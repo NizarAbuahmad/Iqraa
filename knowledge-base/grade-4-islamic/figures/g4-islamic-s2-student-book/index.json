@@ -1,0 +1,533 @@
+{
+  "sourceId": "g4-islamic-s2-student-book",
+  "figures": [
+    {
+      "file": "p011.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 11,
+      "rect": [
+        86.7,
+        75.7,
+        193.9,
+        225.3
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": "Surat Al-Balad: Verses 1-10",
+      "lessonTitleAr": "سورَةُ البَلَدِ: الآياتُ الكَريمَةُ (1-10)",
+      "lessonStartPage": 6
+    },
+    {
+      "file": "p013.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 13,
+      "rect": [
+        227.9,
+        457.5,
+        513.7,
+        636.4
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": "One of God's Beautiful Names: Al-'Azeem (The Magnificent)",
+      "lessonTitleAr": "مِنْ أَسْماءِ اللهِ الحُسْنى: العَظيمُ",
+      "lessonStartPage": 13
+    },
+    {
+      "file": "p015.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 15,
+      "rect": [
+        69.7,
+        376.6,
+        518.8,
+        528.0
+      ],
+      "unit": 5,
+      "lesson": 2,
+      "lessonTitleEn": "One of God's Beautiful Names: Al-'Azeem (The Magnificent)",
+      "lessonTitleAr": "مِنْ أَسْماءِ اللهِ الحُسْنى: العَظيمُ",
+      "lessonStartPage": 13
+    },
+    {
+      "file": "p021.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 21,
+      "rect": [
+        88.4,
+        141.0,
+        239.8,
+        297.5
+      ],
+      "unit": 5,
+      "lesson": 4,
+      "lessonTitleEn": "Belief in the Divine Books",
+      "lessonTitleAr": "الإيمانُ بِالكُتُبِ الإلهِيَّةِ",
+      "lessonStartPage": 21
+    },
+    {
+      "file": "p023.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 23,
+      "rect": [
+        66.3,
+        567.5,
+        193.9,
+        739.5
+      ],
+      "unit": 5,
+      "lesson": 4,
+      "lessonTitleEn": "Belief in the Divine Books",
+      "lessonTitleAr": "الإيمانُ بِالكُتُبِ الإلهِيَّةِ",
+      "lessonStartPage": 21
+    },
+    {
+      "file": "p034.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 34,
+      "rect": [
+        76.5,
+        430.0,
+        529.0,
+        614.0
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": "Surat Al-Balad: Verses 11-20",
+      "lessonTitleAr": "سورَةُ البَلَدِ: الآياتُ الكَريمَةُ (11-20)",
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p037.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 37,
+      "rect": [
+        352.1,
+        338.8,
+        464.3,
+        474.7
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": "Surat Al-Balad: Verses 11-20",
+      "lessonTitleAr": "سورَةُ البَلَدِ: الآياتُ الكَريمَةُ (11-20)",
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p047.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 47,
+      "rect": [
+        61.2,
+        173.7,
+        217.7,
+        325.0
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": "Surat Al-Ma'arij: Verses 19-28",
+      "lessonTitleAr": "سورَةُ المَعارِجِ: الآياتُ الكَريمَةُ (19-28)",
+      "lessonStartPage": 47
+    },
+    {
+      "file": "p049.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 49,
+      "rect": [
+        86.7,
+        153.1,
+        282.3,
+        349.1
+      ],
+      "unit": 6,
+      "lesson": 4,
+      "lessonTitleEn": "Hadith: Exchange Gifts, You Will Love One Another",
+      "lessonTitleAr": "الحَديثُ الشَّريفُ: تَهادَوْا تَحابّوا",
+      "lessonStartPage": 49
+    },
+    {
+      "file": "p051.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 51,
+      "rect": [
+        343.6,
+        288.9,
+        512.0,
+        400.7
+      ],
+      "unit": 6,
+      "lesson": 4,
+      "lessonTitleEn": "Hadith: Exchange Gifts, You Will Love One Another",
+      "lessonTitleAr": "الحَديثُ الشَّريفُ: تَهادَوْا تَحابّوا",
+      "lessonStartPage": 49
+    },
+    {
+      "file": "p055.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 55,
+      "rect": [
+        76.5,
+        178.9,
+        268.7,
+        280.3
+      ],
+      "unit": 6,
+      "lesson": 5,
+      "lessonTitleEn": "Surat Al-Ma'arij: Verses 29-35",
+      "lessonTitleAr": "سورَةُ المَعارِجِ: الآياتُ الكَريمَةُ (29-35)",
+      "lessonStartPage": 55
+    },
+    {
+      "file": "p057.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 57,
+      "rect": [
+        3.4,
+        345.7,
+        586.8,
+        748.1
+      ],
+      "unit": 7,
+      "lesson": 1,
+      "lessonTitleEn": "The Status of the Mosque",
+      "lessonTitleAr": "مَكانَةُ المَسْجِدِ",
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p058.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 58,
+      "rect": [
+        76.5,
+        137.6,
+        256.8,
+        284.9
+      ],
+      "unit": 7,
+      "lesson": 1,
+      "lessonTitleEn": "The Status of the Mosque",
+      "lessonTitleAr": "مَكانَةُ المَسْجِدِ",
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p059.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 59,
+      "rect": [
+        69.7,
+        97.1,
+        265.3,
+        208.3
+      ],
+      "unit": 7,
+      "lesson": 1,
+      "lessonTitleEn": "The Status of the Mosque",
+      "lessonTitleAr": "مَكانَةُ المَسْجِدِ",
+      "lessonStartPage": 58
+    },
+    {
+      "file": "p063.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 63,
+      "rect": [
+        73.1,
+        130.7,
+        236.4,
+        306.1
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "Mosque Etiquette",
+      "lessonTitleAr": "آدابُ المَسْجِدِ",
+      "lessonStartPage": 63
+    },
+    {
+      "file": "p065.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 65,
+      "rect": [
+        124.2,
+        325.0,
+        287.4,
+        471.7
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "Mosque Etiquette",
+      "lessonTitleAr": "آدابُ المَسْجِدِ",
+      "lessonStartPage": 63
+    },
+    {
+      "file": "p065b.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 65,
+      "rect": [
+        321.5,
+        359.4,
+        486.4,
+        474.7
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "Mosque Etiquette",
+      "lessonTitleAr": "آدابُ المَسْجِدِ",
+      "lessonStartPage": 63
+    },
+    {
+      "file": "p065c.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 65,
+      "rect": [
+        319.8,
+        502.2,
+        489.8,
+        617.4
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "Mosque Etiquette",
+      "lessonTitleAr": "آدابُ المَسْجِدِ",
+      "lessonStartPage": 63
+    },
+    {
+      "file": "p065d.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 65,
+      "rect": [
+        122.5,
+        509.1,
+        287.4,
+        617.4
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "Mosque Etiquette",
+      "lessonTitleAr": "آدابُ المَسْجِدِ",
+      "lessonStartPage": 63
+    },
+    {
+      "file": "p069.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 69,
+      "rect": [
+        62.9,
+        172.0,
+        336.8,
+        319.9
+      ],
+      "unit": 7,
+      "lesson": 3,
+      "lessonTitleEn": "Surat Al-Ma'arij: Verses 36-44",
+      "lessonTitleAr": "سورَةُ المَعارِجِ: الآياتُ الكَريمَةُ (36-44)",
+      "lessonStartPage": 69
+    },
+    {
+      "file": "p071.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 71,
+      "rect": [
+        297.6,
+        454.0,
+        457.5,
+        632.9
+      ],
+      "unit": 7,
+      "lesson": 4,
+      "lessonTitleEn": "Congregational Prayer",
+      "lessonTitleAr": "صَلاةُ الجَماعَةِ",
+      "lessonStartPage": 71
+    },
+    {
+      "file": "p071b.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 71,
+      "rect": [
+        127.6,
+        486.7,
+        284.0,
+        632.9
+      ],
+      "unit": 7,
+      "lesson": 4,
+      "lessonTitleEn": "Congregational Prayer",
+      "lessonTitleAr": "صَلاةُ الجَماعَةِ",
+      "lessonStartPage": 71
+    },
+    {
+      "file": "p072.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 72,
+      "rect": [
+        330.0,
+        369.8,
+        525.6,
+        634.4
+      ],
+      "unit": 7,
+      "lesson": 4,
+      "lessonTitleEn": "Congregational Prayer",
+      "lessonTitleAr": "صَلاةُ الجَماعَةِ",
+      "lessonStartPage": 71
+    },
+    {
+      "file": "p072b.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 72,
+      "rect": [
+        149.7,
+        490.2,
+        292.5,
+        641.5
+      ],
+      "unit": 7,
+      "lesson": 4,
+      "lessonTitleEn": "Congregational Prayer",
+      "lessonTitleAr": "صَلاةُ الجَماعَةِ",
+      "lessonStartPage": 71
+    },
+    {
+      "file": "p077.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 77,
+      "rect": [
+        64.6,
+        154.8,
+        277.2,
+        297.5
+      ],
+      "unit": 7,
+      "lesson": 5,
+      "lessonTitleEn": "Friday Prayer",
+      "lessonTitleAr": "صَلاةُ الجُمُعَةِ",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p078.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 78,
+      "rect": [
+        81.6,
+        273.5,
+        236.4,
+        387.0
+      ],
+      "unit": 7,
+      "lesson": 5,
+      "lessonTitleEn": "Friday Prayer",
+      "lessonTitleAr": "صَلاةُ الجُمُعَةِ",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p078b.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 78,
+      "rect": [
+        91.8,
+        447.2,
+        231.3,
+        738.7
+      ],
+      "unit": 7,
+      "lesson": 5,
+      "lessonTitleEn": "Friday Prayer",
+      "lessonTitleAr": "صَلاةُ الجُمُعَةِ",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p079.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 79,
+      "rect": [
+        47.6,
+        596.8,
+        272.1,
+        748.1
+      ],
+      "unit": 7,
+      "lesson": 5,
+      "lessonTitleEn": "Friday Prayer",
+      "lessonTitleAr": "صَلاةُ الجُمُعَةِ",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p080.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 80,
+      "rect": [
+        73.1,
+        51.6,
+        244.9,
+        142.7
+      ],
+      "unit": 7,
+      "lesson": 5,
+      "lessonTitleEn": "Friday Prayer",
+      "lessonTitleAr": "صَلاةُ الجُمُعَةِ",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p082.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 82,
+      "rect": [
+        79.9,
+        172.0,
+        204.1,
+        297.5
+      ],
+      "unit": 7,
+      "lesson": 6,
+      "lessonTitleEn": "Surat Al-Muzzammil: Verses 1-14",
+      "lessonTitleAr": "سورَةُ المُزَّمِّلِ: الآياتُ الكَريمَةُ (1-14)",
+      "lessonStartPage": 82
+    },
+    {
+      "file": "p088.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 88,
+      "rect": [
+        74.8,
+        337.1,
+        284.0,
+        471.2
+      ],
+      "unit": 8,
+      "lesson": 1,
+      "lessonTitleEn": "Surat Ad-Duha",
+      "lessonTitleAr": "سورَةُ الضُّحى",
+      "lessonStartPage": 85
+    },
+    {
+      "file": "p100.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 100,
+      "rect": [
+        141.2,
+        397.3,
+        471.1,
+        629.5
+      ],
+      "unit": 8,
+      "lesson": 4,
+      "lessonTitleEn": "Hadith: Good Treatment",
+      "lessonTitleAr": "الحَديثُ الشَّريفُ: حُسْنُ المُعامَلَةِ",
+      "lessonStartPage": 100
+    },
+    {
+      "file": "p106.png",
+      "sourceId": "g4-islamic-s2-student-book",
+      "pdfPage": 106,
+      "rect": [
+        86.7,
+        141.0,
+        294.2,
+        328.5
+      ],
+      "unit": 8,
+      "lesson": 5,
+      "lessonTitleEn": "Respect",
+      "lessonTitleAr": "الاحْتِرامُ",
+      "lessonStartPage": 106
+    }
+  ]
+}
