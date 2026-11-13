@@ -65,6 +65,52 @@ notice.
   no cache. Uploads still have no English title (the English UI shows the Arabic one).
 - The PATCH route itself has no database test; only its parser is tested.
 
+## Grade 8 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
+
+The Grade 6/7 review («Grade 6 audit…», «Grade 7 audit…»), repeated for all of Grade 8 (358 lessons, 19 books). Every
+lesson's book pages and all 425 figures were looked at as images from the public bucket. Printed page = PDF page in every
+book except English (PDF = printed + 2).
+
+**Book pages.** Fewer wrong starts than Grade 6; most ranges ran past the lesson's end, to where the next *mapped* lesson
+began. Worst: maths S1 u2_l2 held all of u2_l3; Arabic S2 u8_l4 showed the grammar lesson; S1 unit 5 was shifted a lesson
+(u5_l5 showed only «حصاد الوحدة» and the closing page); vocational S1 u1_l1 held u1_l2 and every vocational unit's first
+lesson began on the unit opener (16); social S1 u3_l5 served all of u4_l1, S2 u9_l3 all of u10_l1; English u5_l7 and u10_l7
+ran 20 pages through the back matter; every unit-final lesson in maths (unit test, next opener, project), science
+(enrichment, inquiry, review, glossary), Islamic, Arabic, finlit, digital and arts ran on.
+- **Fix:** the `rendered` mechanism again — 89 ranges corrected from images already cut; 309 of 358 lessons have pages, up
+  from 301. Two lessons that showed nothing of their own lose their pages (Arabic S2 u8_l4, social S2 u7_l1). Where the
+  right range is not all cut, a lesson keeps only the part of its folder inside it (Arabic S1 u1_l5 26-28 of 25-28, u5_l4
+  126-128 of 123-128, S2 u7_l4 47-50; five English lesson-1A ranges keep their band page, missing the unit-opener page that
+  is their first). Every Grade 8 URL the app builds (1,661) answered 200; corrected openers were viewed.
+- Still without pages (49): PE (14, no images at all), maths S2 (14 — only five of its ranges were ever cut), Arabic S2
+  (12), social (8), arts u2_l7. They need a render from the PDFs.
+
+**Contents.** No contents page was reachable except English (read from its extracted text). Lesson lists rebuilt from
+unit openers and lesson openers: **every book matches its catalog** where it could be seen (social S1 units 1 and 6, maths
+S2's unmapped lessons and PE could not be checked). English: 5 units × 7 lessons per book, matching.
+
+**Honorifics (Islamic) — fixed.** «ﷺ» after people other than the Prophet, each checked on the page: «أيد الله تعالى رسله»
+→ «عليهم السلام» (S1 u1_l3, p18), «السيدة سكينة بنت الحسين» → «رحمها الله» (S1 u2_l6, p65), «عمر بن عبد العزيز» → «رحمه الله»
+(S2 u3_l3 title, p108). The 8 left all follow the Prophet. Also «أسرة تُغنى بالعلم» → «تُعنى» (p65).
+
+**Figures.** 425 checked. Merged with «Grade 8 review…» (#1433, below), which landed first and moved some of the same
+figures; its placements stand where the two differ (maths `p047b`/`p048`/`p048b` → u2_l1, `p069b` → dilation, science
+`p071b` → bonds, vocational S2 `p057`, English back matter unmapped). On top of it, this moves maths S1 p021b → u1_l3,
+science S2 p036b → u5_l1, English S1 p016 → u2_l1 and S2 p028–p028d → u8_l1 (two English map entries added; the
+figures were already served, so already in the bucket), and drops what #1433 left: unit-test, review, enrichment and
+inquiry figures filed under a unit's last lesson (maths 6, science 18), English «LIFE SKILLS» pages and two all-text
+crops (8), social S1 p075 (review) and two major crops, and vocational slices of unit openers, lesson lists and
+opener-page tops (18). 53 fewer figures are served than on main; none newly reachable. Minor flaws stay.
+
+**Results.** Offline maths covers 33 of 37 lessons, every sampled key correct (read by hand); u8_l1 «رسم الأشكال ثلاثية
+الأبعاد», u8_l2 «المقاطع والمجسمات الدورانية», u9_l1 «الربيعيات» and u9_l2 «اختيار التمثيل الأنسب» get nothing. **Grade 8
+has no quotable extracted text** — only the two Pearson English books, which are never quoted — so every Grade 8 lesson
+reaches live generation with no book text; that needs the PDFs.
+
+**Verified:** `bookFigures` (with #1433's Grade 8 cases), `bookPage`, `bookFigureAssets`, `lessonSlides`,
+`teachingPlanGrounding` (184), curriculum test (927) and verify (0 errors), typecheck.
+**Not verified:** the pages on a phone; anything needing the PDFs.
+
 ## Grade 1 review: book pages on the wrong unit, tens and two-digit lessons, and an older Islamic edition — 2026-11-13
 
 The same review as Grade 2 (below), for Grade 1's 15 books and 279 lessons.
