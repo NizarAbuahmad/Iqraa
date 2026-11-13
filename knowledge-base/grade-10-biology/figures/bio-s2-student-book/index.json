@@ -402,38 +402,6 @@
    "lessonStartPage": 45
   },
   {
-   "file": "p053b.png",
-   "sourceId": "bio-s2-student-book",
-   "pdfPage": 53,
-   "rect": [
-    290.2,
-    403.8,
-    404.9,
-    543.6
-   ],
-   "unit": 3,
-   "lesson": 9,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": 45
-  },
-  {
-   "file": "p053c-v2.png",
-   "sourceId": "bio-s2-student-book",
-   "pdfPage": 53,
-   "rect": [
-    447.0,
-    412.0,
-    543.0,
-    543.6
-   ],
-   "unit": 3,
-   "lesson": 9,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": 45
-  },
-  {
    "file": "p054b.png",
    "sourceId": "bio-s2-student-book",
    "pdfPage": 54,
