@@ -913,6 +913,12 @@ const TEACHING = {
 const BARE: KBLesson = { ...LESSON, keyConceptsAr: [], rulesAr: [], examplesAr: [] };
 
 describe('usableTeaching', () => {
+  it('keeps up to 8 concepts, for a lesson whose book lists that many terms (physics review, 2026-11-12)', () => {
+    const concepts = Array.from({ length: 9 }, (_, i) => ({ title: `فكرة ${i + 1}`, points: ['شرح'] }));
+    const t = usableTeaching({ concepts });
+    assert.equal(t.concepts.length, 8);
+    assert.equal(t.concepts[7]!.title, 'فكرة 8');
+  });
   it('keeps a well-formed section and strips a bullet the model added itself', () => {
     const t = usableTeaching(TEACHING);
     assert.equal(t.concepts.length, 2);

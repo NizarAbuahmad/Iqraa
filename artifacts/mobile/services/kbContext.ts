@@ -368,6 +368,39 @@ export function groundingRequestFields(grounding: GeneratorGrounding): {
 }
 
 /**
+ * Subjects whose book vocabulary lists the ideas a lesson teaches. English
+ * vocabulary is a word list and maths terms name rules the deck already
+ * projects, so neither sends terms. Add a subject only after reading its
+ * lessons' vocabulary.
+ */
+const KEY_TERM_SUBJECTS = new Set(['physics', 'chemistry']);
+const KEY_TERMS_MAX = 12;
+const KEY_TERM_LENGTH_MAX = 60;
+
+/**
+ * A science lesson's key terms in the content language — `AIRequest.keyTerms`.
+ * Read off the lesson the screen already grounded, never re-derived from the
+ * title. Bounded like the server's `parseKeyTerms`, so an honest request is
+ * never refused there.
+ */
+export function scienceKeyTerms(lesson: KBLesson | null | undefined, lang: 'ar' | 'en'): string[] | undefined {
+  if (!lesson) return undefined;
+  const book = getBookForLesson(lesson);
+  if (!book || !KEY_TERM_SUBJECTS.has(book.subjectId)) return undefined;
+  const terms: string[] = [];
+  for (const t of lesson.keyTerms) {
+    const term = (lang === 'ar' ? t.ar : t.en).replace(/\s+/g, ' ').trim();
+    if (term && term.length <= KEY_TERM_LENGTH_MAX && !terms.includes(term)) terms.push(term);
+  }
+  return terms.length > 0 ? terms.slice(0, KEY_TERMS_MAX) : undefined;
+}
+
+/** Spread into a request: no key at all when there are no terms, so other subjects' requests are unchanged. */
+export function keyTermsField(terms: string[] | undefined): { keyTerms?: string[] } {
+  return terms ? { keyTerms: terms } : {};
+}
+
+/**
  * A unit id the knowledge bank can index by, or `undefined`.
  *
  * The KB carries two unit-id namespaces: NCCD-derived lessons use
