@@ -109,6 +109,23 @@ maths questions were checked by hand by a sub-agent and re-checked by script: **
    - Wording: «من الأمام» in the ordinal line-up; «رقم الآحاد» for «كم آحادًا»; counts of 3 or more before «عشرات /
      آحاد / قطع»; «10 قروش» not «10 قرشًا»; no «(الأسبوع يبدأ بالأحد)» beside «قبل يوم الأحد»; nearest-ten options
      only from the stem's own list; no «(اكتب اسمه)» on choice items; «أي جمع مما يأتي ناتجه 10» lists the sums.
+8. **Every Grade 1 maths lesson now has offline questions of its own** (`early.ts`; `g1MathCoverage.test.ts` checks
+   every lesson and every question type). Each new generator is text only (no picture needed), asks what its
+   objective names, and has three kinds or more (`mathLessonKinds.test.ts`):
+   - The six refused lessons: «الموقع والاتجاه» (opposites, a queue from front to back, a relation read back
+     «… فإن الصندوق ___ القطة», right and left hand); «التصنيف وفق خاصية واحدة» (odd one out, counting one colour,
+     which group, what the group is); «التصنيف وفق أكثر من خاصية» (count what has both properties, find the thing
+     that is both, which shape-and-colour box); «خطة حل المسألة: التخمين والتحقق» (two numbers from their sum and
+     difference, within 20; a number thought of; how many 10-qirsh coins); «مهارة حل المسألة: اختيار العملية» (adding
+     or taking away, the number sentence, the result); «ترتيب الأعمال اليومية» (first or last, what comes next, the
+     time of day).
+   - The data lessons no longer share `read_data_g12` (now Grade 2 only): «جداول البيانات» reads a table,
+     «تمثيل البيانات بالصور» makes a picture graph (how many ★ still to draw, how many in all, which row is longer),
+     «تفسير بيانات ممثلة بالصور» reads one (★ rows). Each kind has its own context (fruit, a trip vote, stories read,
+     a farm; animals, car colours, balls, rainy days) so they read as different tasks.
+   - Measurement: «مقارنة الأطوال / الكتل / السعات» compare and order (and «القلم أطول من الممحاة، والمسطرة أطول
+     من القلم. أيّها الأطول؟»); «وحدات … غير القياسية» are their own lessons — which unit is bigger from two
+     measures of one thing, the fitting unit, the two-small-units story.
 
 **Verified.** Each new test red before its fix, green after. `pnpm run typecheck`; math-practice suite; api-server
 `build` + `test`; mobile suite. **Not verified:** a live model's Grade 1 output with the new clause (no live run from
@@ -121,9 +138,6 @@ stems by a native reviewer.
   slides use when live AI is on). The eight new maths generators ignore difficulty (as most of `early.ts` does).
 - **Maths, still to check against the PDF:** the book's own number-chart direction (the generator no longer depends
   on it) and whether «الأنماط الهندسية» uses «معين».
-- **Lessons still sharing one bank:** u5_l3–l5 (tables and pictographs) and the u11 pairs (compare, then non-standard
-  units) — close topics, so it matters less. The six refused maths lessons (position, sorting ×2, two problem-solving
-  lessons, daily routines) still have no offline bank.
 - **Grade 1 books need ingesting** (text, figures, book pages) from a machine that can reach the PDFs —
   `docs/adding-a-book.md`.
 - Every live prompt reads «للصف ${grade}» with a grade name that already says «الصف», so it says «للصف الصف الأول»

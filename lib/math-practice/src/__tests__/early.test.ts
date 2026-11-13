@@ -1042,13 +1042,16 @@ describe('money, time and measurement: answers recomputed', () => {
           assert.equal(n.length, 1, p); assert.equal(v, 2 * n[0]!, p); assert.ok(n[0]! >= 3 && n[0]! <= 10, p);
           continue;
         }
+        if (has(p, 'أيّها')) { kinds.add('reasoning'); assert.equal(n.length, 0, p); assert.equal(item.answer, p.match(/، و(\S+) /)![1], p); continue; }
         assert.equal(new Set(n).size, n.length, p);
         if (has(p, 'ثلاثة أشياء')) { const up = has(p, 'تصاعديًا'); kinds.add(`order ${up}`); assert.equal(n.length, 3); assert.equal(v, up ? Math.min(...n) : Math.max(...n)); continue; }
         const [a, b] = n;
         kinds.add(has(p, 'بكم') ? 'difference' : 'larger');
         assert.equal(v, has(p, 'بكم') ? Math.abs(a! - b!) : Math.max(a!, b!));
       }
+      // comparing and ordering only: the non-standard-unit story is the units lesson's (units_*_g1)
       assert.equal(kinds.size, 5, `${id}: ${[...kinds]}`);
+      assert.ok(!kinds.has('small unit'), id);
     }
     for (const item of draws('cm_lengths', 300)) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
@@ -1100,7 +1103,12 @@ describe('early routing', () => {
     ['الدينار', 2, 'dinar'], ['فئات النقود الورقية', 2, 'banknotes'], ['أيام الأسبوع', 1, 'week_days'], ['الوقت لأقرب ربع ساعة', 2, 'time_15'], ['أشهر السنة', 2, 'months'], ['التقويم', 3, 'calendar'],
     ['مقارنة الأطوال وترتيبها', 1, 'compare_len'], ['السنتيمتر', 2, 'cm_lengths'], ['اللتر والمليلتر', 2, 'units_l_g2'],
     // lessons that stay refused: they need pictures, objects, or a digit form the app converts itself
-    ['الأرقام الهندية', 3, null], ['التصنيف وفق خاصية واحدة', 1, null], ['الموقع والاتجاه', 1, null], ['ترتيب الأعمال اليومية', 1, null],
+    ['الأرقام الهندية', 3, null],
+    // Grade 1 lessons that used to be refused or to share a bank (review, 2026-11-13)
+    ['التصنيف وفق خاصية واحدة', 1, 'classify_one_g1'], ['التصنيف وفق أكثر من خاصية', 1, 'classify_two_g1'], ['الموقع والاتجاه', 1, 'position_g1'],
+    ['ترتيب الأعمال اليومية', 1, 'daily_order_g1'], ['خطة حل المسألة: التخمين والتحقق', 1, 'guess_check_g1'], ['مهارة حل المسألة: اختيار العملية', 1, 'choose_op_g1'],
+    ['جداول البيانات', 1, 'data_table_g1'], ['تمثيل البيانات بالصور', 1, 'picto_make_g1'], ['تفسير بيانات ممثلة بالصور', 1, 'picto_read_g1'],
+    ['وحدات الطول غير القياسية', 1, 'units_len_g1'], ['وحدات الكتلة غير القياسية', 1, 'units_mass_g1'], ['وحدات السعة غير القياسية', 1, 'units_cap_g1'],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {
