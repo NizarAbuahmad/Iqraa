@@ -162,6 +162,22 @@
       "lessonStartPage": 54
     },
     {
+      "file": "p065.png",
+      "sourceId": "g9-physics-s1-student-book",
+      "pdfPage": 65,
+      "rect": [
+        11.8,
+        144.5,
+        233.8,
+        338.3
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 66
+    },
+    {
       "file": "p066.png",
       "sourceId": "g9-physics-s1-student-book",
       "pdfPage": 66,

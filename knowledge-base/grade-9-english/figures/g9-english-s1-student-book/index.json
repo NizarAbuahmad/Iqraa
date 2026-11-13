@@ -240,6 +240,22 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": null
+    },
+    {
+      "file": "p062.png",
+      "sourceId": "g9-english-s1-student-book",
+      "pdfPage": 62,
+      "rect": [
+        56.9,
+        554.9,
+        303.3,
+        867.4
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
     }
   ]
 }

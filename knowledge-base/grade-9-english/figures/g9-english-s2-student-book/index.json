@@ -114,6 +114,38 @@
       "lessonStartPage": null
     },
     {
+      "file": "p016.png",
+      "sourceId": "g9-english-s2-student-book",
+      "pdfPage": 16,
+      "rect": [
+        369.0,
+        385.3,
+        602.9,
+        657.9
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p017.png",
+      "sourceId": "g9-english-s2-student-book",
+      "pdfPage": 17,
+      "rect": [
+        -29.8,
+        469.4,
+        650.7,
+        932.0
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
       "file": "p018.png",
       "sourceId": "g9-english-s2-student-book",
       "pdfPage": 18,
@@ -194,6 +226,22 @@
       "lessonStartPage": null
     },
     {
+      "file": "p028.png",
+      "sourceId": "g9-english-s2-student-book",
+      "pdfPage": 28,
+      "rect": [
+        -0.1,
+        361.8,
+        441.4,
+        859.0
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
       "file": "p032.png",
       "sourceId": "g9-english-s2-student-book",
       "pdfPage": 32,
@@ -221,6 +269,22 @@
       ],
       "unit": 3,
       "lesson": 7,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p038.png",
+      "sourceId": "g9-english-s2-student-book",
+      "pdfPage": 38,
+      "rect": [
+        -12.4,
+        319.4,
+        309.3,
+        569.8
+      ],
+      "unit": null,
+      "lesson": null,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": null
@@ -301,6 +365,38 @@
       ],
       "unit": 5,
       "lesson": 5,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p061.png",
+      "sourceId": "g9-english-s2-student-book",
+      "pdfPage": 61,
+      "rect": [
+        284.6,
+        405.5,
+        613.5,
+        844.8
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p065.png",
+      "sourceId": "g9-english-s2-student-book",
+      "pdfPage": 65,
+      "rect": [
+        8.4,
+        76.4,
+        306.2,
+        313.3
+      ],
+      "unit": null,
+      "lesson": null,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": null

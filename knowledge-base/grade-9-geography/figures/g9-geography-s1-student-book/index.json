@@ -98,6 +98,22 @@
       "lessonStartPage": 20
     },
     {
+      "file": "p030.png",
+      "sourceId": "g9-geography-s1-student-book",
+      "pdfPage": 30,
+      "rect": [
+        43.2,
+        373.7,
+        305.2,
+        635.7
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "ُمُكِّوِناُتُ الغالِفِ المائِّي",
+      "lessonStartPage": 32
+    },
+    {
       "file": "p032-v2.png",
       "sourceId": "g9-geography-s1-student-book",
       "pdfPage": 32,
