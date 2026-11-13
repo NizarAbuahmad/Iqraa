@@ -21,7 +21,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { PickerField } from '@/components/ui/PickerField';
 import { confirm } from '@/services/confirm';
-import { getLessonsForUnit, getUnitsForSubjectGrade } from '@/services/knowledgeBase';
+import { getLessonById, getLessonsForUnit, getUnitsForSubjectGrade } from '@/services/knowledgeBase';
 import {
   LIBRARY_CATEGORIES,
   MAX_LIBRARY_FILE_BYTES,
@@ -54,6 +54,31 @@ const CATEGORY_LABEL: Record<LibraryCategory, TranslationKey> = {
 
 type Picked = { name: string; mimeType: string; size: number; uri: string; file?: File };
 
+/** The item's subject by name, or its id when the catalog no longer has it. */
+function subjectName(item: LibraryItem, lang: string): string {
+  const subject = getSubjectsForGrade(item.gradeId).find(s => s.id === item.subjectId);
+  return subject ? (lang === 'ar' ? subject.nameAr : subject.name) : item.subjectId;
+}
+
+/** Every lesson of one subject in one grade, in book order. */
+function lessonsOf(subjectId: string, gradeId: string) {
+  return getUnitsForSubjectGrade(subjectId, gradeId).flatMap(u => getLessonsForUnit(u.id));
+}
+
+/**
+ * Where an item is filed, in words: subject, then lesson or semester. The list
+ * showed raw ids («mathematics · kbl-math-s1-nccd-u1_l1»), so an admin could
+ * not see that an edit had moved anything.
+ */
+function placeName(item: LibraryItem, lang: string, semesterLabels: readonly [string, string]): string {
+  const lesson = item.lessonId ? getLessonById(item.lessonId) : undefined;
+  const parts = [subjectName(item, lang)];
+  const ar = lang === 'ar';
+  if (item.lessonId) parts.push(lesson ? (ar ? lesson.titleAr : lesson.titleEn) : item.lessonId);
+  else if (item.semester) parts.push(semesterLabels[item.semester - 1]!);
+  return parts.join(' · ');
+}
+
 export default function LibraryAdminScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -61,6 +86,7 @@ export default function LibraryAdminScreen() {
   const { user } = useAuth();
   const params = useLocalSearchParams<{ gradeId?: string }>();
   const align = isRTL ? 'right' : 'left';
+  const semesterLabels = [t('libraryAdminScopeS1'), t('libraryAdminScopeS2')] as const;
 
   const grades = getVisibleGrades();
   const [gradeIdx, setGradeIdx] = useState(() => Math.max(0, grades.findIndex(g => g.id === params.gradeId)));
@@ -68,10 +94,14 @@ export default function LibraryAdminScreen() {
   const subjects = useMemo(() => getSubjectsForGrade(gradeId), [gradeId]);
   const [subjectIdx, setSubjectIdx] = useState(0);
   const subjectId = subjects[subjectIdx]?.id ?? '';
-  const lessons = useMemo(
-    () => getUnitsForSubjectGrade(subjectId, gradeId).flatMap(u => getLessonsForUnit(u.id)),
-    [subjectId, gradeId],
-  );
+  /** Item currently being edited — null means "add new". */
+  const [editing, setEditing] = useState<LibraryItem | null>(null);
+  const editingId = editing?.id ?? null;
+  // Editing keeps an item's grade and subject (PATCH cannot move them), so its
+  // lesson list is its own subject's — not whatever the pickers above held.
+  const lessonGradeId = editing?.gradeId ?? gradeId;
+  const lessonSubjectId = editing?.subjectId ?? subjectId;
+  const lessons = useMemo(() => lessonsOf(lessonSubjectId, lessonGradeId), [lessonSubjectId, lessonGradeId]);
   const [scope, setScope] = useState<'all' | 'semester-1' | 'semester-2' | 'lesson'>('all');
   const [lessonIdx, setLessonIdx] = useState(0);
   const [category, setCategory] = useState<LibraryCategory>('infographic');
@@ -85,8 +115,6 @@ export default function LibraryAdminScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [existing, setExisting] = useState<LibraryItem[]>([]);
-  /** Item currently being edited — null means "add new". */
-  const [editingId, setEditingId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   const reload = useCallback(() => {
@@ -94,9 +122,20 @@ export default function LibraryAdminScreen() {
   }, [gradeId]);
   useEffect(reload, [reload]);
 
-  // A lesson belongs to one subject; a subject list belongs to one grade.
-  useEffect(() => { setSubjectIdx(0); }, [gradeId]);
-  useEffect(() => { setLessonIdx(0); setScope('all'); }, [subjectId, gradeId]);
+  // A lesson belongs to one subject; a subject list belongs to one grade. Reset
+  // in the pickers' handlers, not in an effect on the ids: an effect also fired
+  // after «edit» filled the form, and threw away the item's own lesson.
+  const pickGrade = (i: number) => {
+    setGradeIdx(i);
+    setSubjectIdx(0);
+    setLessonIdx(0);
+    setScope('all');
+  };
+  const pickSubject = (i: number) => {
+    setSubjectIdx(i);
+    setLessonIdx(0);
+    setScope('all');
+  };
 
   if (user?.role !== 'system_admin') {
     return (
@@ -107,7 +146,7 @@ export default function LibraryAdminScreen() {
   }
 
   const startEdit = (item: LibraryItem) => {
-    setEditingId(item.id);
+    setEditing(item);
     setTitle(item.titleAr);
     setDescription(item.description ?? '');
     setCategory(item.category);
@@ -115,7 +154,9 @@ export default function LibraryAdminScreen() {
     setThumbnailFailed(false);
     const s = item.semester;
     setScope(s === 1 ? 'semester-1' : s === 2 ? 'semester-2' : item.lessonId ? 'lesson' : 'all');
-    setMode('link');
+    // The picker shows the item's own lesson. -1 when the KB no longer has it:
+    // the picker is then blank and saving keeps the id it already had.
+    setLessonIdx(item.lessonId ? lessonsOf(item.subjectId, item.gradeId).findIndex(l => l.id === item.lessonId) : 0);
     setMessage(null);
     // The form sits above the list the pencil lives in; without this the form fills
     // in off-screen and the tap looks like it did nothing.
@@ -123,7 +164,9 @@ export default function LibraryAdminScreen() {
   };
 
   const cancelEdit = () => {
-    setEditingId(null);
+    setEditing(null);
+    setScope('all');
+    setLessonIdx(0);
     setTitle('');
     setDescription('');
     setThumbnailUrl('');
@@ -147,7 +190,7 @@ export default function LibraryAdminScreen() {
     const meta = {
       gradeId,
       subjectId,
-      lessonId: scope === 'lesson' ? (lessons[lessonIdx]?.id ?? null) : null,
+      lessonId: scope === 'lesson' ? (lessons[lessonIdx]?.id ?? editing?.lessonId ?? null) : null,
       semester: scope === 'semester-1' ? (1 as const) : scope === 'semester-2' ? (2 as const) : null,
       category,
       titleAr: title.trim(),
@@ -182,8 +225,11 @@ export default function LibraryAdminScreen() {
           category: meta.category,
           thumbnailUrl: meta.thumbnailUrl ?? null,
           semester: meta.semester,
+          lessonId: meta.lessonId,
         });
-        setEditingId(null);
+        setEditing(null);
+        setScope('all');
+        setLessonIdx(0);
       } else if (mode === 'file' && picked) {
         // Web hands back a File; native a file:// uri that fetch turns into a Blob.
         const blob = picked.file ?? (await (await fetch(picked.uri)).blob());
@@ -235,24 +281,34 @@ export default function LibraryAdminScreen() {
         <Text style={[styles.title, { color: colors.foreground, textAlign: align }]}>{t('libraryAdminTitle')}</Text>
       </View>
 
-      <PickerField
-        label={t('libraryAdminGrade')}
-        value={lang === 'ar' ? grades[gradeIdx]?.nameAr ?? '' : grades[gradeIdx]?.name ?? ''}
-        options={grades.map(g => (lang === 'ar' ? g.nameAr : g.name))}
-        onChange={setGradeIdx}
-        colors={colors}
-        isRTL={isRTL}
-        accent={ACCENT}
-      />
-      <PickerField
-        label={t('libraryAdminSubject')}
-        value={lang === 'ar' ? subjects[subjectIdx]?.nameAr ?? '' : subjects[subjectIdx]?.name ?? ''}
-        options={subjects.map(s => (lang === 'ar' ? s.nameAr : s.name))}
-        onChange={setSubjectIdx}
-        colors={colors}
-        isRTL={isRTL}
-        accent={ACCENT}
-      />
+      {editing ? (
+        // Grade and subject are not editable: PATCH cannot move an item, and
+        // pickers that looked editable here saved nothing.
+        <Text style={[styles.hint, { color: colors.mutedForeground, textAlign: align, marginBottom: 8 }]}>
+          {t('libraryAdminEditPlace', subjectName(editing, lang))}
+        </Text>
+      ) : (
+        <>
+          <PickerField
+            label={t('libraryAdminGrade')}
+            value={lang === 'ar' ? grades[gradeIdx]?.nameAr ?? '' : grades[gradeIdx]?.name ?? ''}
+            options={grades.map(g => (lang === 'ar' ? g.nameAr : g.name))}
+            onChange={pickGrade}
+            colors={colors}
+            isRTL={isRTL}
+            accent={ACCENT}
+          />
+          <PickerField
+            label={t('libraryAdminSubject')}
+            value={lang === 'ar' ? subjects[subjectIdx]?.nameAr ?? '' : subjects[subjectIdx]?.name ?? ''}
+            options={subjects.map(s => (lang === 'ar' ? s.nameAr : s.name))}
+            onChange={pickSubject}
+            colors={colors}
+            isRTL={isRTL}
+            accent={ACCENT}
+          />
+        </>
+      )}
       <Text style={label}>{t('libraryAdminScope')}</Text>
       <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         {(['all', 'semester-1', 'semester-2', 'lesson'] as const).map(s => (
@@ -327,6 +383,10 @@ export default function LibraryAdminScreen() {
         )
       ) : null}
 
+      {/* The file or link itself is immutable (PATCH changes metadata only), so
+          editing offers neither: a URL typed here used to be silently dropped. */}
+      {editing ? null : (
+      <>
       <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row', marginTop: 8 }]}>
         {(['file', 'link'] as const).map(m => (
           <Pressable
@@ -357,6 +417,8 @@ export default function LibraryAdminScreen() {
           <TextInput value={url} onChangeText={setUrl} style={input} autoCapitalize="none" keyboardType="url" placeholder="https://" />
         </>
       )}
+      </>
+      )}
 
       {message ? (
         <Text style={[styles.hint, { color: message.ok ? colors.primary : '#B42318', textAlign: align, marginTop: 10 }]}>{message.text}</Text>
@@ -376,7 +438,7 @@ export default function LibraryAdminScreen() {
           </Pressable>
           <Pressable
             onPress={cancelEdit}
-            style={[styles.saveBtn, { margin: 0, backgroundColor: colors.muted, borderRadius: colors.radius }]}
+            style={[styles.saveBtn, { margin: 0, paddingHorizontal: 20, backgroundColor: colors.muted, borderRadius: colors.radius }]}
           >
             <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_700Bold', fontSize: 15 }}>{t('cancel')}</Text>
           </Pressable>
@@ -405,8 +467,7 @@ export default function LibraryAdminScreen() {
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }}>{item.titleAr}</Text>
             <Text style={[styles.hint, { color: colors.mutedForeground, textAlign: align }]}>
-              {t(CATEGORY_LABEL[item.category] ?? 'libraryCatDocument')} · {item.subjectId}
-              {item.lessonId ? ` · ${item.lessonId}` : ''}
+              {t(CATEGORY_LABEL[item.category] ?? 'libraryCatDocument')} · {placeName(item, lang, semesterLabels)}
             </Text>
           </View>
           <Pressable onPress={() => startEdit(item)} hitSlop={8} accessibilityLabel={t('libraryAdminEditSave')}>

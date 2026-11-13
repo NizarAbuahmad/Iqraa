@@ -98,3 +98,20 @@ export function parseLibraryLink(value: unknown): string | null {
     return null;
   }
 }
+
+/**
+ * The `lessonId` of a metadata edit (PATCH /library/:id). `undefined` when the
+ * edit does not mention it — the item keeps its lesson; `null` (or an empty
+ * string) files it under no lesson. PATCH used to ignore the field entirely,
+ * so the admin screen's lesson picker said «saved» and moved nothing.
+ * Same rule as `parseLibraryMeta`: a `kbl-*` id, never a title.
+ */
+export function parseLessonIdPatch(value: unknown): { lessonId: string | null } | { error: string } | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return { lessonId: null };
+  if (typeof value !== "string") return { error: "lessonId must be a kbl-* lesson id or null" };
+  const lessonId = value.trim();
+  if (!lessonId) return { lessonId: null };
+  if (!lessonId.startsWith("kbl-") || lessonId.length > 120) return { error: "lessonId must be a kbl-* lesson id" };
+  return { lessonId };
+}

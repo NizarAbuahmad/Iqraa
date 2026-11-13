@@ -10,6 +10,49 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Library review: admin edits move the lesson, a failed load is said, search knows the lesson — 2026-11-13
+
+A review of the Library (`/curriculum/resources`), its services, the staff screen (`/admin/library`) and
+`/library`. The screen was in good shape; these are the problems it found.
+
+**What changed.**
+- **Editing an item could not change its lesson.** `startEdit` filled title, category, cover and scope but not the
+  pickers, and `PATCH /library/:id` ignored `lessonId`. An admin who picked another lesson, or moved an item from a
+  lesson to a semester, got «تم الحفظ» and nothing moved (a semester was added *on top of* the lesson). The edit form
+  now shows the item's own lesson (blank if the KB no longer has it; saving then keeps the id), PATCH takes
+  `lessonId` (absent = unchanged, null or "" = none, otherwise `kbl-*` — `parseLessonIdPatch`), and grade/subject
+  pickers and the file/link inputs are hidden while editing, since PATCH changes neither. The resets on a grade or
+  subject change moved from effects into the pickers' handlers: the effect fired after «edit» and wiped the lesson.
+  The list under the form names subject and lesson/semester instead of printing raw ids.
+- **A failed load read as an empty library.** `listLibrary` turns any failure into `[]`, so offline the screen said
+  «لا توجد موارد», and on first open it said so before the uploads arrived. The screen uses `listLibraryChecked`
+  (null on failure): a spinner while a grade with nothing else is loading, and a notice with «أعد المحاولة» when the
+  load fails. A refocus that fails while the grade's rows are already shown keeps them and says nothing.
+  The duplicate fetch (`useEffect` next to `useFocusEffect`) is gone.
+- **Search knows the lesson and the subject.** `filterResources` takes `alsoMatch`; the screen passes each row's
+  lesson title and subject name in both languages.
+- **Grade chips in order.** `MVP_GRADE_IDS` is append-only, so the chips read «…الثالث، الأول، الثاني».
+  `gradesForChips` sorts by level for display; the screen holds the grade by id, so no persisted index moves.
+- Book-code rows name their subject (they have no grade; the screen's grade is used). The sheet lookup per row
+  is a cached map. A stale comment in `videoThumbnail.ts` pointed at a function that no longer exists.
+
+**Verified.** New cases in `resourceCatalog.test.ts` (search via `alsoMatch`), `libraryLayout.test.ts`
+(`gradesForChips`, and that it does not reorder its input) and the api-server `libraryResource.test.ts`
+(`parseLessonIdPatch`). `pnpm run typecheck`, the api-server suite (2,918 pass) and the mobile suite. In a browser
+(web build, API mocked through Playwright): chips read العاشر، التاسع، الثاني، الأول; a 500 on `/library` shows the
+notice and not the empty text; a request that never returns shows the spinner and not the empty text; a real empty
+list still shows the empty text; editing a lesson-scoped item shows that lesson, and switching it to «الفصل الأول»
+sends `{"semester":1,"lessonId":null}`.
+
+**Not done.**
+- **The semester tag still does nothing for teachers.** Admins can file an item under a semester, and nothing on the
+  Library reads it (no chip, no badge). Show it or drop the option — a product decision, left open.
+- **Grades 1–9 have almost nothing built in.** Without staff uploads: grade 10 has 43 items (4 videos, 28 sheets,
+  11 book-code pages), grade 9 has 2, grades 1–8 have none. Production's uploads were not checked.
+- Uploaded videos without a cover still load the file on web (`preload='auto'`, up to 25 MB) to grab a frame, with
+  no cache. Uploads still have no English title (the English UI shows the Arabic one).
+- The PATCH route itself has no database test; only its parser is tested.
+
 ## Grade 8 review: book figures on the right lessons, teaching-plan export grounded by id — 2026-11-13
 
 A review of the 19 grade 8 catalogs (11 subjects). It found the catalogs complete and wired, a picked lesson
