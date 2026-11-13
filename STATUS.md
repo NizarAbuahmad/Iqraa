@@ -72,6 +72,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-11-13 — Grade 10 checked against its books and corrected; history, civics and art text now grounds live prompts (it never did); vocational S1 added; what is left needs the PDFs or a book (PE S2, financial literacy S2, vocational S2, the «حل معادلات خاصة» figures to map and upload) and the same English word-list fix for Grade 9 («Grade 10 checked against its books, and corrected» in the log)
 - 2026-11-13 — Grade 9 checked against its books and corrected; what is left needs the PDFs (nccd.gov.jo does not answer from cloud sessions): figures for 16 books, book pages for art / vocational / history S2, two missing download links, and a page check of the 11 books with no extracted text («Grade 9 checked against its books, and corrected» in the log)
 - 2026-11-13 — Grade 8 audit: no quotable extracted text, so live generation is ungrounded for all 358 lessons (needs the PDFs); 49 lessons still lack book pages (PE, maths S2, Arabic S2, social); four maths lessons have no offline questions («Grade 8 audit…» in the log)
 - 2026-11-13 — Grade 7 audit: Grade 7 has no extracted book text, so live generation is ungrounded for all 397 lessons (needs the PDFs); 24 creative-arts and social lessons still lack book pages; the English S2 figures p027/p043 wait for an upload and remap; the misplaced «ﷺ» in Grade 8/9 Islamic is unchecked («Grade 7 audit…» in the log)
