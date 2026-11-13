@@ -13,13 +13,17 @@
  * prints them (pages 4-6 of the 147-page PDF).
  *
  * Mostly title-only: the structure comes from the activity book's table of
- * contents, and `main_idea_ar`/`vocabulary` are empty throughout, same as
- * g6DigitalSem1. `objectives` (since 2026-11-13) holds 14 statements in 11 of
+ * contents, and `vocabulary` is empty throughout, same as g6DigitalSem1.
+ * `objectives` (since 2026-11-13) holds 14 statements in 11 of
  * the 26 lessons, read from the activity book's text: items of each block's
  * «نتاجات التعلم» list (pp. 7, 27, 43, 87, 99, 109) given to a task only where
  * they clearly describe that one task, plus block 4's own task aims (pp. 88,
  * 90). Everything left out, and why, is in the JSON's `meta.known_gaps`.
  * The four learning projects print no outcomes, so they stay empty.
+ * `main_idea_ar` (since 2026-11-13) is filled for 7 of the 26 lessons, copied
+ * from the book: each learning project's box on what it revolves around
+ * («الفكرة / المشكلة التي يدور حولها المشروع», pp. 59, 74, 123, 137) and
+ * block 4's own task descriptions (pp. 88, 90). No other task prints one.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
@@ -55,14 +59,26 @@ export const g5DigitalSem1LessonKbId = catalog.lessonKbId;
 export const findG5DigitalSem1LessonByKbId: (kbLessonId: string) => NccdLesson | null =
   catalog.findLessonByKbId;
 
-/** True for every unit in this book — see the header for why it is unconditional. */
+/** A lesson the catalog holds nothing for beyond its title. */
+const isEmptyLesson = (l: NccdLesson) =>
+  !l.main_idea_ar && !(l.objectives ?? []).length && !(l.vocabulary ?? []).length;
+
+/**
+ * A unit whose lessons are all titles only — decided by the content, not the
+ * id. Until 2026-11-13 every id in this book was flagged; 15 of its 26 tasks
+ * and projects now carry objectives or a main idea from the activity book.
+ */
 export function isG5DigitalSem1TitleOnlyUnit(unitKbId: string): boolean {
-  return unitKbId.startsWith(unitKbPrefix(SCOPE));
+  if (!unitKbId.startsWith(unitKbPrefix(SCOPE))) return false;
+  const unit = catalog.curriculum.units.find(u => catalog.unitKbId(u.id) === unitKbId);
+  return !!unit && unit.lessons.every(isEmptyLesson);
 }
 
-/** True for every lesson in this book — see the header for why it is unconditional. */
+/** A lesson with nothing beyond its title — see `isG5DigitalSem1TitleOnlyUnit`. */
 export function isG5DigitalSem1TitleOnlyLesson(kbLessonId: string): boolean {
-  return kbLessonId.startsWith(lessonKbPrefix(SCOPE));
+  if (!kbLessonId.startsWith(lessonKbPrefix(SCOPE))) return false;
+  const lesson = catalog.findLessonByKbId(kbLessonId);
+  return !!lesson && isEmptyLesson(lesson);
 }
 
 export const buildG5DigitalSem1Catalog = catalog.buildCatalog;

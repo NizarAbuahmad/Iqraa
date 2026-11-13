@@ -96,6 +96,12 @@ upload needed (keys only removed).
   owner chose to leave `main_idea_ar` empty and record the search in
   `known_gaps`. The Arabic «عنوان الدرس فقط» badge now follows the content like
   social's (`g5ArabicTitleOnly.test.ts`); only u8_l5, with no objectives, wears it.
+- **Digital skills main ideas** 7/26: the activity book prints no «الفكرة
+  الرئيسة» box. Each project's «الفكرة / القضية / المشكلة التي يدور حولها
+  المشروع» box (pp. 59, 74, 123, 137) fills its project, and block 4's own task
+  descriptions (pp. 88, 90) fill u6_l1, u6_l2 and u6_l4. The «عنوان الدرس فقط»
+  badge follows the content here too (`g5DigitalTitleOnly.test.ts`): 15 of 26
+  lessons have objectives or a main idea and no longer wear it.
 - **Islamic vocabulary NOT filled:** the «المفردات والتراكيب» boxes (12 lessons,
   listed by page in `known_gaps`) print their headwords in the Mushaf font, which
   pdf-parse dropped, and **the cloud environment's R2 keys answer AccessDenied on
