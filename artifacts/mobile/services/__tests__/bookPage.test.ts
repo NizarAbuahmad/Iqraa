@@ -62,6 +62,41 @@ describe('book-page-links.json', () => {
     assert.ok(checked > 0, 'no lessons from the page-only subjects to check');
   });
 
+  it('a hand-corrected lesson only borrows images that exist, of its own pages', () => {
+    // `images` names pages rendered under some lesson's key (its own or another
+    // one's); each must be the right page of a range that was rendered, from the
+    // same book. A lesson's rendered range is [renderedStartPage ?? startPage,
+    // renderedEndPage ?? endPage]: the two keep track of a range that was moved
+    // by hand after its images were cut.
+    type Entry = {
+      sourceId: string; startPage: number; endPage: number;
+      images?: string[]; renderedStartPage?: number; renderedEndPage?: number;
+    };
+    const all = lessons as Record<string, Entry>;
+    const rendered = (l: Entry) => [l.renderedStartPage ?? l.startPage, l.renderedEndPage ?? l.endPage] as const;
+    for (const [id, l] of Object.entries(all)) {
+      const [first, last] = rendered(l);
+      assert.ok(first >= 1 && first <= last && last - first < 20, `${id}: bad rendered range ${first}-${last}`);
+      if (l.renderedStartPage !== undefined) {
+        // Its own image 1 is no longer its first page, so the default 1..n is wrong.
+        assert.ok(l.images, `${id}: a range whose start moved must list the images it shows`);
+      }
+      if (!l.images) continue;
+      assert.equal(l.images.length, l.endPage - l.startPage + 1, `${id}: one image per page`);
+      l.images.forEach((key, i) => {
+        const m = key.match(/^(kbl-[^/]+)\/(\d+)$/);
+        assert.ok(m, `${id}: bad image key ${key}`);
+        const host = all[m[1]!];
+        assert.ok(host, `${id}: ${key} names a lesson with no rendered images`);
+        assert.equal(host.sourceId, l.sourceId, `${id}: ${key} is from another book`);
+        const [hostFirst, hostLast] = rendered(host);
+        const page = hostFirst + Number(m[2]) - 1;
+        assert.equal(page, l.startPage + i, `${id}: ${key} is page ${page}, not ${l.startPage + i}`);
+        assert.ok(page <= hostLast, `${id}: ${key} was never rendered`);
+      });
+    }
+  });
+
   it('a book without a live copy (pdfUrl null) was rendered from ours, and says so', () => {
     for (const [id, book] of Object.entries(books as Record<string, { pdfUrl?: string | null; source?: string }>)) {
       if (book.pdfUrl === null) assert.ok(book.source, `${id} has no pdfUrl and no source`);

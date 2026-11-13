@@ -91,8 +91,15 @@ function serializeLessonContext(
   const concepts = isAr ? lesson.keyConceptsAr : lesson.keyConceptsEn;
   const rules    = isAr ? (lesson.rulesAr ?? []) : (lesson.rulesEn ?? []);
 
+  // The unit, because a title alone does not say what the lesson is about:
+  // Grade 7 English S2 names every unit's lessons «المفردات», «القواعد»… and
+  // Grade 7 PE repeats «تدريبات ولعب جماعي» under each sport, so without it the
+  // model was never told which topic or sport (2026-11-13 Grade 7 audit).
+  const unit = getUnitForLesson(lesson);
+  const unitTitle = (isAr ? unit?.titleAr : unit?.titleEn)?.trim();
   const lines: string[] = [
     isAr ? `📚 الدرس: ${title}` : `📚 Lesson: ${title}`,
+    ...(unitTitle && unitTitle !== title ? [isAr ? `الوحدة: ${unitTitle}` : `Unit: ${unitTitle}`] : []),
     '',
     summary,
   ];
