@@ -56,6 +56,28 @@ reaches live generation with no book text; that needs the PDFs.
 `teachingPlanGrounding` (184), curriculum test (927) and verify (0 errors), typecheck.
 **Not verified:** the pages on a phone; anything needing the PDFs.
 
+## A workflow submits an EAS production build to Google Play — 2026-11-13
+
+Getting a build into Play was a download of the `.aab` and a hand upload in Play Console; no session without the
+owner's Console login could do it (the 1.6.0 / versionCode 12 build of 2026-11-13, EAS build
+`315f6c50-9635-463a-a33e-2ac5046f2000`, waited on exactly that).
+
+**What changed.** `.github/workflows/mobile-submit.yml`, manual, takes an EAS `build_id` and a `send_for_review`
+switch. It refuses anything that is not a finished `production` Android `.aab` (`eas build:view`), writes the
+`PLAY_SERVICE_ACCOUNT_JSON` secret to `artifacts/mobile/.play-service-account.json` for the job only (gitignored and
+easignored by the existing `*-service-account*.json` rule, deleted in an `always()` step, never printed), and runs
+`eas submit --id`. `eas.json` gains two submit profiles on the production track: `production` (`releaseStatus:
+draft`, the default — send for review from Play Console, which also sends a listing draft made there) and
+`production-review` (`completed`, Play sends it for review at once). Setup of the service account and the secret:
+`docs/deploying.md`, «Submitting to Google Play».
+
+**Verified.** The YAML and `eas.json` parse; the key's file name is matched by `.gitignore` (`git check-ignore`) and
+by the same line in `.easignore`; typecheck and the mobile suite (`posthogProject.test.ts` reads `eas.json`).
+**Not verified — it has never run:** the secret does not exist yet as far as this session can tell (it cannot read
+secrets); the shape of `eas build:view --json` (the step accepts an object or a one-element list and fails closed
+otherwise); whether Play accepts an API commit while the Console holds a drafted listing change; whether
+`eas submit` with a key path also wants a key stored on EAS.
+
 ## Grade 8 review: book figures on the right lessons, teaching-plan export grounded by id — 2026-11-13
 
 A review of the 19 grade 8 catalogs (11 subjects). It found the catalogs complete and wired, a picked lesson
