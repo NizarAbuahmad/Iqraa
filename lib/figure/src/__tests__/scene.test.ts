@@ -12,7 +12,11 @@ const one = (prims: ScenePrim[], r: string) => {
   return found[0]!;
 };
 const pointsOf = (p: ScenePrim) =>
-  p.t === 'line' || p.t === 'arrow' ? [p.a, p.b] : p.t === 'poly' ? p.pts : p.t === 'circle' ? [p.c] : [p.at];
+  p.t === 'line' ? [p.a, p.b]
+    : p.t === 'arrow' ? [p.a, p.b, ...p.head]
+      : p.t === 'poly' ? p.pts
+        : p.t === 'circle' ? [{ x: p.c.x - p.r, y: p.c.y - p.r }, { x: p.c.x + p.r, y: p.c.y + p.r }]
+          : [p.at];
 
 const SAMPLES: SceneFigure[] = [
   { kind: 'forces', body: 'block', arrows: [{ dir: 270, size: 2, label: 'W', value: { n: 49, unit: 'N' } }, { dir: 90, size: 2, label: 'N' }, { dir: 0, size: 3, label: 'F' }, { dir: 180, size: 1, label: 'f' }] },
@@ -27,6 +31,9 @@ const SAMPLES: SceneFigure[] = [
   { kind: 'wave', cycles: 2, marks: ['crest', 'trough', 'A', 'lambda'], amplitude: { n: 0.2, unit: 'm' }, wavelength: { n: 4, unit: 'm' } },
   { kind: 'wave', cycles: 3, marks: [], second: { phase: 'in', sum: true } },
   { kind: 'wave', cycles: 1, marks: ['lambda'], second: { phase: 'out', sum: true } },
+  { kind: 'forces', body: 'block', incline: 5, arrows: [{ dir: 270, size: 3, label: 'W' }, { dir: 95, size: 3, label: 'N' }] },
+  { kind: 'forces', body: 'block', incline: 60, arrows: [{ dir: 270, size: 3, label: 'W' }, { dir: 150, size: 3, label: 'N' }] },
+  { kind: 'forces', body: 'block', arrows: [{ dir: 0, size: 3, label: 'F', value: { n: 100, unit: 'N' } }, { dir: 180, size: 3, label: 'f', value: { n: 20, unit: 'N' } }] },
 ];
 
 describe('layoutScene: everything inside the box', () => {
@@ -125,6 +132,29 @@ describe('layoutScene: physics the drawing gets right', () => {
     const words = (lang: 'ar' | 'en') => layoutScene(f, BOX, lang).prims.flatMap(p => (p.t === 'text' ? [p.text] : []));
     assert.deepEqual(words('ar'), ['قمة', 'قاع']);
     assert.deepEqual(words('en'), ['crest', 'trough']);
+  });
+
+  it('forces: a value label never covers its own arrowhead', () => {
+    for (const box of [BOX, SMALL]) {
+      for (const f of SAMPLES.filter(s => s.kind === 'forces')) {
+        const prims = layoutScene(f, box).prims;
+        for (const lab of prims.filter(p => p.t === 'text' && p.role.startsWith('label:'))) {
+          const arr = one(prims, 'arrow:' + lab.role.slice(6));
+          if (lab.t !== 'text' || arr.t !== 'arrow') return assert.fail('shapes');
+          const half = (lab.text.length * 7.2) / 2;
+          const inside = arr.b.x >= lab.at.x - half && arr.b.x <= lab.at.x + half && arr.b.y >= lab.at.y - 13 && arr.b.y <= lab.at.y + 4;
+          assert.ok(!inside, `${lab.text} covers its tip in ${box.w}x${box.h}`);
+        }
+      }
+    }
+  });
+
+  it('wave: the λ line sits below the in-phase sum', () => {
+    const prims = layoutScene({ kind: 'wave', cycles: 2, marks: ['lambda'], second: { phase: 'in', sum: true } }, BOX).prims;
+    const sum = one(prims, 'sum');
+    const l = one(prims, 'lambda');
+    if (sum.t !== 'poly' || l.t !== 'line') return assert.fail('shapes');
+    assert.ok(l.a.y > Math.max(...sum.pts.map(q => q.y)));
   });
 
   it('attraction: the two force arrows are equal and opposite', () => {

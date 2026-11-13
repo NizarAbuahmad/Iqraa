@@ -81,11 +81,19 @@ function layoutForces(f: ForcesFigure, box: Box): ScenePrim[] {
     out.push({ t: 'circle', c, r: 5, tone: 'ink', fill: true, role: 'body' });
   }
   f.arrows.forEach((a, i) => {
-    const len = unit * [0, 0.18, 0.27, 0.36][a.size]!;
+    const dx = Math.cos(rad(a.dir));
+    const dy = -Math.sin(rad(a.dir));
+    const toEdge = Math.min(
+      Math.abs(dx) > 1e-9 ? (dx > 0 ? box.w - c.x : -c.x) / dx : Infinity,
+      Math.abs(dy) > 1e-9 ? (dy > 0 ? box.h - c.y : -c.y) / dy : Infinity,
+    );
+    const len = Math.min(unit * [0, 0.18, 0.27, 0.36][a.size]!, Math.max(toEdge - 26, 0));
     const tip = polar(c, a.dir, len);
     out.push(arrow(c, tip, series(i), `arrow:${a.label}`));
-    const at = polar(c, a.dir, len + 14);
-    out.push(text({ x: at.x, y: at.y + 4 }, tagged(a.label, a.value), box, `label:${a.label}`, series(i)));
+    const label = tagged(a.label, a.value);
+    const half = (label.length * GLYPH) / 2;
+    const at = polar(c, a.dir, len + 12 + Math.abs(dx) * half);
+    out.push(text({ x: at.x, y: at.y + 4 }, label, box, `label:${a.label}`, series(i)));
   });
   return out;
 }
@@ -148,7 +156,7 @@ function layoutProjectile(f: ProjectileFigure, box: Box): ScenePrim[] {
     }
     if (has('vx')) {
       out.push(arrow(O, { x: tip.x, y: O.y }, 2, 'vx', true));
-      out.push(text({ x: tip.x + 12, y: O.y + 14 }, 'vx', box, 'vx-label', 2));
+      out.push(text({ x: tip.x + 12, y: O.y - 6 }, 'vx', box, 'vx-label', 2));
     }
     if (has('vy')) {
       out.push(arrow(O, { x: O.x, y: tip.y }, 2, 'vy', true));
@@ -177,7 +185,10 @@ function layoutProjectile(f: ProjectileFigure, box: Box): ScenePrim[] {
     return { x: P.x + x, y: P.y + drop * (x / X) ** 2 };
   });
   out.push({ t: 'poly', pts, tone: 0, role: 'path' });
-  out.push(text({ x: P.x + 8 + (`${tagged('h', f.height)}`.length * GLYPH) / 2, y: (P.y + ground) / 2 + 30 }, tagged('h', f.height), box, 'height-label', 'muted'));
+  if (f.height) {
+    const hl = tagged('h', f.height);
+    out.push(text({ x: P.x + 8 + (hl.length * GLYPH) / 2, y: (P.y + ground) / 2 + 30 }, hl, box, 'height-label', 'muted'));
+  }
   if (has('v0')) {
     out.push(arrow(P, { x: P.x + unit * 0.2, y: P.y }, 1, 'v0'));
     out.push(text({ x: P.x + unit * 0.1, y: P.y - 8 }, tagged('v0', f.speed), box, 'v0-label', 1));
@@ -262,7 +273,7 @@ function layoutWave(f: WaveFigure, box: Box, lang: 'ar' | 'en'): ScenePrim[] {
     out.push(text({ x: crestX + 8 + (s.length * GLYPH) / 2, y: y0 - A / 2 }, s, box, 'A-label'));
   }
   if (f.marks.includes('lambda')) {
-    const yl = Math.min(box.h - 22, y0 + A + 26);
+    const yl = Math.min(box.h - 22, y0 + (doubled ? 2 * A : A) + 26);
     out.push(line({ x: M, y: yl }, { x: M + W / f.cycles, y: yl }, 'muted', 'lambda'));
     out.push(line({ x: M, y: yl - 5 }, { x: M, y: yl + 5 }, 'muted', 'lambda-tick'));
     out.push(line({ x: M + W / f.cycles, y: yl - 5 }, { x: M + W / f.cycles, y: yl + 5 }, 'muted', 'lambda-tick'));
