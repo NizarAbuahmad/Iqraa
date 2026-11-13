@@ -30,6 +30,8 @@ function draws(id: string, n = 240, grade?: number): ConcreteItem[] {
     makeTopicItem(t, grade ?? t.grades[0] + (i % (t.grades[1] - t.grades[0] + 1)), TIERS[i % 3]!, new Set(), seeded(i * 6700417 + 3)));
 }
 const nums = (s: string) => (s.match(/\d+(?:\.\d+)?/g) ?? []).map(Number);
+/** A count of two is written as a dual («قطعتان», «مجموعتين»); read it back as the digit, in place. */
+const twoAsDigit = (s: string) => s.replace(/مجموعتان متساويتان|قطعتان نقديتان|مجموعتين|قطعتان|قلمان/g, '2');
 const has = (s: string, w: string) => s.includes(w);
 const frac = (s: string) => { const [a, b] = s.split('/').map(Number); return b === undefined ? a! : a! / b; };
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
@@ -405,7 +407,7 @@ describe('early arithmetic: answers recomputed', () => {
 
   it('equal groups, division relation, multiplication and division facts', () => {
     for (const id of ['equal_groups_a', 'equal_groups_b']) for (const item of draws(id)) {
-      const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      const p = item.promptAr!, n = nums(twoAsDigit(p)), a = Number(item.answer);
       if (has(p, 'كم قلمًا')) assert.equal(a, n[0]! * n[1]!); else if (has(p, 'كم قطعة')) assert.equal(a * n[1]!, n[0]); else assert.equal(a * n[1]!, n[0]);
     }
     for (const grade of [2, 3]) {
@@ -868,7 +870,7 @@ describe('money, time and measurement: answers recomputed', () => {
       else assert.equal(a, Math.max(d[0]!, d[1]!), p);
     }
     for (const id of ['coins_a', 'coins_b', 'coins_c']) for (const item of draws(id)) {
-      const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      const p = item.promptAr!, n = nums(twoAsDigit(p)), a = Number(item.answer);
       if (has(p, 'كم قطعة')) assert.equal(a * n[0]!, n[1]); else if (has(p, 'و ') && n.length === 4) assert.equal(a, n[0]! * n[1]! + n[2]! * n[3]!); else assert.equal(a, n[0]! * n[1]!);
     }
     const din = new Set<string>();

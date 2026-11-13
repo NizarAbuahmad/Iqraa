@@ -42,6 +42,13 @@ read through what the repo already holds: the rendered lesson pages and figure c
   reads «100 دينار»; «بنظام 24 ساعة» reads «ساعةً». The agreement test (`tamyiz.test.ts`) never saw any of it: its
   look-ahead counted «؟» (U+061F) as a letter, so a counted noun that ends a question was skipped. It now stops
   at letters and marks only, and lists days, weeks and hours.
+- **Ones and twos, Grades 1, 2 and 7.** The test skipped any count under 3, so «2 أقلام», «على 2 مجموعات», «2 قطع
+  من فئة 10 قروش» (Grade 2 `equal_groups_a/b`, Grade 1 `coins_a/b/c`) and «في 2 ساعات» (Grade 7 `unit_rate`)
+  shipped; so did «20 قطع» for «20 قطعةً» and «10 قرشًا» for «10 قروش». They now read «قلمان», «على مجموعتين»,
+  «مجموعتان متساويتان» (nominative, with its adjective), «قطعتان», «في ساعتين», «20 قطعةً», «10 قروش». The test now
+  fails a digit 1 or 2 before a counted noun, except in a unit fact («1 متر = 100 سنتيمتر», printed that way in the
+  books) and a fraction's denominator («1/4 مجموعة»); it also lists groups, pieces and qirsh. Red first on exactly
+  these generators. The recompute tests read the dual back as 2 (`twoAsDigit`).
 
 **Verified.** Red first: the tightened `tamyiz.test.ts` failed on 46 calendar stems and 2 banknote stems, then
 passed after the fix; `lib/math-practice` 949/949; `pnpm run typecheck`; the mobile suite. 16 further lessons'

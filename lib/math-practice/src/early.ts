@@ -32,6 +32,10 @@ const dinars = (n: number) => counted(n, 'دينار واحد', 'ديناران'
 const days = (n: number) => counted(n, 'يوم واحد', 'يومين', 'أيام', 'يومًا', 'يوم');
 /** «أسبوعين / 5 أسابيع» */
 const weeks = (n: number) => counted(n, 'أسبوع واحد', 'أسبوعين', 'أسابيع', 'أسبوعًا', 'أسبوع');
+/** «قطعتان / 5 قطع / 12 قطعةً» — the subject of its clause, so the dual is nominative. */
+const pieces = (n: number) => counted(n, 'قطعة واحدة', 'قطعتان', 'قطع', 'قطعةً', 'قطعة');
+/** «قلمان / 5 أقلام» — nominative. */
+const pens = (n: number) => counted(n, 'قلم واحد', 'قلمان', 'أقلام', 'قلمًا', 'قلم');
 /** «كرة واحدة / كرتان / 5 كرات / 12 كرةً» */
 const balls = (n: number) => (n === 1 ? 'كرة واحدة' : n === 2 ? 'كرتان' : `${n} ${tamyiz(n, 'كرات', 'كرةً', 'كرة')}`);
 /** «45 قرشًا / 7 قروش / 300 قرش» — for 3 or more. */
@@ -616,9 +620,9 @@ const mentalMultiples = (id: string, match: RegExp, add: boolean, grade: number)
 
 const equalGroups = (id: string, match: RegExp) => T(id, match, [2, 2], ({ rng }) => {
   const g = int(rng, 2, 5), n = int(rng, 2, 6), t = g * n, k = pick(rng, [0, 1, 2]);
-  if (k === 0) return { eq: `${g}, ${n}`, answer: String(t), wrongs: ints(t, [g + n, t + g, t - n, g * g]), ar: `${g} مجموعات متساوية، في كل منها ${n} أقلام. كم قلمًا في المجموع؟`, en: `There are ${g} equal groups with ${n} pencils in each. How many pencils are there in all?` };
-  if (k === 1) return { eq: `${t}, ${g}`, answer: String(n), wrongs: ints(n, [t, g, n + 1, t - g]), ar: `وُزّعت ${t} قطع بالتساوي على ${g} مجموعات. كم قطعة في كل مجموعة؟`, en: `${t} pieces are shared equally among ${g} groups. How many pieces are in each group?` };
-  return { eq: `${t}, ${n}`, answer: String(g), wrongs: ints(g, [t, n, g + 1, t - n]), ar: `${t} قطع، وُضع في كل مجموعة ${n} قطع. كم مجموعة تكوّنت؟`, en: `${t} pieces are put into groups of ${n}. How many groups are made?` };
+  if (k === 0) return { eq: `${g}, ${n}`, answer: String(t), wrongs: ints(t, [g + n, t + g, t - n, g * g]), ar: `${g === 2 ? 'مجموعتان متساويتان' : `${g} مجموعات متساوية`}، في كل منها ${pens(n)}. كم قلمًا في المجموع؟`, en: `There are ${g} equal groups with ${n} pencils in each. How many pencils are there in all?` };
+  if (k === 1) return { eq: `${t}, ${g}`, answer: String(n), wrongs: ints(n, [t, g, n + 1, t - g]), ar: `وُزّعت ${pieces(t)} بالتساوي على ${g === 2 ? 'مجموعتين' : `${g} مجموعات`}. كم قطعة في كل مجموعة؟`, en: `${t} pieces are shared equally among ${g} groups. How many pieces are in each group?` };
+  return { eq: `${t}, ${n}`, answer: String(g), wrongs: ints(g, [t, n, g + 1, t - n]), ar: `${pieces(t)}، وُضع في كل مجموعة ${pieces(n)}. كم مجموعة تكوّنت؟`, en: `${t} pieces are put into groups of ${n}. How many groups are made?` };
 });
 
 const divisionRelation = T('division_relation', /^العلاقه بين القسمه والضرب$|^علاقه القسمه بالضرب$/, [2, 3], ({ rng }) => {
@@ -899,10 +903,10 @@ const decimalMoney = T('decimal_money', /^الاعداد العشريه والن
 
 const coins = (id: string, match: RegExp) => T(id, match, [1, 1], ({ rng }) => {
   const v = pick(rng, [5, 10]), n = int(rng, 2, 6), w = v === 5 ? 10 : 5, m = int(rng, 2, 4), k = pick(rng, [0, 1, 2]);
-  if (k === 0) return { eq: `${v}, ${n}`, answer: String(v * n), wrongs: ints(v * n, [v + n, v * n + v, n, v * n - 1]), ar: `مع ليلى ${n} قطع نقدية، قيمة كل منها ${v} قروش. كم قرشًا معها؟`, en: `Layla has ${n} coins worth ${v} qirsh each. How many qirsh does she have?` };
-  if (k === 1) return { eq: `${v}, ${n}, ${w}, ${m}`, answer: String(v * n + w * m), wrongs: ints(v * n + w * m, [v + n + w + m, v * n, w * m, v * n + w * m + v]), ar: `مع ليلى ${n} قطع من فئة ${v} قروش و ${m} قطع من فئة ${w} قروش. كم قرشًا معها؟`, en: `Layla has ${n} coins of ${v} qirsh and ${m} coins of ${w} qirsh. How many qirsh does she have?` };
+  if (k === 0) return { eq: `${v}, ${n}`, answer: String(v * n), wrongs: ints(v * n, [v + n, v * n + v, n, v * n - 1]), ar: `مع ليلى ${n === 2 ? 'قطعتان نقديتان' : `${n} قطع نقدية`}، قيمة كل منها ${v} قروش. كم قرشًا معها؟`, en: `Layla has ${n} coins worth ${v} qirsh each. How many qirsh does she have?` };
+  if (k === 1) return { eq: `${v}, ${n}, ${w}, ${m}`, answer: String(v * n + w * m), wrongs: ints(v * n + w * m, [v + n + w + m, v * n, w * m, v * n + w * m + v]), ar: `مع ليلى ${pieces(n)} من فئة ${v} قروش و ${pieces(m)} من فئة ${w} قروش. كم قرشًا معها؟`, en: `Layla has ${n} coins of ${v} qirsh and ${m} coins of ${w} qirsh. How many qirsh does she have?` };
   const total = v * n;
-  return { eq: `${total}, ${v}`, answer: String(n), wrongs: ints(n, [total, v, n + 1, n - 1]), ar: `كم قطعة من فئة ${v} قروش تلزم لتكوين ${total} قرشًا؟`, en: `How many coins of ${v} qirsh make ${total} qirsh?` };
+  return { eq: `${total}, ${v}`, answer: String(n), wrongs: ints(n, [total, v, n + 1, n - 1]), ar: `كم قطعة من فئة ${v} قروش تلزم لتكوين ${qirsh(total)}؟`, en: `How many coins of ${v} qirsh make ${total} qirsh?` };
 });
 
 const dinar = T('dinar', /^الدينار$/, [2, 2], ({ rng }) => {
