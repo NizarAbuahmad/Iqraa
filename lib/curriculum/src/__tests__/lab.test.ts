@@ -32,31 +32,46 @@ interface CatalogFile {
   units: Array<{ lessons: CatalogLesson[] }>;
 }
 
+/**
+ * Every catalog a lab item may be filed on. A grade or subject joins the Lab by
+ * adding its files here; `lessonKbId` turns each JSON lesson id into the `kbl-*`
+ * id the manifest carries (Grade 10 ids have no grade segment, the rest do).
+ */
 const FILES = [
-  { file: 'iqra_curriculum_g10_chem_sem1.json', subject: 'chem', semester: 1 },
-  { file: 'iqra_curriculum_g10_chem_sem2.json', subject: 'chem', semester: 2 },
-  { file: 'iqra_curriculum_g10_phys_sem1.json', subject: 'phys', semester: 1 },
-  { file: 'iqra_curriculum_g10_phys_sem2.json', subject: 'phys', semester: 2 },
-  { file: 'iqra_curriculum_g10_bio_sem1.json', subject: 'biology', semester: 1 },
-  { file: 'iqra_curriculum_g10_bio_sem2.json', subject: 'biology', semester: 2 },
+  { file: 'iqra_curriculum_g10_chem_sem1.json', gradeId: 'grade-10', subject: 'chem', semester: 1 },
+  { file: 'iqra_curriculum_g10_chem_sem2.json', gradeId: 'grade-10', subject: 'chem', semester: 2 },
+  { file: 'iqra_curriculum_g10_phys_sem1.json', gradeId: 'grade-10', subject: 'phys', semester: 1 },
+  { file: 'iqra_curriculum_g10_phys_sem2.json', gradeId: 'grade-10', subject: 'phys', semester: 2 },
+  { file: 'iqra_curriculum_g10_bio_sem1.json', gradeId: 'grade-10', subject: 'biology', semester: 1 },
+  { file: 'iqra_curriculum_g10_bio_sem2.json', gradeId: 'grade-10', subject: 'biology', semester: 2 },
+  { file: 'iqra_curriculum_g10_earth_sem1.json', gradeId: 'grade-10', subject: 'earth-science', semester: 1 },
+  { file: 'iqra_curriculum_g10_earth_sem2.json', gradeId: 'grade-10', subject: 'earth-science', semester: 2 },
+  { file: 'iqra_curriculum_g5_science_sem1.json', gradeId: 'grade-5', subject: 'science', semester: 1 },
+  { file: 'iqra_curriculum_g5_science_sem2.json', gradeId: 'grade-5', subject: 'science', semester: 2 },
 ] as const;
 
-/** kbl id → { subject slug, Arabic vocabulary terms }, for every grade 10 chem/phys lesson. */
-function lessonIndex(): Map<string, { slug: string; terms: string[] }> {
-  const out = new Map<string, { slug: string; terms: string[] }>();
+/** kbl id → { subject slug, grade, Arabic vocabulary terms }, for every lesson in `FILES`. */
+function lessonIndex(): Map<string, { slug: string; gradeId: string; terms: string[] }> {
+  const out = new Map<string, { slug: string; gradeId: string; terms: string[] }>();
   for (const f of FILES) {
     const cat = JSON.parse(readFileSync(new URL(`../data/${f.file}`, import.meta.url), 'utf8')) as CatalogFile;
     for (const unit of cat.units) {
       for (const lesson of unit.lessons) {
-        const id = lessonKbId({ gradeId: 'grade-10', subject: f.subject, semester: f.semester }, lesson.id);
-        out.set(id, { slug: f.subject, terms: (lesson.vocabulary ?? []).map(v => v.ar) });
+        const id = lessonKbId({ gradeId: f.gradeId, subject: f.subject, semester: f.semester }, lesson.id);
+        out.set(id, { slug: f.subject, gradeId: f.gradeId, terms: (lesson.vocabulary ?? []).map(v => v.ar) });
       }
     }
   }
   return out;
 }
 
-const SLUG_BY_SUBJECT: Record<string, string> = { chemistry: 'chem', physics: 'phys', biology: 'biology' };
+const SLUG_BY_SUBJECT: Record<string, string> = {
+  chemistry: 'chem',
+  physics: 'phys',
+  biology: 'biology',
+  'earth-science': 'earth-science',
+  science: 'science',
+};
 
 describe('the shipped lab manifest', () => {
   it('is structurally valid', () => {
@@ -72,8 +87,13 @@ describe('the shipped lab manifest', () => {
     }
   });
 
-  it('files every item under grade 10, the only grade the lesson index covers', () => {
-    for (const item of LAB_ITEMS) assert.equal(item.gradeId, 'grade-10', `${item.id}: gradeId`);
+  it('files every item under its own lesson\'s grade', () => {
+    const lessons = lessonIndex();
+    for (const item of LAB_ITEMS) {
+      const lesson = lessons.get(item.lessonId);
+      assert.ok(lesson, `${item.id}: ${item.lessonId} is not a lesson in the lab's catalog files`);
+      assert.equal(item.gradeId, lesson.gradeId, `${item.id}: gradeId disagrees with its lesson`);
+    }
   });
 
   it('agrees with the external resource it points at', () => {
@@ -92,7 +112,7 @@ describe('the shipped lab manifest', () => {
     const lessons = lessonIndex();
     for (const item of LAB_ITEMS) {
       const lesson = lessons.get(item.lessonId);
-      assert.ok(lesson, `${item.id}: ${item.lessonId} is not a grade 10 chemistry/physics/biology lesson`);
+      assert.ok(lesson, `${item.id}: ${item.lessonId} is not a lesson in the lab's catalog files`);
       assert.equal(lesson.slug, SLUG_BY_SUBJECT[item.subjectId], `${item.id}: subject disagrees with its lesson`);
     }
   });
