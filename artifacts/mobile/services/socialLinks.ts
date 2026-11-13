@@ -48,7 +48,12 @@ export const SOCIAL_PLATFORMS: Record<SocialPlatform, PlatformInfo> = {
 };
 
 /** Iqrra's accounts, in the order drawn. Only accounts we own — see the header. */
-export const SOCIAL_LINKS: readonly SocialLink[] = [];
+export const SOCIAL_LINKS: readonly SocialLink[] = [
+  { platform: 'instagram', url: 'https://www.instagram.com/iqrra.me' },
+  { platform: 'facebook', url: 'https://www.facebook.com/profile.php?id=61594207419902' },
+  { platform: 'youtube', url: 'https://www.youtube.com/@IQRRA_ME' },
+  { platform: 'linkedin', url: 'https://www.linkedin.com/company/iqrra' },
+];
 
 /** Why `link` may not be shown, or null when it may. */
 export function socialLinkProblem(link: SocialLink): string | null {
