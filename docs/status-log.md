@@ -10,6 +10,59 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## lib/figure: physics scenes (forces, attraction, projectile, circular motion, wave) — 2026-11-13
+
+First of three PRs to let a physics question carry a drawing. This one is the package only: the shapes, the gate,
+the layout and both renderers. Nothing calls it yet. Spec:
+[`docs/superpowers/specs/2026-11-13-physics-figures-design.md`](./superpowers/specs/2026-11-13-physics-figures-design.md);
+plan: [`docs/superpowers/plans/2026-11-13-physics-figures-1-package.md`](./superpowers/plans/2026-11-13-physics-figures-1-package.md).
+
+**What changed (all in `lib/figure`, plus one app component).**
+- **Five scene kinds** in `sceneTypes.ts`: `forces` (block or point, optional incline, labelled arrows), `attraction`
+  (two bodies, a force, a distance), `projectile` (ground or horizontal launch, angle, speed, marks), `circular`
+  (cw or ccw, radius, `v` / `F` / `a` arrows) and `wave` (cycles, crest / trough / A / λ marks, an optional second wave
+  in or out of phase with its sum).
+- **The gate**: `resolveSceneFigure` / `resolvePhysicsFigure` (`sceneGate.ts`) accept a scene or a plane vector figure
+  and never a function graph; anything else is `null`.
+- **The answer-leak guard**: `figureNumbers`, `figureNumbersInText` and `foldDigits` (`figureNumbers.ts`). Every number
+  a drawing prints must appear in its question, or a figure could hand the student the answer. The guard is a
+  function, not a gate: **callers must run it** (PR 2 does).
+- **Layout and rendering**: `layoutScene` (`scene.ts`); `figureSvg` and `figureAltText` now take `AnyFigure`; each
+  `figureSvg` call gets its own clip id (`opts.id` for a stable one, e.g. a review file). The app side is
+  `components/ui/SceneFigureView.tsx`, and `FigureView` hands scenes to it.
+- **Deliberately unchanged: `Figure`, `resolveFigure`, `layoutFigure`.** The maths exam generator, `studentVisual` and
+  the lesson cards pass `resolveFigure`'s output straight to the plane renderer and must never be handed a scene. The
+  spec said to add the kinds "in resolveFigure"; this is a refinement of that. PRs 2 and 3 call `resolveSceneFigure`.
+  No behaviour difference, only the function name differs from the spec text.
+
+**Verified.**
+- Package tests, root `pnpm run typecheck`, and the api-server and mobile suites unchanged (counts in the PR).
+- **Read by eye**: a gallery of 12 sample figures in Arabic and English (forces flat / incline / point, attraction,
+  projectile 30° / 75° / horizontal, circular cw / ccw, wave with marks / in phase / out of phase) and a projectile
+  sweep at 10 / 30 / 45 / 60 / 80° in two box sizes. The physics is right: weight down, N perpendicular to the slope,
+  friction down the slope, the parabola's H/R = tanθ/4 (75° tall and narrow), the horizontal launch leaves the ledge
+  level, v tangent to the path, F and a toward the centre (cw and ccw opposite), λ spans exactly one cycle, the
+  in-phase sum doubles the amplitude and the out-of-phase sum is flat, «قمة» / «قاع» shaped correctly.
+- Two layout defects found that way and fixed: the projectile's v0 label sat on the path, and labels overlapped at
+  steep angles. The second is now covered by a sweep test over 10–80° (no two label boxes overlap, v0 never crosses
+  the path).
+
+**Not verified.**
+- **No caller passes a scene yet.** Server wiring (prompt, route, storage) is PR 2, app wiring PR 3.
+- **`SceneFigureView` has only been typechecked.** It has not been seen in a browser or on a device.
+- **No live model has written a scene.** The shapes are tested against hand-written samples only.
+
+**Known limits (cosmetic unless noted).**
+- «10°» sits on the arrow lines at 10°; at 80° in a small box the H dashed line passes through the v0 label; «A = …»
+  touches the wave curve. All readable.
+- **To fix before PR 2 relies on it:** a digit inside a symbol (`F2`, `v0`) counts as a stated number in
+  `figureNumbersInText`, so a question that does not say "2" can be refused for a label. That fails closed (a figure
+  is dropped, never a leak), but it will drop good figures. Also fail-closed: `1,000`, `١٬٠٠٠`, `.5` and `1/2` are not
+  matched as numbers.
+- A wave's amplitude / wavelength is accepted without its A / λ mark; the layout prints them only with the mark.
+
+**«ما الجديد»:** none; no user-visible change.
+
 ## Grade 8 review: book figures on the right lessons, teaching-plan export grounded by id — 2026-11-13
 
 A review of the 19 grade 8 catalogs (11 subjects). It found the catalogs complete and wired, a picked lesson
