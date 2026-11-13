@@ -1978,6 +1978,152 @@ const simplerProblem: Topic = {
   },
 };
 
+// ─── Grade 4: the two «خطة حل المسألة» lessons ──────────────────────────────
+//
+// Both follow the Grade 4 student book (S1 pp. 44-45, S2 pp. 126-127): the
+// worked example and the «أتدرب» problems give each kind. The distractor that
+// matters is the pupil who stops after the first step (one month, one week,
+// one album) or adds the two groups of a Venn diagram without taking off the
+// overlap; it is always offered.
+
+/** Three positive whole-number wrong options: the candidates that are above zero, then the answer plus a step. */
+const posWrongs = (ans: number, cands: number[], step: number) =>
+  wrongsFrom(String(ans), cands.filter(x => x > 0), k => String(ans + step * Math.abs(k)));
+
+/** Months as the Jordanian calendar names them, with their days. February is left out: it has two lengths. */
+const MONTHS: Array<[string, string, number]> = [
+  ['كانون الثاني', 'January', 31], ['آذار', 'March', 31], ['نيسان', 'April', 30], ['أيار', 'May', 31],
+  ['حزيران', 'June', 30], ['تموز', 'July', 31], ['آب', 'August', 31], ['أيلول', 'September', 30],
+  ['تشرين الأول', 'October', 31], ['تشرين الثاني', 'November', 30], ['كانون الأول', 'December', 31],
+];
+/** A typing time in words, its English, and its minutes. */
+const DURATIONS: Array<[string, string, number]> = [
+  ['نصف ساعة', 'half an hour', 30], ['ساعة وربعًا', 'an hour and a quarter', 75],
+  ['ساعة ونصفًا', 'an hour and a half', 90], ['ساعتين', 'two hours', 120],
+];
+
+/**
+ * Grade 4 «خطة حل المسألة: الحل بأكثر من خطوة»: a problem that needs two
+ * operations — a daily amount over two named months (the book's Rami swims 23
+ * laps a day in August and September), pay per hour over a year's 52 weeks,
+ * books on two kinds of shelf, words a minute over «ساعة وربعًا», photos in
+ * several albums.
+ */
+const multiStep: Topic = {
+  id: 'multi_step', match: /^خطه حل المساله الحل باكثر من خطوه$/, grades: [4, 4],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const k = pick(rng, [0, 1, 2, 3, 4]);
+    if (k === 0) {
+      const i = int(rng, 0, MONTHS.length - 2);
+      const [m1, e1, d1] = MONTHS[i]!, [m2, e2, d2] = MONTHS[i + 1]!;
+      const n = int(rng, [11, 15, 25][t]!, [25, 45, 95][t]!);
+      const ans = n * (d1 + d2);
+      return {
+        eq: `${n} × (${d1} + ${d2})`, answer: String(ans), wrongs: posWrongs(ans, [n * d1, d1 + d2, n + d1 + d2], 10),
+        ar: `يسبح رامي ${n} لفّةً في المسبح كل يوم. كم لفّةً يسبح في شهري ${m1} و${m2}؟`,
+        en: `Rami swims ${n} laps of the pool every day. How many laps does he swim in ${e1} and ${e2}?`,
+      };
+    }
+    if (k === 1) {
+      const r = int(rng, 3, 9), h = int(rng, 3, [4, 5, 6][t]!), ans = r * h * 52;
+      return {
+        eq: `${r} × ${h} × 52`, answer: String(ans), wrongs: posWrongs(ans, [r * h, r * h * 12, r * 52], 10),
+        ar: `تعمل سمر في شركة، وتتلقى ${r} دنانير عن كل ساعة عمل إضافي. إذا كانت تعمل ${h} ساعات إضافية كل أسبوع، فكم دينارًا تستحق عن العمل الإضافي في العام الواحد؟`,
+        en: `Samar earns ${r} JD for every hour of overtime. If she works ${h} hours of overtime every week, how many JD does she earn for overtime in one year?`,
+      };
+    }
+    if (k === 2) {
+      const a = int(rng, 11, [25, 45, 60][t]!), b = int(rng, 11, [20, 30, 40][t]!), c = int(rng, 11, [15, 20, 25][t]!);
+      const ans = (a + b) * c;
+      return {
+        eq: `(${a} + ${b}) × ${c}`, answer: String(ans), wrongs: posWrongs(ans, [a + b, a * c, a + b * c], 10),
+        ar: `تحتوي مكتبة على ${a} رفًّا لكتب الخيال العلمي، و${b} رفًّا لكتب التاريخ. إذا كان يوضع على الرف الواحد ${c} كتابًا، فكم كتابًا يمكن أن يوضع على رفوف المكتبة؟`,
+        en: `A library has ${a} shelves of science-fiction books and ${b} shelves of history books. If each shelf holds ${c} books, how many books can the library's shelves hold?`,
+      };
+    }
+    if (k === 3) {
+      const [dAr, dEn, min] = pick(rng, t === 0 ? DURATIONS.slice(0, 2) : DURATIONS);
+      const w = int(rng, [11, 20, 40][t]!, [40, 70, 99][t]!), ans = w * min;
+      return {
+        eq: `${w} × ${min}`, answer: String(ans), wrongs: posWrongs(ans, [w * 60, w + min, w * (min + 15)], 10),
+        ar: `يستطيع هشام طباعة ${w} كلمةً في الدقيقة. إذا استغرقت ${dAr} لطباعة تقرير، فكم كلمةً في التقرير؟`,
+        en: `Hisham can type ${w} words a minute. If typing a report took him ${dEn}, how many words are in the report?`,
+      };
+    }
+    const p = int(rng, 4, [6, 8, 9][t]!), g = int(rng, 11, [40, 90, 150][t]!), n = int(rng, 3, 5), ans = p * g * n;
+    return {
+      eq: `${p} × ${g} × ${n}`, answer: String(ans), wrongs: posWrongs(ans, [p * g, g * n, p + g + n], 10),
+      ar: `تتسع صفحة ألبوم الصور لـ ${p} صور، ويحتوي الألبوم الواحد على ${g} صفحةً. كم صورةً يمكن أن تضع ريم في ${n} ألبومات؟`,
+      en: `A photo-album page holds ${p} photos, and one album has ${g} pages. How many photos can Reem put in ${n} albums?`,
+    };
+  },
+};
+
+/** One Venn-diagram setting: who, the two groups, and how each question about them is worded. */
+interface VennCtx {
+  total(a: number, b: number, c: number): [string, string];
+  only(a: number, b: number, c: number): [string, string];
+}
+const VENN: VennCtx[] = [
+  {
+    total: (a, b, c) => [
+      `يفضّل ${a} طالبًا من طلبة الصف الرابع مشاهدة مباريات كرة القدم، ويفضّل ${b} طالبًا مشاهدة أفلام الكرتون، بينما يفضّل ${c} منهم مشاهدة الاثنين معًا. إذا كان كل طالب يفضّل واحدًا منهما على الأقل، فما عدد طلبة الصف؟`,
+      `${a} pupils in Grade 4 like watching football matches, ${b} like watching cartoons, and ${c} of them like both. If every pupil likes at least one of the two, how many pupils are in the class?`],
+    only: (a, b, c) => [
+      `يفضّل ${a} طالبًا من طلبة الصف الرابع مشاهدة مباريات كرة القدم، ويفضّل ${b} طالبًا مشاهدة أفلام الكرتون، بينما يفضّل ${c} منهم مشاهدة الاثنين معًا. ما عدد الطلبة الذين يفضّلون مشاهدة مباريات كرة القدم فقط؟`,
+      `${a} pupils like watching football matches, ${b} like watching cartoons, and ${c} of them like both. How many pupils like watching football matches only?`],
+  },
+  {
+    total: (a, b, c) => [
+      `لاحظت مربّية في إحدى الحضانات أن ${a} طفلًا يحبون الحليب، و${b} طفلًا يحبون العصير، و${c} منهم يحبون الحليب والعصير معًا. إذا كان كل طفل يحب واحدًا منهما على الأقل، فما عدد الأطفال في الحضانة؟`,
+      `A nursery carer noticed that ${a} children like milk, ${b} like juice, and ${c} of them like both. If every child likes at least one of the two, how many children are in the nursery?`],
+    only: (a, b, c) => [
+      `لاحظت مربّية في إحدى الحضانات أن ${a} طفلًا يحبون الحليب، و${b} طفلًا يحبون العصير، و${c} منهم يحبون الحليب والعصير معًا. ما عدد الأطفال الذين يحبون الحليب فقط؟`,
+      `${a} children in a nursery like milk, ${b} like juice, and ${c} of them like both. How many children like milk only?`],
+  },
+  {
+    total: (a, b, c) => [
+      `في نادٍ رياضي قاعة للأجهزة ومسبح. في أحد الأيام استعمل ${a} زائرًا قاعة الأجهزة، و${b} زائرًا المسبح، و${c} منهم استعملوا الاثنين. إذا كان كل زائر استعمل أحدهما على الأقل، فكم زائرًا زار النادي في ذلك اليوم؟`,
+      `A sports club has a gym and a pool. One day ${a} visitors used the gym, ${b} used the pool, and ${c} of them used both. If every visitor used at least one, how many visitors came to the club that day?`],
+    only: (a, b, c) => [
+      `في نادٍ رياضي قاعة للأجهزة ومسبح. في أحد الأيام استعمل ${a} زائرًا قاعة الأجهزة، و${b} زائرًا المسبح، و${c} منهم استعملوا الاثنين. كم زائرًا استعمل قاعة الأجهزة فقط؟`,
+      `One day ${a} visitors used a club's gym, ${b} used its pool, and ${c} of them used both. How many visitors used the gym only?`],
+  },
+];
+
+/**
+ * Grade 4 «خطة حل المسألة: استعمال شكل ڤن»: two groups and their overlap. The
+ * book's example asks for the class size (20 + 30 − 15); its exercises also
+ * ask for one group only (18 − 4), and the reverse — the total and one group
+ * known, the other wanted.
+ */
+const vennPlan: Topic = {
+  id: 'venn_plan', match: /^خطه حل المساله استعمال شكل ڤن$/, grades: [4, 4],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const k = pick(rng, [0, 1, 2]);
+    if (k === 2) {
+      const T = int(rng, [20, 25, 30][t]!, [30, 40, 45][t]!), x = int(rng, 11, T - 5), both = int(rng, 2, Math.min(x - 1, [6, 9, 14][t]!));
+      const ans = T - x + both;
+      return {
+        eq: `${T} − ${x} + ${both}`, answer: String(ans), wrongs: posWrongs(ans, [T - x, T - x - both, x + both], 1),
+        ar: `في صف ${T} طالبًا، جميعهم يشتركون في النشاط الرياضي أو في نشاط المسرح أو في كليهما. إذا كان ${x} طالبًا يشتركون في النشاط الرياضي، و${both} منهم يشتركون في النشاطين معًا، فكم طالبًا يشترك في نشاط المسرح؟`,
+        en: `In a class of ${T} pupils, every pupil takes part in sport or drama or both. If ${x} pupils take part in sport and ${both} of them take part in both, how many pupils take part in drama?`,
+      };
+    }
+    const a = int(rng, [11, 15, 20][t]!, [30, 60, 99][t]!), b = int(rng, [11, 15, 20][t]!, [30, 60, 99][t]!);
+    const c = int(rng, 2, Math.min(a, b) - 1 > [9, 14, 30][t]! ? [9, 14, 30][t]! : Math.min(a, b) - 1);
+    const ctx = pick(rng, VENN);
+    if (k === 0) {
+      const ans = a + b - c, [ar, en] = ctx.total(a, b, c);
+      return { eq: `${a} + ${b} − ${c}`, answer: String(ans), wrongs: posWrongs(ans, [a + b, a + b + c, a + b - 2 * c], 1), ar, en };
+    }
+    const ans = a - c, [ar, en] = ctx.only(a, b, c);
+    return { eq: `${a} − ${c}`, answer: String(ans), wrongs: posWrongs(ans, [a, a + c, b - c], 1), ar, en };
+  },
+};
+
 /** Specific titles first; the more general patterns after. */
 export const TOPICS: readonly Topic[] = [
   roundDec, roundWhole, estSumDec,
@@ -1991,7 +2137,7 @@ export const TOPICS: readonly Topic[] = [
   mixedImproper, fracDec, decPlace, pctConv, ratioEquiv, ratioSimplest,
   ratCompare, ratOp('rat_addsub', /جمع الاعداد النسبيه/, ['+', '−']), ratOp('rat_muldiv', /ضرب الاعداد النسبيه/, ['×', '÷']),
   repeating, expLaws,
-  decMeasure, simplerProblem,
+  decMeasure, simplerProblem, multiStep, vennPlan,
   ...ALGEBRA_TOPICS,
   ...GEOMETRY_TOPICS,
   ...STATS_TOPICS,
