@@ -10,6 +10,47 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Physics quizzes and worksheets ask for drawings, and the server checks them — 2026-11-13
+
+Second of three PRs to let a physics question carry a drawing (part 1 is
+NizarAbuahmad/Iqraa#1443, the package). This one is the server: the prompt, the check on the finished paper, the pool
+key. Spec: [`docs/superpowers/specs/2026-11-13-physics-figures-design.md`](./superpowers/specs/2026-11-13-physics-figures-design.md) §2.
+
+**What it does.**
+- **The ask.** The physics quiz, worksheet and homework prompts (and the quiz's top-up and the worksheet's top-up) offer
+  the model one optional `"visual"` per question. The clause is `physicsFigureFormatAr/En`, built from `SCENE_LIMITS`
+  in `lib/figure`, so the prompt and the gate quote the same limits. It also names the gate's no-repeat rules: no
+  repeated or zero-length vector, no label twice, three distinct labels in «attraction».
+- **The checks.** `settlePaperVisuals` (`lib/paperVisuals.ts`) runs once on the finished paper, before it is pooled:
+  the gate (`resolvePhysicsFigure`), then the numbers (the drawing may print only numbers the question's stem states),
+  then the cap of 6 drawings a paper, counted in paper order (`MAX_PAPER_VISUALS`). A drawing that fails is removed and
+  its question stays. The route logs «paper visuals» `{ kind, lessonId, kept, dropped }` for a physics paper, or when
+  anything was dropped. A physics paper gets +1500 output tokens for the drawings.
+- **Once per paper, not per completion.** The spec's §2 says the check runs on each completion. It runs once on the
+  finished paper instead. That is equivalent, and the only place a per-paper cap can be counted.
+- **Vectors are now judged by the leak guard.** `figureNumbers` counts a vector's non-zero components as printed
+  numbers, and a drawn sum or difference of two drawn vectors (`vectorsShowResult`) is refused: the picture would give
+  the answer.
+- **Pool.** The strict key gets `drawings: "physics-1"` for physics papers only (`isPhysicsRequest`), so each physics
+  paper kind regenerates once per lesson. Every other subject's prompt and key is byte for byte the same: 45 captured
+  prompts compared against a capture taken before any change, and the 3 pinned keys unchanged.
+- Commits: a87e8c2 (`SCENE_LIMITS`, vectors in the guard), e69ceab + 821bc46 (the format), 58fac35
+  (`paperVisuals.ts`), 4563c72 (the four prompt builders), 415a996 (the key), b803b67 (the route).
+
+**Not verified.**
+- **No live model has written a drawing.** The OpenAI key is out of credit; every test feeds the settler a hand-made
+  paper.
+- **The app does not draw them yet (PR 3).** A served physics paper carries `visual` fields nobody shows.
+- **The evaluation generator and the offline generators make no drawings.** Only the live quiz, worksheet and homework
+  routes ask.
+
+**Known limits of the leak guard.**
+- `vectorsShowResult` does not catch an equilibrant −(a+b), nor a resultant of three or more vectors.
+- Units are not compared: «30 N» is satisfied by «30°» in the stem.
+- A number glued to a letter («ب20») is not read as stated, so a drawing printing 20 is dropped (fails closed).
+
+**«ما الجديد»:** none. Nothing a user sees changes until PR 3.
+
 ## lib/figure: physics scenes (forces, attraction, projectile, circular motion, wave) — 2026-11-13
 
 First of three PRs to let a physics question carry a drawing. This one is the package only: the shapes, the gate,
