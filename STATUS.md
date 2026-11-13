@@ -67,14 +67,16 @@ Checked 2026-10-22:
   on every PR, not required: `migrations match schema`, `math verifier`,
   `destructive migrations acknowledged`.
 - Workflows: ci, deploy, deploy-rerun-stalled, destructive-migration-ack, e2e, mobile-build,
-  mobile-build-gradle, mobile-update, provider-eval, rls-neon-rehearsal, schema-check.
+  mobile-build-gradle, mobile-submit (Play upload, added 2026-11-13; needs the `PLAY_SERVICE_ACCOUNT_JSON`
+  secret — `docs/deploying.md`, «Submitting to Google Play»), mobile-update, provider-eval, rls-neon-rehearsal, schema-check.
 
 ## Open
 
 - 2026-11-13 — Grade 9 checked against its books and corrected; what is left needs the PDFs (nccd.gov.jo does not answer from cloud sessions): figures for 16 books, book pages for art / vocational / history S2, two missing download links, and a page check of the 11 books with no extracted text («Grade 9 checked against its books, and corrected» in the log)
+- 2026-11-13 — Grade 8 audit: no quotable extracted text, so live generation is ungrounded for all 358 lessons (needs the PDFs); 49 lessons still lack book pages (PE, maths S2, Arabic S2, social); four maths lessons have no offline questions («Grade 8 audit…» in the log)
 - 2026-11-13 — Grade 7 audit: Grade 7 has no extracted book text, so live generation is ungrounded for all 397 lessons (needs the PDFs); 24 creative-arts and social lessons still lack book pages; the English S2 figures p027/p043 wait for an upload and remap; the misplaced «ﷺ» in Grade 8/9 Islamic is unchecked («Grade 7 audit…» in the log)
 - 2026-11-13 — Grade 6 audit: 49 lessons have no book pages until their right pages are re-rendered from the PDFs (`knowledge-base/g6-book-pages-to-render.json`, command in the log; NCCD and the private bucket were unreachable from the sandbox), and social, vocational and Arabic grounding text is reversed or scrambled and needs `extract-text --force --ocr` («Grade 6 audit: every lesson's book pages…» in the log)
-- 2026-11-13 — Grade 4 review: lessons complete in all 17 books; what needs the PDFs or a decision (re-OCR social/vocational text, PE has no book text, books with no figure crops, book pages to re-render) is listed in «Grade 4 review: every book's lessons are in…» in the log
+- 2026-11-13 — Grade 4 review: lessons complete in all 17 books; what needs the PDFs or a decision (re-OCR social/vocational text, PE has no book text, books with no figure crops — maths has them since «Grade 4 maths figures», book pages to re-render) is listed in «Grade 4 review: every book's lessons are in…» in the log
 - 2026-10-31 — Homework submissions record their author (migration `0022`)
 - 2026-10-31 — Homework project submission — teacher screens (phase 3: the switch, the handed-in list, one project, «حذف المشروع»; what is left open is the item «Homework projects: what the teacher's app still cannot do…» below)
 - 2026-10-31 — Teacher can clear one student's project (the API; the app's button is the teacher-screens entry above)
