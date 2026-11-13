@@ -10,6 +10,77 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 7 audit: book pages, figures, unit context, prompt wording — 2026-11-13
+
+All 11 Grade 7 subjects (21 books, 397 catalog lessons) were checked against the student books. The PDFs
+were out of reach (nccd.gov.jo refuses the build container and there are no R2 keys), so the check was done
+on the published per-lesson page images in the public bucket: every image of every Grade 7 range was viewed
+on contact sheets, and titles were read at zoom.
+
+**Coverage.**
+- No printed lesson is missing from any Grade 7 catalog, on any page that has an image.
+- Not checkable: art pages 14-25, 34-47, 58-71 and 74-109, and social S2 pages 8-17. No range covers those
+  pages, so no image of them exists. English has no page images at all (see «Grade 8 English gets its book
+  pages; Grades 1-7 do not»).
+- `pnpm --filter @workspace/curriculum run verify`: 0 errors on all 21 Grade 7 catalogs.
+
+**Book pages (`book-page-links.json`).** When a lesson's start was not found, the previous lesson's range
+silently ran on through it. Corrected from the page reads, reusing only images already in the bucket:
+- New fields: `images` (explicit `<kbLessonId>/<n>` per page), `renderedStartPage`/`renderedEndPage` (what a
+  key's own images really are), and top-level `orphanRenders` (keys whose images are another lesson's).
+  `bookPagesForLesson`, `upload-book-pages-r2` and `bookPage.test.ts` know them.
+- The test checks that each borrowed image is the right page of a rendered range from the same book.
+- Lessons that now have pages:
+  - maths S1 «الدوران»;
+  - social S1 u1_l3, u2_l2, u3_l2, u3_l4;
+  - social S2 u7_l4, u8_l1, u9_l2, u9_l3, u11_l4, u12_l3.
+- Wrong pages fixed:
+  - social S1 u6_l1 and S2 u12_l1 showed only the unit opener;
+  - three art keys held other lessons (u1_l3 → u1_l4, u3_l3 → u3_l6, u3_l4 → u3_l7);
+  - arabic S2 u6_l4 started a page late.
+- Social S2 u7_l1 lost its entry, which showed only the unit 7 opener.
+- Every unit's last lesson no longer carries the unit review or the next unit's opener. The unit reviews
+  are therefore no longer reachable from any lesson: deliberate, a lesson's pages should be that lesson's.
+- 302 Grade 7 lessons have pages (was 292), and no two claim the same page.
+- **Trap:** `render_lesson_pages.py` and `verify_book_pages.py` rewrite a lesson's entry when they render it,
+  dropping these hand corrections, and the range rule that caused the errors is unchanged. Re-read the pages
+  after any re-render.
+
+**Figures.** All 265 Grade 7 crops were viewed:
+- 40 dropped (PNG and index entry): unit-review slivers, page-margin strips, whole text articles, sliced
+  lesson banners, diagrams with their labels cut off, one duplicate.
+- Social S1's four unit-opener pictures are refiled to the lesson each opens.
+- The English S2 map keyed lesson ids the catalog no longer has (`u6_l7`, `u7_l7`), so p027 and p043 were
+  never shown and the Festivals pages were shown as Unit 8 Vocabulary and Team Talk.
+- 212 mapped figures remain.
+- Subjects with no figures at all: maths, Arabic, Islamic, PE, digital, vocational S2, art. They need the
+  PDFs.
+
+**Generation.**
+- `serializeLessonContext` now prints the lesson's unit. English S2 calls every unit's lessons «المفردات»,
+  «القواعد»…, and PE repeats one drill title per sport, so the model was never told the topic.
+- Arabic prompts (`prompts.ts`, `classroomPrompts.ts`) read «لمادة Mathematics للصف الصف السابع» for every
+  grade. `promptLabels.ts` now gives the subject's catalog Arabic name and drops the repeated «الصف»
+  (`promptLabels.test.ts`).
+- No wrong maths answer key in 552 Grade 7 items checked by hand.
+
+**Not done:**
+- **No Grade 7 book has extracted text**, so the live model gets no book passages for any of the 397 lessons
+  (Grade 6: 183/334, Grade 10: 254/425). Grade 8 is the same. Fix: Tracks A-B of `docs/adding-a-book.md`.
+- English S2 lesson titles are still bare labels; they need the book.
+- Social studies and PE have no objectives.
+- The offline escape challenge and error detective are fixed quadratic equations for every subject. That
+  is cross-grade, and four tests pin the current behaviour, so it was left for a decision.
+
+**Verified:**
+- `pnpm run typecheck`;
+- mobile suite: 9,210 pass before the last two data commits, the 4 failures traced to an attempted
+  classroom change that was reverted;
+- `bookPage`, `lessonSlides` and `bookFigures` tests after them;
+- `promptLabels.test.ts`.
+
+**Not verified:** the lesson screen's «صفحة الكتاب» and slides in a browser.
+
 ## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
 
 A teacher added a pacing plan from the Today nudge «أضف الخطة» and the nudge kept saying «لا توجد خطة زمنية». Not a
