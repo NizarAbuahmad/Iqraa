@@ -6064,6 +6064,24 @@
       "kbLessonId": "kbl-g5-science-s2-nccd-u10_l2",
       "score": 1,
       "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "audit",
+      "why": "Added by the Grade 8 audit (2026-11-13): the unit opener is the first page of lesson 1A (its exercise 1 sends pupils to it), but the extractor filed its figures under the previous unit lesson 7A, the last band it had seen."
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "audit",
+      "why": "Added by the Grade 8 audit (2026-11-13): the unit opener is the first page of lesson 1A (its exercise 1 sends pupils to it), but the extractor filed its figures under the previous unit lesson 7A, the last band it had seen."
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."

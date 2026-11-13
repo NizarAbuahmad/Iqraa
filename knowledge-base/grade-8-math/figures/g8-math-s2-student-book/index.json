@@ -130,22 +130,6 @@
    "lessonStartPage": 56
   },
   {
-   "file": "p069b-v2.png",
-   "sourceId": "g8-math-s2-student-book",
-   "pdfPage": 69,
-   "rect": [
-    72.0,
-    591.0,
-    270.0,
-    739.8
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "ِحلُّ نظامٍ مِنْ معادلتَينِ خطّيّتَينِ بالحذف الدرس",
-   "lessonStartPage": 56
-  },
-  {
    "file": "p076.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 76,
