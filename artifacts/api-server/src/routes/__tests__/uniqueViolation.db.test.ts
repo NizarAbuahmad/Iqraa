@@ -118,7 +118,9 @@ describeDb("unique violations become 409s (or a retry), against a real database"
   it("/take claim: losing the race for a name is 409 name_taken", async () => {
     // The seeded codes hold characters the share-code alphabet drops (I, 1), so give it a real one.
     await db.pool.query(`UPDATE evaluations SET share_code = 'MXDQZ7' WHERE id = $1`, [x.exams.exMixed]);
-    const res = await call(on, "POST", "/take/MXDQZ7/claim", undefined, { studentId: w.students.sA1 });
+    // Adam, not Sara: Sara's row has her own account, and a name with an account
+    // is refused before any insert (`sign_in_required`, takeClaimLinkedName.db.test.ts).
+    const res = await call(on, "POST", "/take/MXDQZ7/claim", undefined, { studentId: w.students.aA });
     assert.equal(res.status, 409, on.logs().slice(-1500));
     assert.equal(res.json.code, "name_taken");
   });

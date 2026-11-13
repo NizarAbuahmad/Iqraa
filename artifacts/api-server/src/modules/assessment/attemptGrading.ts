@@ -23,7 +23,7 @@ import {
   recommendations,
 } from "@workspace/db";
 import type { Attempt, EvaluationQuestion } from "@workspace/db";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import { resolveObjectiveIds } from "@workspace/curriculum";
 import {
   gradeAttempt,
@@ -241,4 +241,82 @@ export async function gradeSubmission(attempt: Attempt) {
 
   const recomputed = await recomputeResult(attempt);
   return { ok: true as const, machineGrades, recomputed };
+}
+
+/**
+ * Hand a student-link sitting in and grade it — the one path for it, whether
+ * the student pressed «تسليم» or the teacher closed the exam on them.
+ *
+ * Under the attempt's row lock, the same one `writeAnswerIfOpen` takes: an
+ * autosave or a transcription in flight either lands before this (and is
+ * graded) or sees the paper is in and refuses — never after grading. Returns
+ * false when the paper was already in (or is gone), so the caller can tell a
+ * second hand-in from the first. A grading failure is logged by the caller's
+ * choice: handed in is the fact that matters, and the teacher's own submit
+ * route re-runs grading.
+ */
+export async function handInAttempt(
+  attempt: Attempt,
+  now: Date = new Date(),
+): Promise<{ handedIn: boolean; gradingError?: unknown }> {
+  const handedIn = await db.transaction(async tx => {
+    const [open] = await tx
+      .select({ submittedAt: attempts.submittedAt })
+      .from(attempts)
+      .where(eq(attempts.id, attempt.id))
+      .for("update");
+    if (!open || open.submittedAt) return false;
+    await tx
+      .update(attemptAnswers)
+      .set({ isFinal: true, updatedAt: now })
+      .where(eq(attemptAnswers.attemptId, attempt.id));
+    await tx
+      .update(attempts)
+      .set({ status: "submitted", submittedAt: now, updatedAt: now })
+      .where(eq(attempts.id, attempt.id));
+    return true;
+  });
+  if (!handedIn) return { handedIn: false };
+  try {
+    await gradeSubmission({ ...attempt, submittedAt: now });
+    return { handedIn: true };
+  } catch (err) {
+    return { handedIn: true, gradingError: err };
+  }
+}
+
+/**
+ * Hand in every sitting of one exam that a student started through the link
+ * and never handed in. Called when the teacher closes the exam: a closed exam
+ * takes no more answers (`writeGate`), so what was written is all there will
+ * be, and leaving it `in_progress` left it ungraded for good — the family saw
+ * «قيد الحل» and the mastery gate never counted it.
+ *
+ * A `teacher_entry` paper is the teacher's own, still being typed in; it is
+ * left alone. Returns how many papers this call handed in, and the ids whose
+ * grading failed (handed in all the same).
+ */
+export async function handInOpenSittings(
+  evaluationId: string,
+  now: Date = new Date(),
+): Promise<{ handedIn: number; gradingFailed: { attemptId: string; err: unknown }[] }> {
+  const open = await db
+    .select()
+    .from(attempts)
+    .where(
+      and(
+        eq(attempts.evaluationId, evaluationId),
+        eq(attempts.source, "student_link"),
+        isNull(attempts.submittedAt),
+      ),
+    );
+  let handedIn = 0;
+  const gradingFailed: { attemptId: string; err: unknown }[] = [];
+  for (const attempt of open) {
+    const outcome = await handInAttempt(attempt, now);
+    if (!outcome.handedIn) continue;
+    handedIn += 1;
+    if (outcome.gradingError) gradingFailed.push({ attemptId: attempt.id, err: outcome.gradingError });
+  }
+  return { handedIn, gradingFailed };
 }

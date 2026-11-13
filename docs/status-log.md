@@ -10,6 +10,47 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Exam links: a name with an account needs sign-in; closing an exam hands in open papers — 2026-11-13
+
+Two findings from a review of the student side.
+
+**What changed.**
+- **Anonymous claim of a name that has its own account is refused.** `POST /take/:code/claim` checked only that
+  the roster row is in the exam's class. Anyone with the link could start under the name of a classmate who has
+  a student account (a `self` roster link), hand in a blank paper that was graded at once, and the real student's
+  sign-in (`claim-self`) then resumed the stranger's paper. Now such a row answers 403 `sign_in_required`
+  and nothing is created. A parent's `guardian` link does not count; names with no account claim as before.
+  The exam screen maps the code to «لهذا الاسم حساب طالب. سجّل الدخول إلى حسابك، ثم افتح الامتحان من
+  «اختباراتي».» and returns to the name list (`takeErrorKey.ts`, `app/take/[code].tsx`).
+- **Closing an exam hands in the sittings left open.** `POST /evaluations/:id/close` only flipped the status, so
+  a sitting whose phone died or whose tab was closed stayed `in_progress` and ungraded for good: the family saw it
+  in progress, the mastery gate never counted it, and the teacher handed each in by hand. Close now hands in and
+  grades every `student_link` sitting of that exam with no `submittedAt`, before answering (Cloud Run throttles
+  work after the response), and returns `handedIn`. `teacher_entry` papers are left alone. The hand-in is one
+  function, `handInAttempt` in `modules/assessment/attemptGrading.ts`, now also used by `/take/attempt/submit`,
+  so the row lock that serialises it against autosave is the same on both paths. The teacher's close confirmation
+  (`closeEvaluationConfirm`) said students «can still hand in»; it now says their papers are handed in.
+
+**Verified.** Red, then green: `takeClaimLinkedName.db.test.ts` (4 cases — the anonymous claim of Sara's
+account-linked row was 201, then 403 with no attempt row) and `closeHandsIn.db.test.ts` (4 cases — `handedIn`,
+the open sitting submitted with final answers and a result, a `teacher_entry` paper and another exam's sitting
+untouched), and the new `takeErrorKey` case. `uniqueViolation.db.test.ts` staged its claim race on Sara, who has
+an account; it now uses Adam. Run against a local Postgres 16: `pnpm run typecheck`; api-server `pnpm build` then
+`pnpm test` (3,466, one failure — that race test — fixed and re-run green); mobile `pnpm test` (9,259, 0 failed,
+10 skipped). Not run in a browser or on a phone; the e2e student has no account, so its path is unchanged.
+
+**Not done / limits.**
+- **Closing is now final for unfinished papers.** Re-publishing reopens the link, but a sitting the close handed
+  in stays handed in. A teacher who closes by mistake cannot let those students continue.
+- A student with an account who sits on a shared device must sign in there; the screen says so but has no
+  sign-in button (the login screen has no return-to-exam route).
+- Only close hands papers in. A sitting past its time limit on an exam never closed still waits; a sweep
+  (an internal cron) would cover that.
+- Names with no account can still be claimed by anyone holding the link — the trade the link was built on; the
+  teacher can still move or delete a sitting.
+- No «ما الجديد» entry: students see the new message only when they tap a name that is not theirs to tap, and the
+  teacher-facing change is the close confirmation's own text.
+
 ## Grade 8 review: book figures on the right lessons, teaching-plan export grounded by id — 2026-11-13
 
 A review of the 19 grade 8 catalogs (11 subjects). It found the catalogs complete and wired, a picked lesson

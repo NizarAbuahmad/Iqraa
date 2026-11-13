@@ -61,6 +61,7 @@ import {
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
 import { inPaperOrder } from "../modules/assessment/paperOrder";
+import { handInOpenSittings } from "../modules/assessment/attemptGrading.ts";
 import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import {
   assembleLivePaper,
@@ -1951,9 +1952,12 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
  * it, so a published paper stayed open until its share code expired a week
  * later. The student route treats a closed exam exactly as an unknown code
  * (`evaluationByCode`) and refuses further answers on a sitting already under
- * way (`writeGate`); handing in what was already written stays allowed.
+ * way (`writeGate`). Every sitting a student started through the link and
+ * never handed in is handed in and graded here (`handInOpenSittings`), so a
+ * phone that died mid-paper does not leave it «قيد الحل» for good.
  *
- * Re-publishing reopens it, with a fresh share-code expiry and the same code.
+ * Re-publishing reopens it, with a fresh share-code expiry and the same code —
+ * but a sitting handed in by the close stays handed in.
  */
 router.post("/evaluations/:id/close", async (req: AuthenticatedRequest, res) => {
   try {
@@ -1971,7 +1975,14 @@ router.post("/evaluations/:id/close", async (req: AuthenticatedRequest, res) => 
       .set({ status: "closed", closedAt: new Date(), updatedAt: new Date() })
       .where(eq(evaluations.id, evaluation.id))
       .returning();
-    res.json({ evaluation: updated });
+    // Closed first, so no new answer can land; then what each student wrote is
+    // handed in and graded. Awaited before answering: work after `res.json`
+    // may never run on Cloud Run (CLAUDE.md, «Work after `res.json`…»).
+    const { handedIn, gradingFailed } = await handInOpenSittings(evaluation.id);
+    for (const f of gradingFailed) {
+      logger.error({ err: f.err, attemptId: f.attemptId }, "grading on close failed");
+    }
+    res.json({ evaluation: updated, handedIn });
   } catch (err) {
     logger.error({ err }, "close failed");
     res.status(500).json({ error: "Failed to close" });

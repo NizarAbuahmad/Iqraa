@@ -10,6 +10,7 @@
 const BY_CODE: Record<string, string> = {
   link_not_found: 'takeLinkFailed',
   name_taken: 'takeNameTakenError',
+  sign_in_required: 'takeSignInRequired',
   no_level_scale: 'takeExamNotReady',
   already_submitted: 'takeAlreadySubmitted',
   token_invalid: 'takeSessionExpired',
@@ -22,7 +23,7 @@ const BY_CODE: Record<string, string> = {
 export function takeErrorKey<K extends string>(
   err: unknown,
   fallback: K,
-): K | 'takeLinkFailed' | 'takeNameTakenError' | 'takeExamNotReady' | 'takeAlreadySubmitted'
+): K | 'takeLinkFailed' | 'takeNameTakenError' | 'takeSignInRequired' | 'takeExamNotReady' | 'takeAlreadySubmitted'
   | 'takeSessionExpired' | 'takeTimeUp' | 'takeExamClosed' | 'takeSubmitFailed' | 'takeTooManyRequests'
   | 'readAloudNoTakesLeft' {
   if (!err || typeof err !== 'object') return fallback;

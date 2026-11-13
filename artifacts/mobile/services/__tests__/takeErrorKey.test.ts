@@ -14,6 +14,10 @@ describe('takeErrorKey', () => {
     assert.equal(takeErrorKey({ code: 'exam_closed', status: 409 }, 'takeSaveFailed'), 'takeExamClosed');
   });
 
+  it('tells a student whose name has its own account to sign in, not that the start failed', () => {
+    assert.equal(takeErrorKey({ code: 'sign_in_required', status: 403 }, 'takeStartFailed'), 'takeSignInRequired');
+  });
+
   it('names a used-up recording allowance, and never prints a recording rejection', () => {
     assert.equal(takeErrorKey({ code: 'too_many_takes', status: 429 }, 'readAloudFailed'), 'readAloudNoTakesLeft');
     // The rejection that hid a Chrome-only bug: the student read
