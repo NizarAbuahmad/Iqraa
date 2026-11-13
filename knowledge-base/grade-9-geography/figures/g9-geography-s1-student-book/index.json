@@ -130,22 +130,6 @@
       "lessonStartPage": 32
     },
     {
-      "file": "p041-v2.png",
-      "sourceId": "g9-geography-s1-student-book",
-      "pdfPage": 41,
-      "rect": [
-        0.0,
-        0.0,
-        595.3,
-        267.4
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": "ِحركُةُ المياِهِ في البحاِرِ والمحيطاِت",
-      "lessonStartPage": 40
-    },
-    {
       "file": "p045.png",
       "sourceId": "g9-geography-s1-student-book",
       "pdfPage": 45,
@@ -272,22 +256,6 @@
       "lessonTitleEn": null,
       "lessonTitleAr": "المالمُحُ البشريُةُ للوطِنِ العربِّي",
       "lessonStartPage": 65
-    },
-    {
-      "file": "p075.png",
-      "sourceId": "g9-geography-s1-student-book",
-      "pdfPage": 75,
-      "rect": [
-        66.6,
-        277.7,
-        527.6,
-        584.1
-      ],
-      "unit": 3,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 70
     }
   ]
 }

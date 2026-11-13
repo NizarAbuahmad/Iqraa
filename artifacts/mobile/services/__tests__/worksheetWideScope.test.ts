@@ -92,12 +92,15 @@ describe('offline worksheet — a wide scope', () => {
   });
 
   it('the half-solved question names a lesson of the scope', async () => {
-    // Semester 2, balanced: the first two slots' lessons both have checked
-    // working, so the paper has an example and a half-solved item (semester 1's
-    // second slot is a lesson without working, and drops the half-solved item).
+    // Unit 6 (derivatives), balanced: the first two slots' lessons both have
+    // checked working, so the paper has an example and a half-solved item. A
+    // slot whose lesson has no working drops them — semester 1's second slot,
+    // and since 2026-11-13 semester 2's first two (polynomials, rational
+    // functions), which have their own generators but no worked solutions.
     // If the data stops giving one, say so rather than pass vacuously.
-    const wide = buildWideRequest(sem2, 'ar', 12, 'balanced')!;
-    const req = { ...base, topic: 'الفصل الثاني كاملًا', numQuestions: 12, ...wide.fields } as AIRequest;
+    const unit6: ScopeSelection = { kind: 'unit', gradeId: 'grade-10', subjectId: 'mathematics', unitId: 'kbu-math-s2-nccd-u6' };
+    const wide = buildWideRequest(unit6, 'ar', 12, 'balanced')!;
+    const req = { ...base, topic: 'وحدة المشتقات', numQuestions: 12, ...wide.fields } as AIRequest;
     const out = await aiService.generateWorksheet(req);
     const half = halfSolved(out);
     assert.ok(half, 'probe: the wide maths paper should have a half-solved section');
