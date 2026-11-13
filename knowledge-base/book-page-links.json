@@ -9416,7 +9416,7 @@
   "kbl-g8-finlit-s1-nccd-u2_l1": {
    "sourceId": "g8-finlit-s1-student-book",
    "startPage": 34,
-   "endPage": 53,
+   "endPage": 39,
    "aspect": 0.75
   },
   "kbl-g8-finlit-s1-nccd-u2_l2": {
@@ -9992,7 +9992,7 @@
   "kbl-g8-social-s1-nccd-u3_l5": {
    "sourceId": "g8-social-s1-student-book",
    "startPage": 71,
-   "endPage": 83,
+   "endPage": 75,
    "aspect": 0.75
   },
   "kbl-g8-social-s1-nccd-u4_l1": {
@@ -10010,7 +10010,7 @@
   "kbl-g8-social-s1-nccd-u4_l3": {
    "sourceId": "g8-social-s1-student-book",
    "startPage": 89,
-   "endPage": 108,
+   "endPage": 95,
    "aspect": 0.75
   },
   "kbl-g8-social-s2-nccd-u10_l1": {
@@ -10130,7 +10130,7 @@
   "kbl-g8-social-s2-nccd-u9_l3": {
    "sourceId": "g8-social-s2-student-book",
    "startPage": 70,
-   "endPage": 85,
+   "endPage": 77,
    "aspect": 0.75
   },
   "kbl-g8-voc-s1-nccd-u1_l1": {
@@ -10250,7 +10250,7 @@
   "kbl-g8-voc-s2-nccd-u4_l2": {
    "sourceId": "g8-voc-s2-student-book",
    "startPage": 49,
-   "endPage": 57,
+   "endPage": 55,
    "aspect": 0.75
   },
   "kbl-g8-voc-s2-nccd-u5_l1": {

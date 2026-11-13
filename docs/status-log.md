@@ -45,7 +45,24 @@ read through what the repo already holds: the rendered lesson pages and figure c
     services lesson, u8_l2 «التراث الثقافي» opened on lesson 1 «الثقافة» (its own start, p87, is image 6) — all three
     removed. A range can only be cut from its end without re-rendering, so a lesson whose right pages begin
     inside its folder, or sit in another lesson's folder, goes until it is re-rendered from the PDF.
-  - Not opened: the other 25 books' lessons beyond the three sampled each.
+- **Grades 5 and 8, the other 23 books, every lesson.** Page 1 of all 400 remaining lessons was opened (read in
+  three batches by sub-agents, every flag re-checked here by eye) and the last page of every unit's final lesson (99).
+  - **No first page is on the wrong lesson.** Printed lesson numbers and titles match in all 400, including every
+    Arabic book's listen/speak/read/write/language order (none has Grade 3 Arabic S2's one-lesson shift).
+  - **Five ranges ran on into the next unit**, now cut back to where their unit ends (checked on the images):
+    Grade 8 financial literacy u2_l1 p34-53 → 34-39 (p40 opens lesson 2); social S1 u3_l5 71-83 → 71-75 and u4_l3
+    89-108 → 89-95 (each swallowed the next unit's cover and first lesson); social S2 u9_l3 70-85 → 70-77; vocational
+    S2 u4_l2 49-57 → 49-55 (p56-57 are unit 5's cover and lesson list).
+  - **Left as they are, for a re-render:** three ranges stop after a unit cover and one page (social S1 u4_l1
+    p76-77, social S2 u7_l1 p6-7 and u10_l1 p78-79) — the right start, cut short, because the lesson's other pages sit
+    in the previous lesson's images. About 40 unit-final lessons across these books end with one page of the NEXT
+    unit's opener («كفايات الوحدة» in Arabic, the unit cover in Islamic, social and PE, «مشروع الوحدة» in maths):
+    one extra page, not wrong content, and it comes from how the renderers end a lesson at the next lesson's start
+    rather than at the next unit's opener — a fix for `verify_book_pages.py` / `render_lesson_pages.py`, not
+    hand edits. Two English pages are borderline (S1 u4_l7 opens on a culture page before 7A; S2 u7_l3 is one page
+    that ends 2A and starts 3A); the right lesson is in both.
+  - Catalog text, not pages: Grade 8 Islamic S2 u3_l3 is titled «عمرُ بنُ عبدِ العزيزِ ﷺ» — ﷺ is the Prophet's
+    honorific; not changed here.
 - **A test now catches a range that swallows another lesson** (`bookPage.test.ts`): no lesson's pages may contain
   the start page of a different lesson as the figure index records it. It failed on exactly these two books before
   the fix. A wider rule, «no two lessons share a page», was tried and dropped: ~30 ranges in Grades 6-10 overlap,
