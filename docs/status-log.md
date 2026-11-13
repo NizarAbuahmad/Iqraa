@@ -59,8 +59,17 @@ the catalog carried 9 — lessons 10 Literacy, 11 Writing and 12 (its Activity B
 units. Appended as `u*_l10..l12` (no id moved); lesson 2 is «Team Talk» as the books print, not «Fun Talk».
 
 **Results — found, not fixed here:**
-- Offline maths (no AI) answers 36 of 39 lessons with on-topic questions; every key read and correct. u3_l3 «القياس»,
-  u3_l4 «خطة حل المسألة» and u4_l5 «إنشاءات هندسية» get nothing. Offline non-maths lessons refuse (`no_question_bank`).
+- Offline maths (no AI) answered 36 of 39 lessons with on-topic questions; every key read and correct. **Fixed here:**
+  the other three had no generator and now do, each following its book pages (`lib/math-practice`):
+  `dec_measure` for u3_l3 «القياس: تطبيقات العمليات على الأعداد العشرية» (pp. 81-84: «2.5m × 420cm» in m², «6.5L ÷
+  400mL», a rug's area, pies from «2kg, 800g»), `simpler_problem` for u3_l4 «خطة حل المسألة: حل مسألة أبسط» (pp. 86-87:
+  a rate with awkward decimals scaled to a new amount — distance, fuel, price — with the rounded «simpler problem»
+  answer as a distractor), `constructions` for u4_l5 «إنشاءات هندسية» (pp. 117-124: half a bisected segment, half a
+  bisected angle, the whole angle from its half as in question 13, the perpendicular bisector's 90°). Integer arithmetic
+  throughout, at most three decimals. `grade6Lessons.test.ts` recomputes every answer from its stem (failed first, no
+  generator); the full `math-practice` suite passes (959). Sample papers read and each key checked by hand. The API's
+  evaluation generator draws from the same bank, so a Grade 6 paper on these lessons can now carry self-marking items.
+  Offline non-maths lessons refuse (`no_question_bank`).
 - **Live grounding is thin for most of Grade 6.** With `unitId` + title (as the API asks), no book page at all for
   social 26/32, vocational 18/23, PE 10/14, Arabic S2 12/25; Arabic S1 and art are grounded mainly in the contents page.
   The vocational and social extractions are **reversed** («ةَيِبَرَعْلِ ا ةَرَزيجْلُ ا هْبِشْ» = شبه الجزيرة العربية;
