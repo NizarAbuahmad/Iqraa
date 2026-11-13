@@ -30,7 +30,13 @@ describe('primary lessons: the ops come from the title', () => {
     ['ضرب الأعداد العشرية وقسمتها', 'dec_mul+dec_div'],
     ['النسبة المئوية من عدد', 'percent'],
     ['القيمة المنزلية ضمن الألوف', 'place'],
-    ['الضرب كجمع متكرر', 'add+mul'],
+    // «كجمع متكرر» / «كطرح متكرر» name the METHOD, not a second topic: the
+    // add/sub items are unrelated three-digit sums («228 + 91 + 153»), which
+    // took over 6 of 10 questions in the Grade 2 lesson (2026-11-13).
+    ['الضرب كجمع متكرر', 'mul'],
+    ['الضَّرْبُ كَجَمْعٍ مُتَكَرِّر', 'mul'],
+    ['القسمة كطرح متكرر', 'div'],
+    ['الْقِسْمَةُ كَطَرْحٍ مُتَكَرِّر', 'div'],
   ];
   for (const [title, expected] of cases) {
     it(`${title} → ${expected}`, () => assert.equal(ops(title), expected));
@@ -64,6 +70,30 @@ describe('primary lessons: the ops come from the title', () => {
     for (const title of refused) {
       const kb = { id: 'x', titleAr: title, titleEn: '', objectives: [], keyConceptsAr: [], keyConceptsEn: [] };
       assert.equal(ops(lessonTitleBlob(title, kb)), '-', title);
+    }
+  });
+
+  // Grade 1's tens and two-digit lessons have their own generators (early.ts);
+  // read as plain «add»/«sub» they drew the grade's sums within 20 («9 + 1»).
+  it('Grade 1 tens and two-digit lessons reach their own generators', () => {
+    for (const [title, test] of [
+      ['جمع العشرات', (n: number[]) => n.every(x => x % 10 === 0)],
+      ['طرح العشرات', (n: number[]) => n.every(x => x % 10 === 0)],
+      ['جمع عددين من منزلتين', (n: number[]) => n.filter(x => x >= 10).length >= 2],
+      ['طرح عددين من منزلتين', (n: number[]) => n.filter(x => x >= 10).length >= 2],
+    ] as Array<[string, (n: number[]) => boolean]>) {
+      assert.equal(ops(title), '-', title);
+      // As the app sends it: a lesson, whose blob is «title titleEn» (an anchored
+      // pattern missed it, 2026-11-13).
+      const kb = { id: 'x', titleAr: title, titleEn: 'Adding and subtracting', objectives: [], keyConceptsAr: [], keyConceptsEn: [] };
+      assert.equal(ops(lessonTitleBlob(title, kb)), '-', title);
+      const session = new Set<string>();
+      for (let i = 0; i < 20; i++) {
+        const q = takeElementaryMath('short_answer', title, kb, 1, 'medium', 'ar', 1, session)!;
+        assert.ok(q, title);
+        const n = (q.text.match(/\d+/g) ?? []).map(Number).filter(x => x !== 1 || !/عشرات/.test(q.text));
+        if (!/عشرات/.test(q.text)) assert.ok(test(n), `${title}: ${q.text}`);
+      }
     }
   });
 
@@ -126,6 +156,8 @@ describe('the Grade 10 families come from the title', () => {
     ['حل نظام مكون من معادلة خطية ومعادلة تربيعية', 'linear_quad'],
     ['معمل برمجية جيوجبرا: حل أنظمة المعادلات بيانيا', 'system_graph'],
     ['قانون الجيوب', 'trig_apps'],
+    ['قانون جيوب التمام', 'trig_apps'],              // the book's and guide's spelling; the catalog title stays «جيب التمام»
+    ['قانون جيب التمام', 'trig_apps'],               // the old name, still in saved materials
     ['احتمالات الحوادث المستقلة', 'stats'],
     ['معادلة الدائرة', 'circle'],
     ['Quadratic Equations', 'algebra'],

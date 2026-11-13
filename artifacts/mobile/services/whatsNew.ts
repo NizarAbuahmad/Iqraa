@@ -39,6 +39,22 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
+    id: 'g10-vocational-curriculum',
+    date: '2026-11-13',
+    roles: ['teacher'],
+    titleKey: 'whatsNewG10VocationalTitle',
+    bodyKey: 'whatsNewG10VocationalBody',
+    route: '/curriculum/browse',
+  },
+  {
+    id: 'follow-us-social',
+    date: '2026-11-13',
+    roles: ALL_ROLES,
+    titleKey: 'whatsNewFollowUsTitle',
+    bodyKey: 'whatsNewFollowUsBody',
+    route: '/profile',
+  },
+  {
     id: 'exam-drawn-figures',
     date: '2026-11-03',
     roles: ['teacher'],

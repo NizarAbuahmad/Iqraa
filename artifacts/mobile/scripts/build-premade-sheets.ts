@@ -197,9 +197,10 @@ function parseArgs(argv: string[]): Args {
 /**
  * Every Grade 10 maths lesson, both semesters.
  *
- * `order === 0` entries are the GeoGebra lab lessons — an activity to run, not
- * a lesson to set questions on — so they get no sheet. That is why this yields
- * 33 and not the grade's 36.
+ * The GeoGebra lab lessons (ids ending `_lab`) are an activity to run, not a
+ * lesson to set questions on, so they get no sheet. Matched by id, not by
+ * `order === 0`: labs are ordered where the book prints them (S2 `u8_lab` is
+ * second in its unit), and «حل معادلات خاصة» (S1 `u1_l5`) now opens unit 1.
  */
 function lessonsFor(gradeId: string, subjectId: string): NccdKbLesson[] {
   if (!SUBJECT_NAME_AR[subjectId] || !GRADE_NAME_AR[gradeId]) {
@@ -209,7 +210,7 @@ function lessonsFor(gradeId: string, subjectId: string): NccdKbLesson[] {
     );
   }
   return [...buildNccdSem1Catalog().lessons, ...buildNccdSem2Catalog().lessons].filter(
-    lesson => lesson.order !== 0,
+    lesson => !lesson.id.endsWith('_lab'),
   );
 }
 

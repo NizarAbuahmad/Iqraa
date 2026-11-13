@@ -785,6 +785,67 @@ const congruence = (id: string, match: RegExp, answers: string[]) => T(id, match
   return { eq: ans, answer: ans, wrongs: names(rng, ans, all), ar: `إذا كان ${DESC[ans]![0]}، فبأي حالة تتطابق المثلثان؟`, en: `If ${DESC[ans]![1]}, by which criterion are the triangles congruent?` };
 });
 
+/** The vertex of DEF that corresponds to each of ABC's, for a side «AB» or an angle «A». */
+const corrOf = (v: string) => v.split('').map(c => 'DEF'['ABC'.indexOf(c)]).join('');
+
+/** From △ABC ≅ △DEF: the angle F (3), a side (4), x from two corresponding sides (5). Shared by both congruence lessons. */
+function congruenceCalc(k: 3 | 4 | 5, rng: Rng, diff: D): Draft {
+  if (k === 4) {
+    let s = [0, 0, 0];
+    do s = [int(rng, 3, 15), int(rng, 3, 15), int(rng, 3, 15)]; while (s[0]! + s[1]! <= s[2]! || s[0]! + s[2]! <= s[1]! || s[1]! + s[2]! <= s[0]! || new Set(s).size < 3);
+    const [ab, bc, ac] = s as [number, number, number], i = int(rng, 0, 2), ask = ['DE', 'EF', 'DF'][i]!, ans = s[i]!;
+    return { eq: `sides ${ab}, ${bc}, ${ac} ${ask}`, answer: String(ans), wrongs: pos(ans, s.filter(v => v !== ans).concat(ab + bc + ac, ans + 1)), ar: `إذا كان △ABC ≅ △DEF، وكانت أطوال أضلاع المثلث ABC هي AB = ${ab} سم و BC = ${bc} سم و AC = ${ac} سم، فما طول الضلع ${ask}؟`, en: `If △ABC ≅ △DEF with AB = ${ab} cm, BC = ${bc} cm and AC = ${ac} cm, how long is ${ask}?` };
+  }
+  if (k === 5) {
+    const x = int(rng, 2, span(diff, 8, 12, 15)), p = int(rng, 2, 5), q = int(rng, 1, p - 1), c1 = int(rng, 1, 12), c2 = c1 + (p - q) * x;
+    const side = pick(rng, ['AB', 'BC', 'AC']);
+    return { eq: `x ${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, c2 - c1, p * x + c1, (c1 + c2) / (p + q) | 0]), ar: `المثلثان ABC و DEF متطابقان (△ABC ≅ △DEF). إذا كان ${side} = (${lin(p, c1)}) سم و ${corrOf(side)} = (${lin(q, c2)}) سم، فما قيمة x؟`, en: `Triangles ABC and DEF are congruent (△ABC ≅ △DEF). If ${side} = (${lin(p, c1)}) cm and ${corrOf(side)} = (${lin(q, c2)}) cm, what is x?` };
+  }
+  const a = int(rng, 30, 90), b = int(rng, 25, 150 - a), c = 180 - a - b;
+  return { eq: `angle ${a}, ${b}`, answer: `${c}°`, wrongs: deg(c, [a, b, a + b, 180 - a]), ar: `إذا كان △ABC ≅ △DEF، وكان قياس الزاوية A يساوي ${a}° وقياس الزاوية B يساوي ${b}°، فما قياس الزاوية F؟`, en: `If △ABC ≅ △DEF, angle A = ${a}° and angle B = ${b}°, what does angle F measure?` };
+}
+
+/**
+ * SSS, SAS and HL (u4_l1) used to be one kind — name the criterion from its
+ * description — so a quiz of ten had three distinct questions. Now also: name it
+ * from marked parts (1), pick the extra part a criterion needs (2), and the
+ * three computations the ASA lesson already asks (3 angle, 4 side, 5 x).
+ */
+const congruenceSss = (id: string, match: RegExp) => {
+  const base = congruence(id, match, ['SSS', 'SAS', 'HL']);
+  const all = ['SSS', 'SAS', 'HL', 'ASA', 'AAS'];
+  const side = (p: string, q: string) => [p, q].sort().join('');
+  const pair = (s: string) => `${s} ≅ ${corrOf(s)}`;
+  const ang = (v: string) => `∠${v} ≅ ∠${corrOf(v)}`;
+  return T(id, match, [8, 8], ({ rng, diff, grade }) => {
+    const k = pick(rng, [0, 1, 1, 2, 3, 4, 5]);
+    if (k >= 3) return congruenceCalc(k as 3 | 4 | 5, rng, diff);
+    if (k === 1) {
+      const crit = pick(rng, ['SSS', 'SAS', 'HL']);
+      const v = pick(rng, ['A', 'B', 'C']), rest = 'ABC'.replace(v, '').split('') as [string, string];
+      let facts: string[], enFacts: string[];
+      if (crit === 'SSS') { facts = ['AB', 'BC', 'AC'].map(pair); enFacts = facts; }
+      else if (crit === 'SAS') { facts = [pair(side(v, rest[0])), pair(side(v, rest[1])), ang(v)]; enFacts = facts; }
+      else {
+        // a right angle at v: the hypotenuse is the side opposite v, and one leg runs through v
+        facts = [`∠${v} = ∠${corrOf(v)} = 90°`, pair(side(rest[0], rest[1])), pair(side(v, pick(rng, rest)))];
+        enFacts = facts;
+      }
+      return { eq: `parts ${crit} ${v}`, answer: crit, wrongs: names(rng, crit, all), ar: `في المثلثين ABC و DEF: ${facts.join(' و ')}. بأي حالة يتطابق المثلثان؟`, en: `In triangles ABC and DEF: ${enFacts.join(', ')}. By which criterion are the triangles congruent?` };
+    }
+    if (k === 2) {
+      // AB ≅ DE and the other side through v are given; SSS needs the third side, SAS the angle between the two
+      const v = pick(rng, ['A', 'B', 'C']), rest = 'ABC'.replace(v, '').split('') as [string, string];
+      const s1 = side(v, rest[0]), s2 = side(v, rest[1]), third = side(rest[0], rest[1]);
+      const sss = rng() < 0.5;
+      const right = sss ? pair(third) : ang(v);
+      const wrongs = sss ? ['A', 'B', 'C'].map(ang) : [pair(third), ...rest.map(ang)];
+      return { eq: `need ${v} ${sss ? 'SSS' : 'SAS'}`, answer: right, wrongs, ar: `في المثلثين ABC و DEF: ${pair(s1)} و ${pair(s2)}. ما التطابق الإضافي الذي يلزم لإثبات تطابق المثلثين بحالة ${sss ? 'SSS' : 'SAS'}؟`, en: `In triangles ABC and DEF: ${pair(s1)} and ${pair(s2)}. Which extra congruence proves the triangles congruent by ${sss ? 'SSS' : 'SAS'}?` };
+    }
+    return base.make({ rng, diff, grade });
+  });
+};
+
 /**
  * ASA and AAS: besides naming the criterion from its description (0), name it
  * from marked parts (1), pick the extra part a criterion needs (2), and use the
@@ -811,21 +872,7 @@ const congruenceAsa = (id: string, match: RegExp) => {
       const sides = ['AB', 'BC', 'AC'].filter(s => s !== side).map(s => `${s} ≅ ${corr(s)}`);
       return { eq: `need ${angle} ${side} ${asa ? 'ASA' : 'AAS'}`, answer: ans, wrongs: [`∠${asa ? off : other} ≅ ∠${corr(asa ? off : other)}`, ...sides], ar: `في المثلثين ABC و DEF: ∠${angle} ≅ ∠${corr(angle)} و ${side} ≅ ${corr(side)}. ما التطابق الإضافي الذي يلزم لإثبات تطابق المثلثين بحالة ${asa ? 'ASA' : 'AAS'}؟`, en: `In triangles ABC and DEF, ∠${angle} ≅ ∠${corr(angle)} and ${side} ≅ ${corr(side)}. Which extra congruence proves the triangles congruent by ${asa ? 'ASA' : 'AAS'}?` };
     }
-    if (k === 4) {
-      let s = [0, 0, 0];
-      do s = [int(rng, 3, 15), int(rng, 3, 15), int(rng, 3, 15)]; while (s[0]! + s[1]! <= s[2]! || s[0]! + s[2]! <= s[1]! || s[1]! + s[2]! <= s[0]! || new Set(s).size < 3);
-      const [ab, bc, ac] = s as [number, number, number], i = int(rng, 0, 2), ask = ['DE', 'EF', 'DF'][i]!, ans = s[i]!;
-      return { eq: `sides ${ab}, ${bc}, ${ac} ${ask}`, answer: String(ans), wrongs: pos(ans, s.filter(v => v !== ans).concat(ab + bc + ac, ans + 1)), ar: `إذا كان △ABC ≅ △DEF، وكانت أطوال أضلاع المثلث ABC هي AB = ${ab} سم و BC = ${bc} سم و AC = ${ac} سم، فما طول الضلع ${ask}؟`, en: `If △ABC ≅ △DEF with AB = ${ab} cm, BC = ${bc} cm and AC = ${ac} cm, how long is ${ask}?` };
-    }
-    if (k === 5) {
-      const x = int(rng, 2, span(diff, 8, 12, 15)), p = int(rng, 2, 5), q = int(rng, 1, p - 1), c1 = int(rng, 1, 12), c2 = c1 + (p - q) * x;
-      const side = pick(rng, ['AB', 'BC', 'AC']);
-      return { eq: `x ${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, c2 - c1, p * x + c1, (c1 + c2) / (p + q) | 0]), ar: `المثلثان ABC و DEF متطابقان (△ABC ≅ △DEF). إذا كان ${side} = (${lin(p, c1)}) سم و ${corr(side)} = (${lin(q, c2)}) سم، فما قيمة x؟`, en: `Triangles ABC and DEF are congruent (△ABC ≅ △DEF). If ${side} = (${lin(p, c1)}) cm and ${corr(side)} = (${lin(q, c2)}) cm, what is x?` };
-    }
-    if (k === 3) {
-      const a = int(rng, 30, 90), b = int(rng, 25, 150 - a), c = 180 - a - b;
-      return { eq: `angle ${a}, ${b}`, answer: `${c}°`, wrongs: deg(c, [a, b, a + b, 180 - a]), ar: `إذا كان △ABC ≅ △DEF، وكان قياس الزاوية A يساوي ${a}° وقياس الزاوية B يساوي ${b}°، فما قياس الزاوية F؟`, en: `If △ABC ≅ △DEF, angle A = ${a}° and angle B = ${b}°, what does angle F measure?` };
-    }
+    if (k >= 3) return congruenceCalc(k as 3 | 4 | 5, rng, diff);
     return base.make({ rng, diff, grade });
   });
 };
@@ -1154,6 +1201,33 @@ const medians = T('medians_centroid', /^القطع المتوسطه والارت
   return { eq: `${m}`, answer: String(ans), wrongs: pos(ans, [m / 2, m, k ? m / 3 : (2 * m) / 3, ans + 1, m - 1]), ar: `في المثلث ABC، القطعة المتوسطة من الرأس A طولها ${m} سم، ومركز المثلث G. ما طول ${k ? 'AG' : 'GD (حيث D منتصف BC)'}؟`, en: `In triangle ABC the median from vertex A is ${m} cm long, and G is the centroid. What is the length of ${k ? 'AG' : 'GD (where D is the midpoint of BC)'}?` };
 });
 
+/**
+ * Grade 9 GeoGebra lab «توسع: مثلث القطع المنصفة» (added 2026-11-13): the triangle
+ * the three midsegments make has a quarter of the area and half the perimeter of
+ * the triangle they are drawn in, whatever its shape.
+ */
+const midsegmentTriangle = T('midsegment_triangle', /^(?:معمل برمجيه جيوجبرا (?:توسع )?)?مثلث القطع المنصفه$/, [9, 9], ({ rng, diff }) => {
+  // 0 area of the midsegment triangle; 1 area of the triangle; 2 perimeter; 3 area from coordinates; 4 the ratio
+  const kind = pick(rng, [0, 1, 2, 3, 4]);
+  if (kind === 2) {
+    const a = int(rng, 3, 9), b = int(rng, 3, 9), c = int(rng, Math.abs(a - b) + 1, a + b - 1), h = a + b + c;
+    return { eq: `${2 * a}, ${2 * b}, ${2 * c}`, answer: String(h), wrongs: pos(h, [2 * h, a + b, b + c, a + c, h + a]), ar: `أطوال أضلاع المثلث ABC هي ${2 * a} سم و ${2 * b} سم و ${2 * c} سم. ما محيط مثلث القطع المنصفة له بالسنتمتر؟`, en: `The sides of triangle ABC are ${2 * a} cm, ${2 * b} cm and ${2 * c} cm. What is the perimeter, in cm, of its midsegment triangle?` };
+  }
+  if (kind === 3) {
+    let p = int(rng, 1, 6), v = int(rng, 1, 6);
+    if ((p * v) % 2) v = v === 6 ? 5 : v + 1;
+    const u = int(rng, -3, 6), m = (p * v) / 2;
+    return { eq: `${p}, ${u}, ${v}`, answer: String(m), wrongs: pos(m, [2 * p * v, p * v, (p * v) / 4, 4 * m + 2, m + 1]), ar: `رؤوس المثلث ABC هي A${pt(0, 0)} و B${pt(2 * p, 0)} و C${pt(2 * u, 2 * v)}. ما مساحة مثلث القطع المنصفة له بوحدة المساحة؟`, en: `Triangle ABC has vertices A${pt(0, 0)}, B${pt(2 * p, 0)} and C${pt(2 * u, 2 * v)}. What is the area, in square units, of its midsegment triangle?` };
+  }
+  if (kind === 4) {
+    const shape = pick(rng, [['حاد الزوايا', 'acute'], ['قائم الزاوية', 'right-angled'], ['مختلف الأضلاع', 'scalene']] as const);
+    return { eq: shape[1], answer: '1 : 4', wrongs: ['1 : 2', '1 : 3', '1 : 8'], ar: `في مثلث ${shape[0]}، ما نسبة مساحة مثلث القطع المنصفة إلى مساحة المثلث الأصلي؟`, en: `In a ${shape[1]} triangle, what is the ratio of the area of the midsegment triangle to the area of the original triangle?` };
+  }
+  const m = int(rng, 2, span(diff, 9, 15, 24));
+  if (kind === 1) return { eq: `${m}`, answer: String(4 * m), wrongs: pos(4 * m, [2 * m, 3 * m, 8 * m, m * m, m + 4]), ar: `مساحة مثلث القطع المنصفة للمثلث ABC تساوي ${m} سم². ما مساحة المثلث ABC؟`, en: `The midsegment triangle of triangle ABC has area ${m} cm². What is the area of triangle ABC?` };
+  return { eq: `${4 * m}`, answer: String(m), wrongs: pos(m, [2 * m, 3 * m, 4 * m, 8 * m, m + 1]), ar: `مساحة المثلث ABC تساوي ${4 * m} سم². ما مساحة مثلث القطع المنصفة له؟`, en: `Triangle ABC has area ${4 * m} cm². What is the area of its midsegment triangle?` };
+});
+
 const TRI9: Array<[number, number, number]> = [[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25]];
 type Ratio = 'sin' | 'cos' | 'tan';
 const RATIOS: Ratio[] = ['sin', 'cos', 'tan'];
@@ -1433,11 +1507,11 @@ export const GEOMETRY_TOPICS: readonly Topic[] = [
   quadName('quad_name_g5', /^تصنيف الاشكال الرباعيه$/, 5), quadName('quad_name_g6', /^الاشكال الرباعيه$/, 6),
   prismPyramid, symmetry, complement, transversal, triangleAngles, polygonAngles,
   parallelogram, parallelogramTest, specialParallelograms, parallelProof, isosceles,
-  congruence('congruence_a', /^تطابق المثلثات \(SSS SAS HL\)$/, ['SSS', 'SAS', 'HL']), congruenceAsa('congruence_b', /^تطابق المثلثات \(ASA AAS\)$/),
+  congruenceSss('congruence_a', /^تطابق المثلثات \(SSS SAS HL\)$/), congruenceAsa('congruence_b', /^تطابق المثلثات \(ASA AAS\)$/),
   similarity, pyth,
   reflectLine, translate('translate_g5', /^الانسحاب$/, 5), translate('translate_g6', /^الانسحاب في المستوي الاحداثي$/, 6), reflectAxes, coordPlane5, coordPlane6, rotate,
   dilate('dilate_g7', /^التكبير$/, 7), dilate('dilate_g8', /^التمدد$/, 8),
-  distance, pointLine, proportionalParts, bisector, medians, trigRatios, trigApplications,
+  distance, pointLine, proportionalParts, midsegmentTriangle, bisector, medians, trigRatios, trigApplications,
   circleChords, circleAngles, bearing, sineArea,
   convertGen('units_m', /^المتر والسنتيمتر$/, ['length_m'], [3, 3]), convertGen('units_km', /^الكيلومتر$/, ['length_km'], [3, 3]),
   convertGen('units_mass', /^الغرام والكيلوغرام$/, ['mass'], [3, 3]), convertGen('units_volume', /^اللتر والمليلتر$/, ['volume'], [3, 3]),

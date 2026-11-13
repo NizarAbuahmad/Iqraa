@@ -50,10 +50,15 @@ const UNSERVED = new RegExp([
  * fraction addition. An empty list is a refusal, not a fallback — the caller
  * says there is no bank for the lesson rather than invent one.
  *
- * «جمع البيانات» is collecting data, not addition.
+ * «جمع البيانات» is collecting data, not addition. «الضرب كجمع متكرر» and
+ * «القسمة كطرح متكرر» are multiplication and division: the «as repeated
+ * addition/subtraction» names the method, and reading it as a second topic
+ * filled the Grade 2 lessons with unrelated three-digit sums.
  */
 export function elementaryOpsForTitle(title: string): ElementaryOp[] {
-  const t = fold(title).replace(/جمع\s*البيانات|data\s*collection/gi, ' ');
+  const t = fold(title)
+    .replace(/جمع\s*البيانات|data\s*collection/gi, ' ')
+    .replace(/ك(?:جمع|طرح)\s*متكرر|as\s*repeated\s*(?:addition|subtraction)/gi, ' ');
 
   if (/مقارنه|ترتيب|compar|order/i.test(t)) {
     if (/صحيحه/.test(t)) return [];
@@ -63,6 +68,10 @@ export function elementaryOpsForTitle(title: string): ElementaryOp[] {
   }
   if (/مئوي|percent/i.test(t)) return /والكسور/.test(t) ? [] : ['percent'];
   if (UNSERVED.test(t)) return [];
+  // Grade 1's tens and two-digit lessons have their own generators (early.ts
+  // `tensG1`, `twoDigitG1`); as plain add/sub they drew sums within 20. Not
+  // anchored at the end: from a lesson the blob is «title titleEn».
+  if (/^(?:جمع|طرح) (?:العشرات|عددين من منزلتين)(?=\s|$)/.test(t.trim())) return [];
   if (/منزلي|place\s*value/i.test(t)) return ['place'];
 
   const kind = /كسور|كسر|fraction/i.test(t) ? 'frac' : /عشري|decimal/i.test(t) ? 'dec' : 'whole';

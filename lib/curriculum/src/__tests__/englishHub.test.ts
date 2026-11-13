@@ -261,13 +261,13 @@ test('"robot" is رجل آلي, as a Grade 1 English teacher asked (2026-10-15)'
 });
 
 const GRAMMAR_ONLY = [
-  'kbl-g9-eng-s1-nccd-u2_l3', 'kbl-g9-eng-s2-nccd-u7_l1', 'kbl-g9-eng-s2-nccd-u7_l2', 'kbl-g9-eng-s2-nccd-u8_l5', 'kbl-g9-eng-s2-nccd-u9_l3',
-  'kbl-eng-s1-nccd-u1_l5',
+  'kbl-g9-eng-s1-nccd-u2_l3', 'kbl-g9-eng-s1-nccd-u4_l7', 'kbl-g9-eng-s2-nccd-u7_l1', 'kbl-g9-eng-s2-nccd-u7_l2', 'kbl-g9-eng-s2-nccd-u8_l5', 'kbl-g9-eng-s2-nccd-u9_l3',
+  'kbl-eng-s1-nccd-u1_l5', 'kbl-eng-s1-nccd-u2_l4', 'kbl-eng-s1-nccd-u3_l4', 'kbl-eng-s1-nccd-u4_l4', 'kbl-eng-s1-nccd-u5_l3',
   'kbl-eng-s2-nccd-u6_l1', 'kbl-eng-s2-nccd-u6_l4', 'kbl-eng-s2-nccd-u7_l1', 'kbl-eng-s2-nccd-u7_l5', 'kbl-eng-s2-nccd-u8_l1',
   'kbl-eng-s2-nccd-u8_l6', 'kbl-eng-s2-nccd-u9_l1', 'kbl-eng-s2-nccd-u9_l4', 'kbl-eng-s2-nccd-u10_l1', 'kbl-eng-s2-nccd-u10_l3',
 ];
 
-test('sixteen lessons are grammar-only (five in Grade 9, Articles and the ten Semester 2 lessons in Grade 10): listed, under the word floor, and no other lesson is', () => {
+test('twenty-one lessons are grammar-only (six in Grade 9; in Grade 10 Articles, the four Semester 1 grammar lessons with no Word List of their own, and the ten Semester 2 lessons): listed, under the word floor, and no other lesson is', () => {
   assert.deepEqual([...GRAMMAR_ONLY_LESSONS], GRAMMAR_ONLY);
   const flagged = ENGLISH_HUB_LESSONS.filter(l => l.grammarOnly).map(l => l.id).sort();
   assert.deepEqual(flagged, [...GRAMMAR_ONLY].sort());
@@ -279,6 +279,8 @@ test('every grammar-only lesson has a grammar unit', async () => {
   for (const id of GRAMMAR_ONLY) assert.ok(grammarUnit(id), id);
 });
 
-test('the hub has 41 Grade 9 and 31 Grade 10 lessons now and every other grade is unchanged', () => {
-  assert.deepEqual([1, 2, 3, 4, 5, 9, 10].map(g => hubLessonsForGrade(g).length), [10, 9, 8, 9, 10, 41, 31]);
+test('the hub has 42 Grade 9 and 35 Grade 10 lessons now and every other grade is unchanged', () => {
+  // Grade 10 was 31 before the Word List markers were read through their LESSON headings (extract-english-vocabulary.ts):
+  // the lessons that print a Word List (2A, 3A and 5A of units 2-4, 5A and 6A of unit 5 …) now carry their own words.
+  assert.deepEqual([1, 2, 3, 4, 5, 9, 10].map(g => hubLessonsForGrade(g).length), [10, 9, 8, 9, 10, 42, 35]);
 });

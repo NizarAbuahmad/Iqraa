@@ -125,7 +125,10 @@ describe('book-page-links.json', () => {
     const bad = new Set<string>();
     for (const [id, l] of Object.entries(lessons)) {
       for (const s of starts) {
-        if (s.sourceId === l.sourceId && s.kb !== id && l.startPage < s.page && s.page <= l.endPage) {
+        // Ending ON the next lesson's recorded start is allowed: Grade 4 maths prints a
+        // «نشاط مفاهيمي» page between two lessons that the figures give to the next lesson
+        // and the range to the last — one shared page, not a lesson swallowed.
+        if (s.sourceId === l.sourceId && s.kb !== id && l.startPage < s.page && s.page < l.endPage) {
           bad.add(`${id} p${l.startPage}-${l.endPage} contains the start of ${s.kb} (p${s.page})`);
         }
       }
@@ -137,6 +140,44 @@ describe('book-page-links.json', () => {
     for (const [id, book] of Object.entries(books as Record<string, { pdfUrl?: string | null; source?: string }>)) {
       if (book.pdfUrl === null) assert.ok(book.source, `${id} has no pdfUrl and no source`);
     }
+  });
+});
+
+describe('Grade 1 Arabic semester 2 pages (audit 2026-11-13)', () => {
+  // The mapper matched «أستمع بانتباه وتركيز» by title, which repeats in every
+  // unit, and filed unit 7's speaking lesson under unit 6 and units 8-10 under
+  // unit 7. Each page was read by eye; these pin where the right images sit.
+  const A = 'kbl-g1-arabic-s2-nccd-';
+  it('unit 8 reads its own pages from the folders they were cut into', () => {
+    const p = bookPagesForLesson(`${A}u8_l1`)!;
+    assert.equal(p.page, 74);
+    assert.equal(p.urls[0], `${BOOK_PAGES_BASE_URL}/${A}u7_l1/1.jpg`);
+    assert.equal(bookPagesForLesson(`${A}u7_l2`)!.urls[0], `${BOOK_PAGES_BASE_URL}/${A}u6_l2/1.jpg`);
+  });
+
+  it('a unit 7 lesson whose pages were never cut shows none, not unit 8 or 9', () => {
+    for (const l of ['u7_l1', 'u7_l3', 'u7_l4', 'u7_l5', 'u7_l6']) assert.equal(bookPagesForLesson(`${A}${l}`), null, l);
+  });
+});
+
+describe('Grade 3 Arabic semester 2 and maths pages (audit 2026-11-13)', () => {
+  // Every Arabic S2 lesson was cut one lesson early (its folder opens on the
+  // lesson BEFORE it), the same fault as Grade 6 Arabic. Read by eye.
+  const A = 'kbl-g3-arabic-s2-nccd-';
+  it('each Arabic S2 lesson reads the folder that opens on it', () => {
+    assert.equal(bookPagesForLesson(`${A}u6_l1`)!.urls[0], `${BOOK_PAGES_BASE_URL}/${A}u6_l2/1.jpg`);
+    assert.equal(bookPagesForLesson(`${A}u9_l5`)!.urls[0], `${BOOK_PAGES_BASE_URL}/${A}u10_l1/1.jpg`);
+    // unit 10's last folder holds lesson 4 (p. 115) and lesson 5 (p. 120)
+    assert.equal(bookPagesForLesson(`${A}u10_l4`)!.page, 115);
+    assert.equal(bookPagesForLesson(`${A}u10_l5`)!.urls[0], `${BOOK_PAGES_BASE_URL}/${A}u10_l5/6.jpg`);
+  });
+
+  it('a maths lesson opens on its own page of the unit folder, not the unit cover', () => {
+    const M = 'kbl-g3-math-s2-nccd-';
+    // the folder named after u9_l3 opens on the unit 9 cover (p. 42); lesson 3 is p. 48
+    assert.equal(bookPagesForLesson(`${M}u9_l3`)!.page, 48);
+    assert.equal(bookPagesForLesson(`${M}u9_l3`)!.urls[0], `${BOOK_PAGES_BASE_URL}/${M}u9_l3/7.jpg`);
+    assert.equal(bookPagesForLesson(`${M}u8_l1`)!.page, 26);
   });
 });
 

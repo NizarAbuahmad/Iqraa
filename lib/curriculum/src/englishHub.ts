@@ -71,11 +71,19 @@ export const MIN_HUB_WORDS = 4;
  */
 export const GRAMMAR_ONLY_LESSONS: readonly string[] = [
   'kbl-g9-eng-s1-nccd-u2_l3',
+  'kbl-g9-eng-s1-nccd-u4_l7',
   'kbl-g9-eng-s2-nccd-u7_l1',
   'kbl-g9-eng-s2-nccd-u7_l2',
   'kbl-g9-eng-s2-nccd-u8_l5',
   'kbl-g9-eng-s2-nccd-u9_l3',
   'kbl-eng-s1-nccd-u1_l5',
+  // Grade 10 semester 1's grammar lessons 4A and the Future Continuous lesson: the Word List's WLu.n markers are a
+  // running count per unit, not lesson numbers (extract-english-vocabulary.ts), so these lessons once carried the
+  // next lesson's words. They print none of their own.
+  'kbl-eng-s1-nccd-u2_l4',
+  'kbl-eng-s1-nccd-u3_l4',
+  'kbl-eng-s1-nccd-u4_l4',
+  'kbl-eng-s1-nccd-u5_l3',
   'kbl-eng-s2-nccd-u6_l1',
   'kbl-eng-s2-nccd-u6_l4',
   'kbl-eng-s2-nccd-u7_l1',

@@ -51,14 +51,23 @@ export type LibraryMeta = {
 /** Must match the server's MAX_LIBRARY_FILE_BYTES; checked here so a big file fails before it uploads. */
 export const MAX_LIBRARY_FILE_BYTES = 25 * 1024 * 1024;
 
-/** Empty on any failure — an unreachable library reads as an empty one, not a broken screen. */
-export async function listLibrary(gradeId: string): Promise<LibraryItem[]> {
+/**
+ * The staff uploads for one grade, or `null` when they could not be loaded —
+ * for a screen that must tell «nothing published» from «could not reach the
+ * server». The Library does: it said «لا توجد موارد» while offline.
+ */
+export async function listLibraryChecked(gradeId: string): Promise<LibraryItem[] | null> {
   if (!gradeId) return [];
   try {
     return await apiJson<LibraryItem[]>(`/library?gradeId=${encodeURIComponent(gradeId)}`);
   } catch {
-    return [];
+    return null;
   }
+}
+
+/** Empty on any failure — for callers where an unreachable library may read as an empty one. */
+export async function listLibrary(gradeId: string): Promise<LibraryItem[]> {
+  return (await listLibraryChecked(gradeId)) ?? [];
 }
 
 export function addLibraryLink(meta: LibraryMeta, url: string): Promise<LibraryItem> {
@@ -87,7 +96,15 @@ export function uploadLibraryFile(meta: LibraryMeta, file: Blob, mimeType: strin
 
 export function updateLibraryItem(
   id: string,
-  patch: { titleAr: string; description?: string; category?: LibraryCategory; thumbnailUrl?: string | null; semester?: 1 | 2 | null },
+  patch: {
+    titleAr: string;
+    description?: string;
+    category?: LibraryCategory;
+    thumbnailUrl?: string | null;
+    semester?: 1 | 2 | null;
+    /** A `kbl-*` lesson of the item's own subject, or null for none. Omitted leaves it as it is. */
+    lessonId?: string | null;
+  },
 ): Promise<LibraryItem> {
   return apiJson<LibraryItem>(`/library/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
 }

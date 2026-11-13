@@ -106,21 +106,21 @@ test('the false twin of every comparison is voiced', () => {
   for (const x of unitSentences(grammarUnit(L(4, 1))!).filter(y => y.claim)) assert.ok(spoken.has(x.claim!.falseText), x.claim!.falseText);
 });
 
-test('the generator produces the designed sentences: 122 in all', () => {
+test('the generator produces the designed sentences: 142 in all', () => {
   const counts = new Map(UNITS.map(u => [u.lessonId, unitSentences(u).length]));
-  assert.deepEqual([...counts], [[L(4, 1), 42], [L(4, 3), 80]]);
-  assert.equal([...counts.values()].reduce((a, b) => a + b, 0), 122);
+  assert.deepEqual([...counts], [[L(4, 1), 62], [L(4, 3), 80]]);
+  assert.equal([...counts.values()].reduce((a, b) => a + b, 0), 142);
   const longest = Math.max(...UNITS.flatMap(u => unitSentences(u)).map(x => x.tokens.length));
   assert.ok(longest <= 9, `the longest sentence is ${longest} words, over the Build cap`);
 });
 
 const docs = new URL('../../../../docs/', import.meta.url);
 
-test('the Grade 9 form lists every sentence once (the pilot\'s 122 and the 760 authored), a data page for Unit 4, and a note per lesson', async () => {
+test('the Grade 9 form lists every sentence once (the pilot\'s 142 and the 800 authored), a data page for Unit 4, and a note per lesson', async () => {
   const { renderGrammarReviewHtml } = await import('../englishGrammarReview.ts');
   const html = renderGrammarReviewHtml(9);
-  assert.equal((html.match(/<td class="sentence" dir="ltr">/g) ?? []).length, 122 + 760);
-  assert.equal((html.match(/<section class="unit"/g) ?? []).length, 2 + 19);
+  assert.equal((html.match(/<td class="sentence" dir="ltr">/g) ?? []).length, 142 + 800);
+  assert.equal((html.match(/<section class="unit"/g) ?? []).length, 2 + 20);
   assert.equal((html.match(/<section class="data"/g) ?? []).length, 1);
   assert.equal((html.match(/<table class="data-table"/g) ?? []).length, 4);
   assert.ok(html.includes('مراجعة قواعد الصف التاسع'));
@@ -130,7 +130,7 @@ test('the Grade 9 form lists every sentence once (the pilot\'s 122 and the 760 a
   assert.ok(html.includes('<span class="yn yn-no" dir="ltr">Doughnuts are healthier than carrots.</span>'));
   assert.ok(html.includes('<span class="yn yn-yes" dir="ltr">Are carrots healthier than doughnuts? → Yes, they are.</span>'));
   // A note under each of the 21 unit pages; every grammar topic of the book has a hub lesson, so no block of gaps.
-  assert.equal((html.match(/class="not-covered"/g) ?? []).length, 2 + 19);
+  assert.equal((html.match(/class="not-covered"/g) ?? []).length, 2 + 20);
   // Grade 9's data page lists Grade 9's adjectives only, and Grade 4's lists its own.
   assert.ok(!html.includes('more colourful'));
 });

@@ -176,22 +176,6 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 52
-    },
-    {
-      "file": "p091-v2.png",
-      "sourceId": "history-s2-student-book",
-      "pdfPage": 91,
-      "rect": [
-        89.0,
-        238.0,
-        536.0,
-        536.0
-      ],
-      "unit": 2,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 84
     }
   ]
 }

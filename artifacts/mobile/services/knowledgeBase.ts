@@ -784,6 +784,10 @@ import {
   buildG10PeSem1Catalog,
 } from './curriculumG10PeSem1.ts';
 import {
+  G10_VOC_S1_BOOK_ID,
+  buildG10VocSem1Catalog,
+} from './curriculumG10VocationalSem1.ts';
+import {
   G4_PE_S1_BOOK_ID,
   buildG4PhysicalEducationSem1Catalog,
 } from './curriculumG4PhysicalEducationSem1.ts';
@@ -1602,6 +1606,15 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'Physical Education – Grade 10 – Semester 1',
     semester: 1,
     source: 'iqra_curriculum_g10_physical_education_sem1.json (NCCD)',
+  },
+  {
+    id: G10_VOC_S1_BOOK_ID,
+    gradeId: 'grade-10',
+    subjectId: 'vocational-education',
+    titleAr: 'التربية المهنية – الصف العاشر – الفصل الأول',
+    titleEn: 'Vocational Education – Grade 10 – Semester 1',
+    semester: 1,
+    source: 'iqra_curriculum_g10_vocational_sem1.json (Ministry of Education, 2016 edition)',
   },
   {
     id: G4_PE_S1_BOOK_ID,
@@ -3799,6 +3812,7 @@ const _engIndustry = buildEnglishIndustryKbCatalog();
 const _g5PhysicalEducationSem1 = buildG5PhysicalEducationSem1Catalog();
 const _g5PhysicalEducationSem2 = buildG5PhysicalEducationSem2Catalog();
 const _g10PeSem1 = buildG10PeSem1Catalog();
+const _g10VocSem1 = buildG10VocSem1Catalog();
 const _g4PhysicalEducationSem1 = buildG4PhysicalEducationSem1Catalog();
 const _g8PeSem1 = buildG8PeSem1Catalog();
 const _legacyS1UnitIds = new Set(
@@ -4125,6 +4139,7 @@ export const KB_UNITS: KBUnit[] = [
   ..._g5PhysicalEducationSem1.units,
   ..._g5PhysicalEducationSem2.units,
   ..._g10PeSem1.units,
+  ..._g10VocSem1.units,
   ..._g4PhysicalEducationSem1.units,
   ..._g8PeSem1.units,
 ];
@@ -4337,6 +4352,7 @@ export const KB_LESSONS: KBLesson[] = [
   ..._g5PhysicalEducationSem1.lessons,
   ..._g5PhysicalEducationSem2.lessons,
   ..._g10PeSem1.lessons,
+  ..._g10VocSem1.lessons,
   ..._g4PhysicalEducationSem1.lessons,
   ..._g8PeSem1.lessons,
 ];

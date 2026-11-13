@@ -36,6 +36,8 @@ const weeks = (n: number) => counted(n, 'أسبوع واحد', 'أسبوعين',
 const pieces = (n: number) => counted(n, 'قطعة واحدة', 'قطعتان', 'قطع', 'قطعةً', 'قطعة');
 /** «قلمان / 5 أقلام» — nominative. */
 const pens = (n: number) => counted(n, 'قلم واحد', 'قلمان', 'أقلام', 'قلمًا', 'قلم');
+/** After «في / من / بـ» a dual is genitive: «في دينارين», never «في ديناران». */
+const dinarsAfterPreposition = (n: number) => counted(n, 'دينار واحد', 'دينارين', 'دنانير', 'دينارًا', 'دينار');
 /** «كرة واحدة / كرتان / 5 كرات / 12 كرةً» */
 const balls = (n: number) => (n === 1 ? 'كرة واحدة' : n === 2 ? 'كرتان' : `${n} ${tamyiz(n, 'كرات', 'كرةً', 'كرة')}`);
 /** «45 قرشًا / 7 قروش / 300 قرش» — for 3 or more. */
@@ -379,6 +381,42 @@ const mentalG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1
   if (k === 0 || k === 2) return { eq: `${n}, ${d}`, answer: String(r), wrongs: ints(r, [add ? r + 10 : r - 10, add ? n + 1 : n - 1, r + 1, r - 1]), ar: `${n} ${add ? '+' : '−'} ${d} = ___`, en: `${n} ${add ? '+' : '−'} ${d} = ___` };
   const m = add ? int(rng, 1, 70) : int(rng, 21, 99), r9 = add ? m + 9 : m - 9;
   return { eq: `${m}, 9`, answer: String(r9), wrongs: ints(r9, [add ? m + 10 : m - 10, add ? m + 8 : m - 8, r9 + 2, r9 - 2]), ar: `${m} ${add ? '+' : '−'} 9 = ___ (فكّر: ${add ? 'أضف 10 ثم انقص 1' : 'انقص 10 ثم أضف 1'})`, en: `${m} ${add ? '+' : '−'} 9 = ___ (think: ${add ? 'add 10 then take away 1' : 'take away 10 then add 1'})` };
+});
+
+// Grade 1 S2 «جمع العشرات / طرح العشرات»: multiples of ten up to 90. These
+// lessons used to draw the grade's generic sums within 20 («9 + 1»).
+const tensG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1], ({ rng }) => {
+  const op = add ? '+' : '−';
+  let a = 0, b = 0;
+  do { a = int(rng, 1, 8); b = int(rng, 1, 8); } while (add ? a + b > 9 : a <= b);
+  const A = a * 10, B = b * 10, R = add ? A + B : A - B, r = R / 10, k = pick(rng, [0, 1, 2, 3]);
+  if (k === 1) {
+    // Counted tens start at 3: «1 عشرات / 2 عشرات» is not Arabic (one ten, two tens).
+    let c = 0, d = 0;
+    do { c = int(rng, 3, 9); d = int(rng, 3, 9); } while (add ? c + d > 9 : c <= d);
+    const e = add ? c + d : c - d;
+    return { eq: `${c}t ${op} ${d}t`, answer: String(e), wrongs: ints(e, [add ? c - d : c + d, e + 1, e - 1, e * 10]), ar: `${c} عشرات ${op} ${d} عشرات = ___ عشرات`, en: `${c} tens ${op} ${d} tens = ___ tens` };
+  }
+  if (k === 2) return { eq: `${A}, ${R}`, answer: String(B), wrongs: ints(B, [R, A, B + 10, B - 10]), ar: `${A} ${op} ___ = ${R}`, en: `${A} ${op} ___ = ${R}` };
+  if (k === 3) return { eq: `word ${A} ${op} ${B}`, answer: String(R), wrongs: ints(R, [add ? A - B : A + B, R + 10, R - 10, r]), ar: add ? `مع رامي ${qirsh(A)}، وأعطاه والده ${qirsh(B)}. كم قرشًا أصبح معه؟` : `مع رامي ${qirsh(A)}، أنفق منها ${qirsh(B)}. كم قرشًا بقي معه؟`, en: add ? `Rami has ${A} qirsh and his father gives him ${B} qirsh. How many qirsh does he have now?` : `Rami has ${A} qirsh and spends ${B} qirsh. How many qirsh are left?` };
+  return { eq: `${A} ${op} ${B}`, answer: String(R), wrongs: ints(R, [add ? A - B : A + B, R + 10, R - 10, r]), ar: `${A} ${op} ${B} = ___`, en: `${A} ${op} ${B} = ___` };
+});
+
+// Grade 1 S2 «جمع / طرح عددين من منزلتين»: two two-digit numbers with nothing
+// to regroup (regrouping is Grade 2's unit 3). They drew sums within 20.
+const twoDigitG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1], ({ rng }) => {
+  const op = add ? '+' : '−';
+  let x = 0, y = 0;
+  do { x = int(rng, 10, 99); y = int(rng, 10, 99); }
+  while (add ? (x % 10) + (y % 10) > 9 || x + y > 99 : x <= y || x % 10 < y % 10 || x - y < 10);
+  const r = add ? x + y : x - y, k = pick(rng, [0, 1, 2, 3]);
+  if (k === 1) return { eq: `${x}, ${r}`, answer: String(y), wrongs: ints(y, [r, x, y + 10, y + 1]), ar: `${x} ${op} ___ = ${r}`, en: `${x} ${op} ___ = ${r}` };
+  if (k === 2) {
+    const t = Math.floor(r / 10);
+    return { eq: `tens ${x} ${op} ${y}`, answer: String(t), wrongs: ints(t, [r % 10, Math.floor(x / 10), t + 1, t - 1]), ar: `${add ? 'اجمع' : 'اطرح'} الآحاد ثم العشرات: ${x} ${op} ${y}. كم عشرة في الناتج؟`, en: `${add ? 'Add' : 'Subtract'} the ones, then the tens: ${x} ${op} ${y}. How many tens are in the answer?` };
+  }
+  if (k === 3) return { eq: `word ${x} ${op} ${y}`, answer: String(r), wrongs: ints(r, [add ? x - y : x + y, r + 10, r - 10, r + 1]), ar: add ? `مع ليلى ${qirsh(x)}، وأعطتها جدتها ${qirsh(y)}. كم قرشًا أصبح معها؟` : `مع ليلى ${qirsh(x)}، أنفقت منها ${qirsh(y)}. كم قرشًا بقي معها؟`, en: add ? `Layla has ${x} qirsh and her grandmother gives her ${y} qirsh. How many qirsh does she have now?` : `Layla has ${x} qirsh and spends ${y} qirsh. How many qirsh are left?` };
+  return { eq: `${x} ${op} ${y}`, answer: String(r), wrongs: ints(r, [add ? x - y : x + y, r + 10, r - 10, r + 1]), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
 });
 
 // ─── shapes ─────────────────────────────────────────────────────────────────
@@ -921,11 +959,12 @@ const dinar = T('dinar', /^الدينار$/, [2, 2], ({ rng }) => {
     const price = int(rng, 2, 5), m = 10 * int(rng, 1, 9), have = price * 100 - m;
     return { eq: `${price}, ${have}`, answer: String(m), wrongs: ints(m, [100 - m, m + 100, m + 10, m - 10]), ar: `ثمن لعبة ${dinars(price)}، ومع رامي ${qirsh(have)}. كم قرشًا ينقصه ليشتري اللعبة؟ (الدينار الواحد = 100 قرش)`, en: `A toy costs ${price} dinars and Rami has ${have} qirsh. How many more qirsh does he need to buy it? (1 dinar = 100 qirsh)` };
   }
-  if (k === 0) return { eq: `${d}`, answer: String(d * 100), wrongs: ints(d * 100, [d * 10, d, d * 1000, d * 100 + 100]), ar: `إذا كان الدينار الواحد = 100 قرش فكم قرشًا في ${dinars(d)}؟`, en: `If 1 dinar = 100 qirsh, how many qirsh are in ${d} dinars?` };
+  if (k === 0) return { eq: `${d}`, answer: String(d * 100), wrongs: ints(d * 100, [d * 10, d, d * 1000, d * 100 + 100]), ar: `إذا كان الدينار الواحد = 100 قرش فكم قرشًا في ${dinarsAfterPreposition(d)}؟`, en: `If 1 dinar = 100 qirsh, how many qirsh are in ${d} dinars?` };
   return { eq: `${d * 100}`, answer: String(d), wrongs: ints(d, [d * 10, d + 1, d - 1, d * 100]), ar: `إذا كان الدينار الواحد = 100 قرش فكم دينارًا في ${d * 100} قرش؟`, en: `If 1 dinar = 100 qirsh, how many dinars are in ${d * 100} qirsh?` };
 });
 const banknotes = T('banknotes', /^فئات النقود الورقيه$/, [2, 2], ({ rng }) => {
-  const f = pick(rng, [5, 10, 20]), n = int(rng, 2, 6), g = pick(rng, [1, 5, 10].filter(x => x !== f)), m = int(rng, 2, 4), k = pick(rng, [0, 1, 2]);
+  // 3 or more notes, so «${n} أوراق» is right as written (two would be «ورقتان»).
+  const f = pick(rng, [5, 10, 20]), n = int(rng, 3, 6), g = pick(rng, [1, 5, 10].filter(x => x !== f)), m = int(rng, 3, 4), k = pick(rng, [0, 1, 2]);
   if (k === 0) return { eq: `${f}, ${n}`, answer: String(f * n), wrongs: ints(f * n, [f + n, f * n + f, f * n - n, n]), ar: `كم دينارًا في ${n} أوراق نقدية من فئة ${dinars(f)}؟`, en: `How many dinars are in ${n} banknotes of ${f} dinars?` };
   if (k === 1) return { eq: `${f}, ${n}, ${g}, ${m}`, answer: String(f * n + g * m), wrongs: ints(f * n + g * m, [f + n + g + m, f * n, g * m, f * n + g * m + g]), ar: `مع سلمى ${n} أوراق من فئة ${dinars(f)} و ${m} أوراق من فئة ${dinars(g)}. كم دينارًا معها؟`, en: `Salma has ${n} notes of ${f} dinars and ${m} notes of ${g} dinar${g === 1 ? '' : 's'}. How many dinars does she have?` };
   const total = f * n;
@@ -1132,6 +1171,8 @@ export const EARLY_TOPICS: readonly Topic[] = [
   makeTen, addProps('add_props_g1', /^خصائص عمليه الجمع$/, 1), addProps('add_props_g2', /^خصائص الجمع$/, 2),
   relatedFacts('related_g1', 1), relatedFacts('related_g3', 3), missingNumber,
   mentalG1('mental_add', /^الجمع الذهني$/, true), mentalG1('mental_sub', /^الطرح الذهني$/, false),
+  tensG1('tens_add_g1', /^جمع العشرات$/, true), tensG1('tens_sub_g1', /^طرح العشرات$/, false),
+  twoDigitG1('two_digit_add_g1', /^جمع عددين من منزلتين$/, true), twoDigitG1('two_digit_sub_g1', /^طرح عددين من منزلتين$/, false),
   solids, planeShapes('plane_shapes', /^الاشكال المستويه$/, [1, 2]), planeShapes('plane_sides_g1', /^اضلاع الاشكال المستويه ورؤوسها$/, [1, 1]), planeShapes('plane_sides_g2', /^الاضلاع والرؤوس$/, [2, 2]),
   solidParts, geoPattern,
   halfQuarter('half', /^النصف$/, 'نصف'), halfQuarter('quarter', /^الربع$/, 'ربع'), equalParts, fractionOfSetG1, fractionOfSetG3,
