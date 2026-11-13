@@ -17,7 +17,21 @@ export function foldDigits(text: string): string {
     .replace(/(\d)[٫،](?=\d)/gu, '$1.');
 }
 
-/** Every number the drawing prints, in the order the renderer prints them. */
+/**
+ * A number as the question states it: not the digit of a symbol (F2, m1, v0, x2, H2O),
+ * so the digit may not follow a Latin, Greek or Arabic letter, an underscore, another
+ * digit or a point. Tatweel (U+0640) may precede it, so «بـ20» states 20.
+ * Written with \u escapes so no tool can mangle the ranges; `-` is never a range by accident.
+ */
+const STATED_NUMBER = /(?<![A-Za-z\u0370-\u03FF\u0621-\u063A\u0641-\u064A_0-9.])\d+(?:\.\d+)?/gu;
+
+/**
+ * Every number the drawing prints, in the order the renderer prints them.
+ *
+ * A `vectors` figure returns [] (so `figureNumbersInText` always passes it), yet it is
+ * drawn on a numbered grid and its alt text prints end points: this guard does not
+ * judge vectors, and a caller that draws one must judge it some other way.
+ */
 export function figureNumbers(f: PhysicsFigure): number[] {
   switch (f.kind) {
     case 'forces':
@@ -35,8 +49,12 @@ export function figureNumbers(f: PhysicsFigure): number[] {
   }
 }
 
-/** True when each number the drawing prints appears, as a whole number token, in `text`. */
+/**
+ * True when each number the drawing prints appears, as a whole number token, in `text`.
+ * A digit inside a symbol (F2, m1, v0) is not a stated number. Always true for a
+ * `vectors` figure (see `figureNumbers`): the caller must judge vectors otherwise.
+ */
 export function figureNumbersInText(f: PhysicsFigure, text: string): boolean {
-  const found = (foldDigits(text).match(/\d+(?:\.\d+)?/gu) ?? []).map(Number);
+  const found = (foldDigits(text).match(STATED_NUMBER) ?? []).map(Number);
   return figureNumbers(f).every(n => found.some(m => Math.abs(m - Math.abs(n)) < 1e-9));
 }

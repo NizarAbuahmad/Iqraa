@@ -40,6 +40,23 @@ describe('figureNumbersInText', () => {
     assert.equal(figureNumbersInText(proj, 'قُذفت كرة بسرعة 120 م/ث بزاوية 130°.'), false);
   });
 
+  it('a digit inside a symbol (F2, m1, v0) is not a stated number', () => {
+    const two: PhysicsFigure = { kind: 'forces', body: 'point', arrows: [
+      { dir: 0, size: 3, label: 'F1', value: { n: 3, unit: 'N' } },
+      { dir: 90, size: 2, label: 'F2', value: { n: 2, unit: 'N' } },
+    ] };
+    assert.equal(figureNumbersInText(two, 'تؤثر قوتان F1 = 3 N و F2 في جسم. احسب F2.'), false);
+    const pull: PhysicsFigure = { kind: 'attraction', bodies: ['m1', 'm2'], force: 'F', distance: { label: 'r', value: { n: 1, unit: 'm' } } };
+    assert.equal(figureNumbersInText(pull, 'كتلتان m1 و m2، احسب المسافة r بينهما.'), false);
+    const ledge: PhysicsFigure = { kind: 'projectile', launch: 'horizontal', height: { n: 0, unit: 'm' }, marks: ['v0'] };
+    assert.equal(figureNumbersInText(ledge, 'قُذف جسم أفقيًا بسرعة v0 من حافة.'), false);
+  });
+
+  it('a number joined to a word by tatweel still counts («بـ20»)', () => {
+    const fast: PhysicsFigure = { kind: 'projectile', launch: 'horizontal', speed: { n: 20, unit: 'm/s' }, marks: ['v0'] };
+    assert.equal(figureNumbersInText(fast, 'قُذف جسم أفقيًا بـ20 م/ث من حافة.'), true);
+  });
+
   it('a drawing that prints no number always passes', () => {
     assert.equal(figureNumbersInText({ kind: 'circular', turning: 'ccw', arrows: ['v', 'F'] }, 'جسم يتحرك حركة دائرية.'), true);
   });
