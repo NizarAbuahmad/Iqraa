@@ -23,8 +23,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
-import { confirm } from '@/services/confirm';
 import { MaterialClassField } from './MaterialClassField';
+import { ReportProblemSheet } from './ReportProblemSheet';
 import { FeedbackWidget } from './FeedbackWidget';
 import { RelatedResourcesPanel } from './RelatedResourcesPanel';
 import { textOn } from '@/services/readableColor';
@@ -102,6 +102,7 @@ export function GeneratorResultActions({
     }
   };
   const [reported, setReported] = React.useState(false);
+  const [reportOpen, setReportOpen] = React.useState(false);
 
   // A new variantId means onRegenerate() already swapped in a fresh,
   // unreported artifact — the button must not still say "reported" for it.
@@ -121,25 +122,19 @@ export function GeneratorResultActions({
    * A failed report does NOT go on to regenerate — same reasoning as before:
    * the report has to fail visibly or not at all.
    */
-  const reportProblem = async () => {
+  const sendReport = async (reason: string) => {
     if (!variantId || reporting || reported) return;
-    const ok = await confirm({
-      title: t('reportArtifactTitle'),
-      message: t('reportArtifactMsg'),
-      confirmLabel: t('reportArtifactConfirm'),
-      cancelLabel: t('cancel'),
-      destructive: true,
-    });
-    if (!ok) return;
     setReporting(true);
     try {
-      const queued = await remoteAIService.reportVariant(variantId);
+      const queued = await remoteAIService.reportVariant(variantId, reason);
+      setReportOpen(false);
       // Already gone (retired by an earlier approval) counts as done — the
       // teacher wanted it out of circulation and it already is.
       onToast(queued ? t('reportArtifactDone') : t('reportArtifactGone'));
       setReported(true);
       onRegenerate();
     } catch {
+      // Left open on purpose: what the teacher typed is still in the box.
       onToast(t('reportArtifactFailed'));
     } finally {
       setReporting(false);
@@ -221,7 +216,7 @@ export function GeneratorResultActions({
             the only one that affects other teachers' material. */}
         {!!variantId && (
           <Pressable
-            onPress={reportProblem}
+            onPress={() => setReportOpen(true)}
             disabled={reporting || reported}
             style={({ pressed }) => [
               styles.actionBtn,
@@ -240,6 +235,13 @@ export function GeneratorResultActions({
           </Pressable>
         )}
       </View>
+
+      <ReportProblemSheet
+        visible={reportOpen}
+        busy={reporting}
+        onClose={() => setReportOpen(false)}
+        onSubmit={(reason) => { void sendReport(reason); }}
+      />
 
       <FeedbackWidget materialType={materialType} toolId={toolId} />
       {hideRelated ? null : <RelatedResourcesPanel toolId={toolId} topic={topic} isRTL={isRTL} />}

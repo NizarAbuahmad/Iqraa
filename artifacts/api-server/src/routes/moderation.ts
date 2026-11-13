@@ -319,6 +319,8 @@ router.get(
           status: aiArtifactReports.status,
           createdAt: aiArtifactReports.createdAt,
           artifactId: aiArtifactReports.artifactId,
+          // What the reporter said was wrong — "" when they gave no reason.
+          reason: aiArtifactReports.reason,
           kind: aiArtifacts.kind,
           lessonRef: aiArtifacts.lessonRef,
           language: aiArtifacts.language,
