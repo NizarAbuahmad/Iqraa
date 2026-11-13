@@ -188,7 +188,7 @@ function solveMissing(eq: string): number {
   return op === '+' ? other - k : op === '−' ? k - other : op === '×' ? other / k : k / other;
 }
 
-const PLACE = ['الآحاد', 'العشرات', 'المئات', 'الألوف', 'عشرات الألوف', 'مئات الألوف', 'الملايين'];
+const PLACE = ['الآحاد', 'العشرات', 'المئات', 'الألوف', 'عشرات الألوف', 'مئات الألوف', 'الملايين', 'عشرات الملايين'];
 const listOf = (p: string) => p.slice(p.lastIndexOf(':') + 1).replace(/[؟.]\s*$/, '').split('،').map(x => x.trim());
 
 /** [kind, expected answer] from the Arabic stem alone. */
@@ -393,13 +393,65 @@ describe('place value reaches the range the lesson names', () => {
     }
     return [lo, hi];
   };
-  it('Grade 4 asks about 4- to 6-digit numbers, Grade 5 up to 7', () => {
+  it('Grade 4 asks about 4- to 6-digit numbers', () => {
     assert.deepEqual(widest(4, 'easy'), [4, 4]);
     assert.equal(widest(4, 'hard')[1], 6);
-    assert.equal(widest(5, 'hard')[1], 7);
+  });
+  it('Grade 5 («ضمن الملايين») reaches the millions on a medium paper', () => {
+    // A medium Grade 5 paper stopped at 6 digits, so it never named a million
+    // (Grade 5 audit, 2026-11-13). The book's own example is 8924080.
+    assert.equal(widest(5, 'medium')[1], 7);
+    assert.equal(widest(5, 'hard')[1], 8);
+    assert.ok(widest(5, 'easy')[0] >= 5);
   });
   it('Grades 1–3 keep their ranges', () => {
     assert.ok(widest(2, 'hard')[1] <= 3);
     assert.ok(widest(3, 'hard')[1] <= 4);
+  });
+});
+
+describe('Grade 5 multiplies and divides the sizes its lessons name', () => {
+  // «ضرب الأعداد» names up to 3 digits × 2 digits and «قسمة الأعداد» a divisor of
+  // one or two digits, but a Grade 5 paper drew «4 × 16» and «63 ÷ 3»: divisors
+  // stopped at 10 and the 2-digit factor only met another on hard (Grade 5
+  // audit, 2026-11-13).
+  /** The two factors (×) or the dividend and divisor (÷) an item works with, from its key. */
+  const operands = (item: ConcreteItem, op: '×' | '÷'): [number, number] | null => {
+    const e = item.eq.replace(/^word:/, '');
+    let m: RegExpMatchArray | null;
+    if (op === '×') {
+      if ((m = e.match(/^(\d+) × (\d+)$/))) return [Number(m[1]), Number(m[2])];
+      if ((m = e.match(/^(\d+) × ؟ = (\d+)$/)) || (m = e.match(/^؟ × (\d+) = (\d+)$/))) return [Number(m[1]), Number(m[2]) / Number(m[1])];
+      return null;
+    }
+    if ((m = e.match(/^(\d+) ÷ (\d+)$/))) return [Number(m[1]), Number(m[2])];
+    if ((m = e.match(/^(\d+) ÷ ؟ = (\d+)$/))) return [Number(m[1]), Number(m[1]) / Number(m[2])];
+    if ((m = e.match(/^؟ ÷ (\d+) = (\d+)$/))) return [Number(m[1]) * Number(m[2]), Number(m[1])];
+    if ((m = e.match(/^(\d+) × (\d+) = (\d+) → /))) return [Number(m[3]), Number(m[1])];
+    return null;
+  };
+  const sizes = (title: string, op: '×' | '÷', grade: number) =>
+    draws(title, grade).flatMap((item, i) => { const o = operands(item, op); return o ? [{ o, diff: (['easy', 'medium', 'hard'] as const)[i % 3] }] : []; });
+
+  it('multiplication: a 3-digit by a 2-digit factor, never past it', () => {
+    const got = sizes('ضرب الأعداد', '×', 5);
+    assert.ok(got.length > 60, String(got.length));
+    const big = (o: [number, number]) => Math.max(...o), small = (o: [number, number]) => Math.min(...o);
+    assert.ok(got.some(g => big(g.o) >= 100 && small(g.o) >= 11), '3-digit × 2-digit never drawn');
+    assert.ok(got.some(g => g.diff === 'medium' && big(g.o) >= 100), 'medium never reaches 3 digits');
+    for (const g of got) assert.ok(big(g.o) <= 999 && small(g.o) <= 99, `${g.o.join(' × ')}`);
+  });
+
+  it('division: a divisor of one or two digits, a dividend of at most 3 digits', () => {
+    const got = sizes('قسمة الأعداد', '÷', 5);
+    assert.ok(got.length > 40, String(got.length));
+    assert.ok(got.some(g => g.o[1] >= 11 && g.diff !== 'hard'), 'no 2-digit divisor below hard');
+    assert.ok(got.some(g => g.o[1] <= 9), 'no 1-digit divisor');
+    for (const g of got) assert.ok(g.o[0] <= 999 && g.o[1] <= 99 && Number.isInteger(g.o[0] / g.o[1]), `${g.o.join(' ÷ ')}`);
+  });
+
+  it('Grade 4 keeps its sizes', () => {
+    for (const g of sizes('ضرب الأعداد', '×', 4)) assert.ok(Math.max(...g.o) <= 99, g.o.join(' × '));
+    for (const g of sizes('قسمة الأعداد', '÷', 4)) assert.ok(g.o[1] <= 10, g.o.join(' ÷ '));
   });
 });

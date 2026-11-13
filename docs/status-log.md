@@ -10,6 +10,83 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 5 review: book pages on the right lessons, offline maths for five more lessons, and the sizes Grade 5 names — 2026-11-13
+
+The first review of Grade 5 against its books. It covers 317 lessons in 18 catalogs: Arabic, Islamic, maths,
+science, social studies, PE, vocational and English in both semesters, and arts and digital literacy in S1 only. The
+method was the same as for Grades 1–4.
+
+**Generators (offline), all 317 lessons.**
+- Grounding by lesson id is exact for every lesson, and no screen lands on another subject.
+- Only maths has offline banks, as in every grade. Before this change, 45 of its 52 lessons served a paper. I read
+  every question of every maths quiz.
+- The keys are right. The checker's 21 «wrong» and 7 «unsolvable» flags are its own misreads: fractions compared as
+  decimals, four-digit «أكبر عدد» items read as three digits, and true/false items.
+- **Fixed: Grade 5 drew Grade 4 sizes.**
+  - «القيمة المنزلية ضمن الملايين» never passed 6 digits on a medium paper. Grade 5 now draws 6/7/8 digits, and
+    «عشرات الملايين» joins the place names. The book's unit opener uses 8924080.
+  - «ضرب الأعداد» names up to 3 digits × 2 digits but drew «4 × 16» and «12 × 6». Papers now draw 2-digit × 1-digit
+    on easy, 3-digit × 1-digit or 2-digit × 2-digit on medium, and 3-digit × 2-digit on hard. With a 3-digit
+    factor there is no «735 + 735 + … = ؟ × 735».
+  - «قسمة الأعداد» names a divisor of one or two digits, but no divisor was ever above 10. A dividend now has at most
+    3 digits, and the divisor is two digits on half the medium papers and on all hard ones.
+  - Grades 4 and 6 are unchanged (`elementary.test.ts` «Grade 5 multiplies and divides the sizes its lessons name»).
+- **Fixed for every grade:** the direct × word problem printed «في الصف 25 صفوف … 23 مقاعد», breaking Arabic
+  number agreement past 10. It now goes through `counted()`, and a 3-digit factor gets a story about a store of pens
+  rather than a hall with 345 rows.
+- **New:** `lib/math-practice/src/g5.ts` serves the five lessons that threw `NoQuestionBankError`, each with answers
+  recomputed from the stem in `g5.test.ts`:
+  - «الضرب الذهني»: zeros, a missing factor, doubling, halving and doubling, the distributive property.
+  - «المضلعات»: name ↔ sides, vertices, perimeter ↔ side, «ليس مضلعًا».
+  - «السؤال الإحصائي»: which question is statistical, yes/no, the most frequent answer in a list of answers.
+  - «التمثيل بالخطوط» and «التمثيل بالأعمدة المزدوجة»: the graph's values are given in words.
+  - The two «خطة حل المسألة» lessons stay unserved, as in Grades 3 and 4.
+- **Weak, not fixed:**
+  - «تصنيف الأشكال الرباعية» runs out at 5 questions of 10.
+  - «قسمة الكسور» can print «2/2» and «3/3».
+  - «يمثّل المقدار 6n + 4 … إذا اشترى 2 من الكتب».
+  - Triangles are named ABC, the convention across the whole bank.
+
+**Book pages: 149 entries → 155. There are 46 changes: 7 new entries and one removed.**
+- **How they were found.** For maths, Arabic, Islamic and PE, I read the books' own per-page text in
+  `lib/curriculum/src/data/extracted/`, looking for lesson openers, «اختبار نهاية الوحدة», unit openers,
+  «حصاد الوحدة» and blank pages. Social studies and science have a reversed text layer, so I read every page
+  of their 10 + 1 entries as images.
+- **Social studies was filed by title and was mostly wrong.**
+  - «الملك وصلاحياته الدستورية» showed pp. 40–59: the middle of «السلطة التنفيذية», «السلطة القضائية» and the
+    Amman trip.
+  - «التكافل المجتمعي» ran 18 pages, through unit 2's first three lessons.
+  - In S2, «الإنجازات الحضارية» held «الدولة الأردنية» and the start of unit 6, and «مفاهيم اقتصادية» showed
+    pages of «قطاع الخدمات».
+  - Each now reads its own pages, through `rendered` where the pages sit in another lesson's folder.
+  - Five lessons gain pages they had in a folder: «السلطة التشريعية», «السلطة القضائية», «رحلتي في محافظة
+    العاصمة» and «مفهوم الثقافة» (S1/S2), plus maths «مقارنة الكسور» (pp. 81–85, which sat inside «الأعداد
+    الكسرية»).
+  - Two lessons had their first page cut into the previous lesson's folder, so they now start one page late:
+    «التكافل المجتمعي» at p. 22 and «نظام تحديد الموقع العالمي» at p. 60.
+- **Science S2 «السرعة» showed no page of «السرعة».** Its folder holds «الجهاز التنفسي، وجهاز الدوران» (pp. 31–35),
+  «الجهاز الهيكلي، والجهاز العضلي» (pp. 36–39) and the opening of the matter unit. Those two lessons now read it, and
+  «السرعة» has no pages.
+- **Unit ends that ran on, 29 trims:**
+  - Arabic: 10, each now ending on «حصاد الوحدة» rather than the next unit's cover and «كفايات» page.
+  - Islamic: 8, cutting the next unit's lessons page and blank closing pages.
+  - PE: 6, cutting the next unit's opener and the «جائزة الملك عبد الله الثاني للياقة البدنية» appendix.
+  - Maths S1: 5, cutting the unit test and the next unit's opener.
+- **Pinned:** `bookPage.test.ts` «Grade 5 pages (audit 2026-11-13)». It fails on the old data and passes on the new.
+- **Figures:** science is the only Grade 5 subject with figures, and its 61 lesson figures sit on their own lessons.
+  Two come from review pages: p. 48 is a nearly empty «تقويم الأداء» box filed under fungi, and p. 101 is an
+  earth-layers diagram filed under weather. They are left, because the index is generated.
+
+**Not covered, and why:**
+- Maths S2, science S1, English, arts, digital literacy and vocational have no page images. Nothing can be added
+  without the PDFs, and NCCD resets connections from this container.
+- Eight lessons have pages that only partly sit in a folder, and are left without pages rather than shown half:
+  social S1 «السلطة التنفيذية» (p. 39 in one folder, pp. 40–41 in another) and «رحلتي في محافظة معان»; social S2
+  «الدولة الأردنية», «قطاع التجارة», «قطاع الخدمات» and «دول وادي النيل»; science «الجهاز الهضمي» and «الخصائص
+  الفيزيائية للمواد».
+- Arts and digital literacy are in the catalog for S1 only. Whether the books have an S2 could not be checked.
+- **Not run:** the pages on a phone, and live AI.
+
 ## Grade 4, second pass: generator output, page ends, and place value up to hundred thousands — 2026-11-13
 
 The earlier Grade 4 review (below, «Grade 4 review: every book's lessons are in…») covered coverage, retrieval and
