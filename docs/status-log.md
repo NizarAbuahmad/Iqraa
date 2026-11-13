@@ -67,6 +67,233 @@ RTL and dark mode.
 not signed R2 links (the route itself is covered by the API's own tests). Whether replay masking hides the photos is
 unverified, as for the student's and the teacher's project screens (STATUS.md, «Screen recording»).
 
+## Grade 9 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
+
+The Grade 6–8 review («Grade 8 audit…»), repeated for all of Grade 9 (423 lessons). It complements «Grade 9 checked
+against its books, and corrected» (below), which read the catalogue against the extracted text; this one looks at every
+served page image and every figure from the public bucket. Printed page = PDF page in every book except English (PDF = printed + 2).
+
+**Book pages.**
+- **Arabic S2 was shifted:** 25 of its 25 lessons started on an earlier lesson's pages (u6_l1 opened on the unit
+  opener; u10_l5 held the unit 10 opener and all four other unit 10 lessons and none of «التوكيد»).
+- **Civic Education S2: all 11 ranges were wrong** (unit openers, reviews, other lessons).
+- **History S2:** every range showed a different lesson (u5_l3 Ibn Battuta showed «أروى الصليحي»).
+- **Geography S2 unit 6** was a lesson off (Africa showed Asia; Asia had none).
+- **Unit-final lessons in every subject ran on** into «حصاد الوحدة», unit tests, reviews, enrichment, the next opener or
+  the glossary. Maths S1 u1_l1 held all of u1_l2; biology S2 u4_l1 held u4_l2; physics S1 u1_l3 ran into u2_l1. English
+  u5_l7 and u10_l7 ran 20 pages through the back matter, and four writing lessons into LIFE SKILLS spreads.
+- **Fix:** the `rendered` mechanism — 129 ranges corrected from images already cut, eight lessons newly served from pages
+  another lesson's folder holds (geo S2 u6_l1, history S1 u1_l2 and u2_l4, history S2 u4_l5, u5_l1, u5_l4 and u5_l5, maths
+  S2 u5_lab). Five lose pages that showed nothing of their own: Arabic S2 u8_l5, u9_l1, u10_l5 (their right pages were
+  never cut), history S2 u5_l3 (its pages are somewhere in 51–56, never cut) and PE S2 u7_l4 (its pages 33–35 never cut;
+  it showed nothing before either). Three English lessons keep only the part of their right range that is cut (S2 u6_l7
+  p15 of 14–15, u7_l7 p27 of 26–27, u8_l1 p29 of 28–29). 358 of 423 lessons have pages, up from 354. Every changed URL
+  (820) answered 200; corrected openers were viewed against their catalogue titles.
+- **PE:** the one-page «نهاية الوحدة» checklist is left out of each unit's last lesson, as the digital unit summary is.
+- **To render from the PDFs** (pages never cut): Arabic S2 u8_l5 75–78, u9_l1 82–84, u10_l5 124–130; English S2 u6_l7
+  14–15, u7_l7 26–27, u8_l1 28–29; PE S2 u7_l4 33–35; history S2 u4_l1–l4 (8–25) and u5_l2–l3 (51–56). Vocational and
+  art (55 lessons) have no page images at all.
+
+**Contents.** Every book matches its catalogue where its contents or openers could be seen. Small differences: PE S1 u1_l2
+is printed «التمويهُ» (catalogue «التمويةُ»); history S2 prints «أروى الصُلَيحيّ (1048 - 1138م)» (catalogue
+«أروى الصُلَيْحيّةُ»); Digital Skills S2's printed contents page numbers are 2–4 pages stale (the ranges follow the real
+pages). Lesson ranges name the finance books `g9-finlit-s*`, the extracted text `g9-financial-literacy-s*`.
+
+**Honorifics (Islamic) — fixed.** Two lesson titles put «ﷺ» after the Companions; the book prints «رضي الله عنهم»: S1
+u4_l5 «منْ أعلامِ الصحابةِ … على ثَرى الأردنِّ» (p100) and S2 u1_l6 «شهداءُ منَ الصحابةِ الكرامِ … على ثرى الأردنِّ» (p38).
+The others all follow the Prophet.
+
+**Figures.** Merged with «Grade 9 figures: unit-opening pages…» (#1445, below), which landed first: its placements stand
+(the opening-experiment and unit-opener figures go to the next unit's lesson 1, English LIFE SKILLS and Spot pages are
+unmapped, not deleted), and the rest of this plan applies around them — 62 dropped, 2 moved, none newly reachable:
+- **Dropped:** every figure from a unit test, unit review, enrichment page or unit project
+  page that was filed under the wrong lesson (maths 19, sciences 32, geography 1), plus mostly-text or cut-apart crops (maths 8, biology S1 p036, geography S1 p041-v2). Maths S1 p076-v2 belongs to
+  u2_lab, which has no figure-map entry, so it is dropped rather than mapped.
+- **Moved:** maths S2 p039b → u5_l4 (its lead-in activity), English S2 p026-v2 → u7_l7 (its first page).
+- Minor crop flaws stay.
+
+**Results.** Offline maths covers all 32 Grade 9 maths lessons; every sampled key (three per lesson) was checked by hand
+and is correct.
+
+**Verified:** `bookFigures`, `bookPage`, `bookFigureAssets` tests, curriculum test and verify, typecheck.
+**Not verified:** the pages on a phone; anything needing the PDFs; live grounding text.
+
+## Grade 10 maths: lesson-specific offline questions for thin and empty lessons — 2026-11-13
+
+Offline (live AI off), a Grade 10 maths lesson's questions come from `takeConcreteMath`
+(`lib/math-practice/src/index.ts`), which maps the lesson to a bank *family* shared with its sibling lessons.
+
+**What was thin (measured before the change, one session, `allowRepeat=false`, mobile `takeConcreteMath`
+with the real KB lesson):**
+- «قانون الجيوب» (u4_l2) and «قانون جيب التمام» (u4_l3) shared `trig_apps`: **3 items** in all (one sine
+  rule, one cosine rule, one area), so a sine-rule quiz held 3 questions, one of them on the cosine rule.
+- «النسب المثلثية» (u3_l1), «… ضمن الدورة الواحدة» (u3_l2) and «حل المعادلات المثلثية» (u3_l4) shared
+  `trig`: **6 items**, ratios and equations mixed.
+- «معادلة الدائرة» (u2_l4) got `circle`: 5 items, half of them arc length and area (another lesson).
+- «تمثيل الاقترانات المثلثية» (u3_l3), «حل مسائل ثلاثية الأبعاد» (u4_l5), «اقترانات كثيرات الحدود»
+  (u5_l1), «قسمة كثيرات الحدود والاقترانات النسبية» (u5_l2): **nothing** (no family, no generator).
+- The API's mock evaluation generator was the same or worse: it reaches the bank with the *objective's
+  wording*, so «حل مسائل ثلاثية الأبعاد» was served trigonometry-ratio items (an objective mentions «النسب
+  المثلثية») and a 10-question «قانون الجيوب» paper came back with 4 questions, 3 distinct.
+
+**What changed.**
+- `lib/math-practice/src/grade10.ts`: ten topic generators (`grades: [10, 10]`, `match` anchored to the
+  folded catalog title), one per lesson above, each asking what its student-book pages ask (S1 pp. 54-61,
+  66-95, 106-118, 124-129; S2 pp. 8-24 — the S2 lesson is titled «الاقترانات النسبية» in the book and
+  matches too), with 3–8 kinds each: centre/radius from the standard and general forms, the equation from
+  centre and radius or a point, tangent length; coterminal angles, ratios from a unit-circle point,
+  quadrantal angles, sin²+cos²=1; reference angles, exact values all the way round, the second angle with
+  the same ratio, the book's wheel h = a − a cos θ; graph symmetry, where y = k cuts the curve, max/min and
+  where, value at a point; a·f(x)+b=c for sin/cos/tan, a common factor (the book's «أكتشف الخطأ»: dividing
+  by sin x loses its roots), quadratics in sin/cos/tan; the sine rule for a side, a side after the angle sum,
+  an angle (only where the obtuse twin cannot fit); the cosine rule for a side, an angle, clock hands, two
+  ships; cuboid face and space diagonals, the diagonal–base angle to 0.1°, square-pyramid height; degree /
+  leading coefficient / constant of a polynomial written out of order, one coefficient of f ± g and of a
+  product, s(t) position and when at the origin; remainder, quotient (incl. the book's missing-term
+  dividend), domain, vertical/horizontal asymptotes of a/(x−b)+c and px/(x−b), the hole a common factor
+  leaves. Special angles only; triangles and solids chosen so lengths are whole or simple surds; whole
+  coefficients; distractors are real slips (sin↔cos, wrong quadrant, sign, forgetting the square root,
+  dividing out a factor).
+- Routing, scoped: `G10_LESSON_FIRST` lists exactly these ten ids. `takeConcreteMath` asks
+  `takeG10LessonMath` first (the lesson's title, as `topicForLesson` reads it) and only then the family — so
+  every other Grade 10 lesson keeps exactly today's bank behaviour. `mathBankCovers` is now true for the four
+  that had nothing.
+- API (`mockGenerator.ts` `bankMultipleChoice`): for a Grade 10 maths evaluation it tries
+  `takeG10LessonMath` with `objective.lessonTitleAr` before the existing bank call — the smallest change that
+  makes the API reach the same generators (the objective's wording matches no title).
+
+**Verified.** `lib/math-practice/src/__tests__/grade10Lessons.test.ts` (38 tests, written first and seen
+failing): each catalog title (read from the catalog JSON) reaches its own generator through
+`takeConcreteMath` with the real KB id, never a banked item, ≥10 distinct questions in one session (20/20
+measured on the mobile path for every lesson); every answer recomputed from its own stem by code sharing
+nothing with the generators (Math.sin/cos/tan, a 0°–359° sweep for the equations, its own polynomial
+parser and long division); every kind drawn; 3 distinct wrong options, none worth the answer, no
+hyphen-minus, no float residue, English stems too; the multiple-choice key is among the options; untouched
+lessons («حل المعادلة الأسية», «المتتاليات», «الاشتقاق», «الضرب القياسي», «تبسيط المقادير الأسية», typed
+«law of sines») still draw banked items. Two throwaway mutations (the sine quadrant rule, the cosine-rule
+sign) each failed the suite. API: four lessons now give ≥8 distinct, self-marking, validator-accepted
+questions on a 10-question paper; «حل المعادلة الأسية» stays on its family (test seen failing with the
+change disabled). Three mobile tests used «قانون الجيوب» as *the* thin bank (3 items) to pin the
+shortfall notice and the no-repeat short worksheet; they now use «المتجهات في المستوى الإحداثي» (`vectors`,
+5 items, all with working). Suites: math-practice 1023/1023, api-server 2919/2919, mobile 9248 pass /
+0 fail (10 skipped, as before), root typecheck clean. 100 generated questions (4–6 per lesson, two runs) read and every key checked by hand.
+
+**Not done / limits.** `takeSolvedMath` (worked examples) and the formats bank (`pickForFormat`) still use
+the families — «قانون الجيوب» still gets the one banked sine-rule worked example. **Side effect on wide
+worksheets:** a whole-semester-2 offline worksheet's first two slots are now «اقترانات كثيرات الحدود» and
+«قسمة كثيرات الحدود…» (covered now, but with no hand-checked working), so that paper opens with no worked
+example and no half-solved item — what semester 1 already did for its second slot. The wide-scope test that
+pinned the half-solved item now uses unit 6 (derivatives). Writing working for the new generators, or
+letting a wide paper take its example from the next lesson that has some, is a follow-up. The S1 student book's text
+layer is scrambled, so those lessons were followed from the readable parts (examples, exercise numbers,
+the book's tables) and the catalog objectives, not line by line. No ambiguous-case sine-rule items, no
+non-special angles (the book's calculator questions), no graphs drawn. No «ما الجديد» entry: offline
+question content, no new screen or tool. Generated items carry no `check` and are never `verified`.
+
+## Library review: admin edits move the lesson, a failed load is said, search knows the lesson, no semester tag — 2026-11-13
+
+A review of the Library (`/curriculum/resources`), its services, the staff screen (`/admin/library`) and
+`/library`. The screen was in good shape; these are the problems it found.
+
+**What changed.**
+- **Editing an item could not change its lesson.** `startEdit` filled title, category, cover and scope but not the
+  pickers, and `PATCH /library/:id` ignored `lessonId`. An admin who picked another lesson, or moved an item from a
+  lesson to a semester, got «تم الحفظ» and nothing moved (a semester was added *on top of* the lesson). The edit form
+  now shows the item's own lesson (blank if the KB no longer has it; saving then keeps the id), PATCH takes
+  `lessonId` (absent = unchanged, null or "" = none, otherwise `kbl-*` — `parseLessonIdPatch`), and grade/subject
+  pickers and the file/link inputs are hidden while editing, since PATCH changes neither. The resets on a grade or
+  subject change moved from effects into the pickers' handlers: the effect fired after «edit» and wiped the lesson.
+  The list under the form names subject and lesson instead of printing raw ids, and the edit hint names the grade
+  and subject the pickers no longer show. Deleting the item being edited leaves edit mode (its next save was a 404).
+- **The semester option is gone from the admin form.** Admins could file an item under «الفصل الأول/الثاني», and
+  nothing a teacher sees read it — no filter, no badge. Scope is now «كل الكتاب» or «درس محدد». Saving an edit sends
+  `semester: null`, so an old tag is cleared the next time its item is edited. The column and the API field stay
+  (dropping them is a destructive migration for no gain); nothing writes a semester from the app any more.
+- **A failed load read as an empty library.** `listLibrary` turns any failure into `[]`, so offline the screen said
+  «لا توجد موارد», and on first open it said so before the uploads arrived. The screen uses `listLibraryChecked`
+  (null on failure): a spinner while a grade with nothing else is loading, and a notice with «أعد المحاولة» when the
+  load fails. A refocus that fails while the grade's rows are already shown keeps them and says nothing. Retry
+  bumps a key the focus effect depends on, so every request is the effect's and is cancelled on a grade change (a
+  hand-fired retry could answer late and overwrite another grade's rows); a failure is held with its grade.
+  The duplicate fetch (`useEffect` next to `useFocusEffect`) is gone.
+- **Search knows the lesson and the subject.** `filterResources` takes `alsoMatch`; the screen passes each row's
+  lesson title and subject name in both languages, built once per list rather than per keystroke.
+- **Grade chips in order.** `MVP_GRADE_IDS` is append-only, so the chips read «…الثالث، الأول، الثاني».
+  `gradesForChips` sorts by level for display, and the starting grade is the first chip; the screen holds the grade
+  by id, so no persisted index moves.
+- Book-code rows name their subject (they have no grade; the screen's grade is used). The sheet lookup per row
+  is a cached map. A stale comment in `videoThumbnail.ts` pointed at a function that no longer exists.
+
+**Verified.** New cases in `resourceCatalog.test.ts` (search via `alsoMatch`), `libraryLayout.test.ts`
+(`gradesForChips`, and that it does not reorder its input) and the api-server `libraryResource.test.ts`
+(`parseLessonIdPatch`). `pnpm run typecheck`, the api-server suite (2,918 pass) and the mobile suite. In a browser
+(web build, API mocked through Playwright): chips read العاشر، التاسع، الثاني، الأول; a 500 on `/library` shows the
+notice and not the empty text; a request that never returns shows the spinner and not the empty text; a real empty
+list still shows the empty text; editing a lesson-scoped item shows that lesson, and switching it to «الفصل الأول»
+sends `{"semester":1,"lessonId":null}` (before the semester option was dropped). After it: no semester chips; a
+semester-tagged lesson item opens on its lesson and saves `{"semester":null,"lessonId":"kbl-…"}`; a teacher with
+grades 1 and 2 sees الثاني، الأول and starts on الثاني; a failed load, then «أعد المحاولة», shows the row and drops the
+notice.
+
+**Not done.**
+- Items already tagged with a semester keep the tag until edited; it is invisible either way.
+- PATCH accepts any `kbl-*` id; it does not check the lesson belongs to the item's grade and subject (the client
+  only offers those).
+- **Grades 1–9 have almost nothing built in.** Without staff uploads: grade 10 has 43 items (4 videos, 28 sheets,
+  11 book-code pages), grade 9 has 2, grades 1–8 have none. Production's uploads were not checked.
+- Uploaded videos without a cover still load the file on web (`preload='auto'`, up to 25 MB) to grab a frame, with
+  no cache. Uploads still have no English title (the English UI shows the Arabic one).
+- The PATCH route itself has no database test; only its parser is tested.
+
+## Grade 9 figures: unit-opening pages and the pages between English units — 2026-11-13
+
+A pass over grade 9 after «Grade 9 checked against its books, and corrected» (same day), for the two figure faults
+the grade 8 review found. That review's check (every figure inside its lesson's pages) cannot see either fault,
+because each starts with the lesson's page range being wrong.
+
+**What changed.**
+- **Unit-opening pages** (the figure extractor gives them to the last lesson of the unit before). Each was checked
+  by opening it and, where the book has text, reading the page:
+  - chemistry S1 `p035` (pH scale): from u1_l2 to u2_l1, acids and bases
+  - physics S1 `p065` (climbing stairs against a clock): to u3_l1, work and power
+  - geography S1 `p030` (ocean globe, two pages before the hydrosphere unit starts): to u2_l1
+  
+  The other 27 candidates are end-of-unit reviews, tests and projects, or English lesson pages. Those stay with
+  their unit.
+- **English pages between units, grade 9.** The books print two Life Skills pages after units 2 and 4 (S1) or 1
+  and 3 (S2), and Culture Spot, a reader and a project at the back. The photo extractor filed those photos under
+  the writing lesson before them, and that lesson's «صفحة الكتاب» ran into them.
+  - 6 photos now sit under no lesson: the Life Skills pages, plus the S1/S2 back matter.
+  - S2 `p028` (scientists, "Switch on") is on that unit's opening page. It moves to the unit's first lesson, with a
+    new hand-checked map row.
+  - 7 writing-lesson ranges trimmed to the lesson's own pages; every page was read from the book text. The two
+    last ones end at page 59, not 76 and 77.
+- **Grade 8 English: left as «Grade 8 audit…» (#1441) has it.** This PR first did the same for grade 8 (6 Life
+  Skills photos; the opening photos S1 `p016` and S2 `p028`–`p028d`; 6 ranges). #1441 landed first with the same
+  calls, and it drops those photos rather than unfiling them. Its files are kept as they are, and the two map rows
+  both PRs added are kept once. The tests here still pin grade 8's outcome.
+- **Grade 10 English** (same series, same layout):
+  - S1 `p026-v2`, `p027-v2`, `p048` and `p049` (Life Skills) and `p060-v2` (Culture Spot) now sit under no lesson.
+  - S2 `p038-v2`, `p038b` and `p038c` (Life Skills) and `p062` and `p063` (Culture Spot) now sit under no lesson.
+  - Six writing-lesson ranges are trimmed. S1 u5_l7 and S2 u10_l7 had run to page 77.
+  - No opening-page photo was misfiled.
+- **Grade 7 English** (Jordan Team Together, a different series with no Life Skills pages) needed no change of
+  this kind. Two S2 map rows point at u6_l7 and u7_l7, lessons the catalog does not carry, and the two photos
+  they should carry (`p027`, English in Action; `p043`, Literacy: Writing) are shown nowhere. They are **left as
+  the grade 7 audit left them**, on purpose: neither PNG is in `iqraa-public`, and `upload-figures-r2` uploads only
+  keys already in `bookFigureAssets.ts`. The order that works is: map them on a branch, run the upload from that
+  branch, then merge.
+
+**Verified.** Red/green on two new blocks in `bookFigures.test.ts`: English pages between units for grades 8–10
+(3 cases), and grade 9 opening pages (3 cases). Also run: `pnpm run typecheck`; the mobile suite; curriculum
+test and `verify`. The generated figure list only loses keys, so nothing new needs uploading to `iqraa-public`.
+
+**Not verified / open.** The geography page has no text in the repo; it was judged from the image and its place
+two pages before the unit. **Grade 8's `p076` (merged in #1433) has the upload problem described above**: it
+is mapped and listed but not yet uploaded, so its lesson shows a broken image until `upload-figures-r2` runs.
+Not looked at in the running app. The extractors are unchanged, so re-running them would bring these back.
+Everything the grade 9 review lists as needing the PDFs still does.
+
 ## Grade 3 review: Arabic S2 pages one lesson early, maths pages from their own lesson, calendar grammar — 2026-11-13
 
 The same review as Grades 1 and 2 (below), for Grade 3's 15 books and 254 lessons.
@@ -171,6 +398,29 @@ reaches live generation with no book text; that needs the PDFs.
 **Verified:** `bookFigures` (with #1433's Grade 8 cases), `bookPage`, `bookFigureAssets`, `lessonSlides`,
 `teachingPlanGrounding` (184), curriculum test (927) and verify (0 errors), typecheck.
 **Not verified:** the pages on a phone; anything needing the PDFs.
+
+## Grade 4 maths figures: 85 crops on 37 lessons, cut from the page renders — 2026-11-13
+
+Grade 4 maths had no figure crops at all, so its slides and lesson screens showed no number lines, protractors,
+symmetry axes, fraction strips, decimal grids, bar graphs or Venn diagrams. No PDF is reachable from a cloud session
+(nccd.gov.jo resets; `iqraa-media` refuses this environment's key), so the crops were cut from the 208 page renders
+already in `iqraa-public/book-pages/` (1400 px, our copy of each book) instead of from the PDF with
+`extract_book_figures.py`.
+
+**How.** Every lesson page was looked at on a 5% grid and each teaching picture boxed by hand (the box is then tightened
+to its drawn content against the box's own background, and a thin strip of ink separated by whitespace at an edge is
+dropped). Each crop was reviewed on a contact sheet; 20 boxes were adjusted and one (S2 p. 63, a ×3 pattern whose
+crop kept a sliver of the «أتحقق من فهمي» heading) dropped. Lesson = the lesson whose start page comes last before the
+crop's page, from the start-page tables the Grade 4 review checked against both books (concept-activity pages 8, 13,
+22, 32, 37, 51 belong to the lesson they introduce). Unit and lesson numbers are the catalog's, which the review found
+equal to the book's. `rect` is in PDF points scaled from the render (595.3 × 793.7). New: `knowledge-base/grade-4-math/
+figures/g4-math-s{1,2}-student-book/` (30 + 55 PNGs and `index.json`), 37 rows in `figure-lesson-map.json`,
+`bookFigures.ts` and `gen_book_figure_assets.mjs` list the two indexes, and `bookFigures.test.ts` knows the `g4-math`
+source prefix. The 85 PNGs were uploaded to `iqraa-public/figures/` (keys only added) and answer 200.
+
+**Not covered.** S1 unit 2-3 multiplication and division pages and S2 unit 8's equations lesson are worked layouts and
+tables with no picture worth a crop; units' opener art and unit tests were skipped on purpose. Crops from a 1400 px
+render are softer than PDF crops; re-cutting them from the PDF with the same boxes is possible when one is at hand.
 
 ## Grade 1 review: book pages on the wrong unit, tens and two-digit lessons, and an older Islamic edition — 2026-11-13
 
