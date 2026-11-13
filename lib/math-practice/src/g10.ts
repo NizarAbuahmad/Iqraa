@@ -87,6 +87,9 @@ const roots = (xs: readonly number[]) => [...new Set(xs)].sort((a, b) => a - b).
 /** `wrongsFrom` with a fallback that never runs dry for list-shaped answers. */
 const wr = (answer: string, cands: ReadonlyArray<string | number>, near: (k: number) => string) => wrongsFrom(answer, [...cands], near);
 
+/** «x − 3», «x + 4», or «x» for 0. */
+const linear = (r: number) => poly([1, -r]);
+
 const sq = (n: number) => n * n;
 
 // ─── «حل معادلات خاصة» ───────────────────────────────────────────────────────
@@ -558,17 +561,15 @@ const polyFn = T('poly_fn', /^اقترانات كثيرات الحدود$/, [10,
   const signSlip = polyMul([1, p], [1, b, c]);
   const dropped = [1, b - p, c - p * b];
   return {
-    eq: `(x ${p < 0 ? '+' : '−'} ${Math.abs(p)})(x² ${b < 0 ? '−' : '+'} ${Math.abs(b)}x ${c < 0 ? '−' : '+'} ${Math.abs(c)})`, answer,
+    eq: `(${linear(p)})(${poly([1, b, c])})`, answer,
     wrongs: wr(answer, [poly(noCross), poly(signSlip), poly(dropped), poly([1, b - p, c + p * b, -p * c])], j => poly([1, b - p + j, c - p * b, -p * c])),
-    ar: `أجد ناتج (x ${p < 0 ? '+' : '−'} ${Math.abs(p)})(x² ${b < 0 ? '−' : '+'} ${Math.abs(b)}x ${c < 0 ? '−' : '+'} ${Math.abs(c)}) بالصورة القياسية.`,
-    en: `Find (x ${p < 0 ? '+' : '−'} ${Math.abs(p)})(x² ${b < 0 ? '−' : '+'} ${Math.abs(b)}x ${c < 0 ? '−' : '+'} ${Math.abs(c)}) in standard form.`,
+    ar: `أجد ناتج (${linear(p)})(${poly([1, b, c])}) بالصورة القياسية.`,
+    en: `Find (${linear(p)})(${poly([1, b, c])}) in standard form.`,
   };
 });
 
 // ─── «الاقترانات النسبية» ─────────────────────────────────────────────────────
 
-/** «x − 3», «x + 4», or «x» for 0. */
-const linear = (r: number) => poly([1, -r]);
 /** The fraction written the way a line of text can hold it. */
 const frac = (num: string, den: string) => `(${num})/(${den})`;
 
