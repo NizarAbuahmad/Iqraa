@@ -300,3 +300,40 @@ describe('runLessonFlowFrom — retry after failure', () => {
     assert.ok(result.exitTicket);
   });
 });
+
+/**
+ * A science lesson's key terms (`AIRequest.keyTerms`) are a checklist for the
+ * question steps only. The lesson plan and the activities ignore them, so
+ * sending them there would only move those artifacts' cache keys.
+ */
+describe('runLessonFlowFrom — key terms reach the question steps only', () => {
+  function makeRecordingAI() {
+    const seen: Array<{ call: string; req: AIRequest }> = [];
+    const ok = makeWorkingAI();
+    const ai: RunnerAIService = {
+      generateLessonPlan: async (req) => { seen.push({ call: 'plan', req }); return ok.generateLessonPlan(req); },
+      generateActivity: async (req) => { seen.push({ call: `activity:${req.activityVariant}`, req }); return ok.generateActivity(req); },
+      generateWorksheet: async (req) => { seen.push({ call: 'worksheet', req }); return ok.generateWorksheet(req); },
+      generateQuiz: async (req) => { seen.push({ call: 'quiz', req }); return ok.generateQuiz(req); },
+    };
+    return { ai, seen };
+  }
+  const TERMS = ['المقذوفات', 'زمن التحليق', 'المدى الأفقي'];
+
+  it('sends the terms with the worksheet and the exit ticket, and nowhere else', async () => {
+    const { ai, seen } = makeRecordingAI();
+    await runLessonFlowFrom('objectives', { ...BASE_REQ, keyTerms: TERMS }, ai, {}, makeCallbacks().callbacks);
+    const withTerms = seen.filter(s => 'keyTerms' in s.req).map(s => s.call);
+    assert.deepEqual(withTerms, ['worksheet', 'quiz']);
+    for (const s of seen.filter(s => s.call === 'worksheet' || s.call === 'quiz')) {
+      assert.deepEqual(s.req.keyTerms, TERMS);
+    }
+  });
+
+  it('leaves every request unchanged when there are no terms', async () => {
+    const { ai, seen } = makeRecordingAI();
+    await runLessonFlowFrom('objectives', BASE_REQ, ai, {}, makeCallbacks().callbacks);
+    assert.equal(seen.length, 5);
+    assert.ok(seen.every(s => !('keyTerms' in s.req)));
+  });
+});

@@ -23,7 +23,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { getT } from '@/services/i18n';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { groundingRequestFields, resolveGeneratorGrounding } from '@/services/kbContext';
+import { groundingRequestFields, keyTermsField, resolveGeneratorGrounding, scienceKeyTerms } from '@/services/kbContext';
 import { isolateForeignRuns } from '@/services/mathRender';
 import {
   ActivityOutput,
@@ -273,12 +273,16 @@ export default function LessonFlowScreen() {
         // question steps off any slot plan (`questionStepFields`).
         req = { grade, subject, topic: wide.label, language, duration, ...wide.request.fields };
       } else {
+        const grounding = groundTopic(topic);
         req = {
           grade, subject, topic, language, duration,
-          ...groundingRequestFields(groundTopic(topic)),
+          ...groundingRequestFields(grounding),
           // Every step of the flow is built from the lesson alone, so each one
           // can be served from — and fill — the shared pool.
           contextSource: 'curriculum' as const,
+          // The lesson's book terms, physics and chemistry only — see AIRequest.keyTerms.
+          // The runner sends them with the worksheet and exit ticket only.
+          ...keyTermsField(scienceKeyTerms(grounding.lesson, lang === 'ar' ? 'ar' : 'en')),
         };
       }
 

@@ -100,10 +100,16 @@ export class LessonFlowStepError extends Error {
  * explicitly because the offline planner reads an absent one as `balanced`.
  *
  * `{}` for a single-lesson request, so its body is exactly what it was.
+ *
+ * A science lesson's key terms (`AIRequest.keyTerms`) also ride here: they are
+ * a checklist the worksheet and quiz prompts cover, and the runner strips them
+ * from every other step (`runLessonFlowFrom`), whose prompts ignore them and
+ * whose cache keys they would only move.
  */
-export function questionStepFields(req: AIRequest): Pick<AIRequest, 'distribution' | 'coverage'> {
-  if (!req.scope || !req.coverage?.lessons?.length) return {};
-  return { distribution: 'random', coverage: { lessons: req.coverage.lessons } };
+export function questionStepFields(req: AIRequest): Pick<AIRequest, 'distribution' | 'coverage' | 'keyTerms'> {
+  const terms = req.keyTerms?.length ? { keyTerms: req.keyTerms } : {};
+  if (!req.scope || !req.coverage?.lessons?.length) return terms;
+  return { ...terms, distribution: 'random', coverage: { lessons: req.coverage.lessons } };
 }
 
 // ─── Runner ───────────────────────────────────────────────────────────────────
@@ -118,11 +124,13 @@ export function questionStepFields(req: AIRequest): Pick<AIRequest, 'distributio
  */
 export async function runLessonFlowFrom(
   startKey: StepKey,
-  req: AIRequest,
+  fullReq: AIRequest,
   aiService: RunnerAIService,
   prior: LessonFlowPrior,
   callbacks: StepCallbacks,
 ): Promise<LessonFlowPrior> {
+  // Key terms go to the question steps only, through `questionStepFields(fullReq)`.
+  const { keyTerms: _questionStepsOnly, ...req } = fullReq;
   const acc: LessonFlowPrior = { ...prior };
   const startIdx = STEP_ORDER.indexOf(startKey);
 
@@ -178,7 +186,7 @@ export async function runLessonFlowFrom(
           const worksheet = await aiService.generateWorksheet({
             ...req,
             numQuestions: 5,
-            ...questionStepFields(req),
+            ...questionStepFields(fullReq),
           });
           acc.worksheet = worksheet;
           callbacks.onStepDone(key, { worksheet });
@@ -188,7 +196,7 @@ export async function runLessonFlowFrom(
           const exitTicket = await aiService.generateQuiz({
             ...req,
             numQuestions: 3,
-            ...questionStepFields(req),
+            ...questionStepFields(fullReq),
           });
           acc.exitTicket = exitTicket;
           callbacks.onStepDone(key, { exitTicket });

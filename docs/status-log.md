@@ -61,9 +61,12 @@ each red before green.
   model will follow these rules is unconfirmed.
 - No app or browser check of the screens.
 - The offline generators are unchanged, so an offline paper (live AI off or fallen back) can still skip a term. Chat
-  (`chatArtifacts.ts`), the CQV batch homework paths and lesson-flow (its worksheet and exit-ticket quiz go through
-  `groundingRequestFields`: `app/ai-tools/lesson-flow.tsx`, `services/lessonFlowRunner.ts`) send no terms, so a
-  physics lesson there keeps the old prompts.
+  (`chatArtifacts.ts`) and the CQV batch homework paths send no terms, so a physics lesson there keeps the old
+  prompts.
+- Lesson-flow (`app/ai-tools/lesson-flow.tsx`) sends a single lesson's terms on its shared request, and
+  `runLessonFlowFrom` (`services/ai/lessonFlowRunner.ts`) strips them from the lesson-plan, warm-up and activity
+  calls and hands them back to the worksheet and exit-ticket quiz only (`questionStepFields`), so those other
+  artifacts keep their cache keys. A science lesson's lesson-flow worksheet and exit ticket regenerate once.
 - A lesson with more than 12 terms (`kbl-g9-chem-s2-nccd-u4_l1` has 13) sends only the first 12; five lessons send
   9–12 terms and are told to group them into at most 8 concepts.
 - Known matcher limits (log noise only, nothing is removed by it): plural/construct forms (الموجات vs موجة), ؤ/ئ,
