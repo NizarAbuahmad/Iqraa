@@ -909,7 +909,6 @@ export const BOOK_FIGURE_KEYS: ReadonlySet<string> = new Set([
   'g8-english-s1-student-book/p057b-v2.png',
   'g8-english-s1-student-book/p057c.png',
   'g8-english-s1-student-book/p058.png',
-  'g8-english-s1-student-book/p061-v2.png',
   'g8-english-s2-student-book/p008-v2.png',
   'g8-english-s2-student-book/p010-v2.png',
   'g8-english-s2-student-book/p012.png',
@@ -939,10 +938,6 @@ export const BOOK_FIGURE_KEYS: ReadonlySet<string> = new Set([
   'g8-english-s2-student-book/p059.png',
   'g8-english-s2-student-book/p059b.png',
   'g8-english-s2-student-book/p059c.png',
-  'g8-english-s2-student-book/p060.png',
-  'g8-english-s2-student-book/p062.png',
-  'g8-english-s2-student-book/p062b.png',
-  'g8-english-s2-student-book/p065.png',
   'g8-finlit-s1-student-book/p020-v2.png',
   'g8-finlit-s1-student-book/p020b-v2.png',
   'g8-finlit-s1-student-book/p024-v2.png',
@@ -1007,6 +1002,7 @@ export const BOOK_FIGURE_KEYS: ReadonlySet<string> = new Set([
   'g8-math-s2-student-book/p065-v2.png',
   'g8-math-s2-student-book/p066-v2.png',
   'g8-math-s2-student-book/p069b-v2.png',
+  'g8-math-s2-student-book/p076.png',
   'g8-math-s2-student-book/p078-v2.png',
   'g8-math-s2-student-book/p084b-v2.png',
   'g8-math-s2-student-book/p086-v2.png',
@@ -1244,7 +1240,6 @@ export const BOOK_FIGURE_KEYS: ReadonlySet<string> = new Set([
   'g8-social-s2-student-book/p142-v2.png',
   'g8-social-s2-student-book/p143.png',
   'g8-social-s2-student-book/p144.png',
-  'g8-voc-s1-student-book/p006b.png',
   'g8-voc-s1-student-book/p010-v2.png',
   'g8-voc-s1-student-book/p012b-v2.png',
   'g8-voc-s1-student-book/p021.png',
@@ -2241,4 +2236,4 @@ export const BOOK_FIGURE_KEYS: ReadonlySet<string> = new Set([
 ]);
 
 /** How many figures the app can reach. Asserted by the drift test. */
-export const BOOK_FIGURE_COUNT = 2221;
+export const BOOK_FIGURE_COUNT = 2216;
