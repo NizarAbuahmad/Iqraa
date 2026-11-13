@@ -3,7 +3,7 @@
  * Every number comes from `FIGURE_LIMITS`, so the prompt cannot drift from the
  * gate; the examples are tested against the gate.
  */
-import { FIGURE_LIMITS as L } from "@workspace/figure";
+import { FIGURE_LIMITS as L, PHYSICS_UNITS, SCENE_LIMITS as S } from "@workspace/figure";
 
 const EXAMPLES = [
   '{"kind":"function-graph","functions":[{"expr":"x^2 - 4","label":"f"}],"x":[-3,3],"points":[{"at":1,"label":"A"}]}',
@@ -31,5 +31,53 @@ export function figureFormatAr(): string {
     "الوسم من 1 إلى 3 أحرف، ويجوز أن يليها رقم واحد أو شرطة عليا (A، u، f، v1، B'). لا تكتب في الوسم قيمةً أو إحداثيات أو معادلة، ولا كلمة تدل على عدد (ستة، عشر، six): الرسم يُعرض على الطالب ويجب ألّا يكشف الإجابة.",
     "أمثلة:",
     ...EXAMPLES,
+  ].join("\n");
+}
+
+/** One example per kind, in the order the format lists them. Tested against the gate. */
+export const PHYSICS_FIGURE_EXAMPLES = [
+  '{"kind":"forces","body":"block","incline":30,"arrows":[{"dir":270,"size":3,"label":"W","value":{"n":49,"unit":"N"}},{"dir":120,"size":2,"label":"N"},{"dir":210,"size":1,"label":"f"}]}',
+  '{"kind":"attraction","bodies":["m1","m2"],"force":"F","distance":{"label":"r","value":{"n":2,"unit":"m"}}}',
+  '{"kind":"projectile","launch":"ground","angle":30,"speed":{"n":20,"unit":"m/s"},"marks":["v0","H","R"]}',
+  '{"kind":"circular","radius":{"label":"r","value":{"n":0.5,"unit":"m"}},"turning":"ccw","arrows":["v","F"]}',
+  '{"kind":"wave","cycles":2,"marks":["crest","trough","A","lambda"]}',
+  '{"kind":"vectors","vectors":[{"from":[0,0],"to":[3,0],"label":"A"},{"from":[0,0],"to":[0,4],"label":"B"}]}',
+] as const;
+
+/**
+ * The physics drawing format. Every number comes from `SCENE_LIMITS` / `FIGURE_LIMITS`
+ * and the units from `PHYSICS_UNITS`, so the prompt cannot promise what the gate refuses.
+ */
+export function physicsFigureFormatEn(): string {
+  return [
+    "A drawing is one of six kinds. A drawing outside these limits is dropped whole and the question keeps only its text:",
+    `- "forces": {"kind","body":"block" or "point","incline": optional, whole degrees ${S.minIncline} to ${S.maxIncline} (a block on a slope; "block" only),"arrows":[{"dir": whole degrees 0 to 359, counter-clockwise from the right (270 is straight down),"size": 1, 2 or 3 (relative strength),"label","value": optional}] (1 to ${S.maxArrows}; no two arrows less than ${S.minArrowGap}° apart; weight points 270, a normal force is perpendicular to the surface)}.`,
+    `- "attraction": {"kind","bodies":[label,label],"force": label,"distance": optional {"label","value": optional}}.`,
+    `- "projectile": {"kind","launch":"ground" (needs "angle", whole degrees ${S.minAngle} to ${S.maxAngle}) or "horizontal" (off a height: no "angle", optional "height" value),"speed": optional value (needs "v0" in "marks"),"marks": any of "v0","vx","vy","H","R" ("H" never with "horizontal"; "H" and "R" never carry a value: they are what questions ask for)}.`,
+    `- "circular": {"kind","turning":"cw" or "ccw","arrows": one or two of "v","F","a" ("F" and "a" never together),"radius": optional {"label","value": optional}}.`,
+    `- "wave": {"kind","cycles": 1 to ${S.maxCycles},"marks": any of "crest","trough","A","lambda","second": optional {"phase":"in" or "out","sum": true or false} (two waves and, with "sum", their sum),"amplitude" and "wavelength": optional values}.`,
+    `- "vectors": {"kind","vectors":[{"from":[x,y],"to":[x,y],"label"}] (1 to ${L.maxVectors}; every coordinate a multiple of 0.5 with absolute value at most ${L.maxCoord}), optional "components": true}. It is drawn on a numbered grid, so the question must state every non-zero component, and never draw a vector that is the sum or difference of two drawn vectors.`,
+    `A value is {"n": a number from 0 to ${S.maxValue} with at most ${S.valueDecimals} decimals,"unit": one of ${PHYSICS_UNITS.join(", ")}}, printed in Latin as written.`,
+    "A label is 1 to 3 letters (Latin, Arabic, or one of λ θ α β ω Δ μ), optionally followed by one digit or a prime (F, N, m1, v0, θ). Never a value or a word that names a number.",
+    "Every number the drawing shows (a value, an angle, an incline) must appear in the question text, written the same way. Never put on the drawing the quantity the question asks for: a drawing that gives the answer away is dropped.",
+    "Examples:",
+    ...PHYSICS_FIGURE_EXAMPLES,
+  ].join("\n");
+}
+
+export function physicsFigureFormatAr(): string {
+  return [
+    "الرسم من ستة أنواع، والرسم الذي يتجاوز هذه الحدود يُحذف كاملًا ويبقى للسؤال نصه وحده:",
+    `- "forces": {"kind"، "body": "block" أو "point"، و"incline" اختياري بالدرجات الصحيحة من ${S.minIncline} إلى ${S.maxIncline} (جسم على سطح مائل؛ مع "block" فقط)، و"arrows":[{"dir": بالدرجات الصحيحة من 0 إلى 359 عكس اتجاه عقارب الساعة بدءًا من اليمين (270 إلى الأسفل مباشرة)، "size": 1 أو 2 أو 3 (المقدار النسبي)، "label"، و"value" اختياري}] (من 1 إلى ${S.maxArrows}؛ ولا يقل الفرق بين اتجاهي سهمين عن ${S.minArrowGap}°؛ الوزن باتجاه 270 والقوة العمودية عمودية على السطح)}.`,
+    `- "attraction": {"kind"، "bodies":[وسم، وسم]، "force": وسم، و"distance" اختياري {"label"، و"value" اختياري}}.`,
+    `- "projectile": {"kind"، "launch": "ground" (يلزمه "angle" بالدرجات الصحيحة من ${S.minAngle} إلى ${S.maxAngle}) أو "horizontal" (من ارتفاع: بلا "angle"، و"height" قيمة اختيارية)، و"speed" قيمة اختيارية (يلزمها "v0" في "marks")، و"marks": أيٌّ من "v0" و"vx" و"vy" و"H" و"R" ("H" لا تأتي مع "horizontal"؛ و"H" و"R" لا تحملان قيمة أبدًا لأنهما ما تسأل عنه الأسئلة)}.`,
+    `- "circular": {"kind"، "turning": "cw" أو "ccw"، و"arrows": واحد أو اثنان من "v" و"F" و"a" (لا يجتمع "F" و"a")، و"radius" اختياري {"label"، و"value" اختياري}}.`,
+    `- "wave": {"kind"، "cycles": من 1 إلى ${S.maxCycles}، و"marks": أيٌّ من "crest" و"trough" و"A" و"lambda"، و"second" اختياري {"phase": "in" أو "out"، "sum": true أو false} (موجتان، ومع "sum" مجموعهما)، و"amplitude" و"wavelength" قيمتان اختياريتان}.`,
+    `- "vectors": {"kind"، "vectors":[{"from":[x,y]، "to":[x,y]، "label"}] (من 1 إلى ${L.maxVectors}؛ كل إحداثي من مضاعفات 0.5 وقيمته المطلقة ${L.maxCoord} على الأكثر)، و"components": true اختياري}. يُرسم على شبكة مرقّمة، فيجب أن يذكر السؤال كل مركّبة غير صفرية، ولا ترسم متجهًا هو مجموع متجهين مرسومين أو الفرق بينهما.`,
+    `القيمة {"n": عدد من 0 إلى ${S.maxValue} بحدٍّ أقصى ${S.valueDecimals} منازل عشرية، "unit": واحدة من ${PHYSICS_UNITS.join("، ")}}، وتُطبع بالأحرف اللاتينية كما كُتبت.`,
+    "الوسم من 1 إلى 3 أحرف (لاتينية أو عربية أو واحد من λ θ α β ω Δ μ)، ويجوز أن يليها رقم واحد أو شرطة عليا (F، N، m1، v0، θ). لا تكتب في الوسم قيمة ولا كلمة تدل على عدد.",
+    "كل عدد يظهر في الرسم (قيمة أو زاوية أو ميل) يجب أن يرد في نص السؤال مكتوبًا بالطريقة نفسها. لا تضع في الرسم الكمية التي يطلبها السؤال: الرسم الذي يكشف الإجابة يُحذف.",
+    "أمثلة:",
+    ...PHYSICS_FIGURE_EXAMPLES,
   ].join("\n");
 }
