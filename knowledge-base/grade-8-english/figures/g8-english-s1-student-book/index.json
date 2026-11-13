@@ -224,6 +224,22 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": null
+    },
+    {
+      "file": "p061-v2.png",
+      "sourceId": "g8-english-s1-student-book",
+      "pdfPage": 61,
+      "rect": [
+        321.0,
+        473.0,
+        623.6,
+        870.2
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
     }
   ]
 }

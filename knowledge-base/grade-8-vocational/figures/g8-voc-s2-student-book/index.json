@@ -98,6 +98,22 @@
       "lessonStartPage": 49
     },
     {
+      "file": "p057.png",
+      "sourceId": "g8-voc-s2-student-book",
+      "pdfPage": 57,
+      "rect": [
+        424.1,
+        425.0,
+        595.3,
+        661.5
+      ],
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 58
+    },
+    {
       "file": "p061.png",
       "sourceId": "g8-voc-s2-student-book",
       "pdfPage": 61,

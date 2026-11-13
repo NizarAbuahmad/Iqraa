@@ -352,6 +352,54 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": null
+    },
+    {
+      "file": "p060.png",
+      "sourceId": "g8-english-s2-student-book",
+      "pdfPage": 60,
+      "rect": [
+        328.5,
+        67.9,
+        621.3,
+        305.5
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p062b.png",
+      "sourceId": "g8-english-s2-student-book",
+      "pdfPage": 62,
+      "rect": [
+        -0.2,
+        82.1,
+        302.0,
+        310.4
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
+    },
+    {
+      "file": "p065.png",
+      "sourceId": "g8-english-s2-student-book",
+      "pdfPage": 65,
+      "rect": [
+        13.8,
+        594.0,
+        623.9,
+        869.6
+      ],
+      "unit": null,
+      "lesson": null,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": null
     }
   ]
 }

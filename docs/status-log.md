@@ -38,20 +38,73 @@ S2's unmapped lessons and PE could not be checked). English: 5 units × 7 lesson
 → «عليهم السلام» (S1 u1_l3, p18), «السيدة سكينة بنت الحسين» → «رحمها الله» (S1 u2_l6, p65), «عمر بن عبد العزيز» → «رحمه الله»
 (S2 u3_l3 title, p108). The 8 left all follow the Prophet. Also «أسرة تُغنى بالعلم» → «تُعنى» (p65).
 
-**Figures.** 425 checked. 9 moved to their own lesson (maths S1 p021b → u1_l3, p048/p048b → u2_l1; science S2 p036b → u5_l1;
-English S1 p016 → u2_l1, S2 p028–p028d → u8_l1 — two English map entries added, the figures already being in the bucket);
-63 dropped: unit-test, review, enrichment, inquiry and project figures filed under a unit's last lesson (maths 7, science
-17), English «LIFE SKILLS», Culture and Literature Spot pages (11) and two all-text crops, social S1 p075 (review) and two
-major crops, and vocational slices of unit openers, lesson lists and opener-page tops (20). Minor flaws stay. Maths S2
-p076 is a good crop no map entry reaches (book unit 7 lesson 1); left, as it is not known to be in the bucket.
+**Figures.** 425 checked. Merged with «Grade 8 review…» (#1433, below), which landed first and moved some of the same
+figures; its placements stand where the two differ (maths `p047b`/`p048`/`p048b` → u2_l1, `p069b` → dilation, science
+`p071b` → bonds, vocational S2 `p057`, English back matter unmapped). On top of it, this moves maths S1 p021b → u1_l3,
+science S2 p036b → u5_l1, English S1 p016 → u2_l1 and S2 p028–p028d → u8_l1 (two English map entries added; the
+figures were already served, so already in the bucket), and drops what #1433 left: unit-test, review, enrichment and
+inquiry figures filed under a unit's last lesson (maths 6, science 18), English «LIFE SKILLS» pages and two all-text
+crops (8), social S1 p075 (review) and two major crops, and vocational slices of unit openers, lesson lists and
+opener-page tops (18). 53 fewer figures are served than on main; none newly reachable. Minor flaws stay.
 
 **Results.** Offline maths covers 33 of 37 lessons, every sampled key correct (read by hand); u8_l1 «رسم الأشكال ثلاثية
 الأبعاد», u8_l2 «المقاطع والمجسمات الدورانية», u9_l1 «الربيعيات» and u9_l2 «اختيار التمثيل الأنسب» get nothing. **Grade 8
 has no quotable extracted text** — only the two Pearson English books, which are never quoted — so every Grade 8 lesson
 reaches live generation with no book text; that needs the PDFs.
 
-**Verified:** `bookPage`, `bookFigureAssets`, `lessonSlides` (149), curriculum test (927) and verify (0 errors), typecheck.
+**Verified:** `bookFigures` (with #1433's Grade 8 cases), `bookPage`, `bookFigureAssets`, `lessonSlides`,
+`teachingPlanGrounding` (184), curriculum test (927) and verify (0 errors), typecheck.
 **Not verified:** the pages on a phone; anything needing the PDFs.
+
+## Grade 8 review: book figures on the right lessons, teaching-plan export grounded by id — 2026-11-13
+
+A review of the 19 grade 8 catalogs (11 subjects). It found the catalogs complete and wired, a picked lesson
+grounded to exactly itself (358/358 by id), and offline maths serving grade 8 items with correct keys (7 quizzes
+checked by hand). It also found the problems fixed here.
+
+**What changed.**
+- **Figures on the wrong lesson.** The figure extractor gives a unit's opening pages to the last lesson of the unit
+  before. Five images moved, each checked by opening it:
+  - maths S1 `p047b`, `p048-v2`, `p048b-v2` (algebra-tile factoring): from «النسبة المئوية» to u2_l1
+  - maths S2 `p069b-v2` (pantograph): from elimination to «التمدّد»
+  - science S2 `p071b-v2` (O²⁻/Mg²⁺ pieces): from «الحرارة والمادة» to «الروابط الكيميائية»
+  - vocational S2 `p057` (mushroom): to the mushroom unit
+  
+  The English photo extractor gave the back matter (Life Skills, Culture Spot, the reader, the word list) to the last
+  writing lesson. `p060`, `p062b` and `p065` (S2) and `p061-v2` (S1) now sit under no lesson, like the science S2
+  contents-page icons. Both writing lessons' «صفحة الكتاب» now end at page 59 (was 77).
+- **Bad crops dropped:** English S2 `p062` (a page of body text, edge sliced) and vocational S1 `p006b` (half a clock).
+  The PNG and its index entry are both gone.
+- **A good figure that was never shown:** maths S2 `p076` (parallel and perpendicular lines). Its book lesson had no
+  row in `figure-lesson-map.json`; the row is added, marked hand-checked.
+- **Teaching-plan export** (`app/teaching-plans/index.tsx`) grounded each lesson by title. Every grade 8 English unit
+  opens with «المفردات والقواعد», so the title found unit 1 or another grade, and the guard sent no context.
+  It now passes `lessonId`. About 62 grade 8 English and Arabic lessons were affected.
+- Stale «semester 1 not attached» notes in `g8MathSem2.ts` and its JSON corrected.
+
+**Verified.** Red/green on the new grade 8 block in `bookFigures.test.ts` (8 cases) and `teachingPlanGrounding.test.ts`.
+The back-matter case caught `p062b`, which the review had missed. Also run: `pnpm run typecheck`; mobile suite 9,224
+pass, 0 fail, 10 skipped; curriculum test 915/915; `verify` 0 errors.
+
+**Not verified / still open.**
+- **`p076` must be uploaded to `iqraa-public`.** Run `pnpm --filter @workspace/curriculum run upload-figures-r2`;
+  this session has no R2 keys. Until then the lesson's slide shows a missing image. The other moved figures were
+  already in the key list, so they are already in the bucket.
+- The source PDFs were not reachable: NCCD resets connections from the cloud sandbox, and the books are not on
+  Drive. So coverage against the printed books is checked only for English (5 units × 7 lessons per semester, both
+  match).
+- Not checked, for lack of the PDFs:
+  - digital skills unit 2 is missing (S1 has unit 1, S2 starts at 3)
+  - 17 of 19 grade 8 books have no extracted text, so no live grade 8 lesson gets book passages; the English two are
+    `third-party` and never quoted
+  - 8 books have no figures at all
+- Re-running `extract_book_figures.py`, `extract_book_photos.py` or `verify_book_pages.py` would restore the wrong
+  placements; the extractors' boundary rules are unchanged.
+- Small edge cuts left as they are (`g8-math-s2/p138g-v2`, `g8-finlit-s1/p036b-v2`, `g8-science-s2/p126f`): a re-crop
+  needs the PDF.
+- Not looked at in the running app.
+
+No «ما الجديد» entry: corrections to which picture a lesson shows, not a feature.
 
 ## Grade 9 checked against its books, and corrected — 2026-11-13
 

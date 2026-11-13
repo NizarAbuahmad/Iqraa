@@ -162,6 +162,22 @@
    "lessonStartPage": 37
   },
   {
+   "file": "p047b.png",
+   "sourceId": "g8-math-s1-student-book",
+   "pdfPage": 47,
+   "rect": [
+    90.7,
+    286.9,
+    218.2,
+    388.8
+   ],
+   "unit": 2,
+   "lesson": 1,
+   "lessonTitleEn": null,
+   "lessonTitleAr": "التحليلُ بإخراجِ العاملِ المشتركِ األكبرِ الدرس",
+   "lessonStartPage": 49
+  },
+  {
    "file": "p048-v2.png",
    "sourceId": "g8-math-s1-student-book",
    "pdfPage": 48,

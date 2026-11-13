@@ -498,6 +498,22 @@
       "lessonStartPage": 54
     },
     {
+      "file": "p071b-v2.png",
+      "sourceId": "g8-science-s2-student-book",
+      "pdfPage": 71,
+      "rect": [
+        130.0,
+        280.0,
+        245.0,
+        335.0
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": null,
+      "lessonTitleAr": null,
+      "lessonStartPage": 72
+    },
+    {
       "file": "p073-v2.png",
       "sourceId": "g8-science-s2-student-book",
       "pdfPage": 73,
