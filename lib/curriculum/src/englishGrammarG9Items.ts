@@ -1,12 +1,12 @@
 /**
- * Grade 9 grammar: the nineteen authored hub lessons outside Unit 4 (specs:
+ * Grade 9 grammar: the twenty authored hub lessons outside Unit 4 (specs:
  * docs/superpowers/specs/2026-10-23-english-corner-grammar-g9-lessons-design.md and
  * ...-grammar-only-lessons-design.md, which adds the five grammar-only lessons). Every item is a whole sentence with its
  * correct answer and a distractor, written by us and checked by a teacher on the printed form; nothing here is pictured.
  *
  * The rule for a distractor: it is `form` (ungrammatical in standard English) or `meaning` (grammatical but excluded
  * by something in the sentence itself), never a form that could fit. `meaning` is used only for the «now» markers of
- * S1 U1 l1 and the prohibition items of S1 U5 l1; the two future lessons of S2 U6 test sentence form only. Every
+ * S1 U1 l1, the article items of S1 U4 l7 (all but `a-an`) and the prohibition items of S1 U5 l1; the two future lessons of S2 U6 test sentence form only. Every
  * sentence is nine words or fewer, so Build always takes it whole. `statement` is the book's own «I can» line for the
  * lesson id (a test reads it back from the data file).
  *
@@ -382,6 +382,60 @@ export const G9_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ["This is the student whose answer was right.", "whose", "which"],
         ["She has a dog whose tail is very long.", "whose", "who"],
         ["The family whose house is near ours moved.", "whose", "who"],
+      ]),
+    ],
+  },
+  {
+    lessonId: L("s1-nccd-u4_l7"),
+    statement: "I can write a simple formal letter of complaint.",
+    items: [
+      ...items("a-an", "form", [
+        ["I need an umbrella.", "an", "a"],
+        ["She has a brother.", "a", "an"],
+        ["He ate an apple.", "an", "a"],
+        ["This is a good idea.", "a", "an"],
+        ["We saw an elephant at the zoo.", "an", "a"],
+        ["My father is a doctor.", "a", "an"],
+        ["I have an exam today.", "an", "a"],
+        ["She wants an orange.", "an", "a"],
+        ["He is a student at my school.", "a", "an"],
+        ["It was an interesting film.", "an", "a"],
+        ["Dad drives a taxi.", "a", "an"],
+        ["We waited for an hour.", "an", "a"],
+      ]),
+      ...items("first-mention", "meaning", [
+        ["There is a muffin in the cupboard.", "a", "the"],
+        ["There was an old car outside.", "an", "the"],
+        ["There is a bag under my desk.", "a", "the"],
+        ["There was a spider in the bath.", "a", "the"],
+        ["There is an exam on Monday.", "an", "the"],
+        ["There is a shop near my house.", "a", "the"],
+        ["There was a cat on the roof.", "a", "the"],
+        ["There is an apple in my bag.", "an", "the"],
+      ]),
+      ...items("second-mention", "meaning", [
+        ["I saw a dog. The dog was big.", "The", "A"],
+        ["We had an exam. The exam was hard.", "The", "A"],
+        ["She wrote a letter. She posted the letter.", "the", "a"],
+        ["He bought a phone. The phone was cheap.", "The", "A"],
+        ["I met a girl. The girl was kind.", "The", "A"],
+        ["We stayed in a hotel. The hotel was clean.", "The", "A"],
+        ["I ordered a pizza. I ate the pizza quickly.", "the", "a"],
+        ["She has a cat. The cat is white.", "The", "A"],
+        ["I found a key. I kept the key.", "the", "a"],
+        ["He drew a picture. The picture was nice.", "The", "A"],
+        ["They built a house. The house is big.", "The", "A"],
+        ["I read a book. I liked the book.", "the", "a"],
+      ]),
+      ...items("specific-unique", "meaning", [
+        ["Look at the sky.", "the", "a"],
+        ["Tonight the moon is very bright.", "the", "a"],
+        ["Amman is the capital of Jordan.", "the", "a"],
+        ["She is the youngest child in my family.", "the", "a"],
+        ["He is the tallest boy in my class.", "the", "a"],
+        ["Aqaba is the only port in Jordan.", "the", "a"],
+        ["Petra is the most famous place in Jordan.", "the", "a"],
+        ["Amman is the biggest city in Jordan.", "the", "a"],
       ]),
     ],
   },

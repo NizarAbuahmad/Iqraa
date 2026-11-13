@@ -388,6 +388,26 @@ Not reviewed yet — shown to nobody.
 | Jam is more popular than honey. | **more popular** / popular | — | — |
 | Salmon is tastier than rice. | **tastier** / tasty | — | — |
 | Grapes are more popular than melons. | **more popular** / popular | — | — |
+| Doughnuts are not as healthy as carrots. | **not as** / not more | _Carrots are not as healthy as doughnuts._ | — |
+| Muffins are not as healthy as cucumbers. | **not as** / not more | _Cucumbers are not as healthy as muffins._ | — |
+| Cucumbers are not as fattening as doughnuts. | **not as** / not more | _Doughnuts are not as fattening as cucumbers._ | — |
+| Melons are not as fattening as croissants. | **not as** / not more | _Croissants are not as fattening as melons._ | — |
+| Croissants are not as nutritious as carrots. | **not as** / not more | _Carrots are not as nutritious as croissants._ | — |
+| Bread is not as expensive as salmon. | **not as** / not more | _Salmon is not as expensive as bread._ | — |
+| Sugar is not as expensive as honey. | **not as** / not more | _Honey is not as expensive as sugar._ | — |
+| Salmon is not as cheap as bread. | **not as** / not more | _Bread is not as cheap as salmon._ | — |
+| Honey is not as cheap as sugar. | **not as** / not more | _Sugar is not as cheap as honey._ | — |
+| Water is not as filling as porridge. | **not as** / not more | _Porridge is not as filling as water._ | — |
+| Salmon is too expensive for me. | **too** / enough | — | — |
+| Doughnuts are too fattening for me. | **too** / enough | — | — |
+| Porridge is too filling for me. | **too** / enough | — | — |
+| Honey is too expensive for me. | **too** / enough | — | — |
+| Croissants are too fattening for me. | **too** / enough | — | — |
+| Water is cheap enough for me. | **enough** / too | — | — |
+| Bread is cheap enough for me. | **enough** / too | — | — |
+| Rice is filling enough for me. | **enough** / too | — | — |
+| Pancakes are tasty enough for me. | **enough** / too | — | — |
+| Carrots are nutritious enough for me. | **enough** / too | — | — |
 
 ## Semester 1 · Unit 4 — A good buy
 
@@ -475,6 +495,53 @@ Not reviewed yet — shown to nobody.
 | I'd like a little porridge, please. | **a little** / a few | — |
 | I'd like a little milk, please. | **a little** / a few | — |
 | I'd like a little rice, please. | **a little** / a few | — |
+
+## Semester 1 · Unit 4 — A good buy
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Choose | True or false: wrong sentence |
+|---|---|---|
+| I need an umbrella. | **an** / a | _I need a umbrella._ |
+| She has a brother. | **a** / an | _She has an brother._ |
+| He ate an apple. | **an** / a | _He ate a apple._ |
+| This is a good idea. | **a** / an | _This is an good idea._ |
+| We saw an elephant at the zoo. | **an** / a | _We saw a elephant at the zoo._ |
+| My father is a doctor. | **a** / an | _My father is an doctor._ |
+| I have an exam today. | **an** / a | _I have a exam today._ |
+| She wants an orange. | **an** / a | _She wants a orange._ |
+| He is a student at my school. | **a** / an | _He is an student at my school._ |
+| It was an interesting film. | **an** / a | _It was a interesting film._ |
+| Dad drives a taxi. | **a** / an | _Dad drives an taxi._ |
+| We waited for an hour. | **an** / a | _We waited for a hour._ |
+| There is a muffin in the cupboard. | **a** / the | _There is the muffin in the cupboard._ |
+| There was an old car outside. | **an** / the | _There was the old car outside._ |
+| There is a bag under my desk. | **a** / the | _There is the bag under my desk._ |
+| There was a spider in the bath. | **a** / the | _There was the spider in the bath._ |
+| There is an exam on Monday. | **an** / the | _There is the exam on Monday._ |
+| There is a shop near my house. | **a** / the | _There is the shop near my house._ |
+| There was a cat on the roof. | **a** / the | _There was the cat on the roof._ |
+| There is an apple in my bag. | **an** / the | _There is the apple in my bag._ |
+| I saw a dog. The dog was big. | **The** / A | _I saw a dog. A dog was big._ |
+| We had an exam. The exam was hard. | **The** / A | _We had an exam. A exam was hard._ |
+| She wrote a letter. She posted the letter. | **the** / a | _She wrote a letter. She posted a letter._ |
+| He bought a phone. The phone was cheap. | **The** / A | _He bought a phone. A phone was cheap._ |
+| I met a girl. The girl was kind. | **The** / A | _I met a girl. A girl was kind._ |
+| We stayed in a hotel. The hotel was clean. | **The** / A | _We stayed in a hotel. A hotel was clean._ |
+| I ordered a pizza. I ate the pizza quickly. | **the** / a | _I ordered a pizza. I ate a pizza quickly._ |
+| She has a cat. The cat is white. | **The** / A | _She has a cat. A cat is white._ |
+| I found a key. I kept the key. | **the** / a | _I found a key. I kept a key._ |
+| He drew a picture. The picture was nice. | **The** / A | _He drew a picture. A picture was nice._ |
+| They built a house. The house is big. | **The** / A | _They built a house. A house is big._ |
+| I read a book. I liked the book. | **the** / a | _I read a book. I liked a book._ |
+| Look at the sky. | **the** / a | _Look at a sky._ |
+| Tonight the moon is very bright. | **the** / a | _Tonight a moon is very bright._ |
+| Amman is the capital of Jordan. | **the** / a | _Amman is a capital of Jordan._ |
+| She is the youngest child in my family. | **the** / a | _She is a youngest child in my family._ |
+| He is the tallest boy in my class. | **the** / a | _He is a tallest boy in my class._ |
+| Aqaba is the only port in Jordan. | **the** / a | _Aqaba is a only port in Jordan._ |
+| Petra is the most famous place in Jordan. | **the** / a | _Petra is a most famous place in Jordan._ |
+| Amman is the biggest city in Jordan. | **the** / a | _Amman is a biggest city in Jordan._ |
 
 ## Semester 1 · Unit 5 — Fit and well
 
