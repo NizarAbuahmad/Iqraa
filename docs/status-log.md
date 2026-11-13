@@ -35,13 +35,25 @@ because each starts with the lesson's page range being wrong.
   - Three opening photos move to the first lesson of the unit they open, with new hand-checked map rows: grade 8
     S1 `p016` (hobby houses), grade 8 S2 `p028`–`p028d` ("By 2040") and grade 9 S2 `p028` (scientists, "Switch on").
   - 13 writing-lesson page ranges trimmed to the lesson's own pages; every page was read from the book text.
+- **Grade 10 English** (same series, same layout), added in a second pass:
+  - S1 `p026-v2`, `p027-v2`, `p048` and `p049` (Life Skills) and `p060-v2` (Culture Spot) now sit under no lesson.
+  - S2 `p038-v2`, `p038b` and `p038c` (Life Skills) and `p062` and `p063` (Culture Spot) now sit under no lesson.
+  - Six writing-lesson ranges are trimmed. S1 u5_l7 and S2 u10_l7 had run to page 77.
+  - No opening-page photo was misfiled.
+- **Grade 7 English** (Jordan Team Together, a different series with no Life Skills pages) needed no change of
+  this kind. Two S2 map rows point at u6_l7 and u7_l7, lessons the catalog does not carry, and the two photos
+  they should carry (`p027`, English in Action; `p043`, Literacy: Writing) are shown nowhere. They are **left as
+  the grade 7 audit left them**, on purpose: neither PNG is in `iqraa-public`, and `upload-figures-r2` uploads only
+  keys already in `bookFigureAssets.ts`. The order that works is: map them on a branch, run the upload from that
+  branch, then merge.
 
 **Verified.** Red/green on two new blocks in `bookFigures.test.ts`: English pages between units for grades 8–9
 (3 cases), and grade 9 opening pages (3 cases). Also run: `pnpm run typecheck`; the mobile suite; curriculum
 test and `verify`. The generated figure list only loses keys, so nothing new needs uploading to `iqraa-public`.
 
 **Not verified / open.** The geography page has no text in the repo; it was judged from the image and its place
-two pages before the unit. The other grades' English books (7 and 10) were not checked for the Life Skills case.
+two pages before the unit. **Grade 8's `p076` (merged in #1433) has the upload problem described above**: it
+is mapped and listed but not yet uploaded, so its lesson shows a broken image until `upload-figures-r2` runs.
 Not looked at in the running app. The extractors are unchanged, so re-running them would bring these back.
 Everything the grade 9 review lists as needing the PDFs still does.
 

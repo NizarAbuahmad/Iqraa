@@ -168,18 +168,13 @@ export const BOOK_FIGURE_KEYS: ReadonlySet<string> = new Set([
   'eng-s1-student-book/p022.png',
   'eng-s1-student-book/p023.png',
   'eng-s1-student-book/p024.png',
-  'eng-s1-student-book/p026-v2.png',
-  'eng-s1-student-book/p027-v2.png',
   'eng-s1-student-book/p031.png',
   'eng-s1-student-book/p033.png',
   'eng-s1-student-book/p035.png',
   'eng-s1-student-book/p043.png',
   'eng-s1-student-book/p044.png',
   'eng-s1-student-book/p044b.png',
-  'eng-s1-student-book/p048.png',
-  'eng-s1-student-book/p049.png',
   'eng-s1-student-book/p059.png',
-  'eng-s1-student-book/p060-v2.png',
   'eng-s2-student-book/p008.png',
   'eng-s2-student-book/p009.png',
   'eng-s2-student-book/p014.png',
@@ -191,16 +186,11 @@ export const BOOK_FIGURE_KEYS: ReadonlySet<string> = new Set([
   'eng-s2-student-book/p030.png',
   'eng-s2-student-book/p031.png',
   'eng-s2-student-book/p036.png',
-  'eng-s2-student-book/p038-v2.png',
-  'eng-s2-student-book/p038b.png',
-  'eng-s2-student-book/p038c.png',
   'eng-s2-student-book/p046.png',
   'eng-s2-student-book/p048.png',
   'eng-s2-student-book/p048b.png',
   'eng-s2-student-book/p053.png',
   'eng-s2-student-book/p057.png',
-  'eng-s2-student-book/p062.png',
-  'eng-s2-student-book/p063.png',
   'finlit-s1-student-book/p017.png',
   'finlit-s1-student-book/p041-v2.png',
   'finlit-s1-student-book/p053-v2.png',
@@ -2226,4 +2216,4 @@ export const BOOK_FIGURE_KEYS: ReadonlySet<string> = new Set([
 ]);
 
 /** How many figures the app can reach. Asserted by the drift test. */
-export const BOOK_FIGURE_COUNT = 2206;
+export const BOOK_FIGURE_COUNT = 2196;

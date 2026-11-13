@@ -400,7 +400,7 @@ describe('grade 8: a figure sits with the lesson its page teaches', () => {
   });
 });
 
-describe('grades 8 and 9 English: pages between units belong to no lesson', () => {
+describe('grades 8, 9 and 10 English: pages between units belong to no lesson', () => {
   // Found by the 2026-11-13 grade 9 pass, which also caught what the grade 8
   // fix missed. The Jordan High Note books print two LIFE SKILLS pages after
   // units 2 and 4 (S1) or 1 and 3 (S2), and the photo extractor filed their
@@ -408,6 +408,9 @@ describe('grades 8 and 9 English: pages between units belong to no lesson', () =
   // ran on into them, and in three ranges into the next unit's opening page.
   // Pages read from each book's extracted text.
   const BETWEEN_UNITS: Record<string, number[]> = {
+    // Grade 10 (same series, same layout), added in the grade 7/10 pass.
+    'eng-s1-student-book': [26, 27, 48, 49],
+    'eng-s2-student-book': [16, 17, 38, 39],
     'g8-english-s1-student-book': [26, 27, 48, 49],
     'g8-english-s2-student-book': [16, 17, 38, 39],
     'g9-english-s1-student-book': [26, 27, 48, 49],
@@ -433,6 +436,9 @@ describe('grades 8 and 9 English: pages between units belong to no lesson', () =
       'kbl-g9-eng-s1-nccd-u5_l7': [58, 59], 'kbl-g9-eng-s2-nccd-u6_l7': [15, 15],
       'kbl-g9-eng-s2-nccd-u7_l7': [27, 27], 'kbl-g9-eng-s2-nccd-u8_l7': [36, 37],
       'kbl-g9-eng-s2-nccd-u10_l7': [58, 59],
+      'kbl-eng-s1-nccd-u2_l7': [24, 25], 'kbl-eng-s1-nccd-u4_l7': [46, 47],
+      'kbl-eng-s1-nccd-u5_l7': [58, 59], 'kbl-eng-s2-nccd-u6_l7': [14, 15],
+      'kbl-eng-s2-nccd-u8_l7': [36, 37], 'kbl-eng-s2-nccd-u10_l7': [58, 59],
     };
     for (const [id, [start, end]] of Object.entries(WRITING)) {
       const pages = bookPagesForLesson(id);
