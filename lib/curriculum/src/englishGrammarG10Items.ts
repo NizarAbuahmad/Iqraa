@@ -846,15 +846,16 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['She said she would like some water.', 'would like', 'would liking'],
       ]),
       // Time words change with the shift (the day before, the next day, the week before, that night). The twin is the
-      // original word pointing the wrong way for the verb: a past perfect with «tomorrow» or «next week», a «would»
-      // with «yesterday» or «last week», so exactly one fits.
+      // original word pointing the wrong way for the verb: a past perfect with «tomorrow» or «next week», so exactly
+      // one fits. Not «would» against «yesterday»: «he said (on Monday) he would call yesterday (Tuesday)» is
+      // correct English once the report is made later, so those rows had two right answers.
       ...items('time-changes', 'form', [
         ['She said she had seen him the day before.', 'the day before', 'tomorrow'],
         ['He said he had finished the week before.', 'the week before', 'next week'],
         ['She said she had moved there the year before.', 'the year before', 'next year'],
-        ['Dad said he would call the next day.', 'the next day', 'yesterday'],
-        ['They said they would leave the following week.', 'the following week', 'last week'],
-        ['He said he would arrive that night.', 'that night', 'last night'],
+        ['They said they had arrived the night before.', 'the night before', 'tomorrow night'],
+        ['He said he had called her the previous day.', 'the previous day', 'tomorrow'],
+        ['She said she had visited Petra the month before.', 'the month before', 'next month'],
       ]),
       // «Tell and say»: tell takes a person, say does not (the book: Ali told Hani …, NOT Ali told he …; Nour said
       // …, NOT Nour said him that …). The twin gives tell no person, or say one.

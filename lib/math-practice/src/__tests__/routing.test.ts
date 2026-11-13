@@ -132,7 +132,7 @@ describe('the Grade 10 families come from the title', () => {
     ['حل نظام مكون من معادلة خطية ومعادلة تربيعية', 'linear_quad'],
     ['معمل برمجية جيوجبرا: حل أنظمة المعادلات بيانيا', 'system_graph'],
     ['قانون الجيوب', 'trig_apps'],
-    ['قانون جيوب التمام', 'trig_apps'],              // the book's and guide's name (u4_l3 renamed 2026-11-13)
+    ['قانون جيوب التمام', 'trig_apps'],              // the book's and guide's spelling; the catalog title stays «جيب التمام»
     ['قانون جيب التمام', 'trig_apps'],               // the old name, still in saved materials
     ['احتمالات الحوادث المستقلة', 'stats'],
     ['معادلة الدائرة', 'circle'],

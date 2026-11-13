@@ -314,7 +314,7 @@ const trigGraph = T('trig_graph', /^تمثيل الاقترانات المثلث
     return {
       eq: eqHalf(fn, v), answer,
       wrongs: wr(answer, rest, j => `${Math.abs(j) * 15}° ، ${360 - Math.abs(j) * 15}°`),
-      ar: `أُقدِّر قيمتين للمتغير x في ${DOMAIN_AR} يكون عندهما ${eqHalf(fn, v)}.`,
+      ar: `أجد قيمتَي x في ${DOMAIN_AR} اللتين يكون عندهما ${eqHalf(fn, v)}.`,
       en: `Find the two values of x for ${DOMAIN_EN} at which ${eqHalf(fn, v)}.`,
     };
   }

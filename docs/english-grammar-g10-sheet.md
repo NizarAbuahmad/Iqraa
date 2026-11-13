@@ -639,9 +639,9 @@ Not reviewed yet — shown to nobody.
 | She said she had seen him the day before. | **the day before** / tomorrow | _She said she had seen him tomorrow._ |
 | He said he had finished the week before. | **the week before** / next week | _He said he had finished next week._ |
 | She said she had moved there the year before. | **the year before** / next year | _She said she had moved there next year._ |
-| Dad said he would call the next day. | **the next day** / yesterday | _Dad said he would call yesterday._ |
-| They said they would leave the following week. | **the following week** / last week | _They said they would leave last week._ |
-| He said he would arrive that night. | **that night** / last night | _He said he would arrive last night._ |
+| They said they had arrived the night before. | **the night before** / tomorrow night | _They said they had arrived tomorrow night._ |
+| He said he had called her the previous day. | **the previous day** / tomorrow | _He said he had called her tomorrow._ |
+| She said she had visited Petra the month before. | **the month before** / next month | _She said she had visited Petra next month._ |
 | Dad told my uncle he liked his new watch. | **told my uncle** / told to my uncle | _Dad told to my uncle he liked his new watch._ |
 | Mum told me that dinner was ready. | **told me** / said me | _Mum said me that dinner was ready._ |
 | She said she was sorry. | **said** / told | _She told she was sorry._ |

@@ -91,20 +91,22 @@ describe('offline worksheet — a wide scope', () => {
     if (produced < 30) assert.equal(out.shortfall?.requested, 30);
   });
 
-  it('the half-solved question names a lesson of the scope', async () => {
-    // Semester 2, balanced: the first two slots' lessons both have checked
-    // working, so the paper has an example and a half-solved item (semester 1's
-    // second slot is a lesson without working, and drops the half-solved item).
-    // If the data stops giving one, say so rather than pass vacuously.
-    const wide = buildWideRequest(sem2, 'ar', 12, 'balanced')!;
-    const req = { ...base, topic: 'الفصل الثاني كاملًا', numQuestions: 12, ...wide.fields } as AIRequest;
-    const out = await aiService.generateWorksheet(req);
-    const half = halfSolved(out);
-    assert.ok(half, 'probe: the wide maths paper should have a half-solved section');
-    assert.ok(out.workedExample, 'probe: ... and the worked example it follows');
-    assert.ok(half.lessonId, 'half-solved question has no lessonId');
-    assert.ok(wide.lessons.some(l => l.id === half.lessonId), `foreign lesson ${half.lessonId}`);
-  });
+  for (const [sel, label] of [[sem1, 'الفصل الأول كاملًا'], [sem2, 'الفصل الثاني كاملًا']] as const) {
+    it(`the half-solved question names a lesson of the scope (${label})`, async () => {
+      // A slot whose lesson has a bank but no worked steps (S1's opener «حل
+      // معادلات خاصة», S2's polynomial and rational functions) must not cost the
+      // paper its worked example: the solved slots walk on to the next lesson
+      // with working. Both semesters used to lose the half-solved item to it.
+      const wide = buildWideRequest(sel, 'ar', 12, 'balanced')!;
+      const req = { ...base, topic: label, numQuestions: 12, ...wide.fields } as AIRequest;
+      const out = await aiService.generateWorksheet(req);
+      const half = halfSolved(out);
+      assert.ok(half, 'the wide maths paper should have a half-solved section');
+      assert.ok(out.workedExample, '... and the worked example it follows');
+      assert.ok(half.lessonId, 'half-solved question has no lessonId');
+      assert.ok(wide.lessons.some(l => l.id === half.lessonId), `foreign lesson ${half.lessonId}`);
+    });
+  }
 });
 
 describe('offline homework — a wide scope', () => {

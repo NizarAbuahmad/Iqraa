@@ -183,7 +183,7 @@ describe('«تمثيل الاقترانات المثلثية»', () => {
         kinds.add('asymptote');
         assert.equal(item.answer, 'x = 90° ، x = 270°');
         assert.ok(Math.abs(Math.cos(90 * rad)) < 1e-9 && Math.abs(Math.cos(270 * rad)) < 1e-9);
-      } else if (p.includes('قيمتين')) {
+      } else if (/قيمتَي|قيمتين/.test(p)) {
         kinds.add('solve');
         const m = p.match(/(sin|cos|tan) x = (−?\d+(?:\.\d+)?)/)!;
         for (const d of item.answer.split(' ، ').map(s => Number(s.replace('°', '')))) {
