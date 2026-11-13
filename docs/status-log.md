@@ -90,6 +90,12 @@ upload needed (keys only removed).
   visual-order lines and checked letter for letter. The «عنوان الدرس فقط» badge
   for these books now follows the content (`isG5SocialSem{1,2}TitleOnly*`, pinned
   by `g5SocialTitleOnly.test.ts`), so no Grade 5 social lesson wears it.
+- **Arabic main ideas: none, on purpose.** The books print no main-idea box;
+  every «الفكرة الرئيسة» is an exercise, a blank table or a definition, and
+  «أعرف عن النص» (reading lessons only) is mostly facts about the source. The
+  owner chose to leave `main_idea_ar` empty and record the search in
+  `known_gaps`. The Arabic «عنوان الدرس فقط» badge now follows the content like
+  social's (`g5ArabicTitleOnly.test.ts`); only u8_l5, with no objectives, wears it.
 - **Islamic vocabulary NOT filled:** the «المفردات والتراكيب» boxes (12 lessons,
   listed by page in `known_gaps`) print their headwords in the Mushaf font, which
   pdf-parse dropped, and **the cloud environment's R2 keys answer AccessDenied on
