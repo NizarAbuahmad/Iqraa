@@ -124,6 +124,8 @@ const DEFAULT_OPS: Record<number, ElementaryOp[]> = {
 const ADD_MAX: Record<number, number> = { 1: 20, 2: 999, 3: 9999, 4: 99999, 5: 999999, 6: 999999 };
 /** Times tables for × and ÷ by grade (Grade 2 teaches 2–5). */
 const TABLE_MAX: Record<number, number> = { 1: 2, 2: 5, 3: 10, 4: 10, 5: 10, 6: 10 };
+/** The widest number a grade's place-value lesson names: G3 «ضمن الألوف», G4 «ضمن مئات الألوف», G5 «ضمن الملايين». */
+const PLACE_DIGITS: Record<number, number> = { 1: 2, 2: 3, 3: 4, 4: 6, 5: 7, 6: 7 };
 
 const TIER_SCALE: Record<DiffTier, number> = { easy: 0.1, medium: 0.5, hard: 1 };
 
@@ -309,8 +311,9 @@ const listAr = (xs: readonly (string | number)[]) => xs.join('، ');
 const listEn = (xs: readonly (string | number)[]) => xs.join(', ');
 const q = (s: string) => s.replace(/؟/g, '?');
 
-const PLACE_AR = ['الآحاد', 'العشرات', 'المئات', 'الألوف'];
-const PLACE_EN = ['ones', 'tens', 'hundreds', 'thousands'];
+// Up to millions: Grade 4 asks within «مئات الألوف», Grade 5 within «الملايين».
+const PLACE_AR = ['الآحاد', 'العشرات', 'المئات', 'الألوف', 'عشرات الألوف', 'مئات الألوف', 'الملايين'];
+const PLACE_EN = ['ones', 'tens', 'hundreds', 'thousands', 'ten thousands', 'hundred thousands', 'millions'];
 
 /** «345» → «300 + 40 + 5», zero digits left out. */
 const expanded = (digits: number[]) =>
@@ -1064,7 +1067,11 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'place': {
-      const digits = Math.min(String(ADD_MAX[grade]).length, diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4);
+      // Grades 4 and 5 name a wider range («ضمن مئات الألوف», «ضمن الملايين»):
+      // their tiers start higher, or a Grade 4 paper never passed 4 digits.
+      // Grades 1–3 keep 2/3/4 capped by the grade.
+      const top = PLACE_DIGITS[grade] ?? 4;
+      const digits = Math.min(top, (diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4) + Math.max(0, top - 4));
       if (int(rng, 0, 3) > 0) return placeKinds(base, digits, rng);
       // The digit asked about must occur once: «الرقم 4 في العدد 344» has two
       // place values and no single answer.
