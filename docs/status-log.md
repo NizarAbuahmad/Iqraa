@@ -10,6 +10,72 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 5 reviewed against its books: catalogs, maths questions, science figures — 2026-11-13
+
+All 18 Grade 5 catalogs (10 subjects) were compared with their books' contents
+pages and lesson openers. **The PDFs were not reachable** (nccd.gov.jo resets
+the connection from the cloud container), so the evidence is the committed
+extracted text in `lib/curriculum/src/data/extracted/`. Nothing was re-extracted.
+
+**Catalogs.** Maths, science, Arabic, Islamic, vocational, PE and art: every
+unit and numbered lesson the book prints is present, in order, with its title.
+Fixed:
+- Social S1: three titles were wrong (u1_l1 «أتواصل مع مجتمعي», u4_l1 «أشكال
+  سطح الأرض والمسطحات المائية في وطني», u4_l3 «التوزع السكاني في وطني»).
+  Social S2: u8_l1 is «الثقافة»; **u7_l4 «دول المغرب العربي» was missing** and is
+  appended (no id moved). The social text layer is not unreadable as the old
+  notes said: it is visual order, readable once each line is reversed.
+- Islamic S1/S2: objectives (159) and periods filled from the teacher guides'
+  «نتاجات التعلم» blocks, each headed with its lesson. u5_l1/u6_l1 periods stay
+  null (digit lost in extraction).
+- Maths: four vocabulary glosses. English: «money box» (was split), duplicates,
+  u10 pronunciation; each unit's story, song, culture, function, reading and
+  writing appended to objectives (positions unchanged).
+- **The «Grade 5» digital teacher's guide is Grade 4's** (cover, ISBN, deposit
+  number). Its row is now `duplicate` of `g4-digital-s1-teacher-guide` and its
+  extracted text deleted, so Grade 5 lessons are not grounded on it.
+
+**Maths questions (offline generator, `lib/math-practice`).** Every Grade 5
+lesson was run through `takeElementaryMath`; every key checked was right, but
+place value «ضمن الملايين» asked about 92 and 399, «ضرب الأعداد» asked repeated
+addition, «قسمة الأعداد» a fact family, and «الضرب الذهني» / «المضلعات» got
+nothing. Grade 5+ now draws 6-9-digit place value, 3-4-digit × 1-digit and up
+to 3-digit × 2-digit products, 3-4-digit dividends, and two new generators
+(`mental_mul`, `polygons_g5`). Pinned by `grade5Book.test.ts`. Still refused
+offline: «السؤال الإحصائي», the two graph lessons and the two «خطة حل المسألة»
+lessons (they need a drawn chart or are about method; live AI serves them).
+
+**Science figures.** Seven moved to the lesson they show (the pendulum was on
+«تحولات المادة», the Earth's layers on «الطاقة الميكانيكية»; review-page figures
+sat on each unit's last lesson). Two crops dropped (S1 p48, a whole «تقويم
+الأداء» page; S2 p25c, gloves cut from a question). Asset list regenerated; no
+upload needed (keys only removed).
+
+**Not done — needs the PDFs or a decision:**
+- **English units have 12 lessons each** (TG p.7); the catalog models 2. Adding
+  l3-l12 is a structure change for the English corner (lesson counts, audio).
+- **The digital activity book is whole-year**; u6-u10 are semester 2 content
+  filed under semester 1. No Grade 5 digital S2 book or real guide is on file.
+- **«money box» has no audio clip** until `generate-english-audio` runs (web
+  falls back to speech; a phone stays silent on that word).
+- **Figures exist only for Grade 5 science**; none for S1 unit 3, «الضوء»,
+  «السرعة». Other subjects need extraction from the PDFs.
+- **Weak text layers** feed grounding: maths S1 student book (~15 of 66 prose
+  pages reversed), art (~a third), vocational S2, social. Re-extract with
+  `--force --ocr` when the PDFs are at hand.
+- Arabic objectives: the unit competency pages do map to lessons, but the
+  pdf-parse text scrambles them; needs a PyMuPDF re-read.
+- PE: the «نتاجات التعلم» statements could fill objectives; left as one decision
+  for every grade's PE catalog.
+- `book-page-links.json` ranges for Grade 5 social look wrong (u2_l1 listed at
+  pp40-59, starts p30); regenerate with `verify_book_pages.py`.
+- The maths S1 teacher guide is the 2020 pilot edition (unit 2 has 7 lessons),
+  not the student book's; do not fill from it.
+
+**Verified:** `math-practice` 958/958 and typecheck; curriculum `verify` 0
+errors, tests 914/915 (the one failure, `r2.test.ts`, asserts R2 is
+unconfigured and fails because this container has R2 set); figure tests 25/25; repo typecheck clean; mobile suite 9212 pass with one failure, fixed after: `mathLessonKinds.test.ts` counted the first wording of doubling and halving («أوجد ضعف/نصف العدد…») as one kind, so they are now distinct word problems.
+
 ## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
 
 A teacher added a pacing plan from the Today nudge «أضف الخطة» and the nudge kept saying «لا توجد خطة زمنية». Not a

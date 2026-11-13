@@ -445,7 +445,8 @@ const mentalMul: Topic = {
       const d = 2 * n;
       return {
         eq: `2 × ${n}`, answer: String(d), wrongs: numWrongs(d, [n + 2, d + 10, d - 10, n * 20]),
-        ar: `أوجد ضعف العدد ${n} ذهنيًّا.`, en: `Double ${n} mentally.`,
+        ar: `في مكتبة المدرسة ${counted(n, 'كتب', 'كتابًا', 'كتاب')}، وفي مكتبة البلدية ضعف هذا العدد. كم كتابًا في مكتبة البلدية؟ احسب ذهنيًّا.`,
+        en: `The school library has ${n} books and the town library has double that. How many books does the town library have? Work it out mentally.`,
       };
     }
     if (kind === 1) {
@@ -453,7 +454,8 @@ const mentalMul: Topic = {
       const n = 2 * h;
       return {
         eq: `${n} ÷ 2`, answer: String(h), wrongs: numWrongs(h, [n * 2, h + 10, h - 10, n - 2]),
-        ar: `أوجد نصف العدد ${n} ذهنيًّا.`, en: `Halve ${n} mentally.`,
+        ar: `قطع عدّاء ${counted(n, 'أمتار', 'مترًا', 'متر')}، وقطع زميله نصف هذه المسافة. كم مترًا قطع زميله؟ احسب ذهنيًّا.`,
+        en: `A runner ran ${n} metres and a teammate ran half that distance. How many metres did the teammate run? Work it out mentally.`,
       };
     }
     // a × b where halving b and doubling a lands on an easy product: 35 × 16 = 70 × 8.
