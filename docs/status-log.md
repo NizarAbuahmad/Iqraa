@@ -123,6 +123,16 @@ failed with live AI off. The lessons are «رسم الأشكال ثلاثيّة 
 example (the solved slots walk on to a lesson that has working). The questions follow the objectives, not
 a book page, until a Grade 8 maths book is extracted.
 
+## Grade 4 PE: the technique steps, courts and first-aid pictures — 2026-11-13
+
+The 28 PE crops from «Grade 4 PE, vocational S2, social and arts figures» were the photos the colour detector found;
+it missed the teaching pictures, which are small figures on white. Looked at all 39 renders and boxed by hand: the
+numbered «النواحي الفنية» step blocks with their captions — football pp. 7, 10, 13, 16 and badminton grips pp. 24, 27,
+ready stance p. 33 — the ladder drill (p. 11), the futsal court (p. 12), the badminton net with its 6.1 m / 76 cm (p. 32),
+the four injury-prevention cards (p. 47, replacing the healthy-plate crop that was one of them), the equipment-safety
+cards (p. 48), the warm-up figures (p. 49) and the four first-aid steps الراحة، الثلج، الضغط، الرفع (p. 52). 14 crops;
+PE now has 41 on 11 of 13 lessons. All in `iqraa-public/figures/` under names checked free first.
+
 ## Grade 4 vocational S2: six figures the detector missed — 2026-11-13
 
 A page-by-page look at the 36 vocational S2 renders (after «Grade 4 PE, vocational S2, social and arts figures»)
