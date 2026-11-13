@@ -2,16 +2,19 @@
  * Grade 5 Social Studies (الدراسات الاجتماعية) — Semester 2.
  * Source of truth: data/iqra_curriculum_g5_social_sem2.json
  *
- * Title-only for the same reason as g5SocialSem1: a corrupted ToUnicode CMap
- * in this book's PDF, not an extraction-order bug — see that file's header
- * for the full explanation. Unit and lesson titles here were recovered by
- * OCR of the contents pages and unit opener pages. Units are numbered 5-8,
- * continuing Semester 1's 1-4, matching the book's own cover and contents
- * page. Re-checked 2026-11-13 against the contents pages in
- * data/extracted/g5-social-s2-student-book.json (visual-order text: reverse
- * each line to read it): Unit 7 has four lessons — «دول المغرب العربي» was
- * appended as u7_l4 — and Unit 8 Lesson 1 is «الثقافة». See the JSON's
- * `known_gaps`.
+ * Titles plus one objective per lesson, same history as g5SocialSem1 (see
+ * that file's header): the text layer was taken for a corrupted ToUnicode
+ * CMap on 2026-09-16, so unit and lesson titles were recovered by OCR of the
+ * contents pages and unit opener pages; on 2026-11-13 it turned out to be
+ * visual-order text that reads cleanly once each line is reversed. Units are
+ * numbered 5-8, continuing Semester 1's 1-4, matching the book's own cover
+ * and contents page. Re-checked 2026-11-13 against the contents pages in
+ * data/extracted/g5-social-s2-student-book.json: Unit 7 has four lessons —
+ * «دول المغرب العربي» was appended as u7_l4 — and Unit 8 Lesson 1 is
+ * «الثقافة». The same day `objectives` were filled from each unit opener's
+ * «ماذا سأتعلم؟» box (pp. 7, 27, 49, 81; one item per lesson, in lesson
+ * order — four for Unit 7). Main ideas and vocabulary are still empty, and
+ * the title-only predicates below are unchanged. See the JSON's `known_gaps`.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */

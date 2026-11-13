@@ -2,19 +2,22 @@
  * Grade 5 Social Studies (الدراسات الاجتماعية) — Semester 1.
  * Source of truth: data/iqra_curriculum_g5_social_sem1.json
  *
- * Title-only, but for a different reason than the other title-only Grade 5/6
- * books: this IS a normal subject book with a student edition, but its PDF's
- * embedded text layer is corrupted — even PyMuPDF (which reads every other
- * Grade 5 book cleanly) decodes garbled Arabic, because the ToUnicode CMap
- * baked into this specific file is wrong, not because of an extraction-order
- * bug. Unit and lesson titles here were recovered by OCR (Tesseract, `ara`
- * language pack) of the contents pages and each unit's own opener page, not
- * from the text layer. Re-checked 2026-11-13: the extracted text in
- * data/extracted/g5-social-s1-student-book.json is in visual order (each
- * line's characters reversed, some lam-alef pairs swapped), so the contents
- * pages read cleanly once a line is reversed — three OCR-era titles were
- * corrected from it (Unit 1 Lesson 1, Unit 4 Lessons 1 and 3). See the
- * JSON's `known_gaps`.
+ * Titles plus one objective per lesson; main ideas and vocabulary are still
+ * empty. On 2026-09-16 the PDF's text layer looked garbled even through
+ * PyMuPDF (which reads every other Grade 5 book cleanly), and was put down to
+ * a broken ToUnicode CMap, so unit and lesson titles were recovered by OCR
+ * (Tesseract, `ara` language pack) of the contents pages and each unit's
+ * opener page. Re-checked 2026-11-13: the text is not corrupted — the
+ * extracted text in data/extracted/g5-social-s1-student-book.json is in
+ * visual order (each line's characters reversed, some lam-alef pairs
+ * swapped) and reads cleanly once a line is reversed. Three OCR-era titles
+ * were corrected from it (Unit 1 Lesson 1, Unit 4 Lessons 1 and 3), and
+ * `objectives` were filled from each unit opener's «ماذا سأتعلم؟» box (pp. 7,
+ * 29, 49, 75): the book prints no per-lesson outcomes box, and that box has
+ * exactly one item per lesson, in lesson order, each matching its lesson's
+ * topic. They are topic phrases, not behavioural outcomes, and some nearly
+ * repeat the lesson title. The title-only predicates below are unchanged.
+ * See the JSON's `known_gaps`.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
