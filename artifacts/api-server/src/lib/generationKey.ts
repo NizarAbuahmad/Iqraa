@@ -27,7 +27,11 @@ import { isFirstGrade } from "./firstGrade.ts";
  * other grade's key leaves the field out (`hash` drops `undefined`), so no
  * other pool restarts. Bump the date when the clause changes.
  */
-export const FIRST_GRADE_KINDS: ReadonlySet<string> = new Set(["lesson-plan", "worksheet", "homework", "quiz", "activity"]);
+export const FIRST_GRADE_KINDS: ReadonlySet<string> = new Set([
+  "lesson-plan", "worksheet", "homework", "quiz", "activity",
+  // the clause reached these the same day, in a second change
+  "lesson-teaching", "prompt-slides", "classroom-activity", "infographic",
+]);
 export const FIRST_GRADE_CLAUSE_VERSION = "2026-11-13";
 
 /**

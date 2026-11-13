@@ -15,6 +15,7 @@ import { arabicLessonType, isFirstGradeLesson } from '../ai/lessonPlanFirstGrade
 import { KB_LESSONS, getBookForLesson, getLessonById } from '../knowledgeBase.ts';
 import type { AIRequest, LessonPlanOutput } from '../ai/AIService.ts';
 import { FIRST_PERSON, imperativesIn, norm } from './teacherVoiceCheck.ts';
+import { lessonsInScope, scopeKey, type ScopeSelection } from '../scopeSelection.ts';
 
 (aiService as unknown as { delay: () => Promise<void> }).delay = async () => {};
 
@@ -153,5 +154,49 @@ describe('other grades keep their plan', () => {
       const p = await planFor(l.id, 'direct');
       assert.doesNotMatch(p.assessment, /لن أطلب كتابة إلا نسخ/, `${grade} got the Grade 1 plan`);
     }
+  });
+});
+
+describe('a Grade 1 review (unit or semester) and a plan from the teacher’s file', () => {
+  const G1_SUBJECTS = ['arabic', 'mathematics', 'science', 'social', 'islamic', 'english', 'physical-education'];
+  const reviewReq = (sel: ScopeSelection, style: string, language: 'arabic' | 'english' = 'arabic'): AIRequest => {
+    const ls = lessonsInScope(sel);
+    return {
+      grade: language === 'arabic' ? 'الصف الأول' : 'Grade 1', subject: sel.subjectId, topic: 'مراجعة', language, duration: 45, teachingStyle: style,
+      scope: { kind: sel.kind, scopeKey: scopeKey(sel), unitIds: [...new Set(ls.map(l => l.unitId))] },
+      coverage: { lessons: ls.map((l, i) => ({ code: `L${i + 1}`, id: l.id, unitId: l.unitId, title: l.titleAr })) },
+    } as AIRequest;
+  };
+  const REVIEW_TOO_OLD = [...TOO_OLD_AR, /ورقة مراجعة/, /بطاقة خروج/, /الفكرة الرئيسة في جملتين/, /سيكتب كل طالب/, /يكتب كل ثلاثي/, /ملخّصًا/];
+
+  it('a semester review of every Grade 1 subject, every style, is pitched at six-year-olds, in the teacher’s voice', async () => {
+    const bad: string[] = [];
+    for (const subjectId of G1_SUBJECTS) {
+      for (const style of LESSON_STYLE_IDS) {
+        const p = await aiService.generateLessonPlan(reviewReq({ kind: 'semester', gradeId: 'grade-1', subjectId, semester: 1 }, style));
+        const t = textOf({ ...p, objectives: [] });
+        for (const re of REVIEW_TOO_OLD) if (re.test(t)) bad.push(`${subjectId} · ${style}: ${re}`);
+        for (const f of TEACHER_FIELDS) { const hits = imperativesIn(p[f]); if (hits.length) bad.push(`${subjectId} · ${style} · ${f}: ${hits}`); }
+        for (const f of ['mainActivity', 'guidedPractice', 'closure', 'assessment'] as const) if (!FIRST_PERSON.test(norm(p[f]))) bad.push(`${subjectId} · ${style} · ${f}: never «سأ…»`);
+      }
+    }
+    assert.deepEqual(bad.slice(0, 8), [], `${bad.length} problems`);
+  });
+
+  it('a Grade 10 review keeps its plan', async () => {
+    const p = await aiService.generateLessonPlan(reviewReq({ kind: 'semester', gradeId: 'grade-10', subjectId: 'mathematics', semester: 1 }, 'direct'));
+    assert.match(p.closure, /بطاقة خروج/);
+  });
+
+  it('a plan from the teacher’s file, for Grade 1, keeps the file and the Grade 1 plan', async () => {
+    const DOC = ['=== مواد المعلم المرفوعة (سياق أساسي) ===', 'ملف 1: plants.pdf (pdf)', 'جودة الاستخراج: نص حقيقي', 'عنوان: أجزاء النبات', 'ملخص: للنبات جذر وساق وأوراق', 'مفاهيم: الجذر · الساق · الورقة'].join('\n');
+    const req = { grade: 'الصف الأول', subject: 'العلوم', topic: 'أجزاء النبات', language: 'arabic', duration: 40, additionalContext: DOC } as AIRequest;
+    const p = await aiService.generateLessonPlan(req);
+    assert.match(p.materials[0]!, /plants\.pdf/);
+    assert.match(p.introduction, /plants\.pdf/);
+    assert.deepEqual(p.objectives, ['أن يتعرّف الطفل «الجذر» ويسمّيه', 'أن يتعرّف الطفل «الساق» ويسمّيه', 'أن يتعرّف الطفل «الورقة» ويسمّيه']);
+    for (const re of TOO_OLD_AR) assert.doesNotMatch(textOf({ ...p, objectives: [] }), re);
+    const g10 = await aiService.generateLessonPlan({ ...req, grade: 'الصف العاشر' });
+    assert.doesNotMatch(g10.assessment, /لن أطلب كتابة إلا نسخ/, 'a Grade 10 file plan is not the Grade 1 plan');
   });
 });

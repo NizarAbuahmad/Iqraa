@@ -37,6 +37,8 @@ export interface FirstGradeActivityContext {
   practice: PracticeWQ[];
   duration: number;
   variant?: number;
+  /** A unit or semester review: its warm-up looks back over the units, not at «yesterday's lesson». */
+  revision?: boolean;
 }
 
 type Pair = { ar: string; en: string };
@@ -165,7 +167,35 @@ const TIPS: Pair[] = [
 
 const L = (ctx: FirstGradeActivityContext, p: Pair) => (ctx.lang === 'ar' ? p.ar : p.en);
 
+/**
+ * A review covers several lessons, so everything it says names them all
+ * («مفردات الدروس», never «مفردات الدرس»). The specific phrases go first; the
+ * last rule of each language catches the rest («من الدرس» → «من الدروس»).
+ */
+const REVIEW_WORDING: Array<[RegExp, string]> = [
+  [/أنشودة الدرس أو تسجيلها/g, 'أناشيد الدروس أو تسجيلاتها'],
+  [/أنشودة الدرس/g, 'أناشيد الدروس'],
+  [/الدرس/g, 'الدروس'],
+  [/The lesson song or its recording/g, 'The lessons’ songs or their recordings'],
+  [/as the lesson needs/g, 'as the lessons need'],
+  [/the lesson words/g, 'the lessons’ words'],
+  [/\b([Tt])he lesson\b(?![s’])/g, '$1he lessons'],
+];
+const forReview = (x: string) => REVIEW_WORDING.reduce((y, [re, to]) => y.replace(re, to), x);
+
 export function buildFirstGradeActivity(id: ActivityBlueprintId, ctx: FirstGradeActivityContext): ActivityBlueprint {
+  const b = oneLesson(id, ctx);
+  if (!ctx.revision) return b;
+  return {
+    ...b,
+    titleSuffix: forReview(b.titleSuffix), groupSize: forReview(b.groupSize), objective: forReview(b.objective),
+    materials: b.materials.map(forReview), teacherTips: b.teacherTips.map(forReview),
+    differentiation: forReview(b.differentiation), assessment: forReview(b.assessment),
+    steps: b.steps.map(st => ({ ...st, title: forReview(st.title), description: forReview(st.description) })),
+  };
+}
+
+function oneLesson(id: ActivityBlueprintId, ctx: FirstGradeActivityContext): ActivityBlueprint {
   const c = firstGradeContent(ctx.kind, ctx.topic, ctx.kb?.titleAr ?? ctx.topic);
   const ar = ctx.lang === 'ar';
   const t = ctx.topic;
@@ -308,6 +338,30 @@ export function buildFirstGradeActivity(id: ActivityBlueprintId, ctx: FirstGrade
     }
     case 'warmup':
     default:
+      if (ctx.revision) {
+        return {
+          titleSuffix: ar ? 'تهيئة' : 'Warm-up',
+          groupSize: ar ? 'الصف كله' : 'The whole class',
+          objective: ar ? `أن يتهيّأ الأطفال لمراجعة «${t}» بنشيد وصور مما تعلّموه` : `Children get ready to review “${t}” with a song and pictures of what they learned`,
+          materials: ar ? ['أنشودة قصيرة', 'صور من الدروس التي نراجعها'] : ['A short song', 'Pictures from the lessons we are reviewing'],
+          steps: mk(ar ? [
+            ['نشيد وحركة', 'سننشد معًا أنشودة قصيرة مع حركات، ليقف الأطفال ويتحركوا.'],
+            ['ماذا نتذكّر؟', 'سأرفع صورًا مما تعلّمناه في هذه الدروس واحدة بعد واحدة، وأسأل: «ماذا تذكرون؟» ويجيب طفلان أو ثلاثة بكلمة.'],
+            ['إلى المراجعة', 'سأقول للأطفال إننا سنلعب اليوم ونتذكّر معًا ما تعلّمناه، وأرتّب الصور على السبورة لنعود إليها.'],
+          ] : [
+            ['A song and actions', 'We will sing a short song with actions, so the children stand and move.'],
+            ['What do we remember?', 'I will hold up pictures of what we learned in these lessons one by one and ask “What do you remember?”; two or three children answer with a word.'],
+            ['Into the review', 'I will tell the children that today we play and remember together what we learned, and put the pictures up on the board to come back to.'],
+          ], [2, 2, 2]),
+          teacherTips: [tip(1)],
+          differentiation: ar
+            ? 'أعطي الطفل المتردّد فرصة الإجابة بالإشارة إلى الصورة.'
+            : 'I let a hesitant child answer by pointing at the picture.',
+          assessment: ar
+            ? 'الصور التي لم يتذكّرها الأطفال هي التي أبدأ بها المراجعة.'
+            : 'The pictures the children did not remember are where I start the review.',
+        };
+      }
       return {
         titleSuffix: ar ? 'تهيئة' : 'Warm-up',
         groupSize: ar ? 'الصف كله' : 'The whole class',

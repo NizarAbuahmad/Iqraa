@@ -19,6 +19,11 @@ import {
 } from "../prompts.ts";
 import { firstGradeClauseAr, isFirstGrade } from "../firstGrade.ts";
 import { generationKeys } from "../generationKey.ts";
+import { lessonTeachingPromptAr, lessonTeachingPromptEn } from "../lessonTeachingPrompt.ts";
+import { promptSlidesPromptAr, promptSlidesPromptEn } from "../promptSlidesPrompt.ts";
+import { classroomActivityPrompt } from "../classroomPrompts.ts";
+import { infographicPromptAr, infographicPromptEn } from "../prompts.ts";
+import { buildGenerationPrompt } from "../../modules/assessment/llmGenerator.ts";
 
 const G1_ARABIC = {
   grade: "الصف الأول", subject: "اللغة العربية", subjectId: "arabic", topic: "حَرْفُ الْبَاءِ (ب)",
@@ -132,8 +137,51 @@ describe("review fixes (2026-11-13)", () => {
     const g1 = { grade: "الصف الأول", subject: "اللغة العربية", topic: "حرف الباء (ب)", lessonId: "kbl-g1-arabic-s1-nccd-u1_l6", language: "arabic", contextSource: "curriculum" };
     // Computed with the key code as it was before the Grade 1 field existed.
     assert.equal(generationKeys("lesson-plan", "m", g10).strictKey, "4be98b498ea453a4", "a Grade 10 key moved");
-    assert.equal(generationKeys("lesson-teaching", "m", g1).strictKey, "d1cb7cad59b3844d", "a kind without the clause moved");
+    // a kind without the clause (the Prompt Slides clarifying questions, which go to the teacher) keeps its key
+    const questions = generationKeys("prompt-slides-questions", "m", g1).strictKey;
+    assert.equal(questions, generationKeys("prompt-slides-questions", "m", { ...g1, grade: "الصف الأول " }).strictKey);
+    // lesson-teaching gained the clause the same day, so its Grade 1 key moved too
+    assert.notEqual(generationKeys("lesson-teaching", "m", g1).strictKey, "d1cb7cad59b3844d", "a Grade 1 explanation still reads the old pool");
+    assert.equal(generationKeys("lesson-teaching", "m", g10).strictKey, generationKeys("lesson-teaching", "m", { ...g10 }).strictKey);
     assert.notEqual(generationKeys("lesson-plan", "m", g1).strictKey, "e3da440e90702faf", "a Grade 1 plan still reads the old pool");
     assert.notEqual(generationKeys("lesson-plan", "m", g1).coarseKey, "0e7f0548453934bc");
+  });
+});
+
+describe("the Grade 1 clause in the remaining live prompts", () => {
+  it("the lesson explanation (deck and student) is written for six-year-olds", () => {
+    assert.match(lessonTeachingPromptAr(G1_ARABIC), /خمس كلمات أو أقل/);
+    assert.match(lessonTeachingPromptEn({ ...G1_MATH_EN }), /five words or fewer/);
+    assert.ok(!lessonTeachingPromptAr(G10).includes(MARK_AR));
+  });
+
+  it("Prompt Slides applies it only if the deck is a lesson for the teacher's Grade 1 class", () => {
+    const p = promptSlidesPromptAr({ grade: "الصف الأول", subject: "الرياضيات", additionalContext: "عرض عن الجمع" });
+    assert.match(p, /إن كان العرض درسًا أو مراجعة لطلبة هذا الصف/);
+    assert.ok(p.includes(MARK_AR));
+    assert.ok(!promptSlidesPromptAr({ grade: "الصف العاشر", subject: "الرياضيات", additionalContext: "x" }).includes(MARK_AR));
+    assert.match(promptSlidesPromptEn({ grade: "Grade 1", subject: "Mathematics", additionalContext: "addition" }), /If the deck is a lesson or a review for this class/);
+  });
+
+  it("classroom games and the deck's quick check are answered together, not written", () => {
+    const q = classroomActivityPrompt({ ...G1_ARABIC, activityType: "quick-check", groupType: "whole-class", teachingGoal: "assessment", duration: 10 }, true);
+    assert.match(q, /يجيب الأطفال معًا بالإشارة/);
+    assert.ok(!classroomActivityPrompt({ ...G10, activityType: "quick-check", groupType: "whole-class", teachingGoal: "assessment", duration: 10 }, true).includes(MARK_AR));
+    assert.doesNotMatch(q, /مجموعات صغيرة \(2-4\)/, "a whole-class quick check is not group work");
+  });
+
+  it("the infographic has few words a line", () => {
+    assert.match(infographicPromptAr(G1_ARABIC), /خمس كلمات أو أقل في السطر/);
+    assert.ok(!infographicPromptEn(G10).includes(MARK_EN));
+  });
+
+  it("an evaluation for Grade 1 carries the paper clause; another grade does not", () => {
+    const req = (gradeId: string) => buildGenerationPrompt({
+      objectives: [{ id: "o1", description: "Numbers 1, 2, 3", descriptionAr: "قراءة الأعداد", effectiveBloomsLevel: "Remember", subjectId: "mathematics" } as never],
+      gradeId, assessmentTypes: ["multiple_choice"], count: 4, difficulty: "standard", language: "ar",
+    } as never).system;
+    assert.ok(req("grade-1").includes(MARK_EN));
+    assert.match(req("grade-1"), /Grade 1 mathematics: numbers only within the lesson's range/);
+    for (const g of ["grade-2", "grade-10", undefined]) assert.ok(!req(g as never).includes(MARK_EN), String(g));
   });
 });

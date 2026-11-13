@@ -14,6 +14,7 @@ import { aiService, buildOfflineActivity } from '../ai/generators.ts';
 import { ACTIVITY_BLUEPRINT_IDS } from '../ai/activityBlueprints.ts';
 import { KB_LESSONS, getBookForLesson, getLessonById } from '../knowledgeBase.ts';
 import type { ActivityOutput, AIRequest, ClassroomActivity, ClassroomActivityRequest } from '../ai/AIService.ts';
+import { lessonsInScope, scopeKey, type ScopeSelection } from '../scopeSelection.ts';
 
 (aiService as unknown as { delay: () => Promise<void> }).delay = async () => {};
 
@@ -142,5 +143,51 @@ describe('the deck’s quick check for Grade 1', () => {
   it('a Grade 1 maths check keeps its own questions', async () => {
     const a = await check('kbl-g1-math-s2-nccd-u6_l1');
     assert.ok(a.slides.some(s => s.type === 'question'), 'no maths questions');
+  });
+});
+
+describe('a Grade 1 review activity and its quick check', () => {
+  const reviewReq = (subjectId: string, type: string): AIRequest => {
+    const sel: ScopeSelection = { kind: 'semester', gradeId: 'grade-1', subjectId, semester: 1 };
+    const ls = lessonsInScope(sel);
+    return {
+      grade: 'الصف الأول', subject: subjectId, topic: 'مراجعة', language: 'arabic',
+      activityType: type === 'warmup' ? 'group' : type, ...(type === 'warmup' ? { activityVariant: 'warmup' } : {}),
+      scope: { kind: 'semester', scopeKey: scopeKey(sel), unitIds: [...new Set(ls.map(l => l.unitId))] },
+      coverage: { lessons: ls.map((l, i) => ({ code: `L${i + 1}`, id: l.id, unitId: l.unitId, title: l.titleAr })) },
+    } as AIRequest;
+  };
+
+  it('every format of a semester review is the Grade 1 one', () => {
+    const bad: string[] = [];
+    for (const subjectId of ['arabic', 'mathematics', 'science', 'islamic', 'english']) {
+      for (const type of ACTIVITY_BLUEPRINT_IDS) {
+        const t = textOf(buildOfflineActivity(reviewReq(subjectId, type)));
+        for (const re of TOO_OLD_AR) if (re.test(t)) bad.push(`${subjectId} · ${type}: ${re}`);
+        // A review is several lessons: «مفردات الدرس», «من الدرس السابق» are one lesson's words.
+        if (/الدرس|درس اليوم/.test(t)) bad.push(`${subjectId} · ${type}: speaks of one lesson`);
+      }
+    }
+    assert.deepEqual(bad.slice(0, 8), [], `${bad.length} problems`);
+  });
+
+  it('a review quick check for a subject with no bank is spoken, not written', async () => {
+    const a = await aiService.generateClassroomActivity({ ...reviewReq('science', 'quick-check'), activityType: 'quick-check', duration: 10, difficulty: 'standard', groupType: 'whole-class', teachingGoal: 'assessment', numQuestions: 5 } as unknown as ClassroomActivityRequest);
+    const t = a.slides.map(s => s.content ?? '').join('\n');
+    assert.doesNotMatch(t, /اشرح بكلماتك|اكتب إجابتك/);
+  });
+});
+
+describe('a Grade 1 review warm-up', () => {
+  it('looks back over the units, never at «yesterday’s lesson» or «today’s lesson»', () => {
+    const sel: ScopeSelection = { kind: 'book', gradeId: 'grade-1', subjectId: 'mathematics' };
+    const ls = lessonsInScope(sel);
+    const a = buildOfflineActivity({
+      grade: 'الصف الأول', subject: 'Mathematics', topic: 'مراجعة', language: 'arabic', activityType: 'group', activityVariant: 'warmup',
+      scope: { kind: 'book', scopeKey: scopeKey(sel), unitIds: [...new Set(ls.map(l => l.unitId))] },
+      coverage: { lessons: ls.map((l, i) => ({ code: `L${i + 1}`, id: l.id, unitId: l.unitId, title: l.titleAr })) },
+    } as AIRequest);
+    assert.doesNotMatch(JSON.stringify(a), /الدرس السابق|درس اليوم|أمس/);
+    assert.match(a.steps.map(s => s.title).join('|'), /إلى المراجعة/);
   });
 });

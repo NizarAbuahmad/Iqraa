@@ -1120,10 +1120,11 @@ export function buildOfflineActivity(req: AIRequest, variant = 0, probe?: Revisi
 
   const subjectForKind = (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject;
   // Grade 1 is six-year-olds learning to read: each format has its own Grade 1
-  // version (`activityFirstGrade.ts`). A revision keeps the all-grades one.
-  const blueprint = !rev && isFirstGradeLesson(kb, req.grade)
+  // version (`activityFirstGrade.ts`), a unit or semester review included (its
+  // composite lesson sits in a real Grade 1 unit, so the book still decides).
+  const blueprint = isFirstGradeLesson(kb, req.grade)
     ? buildFirstGradeActivity(isActivityBlueprintId(actType) ? actType : 'group', {
-      topic, lang, kb, practice, duration, variant,
+      topic, lang, kb, practice, duration, variant, revision: !!rev,
       kind: lessonKindFor((kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined),
     })
     : buildActivityBlueprint(actType, {
@@ -1383,6 +1384,32 @@ export class MockAIService extends AIService {
     });
 
     // Document-grounded lesson plan (Demo Mode) — prefer uploaded materials over KB soft pin
+    // A Grade 1 plan built from the teacher's own file: the Grade 1 plan, carrying
+    // the file — named in the materials and the opening, its example in the
+    // modelling step, its objectives when it states them.
+    if (docs.present && isFirstGradeLesson(null, req.grade)) {
+      const g1 = firstGradePlan({ topic, kb: null, lang, kind, style, duration: dur, variant, customObjectives: req.objectives });
+      const ar = lang === 'ar';
+      return {
+        title: ar ? `${topic} – خطة درس` : `${topic} – Lesson Plan`,
+        grade: req.grade, subject: req.subject, duration: dur,
+        // the file's concepts, at a six-year-old's level (its generic objectives ask for «تمارين بمستويات متدرجة»)
+        objectives: req.objectives?.trim() || !docs.concepts.length ? g1.objectives
+          : docs.concepts.slice(0, 3).map(c => (ar ? `أن يتعرّف الطفل «${c}» ويسمّيه` : `The child will recognise and name “${c}”`)),
+        materials: [ar ? fileLabel.replace(/^الملف /, 'الملف المرفوع: ') : `Uploaded: ${docs.fileNames[0] ?? 'teacher materials'}`, ...g1.materials.slice(0, 3)],
+        ...(priorReview ? { priorReview } : {}),
+        introduction: (ar ? `اعتمادًا على ${fileLabel}: ` : `Using ${fileLabel}: `) + g1.introduction,
+        mainActivity: g1.mainActivity
+          + (exampleLine ? (ar ? `\n\nمثال من الملف أعرضه بالأشياء أو بالصور:\n• ${exampleLine}` : `\n\nAn example from the file, shown with objects or pictures:\n• ${exampleLine}`) : ''),
+        guidedPractice: g1.guidedPractice,
+        independentPractice: g1.independentPractice,
+        closure: g1.closure,
+        assessment: g1.assessment,
+        differentiation: g1.differentiation,
+        homework: g1.homework,
+      };
+    }
+
     if (docs.present) {
       if (lang === 'ar') {
         return {
@@ -2181,7 +2208,7 @@ export class MockAIService extends AIService {
 
       // Grade 1, no bank: spoken prompts answered all together — never «explain
       // in your own words» on a board (`activityFirstGrade.ts`).
-      if (!rev && isFirstGradeLesson(kb, req.grade)) {
+      if (isFirstGradeLesson(kb, req.grade)) {
         const g1Kind = lessonKindFor((kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined);
         const g1Slides = firstGradeCheckSlides(g1Kind, topic, kb?.titleAr ?? topic, isAr ? 'ar' : 'en');
         return {

@@ -23,7 +23,13 @@
  * Grade 1.
  */
 
-export type FirstGradeUse = "plan" | "paper" | "activity";
+/**
+ * Which generator the clause is for: a lesson plan, a paper (worksheet, homework,
+ * quiz, exam), an activity, a classroom game or quick check projected to the
+ * class, the explanation section a deck or a student shows, or a visual (a slide
+ * deck, an infographic).
+ */
+export type FirstGradeUse = "plan" | "paper" | "activity" | "classroom" | "explain" | "visual";
 
 type GradeFields = {
   grade?: unknown;
@@ -80,6 +86,17 @@ const BASE_AR: Record<FirstGradeUse, string> = {
 - خطوات قصيرة محسوسة يقودها المعلم: صور وبطاقات ومجسّمات وحركة وأناشيد وألعاب، وتعليمات المعلم جمل قصيرة يقولها بصوته.
 - لا قراءة نصوص ولا كتابة جمل أو فقرات ولا أوراق تُملأ: يشير الطفل أو يلوّن أو يصل أو يقول أو ينسخ حرفًا أو كلمة.
 - التقييم ملاحظة المعلم وسؤاله الشفوي.`,
+  classroom: `الصف الأول (أطفال في السادسة يتعلّمون القراءة الآن):
+- كل ما على الشريحة كلمات قليلة يقرؤها المعلم بصوته، وكل سؤال جملة واحدة قصيرة بكلمات مألوفة.
+- يجيب الأطفال معًا بالإشارة أو بصوت واحد أو برفع الإبهام أو بكلمة أو عدد؛ لا كتابة على الألواح إلا حرفًا أو عددًا.
+- لا «اشرح» ولا «علّل» ولا «قارن»، ولا مسألة من أكثر من خطوة، وما يحتاج صورة يُرسم برموز (★ ★ ★) أو يصفه المعلم.`,
+  explain: `الصف الأول (أطفال في السادسة يتعلّمون القراءة الآن، والمعلّم يقرأ الشاشة بصوته):
+- كل ما يُعرض جمل قصيرة جدًا (خمس كلمات أو أقل) بكلمات يعرفها الطفل، وفكرة واحدة في كل شريحة.
+- الشرح بأمثلة محسوسة من حياة الطفل (أشياء يعدّها، صور يصفها المعلم)، لا تعريفات ولا مصطلحات صعبة.
+- المثال المحلول والتدريب خطوة أو خطوتان بأعداد الدرس وكلماته فقط، والإجابة كلمة أو عدد؛ والحلّ الخاطئ فيه خطأ واحد بسيط يراه الطفل.`,
+  visual: `الصف الأول (أطفال في السادسة يتعلّمون القراءة الآن):
+- كلمات قليلة في كل شريحة أو قسم (خمس كلمات أو أقل في السطر)، وصورة أو رمز يقول أكثر من الكلام.
+- فكرة واحدة في كل شريحة أو قسم، وأسئلة يجيب عنها الطفل بالإشارة أو بكلمة؛ لا فقرات ولا قوانين ولا مصطلحات صعبة.`,
 };
 
 const BASE_EN: Record<FirstGradeUse, string> = {
@@ -96,6 +113,17 @@ const BASE_EN: Record<FirstGradeUse, string> = {
 - Short, concrete steps the teacher leads: pictures, cards, objects, movement, songs and games; the teacher gives instructions aloud in short sentences.
 - No reading texts, no writing sentences or paragraphs, no sheets to fill in: a child points, colours, matches, says, or copies a letter or a word.
 - Assessment is the teacher's observation and spoken questions.`,
+  classroom: `Grade 1 (six-year-olds who are learning to read now):
+- Everything on a slide is a few words the teacher reads aloud, and every question is one short sentence in familiar words.
+- The children answer together by pointing, in one voice, with thumbs, or with a word or a number; nothing is written on boards but a letter or a number.
+- No "explain", "justify" or "compare", no multi-step problem; anything that needs a picture is drawn with symbols (★ ★ ★) or described by the teacher.`,
+  explain: `Grade 1 (six-year-olds who are learning to read now; the teacher reads the screen aloud):
+- Everything shown is a very short sentence (five words or fewer) in words a child knows, one idea per slide.
+- Explain with concrete examples from the child's life (things to count, pictures the teacher describes), not definitions or hard terms.
+- The worked example and the practice are one or two steps with the lesson's own numbers and words, answered with a word or a number; the mistake has one simple error a child can see.`,
+  visual: `Grade 1 (six-year-olds who are learning to read now):
+- Few words on each slide or section (five words or fewer per line), and a picture or symbol that says more than the words.
+- One idea per slide or section, and questions a child answers by pointing or with a word; no paragraphs, formulas or hard terms.`,
 };
 
 const SUBJECT_AR: Record<"arabic" | "english" | "mathematics", string> = {
@@ -124,16 +152,25 @@ const GROUPED = new Set(["group", "hands-on", "game"]);
 const groupLineAr = (b: GradeFields) => (GROUPED.has(activityFormat(b)) ? "\n- مجموعات صغيرة (2-4) بدور واحد واضح لكل طفل." : "");
 const groupLineEn = (b: GradeFields) => (GROUPED.has(activityFormat(b)) ? "\n- Small groups (2–4) with one clear job per child." : "");
 
-export function firstGradeClauseAr(b: GradeFields, use: FirstGradeUse): string {
+/**
+ * `ifLesson`: the request's grade is only what the teacher usually teaches (Prompt
+ * Slides, whose description may be a parents' meeting), so the clause applies only
+ * when the deck is a lesson for that class.
+ */
+type ClauseOptions = { ifLesson?: boolean };
+
+export function firstGradeClauseAr(b: GradeFields, use: FirstGradeUse, opts: ClauseOptions = {}): string {
   if (!isFirstGrade(b)) return "";
   const subject = subjectOf(b);
   const group = use === "activity" ? groupLineAr(b) : "";
-  return `\n${BASE_AR[use]}${group}${subject ? `\n${SUBJECT_AR[subject]}` : ""}\n${OVERRIDE_AR}`;
+  const lead = opts.ifLesson ? "\nإن كان العرض درسًا أو مراجعة لطلبة هذا الصف، فالتزم بما يأتي:" : "";
+  return `${lead}\n${BASE_AR[use]}${group}${subject ? `\n${SUBJECT_AR[subject]}` : ""}\n${OVERRIDE_AR}`;
 }
 
-export function firstGradeClauseEn(b: GradeFields, use: FirstGradeUse): string {
+export function firstGradeClauseEn(b: GradeFields, use: FirstGradeUse, opts: ClauseOptions = {}): string {
   if (!isFirstGrade(b)) return "";
   const subject = subjectOf(b);
   const group = use === "activity" ? groupLineEn(b) : "";
-  return `\n${BASE_EN[use]}${group}${subject ? `\n${SUBJECT_EN[subject]}` : ""}\n${OVERRIDE_EN}`;
+  const lead = opts.ifLesson ? "\nIf the deck is a lesson or a review for this class, follow this:" : "";
+  return `${lead}\n${BASE_EN[use]}${group}${subject ? `\n${SUBJECT_EN[subject]}` : ""}\n${OVERRIDE_EN}`;
 }

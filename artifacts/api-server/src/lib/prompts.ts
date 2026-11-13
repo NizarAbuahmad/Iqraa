@@ -942,7 +942,7 @@ ${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additional
   "keyFacts": [{ "label": "مصطلح", "value": "تعريف قصير" }],
   "sections": [{ "heading": "عنوان القسم", "icon": "bulb-outline", "points": ["نقطة 1", "نقطة 2"] }],
   "takeaway": "الفكرة الأهم في جملة"
-}`;
+}${firstGradeClauseAr(b, "visual")}`;
 }
 
 export function infographicPromptEn(b: any): string {
@@ -964,5 +964,5 @@ Return JSON in this exact shape:
   "keyFacts": [{ "label": "Term", "value": "Short definition" }],
   "sections": [{ "heading": "Section heading", "icon": "bulb-outline", "points": ["point 1", "point 2"] }],
   "takeaway": "The single most important idea"
-}`;
+}${firstGradeClauseEn(b, "visual")}`;
 }

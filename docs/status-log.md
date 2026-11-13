@@ -126,6 +126,23 @@ maths questions were checked by hand by a sub-agent and re-checked by script: **
    - Measurement: «مقارنة الأطوال / الكتل / السعات» compare and order (and «القلم أطول من الممحاة، والمسطرة أطول
      من القلم. أيّها الأطول؟»); «وحدات … غير القياسية» are their own lessons — which unit is bigger from two
      measures of one thing, the fitting unit, the two-small-units story.
+9. **The rest of the generators know Grade 1 too.**
+   - Live (`firstGrade.ts`, three more uses — `classroom`, `explain`, `visual`): the lesson explanation
+     (`lessonTeachingPrompt.ts`, what slides use when live AI is on: short sentences, «خمس كلمات أو أقل» on a
+     slide, a picture per idea), Prompt Slides (its lead is about the lesson, given only when there is one),
+     classroom activities and the quick check (`classroomPrompts.ts`: answered together, by pointing or aloud), the
+     infographic, and evaluations (`llmGenerator.ts`: a Grade 1 paper is short, pictured, read aloud by the
+     teacher, with no written explanation). The shared pool key gets the clause date for those kinds as well
+     (`FIRST_GRADE_KINDS`), so a Grade 1 lesson explanation or deck made before the clause is not served again;
+     every other key is unchanged (pinned by literal keys in `firstGradePrompts.test.ts`).
+   - Offline review (unit or semester): the plan has its own Grade 1 version (`firstGradeRevision` in
+     `lessonPlanRevision.ts`: pictures and a song, rounds answered aloud, «صح أم خطأ» standing and sitting, homework
+     shown to the family — no «ورقة مراجعة», no «بطاقة خروج», no «اكتب الفكرة الرئيسة في جملتين»), and still says
+     which lessons it leaves out. The review's activities and quick check are the Grade 1 ones; a review warm-up
+     looks back over the units (no «الدرس السابق» / «درس اليوم») and a review's wording is plural throughout
+     («مفردات الدروس»).
+   - A plan from the teacher's uploaded file, for Grade 1, is the Grade 1 plan with the file named in materials and
+     introduction and the file's concepts as the objectives («أن يتعرّف الطفل «الجذر» ويسمّيه»).
 
 **Verified.** Each new test red before its fix, green after. `pnpm run typecheck`; math-practice suite; api-server
 `build` + `test`; mobile suite. **Not verified:** a live model's Grade 1 output with the new clause (no live run from
@@ -133,9 +150,9 @@ the session) — after merge, generate one Grade 1 Arabic letter plan, worksheet
 stems by a native reviewer.
 
 **Still open, found by the sweep:**
-- **Not Grade 1 aware yet:** a plan built from a teacher's uploaded file; a revision (unit/semester) activity; the
-  live prompts for evaluations (`llmGenerator`), Prompt Slides and the lesson explanation (`lesson-teaching`, which
-  slides use when live AI is on). The eight new maths generators ignore difficulty (as most of `early.ts` does).
+- The new maths generators ignore difficulty (as most of `early.ts` does). A Grade 1 evaluation paper is told it
+  is for six-year-olds but still uses the evaluation's own question types; a live model's Grade 1 output for any of
+  the item 9 prompts has not been read.
 - **Maths, still to check against the PDF:** the book's own number-chart direction (the generator no longer depends
   on it) and whether «الأنماط الهندسية» uses «معين».
 - **Grade 1 books need ingesting** (text, figures, book pages) from a machine that can reach the PDFs —
