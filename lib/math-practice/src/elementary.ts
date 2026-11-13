@@ -286,6 +286,7 @@ const STUDENT = noun('طالب', 'طالبان', 'طلاب', 'طالبًا');
 /** Genitive dual: «على طالبَين». */
 const STUDENT_GEN = noun('طالب', 'طالبَين', 'طلاب', 'طالبًا');
 const SCHOOL_GEN = noun('مدرسة', 'مدرستَين', 'مدارس', 'مدرسة');
+const GROUP_GEN = noun('مجموعة', 'مجموعتَين', 'مجموعات', 'مجموعة');
 
 /** «n noun» as Arabic counts it. `n` is at least 2 — no word problem here counts one thing. */
 function counted(n: number, w: Noun): string {
@@ -300,8 +301,8 @@ const listAr = (xs: readonly (string | number)[]) => xs.join('، ');
 const listEn = (xs: readonly (string | number)[]) => xs.join(', ');
 const q = (s: string) => s.replace(/؟/g, '?');
 
-const PLACE_AR = ['الآحاد', 'العشرات', 'المئات', 'الألوف'];
-const PLACE_EN = ['ones', 'tens', 'hundreds', 'thousands'];
+const PLACE_AR = ['الآحاد', 'العشرات', 'المئات', 'الألوف', 'عشرات الألوف', 'مئات الألوف', 'الملايين', 'عشرات الملايين', 'مئات الملايين'];
+const PLACE_EN = ['ones', 'tens', 'hundreds', 'thousands', 'ten thousands', 'hundred thousands', 'millions', 'ten millions', 'hundred millions'];
 
 /** «345» → «300 + 40 + 5», zero digits left out. */
 const expanded = (digits: number[]) =>
@@ -526,9 +527,48 @@ function mulKinds(base: Base, a: number, bMax: number, rng: Rng): ConcreteItem {
   }
 }
 
+/**
+ * Grade 5 «ضرب الأعداد» (student book S1, p. 37-41): a 3- or 4-digit number by
+ * one digit, and up to a 3-digit number by two digits — «252 × 8», «4698 × 6»,
+ * «27 × 58», «84 × 207». No repeated addition and no times-table fact: those
+ * are Grade 2 and 3.
+ */
+function mulKindsG5(base: Base, diff: DiffTier, rng: Rng): ConcreteItem {
+  const [a, b] = diff === 'easy' ? [int(rng, 101, 999), int(rng, 2, 9)]
+    : diff === 'medium' ? (rng() < 0.5 ? [int(rng, 1001, 9999), int(rng, 2, 9)] : [int(rng, 11, 99), int(rng, 11, 99)])
+      : [int(rng, 101, 999), int(rng, 11, 99)];
+  const p = a * b;
+  switch (int(rng, 1, 3)) {
+    case 1: {
+      const eq = rng() < 0.5 ? `${a} × ؟ = ${p}` : `؟ × ${a} = ${p}`;
+      return ask(base, eq, String(b), wrongNums(b, rng, [b + 1, b - 1, b * 10, a]),
+        `أوجد العدد المجهول: ${eq}`, `Find the missing number: ${q(eq)}`);
+    }
+    case 2:
+      return ask(base, `${a} × ${b}`, String(p), wrongNums(p, rng, [p + a, p - a, p + 10 * a, p - 10]),
+        `أوجد ناتج: ${a} × ${b}`, `Find: ${a} × ${b}`);
+    default: {
+      // Two rows or boxes is a dual with no digit («صفّان»); the drill says it plainly.
+      if (b === 2) return ask(base, `${a} × ${b}`, String(p), wrongNums(p, rng, [p + a, p - a, p + 10 * a, p - 10]),
+        `أوجد ناتج: ${a} × ${b}`, `Find: ${a} × ${b}`);
+      const wr = wrongNums(p, rng, [a + b, p + a, p - a, p + 10]);
+      const eq = `word:${b} × ${a}`;
+      if (rng() < 0.5) {
+        return ask(base, eq, String(p), wr,
+          `في مستودع ${counted(b, BOX)}، في كل علبة ${counted(a, PEN)}. كم قلمًا في المستودع؟`,
+          `A store has ${b} boxes with ${a} pens in each box. How many pens are in the store?`, true);
+      }
+      return ask(base, eq, String(p), wr,
+        `زرع مزارع ${counted(b, ROW)} من أشجار الزيتون، في كل صف ${counted(a, TREE)}. كم شجرة زرع؟`,
+        `A farmer planted ${b} rows of olive trees with ${a} trees in each row. How many trees did he plant?`, true);
+    }
+  }
+}
+
 function divKinds(base: Base, b: number, q0: number, grade: number, diff: DiffTier, rng: Rng): ConcreteItem {
   const a = b * q0;
-  switch (int(rng, 1, 5)) {
+  // Grade 5 divides 3- and 4-digit numbers; the related times-table fact is Grade 3.
+  switch (grade >= 5 ? choose(rng, [1, 3, 4, 5]) : int(rng, 1, 5)) {
     case 1: {
       // The missing divisor or dividend.
       if (rng() < 0.5) {
@@ -548,7 +588,7 @@ function divKinds(base: Base, b: number, q0: number, grade: number, diff: DiffTi
     case 3:
     case 4: {
       // Sharing equally, or making equal groups. At least two in each share.
-      const qq = Math.max(2, q0 > 60 ? int(rng, 11, 60) : q0);
+      const qq = grade >= 5 ? q0 : Math.max(2, q0 > 60 ? int(rng, 11, 60) : q0);
       const n = b * qq;
       const wr = wrongNums(qq, rng, [n - b, n + b, qq + 1, qq - 1, b]);
       const eq = `word:${n} ÷ ${b}`;
@@ -577,7 +617,7 @@ function divKinds(base: Base, b: number, q0: number, grade: number, diff: DiffTi
       }
       // What the remainder means: a part-filled box is still a box.
       const per = int(rng, 4, 9);
-      const full = int(rng, 5, diff === 'hard' ? 99 : 30);
+      const full = grade >= 5 ? int(rng, 25, diff === 'hard' ? 150 : 99) : int(rng, 5, diff === 'hard' ? 99 : 30);
       const n = per * full + int(rng, 1, per - 1);
       const ans = full + 1;
       return ask(base, `ceil:${n} ÷ ${per}`, String(ans), wrongNums(ans, rng, [full, n - per * full, full + 2]),
@@ -1017,6 +1057,7 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'mul': {
+      if (grade >= 5 && table === null) return mulKindsG5(base, diff, rng);
       // Grades 4+ go past the tables: a two-digit factor on medium/hard.
       const a = table ?? (grade >= 4 && diff !== 'easy' ? int(rng, 11, diff === 'hard' ? 99 : 30) : int(rng, 2, tableMax));
       const bMax = grade >= 5 && diff === 'hard' ? 99 : 10;
@@ -1031,14 +1072,18 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'div': {
-      const b = table ?? int(rng, 2, tableMax);
-      const q = table ? int(rng, 1, 10) : grade >= 4 && diff !== 'easy' ? int(rng, 11, diff === 'hard' ? 250 : 60) : int(rng, 1, 10);
+      // Grade 5 (student book S1, «قسمة الأعداد»): a 3- or 4-digit number by
+      // one digit, then a 3-digit number by two digits.
+      const g5 = grade >= 5 && table === null;
+      const b = g5 ? (diff === 'hard' ? int(rng, 11, 40) : int(rng, 2, 9)) : table ?? int(rng, 2, tableMax);
+      const q = g5 ? (diff === 'easy' ? int(rng, Math.ceil(100 / b), 99) : diff === 'medium' ? int(rng, 120, 999) : int(rng, Math.max(12, Math.ceil(100 / b)), 99))
+        : table ? int(rng, 1, 10) : grade >= 4 && diff !== 'easy' ? int(rng, 11, diff === 'hard' ? 250 : 60) : int(rng, 1, 10);
       if (int(rng, 0, 5) > 0) return divKinds(base, b, q, grade, diff, rng);
       const a = b * q;
       return {
         ...base, eq: `${a} ÷ ${b}`, answer: String(q),
         wrongs: numericWrongs(q, rng, [1, -1, 2, b, -2]),
-        wordAr: `وُزِّع ${a} قلمًا بالتساوي على ${b} مجموعات. كم قلمًا لكل مجموعة؟`,
+        wordAr: `وُزِّع ${counted(a, PEN)} بالتساوي على ${counted(b, GROUP_GEN)}. كم قلمًا لكل مجموعة؟`,
         wordEn: `${a} pencils are shared equally among ${b} groups. How many does each group get?`,
       };
     }
@@ -1055,7 +1100,10 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'place': {
-      const digits = Math.min(String(ADD_MAX[grade]).length, diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4);
+      // Grade 5 reads numbers to the hundred millions (student book S1, p. 9-10).
+      const digits = grade >= 5
+        ? (diff === 'easy' ? 6 : diff === 'medium' ? 7 : 9)
+        : Math.min(String(ADD_MAX[grade]).length, diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4);
       if (int(rng, 0, 3) > 0) return placeKinds(base, digits, rng);
       // The digit asked about must occur once: «الرقم 4 في العدد 344» has two
       // place values and no single answer.
@@ -1067,7 +1115,7 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
         s = String(n);
         once = [...s].flatMap((c, i) => (s.indexOf(c) === s.lastIndexOf(c) ? [i] : []));
       }
-      if (once.length === 0) { n = Number('1234'.slice(0, digits)); s = String(n); once = [0]; }
+      if (once.length === 0) { n = Number('123456789'.slice(0, digits)); s = String(n); once = [0]; }
       const pos = choose(rng, once);
       const digit = Number(s[pos]);
       const value = digit * 10 ** (s.length - 1 - pos);

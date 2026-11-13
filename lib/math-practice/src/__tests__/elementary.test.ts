@@ -188,7 +188,7 @@ function solveMissing(eq: string): number {
   return op === '+' ? other - k : op === '−' ? k - other : op === '×' ? other / k : k / other;
 }
 
-const PLACE = ['الآحاد', 'العشرات', 'المئات', 'الألوف'];
+const PLACE = ['الآحاد', 'العشرات', 'المئات', 'الألوف', 'عشرات الألوف', 'مئات الألوف', 'الملايين', 'عشرات الملايين', 'مئات الملايين'];
 const listOf = (p: string) => p.slice(p.lastIndexOf(':') + 1).replace(/[؟.]\s*$/, '').split('،').map(x => x.trim());
 
 /** [kind, expected answer] from the Arabic stem alone. */
@@ -212,7 +212,7 @@ function solve(p: string): [string, number | string] {
     return ['expand', [...ds].map((c, i) => Number(c) * 10 ** (ds.length - 1 - i)).filter(v => v > 0).join(' + ')];
   }
   if (has('صورته التحليلية')) return ['standard', n.reduce((x, y) => x + y, 0)];
-  if ((m = p.match(/^ما الرقم في منزلة (\S+) في العدد (\d+)؟$/))) {
+  if ((m = p.match(/^ما الرقم في منزلة (.+) في العدد (\d+)؟$/))) {
     const ds = m[2]!;
     return ['digit', Number(ds[ds.length - 1 - PLACE.indexOf(m[1]!)])];
   }
@@ -293,7 +293,9 @@ describe('every kind of question: the key is recomputed from the printed stem', 
     ['الطرح', 1, ['drill', 'missing', 'take', 'more', 'fact']],
     ['الطرح', 3, ['drill', 'missing', 'take', 'more', 'fact']],
     ['الضرب في 2', 2, ['drill', 'missing', 'groups', 'word']],
-    ['ضرب الأعداد', 5, ['drill', 'missing', 'groups', 'word']],
+    ['ضرب الأعداد', 4, ['drill', 'missing', 'groups', 'word']],
+    // Grade 5 multiplies multi-digit numbers; repeated addition is Grade 2 (grade5Book.test.ts).
+    ['ضرب الأعداد', 5, ['drill', 'missing', 'word']],
     ['القسمة على 3', 2, ['drill', 'missing', 'fact', 'share', 'trays', 'repeat']],
     ['قسمة الأعداد', 4, ['drill', 'missing', 'fact', 'share', 'trays', 'ceil']],
     ['مقارنة الأعداد', 1, ['sign', 'order', 'extreme']],
