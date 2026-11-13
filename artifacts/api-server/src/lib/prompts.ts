@@ -13,7 +13,8 @@
  */
 
 import {
-  lessonKindClauseAr, lessonKindClauseEn, usesWorkedExample, worksheetKindRuleAr, worksheetKindRuleEn,
+  gradeBandClauseAr, gradeBandClauseEn, lessonKindClauseAr, lessonKindClauseEn, lessonTypeClauseAr, lessonTypeClauseEn,
+  usesWorkedExample, worksheetKindRuleAr, worksheetKindRuleEn,
 } from "./lessonKinds.ts";
 import { QUIZ_TYPE_ORDER, type QuizType } from "./generationShape.ts";
 import { coverageClauseAr, coverageClauseEn } from "./coverage.ts";
@@ -265,6 +266,14 @@ const teacherVoiceAr = (b: any, hasPriorReview: boolean) => `صيغة النص �
 /** The subject-kind clause on its own lines, or nothing for maths and unknown subjects. */
 const kindBlockAr = (b: any) => { const c = lessonKindClauseAr(b); return c ? `\n${c}` : ""; };
 const kindBlockEn = (b: any) => { const c = lessonKindClauseEn(b); return c ? `\n${c}` : ""; };
+/**
+ * The lesson's type inside its subject (after the subject clause), then the
+ * grade's homework and closure size — `lessonKinds.ts`. Both are empty for a
+ * request that names no type and a grade from 7 up, so those prompts are as
+ * they were.
+ */
+const typeBlockAr = (b: any) => [lessonTypeClauseAr(b), gradeBandClauseAr(b)].filter(Boolean).map(c => `\n${c}`).join("");
+const typeBlockEn = (b: any) => [lessonTypeClauseEn(b), gradeBandClauseEn(b)].filter(Boolean).map(c => `\n${c}`).join("");
 
 export function lessonPlanPromptAr(b: any): string {
   const priorConcepts = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
@@ -275,7 +284,7 @@ export function lessonPlanPromptAr(b: any): string {
   return `أنشئ خطة درس كاملة لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}"، مدتها ${b.duration ?? 45} دقيقة.
 ${b.objectives ? `الأهداف المحددة:\n${b.objectives}` : ""}
 ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
-${lessonStyleClauseAr(b)}${kindBlockAr(b)}${revisionClauseAr(b, "plan")}
+${lessonStyleClauseAr(b)}${kindBlockAr(b)}${typeBlockAr(b)}${revisionClauseAr(b, "plan")}
 ${teacherVoiceAr(b, hasPriorReview)}
 ${hasPriorReview ? `
 خصّص 5-10 دقائق في بداية الحصة لمراجعة معارف سابقة قد لا يتقنها بعض الطلبة، واكتب خطة هذه المراجعة في حقل "priorReview". هذه مراجعة تمهيدية وليست من أهداف هذا الدرس، فلا تُدرجها ضمن "objectives".
@@ -317,7 +326,7 @@ export function lessonPlanPromptEn(b: any): string {
   return `Create a complete lesson plan for ${b.subject}, ${b.grade}, on the topic "${b.topic}", duration ${b.duration ?? 45} minutes.
 ${b.objectives ? `Specified objectives:\n${b.objectives}` : ""}
 ${b.additionalContext ? `Additional context: ${b.additionalContext}` : ""}
-${lessonStyleClauseEn(b)}${kindBlockEn(b)}${revisionClauseEn(b, "plan")}
+${lessonStyleClauseEn(b)}${kindBlockEn(b)}${typeBlockEn(b)}${revisionClauseEn(b, "plan")}
 ${hasPriorReview ? `
 Set aside 5-10 minutes at the start of the lesson to review prior material some students may not have fully grasped, and put that review plan in a "priorReview" field. This is a warm-up review, not one of this lesson's own objectives — do not list it under "objectives".
 ${priorConcepts ? `Curriculum concepts to review verbatim (do not invent others):\n- ${priorConcepts.join("\n- ")}` : ""}

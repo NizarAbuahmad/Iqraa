@@ -29,6 +29,7 @@
 import type { Lang } from './mathPractice.ts';
 import type { LessonKind } from './lessonPlanKinds.ts';
 import { nativeDirectBlueprint } from './lessonPlanNative.ts';
+import { typedDirectBlueprint } from './lessonPlanTyped.ts';
 import { collaborativeAr1, directAr1, inquiryAr1, nativeDirectVariant1 } from './lessonPlanVariantsAr.ts';
 import { collaborativeEn1, directEn1, inquiryEn1, nativeDirectVariant1En } from './lessonPlanVariantsEn.ts';
 import {
@@ -200,6 +201,10 @@ export function buildLessonStyleBlueprint(
   // Direct instruction is the routine each subject is actually taught with:
   // mathematics keeps its worked examples, every other kind gets its own.
   if (key === 'direct') {
+    // Inside Islamic education, the arts and Arabic, the lesson's own TYPE
+    // (a hadith, a drama, a listening lesson) decides first — `lessonTypes.ts`.
+    const typed = typedDirectBlueprint(ctx);
+    if (typed) return typed;
     const native = alternative
       ? (ctx.lang === 'ar' ? nativeDirectVariant1(ctx) : nativeDirectVariant1En(ctx))
       : nativeDirectBlueprint(ctx);

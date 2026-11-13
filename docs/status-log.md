@@ -10,6 +10,63 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A lesson plan fits the lesson's type inside its subject — 2026-11-13
+
+The offline audit of 2026-11-13 (all 236 Grade 2 lessons, live AI off) found the plan's body chosen by **subject alone**
+(`lessonKindFor`, `KIND_BY_SUBJECT`). Every Islamic lesson got the Quran-recitation body, «أركان الإيمان» and «أعمال الوضوء»
+included; the drama lesson «خشبة المسرح» was told «سأعرض نموذجًا منجزًا للعمل المطلوب»; «الألوان الثانوية» never named
+green, orange or violet; all 50 Grade 2 Arabic plans were identical and the listening lesson read a text aloud; 28 of 61
+Grade 2 maths plans asked a seven-year-old for «ملخصًا شخصيًا من 10 جمل», and every plan closed on a written "3-2-1" card.
+
+**What changed.**
+- **A lesson TYPE inside the subject** (`artifacts/mobile/services/ai/lessonTypes.ts`): Islamic — `quran`, `hadith`,
+  `creed`, `worship`, `sira`, `conduct` (from the title: «سورة…», «الحديث الشريف…», Names of Allah and «الإيمان…», wudu /
+  prayer / fasting…, «سيدنا…» / companions / battles; anything else is `conduct`); creative arts — `visual-art`, `music`,
+  `drama` (from the **unit**, since one book holds all three); Arabic — `listening`, `speaking`, `reading`, `writing`,
+  `language`, `letters` (from the «لغتي» title's first word). It is read **only from the lesson the request names by id**
+  (`lessonTypeForId(req.lessonId)`), never from the title search `groundedKb` falls back to: Grade 2 Arabic titles repeat in
+  every unit. A typed topic, an uploaded file and every other subject have no type and keep their plan.
+- **Offline plan** (`lessonPlanTyped.ts`): the direct style's body, objectives (when the lesson has no official outcomes)
+  and opening come from the type. Twelve types have their own body; `quran`, `visual-art` and `reading` keep their kind's
+  routine, which was written for them. Every typed plan quotes the lesson's **main idea** — the first sentence of its
+  catalog summary (the Grade 2 Arabic summaries are placeholders, so those plans name the unit theme and, for reading, the
+  text in the title's brackets). Nothing states content the catalog does not hold: the pillars, the steps and the story are
+  "as the book gives them".
+- **Grade bands** (`gradeBandFor`, from the lesson's book, else the request's grade): Grades 1–3 close aloud and get one
+  short task to do with someone at home (per type, else per kind); Grades 4–6 get a five-sentence summary in place of ten;
+  Grade 7 up, and an unreadable grade, are unchanged. An Arabic typed lesson's homework (middle/upper) is about the unit's
+  theme, not «أستمع بانتباه وتركيز».
+- **Live plan**: `RemoteAIService.generateLessonPlan` sends `lessonType` (`withLessonType`); the API adds a type clause after
+  the subject clause and a grade-band clause (`lessonTypeClauseAr/En`, `gradeBandClauseAr/En` in `lessonKinds.ts`, wired in
+  `prompts.ts`). A type that is unknown or belongs to another subject adds nothing. `lessonType` joined the strict pool key
+  and `lesson-plan` got its own pool version (`2026-11-13.1`), so plans pooled before are not served again.
+
+**Verified.** `lessonPlanTypes.test.ts` (mobile, new): the Grade 2 classification by id (all 24 Islamic, 30 arts in
+10/10/10, 50 Arabic in 10 per type); the types of each subject produce different main activities in both languages; the
+audit's defects on the real lessons (no recitation in «أركان الإيمان», no finished model / making in drama and music,
+«الألوان الثانوية» names the three colours, every Grade 2 arts and Islamic plan with a real summary carries it, listening is
+books-closed); first-person voice on every type; no Grade 2 plan (all 236, three draws each) asks for a long summary or
+closes on a card; Grade 5 never gets ten sentences, Grade 10 still can. `lessonTypePrompts.test.ts` (API, new): the type
+list and type→kind map equal the app's, the clause only for a matching subject, after the subject clause, grade bands.
+Measured on all Grade 2 lessons (944 plans, four draws each): 0 ten-sentence homeworks and 0 "3-2-1" closures (were 28/61
+maths and all); Islamic 6 main-activity routines with the recitation body on the 7 surahs only; Arabic 5 routines and 50
+distinct plans (was 1); arts 29 of 30 plans carry the lesson's main idea (the 30th has a placeholder summary).
+`pnpm run typecheck`; mobile `pnpm test`; api-server `pnpm build && pnpm test`.
+
+**Not verified / limits.**
+- **One wording per new body.** The twelve own bodies have no "variant 1": a regenerate on a direct-style hadith, creed,
+  drama or listening plan changes the introduction, closure and homework, and the `repeated` notice counts the five sections
+  that stayed (pinned). `lessonPlanVariants.test.ts` and `lessonPlanKinds.test.ts` now sample a lesson per subject that keeps
+  its kind's routine. Writing second wordings is content work.
+- **Only the direct style is typed.** Inquiry and collaborative keep their generic, kind-adjusted phases for every lesson.
+- **The live path was not run against a model.** The prompt is tested as text; whether a model follows the type clause is
+  unmeasured. Production pools are keyed afresh, so the first live plan per lesson costs a generation.
+- **The classification is title patterns.** Upper-grade Islamic fiqh of transactions («البيع…», «الإجارة…») and topics like
+  «صحيح البخاري» fall to `conduct`; «فضل تلاوة القرآن الكريم» is `conduct`, not `quran`. Worth a teacher's pass.
+- **No teacher has read the new bodies.** Whether «نجرّب على الخشبة» or the books-closed listening routine is how a Jordanian
+  Grade 2 teacher runs those lessons needs a teacher's read; the tests prove only that they differ and avoid the defects.
+- No «ما الجديد» entry: this corrects generated content inside an existing tool; nothing new to find.
+
 ## A content report can say what is wrong — 2026-11-11
 
 The admin's «تقرير محتوى جديد» email of 2026-11-11 (a Grade 4 Arabic lesson plan, the second Grade 4 Arabic report in four

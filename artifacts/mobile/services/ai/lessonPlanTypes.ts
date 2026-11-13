@@ -6,6 +6,7 @@
 import type { KBLesson } from '../knowledgeBase.ts';
 import type { Lang } from './mathPractice.ts';
 import type { LessonKind } from './lessonPlanKinds.ts';
+import type { LessonType } from './lessonTypes.ts';
 
 /** Content pulled from an uploaded document, when the plan is built from one. */
 export interface LessonDocContext {
@@ -27,6 +28,11 @@ export interface LessonStyleContext {
   /** The catalog subject id, when known — a physics plan keeps its calculation
    *  step, a science one does not. */
   subjectId?: string;
+  /**
+   * The lesson's type inside its subject (a hadith, a drama, a listening
+   * lesson) — see `lessonTypes.ts`. Absent or null keeps the kind's own plan.
+   */
+  lessonType?: LessonType | null;
   /** Present when the teacher attached materials; phases draw on these
    *  instead of the KB, but the STYLE still decides their shape. */
   doc?: LessonDocContext | null;

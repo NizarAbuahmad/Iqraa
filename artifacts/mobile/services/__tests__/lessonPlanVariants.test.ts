@@ -27,6 +27,7 @@ import assert from 'node:assert/strict';
 import { aiService } from '../ai/generators.ts';
 import { LESSON_STYLE_IDS, buildLessonStyleBlueprint } from '../ai/lessonPlanBlueprints.ts';
 import { lessonKindFor } from '../ai/lessonPlanKinds.ts';
+import { lessonTypeForKb } from '../ai/lessonTypes.ts';
 import type { LessonStyleContext } from '../ai/lessonPlanTypes.ts';
 import { KB_LESSONS, getBookForLesson } from '../knowledgeBase.ts';
 import type { AIRequest, LessonPlanOutput } from '../ai/AIService.ts';
@@ -37,13 +38,20 @@ import { FIRST_PERSON, imperativesIn, norm } from './teacherVoiceCheck.ts';
 const FIVE = ['mainActivity', 'guidedPractice', 'independentPractice', 'assessment', 'differentiation'] as const;
 const LANGS = ['ar', 'en'] as const;
 
-/** One lesson per subject, so every `LessonKind` is covered. */
+/**
+ * One lesson per subject, so every `LessonKind` is covered — each one a lesson
+ * that still gets its kind's own two wordings: no type, or one of the three
+ * types the kind's routine was written for (`lessonPlanTyped.ts`). The other
+ * types have one wording; `lessonPlanTypes.test.ts` pins what a regenerate does
+ * for them.
+ */
+const KIND_WORDED = new Set([null, 'quran', 'visual-art', 'reading']);
 const lessons = (() => {
   const seen = new Set<string>();
   const out: Array<{ subjectId: string; gradeId: string; id: string; title: string; titleEn: string }> = [];
   for (const l of KB_LESSONS) {
     const b = getBookForLesson(l);
-    if (!b || seen.has(b.subjectId)) continue;
+    if (!b || seen.has(b.subjectId) || !KIND_WORDED.has(lessonTypeForKb(l))) continue;
     seen.add(b.subjectId);
     out.push({ subjectId: b.subjectId, gradeId: b.gradeId, id: l.id, title: l.titleAr, titleEn: l.titleEn });
   }
