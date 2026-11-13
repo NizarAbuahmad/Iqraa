@@ -39,8 +39,10 @@ describe('liveChatGrounding', () => {
   });
 
   it('keeps the lesson a curriculum question is about', () => {
-    const { grounded } = ground('اشرح لي قانون جيب التمام');
-    assert.equal(grounded[0]?.titleAr, 'قانون جيب التمام');
+    // The guide and book name it «قانون جيوب التمام» (renamed from «جيب التمام» 2026-11-13). The older
+    // spelling is what teachers say aloud, and it no longer ranks this lesson first on its own.
+    const { grounded } = ground('اشرح لي قانون جيوب التمام');
+    assert.equal(grounded[0]?.titleAr, 'قانون جيوب التمام');
   });
 
   it('keeps close same-subject rivals — they are all the topic asked about', () => {
