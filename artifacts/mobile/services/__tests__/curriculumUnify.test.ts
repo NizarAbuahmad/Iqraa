@@ -52,10 +52,10 @@ describe('Math G10 S1 browser catalog — NCCD unify', () => {
     assert.equal(LESSONS.some(l => l.id === 'lesson-math-1'), false);
   });
 
-  it('has 18 Sem1 lessons total', () => {
+  it('has 19 Sem1 lessons total (the book opener «حل معادلات خاصة» is u1_l5)', () => {
     const units = getUnitsForBook('book-math-10');
     const count = units.reduce((n, u) => n + getLessonsForUnit(u.id).length, 0);
-    assert.equal(count, 18);
+    assert.equal(count, 19);
   });
 
   it('Unit 1 is fully grounded (no title-only badge)', () => {

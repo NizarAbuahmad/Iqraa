@@ -3,9 +3,9 @@
  * Source of truth: data/iqra_curriculum_g10_bio_sem1.json
  *
  * Same lesson-opener convention as physics, chemistry and earth science. No
- * period counts: the S1 teacher guide has no text layer at all and the S2
- * guide extracts with its letters transposed, so neither was ever ingested.
- * Every `periods` is null.
+ * period counts: the S1 teacher guide had no text layer and was OCR'd on
+ * 2026-09-05, but only part of its unit 2 plan is legible, so every `periods`
+ * is still null.
  *
  * Two things specific to biology, both recorded in the JSON rather than
  * smoothed over:
@@ -14,12 +14,13 @@
  *    continues in g10BioSem2.ts as lessons 5-9, under the same printed unit
  *    number and title. The ids are semester-scoped
  *    (`kbu-biology-s1-nccd-u3` vs `…-s2-…`) so the two halves do not collide.
- * 2. **The corruption in these files is localised, not document-wide.** Every
- *    `general_idea_ar` here is empty because the unit-opener boxes extract as
- *    scrambled letters, while the lesson titles, outcomes and vocabulary on
- *    the very same pages are clean. The file passed the document-level
- *    transposition gate at 13.7% — a reminder that passing it does not mean
- *    every block inside is sound.
+ * 2. **The corruption in these files is localised, not document-wide.** The
+ *    unit-opener boxes extract as letter runs in reverse order, while the
+ *    lesson titles, outcomes and vocabulary on the very same pages are clean.
+ *    The three `general_idea_ar` were rebuilt from those runs on 2026-11-13
+ *    (pp. 8, 20, 38; unit 3 corroborated by the teacher guide, p. 63). The
+ *    file passed the document-level transposition gate at 13.7% — a reminder
+ *    that passing it does not mean every block inside is sound.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */

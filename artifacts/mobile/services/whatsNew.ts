@@ -47,6 +47,14 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
     route: '/curriculum/browse',
   },
   {
+    id: 'g10-vocational-curriculum',
+    date: '2026-11-13',
+    roles: ['teacher'],
+    titleKey: 'whatsNewG10VocationalTitle',
+    bodyKey: 'whatsNewG10VocationalBody',
+    route: '/curriculum/browse',
+  },
+  {
     id: 'follow-us-social',
     date: '2026-11-13',
     roles: ALL_ROLES,
