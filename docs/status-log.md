@@ -78,6 +78,114 @@ own change (fixing it turns four G9 grammar lessons grammar-only). Ten offline m
 build + tests; mobile suite; math-verifier — results in the PR body. Not opened in a browser or on a
 device; no live model was run.
 
+## Grade 10 audit: book pages, figures and contents checked against the printed books — 2026-11-13
+
+The Grade 6–9 review («Grade 9 audit…»), repeated for all of Grade 10 (425 lessons). Every served page image and every
+figure were looked at from the public bucket. Printed page = PDF page in every book except English (PDF = printed + 2).
+
+**Book pages.**
+- **Civic Education S1:** all 10 lessons showed the previous lesson's pages (u1_l1 the unit opener, u2_l1 unit 1's
+  review). Civic S2 u7_l1 started a page late.
+- **Financial literacy S1:** 6 of 10 wrong — u1_l1 opened on the unit opener, u1_l3 held u1_l4 and u1_l5, u2_l1 held
+  u2_l2, u2_l4 held u2_l5, u2_l5 ran through the glossary.
+- **Chemistry S2:** u4_lab opened on the copyright page; u4_l1 and u5_l1 each held the whole next lesson.
+- **Others:** biology S1 u2_l2 started on u2_l1's pages (and u2_l1 held it); history S1 u1_l3 held the unmapped u1_l4;
+  geography S1 u1_l2 and u2_l1 each held the next lesson; maths S1 u4_l3 held u4_l4; Arabic S1 u2_l2 started a page late
+  (the book's own contents page prints the wrong page).
+- **Unit-final lessons in every subject ran on** — into «حصاد الوحدة», unit tests and projects, enrichment, unit reviews,
+  the next opener, the glossary or the closing page. English u5_l7 and u10_l7 ran 20 pages through the back matter, four
+  writing lessons into LIFE SKILLS spreads.
+- **Fix:** the `rendered` mechanism — 104 ranges corrected from images already cut, and nine lessons newly served from
+  pages another lesson's folder holds: history S1 u1_l4, maths S1 u4_l4, maths S2 u6_lab and u8_lab, and five opening
+  labs (physics S1 u2_lab, S2 u5_lab; chemistry S1 u2_lab and u3_lab, S2 u5_lab). None loses its pages. Three keep only
+  the part of their range that is cut (Arabic S1 u2_l2 p38 of 37–38, civic S1 u2_l5 75–79 of 75–82, civic S2 u7_l1 87–92
+  of 86–92). 335 lessons have pages, up from 326. Every changed URL (674) answered 200; corrected openers were viewed
+  against their catalogue titles.
+- **Where a lesson ends:** on its own last page, before the enrichment page, unit review, «نهاية الوحدة» checklist (PE)
+  and unit summary (digital), as in Grades 8 and 9.
+- **Cut short by the 20-page limit** (`MAX_PAGES`), left as is: digital S1 u1_l2–l4 and S2 u4_l3, physics S1 u2_l1 (misses
+  p56, its review) and S2 u4_l2 (misses p38–41).
+- **To render from the PDFs** (pages never cut): biology S1 u1_l1 10–16; geography S2 u4_l1, u4_l2, u5_l1, u5_l3,
+  u6_l1–l3; all of history S2 (11 lessons, ranges from its contents in the audit); maths S1 u1_lab 16–17; the opening labs
+  physics S1 u1_lab p7, S2 u4_lab p9 and u6_lab p93, chemistry S1 u1_lab p9; plus the cut-short parts above. Arts (23
+  lessons) and the four vocational English books (30) have no page images at all.
+
+**Contents.** Every book's units and lessons match its catalogue in order, unit and title, with these notes:
+- **Maths unit 1 — a decision for the owner, not changed:** the catalogue drops the book's first lesson «حل معادلات خاصة»
+  (pp8–15) as «from an earlier edition» and carries two exponents lessons from the teacher guide (u1_l3, u1_l4). The book
+  served today is the 2026 second edition: it still has «حل معادلات خاصة» and has no exponents lessons, so the book prints
+  «الدرس 2/3» on the catalogue's u1_l1/u1_l2, and u1_l3/u1_l4 have no pages.
+- Maths S2 u5_l2 is printed «الاقترانات النسبية» (catalogue «قسمة كثيرات الحدود والاقترانات النسبية»); u8_lab's title
+  stops before «: رسم المستقيم الأفضل مطابقة»; unit projects and tests are not carried and the notes do not say so.
+- Arabic S2 u10_l3/l4 carry the unit-contents titles, not the headings on the page (recorded in `known_gaps`).
+- Physics S1's contents give the glossary as p85; it is p87.
+
+**Honorifics (Islamic).** Checked; nothing to change.
+
+**Figures.** 77 dropped; none moved, none newly reachable. The ten English LIFE SKILLS and Culture Spot photos filed under
+a unit's last lesson were already unmapped by «Grade 9 figures: unit-opening pages…» (#1445), whose placement stands.
+- **Dropped:** every figure from a unit test, unit project, unit review, enrichment page, opening lab or opener filed under
+  another lesson (maths 27, physics 15, chemistry 8, earth science 2, biology 2, geography 2, history 2), plus major
+  crops: maths 7 (mostly cut example text; p119-v2 lost its y-axis), earth science 4, geography 3, history 2, and three
+  crops that reached no lesson (maths S1's title-page p001b, chemistry S1's cover logo p001 and opener box p008d). Labs
+  have no figure-map entries, so lab figures are dropped rather than moved.
+- Minor crop flaws stay.
+
+**Verified:** `bookFigures`, `bookPage`, `bookFigureAssets`, `lessonSlides`, `teachingPlanGrounding` tests, curriculum test
+and verify, typecheck.
+**Not verified:** the pages on a phone; anything needing the PDFs (nccd.gov.jo refuses the cloud session).
+
+## Grade 9 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
+
+The Grade 6–8 review («Grade 8 audit…»), repeated for all of Grade 9 (423 lessons). It complements «Grade 9 checked
+against its books, and corrected» (below), which read the catalogue against the extracted text; this one looks at every
+served page image and every figure from the public bucket. Printed page = PDF page in every book except English (PDF = printed + 2).
+
+**Book pages.**
+- **Arabic S2 was shifted:** 25 of its 25 lessons started on an earlier lesson's pages (u6_l1 opened on the unit
+  opener; u10_l5 held the unit 10 opener and all four other unit 10 lessons and none of «التوكيد»).
+- **Civic Education S2: all 11 ranges were wrong** (unit openers, reviews, other lessons).
+- **History S2:** every range showed a different lesson (u5_l3 Ibn Battuta showed «أروى الصليحي»).
+- **Geography S2 unit 6** was a lesson off (Africa showed Asia; Asia had none).
+- **Unit-final lessons in every subject ran on** into «حصاد الوحدة», unit tests, reviews, enrichment, the next opener or
+  the glossary. Maths S1 u1_l1 held all of u1_l2; biology S2 u4_l1 held u4_l2; physics S1 u1_l3 ran into u2_l1. English
+  u5_l7 and u10_l7 ran 20 pages through the back matter, and four writing lessons into LIFE SKILLS spreads.
+- **Fix:** the `rendered` mechanism — 129 ranges corrected from images already cut, eight lessons newly served from pages
+  another lesson's folder holds (geo S2 u6_l1, history S1 u1_l2 and u2_l4, history S2 u4_l5, u5_l1, u5_l4 and u5_l5, maths
+  S2 u5_lab). Five lose pages that showed nothing of their own: Arabic S2 u8_l5, u9_l1, u10_l5 (their right pages were
+  never cut), history S2 u5_l3 (its pages are somewhere in 51–56, never cut) and PE S2 u7_l4 (its pages 33–35 never cut;
+  it showed nothing before either). Three English lessons keep only the part of their right range that is cut (S2 u6_l7
+  p15 of 14–15, u7_l7 p27 of 26–27, u8_l1 p29 of 28–29). 358 of 423 lessons have pages, up from 354. Every changed URL
+  (820) answered 200; corrected openers were viewed against their catalogue titles.
+- **PE:** the one-page «نهاية الوحدة» checklist is left out of each unit's last lesson, as the digital unit summary is.
+- **To render from the PDFs** (pages never cut): Arabic S2 u8_l5 75–78, u9_l1 82–84, u10_l5 124–130; English S2 u6_l7
+  14–15, u7_l7 26–27, u8_l1 28–29; PE S2 u7_l4 33–35; history S2 u4_l1–l4 (8–25) and u5_l2–l3 (51–56). Vocational and
+  art (55 lessons) have no page images at all.
+
+**Contents.** Every book matches its catalogue where its contents or openers could be seen. Small differences: PE S1 u1_l2
+is printed «التمويهُ» (catalogue «التمويةُ»); history S2 prints «أروى الصُلَيحيّ (1048 - 1138م)» (catalogue
+«أروى الصُلَيْحيّةُ»); Digital Skills S2's printed contents page numbers are 2–4 pages stale (the ranges follow the real
+pages). Lesson ranges name the finance books `g9-finlit-s*`, the extracted text `g9-financial-literacy-s*`.
+
+**Honorifics (Islamic) — fixed.** Two lesson titles put «ﷺ» after the Companions; the book prints «رضي الله عنهم»: S1
+u4_l5 «منْ أعلامِ الصحابةِ … على ثَرى الأردنِّ» (p100) and S2 u1_l6 «شهداءُ منَ الصحابةِ الكرامِ … على ثرى الأردنِّ» (p38).
+The others all follow the Prophet.
+
+**Figures.** Merged with «Grade 9 figures: unit-opening pages…» (#1445, below), which landed first: its placements stand
+(the opening-experiment and unit-opener figures go to the next unit's lesson 1, English LIFE SKILLS and Spot pages are
+unmapped, not deleted), and the rest of this plan applies around them — 62 dropped, 2 moved, none newly reachable:
+- **Dropped:** every figure from a unit test, unit review, enrichment page or unit project
+  page that was filed under the wrong lesson (maths 19, sciences 32, geography 1), plus mostly-text or cut-apart crops (maths 8, biology S1 p036, geography S1 p041-v2). Maths S1 p076-v2 belongs to
+  u2_lab, which has no figure-map entry, so it is dropped rather than mapped.
+- **Moved:** maths S2 p039b → u5_l4 (its lead-in activity), English S2 p026-v2 → u7_l7 (its first page).
+- Minor crop flaws stay.
+
+**Results.** Offline maths covers all 32 Grade 9 maths lessons; every sampled key (three per lesson) was checked by hand
+and is correct.
+
+**Verified:** `bookFigures`, `bookPage`, `bookFigureAssets` tests, curriculum test and verify, typecheck.
+**Not verified:** the pages on a phone; anything needing the PDFs; live grounding text.
+
 ## Grade 10 maths: lesson-specific offline questions for thin and empty lessons — 2026-11-13
 
 Offline (live AI off), a Grade 10 maths lesson's questions come from `takeConcreteMath`
