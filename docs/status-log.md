@@ -10,6 +10,37 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 10 civic, history S2 and PE: the books' self-assessment criteria reach the generator, labelled as such — 2026-11-13
+
+Third fix from the Grade 10 review. Grade 10 history, geography, civic and PE lessons have no `objectives`. Their catalogs say why, in `meta.known_gaps`: the books print no outcomes list, and PE's «أُقيِّمُ تعلُّمي» was deliberately not used «تجنُّبًا لتصنيفِ محتوًى تقييميٍّ على أنّهُ نتاجاتٌ منهجيّةٌ». The review proposed filling `objectives` from the self-assessment tables and the «الفكرة الرئيسة» box. Anything in `objectives` reaches the model as «النتاجات (من المنهاج الرسمي)», so that would have claimed outcomes the books do not print. The owner chose a separate field instead. The «الفكرة الرئيسة» box was already the lesson summary, so it stays as it was.
+
+**What changed**
+- **New optional field `self_assessment_ar`** (`lib/curriculum/src/catalogs/nccdCatalog.ts`).
+  - On a unit for a book that prints the table per unit: civic S1 (p43, p84), civic S2 (p25, 49, 69, 83, 99) and history S2 (p67, p93). The book does not say which statement belongs to which lesson, so none is assigned to a lesson.
+  - On a lesson for PE, whose box ends each lesson (40 statements).
+  - It reaches `KBLesson` as `selfAssessmentAr` / `unitSelfAssessmentAr`.
+- **`buildLessonBlock`** (`services/kbContext.ts`) prints the statements under «معايير التقويم الذاتي في كتاب الطالب … (ليست قائمة النتاجات الرسمية)», for this lesson or for the whole unit. `objectives` stays empty, so nothing new is labelled official.
+- **Each statement was checked against its page in the extracted text.**
+  - Civic: fuzzy line match, 0.83–1.0.
+  - History S2: read against the numbered tables, and kept in the book's order.
+  - PE: letter-composition match against each line, 0.93–1.0, because that text layer prints words in reverse order.
+  - Three civic S2 lines whose OCR cannot be read with confidence are left out and listed in that catalog's `known_gaps`: p25 item 7, p69 items 1 and 6.
+- **Test.** `selfAssessmentContext.test.ts`, 4 cases: civic unit-level, history S2, PE lesson-level, and biology as a control, which keeps its official outcomes and gets no criteria. It fails 3/4 without the `kbContext` change.
+
+**Verified:**
+- mobile suite: 9,221 pass, 0 fail, 10 skipped;
+- api-server, build then test: 2,913 pass;
+- curriculum: 915 pass, `verify` 0 errors;
+- `pnpm run typecheck`.
+
+**Not verified:**
+- a live-AI plan for these lessons;
+- the API's own prompts (`lessonTeachingPrompt`, the evaluation generator) do not read the new field; only the app's generator context does.
+
+**Not done:**
+- history S1 and geography print no self-assessment table, so they still have nothing beyond the main idea;
+- `verify --gaps` still lists these lessons as «no outcomes», which is true.
+
 ## Grade 10 lesson content: wrong maths and chemistry text corrected from the books — 2026-11-13
 
 Second fix from the Grade 10 review, on the same branch as the figures fix below. Lessons get their summary, key concepts, terms and rules from hand-written rows in `artifacts/mobile/services/knowledgeBase.ts`, merged onto the NCCD lesson by title (`enrichLesson`). Several of those rows described a different lesson, or material the 2026 book does not teach. Each fix below was checked against the extracted book text (`lib/curriculum/src/data/extracted/`), with page numbers in code comments.

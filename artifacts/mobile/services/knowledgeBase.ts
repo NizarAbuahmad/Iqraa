@@ -821,6 +821,13 @@ export interface KBLesson {
   objectives: string[];
   /** Period count from the teacher guide, or null if unknown. */
   periods: number | null;
+  /**
+   * The book's self-assessment statements for this lesson / its unit, where
+   * the book prints those instead of an outcomes list. Never merged into
+   * `objectives`, which the prompt labels as official outcomes.
+   */
+  selfAssessmentAr?: string[];
+  unitSelfAssessmentAr?: string[];
   examplesAr?: string[];
   examplesEn?: string[];
   rulesAr?: string[];

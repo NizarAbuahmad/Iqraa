@@ -13,7 +13,8 @@
     },
     "known_gaps": [
       "نفسُ الفجواتِ المُسجَّلةِ في ملفِّ الفصلِ الأولِ: لا نتاجاتِ تعلُّمٍ مُرقَّمةً (objectives فارغةٌ)، ولا دليلَ معلمٍ (periods وtotal_periods = null)، وصندوقُ «مهاراتِ التعلُّمِ» غيرُ منقولٍ لعدمِ وجودِ حقلٍ لهُ، و«مراجعةُ الوحدةِ» ليستْ درسًا فلمْ تُدرَجْ، ولا معارفَ سابقةً مطبوعةً (prior_knowledge = []).",
-      "بعضُ الأسطرِ في صندوقِ «المصطلحاتِ» طُبِعَتْ من دونِ مقابلٍ إنجليزيٍّ ظاهرٍ (كـ«اتفاقيةِ الضمانِ الجماعيِّ» و«اتفاقيةِ التضامنِ العربيِّ» في الوحدةِ الرابعةِ، و«قوّاتِ حفظِ السلامِ الدوليةِ» و«منظَّمةِ التعاونِ الإسلاميِّ» في درسِها الثاني)؛ تُرِكَ en فارغًا في هذه الحالاتِ بدلًا مِنِ اختلاقِ ترجمةٍ. ومقابلُ «منظَّمةِ الصحةِ العالميةِ» منقولٌ حرفيًّا كما طُبِعَ (World Health Organizatoin) بخطئِهِ المطبعيِّ."
+      "بعضُ الأسطرِ في صندوقِ «المصطلحاتِ» طُبِعَتْ من دونِ مقابلٍ إنجليزيٍّ ظاهرٍ (كـ«اتفاقيةِ الضمانِ الجماعيِّ» و«اتفاقيةِ التضامنِ العربيِّ» في الوحدةِ الرابعةِ، و«قوّاتِ حفظِ السلامِ الدوليةِ» و«منظَّمةِ التعاونِ الإسلاميِّ» في درسِها الثاني)؛ تُرِكَ en فارغًا في هذه الحالاتِ بدلًا مِنِ اختلاقِ ترجمةٍ. ومقابلُ «منظَّمةِ الصحةِ العالميةِ» منقولٌ حرفيًّا كما طُبِعَ (World Health Organizatoin) بخطئِهِ المطبعيِّ.",
+      "self_assessment_ar (2026-11-13): جداولُ التقويمِ الذاتيِّ لكلِّ وحدةٍ (ص25، 49، 69، 83، 99) منقولةٌ على مستوى الوحدةِ؛ أُسقِطَتْ ثلاثُ عباراتٍ لا يُقرأ نصُّها المستخرَجُ بثقةٍ (ص25 البند 7، ص69 البندان 1 و6) — تُراجَعُ معَ الـ PDF. objectives يبقى فارغًا عمدًا."
     ]
   },
   "units": [
@@ -26,6 +27,15 @@
       "total_periods": null,
       "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
       "prior_knowledge": [],
+      "self_assessment_ar": [
+        "أبيّن مصادر الشرعة الدولية لحقوق الإنسان.",
+        "أعدّد أهم حقوق الإنسان الواردة في الدستور الأردني.",
+        "أبيّن أهمية حقوق الإنسان.",
+        "أوضّح دور المؤسسات الوطنية التي تُعنى بحقوق الإنسان.",
+        "أستنتج آثار تطبيق حقوق الإنسان في الفرد والمجتمع.",
+        "أوضّح أهمية دور المرأة في بناء المجتمع.",
+        "أبيّن دور وسائل الإعلام في التوعية بحقوق الإنسان."
+      ],
       "lessons": [
         {
           "id": "u3_l1",
@@ -66,6 +76,16 @@
       "total_periods": null,
       "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
       "prior_knowledge": [],
+      "self_assessment_ar": [
+        "أبيّن أهمية التضامن العربي.",
+        "أعدّد مرتكزات السياسة الخارجية الأردنية.",
+        "أستنتج أهمية القضية الفلسطينية بالنسبة إلى السياسة الخارجية الأردنية.",
+        "أوضّح أبرز مواقف الأردن القومية.",
+        "أبيّن علاقة الأردن بالمنظمات الدولية.",
+        "أعدّد أهم المنظمات الدولية.",
+        "أوضّح دور القوات المسلحة الأردنية والأجهزة الأمنية في المشاركة مع قوات حفظ السلام الدولية.",
+        "أبيّن دور القيادة الهاشمية في توطيد علاقات الصداقة بين الأردن ودول العالم."
+      ],
       "lessons": [
         {
           "id": "u4_l1",
@@ -110,6 +130,13 @@
       "total_periods": null,
       "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
       "prior_knowledge": [],
+      "self_assessment_ar": [
+        "أعدّد أهم المواقع الأردنية المدرجة على لائحة التراث العالمي.",
+        "أستنتج أهمية التراث الوطني في دعم الاقتصاد الوطني للدولة.",
+        "أوضّح دور الدولة في المحافظة على التراث الوطني.",
+        "أبيّن دور المنظمات الدولية في المحافظة على التراث.",
+        "ألتزم المحافظة على التراث الوطني."
+      ],
       "lessons": [
         {
           "id": "u5_l1",
@@ -149,6 +176,13 @@
       "total_periods": null,
       "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
       "prior_knowledge": [],
+      "self_assessment_ar": [
+        "أوضّح كيفية تحقيق النزاهة الوطنية.",
+        "أعدّد معايير النزاهة الوطنية.",
+        "أوضّح الآثار الناجمة عن الفساد.",
+        "أبيّن أهمية مكافحة الفساد.",
+        "أعدّد أهداف هيئة النزاهة ومكافحة الفساد."
+      ],
       "lessons": [
         {
           "id": "u6_l1",
@@ -187,6 +221,16 @@
       "total_periods": null,
       "data_tier": "lesson-level (student book only: unit and lesson titles from the contents page, general idea and main idea copied verbatim from each unit's/lesson's own printed boxes, bilingual key terms from each lesson's «المصطلحات» box; no teacher guide on disk, so no objectives or periods)",
       "prior_knowledge": [],
+      "self_assessment_ar": [
+        "أبحث عن مصادر المعلومة.",
+        "أبيّن أهمية المحتوى الإعلامي.",
+        "أوضّح مقوّمات المحتوى الإعلامي.",
+        "أستنتج الآثار السلبية للمحتوى الإعلامي.",
+        "أوضّح أهمية تحليل المحتوى الإعلامي.",
+        "ألتزم حقّ الحرية وَفق القانون.",
+        "أوضّح دور الإعلام في نشر الوعي في المجتمع.",
+        "ألتزم قواعد السلوك الإيجابي في احترام المواعيد وتنظيم الوقت."
+      ],
       "lessons": [
         {
           "id": "u7_l1",

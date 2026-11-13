@@ -55,6 +55,13 @@ export type NccdLesson = {
   periods: number | null;
   objectives: string[];
   vocabulary: NccdVocab[];
+  /**
+   * The lesson's own self-assessment box as the book prints it (e.g. PE's
+   * «أُقيِّمُ تعلُّمي»). Deliberately NOT `objectives`: those reach the model
+   * as «النتاجات (من المنهاج الرسمي)», and a self-assessment table is not the
+   * book's outcomes list. Absent where the book prints none.
+   */
+  self_assessment_ar?: string[];
 };
 
 export type NccdUnit = {
@@ -66,6 +73,12 @@ export type NccdUnit = {
   total_periods: number | null;
   prior_knowledge: string[];
   lessons: NccdLesson[];
+  /**
+   * The unit's end-of-unit self-assessment table («أقيّم نفسي ذاتيًّا…»), in
+   * the book's order. Unit-level because the book prints it per unit; which
+   * statement belongs to which lesson is not printed, so it is not guessed.
+   */
+  self_assessment_ar?: string[];
 };
 
 export type NccdCurriculumFile = {
@@ -95,6 +108,10 @@ export type NccdKbLesson = {
   keyTerms: Array<{ ar: string; en: string; definitionAr: string; definitionEn: string }>;
   objectives: string[];
   periods: number | null;
+  /** `NccdLesson.self_assessment_ar`, when the book prints one per lesson. */
+  selfAssessmentAr?: string[];
+  /** `NccdUnit.self_assessment_ar` of the lesson's unit, when printed per unit. */
+  unitSelfAssessmentAr?: string[];
 };
 
 /** Shape compatible with Unit / Lesson in curriculumData.ts */
@@ -201,6 +218,8 @@ export function makeNccdCatalog(opts: {
           keyTerms: vocab.map(v => ({ ar: v.ar, en: v.en, definitionAr: '', definitionEn: '' })),
           objectives: [...objectives],
           periods: lesson.periods ?? null,
+          ...(lesson.self_assessment_ar?.length ? { selfAssessmentAr: [...lesson.self_assessment_ar] } : {}),
+          ...(u.self_assessment_ar?.length ? { unitSelfAssessmentAr: [...u.self_assessment_ar] } : {}),
         });
       }
     }

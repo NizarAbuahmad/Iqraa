@@ -142,6 +142,27 @@ function serializeLessonContext(
     unitObjectives.forEach(o => lines.push(`• ${o}`));
   }
 
+  // Books that print no outcomes list (civic, history S2, PE) print a
+  // self-assessment table instead. Labelled as what it is, never as
+  // «النتاجات (من المنهاج الرسمي)»: the catalogs leave `objectives` empty for
+  // these books on purpose (their meta.known_gaps), and this keeps it so.
+  const selfAssessment = lesson.selfAssessmentAr ?? [];
+  const unitSelfAssessment = lesson.unitSelfAssessmentAr ?? [];
+  if (selfAssessment.length > 0 || unitSelfAssessment.length > 0) {
+    lines.push('');
+    if (selfAssessment.length > 0) {
+      lines.push(isAr
+        ? 'معايير التقويم الذاتي في كتاب الطالب لهذا الدرس (ليست قائمة النتاجات الرسمية):'
+        : "Self-assessment criteria printed in the student book for this lesson (not the official outcomes list):");
+      selfAssessment.forEach(o => lines.push(`• ${o}`));
+    } else {
+      lines.push(isAr
+        ? 'معايير التقويم الذاتي في كتاب الطالب للوحدة كاملة (ليست خاصة بهذا الدرس، وليست قائمة النتاجات الرسمية):'
+        : 'Self-assessment criteria printed in the student book for the whole unit (not lesson-specific, not the official outcomes list):');
+      unitSelfAssessment.forEach(o => lines.push(`• ${o}`));
+    }
+  }
+
   if (vocabulary.length > 0) {
     lines.push('');
     lines.push(isAr ? 'المصطلحات:' : 'Vocabulary:');
