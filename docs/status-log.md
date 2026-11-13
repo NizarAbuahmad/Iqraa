@@ -111,6 +111,15 @@ failed with live AI off. The lessons are «رسم الأشكال ثلاثيّة 
 example (the solved slots walk on to a lesson that has working). The questions follow the objectives, not
 a book page, until a Grade 8 maths book is extracted.
 
+## Grade 4 vocational S2: six figures the detector missed — 2026-11-13
+
+A page-by-page look at the 36 vocational S2 renders (after «Grade 4 PE, vocational S2, social and arts figures»)
+found pictures the colour detector had not proposed, mostly photos on pale panels: the three facial-expression photos
+(p. 10, u1_l1), «التفكير خارج الصندوق» (p. 17, u1_l2), the boy at the electronics bench from the unit 2 opener (p. 21,
+u2_l1, cropped clear of the lesson list), three hair types (p. 52, u4_l1), a school bag being cleaned (p. 58, u4_l2) and
+potatoes and apples (p. 62, u4_l3). Boxed by hand on a 5% grid. Vocational S2 now has 26 crops on 9 of 16 lessons;
+three map rows added (u1_l1, u1_l2, u2_l1). The six PNGs are in `iqraa-public/figures/` under names checked free first.
+
 ## Grade 10 checked against its books, and corrected — 2026-11-13
 
 **What was checked.** All 33 Grade 10 books in the catalog (425 lessons before this change), against
