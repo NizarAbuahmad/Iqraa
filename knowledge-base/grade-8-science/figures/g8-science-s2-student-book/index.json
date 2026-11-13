@@ -194,86 +194,6 @@
       "lessonStartPage": 10
     },
     {
-      "file": "p021.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 21,
-      "rect": [
-        53.9,
-        431.1,
-        200.1,
-        585.7
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
-      "file": "p021b-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 21,
-      "rect": [
-        228.0,
-        398.9,
-        368.8,
-        572.0
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
-      "file": "p021c-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 21,
-      "rect": [
-        400.0,
-        435.1,
-        538.0,
-        585.0
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
-      "file": "p021d-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 21,
-      "rect": [
-        56.2,
-        577.0,
-        205.4,
-        728.9
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
-      "file": "p021e-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 21,
-      "rect": [
-        222.5,
-        579.0,
-        378.5,
-        728.8
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
       "file": "p027.png",
       "sourceId": "g8-science-s2-student-book",
       "pdfPage": 27,
@@ -380,41 +300,9 @@
         430.0
       ],
       "unit": 1,
-      "lesson": 3,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 31
-    },
-    {
-      "file": "p040-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 40,
-      "rect": [
-        114.0,
-        226.5,
-        558.8,
-        433.2
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 31
-    },
-    {
-      "file": "p041b.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 41,
-      "rect": [
-        0.0,
-        239.7,
-        169.2,
-        420.3
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "الضبطُ والتنظيمُ",
       "lessonStartPage": 31
     },
     {
@@ -426,38 +314,6 @@
         452.0,
         255.0,
         701.0
-      ],
-      "unit": 2,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 46
-    },
-    {
-      "file": "p050-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 50,
-      "rect": [
-        92.0,
-        483.7,
-        448.0,
-        666.0
-      ],
-      "unit": 2,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 46
-    },
-    {
-      "file": "p050b-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 50,
-      "rect": [
-        414.0,
-        526.0,
-        545.0,
-        660.0
       ],
       "unit": 2,
       "lesson": 1,
@@ -498,22 +354,6 @@
       "lessonStartPage": 54
     },
     {
-      "file": "p055b.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 55,
-      "rect": [
-        54.0,
-        276.7,
-        197.0,
-        398.6
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 54
-    },
-    {
       "file": "p060b-v2.png",
       "sourceId": "g8-science-s2-student-book",
       "pdfPage": 60,
@@ -530,22 +370,6 @@
       "lessonStartPage": 54
     },
     {
-      "file": "p066.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 66,
-      "rect": [
-        387.3,
-        0.0,
-        623.6,
-        488.5
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 54
-    },
-    {
       "file": "p067b-v2.png",
       "sourceId": "g8-science-s2-student-book",
       "pdfPage": 67,
@@ -554,22 +378,6 @@
         155.2,
         438.0,
         368.0
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 54
-    },
-    {
-      "file": "p071b-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 71,
-      "rect": [
-        130.0,
-        280.0,
-        245.0,
-        335.0
       ],
       "unit": 2,
       "lesson": 2,
@@ -898,54 +706,6 @@
       "lessonStartPage": 116
     },
     {
-      "file": "p126b-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 126,
-      "rect": [
-        124.0,
-        325.0,
-        217.0,
-        444.0
-      ],
-      "unit": 4,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 116
-    },
-    {
-      "file": "p126c-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 126,
-      "rect": [
-        228.0,
-        325.0,
-        316.0,
-        444.0
-      ],
-      "unit": 4,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 116
-    },
-    {
-      "file": "p126d-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 126,
-      "rect": [
-        336.0,
-        324.0,
-        400.0,
-        398.0
-      ],
-      "unit": 4,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 116
-    },
-    {
       "file": "p126f.png",
       "sourceId": "g8-science-s2-student-book",
       "pdfPage": 126,
@@ -956,9 +716,9 @@
         625.5
       ],
       "unit": 4,
-      "lesson": 2,
+      "lesson": 1,
       "lessonTitleEn": null,
-      "lessonTitleAr": null,
+      "lessonTitleAr": "المجالُ المغناطيسيُّ",
       "lessonStartPage": 116
     },
     {

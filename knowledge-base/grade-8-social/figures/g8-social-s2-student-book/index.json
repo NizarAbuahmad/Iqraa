@@ -18,22 +18,6 @@
       "lessonStartPage": 11
     },
     {
-      "file": "p016.png",
-      "sourceId": "g8-social-s2-student-book",
-      "pdfPage": 16,
-      "rect": [
-        69.7,
-        123.5,
-        496.7,
-        513.5
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 15
-    },
-    {
       "file": "p028b.png",
       "sourceId": "g8-social-s2-student-book",
       "pdfPage": 28,
@@ -64,22 +48,6 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 28
-    },
-    {
-      "file": "p035.png",
-      "sourceId": "g8-social-s2-student-book",
-      "pdfPage": 35,
-      "rect": [
-        32.7,
-        133.5,
-        534.8,
-        394.6
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 34
     },
     {
       "file": "p041.png",
@@ -242,38 +210,6 @@
       "lessonStartPage": 52
     },
     {
-      "file": "p066-v2.png",
-      "sourceId": "g8-social-s2-student-book",
-      "pdfPage": 66,
-      "rect": [
-        73.0,
-        247.0,
-        389.1,
-        437.2
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 63
-    },
-    {
-      "file": "p066b-v2.png",
-      "sourceId": "g8-social-s2-student-book",
-      "pdfPage": 66,
-      "rect": [
-        187.8,
-        247.0,
-        517.0,
-        437.2
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 63
-    },
-    {
       "file": "p067.png",
       "sourceId": "g8-social-s2-student-book",
       "pdfPage": 67,
@@ -346,22 +282,6 @@
         366.9,
         410.4,
         722.5
-      ],
-      "unit": 4,
-      "lesson": 4,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 98
-    },
-    {
-      "file": "p100.png",
-      "sourceId": "g8-social-s2-student-book",
-      "pdfPage": 100,
-      "rect": [
-        52.1,
-        80.4,
-        269.3,
-        297.6
       ],
       "unit": 4,
       "lesson": 4,

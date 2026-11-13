@@ -2219,6 +2219,16 @@
       "matchedBy": "book-opener-title"
     },
     {
+      "sourceId": "g8-math-s2-student-book",
+      "unit": 7,
+      "lesson": 1,
+      "bookTitleAr": "إثبات توازي المستقيمات وتعامدها",
+      "kbLessonId": "kbl-g8-math-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 8 audit: p076 was the one good figure of this lesson and had no map entry."
+    },
+    {
       "sourceId": "eng-s1-student-book",
       "unit": 1,
       "lesson": 3,
@@ -2470,6 +2480,16 @@
       "kbLessonId": "kbl-g8-eng-s1-nccd-u1_l7",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "hand",
+      "why": "2026-11-13 Grade 8 audit: p016 is the Unit 2 opener photo that Lesson 1A works from («photo on page 14»)."
     },
     {
       "sourceId": "g8-english-s1-student-book",

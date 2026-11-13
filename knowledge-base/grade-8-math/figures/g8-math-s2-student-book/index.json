@@ -34,22 +34,6 @@
    "lessonStartPage": 29
   },
   {
-   "file": "p042-v2.png",
-   "sourceId": "g8-math-s2-student-book",
-   "pdfPage": 42,
-   "rect": [
-    425.0,
-    560.7,
-    561.0,
-    737.0
-   ],
-   "unit": 6,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرس حلُّ نظامٍ مِنْ معادلتَينِ خطّيّتَينِ بيانيًّا",
-   "lessonStartPage": 40
-  },
-  {
    "file": "p043-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 43,
@@ -610,22 +594,6 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p136.png",
-   "sourceId": "g8-math-s2-student-book",
-   "pdfPage": 136,
-   "rect": [
-    80.7,
-    413.5,
-    174.4,
-    507.2
-   ],
-   "unit": 8,
-   "lesson": 3,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
-   "lessonStartPage": 132
-  },
-  {
    "file": "p136b-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 136,
@@ -794,22 +762,6 @@
     574.0,
     367.0,
     640.0
-   ],
-   "unit": 8,
-   "lesson": 3,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرس حجمُ الكرةِ ومساحةُ سطحِها",
-   "lessonStartPage": 132
-  },
-  {
-   "file": "p138g-v2.png",
-   "sourceId": "g8-math-s2-student-book",
-   "pdfPage": 138,
-   "rect": [
-    70.5,
-    658.2,
-    214.3,
-    739.8
    ],
    "unit": 8,
    "lesson": 3,
@@ -1074,22 +1026,6 @@
    "lessonStartPage": 166
   },
   {
-   "file": "p167-v2.png",
-   "sourceId": "g8-math-s2-student-book",
-   "pdfPage": 167,
-   "rect": [
-    60.0,
-    446.3,
-    217.2,
-    547.0
-   ],
-   "unit": 9,
-   "lesson": 4,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
-   "lessonStartPage": 166
-  },
-  {
    "file": "p168-v2.png",
    "sourceId": "g8-math-s2-student-book",
    "pdfPage": 168,
@@ -1161,22 +1097,6 @@
     51.0,
     293.0,
     123.0,
-    364.3
-   ],
-   "unit": 9,
-   "lesson": 4,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرسِاحتمالُ الحوادثِ المركَّبة",
-   "lessonStartPage": 166
-  },
-  {
-   "file": "p171b-v2.png",
-   "sourceId": "g8-math-s2-student-book",
-   "pdfPage": 171,
-   "rect": [
-    128.0,
-    293.0,
-    200.0,
     364.3
    ],
    "unit": 9,

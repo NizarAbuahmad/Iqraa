@@ -98,22 +98,6 @@
       "lessonStartPage": null
     },
     {
-      "file": "p025.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 25,
-      "rect": [
-        14.0,
-        66.3,
-        623.6,
-        864.6
-      ],
-      "unit": 2,
-      "lesson": 6,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
       "file": "p027.png",
       "sourceId": "g8-english-s2-student-book",
       "pdfPage": 27,
@@ -130,70 +114,6 @@
       "lessonStartPage": null
     },
     {
-      "file": "p028.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 28,
-      "rect": [
-        -0.0,
-        555.4,
-        269.5,
-        830.4
-      ],
-      "unit": 2,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p028b.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 28,
-      "rect": [
-        268.5,
-        555.1,
-        610.1,
-        841.8
-      ],
-      "unit": 2,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p028c.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 28,
-      "rect": [
-        -0.0,
-        261.1,
-        311.7,
-        550.3
-      ],
-      "unit": 2,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p028d.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 28,
-      "rect": [
-        312.6,
-        276.9,
-        609.8,
-        554.8
-      ],
-      "unit": 2,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
       "file": "p035.png",
       "sourceId": "g8-english-s2-student-book",
       "pdfPage": 35,
@@ -202,22 +122,6 @@
         348.3,
         309.8,
         656.7
-      ],
-      "unit": 3,
-      "lesson": 6,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p035c.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 35,
-      "rect": [
-        -15.2,
-        573.1,
-        644.7,
-        924.1
       ],
       "unit": 3,
       "lesson": 6,
@@ -274,22 +178,6 @@
       "lessonStartPage": null
     },
     {
-      "file": "p038-v2.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 38,
-      "rect": [
-        28.0,
-        574.3,
-        423.9,
-        837.0
-      ],
-      "unit": 3,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
       "file": "p038b.png",
       "sourceId": "g8-english-s2-student-book",
       "pdfPage": 38,
@@ -301,38 +189,6 @@
       ],
       "unit": 3,
       "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p038c.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 38,
-      "rect": [
-        -31.5,
-        56.1,
-        329.3,
-        353.0
-      ],
-      "unit": 3,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p047c.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 47,
-      "rect": [
-        14.2,
-        641.6,
-        623.8,
-        870.3
-      ],
-      "unit": 4,
-      "lesson": 6,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": null
@@ -474,22 +330,6 @@
         67.9,
         621.3,
         305.5
-      ],
-      "unit": 5,
-      "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p062.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 62,
-      "rect": [
-        88.1,
-        -1.0,
-        552.7,
-        870.4
       ],
       "unit": 5,
       "lesson": 7,
