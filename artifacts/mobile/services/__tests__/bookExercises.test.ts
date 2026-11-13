@@ -63,10 +63,11 @@ describe('curriculumLessonId', () => {
     assert.equal(curriculumLessonId('s2', 8, 5), 'kbl-math-s2-nccd-u8_l5');
   });
 
-  it('shifts unit 1 down by one, and drops the book-only opener', () => {
-    // The books teach «حل معادلات خاصة» as unit 1 lesson 1; the curriculum
-    // deliberately does not carry it, so its exercises belong to no lesson.
-    assert.equal(curriculumLessonId('s1', 1, 1), null);
+  it('shifts unit 1 down by one, and files the opener under its own lesson', () => {
+    // The books teach «حل معادلات خاصة» as unit 1 lesson 1. The curriculum
+    // gained it on 2026-11-13 as u1_l5 (an id after the existing four, which
+    // are persisted), so the book's numbering and the ids no longer line up.
+    assert.equal(curriculumLessonId('s1', 1, 1), 'kbl-math-s1-nccd-u1_l5');
     assert.equal(curriculumLessonId('s1', 1, 2), 'kbl-math-s1-nccd-u1_l1');
     assert.equal(curriculumLessonId('s1', 1, 3), 'kbl-math-s1-nccd-u1_l2');
   });
@@ -141,11 +142,18 @@ describe('the derived join, checked against the curriculum', () => {
         checked += 1;
       }
     }
-    assert.equal(checked, 31, 'every book lesson but the curriculum-less one');
+    assert.equal(checked, 32, 'every book lesson, the opener included');
   });
 });
 
 describe('exercisesForLesson', () => {
+  it('gives «حل معادلات خاصة» its own page, page 10', () => {
+    const ex = exercisesForLesson('kbl-math-s1-nccd-u1_l5');
+    assert.ok(ex);
+    assert.equal(ex!.page, 10);
+    assert.equal(ex!.sourceId, 'math-s1-exercise-book');
+  });
+
   it('gives the systems lesson the page the book really prints it on', () => {
     // Page 11, not 10: page 10 is «حل معادلات خاصة», the lesson the curriculum
     // does not carry. Citing page 10 here is exactly the failure this exists

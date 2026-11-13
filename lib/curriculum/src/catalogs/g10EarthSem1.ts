@@ -7,10 +7,9 @@
  * نتاجات التعلم and bilingual المفاهيم والمصطلحات in every lesson opener, so
  * every lesson here is lesson-level data copied from the book. Unlike
  * physics S1, no period counts are available at all, not even from the
- * teacher guide: `earth-s1-teacher-guide` and `earth-s2-teacher-guide` both
- * extract with the definite article transposed and neither extraction was
- * kept, so every `periods` is null and every `total_periods` with it. Both
- * PDFs are intact in R2 and need a better extractor or OCR.
+ * teacher guide: `earth-s1-teacher-guide` was OCR'd on 2026-09-07, but the
+ * numbers in its period column are lost, so every `periods` is null and every
+ * `total_periods` with it.
  *
  * Unit numbering is continuous across the year (1, 2 here; 3, 4, 5 in
  * Semester 2) — unlike physics, which has a gap at unit 3.

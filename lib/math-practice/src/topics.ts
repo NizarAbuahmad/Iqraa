@@ -20,6 +20,8 @@ import { STATS_TOPICS } from './stats.ts';
 import { PROPORTION_TOPICS } from './proportion.ts';
 import { EARLY_TOPICS } from './early.ts';
 import { G10_LESSON_TOPICS } from './grade10.ts';
+import { G10_TOPICS } from './g10.ts';
+import { G8_TOPICS } from './g8.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
 import {
   gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tier, valueOf, wrongsFrom,
@@ -1996,6 +1998,8 @@ export const TOPICS: readonly Topic[] = [
   ...PROPORTION_TOPICS,
   ...EARLY_TOPICS,
   ...G10_LESSON_TOPICS,
+  ...G10_TOPICS,
+  ...G8_TOPICS,
 ];
 
 /** The generator for a lesson title and grade, or null when none is about it. */

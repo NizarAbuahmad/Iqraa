@@ -26,21 +26,24 @@ const ids = () => G10_ITEM_LESSONS.map(l => l.lessonId);
 /** topic: [size, kind] — the kind is pinned per sub-topic, so a meaning item cannot appear outside the topics meant for it. */
 const SIZES: Record<string, Record<string, [number, 'form' | 'meaning']>> = {
   [L('u1_l1')]: { 'habit-markers': [12, 'meaning'], 'temporary-markers': [12, 'meaning'], stative: [8, 'form'], questions: [8, 'form'] },
-  [L('u1_l5')]: { 'a-an': [8, 'form'], 'already-mentioned': [12, 'meaning'], 'unique-things': [10, 'form'], 'no-article': [10, 'form'] },
+  [L('u1_l5')]: { 'a-an-jobs': [6, 'form'], 'the-superlatives': [8, 'form'], 'already-mentioned': [10, 'meaning'], 'unique-things': [8, 'form'], 'no-article': [8, 'form'] },
   [L('u2_l1')]: { 'result-count': [14, 'meaning'], duration: [14, 'meaning'], forms: [12, 'form'] },
-  [L('u2_l4')]: { ing: [14, 'form'], to: [14, 'form'], 'change-of-meaning': [12, 'meaning'] },
+  [L('u2_l4')]: { ing: [10, 'form'], to: [10, 'form'], 'bare-infinitive': [10, 'form'], 'change-of-meaning': [10, 'meaning'] },
   [L('u3_l1')]: { interrupted: [14, 'meaning'], 'earlier-event': [14, 'meaning'], forms: [12, 'form'] },
   [L('u3_l4')]: { 'used-to-states': [14, 'meaning'], 'would-habits': [12, 'meaning'], forms: [14, 'form'] },
   [L('u3_l5')]: { 'could-you-tell': [14, 'form'], 'do-you-know': [14, 'form'], 'if-whether': [12, 'form'] },
-  [L('u4_l1')]: { obligation: [14, 'meaning'], 'ability-permission': [14, 'meaning'], forms: [12, 'form'] },
+  [L('u4_l1')]: { obligation: [10, 'meaning'], 'ability-permission': [14, 'meaning'], forms: [16, 'form'] },
   [L('u4_l4')]: { defining: [12, 'form'], 'non-defining': [14, 'form'], 'whose-where': [14, 'form'] },
-  [L('u5_l1')]: { 'will-decisions': [10, 'meaning'], 'going-to-evidence': [10, 'meaning'], 'arrangements-timetables': [12, 'form'], forms: [8, 'form'] },
+  [L('u5_l1')]: {
+    'will-decisions': [8, 'meaning'], 'going-to-evidence': [8, 'meaning'], 'arrangements-timetables': [6, 'form'], forms: [6, 'form'],
+    'about-to': [4, 'form'], possibility: [4, 'form'], 'will-predictions': [4, 'form'],
+  },
   [L('u5_l3')]: { continuous: [14, 'meaning'], perfect: [14, 'meaning'], forms: [12, 'form'] },
-  [L2('u6_l1')]: { 'first-conditional': [12, 'form'], 'second-conditional': [12, 'form'], 'imagine-vs-real': [16, 'meaning'] },
-  [L2('u6_l4')]: { 'if-present': [14, 'form'], 'when-general-truths': [14, 'form'], 'questions-negatives': [12, 'form'] },
-  [L2('u7_l1')]: { 'verb-patterns': [16, 'form'], 'admit-deny-suggest': [14, 'form'], 'tell-ask-warn': [10, 'form'] },
+  [L2('u6_l1')]: { 'first-conditional': [12, 'form'], 'second-conditional': [12, 'form'], 'condition-result': [10, 'form'], 'were-advice': [6, 'form'] },
+  [L2('u6_l4')]: { 'if-present': [8, 'form'], 'when-general-truths': [8, 'form'], 'questions-negatives': [8, 'form'], 'alternatives-to-if': [16, 'meaning'] },
+  [L2('u7_l1')]: { 'backshift-forms': [10, 'form'], 'time-changes': [6, 'form'], 'say-tell': [6, 'form'], imperatives: [8, 'form'], 'reporting-verbs': [10, 'form'] },
   [L2('u7_l5')]: { 'ask-wonder': [14, 'form'], 'if-whether': [12, 'form'], 'word-order': [14, 'form'] },
-  [L2('u8_l1')]: { 'present-past': [14, 'form'], 'with-modals': [12, 'form'], 'questions-negatives': [14, 'form'] },
+  [L2('u8_l1')]: { 'present-past': [10, 'form'], 'with-modals': [8, 'form'], 'questions-negatives': [8, 'form'], 'continuous-perfect': [14, 'form'] },
   [L2('u8_l6')]: { 'have-something-done': [12, 'form'], 'get-something-done': [12, 'form'], 'service-vs-self': [16, 'meaning'] },
   [L2('u9_l1')]: { 'third-conditional': [14, 'form'], 'past-unreal': [14, 'meaning'], 'would-have-forms': [12, 'form'] },
   [L2('u9_l4')]: { 'wish-present': [14, 'form'], 'wish-past-regrets': [14, 'meaning'], 'if-only': [12, 'form'] },
@@ -59,8 +62,8 @@ describe('Grade 10 authored lessons', () => {
     }
   });
 
-  it('make Articles and every Semester 2 lesson grammar-only, under the word floor, and the rest lessons with words', () => {
-    const grammarOnly = (id: string) => id === L('u1_l5') || id.includes('-s2-');
+  it('make Articles, the Semester 1 grammar lessons that print no Word List and every Semester 2 lesson grammar-only, under the word floor, and the rest lessons with words', () => {
+    const grammarOnly = (id: string) => [L('u1_l5'), L('u2_l4'), L('u3_l4'), L('u4_l4'), L('u5_l3')].includes(id) || id.includes('-s2-');
     for (const id of ids()) {
       assert.equal(!!hubLesson(id)!.grammarOnly, grammarOnly(id), id);
       assert.equal(GRAMMAR_ONLY_LESSONS.includes(id), grammarOnly(id), id);
@@ -75,12 +78,12 @@ describe('Grade 10 authored lessons', () => {
     }
   });
 
-  it('are 21 lessons and 840 items, 308 of them meaning-decided', () => {
+  it('are 21 lessons and 840 items, 296 of them meaning-decided', () => {
     assert.equal(G10_ITEM_LESSONS.length, 21);
     assert.equal(G10_ITEM_LESSONS.reduce((n, l) => n + sentencesOf(l.lessonId).length, 0), 840);
     assert.equal(grammarUnitsForGrade(10).length, 21);
     const meaning = ids().flatMap(id => sentencesOf(id)).filter(x => x.kind === 'meaning').length;
-    assert.equal(meaning, 308);
+    assert.equal(meaning, 296);
     assert.equal(meaning, Object.values(SIZES).flatMap(s => Object.values(s)).filter(([, k]) => k === 'meaning').reduce((n, [size]) => n + size, 0));
   });
 
@@ -190,8 +193,8 @@ describe('the Grade 10 teacher form', () => {
     assert.ok(html.includes('>s2-nccd-u6_l1<'));
     assert.ok(html.includes('>s2-nccd-u10_l3<'));
     assert.ok(!html.includes('>kbl-eng-'), 'no un-stripped id');
-    assert.equal((html.match(/<span class="kind kind-meaning"/g) ?? []).length, 308);
-    assert.equal((html.match(/<span class="kind kind-form"/g) ?? []).length, 532);
+    assert.equal((html.match(/<span class="kind kind-meaning"/g) ?? []).length, 296);
+    assert.equal((html.match(/<span class="kind kind-form"/g) ?? []).length, 544);
   });
   it('names both semesters in its lead', () => {
     assert.ok(html.includes('الفصلان الأول والثاني'));

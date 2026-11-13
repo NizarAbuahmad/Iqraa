@@ -1,0 +1,565 @@
+{
+  "sourceId": "g4-arabic-s2-student-book",
+  "figures": [
+    {
+      "file": "p012.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 12,
+      "rect": [
+        307.9,
+        156.4,
+        518.8,
+        493.1
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (Narrating a Story Based on Pictures)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "lessonStartPage": 11
+    },
+    {
+      "file": "p012b.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 12,
+      "rect": [
+        59.5,
+        158.1,
+        248.3,
+        499.9
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (Narrating a Story Based on Pictures)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "lessonStartPage": 11
+    },
+    {
+      "file": "p016.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 16,
+      "rect": [
+        56.1,
+        124.1,
+        207.5,
+        250.0
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (The Merchants' Chief and the Ideal Friend)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (شَهْبَنْدَرُ التُّجّارِ وَالصَّديقُ الْمِثالِيُّ)",
+      "lessonStartPage": 13
+    },
+    {
+      "file": "p016b.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 16,
+      "rect": [
+        409.9,
+        212.6,
+        549.4,
+        333.3
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (The Merchants' Chief and the Ideal Friend)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (شَهْبَنْدَرُ التُّجّارِ وَالصَّديقُ الْمِثالِيُّ)",
+      "lessonStartPage": 13
+    },
+    {
+      "file": "p029.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 29,
+      "rect": [
+        44.2,
+        129.2,
+        251.7,
+        244.9
+      ],
+      "unit": 6,
+      "lesson": 5,
+      "lessonTitleEn": "I Build My Language (The Simple Nominal Sentence)",
+      "lessonTitleAr": "أَبْني لُغَتي (الْجُمْلَةُ الاسْمِيَّةُ الْبَسيطَةُ)",
+      "lessonStartPage": 28
+    },
+    {
+      "file": "p034.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 34,
+      "rect": [
+        49.3,
+        195.6,
+        551.1,
+        411.7
+      ],
+      "unit": 7,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus (The Most Wonderful Pair of Friends in the World)",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (أَرْوَعُ صَديقَيْنِ في الْعالَمِ)",
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p035.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 35,
+      "rect": [
+        73.1,
+        175.1,
+        263.6,
+        355.4
+      ],
+      "unit": 7,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus (The Most Wonderful Pair of Friends in the World)",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (أَرْوَعُ صَديقَيْنِ في الْعالَمِ)",
+      "lessonStartPage": 34
+    },
+    {
+      "file": "p037.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 37,
+      "rect": [
+        226.2,
+        161.5,
+        428.6,
+        360.5
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (Narrating a Story Based on Pictures)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "lessonStartPage": 37
+    },
+    {
+      "file": "p037b.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 37,
+      "rect": [
+        91.8,
+        426.8,
+        234.7,
+        581.6
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (Narrating a Story Based on Pictures)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "lessonStartPage": 37
+    },
+    {
+      "file": "p037c.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 37,
+      "rect": [
+        318.1,
+        437.0,
+        484.7,
+        585.0
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (Narrating a Story Based on Pictures)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "lessonStartPage": 37
+    },
+    {
+      "file": "p037d.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 37,
+      "rect": [
+        98.6,
+        602.0,
+        265.3,
+        746.5
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (Narrating a Story Based on Pictures)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "lessonStartPage": 37
+    },
+    {
+      "file": "p037e.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 37,
+      "rect": [
+        335.1,
+        624.1,
+        459.2,
+        746.5
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (Narrating a Story Based on Pictures)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "lessonStartPage": 37
+    },
+    {
+      "file": "p045.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 45,
+      "rect": [
+        340.2,
+        307.8,
+        460.9,
+        464.2
+      ],
+      "unit": 7,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (This Is How Sanaa Moved)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (هَكَذا تَحَرَّكَتْ سَناءُ)",
+      "lessonStartPage": 39
+    },
+    {
+      "file": "p045b.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 45,
+      "rect": [
+        333.4,
+        539.1,
+        506.9,
+        658.1
+      ],
+      "unit": 7,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (This Is How Sanaa Moved)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (هَكَذا تَحَرَّكَتْ سَناءُ)",
+      "lessonStartPage": 39
+    },
+    {
+      "file": "p046.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 46,
+      "rect": [
+        30.6,
+        277.2,
+        176.9,
+        426.8
+      ],
+      "unit": 7,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (This Is How Sanaa Moved)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (هَكَذا تَحَرَّكَتْ سَناءُ)",
+      "lessonStartPage": 39
+    },
+    {
+      "file": "p047.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 47,
+      "rect": [
+        129.3,
+        535.7,
+        506.9,
+        746.5
+      ],
+      "unit": 7,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (This Is How Sanaa Moved)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (هَكَذا تَحَرَّكَتْ سَناءُ)",
+      "lessonStartPage": 39
+    },
+    {
+      "file": "p055.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 55,
+      "rect": [
+        222.8,
+        542.5,
+        379.3,
+        700.6
+      ],
+      "unit": 7,
+      "lesson": 5,
+      "lessonTitleEn": "I Build My Language (Relative Pronouns)",
+      "lessonTitleAr": "أَبْني لُغَتي (الأَسْماءُ الْمَوْصولَةُ)",
+      "lessonStartPage": 54
+    },
+    {
+      "file": "p058.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 58,
+      "rect": [
+        3.4,
+        411.5,
+        591.9,
+        746.5
+      ],
+      "unit": 8,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus (From Ash'ab's Tales)",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (مِنْ حِكاياتِ أَشْعَبَ)",
+      "lessonStartPage": 60
+    },
+    {
+      "file": "p065.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 65,
+      "rect": [
+        331.7,
+        389.4,
+        498.4,
+        520.3
+      ],
+      "unit": 8,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (Narrating a Story Based on Pictures)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "lessonStartPage": 65
+    },
+    {
+      "file": "p065b.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 65,
+      "rect": [
+        336.8,
+        574.8,
+        489.8,
+        702.3
+      ],
+      "unit": 8,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (Narrating a Story Based on Pictures)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "lessonStartPage": 65
+    },
+    {
+      "file": "p067.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 67,
+      "rect": [
+        73.1,
+        151.3,
+        285.7,
+        285.7
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (Juha the Just)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (جُحا الْعادِلُ)",
+      "lessonStartPage": 67
+    },
+    {
+      "file": "p077.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 77,
+      "rect": [
+        278.9,
+        576.5,
+        428.6,
+        746.5
+      ],
+      "unit": 8,
+      "lesson": 4,
+      "lessonTitleEn": "I Write (Words Whose Spelling Differs from Their Pronunciation | The Letters Jim, Ha', and Kha' | Writing a Story)",
+      "lessonTitleAr": "أَكْتُبُ (كَلِماتٌ يَخْتَلِفُ رَسْمُها عَنْ نُطْقِها | الأَحْرُفُ: الْجيمُ، وَالْحاءُ، وَالْخاءُ | كِتابَةُ الْقِصَّةِ)",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p086.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 86,
+      "rect": [
+        3.4,
+        426.8,
+        591.9,
+        746.5
+      ],
+      "unit": 9,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus (The Two Ducks and the Turtle)",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (الْبَطَّتانِ وَالسُّلَحْفاةُ)",
+      "lessonStartPage": 88
+    },
+    {
+      "file": "p090.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 90,
+      "rect": [
+        229.6,
+        639.4,
+        406.5,
+        736.3
+      ],
+      "unit": 9,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus (The Two Ducks and the Turtle)",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (الْبَطَّتانِ وَالسُّلَحْفاةُ)",
+      "lessonStartPage": 88
+    },
+    {
+      "file": "p093.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 93,
+      "rect": [
+        42.5,
+        170.0,
+        540.9,
+        743.1
+      ],
+      "unit": 9,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (Narrating a Story Based on Pictures)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "lessonStartPage": 92
+    },
+    {
+      "file": "p110.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 110,
+      "rect": [
+        370.8,
+        493.1,
+        486.4,
+        637.7
+      ],
+      "unit": 9,
+      "lesson": 5,
+      "lessonTitleEn": "I Build My Language (Imitating the Pattern of a Verbal Sentence Negated with 'ma' and 'la')",
+      "lessonTitleAr": "أَبْني لُغَتي (مُحاكاةُ نَمَطِ الْجُمْلَةِ الْفِعْلِيَّةِ الْمَنْفِيَّةِ بِـ «ما» وَ«لا»)",
+      "lessonStartPage": 109
+    },
+    {
+      "file": "p114.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 114,
+      "rect": [
+        302.8,
+        147.9,
+        512.0,
+        328.2
+      ],
+      "unit": 10,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus (The Cloth Bag)",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (كيسُ الْقُماشِ)",
+      "lessonStartPage": 114
+    },
+    {
+      "file": "p114b.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 114,
+      "rect": [
+        40.8,
+        418.3,
+        142.9,
+        673.4
+      ],
+      "unit": 10,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus (The Cloth Bag)",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (كيسُ الْقُماشِ)",
+      "lessonStartPage": 114
+    },
+    {
+      "file": "p117.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 117,
+      "rect": [
+        222.8,
+        222.8,
+        423.5,
+        426.8
+      ],
+      "unit": 10,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (Narrating a Story Based on Pictures)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "lessonStartPage": 117
+    },
+    {
+      "file": "p118.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 118,
+      "rect": [
+        56.1,
+        144.5,
+        551.1,
+        471.0
+      ],
+      "unit": 10,
+      "lesson": 2,
+      "lessonTitleEn": "I Speak Fluently (Narrating a Story Based on Pictures)",
+      "lessonTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "lessonStartPage": 117
+    },
+    {
+      "file": "p119.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 119,
+      "rect": [
+        124.2,
+        134.3,
+        425.2,
+        400.3
+      ],
+      "unit": 10,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (Learning a New Language)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (تَعَلُّمُ لُغَةٍ جَديدَةٍ)",
+      "lessonStartPage": 119
+    },
+    {
+      "file": "p125.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 125,
+      "rect": [
+        42.5,
+        115.6,
+        207.5,
+        282.3
+      ],
+      "unit": 10,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (Learning a New Language)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (تَعَلُّمُ لُغَةٍ جَديدَةٍ)",
+      "lessonStartPage": 119
+    },
+    {
+      "file": "p127.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 127,
+      "rect": [
+        69.7,
+        185.4,
+        205.8,
+        340.1
+      ],
+      "unit": 10,
+      "lesson": 3,
+      "lessonTitleEn": "I Read Fluently and with Comprehension (Learning a New Language)",
+      "lessonTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (تَعَلُّمُ لُغَةٍ جَديدَةٍ)",
+      "lessonStartPage": 119
+    },
+    {
+      "file": "p135.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 135,
+      "rect": [
+        190.5,
+        508.4,
+        591.9,
+        746.5
+      ],
+      "unit": 10,
+      "lesson": 4,
+      "lessonTitleEn": "I Write (The Original Waw and the Waw of the Plural | The Letters Fa' and Qaf | Writing a Story)",
+      "lessonTitleAr": "أَكْتُبُ (الْواوُ الأَصْلِيَّةُ وَواوُ الْجَماعَةِ | حَرْفا الْفاءِ وَالْقافِ | كِتابَةُ الْقِصَّةِ)",
+      "lessonStartPage": 131
+    },
+    {
+      "file": "p136.png",
+      "sourceId": "g4-arabic-s2-student-book",
+      "pdfPage": 136,
+      "rect": [
+        68.0,
+        608.8,
+        214.3,
+        746.5
+      ],
+      "unit": 10,
+      "lesson": 4,
+      "lessonTitleEn": "I Write (The Original Waw and the Waw of the Plural | The Letters Fa' and Qaf | Writing a Story)",
+      "lessonTitleAr": "أَكْتُبُ (الْواوُ الأَصْلِيَّةُ وَواوُ الْجَماعَةِ | حَرْفا الْفاءِ وَالْقافِ | كِتابَةُ الْقِصَّةِ)",
+      "lessonStartPage": 131
+    }
+  ]
+}
