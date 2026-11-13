@@ -10,6 +10,60 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 6 audit: book pages, figures, and the English lessons that were missing — 2026-11-13
+
+Same method as the Grade 7-10 audits below. Every published page image of every Grade 6 range was viewed, and every
+book's extracted contents page and lesson openers were compared with its catalog. For English, maths S2, digital
+and art, which have no or few page images, the comparison was made on the text alone. All 334 lessons ground to
+themselves by id.
+
+**Missing topics.**
+- **Grade 6 English lacked Lessons 10-12 of every unit, 24 lessons in all. They are added.**
+  - The catalog read the Teacher's Book walkthrough as nine lessons. The book says «12 lessons» a unit (TB p.9),
+    and its walkthrough runs to p.12.
+  - Lesson 10 (Literacy) and Lesson 11 (Writing) are Pupil's Book lessons in every unit. Lesson 12 is the Activity
+    Book companion to 11, as 4 and 7 already are to 3 and 6.
+  - The new lessons are title-only like the rest, because the books are third-party.
+  - Lesson 2 is «Team Talk» in the books, not «Fun Talk».
+- Every other Grade 6 catalog matches its book's printed list: maths S1/S2, science, Arabic, Islamic, social
+  studies, vocational, PE, digital and art.
+- PE, digital and art have only one catalog each.
+
+**Book pages** (same fields as Grade 7):
+- **Arabic S1 and S2: all 50 entries were one lesson off.** Each l1 key showed only the unit opener, and every
+  other key showed the previous lesson. All are remapped.
+- Maths S1:
+  - Most entries showed an earlier slot of the book.
+  - u1_l1-l3 and u4_l4 are now placed.
+  - u1_l5, u3_l1, u3_l2 and u3_l4 lose their entries: their own pages have no image, and no image exists for any
+    of unit 3.
+- Digital S1:
+  - None of the 8 entries showed its lesson.
+  - 12 lessons of units 6-8 are now placed; a few meet mid-page, so two lessons share it.
+  - The 8 wrong entries are dropped.
+- Social studies S1 and S2 had six late starts and swallowed lessons, and two keys showed another lesson. 22
+  lessons gain or correct their pages. Three keep a partial range because their first page has no image:
+  `fix_pages` keeps the longest rendered run when it covers at least half the lesson.
+- Science S2 u5_l2 held u6_l1, which started on the unit opener. Science S1 u4_l1 is placed. Vocational S2 u7_l2
+  lay inside u7_l1.
+- 187 Grade 6 lessons have pages (was 178).
+
+**Figures.**
+- All 94 crops were viewed, and all are on R2.
+- 51 dropped, more than half the grade: tiles cut out of one photo grid, halves of one figure, lost labels and
+  text strips.
+- The soil-erosion review picture moves to science S1 u4_l1, which gains a map coordinate.
+- Only science S1/S2 and vocational S1 have figures.
+
+**Verified:**
+- `pnpm run typecheck`;
+- the whole mobile suite (9,214 pass, 0 fail, 10 skipped);
+- api-server build and tests (2,910 pass);
+- `curriculum verify` (0 errors, now 48 lessons per English semester).
+
+**Not verified:** the pages and slides in a browser. Not added: a «ما الجديد» entry; the new English lessons
+complete an existing title-only catalog and add no feature.
+
 ## Grade 10 audit: book pages and figures — 2026-11-13
 
 Same method as the Grade 7-9 audits below. Every published page image of every Grade 10 range was viewed, and
