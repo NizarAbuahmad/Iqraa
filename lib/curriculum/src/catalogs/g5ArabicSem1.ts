@@ -9,12 +9,17 @@
  * of the same fixed pattern (أستمع، أتحدث، أقرأ، أكتب، أبني لغتي), and every
  * lesson is a page of interactive exercises (multiple choice, matching,
  * fill-in-the-blank) around a literary or grammar topic, not an expository
- * passage. The "unit competencies" page after each unit opener is grouped by
- * the five lesson types, so it does map onto lessons 1-5; its item headings
- * repeat unit to unit, but some bodies are lesson-specific (audited
- * 2026-11-13). They are still not in `objectives` because the saved
- * pdf-parse extraction scrambles those lines — a faithful copy needs the PDF
- * re-read (see the JSON's known_gaps). Lesson titles here carry both the
+ * passage. So main_idea_ar and vocabulary stay empty. `objectives` is filled
+ * (2026-11-13) from the "unit competencies" page after each unit opener
+ * (pp. 7, 31, 61, 89, 117), which is grouped by the five lesson types, so
+ * group (1)…(5) maps onto lessons 1-5: three items for lessons 1-4, two for
+ * lesson 5, 70 in all, each one string "heading: body" in the book's order
+ * and vowelling. The PDF was not available, so they were rebuilt from the
+ * saved pdf-parse extraction, which swaps segments, reverses some lines and
+ * swaps lam-alef; each page's statements use exactly that page's letters,
+ * with only the lesson-type labels and the sidebar left over. Method and the
+ * book's own typos kept as printed: the JSON's provenance_note. Units still
+ * say data_tier "title-only". Lesson titles here carry both the
  * fixed lesson-type name and its literary/grammar topic (in parentheses),
  * exactly as the book's own contents page prints them.
  *

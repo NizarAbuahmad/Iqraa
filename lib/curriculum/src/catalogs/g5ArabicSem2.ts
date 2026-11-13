@@ -6,6 +6,17 @@
  * Units are numbered 6-10, continuing Semester 1's 1-5, matching the book's
  * own cover and contents page.
  *
+ * `objectives` is filled (2026-11-13) the same way as Semester 1, from the
+ * unit-competency pages (pp. 7, 33, 59, 85, 111): 65 of the 70 items,
+ * unvowelled, because this book's pdf-parse text is far more scrambled
+ * (letters reversed within segments, marks detached, ي read as U+FFFD on
+ * pp. 33/59, medial ه dropped on p. 111). Each section's statements were
+ * matched letter for letter against that section of the page. Left out, and
+ * why, in the JSON's known_gaps: u7_l3's third item (a repeated phrase whose
+ * place cannot be fixed), the spelling item of u8_l4 and u9_l4 (the page
+ * names a different hamza topic than the lesson's own page), and both items
+ * of u8_l5 (list punctuation not recoverable) — so u8_l5 has none.
+ *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
 
