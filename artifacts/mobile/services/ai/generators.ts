@@ -1626,14 +1626,22 @@ export class MockAIService extends AIService {
           return q;
         }
       }
+      // Twelve repeats: the lesson has nothing new left for this paper. A bank
+      // lesson stops short with a shortfall, as the quiz's `pushUnique` does —
+      // printing the draw anyway put «أي مجسم يشبه كرة القدم؟» on one Grade 2
+      // worksheet three times (2026-11-13).
+      if (bankOnly) throw new BankSpentError();
       const fallback = makeGenericQ(type, diff, atSlot);
       usedStems.add(questionStemKey(fallback.text));
       return fallback;
     };
 
+    // A maths fill-in item already ends with its own «الإجابة: ____» line
+    // (lib/math-practice); a second block printed «الإجابة:» twice.
+    const hasAnswerLine = (text: string) => /(?:الإجابة|Answer):\s*_{3,}\s*$/.test(text);
     const pushQuestion = (type: QType, q: WQ, withSpace: boolean) => {
       let out = q;
-      if (withSpace && type !== 'multiple_choice' && type !== 'true_false') {
+      if (withSpace && type !== 'multiple_choice' && type !== 'true_false' && !hasAnswerLine(q.text)) {
         out = { ...q, text: `${q.text}${answerSpace}` };
       }
       return out;

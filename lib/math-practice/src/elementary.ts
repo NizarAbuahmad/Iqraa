@@ -50,10 +50,15 @@ const UNSERVED = new RegExp([
  * fraction addition. An empty list is a refusal, not a fallback — the caller
  * says there is no bank for the lesson rather than invent one.
  *
- * «جمع البيانات» is collecting data, not addition.
+ * «جمع البيانات» is collecting data, not addition. «الضرب كجمع متكرر» and
+ * «القسمة كطرح متكرر» are multiplication and division: the «as repeated
+ * addition/subtraction» names the method, and reading it as a second topic
+ * filled the Grade 2 lessons with unrelated three-digit sums.
  */
 export function elementaryOpsForTitle(title: string): ElementaryOp[] {
-  const t = fold(title).replace(/جمع\s*البيانات|data\s*collection/gi, ' ');
+  const t = fold(title)
+    .replace(/جمع\s*البيانات|data\s*collection/gi, ' ')
+    .replace(/ك(?:جمع|طرح)\s*متكرر|as\s*repeated\s*(?:addition|subtraction)/gi, ' ');
 
   if (/مقارنه|ترتيب|compar|order/i.test(t)) {
     if (/صحيحه/.test(t)) return [];

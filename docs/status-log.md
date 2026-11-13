@@ -64,6 +64,84 @@ PDFs (Tracks A and B of `docs/adding-a-book.md`).
 **Verified:** `bookPage`, `bookFigureAssets` and `lessonSlides` tests (149), curriculum test (924) and verify (0 errors),
 typecheck. **Not verified:** the pages on a phone; anything needing the PDFs.
 
+## Grade 2 review: coverage, images, and four generator fixes — 2026-11-13
+
+A review of the Grade 2 subjects (14 books, 236 lessons): are all topics in, do
+the generators give the right results, are the books' pictures used properly.
+
+**Generator fixes (offline path; all grades where the code is shared):**
+- **«الضرب كجمع متكرر» / «القسمة كطرح متكرر» served plain addition and
+  subtraction.** `elementaryOpsForTitle` read «كجمع/كطرح» as operations, so 6 of
+  10 quiz questions in the Grade 2 lesson were sums like «228 + 91 + 153». The
+  method phrase is now ignored. They now give `mul`/`div`; `routing.test.ts`
+  had pinned the old `add+mul`, with no reason recorded.
+- **Worksheets printed «الإجابة:» twice.** Maths fill-in items end with their
+  own answer line, and the worksheet added a second block on top. In the Grade 2
+  run that was 171 questions, and it happens in every grade.
+  `pushQuestion` now skips the block when one is there
+  (`worksheetAnswerLine.test.ts`).
+- **A worksheet repeated a question word for word.** «أي مجسم يشبه كرة القدم؟»
+  appeared 3 times on one «المجسمات» sheet, with no shortfall. The worksheet's
+  `makeQ` now stops on a spent bank lesson (`BankSpentError`, shortfall
+  reported), as the quiz's `pushUnique` already did
+  (`worksheetNoRepeats.test.ts`).
+- **Number agreement.** «في ديناران» is now «في دينارين». «وُزّعت 25 قطع» is now
+  «25 قطعةً». «2 أوراق / 2 أقلام / 2 مجموعات» are gone: counts start at 3 in
+  `equalGroups` and `banknotes`, so no dual is needed (`early.test.ts` asserts
+  these). «1 مئات و 2 عشرات» is left as is: it is the books' place-value chart
+  notation.
+
+Measured with the audit script over all 236 lessons, before → after: double
+answer lines 171 → 0, repeated questions 4 → 0, these grammar patterns → 0.
+
+**Catalog fixes:** PE u3_l2's main idea read «الِامْتِصاصِ» where the book prints
+«لِامْتِصاصِ» (read off the lesson's page image). Math, science and social (both
+semesters) gain `meta.semester_covered`.
+
+**Images.** No Grade 2 book has figure crops. 23 lessons have book-page images:
+Islamic 9 of 24 and PE 14 of 14. I opened page 1 of all 23 and every one is its
+own lesson's opener; their main ideas match the printed «الفكرة الرئيسة». A
+bucket probe of the other 213 lessons found no pages. So Grade 2 math, science,
+social, arts, Arabic and English show no picture from their book; decks fall
+back to stock photos.
+
+**Coverage.** Every Grade 2 book is wired: catalog, KB, pickers and `BOOKS`.
+`verify` reports 0 errors. Unit and lesson counts sit in line with Grades 1
+and 3. **No Grade 2 PE Semester 2 book exists in the repo**, though Grades 1
+and 3 have one.
+
+**Not verified: topics against the source PDFs.** `nccd.gov.jo` resets
+connections from this cloud network (as noted 2026-10-10), and this session's
+R2 credentials answer AccessDenied on `iqraa-media`, even for a key known to be
+there. On a machine that can reach NCCD:
+- download the Grade 2 student books;
+- run `scripts/extract_book_figures.py` / `map_lesson_pages.py` and
+  `verify_book_pages.py` for the missing images;
+- read each book's contents page against its catalog JSON;
+- add PE S2.
+
+**Generator audit, the rest.** Grounding by lesson id is exact for all 236
+lessons; by title alone, 88 land on another lesson. Math is at Grade 2 level,
+and 893 keys recomputed found none wrong. Non-maths quizzes and worksheets
+refuse with `noQuestionBank`, as designed. Offline lesson plans are one
+template per subject, a separate task: «أركان الإيمان» gets a recitation plan,
+a drama lesson gets "show the finished artwork", and Arabic listening/speaking
+lessons are told to read aloud.
+
+**Verified:**
+- curriculum `verify`: 0 errors;
+- `pnpm run typecheck`;
+- math-practice: 952 pass;
+- mobile: 9,218 pass, 0 fail;
+- api-server `pnpm build && pnpm test`: 2,899 pass.
+
+Each new assertion was first seen failing on the old code. The curriculum suite's
+`r2.test.ts` («inert when unconfigured») fails in this cloud session only,
+because it has R2 env vars set.
+
+**Not run:** live AI, the server's `/generate` routes, and the
+slides/activity/homework generators.
+
 ## Grade 6 audit: every lesson's book pages, figures and contents checked against the printed books — 2026-11-13
 
 A review of all eleven Grade 6 subjects: are all the books' lessons in the catalog, do generators give the right
