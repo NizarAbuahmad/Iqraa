@@ -64,7 +64,7 @@ describe('Grade 9 authored lessons', () => {
     assert.deepEqual(shape('s1-nccd-u3_l1'), { while: 14, when: 12, agreement: 14 });
     assert.deepEqual(shape('s1-nccd-u3_l4'), { who: 10, which: 10, where: 10, whose: 10 });
     assert.deepEqual(shape('s1-nccd-u5_l1'), { prohibition: 12, should: 14, 'have-to': 14 });
-    assert.deepEqual(shape('s1-nccd-u5_l3'), { 'should-have': 14, 'could-have': 12, 'must-cant-have': 14 });
+    assert.deepEqual(shape('s1-nccd-u5_l3'), { 'could-couldnt': 14, 'had-to': 12, 'didnt-have-to': 14 });
     assert.deepEqual(shape('s2-nccd-u6_l1'), { 'present-continuous': 20, 'going-to': 20 });
     assert.deepEqual(shape('s2-nccd-u6_l3'), { 'going-to-predictions': 20, 'will-predictions': 20 });
     assert.deepEqual(shape('s2-nccd-u8_l1'), { 'ing-verbs': 20, 'to-verbs': 20 });
@@ -74,7 +74,7 @@ describe('Grade 9 authored lessons', () => {
     assert.deepEqual(shape('s2-nccd-u7_l2'), { for: 14, since: 14, 'have-has': 12 });
     assert.deepEqual(shape('s2-nccd-u8_l5'), { 'will-clause': 14, 'if-clause': 14, 'negatives-questions': 12 });
     assert.deepEqual(shape('s2-nccd-u9_l3'), { 'say-tell': 16, ask: 12, 'reported-questions': 12 });
-    assert.deepEqual(shape('s2-nccd-u10_l1'), { 'present-passive': 14, 'past-passive': 14, 'questions-negatives': 12 });
+    assert.deepEqual(shape('s2-nccd-u10_l1'), { 'present-passive': 11, 'past-passive': 11, 'questions-negatives': 10, 'present-perfect-passive': 8 });
     assert.deepEqual(shape('s2-nccd-u10_l4'), { 'second-conditional': 24, 'if-were': 16 });
   });
 
