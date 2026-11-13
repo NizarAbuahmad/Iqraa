@@ -39,6 +39,14 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
+    id: 'chat-clearer-page',
+    date: '2026-11-13',
+    roles: ['teacher'],
+    titleKey: 'whatsNewChatTitle',
+    bodyKey: 'whatsNewChatBody',
+    route: '/iqra',
+  },
+  {
     id: 'exam-drawn-figures',
     date: '2026-11-03',
     roles: ['teacher'],

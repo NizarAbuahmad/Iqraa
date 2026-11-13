@@ -10,6 +10,29 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## «ما الجديد»: the chat page's new look — 2026-11-13
+
+The two chat PRs of 2026-11-01 (#1353 the composer under the intro, the lesson heading, the
+labelled «+», the up arrow; #1376 the subject colour on the strip and the heading) changed what a
+teacher sees and added no «ما الجديد» entry, which the convention in CLAUDE.md asks of a visible
+change (or a PR body saying why not). #1376 merged after that rule landed. This adds the entry.
+
+**The entry** (`chat-clearer-page`, teacher only, route `/iqra`, `whatsNewChatTitle` /
+`whatsNewChatBody`, Arabic and English): on a computer the message box sits under the greeting and
+the greeting asks about the lesson; the «+» says «الأدوات»; on every device the lesson strip has a
+bar in the subject's colour. It says only what a user sees, and which parts are desktop-only (the
+layout, the heading and the label), since the bar is the one change that reaches a phone.
+
+**Known limit.** The changes went live on 2026-11-01 and the entry is dated the day it merges
+(2026-11-13), as the convention asks. An account made between those days will be told about a page
+it has never seen differently. The convention's own rule is that the note must not arrive before
+the feature, and it does not; arriving late is the cost of adding it afterwards.
+
+**Verified:** `pnpm run typecheck` exit 0; `artifacts/mobile` `pnpm test` 9217 pass, 0 fail,
+10 skipped (`whatsNew.test.ts` checks that both languages carry the keys and that the route is a
+real screen). **Not verified:** how the dialog reads in the app; the copy was written from the
+two PRs' diffs, not from a screen.
+
 ## A content report can say what is wrong — 2026-11-11
 
 The admin's «تقرير محتوى جديد» email of 2026-11-11 (a Grade 4 Arabic lesson plan, the second Grade 4 Arabic report in four
