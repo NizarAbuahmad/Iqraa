@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolvePhysicsFigure, resolveSceneFigure } from '../sceneGate.ts';
+import { resolvePhysicsFigure, resolveSceneFigure, SCENE_LIMITS } from '../sceneGate.ts';
 import { resolveFigure } from '../gate.ts';
 
 const forces = (over: Record<string, unknown> = {}) => ({
@@ -130,5 +130,44 @@ describe('resolveFigure is unchanged', () => {
   it('still refuses every physics kind', () => {
     assert.equal(resolveFigure(forces()), null);
     assert.equal(resolveFigure(projectile()), null);
+  });
+});
+
+describe('SCENE_LIMITS is what the gate enforces', () => {
+  const S = SCENE_LIMITS;
+  const block = (arrows: unknown[], incline?: number) =>
+    resolveSceneFigure({ kind: 'forces', body: 'block', ...(incline !== undefined ? { incline } : {}), arrows });
+  const arrows = (n: number) => Array.from({ length: n }, (_, i) => ({ dir: i * 60, size: 1, label: 'ABCDEFG'[i] }));
+  it('arrows', () => {
+    assert.ok(block(arrows(S.maxArrows)));
+    assert.equal(block(arrows(S.maxArrows + 1)), null);
+  });
+  it('incline', () => {
+    assert.ok(block(arrows(1), S.minIncline));
+    assert.ok(block(arrows(1), S.maxIncline));
+    assert.equal(block(arrows(1), S.minIncline - 1), null);
+    assert.equal(block(arrows(1), S.maxIncline + 1), null);
+  });
+  it('projectile angle', () => {
+    const p = (angle: number) => resolveSceneFigure({ kind: 'projectile', launch: 'ground', angle, marks: [] });
+    assert.ok(p(S.minAngle));
+    assert.ok(p(S.maxAngle));
+    assert.equal(p(S.minAngle - 1), null);
+    assert.equal(p(S.maxAngle + 1), null);
+  });
+  it('wave cycles', () => {
+    assert.ok(resolveSceneFigure({ kind: 'wave', cycles: S.maxCycles, marks: [] }));
+    assert.equal(resolveSceneFigure({ kind: 'wave', cycles: S.maxCycles + 1, marks: [] }), null);
+  });
+  it('values', () => {
+    const v = (n: number) => resolveSceneFigure({ kind: 'attraction', bodies: ['m1', 'm2'], force: 'F', distance: { label: 'r', value: { n, unit: 'm' } } });
+    assert.ok(v(S.maxValue));
+    assert.equal(v(S.maxValue + 1), null);
+    assert.ok(v(Number(`0.${'0'.repeat(S.valueDecimals - 1)}1`)));
+    assert.equal(v(Number(`0.${'0'.repeat(S.valueDecimals)}1`)), null);
+  });
+  it('arrow gap', () => {
+    assert.ok(block([{ dir: 0, size: 1, label: 'A' }, { dir: S.minArrowGap, size: 1, label: 'B' }]));
+    assert.equal(block([{ dir: 0, size: 1, label: 'A' }, { dir: S.minArrowGap - 1, size: 1, label: 'B' }]), null);
   });
 });

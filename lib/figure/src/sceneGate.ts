@@ -19,8 +19,22 @@ export const PHYSICS_UNITS = [
 const PROJECTILE_MARKS: readonly ProjectileMark[] = ['v0', 'vx', 'vy', 'H', 'R'];
 const WAVE_MARKS: readonly WaveMark[] = ['crest', 'trough', 'A', 'lambda'];
 const CIRCULAR_ARROWS = ['v', 'F', 'a'] as const;
+/** Every numeric limit of the physics gate, in one place, so a prompt can quote them and never drift. */
+export const SCENE_LIMITS = {
+  maxArrows: 5,
+  minIncline: 5,
+  maxIncline: 60,
+  minAngle: 10,
+  maxAngle: 80,
+  maxCycles: 3,
+  maxValue: 1_000_000,
+  valueDecimals: 3,
+  /** Degrees: the least angle between two force arrows on one body. */
+  minArrowGap: 15,
+} as const;
+const S = SCENE_LIMITS;
 /** Degrees: the least angle between two force arrows on one body. */
-export const MIN_ARROW_GAP = 15;
+export const MIN_ARROW_GAP = S.minArrowGap;
 
 // The maths label rule plus the Greek letters the physics book uses. Tatweel (U+0640) is excluded as in gate.ts.
 const PHYS_LABEL = /^[A-Za-zء-غف-يλθαβωΔμ]{1,3}[0-9]?['′]?$/u;
@@ -39,10 +53,10 @@ function resolveValue(raw: unknown): PhysicsValue | null | undefined {
   const n = raw['n'];
   const unit = raw['unit'];
   // Never negative: a drawn arrow's direction carries the sign, and the leak guard compares magnitudes.
-  if (!isNum(n) || n < 0 || n > 1e6) return null;
-  if (Math.abs(n * 1000 - Math.round(n * 1000)) > 1e-6) return null;
+  if (!isNum(n) || n < 0 || n > S.maxValue) return null;
+  if (Math.abs(n * 10 ** S.valueDecimals - Math.round(n * 10 ** S.valueDecimals)) > 1e-6) return null;
   if (!oneOf(unit, PHYSICS_UNITS)) return null;
-  return { n: Number(n.toFixed(3)), unit };
+  return { n: Number(n.toFixed(S.valueDecimals)), unit };
 }
 
 /** Unique members of `list`, in `order`; `null` on a duplicate or an unknown member. */
@@ -62,11 +76,11 @@ function resolveForces(raw: Rec): ForcesFigure | null {
   let incline: number | undefined;
   if (raw['incline'] !== undefined) {
     const i = raw['incline'];
-    if (!isInt(i) || i < 5 || i > 60 || body !== 'block') return null;
+    if (!isInt(i) || i < S.minIncline || i > S.maxIncline || body !== 'block') return null;
     incline = i;
   }
   const list = raw['arrows'];
-  if (!Array.isArray(list) || list.length < 1 || list.length > 5) return null;
+  if (!Array.isArray(list) || list.length < 1 || list.length > S.maxArrows) return null;
   const labels = new Set<string>();
   const arrows: ForcesFigure['arrows'] = [];
   for (const a of list) {
@@ -113,7 +127,7 @@ function resolveProjectile(raw: Rec): ProjectileFigure | null {
   const angleRaw = raw['angle'];
   let angle: number | undefined;
   if (launch === 'ground') {
-    if (!isInt(angleRaw) || angleRaw < 10 || angleRaw > 80) return null;
+    if (!isInt(angleRaw) || angleRaw < S.minAngle || angleRaw > S.maxAngle) return null;
     if (raw['height'] !== undefined) return null;
     angle = angleRaw;
   } else if (angleRaw !== undefined) {
@@ -156,7 +170,7 @@ function resolveCircular(raw: Rec): CircularFigure | null {
 
 function resolveWave(raw: Rec): WaveFigure | null {
   const cycles = raw['cycles'];
-  if (cycles !== 1 && cycles !== 2 && cycles !== 3) return null;
+  if (!isInt(cycles) || cycles < 1 || cycles > S.maxCycles) return null;
   const marks = orderedSet(raw['marks'], WAVE_MARKS, 0, WAVE_MARKS.length);
   if (!marks) return null;
   let second: WaveFigure['second'];
@@ -172,7 +186,7 @@ function resolveWave(raw: Rec): WaveFigure | null {
   const wavelength = resolveValue(raw['wavelength']);
   if (amplitude === null || wavelength === null) return null;
   return {
-    kind: 'wave', cycles, marks,
+    kind: 'wave', cycles: cycles as WaveFigure['cycles'], marks,
     ...(second ? { second } : {}),
     ...(amplitude ? { amplitude } : {}),
     ...(wavelength ? { wavelength } : {}),

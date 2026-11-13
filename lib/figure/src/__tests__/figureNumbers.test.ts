@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { figureNumbers, figureNumbersInText, foldDigits } from '../figureNumbers.ts';
+import { figureNumbers, figureNumbersInText, foldDigits, vectorsShowResult } from '../figureNumbers.ts';
 import type { PhysicsFigure } from '../sceneTypes.ts';
 
 const proj: PhysicsFigure = { kind: 'projectile', launch: 'ground', angle: 30, speed: { n: 20, unit: 'm/s' }, marks: ['v0', 'H', 'R'] };
@@ -22,7 +22,7 @@ describe('figureNumbers', () => {
     assert.deepEqual(figureNumbers(slope), [37, 49]);
     assert.deepEqual(figureNumbers({ kind: 'wave', cycles: 2, marks: ['A'], amplitude: { n: 0.05, unit: 'm' }, wavelength: { n: 2, unit: 'm' } }), [0.05, 2]);
     assert.deepEqual(figureNumbers({ kind: 'circular', turning: 'cw', arrows: ['v'] }), []);
-    assert.deepEqual(figureNumbers({ kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 2] }] }), []);
+    assert.deepEqual(figureNumbers({ kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 2] }, { from: [1, 1], to: [1, 3.5] }] }), [3, 2, 2.5]);
   });
 });
 
@@ -59,5 +59,29 @@ describe('figureNumbersInText', () => {
 
   it('a drawing that prints no number always passes', () => {
     assert.equal(figureNumbersInText({ kind: 'circular', turning: 'ccw', arrows: ['v', 'F'] }, 'جسم يتحرك حركة دائرية.'), true);
+  });
+});
+
+describe('vectors on the numbered grid', () => {
+  const two = { kind: 'vectors' as const, vectors: [{ from: [0, 0] as [number, number], to: [3, 0] as [number, number], label: 'A' }, { from: [0, 0] as [number, number], to: [0, 4] as [number, number], label: 'B' }] };
+  it('passes only when every non-zero component is stated', () => {
+    assert.equal(figureNumbersInText(two, 'قوتان A = 3 N شرقًا و B = 4 N شمالًا. احسب المحصلة.'), true);
+    assert.equal(figureNumbersInText(two, 'قوتان متعامدتان. احسب مقدار المحصلة.'), false);
+  });
+  it('refuses a drawn sum or difference of two drawn vectors', () => {
+    const tipToTail = { kind: 'vectors' as const, vectors: [
+      { from: [0, 0] as [number, number], to: [3, 0] as [number, number], label: 'A' },
+      { from: [3, 0] as [number, number], to: [3, 4] as [number, number], label: 'B' },
+      { from: [0, 0] as [number, number], to: [3, 4] as [number, number], label: 'R' },
+    ] };
+    assert.equal(vectorsShowResult(tipToTail), true);
+    assert.equal(figureNumbersInText(tipToTail, 'A = 3 و B = 4، احسب R'), false);
+    const diff = { kind: 'vectors' as const, vectors: [
+      { from: [0, 0] as [number, number], to: [3, 1] as [number, number] },
+      { from: [0, 0] as [number, number], to: [1, 1] as [number, number] },
+      { from: [1, 1] as [number, number], to: [3, 1] as [number, number] },
+    ] };
+    assert.equal(vectorsShowResult(diff), true);
+    assert.equal(vectorsShowResult(two), false);
   });
 });

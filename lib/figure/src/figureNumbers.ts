@@ -5,6 +5,7 @@
  * student is already told. The figure cannot see its question; the caller runs this.
  */
 import type { PhysicsFigure } from './sceneTypes.ts';
+import type { VectorsFigure } from './types.ts';
 
 const ARABIC_INDIC = '٠١٢٣٤٥٦٧٨٩';
 const PERSIAN = '۰۱۲۳۴۵۶۷۸۹';
@@ -28,9 +29,8 @@ const STATED_NUMBER = /(?<![A-Za-z\u0370-\u03FF\u0621-\u063A\u0641-\u064A_0-9.])
 /**
  * Every number the drawing prints, in the order the renderer prints them.
  *
- * A `vectors` figure returns [] (so `figureNumbersInText` always passes it), yet it is
- * drawn on a numbered grid and its alt text prints end points: this guard does not
- * judge vectors, and a caller that draws one must judge it some other way.
+ * A `vectors` figure is drawn on a numbered grid, so a student reads each vector's
+ * components off it: every non-zero |dx| and |dy| counts as a printed number.
  */
 export function figureNumbers(f: PhysicsFigure): number[] {
   switch (f.kind) {
@@ -45,16 +45,39 @@ export function figureNumbers(f: PhysicsFigure): number[] {
     case 'wave':
       return [...(f.amplitude ? [f.amplitude.n] : []), ...(f.wavelength ? [f.wavelength.n] : [])];
     case 'vectors':
-      return [];
+      // Drawn on a numbered grid: a student reads each component off it, so each counts as printed.
+      return f.vectors.flatMap(v => [Math.abs(v.to[0] - v.from[0]), Math.abs(v.to[1] - v.from[1])]).filter(n => n > 1e-9);
   }
 }
 
 /**
+ * True when one drawn vector is the sum or the difference of two others (tip to tail or
+ * from one origin): the drawing then shows the resultant a question asks for. Coordinates
+ * are multiples of 0.5, so the arithmetic is exact.
+ */
+export function vectorsShowResult(f: VectorsFigure): boolean {
+  const d = f.vectors.map(v => [v.to[0] - v.from[0], v.to[1] - v.from[1]] as const);
+  const same = (a: readonly number[], x: number, y: number) => Math.abs(a[0]! - x) < 1e-9 && Math.abs(a[1]! - y) < 1e-9;
+  for (let k = 0; k < d.length; k++) {
+    for (let i = 0; i < d.length; i++) {
+      for (let j = i + 1; j < d.length; j++) {
+        if (i === k || j === k) continue;
+        const a = d[i]!, b = d[j]!;
+        if (same(d[k]!, a[0] + b[0], a[1] + b[1]) || same(d[k]!, a[0] - b[0], a[1] - b[1]) || same(d[k]!, b[0] - a[0], b[1] - a[1])) return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
  * True when each number the drawing prints appears, as a whole number token, in `text`.
- * A digit inside a symbol (F2, m1, v0) is not a stated number. Always true for a
- * `vectors` figure (see `figureNumbers`): the caller must judge vectors otherwise.
+ * A digit inside a symbol (F2, m1, v0) is not a stated number. A `vectors` figure's
+ * components count as printed, and a figure that draws a sum or difference of two of its
+ * own vectors (`vectorsShowResult`) always fails: it shows the answer.
  */
 export function figureNumbersInText(f: PhysicsFigure, text: string): boolean {
+  if (f.kind === 'vectors' && vectorsShowResult(f)) return false;
   const found = (foldDigits(text).match(STATED_NUMBER) ?? []).map(Number);
   return figureNumbers(f).every(n => found.some(m => Math.abs(m - Math.abs(n)) < 1e-9));
 }
