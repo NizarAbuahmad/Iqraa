@@ -70,6 +70,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-11-13 — Grade 6 audit: 49 lessons have no book pages until their right pages are re-rendered from the PDFs (list in the log), and social, vocational and Arabic grounding text is reversed or scrambled and needs `extract-text --force --ocr` («Grade 6 audit: every lesson's book pages…» in the log)
 - 2026-10-31 — Homework submissions record their author (migration `0022`)
 - 2026-10-31 — Homework project submission — teacher screens (phase 3: the switch, the handed-in list, one project, «حذف المشروع»; what is left open is the item «Homework projects: what the teacher's app still cannot do…» below)
 - 2026-10-31 — Teacher can clear one student's project (the API; the app's button is the teacher-screens entry above)
