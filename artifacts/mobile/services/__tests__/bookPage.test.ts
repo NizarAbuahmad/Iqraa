@@ -138,9 +138,8 @@ describe('Grade 3 Arabic semester 2 and maths pages (audit 2026-11-13)', () => {
 });
 
 describe('Grade 5 pages (audit 2026-11-13)', () => {
-  // Located from the books' own page text (lesson openers, «اختبار نهاية
-  // الوحدة», unit openers) and, where the text layer is reversed (social
-  // studies, science), by reading the images.
+  // Set by the Grade 5 audit (read as images) and confirmed independently from
+  // the books' own page text (lesson openers, «اختبار نهاية الوحدة», unit openers).
   const G = 'kbl-g5-';
   const at = (id: string, i: number) => bookPagesForLesson(`${G}${id}`)!.urls[i];
   it('social studies lessons read their own pages, not the next unit\'s', () => {
@@ -159,12 +158,12 @@ describe('Grade 5 pages (audit 2026-11-13)', () => {
   });
   it('a maths lesson stops before the unit test, and lesson 2 of unit 4 has its pages', () => {
     assert.equal(lessons[`${G}math-s1-nccd-u2_l5`]!.endPage, 49); // p. 50 is «اختبار نهاية الوحدة»
-    assert.equal(lessons[`${G}math-s1-nccd-u4_l1`]!.endPage, 80);
+    assert.equal(lessons[`${G}math-s1-nccd-u4_l1`]!.endPage, 79); // p. 80 is u4_l2's «نشاط مفاهيمي»
     assert.equal(at('math-s1-nccd-u4_l2', 0), `${BOOK_PAGES_BASE_URL}/${G}math-s1-nccd-u4_l1/6.jpg`);
   });
-  it('an Arabic unit ends on «حصاد الوحدة», not the next unit\'s cover', () => {
-    assert.equal(lessons[`${G}arabic-s1-nccd-u1_l5`]!.endPage, 29);
-    assert.equal(lessons[`${G}arabic-s2-nccd-u10_l5`]!.endPage, 134);
+  it('an Arabic unit\'s last lesson stops before «حصاد الوحدة» and the next unit\'s cover', () => {
+    assert.equal(lessons[`${G}arabic-s1-nccd-u1_l5`]!.endPage, 28);
+    assert.equal(lessons[`${G}arabic-s2-nccd-u10_l5`]!.endPage, 133);
   });
 });
 
