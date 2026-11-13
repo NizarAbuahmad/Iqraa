@@ -5,7 +5,8 @@
  */
 import { figureAltText } from './alt.ts';
 import { layoutFigure, type Pt } from './geometry.ts';
-import type { Figure } from './types.ts';
+import { isSceneFigure, type AnyFigure, type SceneFigure } from './sceneTypes.ts';
+import { layoutScene, type Tone } from './scene.ts';
 import { gridTicks, toPx } from './viewport.ts';
 
 const COLORS = ['#2563EB', '#DC2626', '#15803D'];
@@ -13,10 +14,51 @@ const COLORS = ['#2563EB', '#DC2626', '#15803D'];
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const n = (v: number) => v.toFixed(1);
 
-export function figureSvg(figure: Figure, opts: { lang?: 'ar' | 'en'; width?: number; height?: number } = {}): string {
+/** Unique per call within a page, so two figures never share a clip id (they did, per size, until 2026-11-13). */
+let nextId = 0;
+const TONE: Record<string, string> = { 0: COLORS[0]!, 1: COLORS[1]!, 2: COLORS[2]!, ink: '#111827', muted: '#6b7280' };
+const tone = (t: Tone) => TONE[String(t)]!;
+
+function sceneBody(f: SceneFigure, w: number, h: number, lang: 'ar' | 'en'): string[] {
+  const out: string[] = [];
+  for (const p of layoutScene(f, { w, h }, lang).prims) {
+    const dash = 'dash' in p && p.dash ? ' stroke-dasharray="5 4"' : '';
+    const width = p.tone === 'muted' ? 1.5 : 2;
+    if (p.t === 'line') {
+      out.push(`<line x1="${n(p.a.x)}" y1="${n(p.a.y)}" x2="${n(p.b.x)}" y2="${n(p.b.y)}" stroke="${tone(p.tone)}" stroke-width="${width}"${dash}/>`);
+    } else if (p.t === 'arrow') {
+      out.push(`<line x1="${n(p.a.x)}" y1="${n(p.a.y)}" x2="${n(p.b.x)}" y2="${n(p.b.y)}" stroke="${tone(p.tone)}" stroke-width="${width}"${dash}/>`);
+      out.push(`<polygon points="${p.head.map(q => `${n(q.x)},${n(q.y)}`).join(' ')}" fill="${tone(p.tone)}"/>`);
+    } else if (p.t === 'poly') {
+      const pts = p.pts.map(q => `${n(q.x)},${n(q.y)}`).join(' ');
+      out.push(p.closed
+        ? `<polygon points="${pts}" fill="none" stroke="${tone(p.tone)}" stroke-width="${width}"${dash}/>`
+        : `<polyline points="${pts}" fill="none" stroke="${tone(p.tone)}" stroke-width="${width}"${dash}/>`);
+    } else if (p.t === 'circle') {
+      out.push(`<circle cx="${n(p.c.x)}" cy="${n(p.c.y)}" r="${n(p.r)}" fill="${p.fill ? tone(p.tone) : 'none'}" stroke="${tone(p.tone)}" stroke-width="${width}"/>`);
+    } else {
+      out.push(`<text x="${n(p.at.x)}" y="${n(p.at.y)}" fill="${tone(p.tone)}" font-size="13" font-family="sans-serif" text-anchor="${p.anchor}">${esc(p.text)}</text>`);
+    }
+  }
+  return out;
+}
+
+export function figureSvg(figure: AnyFigure, opts: { lang?: 'ar' | 'en'; width?: number; height?: number; id?: string } = {}): string {
   const w = opts.width ?? 480;
   const h = opts.height ?? 320;
   const lang = opts.lang ?? 'en';
+  if (isSceneFigure(figure)) {
+    const clip = opts.id ? `fig-${opts.id}` : `fig-clip-${++nextId}`;
+    return [
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" overflow="hidden" role="img" aria-label="${esc(figureAltText(figure, lang))}">`,
+      `<defs><clipPath id="${clip}"><rect width="${w}" height="${h}"/></clipPath></defs>`,
+      `<g clip-path="url(#${clip})">`,
+      `<rect width="${w}" height="${h}" fill="#ffffff"/>`,
+      ...sceneBody(figure, w, h, lang),
+      '</g>',
+      '</svg>',
+    ].join('');
+  }
   const lay = layoutFigure(figure, { w, h });
   const vp = lay.viewport;
   const { xs, ys } = gridTicks(vp);
@@ -30,7 +72,7 @@ export function figureSvg(figure: Figure, opts: { lang?: 'ar' | 'en'; width?: nu
   // The layout puts curve points far outside the box on purpose (steep branches
   // climb off-canvas), so everything is clipped to the box twice over: the root
   // `overflow="hidden"` and a clipPath on the drawing group.
-  const clipId = `fig-clip-${w}x${h}`;
+  const clipId = opts.id ? `fig-${opts.id}` : `fig-clip-${++nextId}`;
   const out: string[] = [];
   out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" overflow="hidden" role="img" aria-label="${esc(figureAltText(figure, lang))}">`);
   out.push(`<defs><clipPath id="${clipId}"><rect width="${w}" height="${h}"/></clipPath></defs>`);
