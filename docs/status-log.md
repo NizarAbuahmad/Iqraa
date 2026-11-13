@@ -60,6 +60,33 @@ maths questions were checked by hand by a sub-agent and re-checked by script: **
    teacher's uploaded file) is unchanged. Tested on all 279 Grade 1 lessons × 3 styles: nothing from the
    older-class list («فقرة», «3-2-1», exit ticket, controlled experiment…), and the teacher's own first-person voice
    (`teacherVoiceCheck.ts`); red before the change, green after.
+5. **Offline activities and the deck's quick check have Grade 1 versions** (`activityFirstGrade.ts`,
+   `activityFirstGrade.test.ts`). The all-grades formats opened a Grade 1 «حرف الباء» activity with «اكتب من ذاكرتك
+   — الدفاتر مغلقة», defended a claim in writing, and had teams «عرّف» the letter and bet points; the slide deck's
+   quick check said «اشرح بكلماتك… اكتب إجابتك على لوحك». Each of the six formats now has a Grade 1 version built
+   from the lesson plan's per-kind content (`firstGradeContent`), still distinct on every field: alone with
+   objects; groups of three with a picture job card each; a talking circle that votes with thumbs; making with the
+   hands (shaping the letter in clay, building with cubes); a game with two rounds, stars and a winning team (a
+   maths round reads one of the lesson's own items aloud); a short song-and-picture warm-up. A Grade 1 lesson with
+   no question bank gets a spoken quick check answered all together (for a letter lesson: «قولوا كلمة تبدأ بصوت حرف
+   ب»…); Grade 1 maths keeps its question slides. The rest of a deck is built from the plan (fixed in 4) and the book.
+   A revision (unit/semester) activity keeps the all-grades formats.
+6. **Fixes from the code review of 1–3.**
+   - **The shared pool would have kept serving old Grade 1 artifacts.** A Grade 1 lesson-plan, worksheet, homework,
+     quiz or activity request now carries `firstGrade: "2026-11-13"` in its pool key (`generationKey.ts`,
+     `FIRST_GRADE_CLAUSE_VERSION`); other grades and other kinds leave the field out, so their keys are unchanged —
+     pinned by literal keys computed before the change. Bump the date when the clause changes.
+   - The Grade 1 activity clause asked every format for small groups, overriding an individual or a whole-class
+     discussion; the group line is now only for group, hands-on and game.
+   - A Grade 1 maths worksheet was asked for a 3–6 step worked example with a written self-explanation, next to a
+     clause forbidding both; Grade 1 now gets no worked example (`prompts.ts`).
+   - A word-problem slot in the eight new maths lessons served a bare «60 + ___ = 80» with «اكتب الحل موضّحًا
+     الخطوات»: a generator can now mark a story (`Draft.word`) and is asked for one (`Ctx.word`); «الجمع بالإكمال إلى
+     العشرة» gained a story.
+   - A fill-blank built from a stem that already has «___» no longer gets a second «الإجابة: ____» line
+     (`formatItem`), and the offline worksheet's answer box follows the same rule.
+   - Wording: «دفع منها … ثمنَ دفتر», «فأخذ», the homework line that said «ينسخ سطرًا» and «لا كتابة» at once; a grade
+     sent as the number 1 is recognised.
 
 **Verified.** Each new test red before its fix, green after. `pnpm run typecheck`; math-practice suite; api-server
 `build` + `test`; mobile suite. **Not verified:** a live model's Grade 1 output with the new clause (no live run from
@@ -67,9 +94,9 @@ the session) — after merge, generate one Grade 1 Arabic letter plan, worksheet
 stems by a native reviewer.
 
 **Still open, found by the sweep:**
-- **The other offline Grade 1 generators are not Grade 1 aware**: the activity and slides fallbacks still use the
-  all-grades blueprints. (Quizzes and worksheets refuse offline for every subject but maths.) A plan built from a
-  teacher's uploaded file is not either.
+- **Not Grade 1 aware yet:** a plan built from a teacher's uploaded file; a revision (unit/semester) activity; the
+  live prompts for evaluations (`llmGenerator`), Prompt Slides and the lesson explanation (`lesson-teaching`, which
+  slides use when live AI is on). The eight new maths generators ignore difficulty (as most of `early.ts` does).
 - **Maths, to check against the book:** thirds appear in «الأجزاء المتطابقة» and «الكسر كجزء من مجموعة» (the
   unit teaches halves and quarters); «ما العدد الذي ربعه 5؟» is hidden multiplication; «لوحة الأعداد» keys assume 1
   sits at the LEFT of each row; «0 + / − 0» items in «العدد صفر» come before units 3–4 teach the operations; sums to 23

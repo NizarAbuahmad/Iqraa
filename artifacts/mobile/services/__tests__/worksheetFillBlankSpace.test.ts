@@ -31,7 +31,7 @@ describe('fill-blank questions on a worksheet', () => {
       for (const q of ws.sections.flatMap(s => s.questions)) {
         const box = q.text.indexOf(BOX);
         const stem = box >= 0 ? q.text.slice(0, box) : q.text;
-        if (!stem.includes('__________')) continue;
+        if (!/_{3,}/.test(stem)) continue;
         blanks++;
         assert.equal(box, -1, `two answer places: ${JSON.stringify(q.text)}`);
       }

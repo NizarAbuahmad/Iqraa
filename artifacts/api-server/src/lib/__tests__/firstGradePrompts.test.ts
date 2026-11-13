@@ -18,6 +18,7 @@ import {
   quizPromptAr, quizPromptEn, worksheetPromptAr, worksheetPromptEn,
 } from "../prompts.ts";
 import { firstGradeClauseAr, isFirstGrade } from "../firstGrade.ts";
+import { generationKeys } from "../generationKey.ts";
 
 const G1_ARABIC = {
   grade: "الصف الأول", subject: "اللغة العربية", subjectId: "arabic", topic: "حَرْفُ الْبَاءِ (ب)",
@@ -102,5 +103,37 @@ describe("what the clause says", () => {
   it("forbids the quiz's analysis items for a six-year-old", () => {
     const q = quizPromptAr(G1_ARABIC);
     assert.match(q, /لا أسئلة «علّل» أو «قارن» أو «حلّل»/);
+  });
+});
+
+describe("review fixes (2026-11-13)", () => {
+  it("an activity's Grade 1 clause asks for small groups only in a group format", () => {
+    const g = (activityType: string) => activityPromptAr({ ...G1_ARABIC, activityType });
+    for (const t of ["group", "hands-on", "game"]) assert.match(g(t), /مجموعات صغيرة \(2-4\)/, t);
+    for (const t of ["individual", "discussion"]) assert.doesNotMatch(g(t), /مجموعات صغيرة \(2-4\)/, t);
+    assert.doesNotMatch(activityPromptAr({ ...G1_ARABIC, activityVariant: "warmup" }), /مجموعات صغيرة \(2-4\)/);
+    assert.doesNotMatch(activityPromptEn({ ...G1_MATH_EN, activityType: "individual" }), /Small groups \(2–4\)/);
+  });
+
+  it("a Grade 1 maths worksheet asks for no worked example; Grade 10 still does", () => {
+    const g1 = { ...G1_MATH_EN, subject: "الرياضيات", grade: "الصف الأول", questionTypes: ["short_answer"] };
+    assert.doesNotMatch(worksheetPromptAr(g1), /workedExample/);
+    assert.doesNotMatch(worksheetPromptEn({ ...g1, grade: "Grade 1" }), /workedExample/);
+    assert.match(worksheetPromptAr({ ...g1, grade: "الصف العاشر" }), /workedExample/);
+  });
+
+  it("recognises a grade sent as the number 1", () => {
+    assert.equal(isFirstGrade({ grade: 1 }), true);
+    assert.equal(isFirstGrade({ grade: 10 }), false);
+  });
+
+  it("keys a Grade 1 artifact apart from what was pooled before the clause, and leaves every other key alone", () => {
+    const g10 = { grade: "الصف العاشر", subject: "اللغة العربية", topic: "النص الأدبي", lessonId: "kbl-arabic-s1-nccd-u1_l1", language: "arabic", contextSource: "curriculum" };
+    const g1 = { grade: "الصف الأول", subject: "اللغة العربية", topic: "حرف الباء (ب)", lessonId: "kbl-g1-arabic-s1-nccd-u1_l6", language: "arabic", contextSource: "curriculum" };
+    // Computed with the key code as it was before the Grade 1 field existed.
+    assert.equal(generationKeys("lesson-plan", "m", g10).strictKey, "4be98b498ea453a4", "a Grade 10 key moved");
+    assert.equal(generationKeys("lesson-teaching", "m", g1).strictKey, "d1cb7cad59b3844d", "a kind without the clause moved");
+    assert.notEqual(generationKeys("lesson-plan", "m", g1).strictKey, "e3da440e90702faf", "a Grade 1 plan still reads the old pool");
+    assert.notEqual(generationKeys("lesson-plan", "m", g1).coarseKey, "0e7f0548453934bc");
   });
 });

@@ -18,7 +18,7 @@ import {
 import { QUIZ_TYPE_ORDER, type QuizType } from "./generationShape.ts";
 import { coverageClauseAr, coverageClauseEn } from "./coverage.ts";
 import { revisionClauseAr, revisionClauseEn } from "./revision.ts";
-import { firstGradeClauseAr, firstGradeClauseEn } from "./firstGrade.ts";
+import { firstGradeClauseAr, firstGradeClauseEn, isFirstGrade } from "./firstGrade.ts";
 
 /** «السؤال الأول» … — how a ministry paper numbers its question blocks. */
 const ORDINAL_AR = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس"];
@@ -438,8 +438,9 @@ export function worksheetPromptAr(b: any): string {
   const isHW = b.homework;
   const types = worksheetModelTypes(b.questionTypes);
   const wantsWP = types.includes("word_problem");
-  // Worked example, half-solved question and `solution` rows only where there is a calculation to model.
-  const example = !isHW && usesWorkedExample(b);
+  // Worked example, half-solved question and `solution` rows only where there is a calculation to model —
+  // and never for Grade 1, whose clause forbids multi-step working and «explain» items.
+  const example = !isHW && usesWorkedExample(b) && !isFirstGrade(b);
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
     : null;
@@ -483,7 +484,7 @@ export function worksheetPromptEn(b: any): string {
   const isHW = b.homework;
   const types = worksheetModelTypes(b.questionTypes);
   const wantsWP = types.includes("word_problem");
-  const example = !isHW && usesWorkedExample(b);
+  const example = !isHW && usesWorkedExample(b) && !isFirstGrade(b);
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
     : null;

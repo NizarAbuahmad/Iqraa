@@ -27,6 +27,8 @@ export type FirstGradeUse = "plan" | "paper" | "activity";
 
 type GradeFields = {
   grade?: unknown;
+  activityType?: unknown;
+  activityVariant?: unknown;
   gradeId?: unknown;
   lessonId?: unknown;
   unitId?: unknown;
@@ -45,6 +47,7 @@ export function isFirstGrade(b: GradeFields): boolean {
   const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
   if (/^kbl-g1-/.test(str(b.lessonId)) || /^kbu-g1-/.test(str(b.unitId))) return true;
   if (str(b.gradeId) === "grade-1") return true;
+  if (b.grade === 1) return true;
   const name = str(b.grade);
   return name !== "" && FIRST_GRADE_NAMES.has(bareName(name));
 }
@@ -67,7 +70,7 @@ const BASE_AR: Record<FirstGradeUse, string> = {
   plan: `الصف الأول (أطفال في السادسة يتعلّمون القراءة والكتابة الآن):
 - قسّم الحصة إلى نشاطات قصيرة (3-5 دقائق) محسوسة: صور ومجسّمات وبطاقات وحركة وأناشيد وألعاب، وكلام المعلم للطلبة جمل قصيرة بسيطة.
 - لا تطلب من الطلبة كتابة فقرة أو جمل من إنتاجهم، ولا ملء جدول أو ورقة ملاحظات أو بطاقة خروج مكتوبة: الكتابة نسخ حرف أو كلمة أو عدد أو إكمال كلمة بحرف، وما سواها إجابة شفوية أو بالإشارة أو التلوين أو الوصل أو وضع دائرة.
-- التقييم ملاحظة المعلم لأداء كل طفل وسؤاله شفويًا، والواجب البيتي مهمة قصيرة يؤدّيها الطفل مع أسرته (يشير، يعدّ، يلوّن، ينسخ سطرًا) لا كتابة.`,
+- التقييم ملاحظة المعلم لأداء كل طفل وسؤاله شفويًا، والواجب البيتي مهمة قصيرة يؤدّيها الطفل مع أسرته (يشير، يعدّ، يلوّن، ينسخ سطرًا واحدًا)، لا صفحة كتابة.`,
   paper: `الصف الأول (أطفال في السادسة يتعلّمون القراءة الآن):
 - كل سؤال جملة واحدة قصيرة بكلمات مألوفة، يُجاب عنه بحرف أو كلمة أو عدد أو اختيار أو صح/خطأ.
 - لا أسئلة «علّل» أو «قارن» أو «حلّل» أو «اشرح» أو «اكتب فقرة»، ولا نص قصير يُقرأ ثم يُسأل عنه، ولا مسألة من أكثر من خطوة.
@@ -76,14 +79,14 @@ const BASE_AR: Record<FirstGradeUse, string> = {
   activity: `الصف الأول (أطفال في السادسة يتعلّمون القراءة والكتابة الآن):
 - خطوات قصيرة محسوسة يقودها المعلم: صور وبطاقات ومجسّمات وحركة وأناشيد وألعاب، وتعليمات المعلم جمل قصيرة يقولها بصوته.
 - لا قراءة نصوص ولا كتابة جمل أو فقرات ولا أوراق تُملأ: يشير الطفل أو يلوّن أو يصل أو يقول أو ينسخ حرفًا أو كلمة.
-- مجموعات صغيرة (2-4) بدور واحد واضح لكل طفل، والتقييم ملاحظة المعلم.`,
+- التقييم ملاحظة المعلم وسؤاله الشفوي.`,
 };
 
 const BASE_EN: Record<FirstGradeUse, string> = {
   plan: `Grade 1 (six-year-olds who are learning to read and write now):
 - Split the lesson into short, concrete activities (3–5 minutes): pictures, objects, cards, movement, songs and games; the teacher speaks to the children in short simple sentences.
 - Never ask the children to write a paragraph or sentences of their own, or to fill in a table, an observation sheet or a written exit ticket: writing means copying a letter, word or number or completing a word with a letter; everything else is answered aloud, by pointing, colouring, matching or circling.
-- Assessment is the teacher watching each child and asking aloud; homework is a short task done with the family (point, count, colour, copy one line), not writing.`,
+- Assessment is the teacher watching each child and asking aloud; homework is a short task done with the family (point, count, colour, copy one line), not a page of writing.`,
   paper: `Grade 1 (six-year-olds who are learning to read now):
 - Every question is one short sentence in familiar words, answered with a letter, a word, a number, a choice or True/False.
 - No "justify", "compare", "analyse", "explain" or "write a paragraph", no short text to read and then answer on, and no multi-step problem.
@@ -92,7 +95,7 @@ const BASE_EN: Record<FirstGradeUse, string> = {
   activity: `Grade 1 (six-year-olds who are learning to read and write now):
 - Short, concrete steps the teacher leads: pictures, cards, objects, movement, songs and games; the teacher gives instructions aloud in short sentences.
 - No reading texts, no writing sentences or paragraphs, no sheets to fill in: a child points, colours, matches, says, or copies a letter or a word.
-- Small groups (2–4) with one clear job per child; assessment is the teacher's observation.`,
+- Assessment is the teacher's observation and spoken questions.`,
 };
 
 const SUBJECT_AR: Record<"arabic" | "english" | "mathematics", string> = {
@@ -107,14 +110,30 @@ const SUBJECT_EN: Record<"arabic" | "english" | "mathematics", string> = {
   mathematics: `- Grade 1 mathematics: numbers only within the lesson's range (never beyond what the lesson teaches, and never above 99), counting concrete objects, no multiplication, division, decimals or negative numbers.`,
 };
 
+/** An activity's format, as the prompt reads it (`activityFormatKey` in prompts.ts). */
+function activityFormat(b: GradeFields & { activityType?: unknown; activityVariant?: unknown }): string {
+  return b.activityVariant === "warmup" ? "warmup" : typeof b.activityType === "string" ? b.activityType : "group";
+}
+
+/**
+ * The format line for a Grade 1 activity. Small groups only where the format
+ * is group work; an individual or a whole-class discussion keeps its own shape
+ * (its rule in `ACTIVITY_FORMAT_RULES_*` must not be overridden into groups).
+ */
+const GROUPED = new Set(["group", "hands-on", "game"]);
+const groupLineAr = (b: GradeFields) => (GROUPED.has(activityFormat(b)) ? "\n- مجموعات صغيرة (2-4) بدور واحد واضح لكل طفل." : "");
+const groupLineEn = (b: GradeFields) => (GROUPED.has(activityFormat(b)) ? "\n- Small groups (2–4) with one clear job per child." : "");
+
 export function firstGradeClauseAr(b: GradeFields, use: FirstGradeUse): string {
   if (!isFirstGrade(b)) return "";
   const subject = subjectOf(b);
-  return `\n${BASE_AR[use]}${subject ? `\n${SUBJECT_AR[subject]}` : ""}\n${OVERRIDE_AR}`;
+  const group = use === "activity" ? groupLineAr(b) : "";
+  return `\n${BASE_AR[use]}${group}${subject ? `\n${SUBJECT_AR[subject]}` : ""}\n${OVERRIDE_AR}`;
 }
 
 export function firstGradeClauseEn(b: GradeFields, use: FirstGradeUse): string {
   if (!isFirstGrade(b)) return "";
   const subject = subjectOf(b);
-  return `\n${BASE_EN[use]}${subject ? `\n${SUBJECT_EN[subject]}` : ""}\n${OVERRIDE_EN}`;
+  const group = use === "activity" ? groupLineEn(b) : "";
+  return `\n${BASE_EN[use]}${group}${subject ? `\n${SUBJECT_EN[subject]}` : ""}\n${OVERRIDE_EN}`;
 }

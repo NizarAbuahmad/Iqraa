@@ -627,6 +627,9 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
   }
 
   if (type === 'fill_blank') {
+    // A stem that already has its blank («8 + ___ = 10») is the fill-blank
+    // itself; a second «الإجابة: ____» line under it asks for two answers.
+    if (/_{3,}/.test(stem)) return { text: stem, answer: item.answer };
     return {
       text: isAr
         ? `${stem}\n\nالإجابة: __________`
@@ -821,7 +824,11 @@ export function takeElementaryMath(
     return { ...formatItem(item, lang, type), points };
   }
   if (!gen) return null;
-  return { ...formatItem(makeTopicItem(gen, grade, diff, session ?? usedIds), lang, type), points };
+  // A word-problem slot asks the generator for a story (`Ctx.word`); one that
+  // writes them returns one, rather than a bare «60 + ___ = 80» with «اكتب الحل
+  // موضّحًا الخطوات» under it. Generators without stories ignore the flag.
+  const item = makeTopicItem(gen, grade, diff, session ?? usedIds, Math.random, { word: type === 'word_problem' });
+  return { ...formatItem(item, lang, type), points };
 }
 
 /**

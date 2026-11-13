@@ -1896,14 +1896,14 @@ export function topicFor(title: string, grade: number): Topic | null {
  * avoids the last one (`quizRegenerateStems.test.ts`). A generator makes new
  * numbers on every draw, so nothing is lost here.
  */
-export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used: Set<string>, rng: Rng = Math.random): ConcreteItem {
+export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used: Set<string>, rng: Rng = Math.random, opts: { word?: boolean } = {}): ConcreteItem {
   const served = servedFrames(used);
   let d: Draft | null = null;
   let best: Draft | null = null;
   let bestServed = Infinity;
   let fresh = 0;
   for (let attempt = 0; attempt < 25 && fresh < FRESH_DRAWS; attempt++) {
-    d = topic.make({ rng, diff, grade });
+    d = topic.make({ rng, diff, grade, ...(opts.word ? { word: true } : {}) });
     if (used.has(`stem:${d.ar}`)) continue;
     fresh += 1;
     const n = spreadScore(stemFrame(d.ar), served);
@@ -1921,5 +1921,6 @@ export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used:
     id: `topic-${topic.id}-${grade}-${used.size}-${int(rng, 0, 9)}`,
     family: 'topic', diff, eq: d!.eq, answer: d!.answer, wrongs,
     promptAr: d!.ar, promptEn: d!.en,
+    ...(d!.word ? { kind: 'word' as const, wordAr: d!.ar, wordEn: d!.en } : {}),
   };
 }

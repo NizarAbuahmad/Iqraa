@@ -13,7 +13,7 @@ import { gcd, int, numWrongs, pick, tamyiz, wrongsFrom, type Draft, type Rng, ty
 import { fmtDec } from './elementary.ts';
 
 type D = 'easy' | 'medium' | 'hard';
-type Gen = (c: { rng: Rng; diff: D; grade: number }) => Draft;
+type Gen = (c: { rng: Rng; diff: D; grade: number; word?: boolean }) => Draft;
 const T = (id: string, match: RegExp, grades: [number, number], make: Gen): Topic => ({ id, match, grades, make });
 const span = (diff: D, a: number, b: number, c: number) => (diff === 'easy' ? a : diff === 'medium' ? b : c);
 const ints = (ans: number, cands: number[]) => numWrongs(ans, cands.filter(Number.isInteger));
@@ -385,53 +385,55 @@ const oranges = (n: number) => (n === 1 ? 'برتقالة واحدة' : n === 2 
 const g1 = (ans: number, cands: number[]) => ints(ans, cands.filter(v => v <= 99));
 
 /** Whole tens: «30 + 40», never past 90. */
-const tensG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1], ({ rng }) => {
+const tensG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1], ({ rng, word }) => {
   const a = add ? int(rng, 1, 8) : int(rng, 2, 9), b = add ? int(rng, 1, 9 - a) : int(rng, 1, a - 1);
-  const A = a * 10, B = b * 10, r = add ? A + B : A - B, op = add ? '+' : '−', k = pick(rng, [0, 1, 2, 3]);
+  const A = a * 10, B = b * 10, r = add ? A + B : A - B, op = add ? '+' : '−', k = word ? 2 : pick(rng, [0, 1, 2, 3]);
   const near = [add ? A - B : A + B, r + 10, r - 10, add ? a + b : a - b, r - 20];
   if (k === 1) return { eq: `${A} ${op} ${B}`, answer: String(r), wrongs: g1(r, near), ar: `إذا كان ${a} ${op} ${b} = ${add ? a + b : a - b}، فما ناتج ${A} ${op} ${B}؟`, en: `If ${a} ${op} ${b} = ${add ? a + b : a - b}, what is ${A} ${op} ${B}?` };
-  if (k === 2) return { eq: `${A} ${op} ${B}`, answer: String(r), wrongs: g1(r, near), ar: add ? `في علبة ${pens(A)}، وأضاف إليها المعلم ${pens(B)}. كم قلمًا أصبح في العلبة؟` : `في علبة ${pens(A)}، أخذ الطلبة منها ${pens(B)}. كم قلمًا بقي في العلبة؟`, en: add ? `A box has ${A} pencils and the teacher puts in ${B} more. How many pencils are in the box now?` : `A box has ${A} pencils and the students take ${B} of them. How many pencils are left?` };
+  if (k === 2) return { eq: `${A} ${op} ${B}`, answer: String(r), wrongs: g1(r, near), word: true, ar: add ? `في علبة ${pens(A)}، فأضاف إليها المعلم ${pens(B)}. كم قلمًا أصبح في العلبة؟` : `في علبة ${pens(A)}، فأخذ الطلبة منها ${pens(B)}. كم قلمًا بقي في العلبة؟`, en: add ? `A box has ${A} pencils and the teacher puts in ${B} more. How many pencils are in the box now?` : `A box has ${A} pencils and the students take ${B} of them. How many pencils are left?` };
   if (k === 3) return { eq: `${A}, ${r}`, answer: String(B), wrongs: g1(B, [b, r, B + 10, B - 10]), ar: `${A} ${op} ___ = ${r}`, en: `${A} ${op} ___ = ${r}` };
   return { eq: `${A} ${op} ${B}`, answer: String(r), wrongs: g1(r, near), ar: `${A} ${op} ${B} = ___`, en: `${A} ${op} ${B} = ___` };
 });
 
 /** Two two-digit numbers, no regrouping: the ones and the tens each stay within 9. */
-const twoDigitG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1], ({ rng }) => {
+const twoDigitG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1], ({ rng, word }) => {
   let t1: number, o1: number, t2: number, o2: number;
   if (add) { t1 = int(rng, 1, 8); t2 = int(rng, 1, 9 - t1); o1 = int(rng, 0, 8); o2 = int(rng, o1 === 0 ? 1 : 0, 9 - o1); }
   else { t1 = int(rng, 2, 9); t2 = int(rng, 1, t1 - 1); o1 = int(rng, 1, 9); o2 = int(rng, 0, o1); }
-  const x = t1 * 10 + o1, y = t2 * 10 + o2, r = add ? x + y : x - y, op = add ? '+' : '−', k = pick(rng, [0, 1, 2, 3]);
+  const x = t1 * 10 + o1, y = t2 * 10 + o2, r = add ? x + y : x - y, op = add ? '+' : '−', k = word ? 2 : pick(rng, [0, 1, 2, 3]);
   const near = [add ? x - y : x + y, r + 10, r - 10, r + 1, r - 1, r - 2];
   if (k === 1) { const o = add ? o1 + o2 : o1 - o2; return { eq: `${x} ${op} ${y}`, answer: String(o), wrongs: g1(o, [o1, o2, add ? t1 + t2 : t1 - t2, o + 1, o + 2]), ar: `ما رقم الآحاد في ناتج ${x} ${op} ${y}؟`, en: `What is the ones digit of ${x} ${op} ${y}?` }; }
-  if (k === 2) return { eq: `${x} ${op} ${y}`, answer: String(r), wrongs: g1(r, near), ar: add ? `مع سلمى ${qirsh(x)}، وأعطتها جدّتها ${qirsh(y)}. كم قرشًا أصبح معها؟` : `مع رامي ${qirsh(x)}، اشترى منها دفترًا بـ ${qirsh(y)}. كم قرشًا بقي معه؟`, en: add ? `Salma has ${x} qirsh and her grandmother gives her ${y} qirsh. How many qirsh does she have now?` : `Rami has ${x} qirsh and buys a notebook for ${y} qirsh. How many qirsh are left?` };
+  if (k === 2) return { eq: `${x} ${op} ${y}`, answer: String(r), wrongs: g1(r, near), word: true, ar: add ? `مع سلمى ${qirsh(x)}، وأعطتها جدّتها ${qirsh(y)}. كم قرشًا أصبح معها؟` : `مع رامي ${qirsh(x)}، دفع منها ${qirsh(y)} ثمنَ دفتر. كم قرشًا بقي معه؟`, en: add ? `Salma has ${x} qirsh and her grandmother gives her ${y} qirsh. How many qirsh does she have now?` : `Rami has ${x} qirsh and buys a notebook for ${y} qirsh. How many qirsh are left?` };
   if (k === 3) return { eq: `${x}, ${r}`, answer: String(y), wrongs: g1(y, [x, r, y + 10, y - 10, y + 1]), ar: `${x} ${op} ___ = ${r}`, en: `${x} ${op} ___ = ${r}` };
   return { eq: `${x} ${op} ${y}`, answer: String(r), wrongs: g1(r, near), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
 });
 
 /** Subtraction read off a double: 2n − n = n. */
-const subDoubles = T('sub_doubles_g1', /^الطرح باستعمال الضعف$/, [1, 1], ({ rng }) => {
-  const n = int(rng, 2, 9), d = 2 * n, k = pick(rng, [0, 1, 2, 3]);
+const subDoubles = T('sub_doubles_g1', /^الطرح باستعمال الضعف$/, [1, 1], ({ rng, word }) => {
+  const n = int(rng, word ? 3 : 2, 9), d = 2 * n, k = word ? 3 : pick(rng, [0, 1, 2, 3]);
   const wr = ints(n, [d, n + 1, n - 1, d + n]);
   if (k === 1) return { eq: `${d} − ${n}`, answer: String(n), wrongs: wr, ar: `${d} − ${n} = ___ (فكّر: ${n} + ${n} = ${d})`, en: `${d} − ${n} = ___ (think: ${n} + ${n} = ${d})` };
   if (k === 2) return { eq: `${d}, ${n}`, answer: String(n), wrongs: wr, ar: `${d} − ___ = ${n}`, en: `${d} − ___ = ${n}` };
   // 3 or more given away, so the object reads «3 كرات», never the nominative «كرتان»
-  if (k === 3 && n >= 3) return { eq: `${d} − ${n}`, answer: String(n), wrongs: wr, ar: `مع ليلى ${balls(d)}، أعطت أختها ${balls(n)}. كم كرة بقيت معها؟`, en: `Layla has ${d} balls and gives her sister ${n}. How many balls does she have left?` };
+  if (k === 3 && n >= 3) return { eq: `${d} − ${n}`, answer: String(n), wrongs: wr, word: true, ar: `مع ليلى ${balls(d)}، أعطت أختها ${balls(n)}. كم كرة بقيت معها؟`, en: `Layla has ${d} balls and gives her sister ${n}. How many balls does she have left?` };
   return { eq: `${d} − ${n}`, answer: String(n), wrongs: wr, ar: `إذا كان ${n} + ${n} = ${d}، فما ناتج ${d} − ${n}؟`, en: `If ${n} + ${n} = ${d}, what is ${d} − ${n}?` };
 });
 
 /** A teen minus a one-digit number that crosses ten: 13 − 5 = 13 − 3 − 2. */
-const subMakeTen = T('sub_make_ten_g1', /^الطرح بايجاد عشره$/, [1, 1], ({ rng }) => {
-  const o = int(rng, 1, 8), x = 10 + o, y = int(rng, o + 1, 9), r = x - y, rest = y - o, k = pick(rng, [0, 1, 2, 3]);
+const subMakeTen = T('sub_make_ten_g1', /^الطرح بايجاد عشره$/, [1, 1], ({ rng, word }) => {
+  const o = int(rng, 1, 8), x = 10 + o, y = int(rng, Math.max(o + 1, word ? 3 : 0), 9), r = x - y, rest = y - o, k = word ? 3 : pick(rng, [0, 1, 2, 3]);
   if (k === 1) return { eq: `${x} − ${y}`, answer: String(rest), wrongs: g1(rest, [o, y, r, rest + 1]), ar: `لإيجاد ${x} − ${y}: نطرح ${o} أولًا لنصل إلى 10، ثم نطرح ___`, en: `To find ${x} − ${y}: take away ${o} first to reach 10, then take away ___` };
   if (k === 2) return { eq: `${x} − ${y}`, answer: String(rest), wrongs: g1(rest, [o, y, r, rest + 1]), ar: `أكمل: ${x} − ${y} = 10 − ___`, en: `Complete: ${x} − ${y} = 10 − ___` };
   // 3 or more eaten, so the count is a digit a child reads, not the word «برتقالتان»
-  if (k === 3 && y >= 3) return { eq: `${x} − ${y}`, answer: String(r), wrongs: g1(r, [r + 1, r - 1, r + 10, rest]), ar: `في سلة ${oranges(x)}، أُكلت منها ${oranges(y)}. كم برتقالةً بقيت في السلة؟`, en: `A basket has ${x} oranges and the family eats ${y}. How many oranges are left?` };
+  if (k === 3 && y >= 3) return { eq: `${x} − ${y}`, answer: String(r), wrongs: g1(r, [r + 1, r - 1, r + 10, rest]), word: true, ar: `في سلة ${oranges(x)}، أُكلت منها ${oranges(y)}. كم برتقالةً بقيت في السلة؟`, en: `A basket has ${x} oranges and the family eats ${y}. How many oranges are left?` };
   return { eq: `${x} − ${y}`, answer: String(r), wrongs: g1(r, [r + 1, r - 1, r + 10, rest]), ar: `ما ناتج ${x} − ${y}؟`, en: `What is ${x} − ${y}?` };
 });
 
 /** Adding past ten by first making ten: 8 + 5 = 8 + 2 + 3. */
-const addMakeTen = T('add_make_ten_g1', /^الجمع بالاكمال الي العشره$/, [1, 1], ({ rng }) => {
-  const a = int(rng, 6, 9), b = int(rng, 11 - a, 9), s = a + b, need = 10 - a, rest = b - need, k = pick(rng, [0, 1, 2, 3]);
+const addMakeTen = T('add_make_ten_g1', /^الجمع بالاكمال الي العشره$/, [1, 1], ({ rng, word }) => {
+  const a = int(rng, 6, 9), b = int(rng, Math.max(11 - a, word ? 3 : 0), 9), s = a + b, need = 10 - a, rest = b - need, k = word ? 4 : pick(rng, [0, 1, 2, 3, 4]);
+  // 3 or more added, so the count reads «3 برتقالات», never the word «برتقالتان»
+  if (k === 4 && b >= 3) return { eq: `${a} + ${b}`, answer: String(s), wrongs: g1(s, [s + 1, s - 1, s + 10, rest]), word: true, ar: `في سلة ${oranges(a)}، ووُضعت فيها ${oranges(b)} أخرى. كم برتقالةً أصبحت في السلة؟`, en: `A basket has ${a} oranges and ${b} more are put in. How many oranges are in the basket now?` };
   if (k === 1) return { eq: `${a} + ${b}`, answer: String(rest), wrongs: g1(rest, [need, b, s, rest + 1]), ar: `لإيجاد ${a} + ${b}: نأخذ ${need} من ${b} لنكمل ${a} إلى 10، فيبقى ___`, en: `To find ${a} + ${b}: take ${need} from ${b} to make ${a} up to 10, which leaves ___` };
   if (k === 2) return { eq: `${a} + ${b}`, answer: String(rest), wrongs: g1(rest, [need, b, s, rest + 1]), ar: `أكمل: ${a} + ${b} = 10 + ___`, en: `Complete: ${a} + ${b} = 10 + ___` };
   if (k === 3) return { eq: `${a}`, answer: String(need), wrongs: g1(need, [a, 10, need + 1, need - 1]), ar: `${a} + ___ = 10`, en: `${a} + ___ = 10` };
@@ -439,12 +441,12 @@ const addMakeTen = T('add_make_ten_g1', /^الجمع بالاكمال الي ا�
 });
 
 /** Three one-digit addends, the total within 20. */
-const addThree = T('add_three_g1', /^جمع ثلاثه اعداد$/, [1, 1], ({ rng }) => {
-  const a = int(rng, 1, 7), b = int(rng, 1, 7), c = int(rng, 1, Math.min(7, 18 - a - b)), s = a + b + c, k = pick(rng, [0, 1, 2, 3]);
+const addThree = T('add_three_g1', /^جمع ثلاثه اعداد$/, [1, 1], ({ rng, word }) => {
+  const lo = word ? 3 : 1, a = int(rng, lo, 7), b = int(rng, lo, 7), c = int(rng, lo, Math.min(7, 18 - a - b)), s = a + b + c, k = word ? 2 : pick(rng, [0, 1, 2, 3]);
   const near = [s + 1, s - 1, a + b, b + c, s + 10];
   if (k === 1) { const x = int(rng, 1, 9), y = 10 - x, m = int(rng, 1, 9), t = 10 + m; return { eq: `${x} + ${m} + ${y}`, answer: String(t), wrongs: g1(t, [t + 1, t - 1, x + m, m + y]), ar: `ابدأ بالعددين اللذين مجموعهما 10: ${x} + ${m} + ${y} = ___`, en: `Start with the two numbers that make 10: ${x} + ${m} + ${y} = ___` }; }
   // 3 or more each, so every count is a digit a child reads («3 كرات»), never a word («كرتان»)
-  if (k === 2 && Math.min(a, b, c) >= 3) return { eq: `${a} + ${b} + ${c}`, answer: String(s), wrongs: g1(s, near), ar: `مع سامي ${balls(a)}، ومع علي ${balls(b)}، ومع هيا ${balls(c)}. كم كرة معهم جميعًا؟`, en: `Sami has ${a} balls, Ali has ${b} and Haya has ${c}. How many balls do they have altogether?` };
+  if (k === 2 && Math.min(a, b, c) >= 3) return { eq: `${a} + ${b} + ${c}`, answer: String(s), wrongs: g1(s, near), word: true, ar: `مع سامي ${balls(a)}، ومع علي ${balls(b)}، ومع هيا ${balls(c)}. كم كرة معهم جميعًا؟`, en: `Sami has ${a} balls, Ali has ${b} and Haya has ${c}. How many balls do they have altogether?` };
   if (k === 3) return { eq: `${a} + ${b}, ${s}`, answer: String(c), wrongs: g1(c, [s, a, b, c + 1]), ar: `${a} + ${b} + ___ = ${s}`, en: `${a} + ${b} + ___ = ${s}` };
   return { eq: `${a} + ${b} + ${c}`, answer: String(s), wrongs: g1(s, near), ar: `${a} + ${b} + ${c} = ___`, en: `${a} + ${b} + ${c} = ___` };
 });

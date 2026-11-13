@@ -89,6 +89,13 @@ export function arabicLessonType(title: string): ArabicLesson {
 
 const SURAH = /سوره/;
 
+/** What a Grade 1 lesson of this kind is made of — shared with the Grade 1 activities. */
+export function firstGradeContent(kind: LessonKind, topic: string, titleAr: string): Content {
+  return contentFor(kind, topic, titleAr);
+}
+
+export type FirstGradeContent = Content;
+
 function contentFor(kind: LessonKind, topic: string, titleAr: string): Content {
   const q = `«${topic}»`;
   const qEn = `“${topic}”`;

@@ -7,8 +7,10 @@ import type { DiffTier } from './index.ts';
 import { gcd, int, type Rng } from './elementary.ts';
 export { gcd, int, type Rng };
 
-export interface Ctx { rng: Rng; diff: DiffTier; grade: number }
-export interface Draft { eq: string; answer: string; wrongs: string[]; ar: string; en: string }
+/** `word`: a word-problem slot is asking — a generator that writes stories returns one. */
+export interface Ctx { rng: Rng; diff: DiffTier; grade: number; word?: boolean }
+/** `word`: the stem is a real story, so it can fill a word-problem slot as it is. */
+export interface Draft { eq: string; answer: string; wrongs: string[]; ar: string; en: string; word?: boolean }
 export interface Topic {
   id: string;
   /** Tested against the folded title (see `fold`). */

@@ -12,7 +12,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { TOPICS, makeTopicItem, topicFor } from '../topics.ts';
-import { mathBankCovers, type ConcreteItem, type DiffTier } from '../index.ts';
+import { mathBankCovers, takeElementaryMath, type ConcreteItem, type DiffTier } from '../index.ts';
 
 const TIERS: DiffTier[] = ['easy', 'medium', 'hard'];
 function seeded(seed: number) {
@@ -149,5 +149,19 @@ describe('Grade 1 operation generators: shape and answers', () => {
       assert.ok((has(p, '___ =') ? n[2]! : a) <= 20, p);
     }
     assert.equal(kinds.size, 4, [...kinds].join());
+  });
+});
+
+describe('a word-problem slot in a Grade 1 operation lesson', () => {
+  it('gets a story, not a bare sum with «اكتب الحل موضّحًا الخطوات»', () => {
+    for (const [title] of ROUTES) {
+      let stories = 0;
+      for (let i = 0; i < 20; i++) {
+        const q = takeElementaryMath('word_problem', title, null, 1, 'easy', 'ar', 1, new Set());
+        assert.ok(q, title);
+        if (!/موضّحًا الخطوات/.test(q.text)) stories++;
+      }
+      assert.equal(stories, 20, `${title}: ${20 - stories} of 20 were a bare item`);
+    }
   });
 });
