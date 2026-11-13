@@ -578,6 +578,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["That bag looks heavy. I'll carry it.", "I'll carry", 'I carry'],
         ["Wait, I'll help you with that.", "I'll help", 'I help'],
         ["You look tired. I'll make you some tea.", "I'll make", 'I make'],
+        ["I forgot to call Mum! I'll do it now.", "I'll do", 'I do'],
       ]),
       // A sign of what is about to happen (dark clouds, «Watch out!», «Careful!») takes going to. will is not offered
       // («Look at those clouds, it'll rain» is English too); the distractor is the present simple, and the warning says
@@ -590,6 +591,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['Watch out! The ball is going to hit you.', 'is going to hit', 'hits'],
         ["Look at the sky! It's going to snow.", "It's going to snow", 'It snows'],
         ["Mind the step! You're going to trip.", "You're going to trip", 'You trip'],
+        ['Stop! The milk is going to boil over.', 'is going to boil', 'boils'],
       ]),
       // A timetable (present simple) or an arrangement (present continuous). Form only: with a fixed time, will, going
       // to and both presents all fit («The train will leave at nine tomorrow» is English), so the errors are in the form.
@@ -735,7 +737,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
       // against will: after «If it rains, …» a tentative would is accepted too, so no present if-clause is tested here.
       ...items('condition-result', 'form', [
         ['If I won a prize, I would help others.', 'would help', 'will help'],
-        ['If I were a bird, I would fly to Aqaba.', 'would fly', 'will fly'],
+        ['If I were a bird, I would fly home.', 'would fly', 'will fly'],
         ['If she were my daughter, I would call her.', 'would call', 'will call'],
         ['If we lived on Mars, we would need oxygen.', 'would need', 'will need'],
         ['If I had wings, I would visit every country.', 'would visit', 'will visit'],
@@ -807,10 +809,10 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["The engine doesn't start unless you press the button.", 'unless', 'if'],
         ['Your phone does not work unless it is charged.', 'unless', 'if'],
         ['As soon as the bell rings, we leave.', 'As soon as', 'Unless'],
-        ['As soon as it gets dark, the lights come on.', 'As soon as', 'Unless'],
+        ['As soon as it rains, we go inside.', 'As soon as', 'Unless'],
         ['Borrow it as long as you return it.', 'as long as', 'unless'],
         ['You can stay provided that you are quiet.', 'provided that', 'unless'],
-        ['We can swim as long as the sea is calm.', 'as long as', 'unless'],
+        ['We swim as long as the sea is calm.', 'as long as', 'unless'],
         ['Provided that it is safe, we can try it.', 'Provided that', 'Unless'],
         ['Wait here until I call you.', 'until', 'as soon as'],
         ['I will wait until I have heard from you.', 'until', 'as soon as'],
@@ -824,58 +826,71 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
     lessonId: L2('u7_l1'),
     statement: 'I can use reporting verbs to report stories.',
     items: [
-      // promise, offer, refuse, agree, claim, threaten + to-infinitive: -ing or a bare verb is the error. No verb whose
-      // -ing or bare form could be a noun after it («offered help»). No tense shift is tested anywhere in this lesson.
-      ...items('verb-patterns', 'form', [
-        ['She promised to call me.', 'to call', 'calling'],
-        ['He offered to carry my bag.', 'to carry', 'carrying'],
-        ['They refused to pay for the damage.', 'to pay', 'paying'],
-        ['My brother agreed to help me.', 'to help', 'helping'],
-        ['The boy promised to return the book.', 'to return', 'returning'],
-        ['Dad offered to drive us to Amman.', 'to drive', 'driving'],
-        ['She refused to answer my question.', 'to answer', 'answering'],
-        ['We agreed to meet at the library.', 'to meet', 'meeting'],
-        ['He threatened to tell the teacher.', 'to tell', 'telling'],
-        ['The shop agreed to replace the phone.', 'to replace', 'replacing'],
-        ['She offered to lend me her notes.', 'to lend', 'lending'],
-        ['I promised not to be late.', 'not to be', 'not being'],
-        ['He claimed to know the answer.', 'to know', 'knowing'],
-        ['My sister refused to share her sweets.', 'to share', 'sharing'],
-        ['The teacher agreed to postpone the test.', 'to postpone', 'postponing'],
-        ['Mum promised to make a cake.', 'to make', 'make'],
+      // The book's box and Grammar Reference (reported speech, pp17 and 70). Only the four things below are tested, and
+      // each is told apart by a mistake nobody makes in standard English; the choice «he said he was» against «he said
+      // he is» is not, because the unshifted form is also used when the news is still true.
+      //
+      // The shifted verb itself, in the book's own examples (Past Perfect for Past Simple and Present Perfect, would
+      // for will, could for can, had to for must, was watching for is watching). The twin is a wrong form of the same
+      // verb, never the unshifted tense.
+      ...items('backshift-forms', 'form', [
+        ['He said he was watching the news.', 'was watching', 'were watching'],
+        ['She said she needed a dictionary.', 'needed', 'needing'],
+        ['He told me he had crashed his car.', 'had crashed', 'had crash'],
+        ['She said she had won the race.', 'had won', 'had win'],
+        ['He said he would write the report.', 'would write', 'would wrote'],
+        ['She said she could not remember his name.', 'could not remember', 'could not remembered'],
+        ['They said they had to tidy their rooms.', 'had to', 'had must'],
+        ['My aunt said she had lost her purse.', 'had lost', 'had lose'],
+        ['He said he had seen her.', 'had seen', 'had saw'],
+        ['She said she would like some water.', 'would like', 'would liking'],
       ]),
-      // admit, deny, suggest, apologise for + -ing: the to-infinitive is the error. suggest also takes «that we go», so
-      // only the -ing pattern is tested; «admit to doing» is English, so «to» never stands alone as the distractor.
-      ...items('admit-deny-suggest', 'form', [
-        ['He denied breaking the vase.', 'breaking', 'to break'],
-        ['She admitted taking my pen.', 'taking', 'to take'],
-        ['She suggested going by bus.', 'going', 'to go'],
-        ['The boy admitted cheating in the test.', 'cheating', 'to cheat'],
-        ['They denied making the mess.', 'making', 'to make'],
-        ['He apologised for being late.', 'being', 'to be'],
-        ['Dad suggested eating out tonight.', 'eating', 'to eat'],
-        ['She denied eating the last biscuit.', 'eating', 'to eat'],
-        ['I admitted forgetting my homework.', 'forgetting', 'to forget'],
-        ['We apologised for making so much noise.', 'making', 'to make'],
-        ['The teacher suggested reading the story again.', 'reading', 'to read'],
-        ['He admitted losing the keys.', 'losing', 'to lose'],
-        ['She denied telling anyone the secret.', 'telling', 'to tell'],
-        ['Mum suggested visiting our grandparents.', 'visiting', 'to visit'],
+      // Time words change with the shift (the day before, the next day, the week before, that night). The twin is the
+      // original word pointing the wrong way for the verb: a past perfect with «tomorrow» or «next week», a «would»
+      // with «yesterday» or «last week», so exactly one fits.
+      ...items('time-changes', 'form', [
+        ['She said she had seen him the day before.', 'the day before', 'tomorrow'],
+        ['He said he had finished the week before.', 'the week before', 'next week'],
+        ['She said she had moved there the year before.', 'the year before', 'next year'],
+        ['Dad said he would call the next day.', 'the next day', 'yesterday'],
+        ['They said they would leave the following week.', 'the following week', 'last week'],
+        ['He said he would arrive that night.', 'that night', 'last night'],
       ]),
-      // tell, warn, remind, advise, ask + object + to-infinitive. The errors: said for told, a missing object (after
-      // tell and remind), -ing or a bare verb after the object. Never asked with and without an object against each
-      // other (both are English), and never advise with -ing and no object («advised resting» is English).
-      ...items('tell-ask-warn', 'form', [
-        ['Mum told me to wait.', 'told me', 'said me'],
-        ['The teacher told us to sit down.', 'to sit', 'sitting'],
-        ['Dad warned me not to touch the oven.', 'not to touch', 'not touching'],
-        ['She reminded me to bring my book.', 'to bring', 'bringing'],
-        ['The coach told the players to rest.', 'told the players', 'said the players'],
-        ['She asked me to open the window.', 'to open', 'opening'],
-        ['The doctor advised me to drink water.', 'to drink', 'drink'],
-        ['Our teacher reminded us to switch off our phones.', 'reminded us', 'reminded'],
-        ['He told his sister to close the door.', 'told his sister', 'told to his sister'],
-        ['The guide warned us to stay together.', 'to stay', 'staying'],
+      // «Tell and say»: tell takes a person, say does not (the book: Ali told Hani …, NOT Ali told he …; Nour said
+      // …, NOT Nour said him that …). The twin gives tell no person, or say one.
+      ...items('say-tell', 'form', [
+        ['Dad told my uncle he liked his new watch.', 'told my uncle', 'told to my uncle'],
+        ['Mum told me that dinner was ready.', 'told me', 'said me'],
+        ['She said she was sorry.', 'said', 'told'],
+        ['He told his friends he was leaving.', 'told his friends', 'said his friends'],
+        ['Dad said that he was proud of us.', 'said that', 'said us that'],
+        ['The teacher told us the answer.', 'told us', 'said us'],
+      ]),
+      // Imperatives: tell or ask someone to do something, not to do something. The twin keeps the direct command (a
+      // bare verb or «do not»), or leaves out to.
+      ...items('imperatives', 'form', [
+        ['She told me not to forget.', 'not to forget', "don't forget"],
+        ['The teacher asked us to be quiet.', 'to be', 'be'],
+        ['Dad told me to remember my keys.', 'to remember', 'remember'],
+        ['Mum asked him not to shout.', 'not to shout', 'not shout'],
+        ['The guard told us not to enter.', 'not to enter', 'do not enter'],
+        ['He asked me to open the door.', 'to open', 'opening'],
+        ['She told them to wait outside.', 'to wait', 'waiting'],
+        ['Our teacher asked us not to talk.', 'not to talk', 'not talking'],
+      ]),
+      // Reporting verbs from the book's list that take no person before that («explain», «admit», «claim»,
+      // «complain», «reply», «predict», «point out», «confess», «agree», «add»). The twin puts a person after them.
+      ...items('reporting-verbs', 'form', [
+        ['She explained that she had lost her keys.', 'explained that', 'explained me that'],
+        ['He admitted that he had made a mistake.', 'admitted that', 'admitted me that'],
+        ['The boy claimed that he had seen it.', 'claimed that', 'claimed me that'],
+        ['She complained that the room was cold.', 'complained that', 'complained me that'],
+        ['She added that she had enjoyed it.', 'added that', 'added me that'],
+        ['He replied that he was ready.', 'replied that', 'replied him that'],
+        ['She predicted that it would rain.', 'predicted that', 'predicted me that'],
+        ['He pointed out that the shop was closed.', 'pointed out that', 'pointed out me that'],
+        ['She confessed that she had broken it.', 'confessed that', 'confessed me that'],
+        ['They agreed that the plan was good.', 'agreed that', 'agreed me that'],
       ]),
     ],
   },
@@ -952,13 +967,9 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['Rice is grown in many hot countries.', 'grown', 'grew'],
         ['My bike was stolen last night.', 'stolen', 'stole'],
         ['The windows are cleaned every week.', 'are', 'is'],
-        ['The story was told by my grandmother.', 'told', 'tell'],
         ['These photos were taken in Petra.', 'taken', 'took'],
         ['The car is washed every Friday.', 'is washed', 'is wash'],
-        ['The winners were given medals.', 'given', 'gave'],
-        ['Our house was painted last year.', 'was painted', 'was paint'],
         ['Arabic is taught at every school.', 'is taught', 'is teach'],
-        ['The song was sung by the whole class.', 'sung', 'sang'],
       ]),
       // modal + be + past participle. The errors: no be, to after the modal, been after the modal, a bare verb or a
       // past simple after be.
@@ -969,12 +980,8 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['The homework must be finished today.', 'must be', 'must to be'],
         ['The tickets can be bought online.', 'be bought', 'be buy'],
         ['Plastic bottles can be recycled.', 'can be', 'can'],
-        ['The rules must be followed by everyone.', 'be followed', 'be follow'],
         ['The work will be done tomorrow.', 'will be done', 'will be did'],
-        ['Students must be told about the test.', 'must be told', 'must told'],
-        ['The letter might be sent tomorrow.', 'be sent', 'be send'],
         ["This room can't be used today.", 'be used', 'been used'],
-        ['The plants should be watered every day.', 'should be', 'should'],
       ]),
       // A passive question inverts be (no do); a negative puts not after be.
       ...items('questions-negatives', 'form', [
@@ -983,15 +990,27 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ["The match wasn't cancelled.", "wasn't cancelled", "wasn't cancel"],
         ['Are cars made in Jordan?', 'Are', 'Do'],
         ['Where was this photo taken?', 'taken', 'took'],
-        ["The sandwiches weren't eaten at the party.", "weren't", "didn't"],
-        ['When was the school built?', 'was', 'did'],
         ['Are the rooms cleaned every day?', 'Are', 'Do'],
         ['The emails were not sent.', 'were not', 'not were'],
         ["The homework isn't checked on Fridays.", "isn't checked", "isn't check"],
-        ['Why was the trip cancelled?', 'cancelled', 'cancel'],
-        ['Is this bread made locally?', 'made', 'make'],
-        ["The new rules weren't explained to us.", 'explained', 'explain'],
-        ['Who was the prize given to?', 'given', 'gave'],
+      ]),
+      // The book's other tenses: present continuous (is being), past continuous (was being), present perfect (has
+      // been). The errors are the neighbouring auxiliary: been for being after is or was, being for been after has.
+      ...items('continuous-perfect', 'form', [
+        ['A new logo is being designed.', 'being', 'been'],
+        ['The road is being repaired now.', 'being repaired', 'been repaired'],
+        ['My phone is being fixed today.', 'is being', 'is been'],
+        ['Our new school is being built.', 'is being built', 'is been built'],
+        ['While the jingle was being recorded, he coughed.', 'was being', 'was been'],
+        ['The bridge was being built last year.', 'was being built', 'was been built'],
+        ['Dinner was being cooked when we arrived.', 'was being', 'was been'],
+        ['The ads were being filmed in Amman.', 'were being', 'were been'],
+        ['The new slogan has been announced.', 'has been', 'has being'],
+        ['Three new shops have been opened.', 'have been', 'have being'],
+        ['The tickets have been sold out.', 'have been sold', 'have being sold'],
+        ['The letter has been sent already.', 'has been', 'has being'],
+        ['Many trees have been planted here.', 'been', 'being'],
+        ['My bike has been repaired.', 'has been repaired', 'has be repaired'],
       ]),
     ],
   },
