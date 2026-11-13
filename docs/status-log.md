@@ -10,7 +10,7 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Grade 5 reviewed against its books: catalogs, maths questions, science figures — 2026-11-13
+## Grade 5 reviewed against its books: catalogs, English lessons, objectives, maths questions, science figures — 2026-11-13
 
 All 18 Grade 5 catalogs (10 subjects) were compared with their books' contents
 pages and lesson openers. **The PDFs were not reachable** (nccd.gov.jo resets
@@ -51,9 +51,35 @@ sat on each unit's last lesson). Two crops dropped (S1 p48, a whole «تقويم
 الأداء» page; S2 p25c, gloves cut from a question). Asset list regenerated; no
 upload needed (keys only removed).
 
+**Added the same day, at the owner's request:**
+- **English units carry the book's own lessons** (20 → 102): Welcome back 3,
+  each main unit 12, read lesson by lesson from the teacher's guides (title,
+  aims, new words). `order` is the book lesson number; ids are not, because
+  `u*_l1`/`u*_l2` were persisted: `u*_l1` = Lesson 1 and keeps the unit's whole
+  word list (English corner lesson; the Grade 5 grammar unit is keyed on it, so
+  the corner still has one lesson per unit), `u*_l2` = Lesson 12 (Welcome back:
+  Lesson 3), new `u*_l3…l12` = Lessons 2–11. Objective ids are positional and
+  stored with exam questions, so `u*_l1`/`l2` keep main's objectives first.
+  Only Unit 1's story prints a title («Watch out for the cat!»); the others are
+  named from the guide's plot summary. «ما الجديد» entry `g5-english-twelve-lessons`.
+- **Objectives filled:** PE 29/29 (110, from each lesson's «نتاجات التعلم» box;
+  the badminton law numbers the text layer reversed are written 9.1.1–9.1.3);
+  science 21/22 (66, from the guides' per-lesson outcome tables, the unit's own
+  strand only; «مصادر الطاقة» has no outcome page); social 25/25 (one topic item
+  per lesson from each unit's «ماذا سأتعلم؟» box — topic phrases, so the
+  «عنوان الدرس فقط» badge stays); Arabic 49/50 (135, from each unit's competency
+  page, grouped by lesson type; S2 without harakat, its text too scrambled; u8_l5
+  and three statements left out, listed in `known_gaps`). Vocational already had
+  them (27 lessons, from «ماذا سأتعلم؟»).
+- **Islamic vocabulary NOT filled:** the «المفردات والتراكيب» boxes (12 lessons,
+  listed by page in `known_gaps`) print their headwords in the Mushaf font, which
+  pdf-parse dropped, and **the cloud environment's R2 keys answer AccessDenied on
+  every `iqraa-media` object**, so the page images could not be read. Needs keys
+  that read that bucket, then a new session. Islamic main ideas: 34/37 were
+  already there; the three recitation-practice lessons print no box, and
+  «السيدة فاطمة الأزدية» prints the box heading with nothing under it.
+
 **Not done — needs the PDFs or a decision:**
-- **English units have 12 lessons each** (TG p.7); the catalog models 2. Adding
-  l3-l12 is a structure change for the English corner (lesson counts, audio).
 - **The digital activity book is whole-year**; u6-u10 are semester 2 content
   filed under semester 1. No Grade 5 digital S2 book or real guide is on file.
 - **«money box» has no audio clip** until `generate-english-audio` runs (web
@@ -63,14 +89,13 @@ upload needed (keys only removed).
 - **Weak text layers** feed grounding: maths S1 student book (~15 of 66 prose
   pages reversed), art (~a third), vocational S2, social. Re-extract with
   `--force --ocr` when the PDFs are at hand.
-- Arabic objectives: the unit competency pages do map to lessons, but the
-  pdf-parse text scrambles them; needs a PyMuPDF re-read.
-- PE: the «نتاجات التعلم» statements could fill objectives; left as one decision
-  for every grade's PE catalog.
 - `book-page-links.json` ranges for Grade 5 social look wrong (u2_l1 listed at
   pp40-59, starts p30); regenerate with `verify_book_pages.py`.
 - The maths S1 teacher guide is the 2020 pilot edition (unit 2 has 7 lessons),
   not the student book's; do not fill from it.
+- Grade 5 Arabic and social units' `data_tier` still say "title-only", and so do
+  their `catalog.ts` comments; the badge they drive is kept on purpose (no main
+  ideas or vocabulary yet).
 
 **Verified:** `math-practice` 958/958 and typecheck; curriculum `verify` 0
 errors, tests 914/915 (the one failure, `r2.test.ts`, asserts R2 is
