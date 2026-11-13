@@ -10,6 +10,41 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 9 figures: unit-opening pages and the pages between English units — 2026-11-13
+
+A pass over grade 9 after «Grade 9 checked against its books, and corrected» (same day), for the two figure faults
+the grade 8 review found. That review's check (every figure inside its lesson's pages) cannot see either fault,
+because each starts with the lesson's page range being wrong.
+
+**What changed.**
+- **Unit-opening pages** (the figure extractor gives them to the last lesson of the unit before). Each was checked
+  by opening it and, where the book has text, reading the page:
+  - chemistry S1 `p035` (pH scale): from u1_l2 to u2_l1, acids and bases
+  - physics S1 `p065` (climbing stairs against a clock): to u3_l1, work and power
+  - geography S1 `p030` (ocean globe, two pages before the hydrosphere unit starts): to u2_l1
+  
+  The other 27 candidates are end-of-unit reviews, tests and projects, or English lesson pages. Those stay with
+  their unit.
+- **English pages between units, grades 8 and 9.** The books print two Life Skills pages after units 2 and 4 (S1)
+  or 1 and 3 (S2). The photo extractor filed those photos under the writing lesson before them, and that
+  lesson's «صفحة الكتاب» ran into them.
+  - Grade 8: 6 photos now sit under no lesson. The grade 8 fix earlier today covered only page 60 onwards and
+    missed these.
+  - Grade 9: the S1/S2 back matter (Culture Spot, reader, project) and the Life Skills pages, 6 photos, now sit
+    under no lesson. The two last writing lessons end at page 59, not 76 and 77.
+  - Three opening photos move to the first lesson of the unit they open, with new hand-checked map rows: grade 8
+    S1 `p016` (hobby houses), grade 8 S2 `p028`–`p028d` ("By 2040") and grade 9 S2 `p028` (scientists, "Switch on").
+  - 13 writing-lesson page ranges trimmed to the lesson's own pages; every page was read from the book text.
+
+**Verified.** Red/green on two new blocks in `bookFigures.test.ts`: English pages between units for grades 8–9
+(3 cases), and grade 9 opening pages (3 cases). Also run: `pnpm run typecheck`; the mobile suite; curriculum
+test and `verify`. The generated figure list only loses keys, so nothing new needs uploading to `iqraa-public`.
+
+**Not verified / open.** The geography page has no text in the repo; it was judged from the image and its place
+two pages before the unit. The other grades' English books (7 and 10) were not checked for the Life Skills case.
+Not looked at in the running app. The extractors are unchanged, so re-running them would bring these back.
+Everything the grade 9 review lists as needing the PDFs still does.
+
 ## Grade 8 review: book figures on the right lessons, teaching-plan export grounded by id — 2026-11-13
 
 A review of the 19 grade 8 catalogs (11 subjects). It found the catalogs complete and wired, a picked lesson

@@ -2483,6 +2483,15 @@
     {
       "sourceId": "g8-english-s1-student-book",
       "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u2_l1",
+      "score": null,
+      "matchedBy": "hand-checked: the photo is on the unit's opening page, just before its first lesson; it was filed under the previous unit's writing lesson"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 2,
       "lesson": 4,
       "bookTitleAr": "القراءة والمفردات",
       "kbLessonId": "kbl-g8-eng-s1-nccd-u2_l4",
@@ -2596,6 +2605,15 @@
       "kbLessonId": "kbl-g8-eng-s2-nccd-u7_l7",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u8_l1",
+      "score": null,
+      "matchedBy": "hand-checked: the photo is on the unit's opening page, just before its first lesson; it was filed under the previous unit's writing lesson"
     },
     {
       "sourceId": "g8-english-s2-student-book",
@@ -2903,6 +2921,15 @@
       "kbLessonId": "kbl-g9-eng-s2-nccd-u7_l7",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u8_l1",
+      "score": null,
+      "matchedBy": "hand-checked: the photo is on the unit's opening page, just before its first lesson; it was filed under the previous unit's writing lesson"
     },
     {
       "sourceId": "g9-english-s2-student-book",

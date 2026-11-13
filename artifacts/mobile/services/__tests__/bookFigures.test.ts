@@ -399,3 +399,79 @@ describe('grade 8: a figure sits with the lesson its page teaches', () => {
     }
   });
 });
+
+describe('grades 8 and 9 English: pages between units belong to no lesson', () => {
+  // Found by the 2026-11-13 grade 9 pass, which also caught what the grade 8
+  // fix missed. The Jordan High Note books print two LIFE SKILLS pages after
+  // units 2 and 4 (S1) or 1 and 3 (S2), and the photo extractor filed their
+  // photos under the writing lesson before them; the same lesson's book pages
+  // ran on into them, and in three ranges into the next unit's opening page.
+  // Pages read from each book's extracted text.
+  const BETWEEN_UNITS: Record<string, number[]> = {
+    'g8-english-s1-student-book': [26, 27, 48, 49],
+    'g8-english-s2-student-book': [16, 17, 38, 39],
+    'g9-english-s1-student-book': [26, 27, 48, 49],
+    'g9-english-s2-student-book': [16, 17, 38, 39],
+  };
+  const allFigures = () => lessonsWithFigures().flatMap(id => figuresForLesson(id));
+
+  it('files no Life Skills, Culture Spot, reader or project photo under a lesson', () => {
+    for (const f of allFigures()) {
+      const between = BETWEEN_UNITS[f.sourceId];
+      if (!between) continue;
+      // From page 60 on: Life Skills, project, Culture Spot, the reader, the word list.
+      assert.ok(!between.includes(f.pdfPage) && f.pdfPage < 60, `${f.sourceId} ${f.file} (page ${f.pdfPage})`);
+    }
+  });
+
+  it('shows each writing lesson only its own pages', () => {
+    const WRITING: Record<string, [number, number]> = {
+      'kbl-g8-eng-s1-nccd-u1_l7': [14, 15], 'kbl-g8-eng-s1-nccd-u2_l7': [24, 25],
+      'kbl-g8-eng-s1-nccd-u4_l7': [46, 47], 'kbl-g8-eng-s2-nccd-u6_l7': [14, 15],
+      'kbl-g8-eng-s2-nccd-u7_l7': [26, 27], 'kbl-g8-eng-s2-nccd-u8_l7': [36, 37],
+      'kbl-g9-eng-s1-nccd-u2_l7': [24, 25], 'kbl-g9-eng-s1-nccd-u4_l7': [46, 47],
+      'kbl-g9-eng-s1-nccd-u5_l7': [58, 59], 'kbl-g9-eng-s2-nccd-u6_l7': [15, 15],
+      'kbl-g9-eng-s2-nccd-u7_l7': [27, 27], 'kbl-g9-eng-s2-nccd-u8_l7': [36, 37],
+      'kbl-g9-eng-s2-nccd-u10_l7': [58, 59],
+    };
+    for (const [id, [start, end]] of Object.entries(WRITING)) {
+      const pages = bookPagesForLesson(id);
+      assert.ok(pages, `${id} has pages`);
+      assert.equal(pages!.page, start, id);
+      assert.equal(pages!.urls.length, end - start + 1, `${id} shows ${pages!.urls.length} pages, not ${end - start + 1}`);
+    }
+  });
+
+  it("files a unit's opening photo with that unit's first lesson", () => {
+    const OPENERS: [string, number, string, string][] = [
+      // sourceId, page, the lesson it was on, the lesson it opens
+      ['g8-english-s1-student-book', 16, 'kbl-g8-eng-s1-nccd-u1_l7', 'kbl-g8-eng-s1-nccd-u2_l1'],
+      ['g8-english-s2-student-book', 28, 'kbl-g8-eng-s2-nccd-u7_l7', 'kbl-g8-eng-s2-nccd-u8_l1'],
+      ['g9-english-s2-student-book', 28, 'kbl-g9-eng-s2-nccd-u7_l7', 'kbl-g9-eng-s2-nccd-u8_l1'],
+    ];
+    for (const [src, page, was, opens] of OPENERS) {
+      const on = (id: string) => figuresForLesson(id).some(f => f.sourceId === src && f.pdfPage === page);
+      assert.ok(!on(was), `${src} p${page} is still on ${was}`);
+      assert.ok(on(opens), `${src} p${page} is not on ${opens}`);
+    }
+  });
+});
+
+describe('grade 9: a unit-opening page belongs to the unit it opens', () => {
+  // The figure extractor gives a unit's opening pages to the last lesson of
+  // the unit before (the grade 8 fault). Each was checked by opening it and,
+  // where the book has text, by reading the page.
+  const CASES: [string, number, string, string, string][] = [
+    // sourceId, page, was on, now on, what it is
+    ['g9-chemistry-s1-student-book', 35, 'kbl-g9-chem-s1-nccd-u1_l2', 'kbl-g9-chem-s1-nccd-u2_l1', 'the pH scale, from the acids-and-bases opening experiment'],
+    ['g9-physics-s1-student-book', 65, 'kbl-g9-phys-s1-nccd-u2_l2', 'kbl-g9-phys-s1-nccd-u3_l1', 'climbing stairs against a clock, from the work-and-power opening experiment'],
+    ['g9-geography-s1-student-book', 30, 'kbl-g9-geo-s1-nccd-u1_l3', 'kbl-g9-geo-s1-nccd-u2_l1', 'the ocean globe opening the hydrosphere unit'],
+  ];
+  for (const [src, page, was, now, what] of CASES) {
+    it(`files ${what} with the unit it opens`, () => {
+      const on = (id: string) => figuresForLesson(id).some(f => f.sourceId === src && f.pdfPage === page);
+      assert.ok(!on(was), `p${page} is still on ${was}`);
+      assert.ok(on(now), `p${page} is not on ${now}`);
+    });
+  }
+});
