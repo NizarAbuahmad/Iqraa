@@ -340,3 +340,37 @@ describe("prompt version per kind", () => {
     assert.deepEqual(generationKeys("worksheet", "m", body), generationKeys("worksheet", "m", body, PROMPT_VERSION));
   });
 });
+
+describe("drawings partition physics papers, and only them", () => {
+  const MODEL = "gpt-4o-mini";
+  const mathsQuiz = { subject: "Mathematics", grade: "Grade 10", topic: "المتجهات", lessonId: "kbl-math-x", numQuestions: 10, questionTypes: ["multiple_choice", "true_false"], language: "arabic", contextSource: "curriculum" };
+  const chemistryWorksheet = { subject: "Chemistry", grade: "Grade 10", topic: "المول", lessonId: "kbl-chem-x", numQuestions: 8, questionTypes: ["short_answer"], language: "arabic", contextSource: "curriculum" };
+  const physicsLessonPlan = { subject: "Physics", grade: "Grade 10", topic: "المقذوفات", lessonId: "kbl-phys-x", language: "arabic", contextSource: "curriculum" };
+
+  it("leaves every other key exactly as it was (pinned before the change)", () => {
+    assert.equal(generationKeys("quiz", MODEL, mathsQuiz).strictKey, "e9fcdeb7b80b47e7");
+    assert.equal(generationKeys("worksheet", MODEL, chemistryWorksheet).strictKey, "766d78d4a0fe36b2");
+    assert.equal(generationKeys("lesson-plan", MODEL, physicsLessonPlan).strictKey, "1f0ca89b4b9dc1ca");
+  });
+
+  it("moves a physics quiz, worksheet and homework to a new strict key, coarse key unchanged", () => {
+    for (const kind of ["quiz", "worksheet", "homework"]) {
+      const phys = { ...physicsLessonPlan, numQuestions: 8, questionTypes: ["short_answer"] };
+      const asPhysics = generationKeys(kind, MODEL, phys);
+      // Same body, but the id says chemistry: `subjectId` is in neither key, so only `drawings` differs.
+      const notPhysics = generationKeys(kind, MODEL, { ...phys, subjectId: "chemistry" });
+      assert.notEqual(asPhysics.strictKey, notPhysics.strictKey, kind);
+      assert.equal(asPhysics.coarseKey, notPhysics.coarseKey, `${kind}: coarse key never carries drawings`);
+    }
+    // A lesson plan is not a paper: no partition.
+    const plan = generationKeys("lesson-plan", MODEL, physicsLessonPlan);
+    assert.equal(plan.strictKey, generationKeys("lesson-plan", MODEL, { ...physicsLessonPlan, subjectId: "chemistry" }).strictKey);
+  });
+
+  it("the field depends on the subject id too, not only the name", () => {
+    const a = generationKeys("quiz", MODEL, { ...mathsQuiz, subject: "x", subjectId: "physics" });
+    const b = generationKeys("quiz", MODEL, { ...mathsQuiz, subject: "x" });
+    assert.notEqual(a.strictKey, b.strictKey);
+    assert.equal(a.coarseKey, b.coarseKey);
+  });
+});

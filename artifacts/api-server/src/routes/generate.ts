@@ -76,6 +76,7 @@ import { notifyAdminsOfArtifactReport } from "../lib/adminNotify.ts";
 import { normalizeReportReason } from "../lib/reportReason.ts";
 import { decideServe } from "../lib/variantPolicy.ts";
 import { SingleFlight } from "../lib/singleFlight.ts";
+import { isPhysicsRequest, settlePaperVisuals } from "../lib/paperVisuals.ts";
 import {
   OVERLAP_REJECT_ABOVE,
   normalizeAvoidInput,
@@ -123,6 +124,12 @@ const generateRouter = Router();
 const GENERATION_TOKENS = 8000;
 
 /**
+ * Room for a physics paper's drawings: at most six specs of a few hundred
+ * characters each. A ceiling, not a spend.
+ */
+const PHYSICS_VISUAL_TOKENS = 1500;
+
+/**
  * A quiz's output ceiling, scaled to the count the teacher asked for.
  *
  * A flat 8000 is generous for 10 questions and tight for 20 — an Arabic
@@ -134,7 +141,7 @@ const GENERATION_TOKENS = 8000;
  */
 function quizTokens(body: Record<string, unknown>): number {
   const n = quizWanted(body) ?? 10;
-  return Math.min(24000, Math.max(GENERATION_TOKENS, 2500 + 800 * n));
+  return Math.min(24000, Math.max(GENERATION_TOKENS, 2500 + 800 * n) + (isPhysicsRequest(body) ? PHYSICS_VISUAL_TOKENS : 0));
 }
 
 /**
@@ -144,7 +151,7 @@ function quizTokens(body: Record<string, unknown>): number {
  */
 function worksheetTokens(body: Record<string, unknown>): number {
   const n = quizWanted(body) ?? 10;
-  return Math.min(24000, Math.max(GENERATION_TOKENS, 3000 + 900 * n));
+  return Math.min(24000, Math.max(GENERATION_TOKENS, 3000 + 900 * n) + (isPhysicsRequest(body) ? PHYSICS_VISUAL_TOKENS : 0));
 }
 
 /** Two completions' usage as one, for the single row the artifact is billed on. */
@@ -580,6 +587,19 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
           requested: quizWanted(body),
           produced: quizWanted(body)! - still,
         };
+      }
+    }
+
+    // A paper's drawings are settled once, on the finished paper — after top-ups,
+    // repeats and trims, so a merged question's drawing is gated like any other —
+    // and before anything is pooled. See lib/paperVisuals.ts.
+    if (kind === "quiz" || kind === "worksheet" || kind === "homework") {
+      const visuals = settlePaperVisuals(kind, chosen.parsed, body);
+      if (visuals && (visuals.physics || Object.keys(visuals.dropped).length > 0)) {
+        logger.info(
+          { kind, lessonId: lessonRefOf(body), kept: visuals.kept, dropped: visuals.dropped },
+          "paper visuals",
+        );
       }
     }
 

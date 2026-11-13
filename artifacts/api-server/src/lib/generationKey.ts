@@ -17,6 +17,7 @@
 import { createHash } from "node:crypto";
 
 import { parseCoverage } from "./coverage.ts";
+import { subjectIdOf } from "./lessonKinds.ts";
 
 /**
  * Bump when a prompt changes in a way that makes previously generated
@@ -250,6 +251,16 @@ export function generationKeys(
   // The system prompt differs on it (whether «انظر الشكل» is allowed), so a
   // paper that cites a figure must not reach a client that has none.
   strict.bookFigures = hasBookFigures(body);
+  // A physics paper may carry drawings (paperVisuals.ts). Papers pooled before
+  // drawings existed have none, so physics papers get their own partition; every
+  // other key is untouched. Bump the value if the drawing contract changes.
+  if ((kind === "quiz" || kind === "worksheet" || kind === "homework")
+    && subjectIdOf({
+      subject: typeof body.subject === "string" ? body.subject : undefined,
+      subjectId: typeof body.subjectId === "string" ? body.subjectId : undefined,
+    }) === "physics") {
+    strict.drawings = "physics-1";
+  }
   // The lesson table is rendered into the prompt (code, title) and tags every
   // question (id), so a request that sends a different table asks for a
   // different paper under the same scope key and must not share its slot — or
