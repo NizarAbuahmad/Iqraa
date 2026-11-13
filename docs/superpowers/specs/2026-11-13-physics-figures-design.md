@@ -105,6 +105,11 @@ As built (PR 1): the physics kinds have their own union and resolver — `resolv
 (scenes only) and `resolvePhysicsFigure` (scenes or plane vectors). `resolveFigure` and `Figure`
 are unchanged, because maths callers hand `resolveFigure`'s output straight to the plane renderer.
 The gate also refuses a negative value and two force arrows on one body less than 15° apart.
+As built (PR 2): on a paper the leak guard also refuses a drawing that shows an answer without a
+number — a wave drawn with `second.sum: true`, and a vectors drawing in which one vector is a signed
+sum of the others (a resultant, difference or equilibrant); a vectors drawing's end-point
+coordinates count as printed numbers (the grid shows them). The gate itself still accepts
+`sum: true`, so slides may use it later.
 
 - Every enum and range above; arrows 1–5; no two arrows with the same label; directions 0–359.
 - Labels: the existing rule plus Greek letters (λ θ α β ω Δ μ), still 1–3 letters + optional
@@ -173,8 +178,9 @@ The clip-id collision is fixed here: `figureSvg` takes (or generates) a unique i
 
 - **Types**: `QuizQuestion` and the worksheet question type (`services/ai/AIService.ts`) gain
   `visual?: PhysicsFigure` from `@workspace/figure`. The book-crop `figure` field is untouched.
-- **Re-gated at every render** with `resolvePhysicsFigure`; a stored drawing that no longer passes is
-  skipped, never half-drawn.
+- **Re-gated at every render** with `resolvePhysicsFigure` **and** `figureNumbersInText(visual,
+  question.text)` (decided in PR 2's final review: a guard fixed later then reaches pooled papers
+  without a cache-key bump); a stored drawing that no longer passes is skipped, never half-drawn.
 - **On screen** via the existing `components/ui/QuestionVisual.tsx` (extended by the new
   renderer): the quiz result list (`app/ai-tools/quiz.tsx`), the worksheet/homework result
   (`app/ai-tools/worksheet.tsx`), `components/generator/PaperPreview.tsx`, and the saved-materials
