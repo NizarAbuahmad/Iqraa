@@ -85,7 +85,7 @@ export function divideByLinear(coefs: readonly number[], r: number): { quotient:
 const roots = (xs: readonly number[]) => [...new Set(xs)].sort((a, b) => a - b).map(signed).join(' ، ');
 
 /** `wrongsFrom` with a fallback that never runs dry for list-shaped answers. */
-const wr = (answer: string, cands: ReadonlyArray<string | number>, near: (k: number) => string) => wrongsFrom(answer, cands, near);
+const wr = (answer: string, cands: ReadonlyArray<string | number>, near: (k: number) => string) => wrongsFrom(answer, [...cands], near);
 
 const sq = (n: number) => n * n;
 
@@ -530,7 +530,10 @@ const polyFn = T('poly_fn', /^اقترانات كثيرات الحدود$/, [10,
 
   // sums, differences and products, written in standard form
   const n1 = int(rng, 2, 3), n2 = int(rng, 2, 3);
-  const f = randomPoly(rng, n1, span), g = randomPoly(rng, n2, span);
+  const f = randomPoly(rng, n1, span);
+  let g = randomPoly(rng, n2, span);
+  // never f = ±g: the sum or difference would be the zero polynomial, which has no standard form to ask for
+  while (polyAdd(f, g, 1).every(c => c === 0) || polyAdd(f, g, -1).every(c => c === 0)) g = randomPoly(rng, n2, span);
   if (k === 3 || k === 4) {
     const sub = k === 4;
     const right = polyAdd(f, g, sub ? -1 : 1);
@@ -611,12 +614,15 @@ const rationalFn = T('rational_fn', /^(?:قسمه كثيرات الحدود و)?
     const den = form === 2 ? polyMul([1, 0], [1, -a]) : polyMul([1, -a], [1, -b]);
     const zeros = form === 2 ? [0, a] : [a, b];
     const n = int(rng, -4, 6);
-    const answer = [...new Set(zeros)].sort((u, v) => u - v).map(z => `x ≠ ${signed(z)}`).join(' ، ');
+    // a list of excluded values, once each and ascending, so two lists are the same answer exactly when their text is
+    const excluded = (zs: number[]) => [...new Set(zs)].sort((u, v) => u - v).map(z => `x ≠ ${signed(z)}`).join(' ، ');
+    const answer = excluded(zeros);
     const num = poly([1, n]);
     const [z1, z2] = [...new Set(zeros)].sort((u, v) => u - v) as [number, number];
     return {
       eq: `${frac(num, poly(den))}`, answer,
-      wrongs: wr(answer, [`x ≠ ${signed(z1)}`, `x ≠ ${signed(z2)}`, `x ≠ ${signed(-z1)} ، x ≠ ${signed(-z2)}`, `x ≠ ${signed(-n)}`, `${answer} ، x ≠ ${signed(-n)}`], j => `x ≠ ${signed(z1 + j)} ، x ≠ ${signed(z2)}`),
+      // the numerator's zero is not excluded from a domain, and a lone zero of the denominator is only half the answer
+      wrongs: wr(answer, [excluded([z1]), excluded([z2]), excluded([-z1, -z2]), excluded([-n]), excluded([...zeros, -n])], j => excluded([z1 + j, z2])),
       ar: `ما مجال الاقتران النسبي f(x) = ${frac(num, poly(den))}؟`,
       en: `What is the domain of the rational function f(x) = ${frac(num, poly(den))}?`,
     };
@@ -626,7 +632,9 @@ const rationalFn = T('rational_fn', /^(?:قسمه كثيرات الحدود و)?
     // f(x) = a/(x − b) + c: the asymptotes (k = 3), or the range (k = 6)
     const a = nz(rng, 4 + t);
     const b = nz(rng, 4 + t);
-    const c = nz(rng, 5);
+    // y = ±b would be a real asymptote of its own if c were ±b, which would make a wrong option right
+    let c = nz(rng, 5);
+    while (Math.abs(c) === Math.abs(b)) c = nz(rng, 5);
     const f = `${a < 0 ? '−' : ''}${Math.abs(a)}/(${linear(b)}) ${c < 0 ? '−' : '+'} ${Math.abs(c)}`;
     if (k === 6) {
       const answer = `y ≠ ${signed(c)}`;
