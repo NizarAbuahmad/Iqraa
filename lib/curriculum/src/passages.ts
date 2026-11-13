@@ -76,6 +76,21 @@ export function repairExtractionArtifacts(input: string): string {
     .replace(/ا([أإآ])ل/g, 'ال$1');
 }
 
+/**
+ * A word as the text layer spells it when a lam-alef inside it came out reversed:
+ * «صلاة» → «صالة», «مبطلات» → «مبطالت», «أخلاق» → «أخالق».
+ *
+ * The same ligature defect `repairExtractionArtifacts` undoes after the article,
+ * but mid-word it cannot be undone on the page: «صالة» and «سؤال» are real words,
+ * so rewriting «ال» to «لا» would corrupt them. It is undone on the query
+ * instead — a term also matches its reversed spelling. Found 2026-11-13 in the
+ * Grade 4 Islamic books, where «صلاة» appears 0 times and «صالة» 44, so no
+ * prayer lesson found its own pages.
+ */
+function withReversedLamAlef(term: string): string {
+  return term.length > 2 ? term[0] + term.slice(1).replace(/لا/g, 'ال') : term;
+}
+
 /** The form everything is compared in. Repair first, then fold. */
 export function searchForm(input: string): string {
   return normalizeArabic(repairExtractionArtifacts(input));
@@ -131,15 +146,28 @@ export function hasExtractedText(sourceId: string): boolean {
  * the index. Four characters is generous for Arabic, where the definite article
  * is already two of them.
  */
-function queryTerms(parts: readonly string[]): string[] {
+function queryTerms(parts: readonly string[], minLength = 4): string[] {
   const seen = new Set<string>();
   for (const part of parts) {
     for (const token of searchForm(part).split(/[\s,،.؛:()«»"'\-–—/]+/)) {
-      if (token.length >= 4) seen.add(token);
+      if (token.length >= minLength && !SHORT_STOPWORDS.has(token)) seen.add(token);
     }
   }
   return [...seen].sort((a, b) => b.length - a.length);
 }
+
+/**
+ * Three-letter words that say nothing about a page, in search form.
+ *
+ * Only a lesson's own title is read down to three letters (`titleTerms`): a
+ * title is a handful of content words, and the one that names the lesson is
+ * often a bare three-letter root — «طرح», «جمع», «ضرب» — which the four-letter
+ * floor used to drop, leaving «طَرْحُ الأَعْدادِ» to be found by «الاعداد» alone.
+ */
+const SHORT_STOPWORDS: ReadonlySet<string> = new Set(
+  ['على', 'إلى', 'الى', 'عن', 'من', 'في', 'مع', 'هذا', 'هذه', 'ذلك', 'تلك', 'بين', 'عند', 'غير', 'بعض', 'كل', 'ثم', 'أو', 'او', 'ما', 'لا', 'كيف', 'ماذا', 'التي', 'الذي']
+    .map(w => searchForm(w)),
+);
 
 export interface PassageQuery {
   /** Catalog unit id, e.g. `kbu-math-s1-nccd-u2`. Scopes which books are read. */
@@ -153,6 +181,38 @@ export interface PassageQuery {
    * text in front of a teacher verbatim.
    */
   quotableOnly?: boolean;
+  /**
+   * The lesson asked about, when the caller knows it. Its own title, key terms
+   * and outcomes then outrank the rest of the unit's — see `LESSON_WEIGHT`.
+   * Ignored unless the lesson belongs to `unitId`. When absent, a term that is
+   * exactly the title of one lesson in the unit identifies it the same way.
+   */
+  lessonId?: string;
+}
+
+/**
+ * How much more a lesson's own term counts than a unit-wide one.
+ *
+ * Without it every lesson of a unit got the same pages: the unit's objectives
+ * are many and long and the lesson title is one or two words, so the unit
+ * opener and the guide's unit overview outscored the lesson's own pages. Measured
+ * 2026-11-13 on the 242 Grade 4 lessons whose page range is known, one of their
+ * own student-book pages reached the top four for 83 before this and 146 after
+ * (all grades: 363 → 523 of 2176; 4 gave 137, 16 gave 147). See the log,
+ * «Grade 4 review».
+ */
+const LESSON_WEIGHT = 8;
+
+/** The catalog lesson a query is about, if it can be told without guessing. */
+function queryLesson(query: PassageQuery) {
+  if (query.lessonId) {
+    const byId = LESSONS.find(l => l.id === query.lessonId);
+    return byId?.unitId === query.unitId ? byId : undefined;
+  }
+  const inUnit = LESSONS.filter(l => l.unitId === query.unitId);
+  const titles = new Set((query.terms ?? []).map(searchForm));
+  const named = inUnit.filter(l => titles.has(searchForm(l.titleAr)));
+  return named.length === 1 ? named[0] : undefined;
 }
 
 /**
@@ -171,12 +231,35 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
   // Objectives and vocabulary are what the catalog knows about this unit, and
   // they are the strongest available description of what its pages say.
   const objectives = getObjectivesForUnit(unitId);
-  const terms = queryTerms([
+  const unitTerms = queryTerms([
     ...(query.terms ?? []),
     ...objectives.map(o => o.description),
     ...objectives.flatMap(o => o.skills ?? []),
   ]);
+  // The lesson's own words: its title, its key terms (the book's vocabulary
+  // box) and its own outcomes. For the many lessons whose book prints no
+  // outcomes these are the only terms there are, and a one-word title alone
+  // can never reach the two matches a page needs.
+  const lesson = queryLesson(query);
+  const lessonTerms = lesson
+    ? [
+      ...queryTerms([lesson.titleAr], 3),
+      ...queryTerms([
+        ...lesson.keywordsAr,
+        ...lesson.objectivesAr,
+        ...lesson.outcomes.flatMap(o => [o.descriptionAr, ...(o.skills ?? [])]),
+      ]),
+    ]
+    : [];
+  const weight = new Map<string, number>(unitTerms.map(t => [t, 1]));
+  for (const t of lessonTerms) weight.set(t, LESSON_WEIGHT);
+  const terms = [...weight.keys()];
   if (!terms.length) return [];
+  const reversedLamAlef = new Map<string, string>();
+  for (const t of terms) {
+    const r = withReversedLamAlef(t);
+    if (r !== t) reversedLamAlef.set(t, r);
+  }
 
   const sources: CurriculumSource[] = itemsForUnitTags(tags)
     .filter(s => !quotableOnly || usePolicy(s) === 'quotable')
@@ -192,8 +275,9 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
       let score = 0;
       let matched = 0;
       for (const term of terms) {
-        if (page.search.includes(term)) {
-          score += term.length;
+        const reversed = reversedLamAlef.get(term);
+        if (page.search.includes(term) || (reversed !== undefined && page.search.includes(reversed))) {
+          score += term.length * weight.get(term)!;
           matched += 1;
         }
       }

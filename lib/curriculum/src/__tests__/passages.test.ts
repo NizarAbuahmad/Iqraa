@@ -15,6 +15,7 @@ import {
   resolveUnitByTopic,
   searchForm,
   hasExtractedText,
+  type Passage,
 } from '../passages.ts';
 
 const CIRCLE = 'kbu-math-s1-nccd-u2';
@@ -161,6 +162,40 @@ describe('passagesForUnit', () => {
     // text layer at all and OCR is not something this project has, so it will
     // not go stale the way a pending fetch does.
     assert.ok(!hasExtractedText('math-u1-answers-alkhatib'));
+  });
+});
+
+describe('passagesForUnit for one lesson', () => {
+  // Grade 4 maths S1 unit 3. Student-book pages from book-page-links.json,
+  // where PDF page = printed page (checked on every opener, 2026-11-13).
+  const G4_DIV = 'kbu-g4-math-s1-nccd-u3';
+  const DIV_MULTIPLES = 'kbl-g4-math-s1-nccd-u3_l1'; // «قِسْمَةُ مُضاعَفاتِ 10, 100, 1000», pp. 50-52
+  const DIV_ESTIMATE = 'kbl-g4-math-s1-nccd-u3_l2'; // «تَقْديرُ ناتِجِ القِسْمَةِ», pp. 53-55
+  const ownPage = (ps: Passage[], from: number, to: number) =>
+    ps.some(p => p.sourceId === 'g4-math-s1-student-book' && p.page >= from && p.page <= to);
+
+  it("returns the lesson's own pages, not only the unit opener's", () => {
+    // Before the lesson's own terms were weighted, every lesson of this unit got
+    // the same four pages: the guide's unit plan and the unit extract.
+    assert.ok(ownPage(passagesForUnit({ unitId: G4_DIV, lessonId: DIV_MULTIPLES, quotableOnly: true }), 50, 52));
+    assert.ok(ownPage(passagesForUnit({ unitId: G4_DIV, lessonId: DIV_ESTIMATE, quotableOnly: true }), 53, 55));
+  });
+
+  it('finds the lesson from an exact title when no id is sent', () => {
+    const ps = passagesForUnit({ unitId: G4_DIV, terms: ['تقدير ناتج القسمة'], quotableOnly: true });
+    assert.ok(ownPage(ps, 53, 55));
+  });
+
+  it('ignores a lesson from another unit', () => {
+    const plain = passagesForUnit({ unitId: G4_DIV, quotableOnly: true });
+    const foreign = passagesForUnit({ unitId: G4_DIV, lessonId: 'kbl-g4-math-s1-nccd-u1_l1', quotableOnly: true });
+    assert.deepEqual(foreign.map(p => `${p.sourceId}:${p.page}`), plain.map(p => `${p.sourceId}:${p.page}`));
+  });
+
+  it("reads a title's three-letter root, but not a three-letter stopword", () => {
+    // «طَرْحُ الأَعْدادِ» (pp. 26-29) used to be searched by «الاعداد» alone.
+    const ps = passagesForUnit({ unitId: 'kbu-g4-math-s1-nccd-u1', lessonId: 'kbl-g4-math-s1-nccd-u1_l6', quotableOnly: true });
+    assert.ok(ps.some(p => searchForm(p.text).includes(searchForm('طرح'))));
   });
 });
 
