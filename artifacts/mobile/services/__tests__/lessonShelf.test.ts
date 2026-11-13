@@ -158,10 +158,11 @@ describe('subject isolation', () => {
       // since Grade 9 and up split this into geography/history/civic.
       social: /^g\d+-social-s[12]$/,
       // Vocational Education: a different set of vocational tracks per book,
-      // several per grade — no bare or unprefixed form exists.
+      // several per grade.
       // Grade 6 joined 2026-09-15, Grade 9 joined 2026-09-20, once
-      // SUBJECTS.grades was extended for each.
-      'vocational-education': /^g\d+-voc-s[12]$/,
+      // SUBJECTS.grades was extended for each. Grade 10 (2026-11-13,
+      // `IMPLICIT_GRADE_ID`) takes the bare `voc-s1` form.
+      'vocational-education': /^(voc-s[12]|g\d+-voc-s[12])$/,
       // Art, Music and Drama Education: one book per grade with no semester
       // split — CurriculumIdScope still requires a semester number for
       // id-namespacing, hardcoded to 1, so only the `-s1` form ever appears.

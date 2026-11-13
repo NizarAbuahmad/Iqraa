@@ -188,7 +188,7 @@ function solveMissing(eq: string): number {
   return op === '+' ? other - k : op === '−' ? k - other : op === '×' ? other / k : k / other;
 }
 
-const PLACE = ['الآحاد', 'العشرات', 'المئات', 'الألوف'];
+const PLACE = ['الآحاد', 'العشرات', 'المئات', 'الألوف', 'عشرات الألوف', 'مئات الألوف', 'الملايين'];
 const listOf = (p: string) => p.slice(p.lastIndexOf(':') + 1).replace(/[؟.]\s*$/, '').split('،').map(x => x.trim());
 
 /** [kind, expected answer] from the Arabic stem alone. */
@@ -212,7 +212,7 @@ function solve(p: string): [string, number | string] {
     return ['expand', [...ds].map((c, i) => Number(c) * 10 ** (ds.length - 1 - i)).filter(v => v > 0).join(' + ')];
   }
   if (has('صورته التحليلية')) return ['standard', n.reduce((x, y) => x + y, 0)];
-  if ((m = p.match(/^ما الرقم في منزلة (\S+) في العدد (\d+)؟$/))) {
+  if ((m = p.match(/^ما الرقم في منزلة (.+?) في العدد (\d+)؟$/))) {
     const ds = m[2]!;
     return ['digit', Number(ds[ds.length - 1 - PLACE.indexOf(m[1]!)])];
   }
@@ -377,5 +377,29 @@ describe('every kind of question: the key is recomputed from the printed stem', 
       }
     }
     assert.ok(words > 0);
+  });
+});
+
+describe('place value reaches the range the lesson names', () => {
+  // The digit count was min(grade, 2/3/4 by tier), so Grade 4's «ضمن مئات
+  // الألوف» never went past 4 digits and asked about 119 and «900 + 80»
+  // (Grade 4 audit, 2026-11-13). Grades 1–3 are unchanged.
+  const widest = (grade: number, diff: DiffTier) => {
+    let lo = Infinity, hi = 0;
+    for (let i = 0; i < 120; i++) {
+      const item = makeElementaryItem('القيمة المنزلية', grade, diff, new Set(), seeded(i * 7919 + grade));
+      const w = Math.max(...(itemStem(item, true).match(/\d+/g) ?? ['0']).map(s => s.length));
+      lo = Math.min(lo, w); hi = Math.max(hi, w);
+    }
+    return [lo, hi];
+  };
+  it('Grade 4 asks about 4- to 6-digit numbers, Grade 5 up to 7', () => {
+    assert.deepEqual(widest(4, 'easy'), [4, 4]);
+    assert.equal(widest(4, 'hard')[1], 6);
+    assert.equal(widest(5, 'hard')[1], 7);
+  });
+  it('Grades 1–3 keep their ranges', () => {
+    assert.ok(widest(2, 'hard')[1] <= 3);
+    assert.ok(widest(3, 'hard')[1] <= 4);
   });
 });

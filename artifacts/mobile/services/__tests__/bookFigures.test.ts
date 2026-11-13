@@ -126,9 +126,14 @@ describe('figuresForLesson', () => {
       'g4-arts': 'g4-arts',
       // Grade 4 maths, cropped 2026-11-13 from the book-page renders.
       'g4-math': 'g4-math',
+      // Grade 4 Arabic and Islamic, cropped 2026-11-13 from the book-page renders.
+      'g4-arabic': 'g4-arabic',
+      'g4-islamic': 'g4-islamic',
       'g4-science': 'g4-science',
       'g4-social': 'g4-social',
       'g4-voc': 'g4-voc',
+      // Grade 4 PE, cropped 2026-11-13 from the book-page renders.
+      'g4-pe': 'g4-pe',
       'g5-science': 'g5-science',
       // Grades 6 and 7, added 2026-09-16. Slug and source-id prefix agree
       // for all of these.
@@ -485,4 +490,24 @@ describe('grade 9: a unit-opening page belongs to the unit it opens', () => {
       assert.ok(on(now), `p${page} is not on ${now}`);
     });
   }
+});
+
+describe('grade 10: no unit-review figure is filed under a lesson', () => {
+  // The grade 10 audit (2026-11-13) dropped every figure from a unit test,
+  // project, review or enrichment page filed under a unit's last lesson. A
+  // re-check the same day found six it missed, each on a page the book heads
+  // «مراجعة الوحدة» or that carries only the unit's numbered review questions
+  // (read from the extracted text and by opening the image). They are kept on
+  // disk and filed under no lesson.
+  const REVIEW: [string, number][] = [
+    ['bio-s1-student-book', 18], ['bio-s2-student-book', 54], ['earth-s1-student-book', 58],
+    ['earth-s2-student-book', 24], ['earth-s2-student-book', 55],
+  ];
+  it('files none of them under any lesson', () => {
+    const shown = lessonsWithFigures().flatMap(id => figuresForLesson(id).map(f => ({ id, f })));
+    for (const [src, page] of REVIEW) {
+      const hit = shown.find(({ f }) => f.sourceId === src && f.pdfPage === page);
+      assert.ok(!hit, `${src} p${page} is still shown on ${hit?.id}`);
+    }
+  });
 });

@@ -79,9 +79,11 @@ export function curriculumLessonId(
 ): string | null {
   if (unit === null || lesson === null) return null;
   if (unit === 1) {
-    // The book's «حل معادلات خاصة» is lesson 1 and has no curriculum
-    // counterpart; the rest shift down one.
-    if (lesson === 1) return null;
+    // The book's «حل معادلات خاصة» is lesson 1. The curriculum carries it as
+    // u1_l5 (added 2026-11-13 after the persisted u1_l1..u1_l4, which hold the
+    // book's lessons 2 and 3 and the teacher guide's two exponent lessons), so
+    // the rest still shift down one.
+    if (lesson === 1) return `kbl-math-${semester}-nccd-u1_l5`;
     return `kbl-math-${semester}-nccd-u1_l${lesson - 1}`;
   }
   return `kbl-math-${semester}-nccd-u${unit}_l${lesson}`;

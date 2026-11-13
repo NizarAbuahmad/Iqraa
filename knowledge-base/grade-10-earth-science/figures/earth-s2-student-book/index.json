@@ -187,11 +187,11 @@
         307.9,
         341.0
       ],
-      "unit": 3,
-      "lesson": 2,
+      "unit": null,
+      "lesson": null,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
-      "lessonStartPage": 16
+      "lessonStartPage": null
     },
     {
       "file": "p031-v2.png",
@@ -315,11 +315,11 @@
         309.7,
         466.6
       ],
-      "unit": 4,
-      "lesson": 3,
+      "unit": null,
+      "lesson": null,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
-      "lessonStartPage": 42
+      "lessonStartPage": null
     },
     {
       "file": "p062-v2.png",

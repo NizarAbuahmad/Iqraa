@@ -49,6 +49,13 @@ const UNITS: Unit[] = [
 const MAX_EXTRAS = 4;
 const STRUCTURE_DIFFERS = new Set(['u2']);
 
+/**
+ * u1_l5 «حل معادلات خاصة» is the 2026 student book's opening lesson of unit 1.
+ * The 2020 teacher guide does not print it, so it has no period count (null),
+ * recorded in the file's meta.known_gaps. A count is never guessed.
+ */
+const NO_GUIDE_PERIODS = new Set(['u1_l5']);
+
 describe('maths pacing', () => {
   it('covers all eight units', () => {
     assert.equal(UNITS.length, 8);
@@ -57,6 +64,10 @@ describe('maths pacing', () => {
   it('gives every lesson a period count', () => {
     for (const unit of UNITS) {
       for (const lesson of unit.lessons) {
+        if (NO_GUIDE_PERIODS.has(lesson.id)) {
+          assert.equal(lesson.periods, null, `${lesson.id}: the guide prints no count, so none may be invented`);
+          continue;
+        }
         assert.ok(
           typeof lesson.periods === 'number' && lesson.periods > 0,
           `${lesson.id} has no period count`,

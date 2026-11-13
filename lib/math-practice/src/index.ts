@@ -256,7 +256,7 @@ const FAMILY_BY_TITLE: Array<[RegExp, MathFamily]> = [
   [/معادلتين\s*تربيعيتين|two\s*quadratic/i, 'quad_system'],
   [/جيوجبرا|geogebra|بيانيا|graphically/i, 'system_graph'],
   [/تبسيط.*أسي|مقادير\s*أسية|simplify.*exponent|rational\s*exponent/i, 'simplify_exp'],
-  [/قانون\s*الجيوب|جيب\s*التمام|law\s*of\s*(?:sines|cosines)/i, 'trig_apps'],
+  [/قانون\s*الجيوب|جيو?ب\s*(?:ال)?تمام|law\s*of\s*(?:sines|cosines)/i, 'trig_apps'],
   [/معادلة\s*الدائرة|الدائرة\s*ومعادلتها|الأقواس|القطاعات?|محيط\s*الدائرة|مساحة\s*الدائرة|^\s*(?:ال)?دائرة\s*$|equation\s*of\s*a\s*circle/i, 'circle'],
   [/متجه|vector|الضرب\s*القياسي/i, 'vectors'],
   [/النسب\s*المثلثية|المعادلات\s*المثلثية|trigonometric\s*(?:ratio|equation)/i, 'trig'],
