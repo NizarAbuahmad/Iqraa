@@ -29,6 +29,9 @@ import { stepsFor } from './steps.ts';
 import { elementaryOpsForTitle, makeElementaryItem } from './elementary.ts';
 import { makeTopicItem, topicFor } from './topics.ts';
 import { servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
+import { ITEM_FOCUS, SPLIT_FAMILIES, focusForTitles, type LessonFocus } from './lessonFocus.ts';
+
+export type { LessonFocus } from './lessonFocus.ts';
 
 export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
 export type { ChemFamily } from './chemistry.ts';
@@ -72,6 +75,13 @@ export interface PracticeWQ {
    * derived solution.
    */
   steps?: string[];
+  /**
+   * True when the item is a real-life story (`kind: 'word'`). A worksheet's
+   * «مسألة حياتية» needs one; an equation with «اكتب الحل» under it is not.
+   * Absent for everything else, including the word-problem slot of a lesson
+   * whose family has no story left.
+   */
+  story?: boolean;
 }
 
 /**
@@ -120,6 +130,8 @@ export interface ConcreteItem {
   /** Optional stem overrides */
   promptAr?: string;
   promptEn?: string;
+  /** Which of the book's lessons the item practises, in a family that holds several — `./lessonFocus.ts`. */
+  focus?: LessonFocus;
 }
 
 // ─── Session dedupe (one generation pass) ────────────────────────────────────
@@ -132,6 +144,80 @@ export function beginMathPracticeSession(): void {
 
 /** The module-level used-id set, so offline worksheet formats dedupe against the same set as every other question on the sheet. */
 export function currentSession(): Set<string> { return usedIds; }
+
+/**
+ * An expression as it can be compared: no spaces or braces, superscript digits
+ * and the minus sign written plainly. «81 = 3^4», «81=3⁴» and «81 = 3^{4}» are one.
+ */
+function normMath(s: string): string {
+  const SUP: Record<string, string> = { '⁰': '0', '¹': '1', '²': '2', '³': '3', '⁴': '4', '⁵': '5', '⁶': '6', '⁷': '7', '⁸': '8', '⁹': '9', '⁻': '-' };
+  let out = '';
+  let inSup = false;
+  for (const ch of s) {
+    const d = SUP[ch];
+    if (d !== undefined) { out += (inSup ? '' : '^') + d; inSup = true; continue; }
+    inSup = false;
+    if (/\s|[{}]/.test(ch)) continue;
+    out += ch === '−' ? '-' : ch;
+  }
+  return out.toLowerCase();
+}
+
+/**
+ * The equation an item is about. Two items with one equation are one question
+ * asked two ways — `exp-m4` «أوجد حل 9^x = 27» and `exp-v2` «هل x = 2 حل
+ * للمعادلة 9^x = 27؟» — and one paper printed both (2026-11-13).
+ */
+function eqKey(item: ConcreteItem): string {
+  return `eq:${normMath(item.eq)}${item.eq2 ? `|${normMath(item.eq2)}` : ''}`;
+}
+
+/** Spend an item in a pass: its id and its equation. */
+export function spendItem(item: ConcreteItem, used: Set<string>): void {
+  used.add(item.id);
+  used.add(eqKey(item));
+}
+
+/** `spendItem` by id, for a caller holding a `SolvedItem` — maths or chemistry. */
+export function spendItemById(id: string, used: Set<string>): void {
+  const item = MATH_BANK.find(i => i.id === id) ?? CHEM_BANK.find(i => i.id === id);
+  if (item) spendItem(item, used);
+  else used.add(id);
+}
+
+/**
+ * Working the page prints — a worked example's steps, a half-solved question's
+ * given steps. An item whose equation that working states is answered on the
+ * page: «81 = 3^4» printed in a half-solved question, then «اكتب العدد 81 على
+ * صورة قوة أساسها 3» as question 3 (2026-11-13).
+ */
+export function markShown(lines: readonly string[], used: Set<string>): void {
+  for (const line of lines) used.add(`shown:${normMath(line)}`);
+}
+
+/** Whether `needle` stands in `hay` as a whole expression, not inside a longer one («2^x=8» is not in «32^x=8»). */
+function standsIn(hay: string, needle: string): boolean {
+  const edge = /[0-9a-z.^_]/;
+  for (let at = hay.indexOf(needle); at >= 0; at = hay.indexOf(needle, at + 1)) {
+    const before = hay[at - 1];
+    const after = hay[at + needle.length];
+    if ((before === undefined || !edge.test(before)) && (after === undefined || !edge.test(after) && after !== '(')) return true;
+  }
+  return false;
+}
+
+/** Spent in this pass: the item itself, another asking its equation, or working on the page that states it. */
+export function itemSpent(item: ConcreteItem, used: Set<string>): boolean {
+  if (used.has(item.id) || used.has(eqKey(item))) return true;
+  // Only an equation can be stated. «sin 30°» is an expression, and «r = 5» or
+  // «a=7, b=7, C=60°» are the givens of a problem, not something it answers.
+  const eq = normMath(item.eq);
+  if (!eq.includes('=') || item.eq2 || eq.includes(',') || /^[a-z]=[-0-9./]+$/.test(eq)) return false;
+  for (const key of used) {
+    if (key.startsWith('shown:') && standsIn(key.slice(6), eq)) return true;
+  }
+  return false;
+}
 
 /**
  * The lesson's name and nothing else — what routing reads. See `elementaryOpsForTitle`.
@@ -264,6 +350,17 @@ export function matchMathFamily(topic: string, kb: KBLesson | null): MathFamily 
     if (titles.some(t => re.test(t) && !/قسمة\s*كثيرات/.test(t))) return family;
   }
   return null;
+}
+
+/**
+ * The item lessons this lesson accepts, when its family holds several of the
+ * book's lessons — `./lessonFocus.ts`. Null for a one-lesson family, or a title
+ * that names none of them (a typed «المتجهات» takes the whole family).
+ */
+export function lessonFocus(topic: string, kb: KBLesson | null): LessonFocus[] | null {
+  const family = matchMathFamily(topic, kb);
+  if (!family || !(SPLIT_FAMILIES as readonly string[]).includes(family)) return null;
+  return focusForTitles([topic, kb?.titleAr ?? '', kb?.titleEn ?? ''].filter(Boolean));
 }
 
 /**
@@ -538,6 +635,10 @@ export const MATH_BANK: ConcreteItem[] = [
   },
 ];
 const BANK = MATH_BANK;
+for (const item of MATH_BANK) {
+  const focus = ITEM_FOCUS[item.id];
+  if (focus) item.focus = focus;
+}
 
 /**
  * The question as a teacher would write it.
@@ -577,6 +678,18 @@ export function itemStem(item: ConcreteItem, isAr: boolean): string {
     : (isAr ? `أوجد ناتج: ${item.eq}` : `Evaluate: ${item.eq}`);
 }
 
+/**
+ * A story asks the student to «اكتب المعادلة وحلّها». Put to them as a choice
+ * among four answers, or as a proposed answer to judge, that instruction asks
+ * for work the question then does not want — the bacteria problem printed it
+ * above four options (2026-11-13). The question before it stands on its own.
+ */
+function withoutWriteAndSolve(stem: string): string {
+  return stem
+    .replace(/\s*اكتب\s+(?:ال)?معادلة(?:\s+أسية)?\s+وحلّها\.?\s*$/u, '')
+    .replace(/\s*Write and solve(?: an? [a-z ]*equation)?\.?\s*$/i, '');
+}
+
 function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string; options?: string[]; answer: string } {
   const isAr = lang === 'ar';
   const stem = itemStem(item, isAr);
@@ -601,7 +714,7 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
   if (type === 'multiple_choice') {
     const level = levelOptionShape(item.answer, item.wrongs);
     return {
-      text: stem,
+      text: withoutWriteAndSolve(stem),
       options: placeCorrect(level.correct, level.wrongs),
       // The key must be the option as displayed: the teacher panel shows it
       // as the expected answer and the reveal highlights it by value, so a
@@ -617,10 +730,11 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
     // A prompt is an imperative («أوجد مشتقة…»); there is no mechanical way
     // to turn one into a statement, and the old attempt produced «حل / ناتج
     // «f(x)=x³ − 4x» هو …» for every family alike.
+    const asked = withoutWriteAndSolve(stem);
     return {
       text: isAr
-        ? `${stem}\n\nالإجابة المقترحة: ${value}\n\nهل الإجابة المقترحة صحيحة؟`
-        : `${stem}\n\nProposed answer: ${value}\n\nIs the proposed answer correct?`,
+        ? `${asked}\n\nالإجابة المقترحة: ${value}\n\nهل الإجابة المقترحة صحيحة؟`
+        : `${asked}\n\nProposed answer: ${value}\n\nIs the proposed answer correct?`,
       options: isAr ? ['صح', 'خطأ'] : ['True', 'False'],
       answer: sayTrue ? (isAr ? 'صح' : 'True') : (isAr ? 'خطأ' : 'False'),
     };
@@ -673,28 +787,40 @@ function takeFromBank(
    * topic-templated question takes the slot instead of a duplicate.
    */
   allowRepeat: boolean = true,
+  /** The item lessons the lesson accepts (`lessonFocus`); its own items are taken first. */
+  focus: readonly LessonFocus[] | null = null,
 ): PracticeWQ | null {
-  const preferWord = type === 'word_problem';
-
-  const matches = (item: ConcreteItem, fam: Family) => {
-    if (used.has(item.id)) return false;
-    if (item.family !== fam) return false;
-    if (preferWord && item.kind !== 'word' && !item.wordAr) {
-      // still allow non-word items — formatItem wraps them
-      return true;
-    }
-    return true;
-  };
+  const matches = (item: ConcreteItem, fam: Family) => item.family === fam && !itemSpent(item, used);
+  const isStory = (item: ConcreteItem) => item.kind === 'word' && Boolean(item.wordAr || item.wordEn);
+  const ownLesson = (item: ConcreteItem) => !focus || (item.focus !== undefined && focus.includes(item.focus));
 
   const pickFrom = (fam: Family): ConcreteItem | null => {
-    const pool = bank.filter(i => matches(i, fam));
+    let pool = bank.filter(i => matches(i, fam));
+    // A word problem is a story while the lesson has one. Without one the slot
+    // still gets a question, and `story` stays unset so the caller can say so.
+    if (type === 'word_problem') {
+      const stories = pool.filter(isStory);
+      if (stories.length > 0) pool = stories;
+    }
     if (pool.length === 0) return null;
     // Random within the difficulty-preferred slice, not `ranked[0]`: taking
     // the first unused item in bank order meant every fresh session served
     // the identical quiz for a topic — "regenerate" only looked alive until
     // the page reloaded. The used set still guarantees no repeats in a pass.
     const sameDiff = pool.filter(i => i.diff === diff);
-    const tier = sameDiff.length > 0 ? sameDiff : pool;
+    let tier = sameDiff.length > 0 ? sameDiff : pool;
+    // Within the tier asked for, the lesson's own items before the rest of its
+    // family, so a family that holds several lessons does not hand this one
+    // another lesson's question while its own are unused. Only there: ranking
+    // the lesson above the tier, or inside the any-tier fallback, made the draw
+    // fixed where it had been random — the one law-of-sines item opened every
+    // paper, «إعادة التوليد» served the same homework, and a warm-up and the
+    // activity after it posed the same triangle. The rest of the family still
+    // follows, so a thin lesson keeps its count rather than stopping short.
+    if (sameDiff.length > 0) {
+      const own = sameDiff.filter(ownLesson);
+      if (own.length > 0) tier = own;
+    }
     // Then away from kinds this pass has already served: each candidate's
     // chance falls with the cube of how often its kind came up (the kind
     // part of `spreadScore`). A family is often one ask with a few others
@@ -743,11 +869,16 @@ function takeFromBank(
   }
   if (!item) return null;
 
-  used.add(item.id);
+  spendItem(item, used);
   used.add(`ask:${askOf(item, lang)}`);
   const formatted = formatItem(item, lang, type);
   const working = stepsFor(item.id);
-  return { ...formatted, ...(working ? { steps: [...working[lang]] } : {}), points };
+  return {
+    ...formatted,
+    ...(working ? { steps: [...working[lang]] } : {}),
+    points,
+    ...(type === 'word_problem' && isStory(item) ? { story: true } : {}),
+  };
 }
 
 /**
@@ -787,6 +918,7 @@ export function takeConcreteMath(
     points,
     session ?? usedIds,
     allowRepeat,
+    lessonFocus(topic, kb),
   );
 }
 
@@ -881,12 +1013,19 @@ function takeSolvedFromBank(
   diff: DiffTier,
   lang: Lang,
   used: Set<string>,
+  /**
+   * The item lessons the lesson accepts (`lessonFocus`). Strict, unlike
+   * practice: a worked example from the next lesson teaches a method the class
+   * has not met, so a lesson without one of its own gets none.
+   */
+  focus: readonly LessonFocus[] | null = null,
 ): SolvedItem | null {
+  const ownLesson = (i: ConcreteItem) => !focus || (i.focus !== undefined && focus.includes(i.focus));
   for (const tier of TIER_ORDER[diff]) {
-    const pool = bank.filter(i => i.family === family && i.diff === tier && !used.has(i.id) && stepsFor(i.id));
+    const pool = bank.filter(i => i.family === family && i.diff === tier && ownLesson(i) && !itemSpent(i, used) && stepsFor(i.id));
     if (pool.length === 0) continue;
     const item = pool[Math.floor(Math.random() * pool.length)]!;
-    used.add(item.id);
+    spendItem(item, used);
     return {
       id: item.id,
       problem: itemStem(item, lang === 'ar'),
@@ -908,7 +1047,7 @@ export function takeSolvedMath(
 ): SolvedItem | null {
   const family = matchMathFamily(topic, kb);
   if (!family) return null;
-  return takeSolvedFromBank(MATH_BANK, family, diff, lang, session ?? usedIds);
+  return takeSolvedFromBank(MATH_BANK, family, diff, lang, session ?? usedIds, lessonFocus(topic, kb));
 }
 
 /** A solved chemistry item for this lesson, or null when the lesson has none left. */

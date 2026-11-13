@@ -64,8 +64,10 @@ describe('ORDER_SAFE', () => {
       const session = new Set<string>();
       let picks = 0;
       while (pickForFormat('order', topic, null, 'en', session, subject)) picks += 1;
-      assert.equal(session.size, picks, topic);
-      for (const id of session) assert.ok(ORDER_SAFE.has(id), `${topic}: drew ${id}`);
+      // Item ids only: a pick also spends its equation and the working it prints (`eq:…`, `shown:…`).
+      const ids = [...session].filter(k => !/^(?:ask|eq|shown):/.test(k));
+      assert.equal(ids.length, picks, topic);
+      for (const id of ids) assert.ok(ORDER_SAFE.has(id), `${topic}: drew ${id}`);
       assert.equal(formatSupported('order', topic, null, subject), picks > 0, topic);
     }
   });

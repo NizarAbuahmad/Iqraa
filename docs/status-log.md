@@ -10,6 +10,61 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Offline worksheets: the lesson's own worked example, a real «مسألة حياتية», one equation once — 2026-11-13
+
+A read of offline worksheets as a teacher would see them (exponential equations, law of sines, ionic bonds,
+the four formats, a homework) found three defects on the page. Every answer key on those papers was correct.
+
+**What changed.**
+- **The worked example is the lesson's own.** Some bank families hold several of the book's lessons. `trig_apps`
+  holds «قانون الجيوب», «قانون جيب التمام» and the triangle-area lesson, so a «قانون الجيوب» worksheet opened with a
+  law-of-cosines worked example. Each item of a split family now names its lesson (`ITEM_FOCUS`, the new
+  `lib/math-practice/src/lessonFocus.ts`; families `trig_apps`, `circle`, `trig`, `functions`, `vectors`,
+  `stats`), and a lesson title names the item lessons it accepts (`lessonFocus`). The worked example and the
+  half-solved question come **only** from those, or there is none. Practice prefers them **among the items of the
+  difficulty asked for**, then takes the rest of the family as before, so a thin lesson keeps its count. A first
+  version ranked the lesson above difficulty. That put the one law-of-sines item first on every paper, and three
+  existing tests caught it: homework regenerate repeated, and a warm-up and the activity after it posed the same
+  triangle.
+- **«مسألة حياتية» is a story.** The word problem used to be drawn last, after the practice had spent the lesson's
+  few stories (`exp_eq` has two). So the bacteria story was printed in the challenge section as multiple choice,
+  still saying «اكتب المعادلة وحلّها», while «مسألة حياتية» held «أوجد حل المعادلة: 8^x = 4^{x+1}». Now:
+  - The word problem is drawn before the practice and printed after it, as before.
+  - The bank hands the word-problem slot a story (`kind: 'word'`) while one is unused, and flags it (`story`).
+  - A lesson with no story left keeps the question under «مسألة: حلّ موضّحًا الخطوات» and names `word_problem` in
+    `missingFormats`, so the screen says the real-life problem could not be added.
+  - A story set as multiple choice or true/false no longer says «اكتب المعادلة وحلّها».
+- **One equation is one question.** `9^x = 27` came twice on one paper (`exp-m4` «أوجد الحل», `exp-v2` «هل x = 2
+  حل…»), and the half-solved question printed «81 = 3^4» above «اكتب العدد 81 على صورة قوة أساسها 3». Changes:
+  - Spending an item now also spends its equation (`spendItem`).
+  - Working printed on the page spends any item whose equation it states (`markShown`). That covers the worked
+    example, the half-solved question's given steps, and the steps of «رتّب» and «أين الخطأ؟».
+  - A given such as «r = 5» or «a=7, b=7, C=60°» is not treated as an answer.
+  - The match format pairs one equation once.
+
+**Verified.**
+- Red/green: `lib/math-practice/src/__tests__/lessonFocus.test.ts` (12 cases) and
+  `artifacts/mobile/services/__tests__/worksheetOwnLesson.test.ts` (5). The mobile file's word-problem cases failed
+  before the generator change; its other cases passed once the bank change was in.
+- Three bank tests counted raw session entries and now count item ids only (`chemistry.test.ts`,
+  `formatsBank.test.ts`, `orderSafe.test.ts`); what they assert is unchanged.
+- Regenerated papers read by eye: the exponential-equations paper put the bacteria story under «مسألة حياتية»,
+  printed 9^x = 27 once, and asked no question the half-solved working answered; the law-of-sines paper studied a
+  law-of-sines example.
+
+**Not changed, and known.**
+- **Practice can still leave the lesson.** `trig_apps` has one law-of-sines item. A «قانون الجيوب» worksheet of 8 now
+  studies that item and then practises the area and law-of-cosines items (3 of 8, `shortfall` reported). The bank
+  needs more items per lesson (`trig_apps` 3, `circle`/`functions`/`stats`/`vectors` 5 each), or practice must
+  become as strict as the worked example. That is a decision, not made here.
+- `f-h1` is an arithmetic-sequence item filed under `functions`. It is tagged so no functions lesson studies it, but
+  it can still fill a functions paper's practice.
+- **The review's chemistry finding was wrong.** It said an ionic-bonds worksheet opened with a metallic-bond example.
+  That came from a typed topic: the book's lesson, «الروابط الكيميائية وأنواعها», covers ionic, covalent and metallic
+  bonds, so chemistry is not split.
+- Only the offline generator changed. The live path (`worksheetPromptAr/En`) is the model's, and production runs live
+  AI, so a teacher sees this paper only when live generation is off or fails.
+
 ## Grade 8 review: book figures on the right lessons, teaching-plan export grounded by id — 2026-11-13
 
 A review of the 19 grade 8 catalogs (11 subjects). It found the catalogs complete and wired, a picked lesson

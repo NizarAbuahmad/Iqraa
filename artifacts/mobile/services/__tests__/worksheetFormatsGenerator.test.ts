@@ -110,7 +110,11 @@ describe('worksheet formats in the generator', () => {
           assert.ok(kinds.includes(k as any) || (ws.missingFormats ?? []).includes(k as any), `${n}: ${k} neither built nor reported`);
         }
         assert.ok(kinds.length > 0, `${n}: every format was dropped`);
-        if (!ws.sections.some(s => s.type === 'word_problem')) assert.ok(ws.shortfall, `${n}: no word problem and no shortfall`);
+        // Not on the paper as a story: either the bank ran out (shortfall), or the
+        // lesson had no story left and the screen is told (`missingFormats`).
+        if (!ws.sections.some(s => s.type === 'word_problem')) {
+          assert.ok(ws.shortfall || ws.missingFormats?.includes('word_problem'), `${n}: no word problem and nothing reported`);
+        }
         assert.equal(ws.answerKey.length, ws.sections.flatMap(s => s.questions).length);
       }
     }

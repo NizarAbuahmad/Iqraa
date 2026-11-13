@@ -4,7 +4,7 @@ import type {
   ActivityOutput, ActivityStep, AIRequest,
   ClassroomActivity, ClassroomActivityRequest,
   LessonPlanOutput,
-  QuizOutput, QuizQuestion, WorksheetAnswerKeyItem,
+  MissingKind, QuizOutput, QuizQuestion, WorksheetAnswerKeyItem,
   WorksheetOutput, WorksheetSection,
 } from './AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
@@ -36,7 +36,7 @@ import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
 import { splitFormatTypes, fitFormats, formatPoints, worksheetTotal, buildFormatSet, formatsHaveNoLesson } from './worksheetFormats.ts';
-import { MISSTEPS, ORDER_SAFE, currentSession, type FormatKind } from '@workspace/math-practice';
+import { MISSTEPS, ORDER_SAFE, currentSession, markShown, spendItemById, type FormatKind } from '@workspace/math-practice';
 import { ScopeDrawer } from './scopeDraw.ts';
 import { planCoverage, type CoverageLesson } from '../coveragePlan.ts';
 import {
@@ -82,11 +82,13 @@ interface WQ {
   fromBank?: true;
   /** The KB lesson this question was written for — set on a wide-scope paper. */
   lessonId?: string;
+  /** A bank word problem that is a real-life story — read by the worksheet, never stored. */
+  story?: boolean;
 }
 /** Carries a bank item's mark onto a quiz question, which copies fields one by one. */
 const bankMark = (q: WQ): { fromBank?: true } => (q.fromBank ? { fromBank: true } : {});
 /** A question as stored on the paper: the working belongs to the key, not the student's copy. */
-const withoutSteps = ({ steps: _steps, ...rest }: WQ): WQ => rest;
+const withoutSteps = ({ steps: _steps, story: _story, ...rest }: WQ): WQ => rest;
 
 /**
  * The KB lesson to ground on: the id when the caller supplied one, otherwise
@@ -1566,7 +1568,9 @@ export class MockAIService extends AIService {
       for (const avoid of avoidInTurn) {
         item = takeSolvedIn(tier, at, new Set([...currentSession(), ...avoid]));
         if (item) {
-          currentSession().add(item.id);
+          // Its equation too, not just its id: another item asking the same
+          // equation is the same question (`spendItem`).
+          spendItemById(item.id, currentSession());
           break;
         }
       }
@@ -1574,8 +1578,13 @@ export class MockAIService extends AIService {
       if (item && at) { solvedLesson.set(item, at.id); slot += 1; }
       return item;
     };
+    // The working these two print is on the page, so nothing drawn after them
+    // may ask what it states: the half-solved «81 = 3^4» once sat above
+    // «اكتب العدد 81 على صورة قوة أساسها 3» (`markShown`).
     const exampleItem = takeSolved(band[0]);
+    if (exampleItem) markShown(exampleItem.steps, currentSession());
     const completionItem = exampleItem ? takeSolved(band[1]) : null;
+    if (completionItem) markShown(completionSplit(completionItem.steps).given, currentSession());
 
     // Then the ticked formats, before any practice question, and only pushed
     // (in display order) after the word problem. Their bank items are scarce —
@@ -1586,7 +1595,7 @@ export class MockAIService extends AIService {
     // squeezed in (`formatRoom`, the same rule as the live path).
     // `session: undefined` is the pass's shared session.
     const { built: builtFormats, missing: unbuilt } = buildFormatSet(formats, { topic, kb, lang, subject: req.subject, session: undefined, points: formatPoints(requested) });
-    const missingFormats: FormatKind[] = [...trimmed, ...unbuilt];
+    const missingFormats: MissingKind[] = [...trimmed, ...unbuilt];
     const reserved = (exampleItem ? 1 : 0) + (completionItem ? 1 : 0);
     const mainTotal = Math.max(0, totalQ - reserved - (wantsWordProblem ? 1 : 0) - formats.length);
 
@@ -1722,7 +1731,31 @@ export class MockAIService extends AIService {
     let typeIdx = 0;
     let spent = false;
     bankOnly = questionBankPolicy.required;
+    let wordQ: WQ | null = null;
+    let wordIsStory = false;
     try {
+    // The word problem is drawn FIRST and printed after the practice: a lesson
+    // has few stories (`exp_eq` two), and drawn last it found them spent — the
+    // bacteria story sat in the challenge section as a multiple-choice question
+    // while «مسألة حياتية» held a bare equation (2026-11-13). It keeps the slot
+    // it always had on a wide-scope paper, after the practice's.
+    if (wantsWordProblem) {
+      const practiceStart = slot;
+      slot = practiceStart + easyN + midN + hardN;
+      try {
+        wordQ = pushQuestion('word_problem', makeQ('word_problem', 'medium'), true);
+      } catch (e) {
+        // A word problem the spent bank cannot supply is a shortfall, reported
+        // like any other — it must not take the practice or the formats with it.
+        if (!(e instanceof BankSpentError)) throw e;
+        spent = true;
+      }
+      slot = practiceStart;
+    }
+    // A bank item that is not a story is still a fair problem to work through,
+    // but not under «مسألة حياتية»: it keeps the place, under a heading that
+    // says what it is, and the teacher is told the story could not be added.
+    wordIsStory = wordQ !== null && (wordQ.fromBank !== true || wordQ.story === true);
     for (const bucket of buckets) {
       if (spent) break;
       const questions: WQ[] = [];
@@ -1752,23 +1785,13 @@ export class MockAIService extends AIService {
       }
     }
 
-    // At least one life-application word problem when selected. Its own try:
-    // a word problem the spent bank cannot supply is a shortfall, reported like
-    // any other — it used to escape to the catch below and take every built
-    // format with it, with no note.
-    if (wantsWordProblem && !spent) {
-      try {
-        const q = pushQuestion('word_problem', makeQ('word_problem', 'medium'), true);
-        sections.push({
-          type: 'word_problem',
-          title: lang === 'ar' ? 'مسألة حياتية' : 'Real-life word problem',
-          questions: [withoutSteps(q)],
-        });
-        answerKey.push({ num: qNum++, answer: q.answer ?? '—', ...(q.steps ? { solution: q.steps } : {}) });
-      } catch (e) {
-        if (!(e instanceof BankSpentError)) throw e;
-        spent = true;
-      }
+    // The word problem drawn above, after the practice as it always was.
+    if (wordQ) {
+      sections.push(wordIsStory
+        ? { type: 'word_problem', title: lang === 'ar' ? 'مسألة حياتية' : 'Real-life word problem', questions: [withoutSteps(wordQ)] }
+        : { type: 'short_answer', title: lang === 'ar' ? 'مسألة: حلّ موضّحًا الخطوات' : 'Problem: show your working', questions: [withoutSteps(wordQ)] });
+      answerKey.push({ num: qNum++, answer: wordQ.answer ?? '—', ...(wordQ.steps ? { solution: wordQ.steps } : {}) });
+      if (!wordIsStory) missingFormats.push('word_problem');
     }
     } catch (e) {
       if (!(e instanceof BankSpentError)) throw e;
