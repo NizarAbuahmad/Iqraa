@@ -439,6 +439,56 @@ reaches live generation with no book text; that needs the PDFs.
 `teachingPlanGrounding` (184), curriculum test (927) and verify (0 errors), typecheck.
 **Not verified:** the pages on a phone; anything needing the PDFs.
 
+## Grade 4 PE, vocational S2, social and arts figures from the page renders — 2026-11-13
+
+Same method as the Arabic and Islamic entry below (colour-and-texture candidates on the renders already in
+`iqraa-public/book-pages/`, every one kept or dropped by eye), applied to the renders that exist for these books. Some
+are the renders whose `book-page-links.json` entries the Grade 4 review removed because they showed another lesson:
+the images are still the right book pages, only their lesson link was wrong, so each page is placed here by the page
+table the review read off them.
+
+- **PE** (`g4-pe-s1-student-book`, new `knowledge-base/grade-4-pe/`): 28 crops on 11 of 13 lessons — match photos, the
+  futsal and badminton court diagrams, grip and stance photos, the healthy plate, first-aid pictures. Pages: football
+  L1 7–9, L2 10–12, L3 13–15, L4 16–18, L5 19–21; badminton L1 24–26, L2 27–29, L3 30–32, L4 33–35; unit 3 L2 46–49,
+  L3 50–53 (unit-end and opener art to the adjacent lesson). Badminton L5 and unit 3 L1 were never rendered.
+- **Vocational S2** (`g4-voc-s2-student-book`): 20 crops on 6 of 16 lessons — hygiene and safe use of care products,
+  hair care, clothes care, seasonal produce, electrical tools and an overloaded socket. Renders exist only for pp.
+  10–21, 43–62 and 104–107; units 1–2 had no usable photo on theirs.
+- **Social** (added to the existing indexes): «الحياة البرية» (S1, had none) gains the oak, black iris, Sinai rosefinch,
+  Arabian oryx and fish (pp. 76–78); «بناء الشخصية» (S2, had none) gains the family photos, heredity portraits, the
+  classroom and the dolphin (pp. 8–11); «الأنشطة البشرية» gains the forest, felled logs and plastic litter (pp. 71–72).
+- **Arts**: «الدمى المسرحية» gains the rod and shadow puppets (p. 81) and the human and animal dolls (p. 82); the glove
+  puppets on p. 80 were already there.
+
+Every new file name was checked absent from `iqraa-public/figures/` first (the uploader skips an existing key, so a
+reused name would serve an old crop); all are uploaded. **Still without a source** (no render, no reachable PDF):
+English, digital, the science gaps (relationships, water cycle, Earth's axis) and the arts gaps (qanun, u3_l4, Picasso).
+
+## Grade 4 Arabic and Islamic figures: 135 crops on 67 lessons, from the page renders — 2026-11-13
+
+Neither book had figure crops. As for Grade 4 maths (entry below), no PDF was reachable, so the crops come from the
+456 page renders already in `iqraa-public/book-pages/` for the four books (every lesson of both subjects has them).
+
+**How.** Unlike maths, whose pictures are diagrams among text, these books are illustrated throughout, so candidates
+were found automatically: pixels that are coloured but not pale (the books' pastel text panels are pale), closed into
+regions, kept when large, dense and many-coloured, page banner and footer excluded. That gave 421 candidates; every
+one was looked at on contact sheets and 286 dropped: the purple and yellow text panels («أسمو بقيمي»، «أتعلّم»،
+«أربط مع…»), word games and matching exercises, the self-assessment strip, the «أفهم المضمون» bridge and the other
+recurring mascots, the Qur'an-reading boy that opens every recitation lesson, and duplicates. 18 were trimmed to drop a
+caption or banner. Kept: the listening and reading lessons' scenes, the picture-story panels, Juha and Ash'ab, the food
+pyramid and food groups, the water-cycle and bee pictures (Arabic); the Mushaf, Hira, the manuscript, the Kaaba and
+mosques, the prayer and congregation scenes, Qur'an-story scenes, the seasons and solar system (Islamic).
+
+**Lesson.** The lesson whose `book-page-links.json` range holds the page, except a unit opener: its pages sit inside
+the previous unit's last range (the Grade 4 review found that spill), so its art goes to the next unit's first lesson,
+which in Arabic is the listening lesson that says «أتأمل الصورة السابقة». Numbers are the catalog's (Arabic S2 units
+6–10, Islamic S2 5–8). New: `knowledge-base/grade-4-{arabic,islamic}/figures/g4-{arabic,islamic}-s{1,2}-student-book/`
+(44 + 35 + 23 + 33 PNGs), 67 rows in `figure-lesson-map.json`, the four indexes in `bookFigures.ts` and
+`gen_book_figure_assets.mjs`, the two prefixes in `bookFigures.test.ts`. The 135 PNGs are in `iqraa-public/figures/`.
+
+**Not covered.** Lessons whose pages are text and exercises only (most «أكتب» and «أبني لغتي» lessons, many Islamic
+values lessons) have no crop, by design. Crops from a 1400 px render are softer than PDF crops.
+
 ## Grade 4 maths figures: 85 crops on 37 lessons, cut from the page renders — 2026-11-13
 
 Grade 4 maths had no figure crops at all, so its slides and lesson screens showed no number lines, protractors,
