@@ -3,7 +3,9 @@
  * pupil's book, Pearson/York Press). Source of truth:
  * data/iqra_curriculum_g5_english_sem2.json
  *
- * Not title-only, same shape as g5EnglishSem1 — see that file's header.
+ * Same shape as g5EnglishSem1 — the book's own lessons (Welcome back 3, each
+ * main unit 12), with u*_l1 = Lesson 1, u*_l2 = Lesson 12 and u*_l3…l12 =
+ * Lessons 2–11; see that file's header.
  * Units are numbered 6-10, continuing Semester 1's 1-5. That is NOT the
  * book's numbering: its contents page prints Welcome back, then Units 5-8,
  * so the book's Unit 5 (Animals in danger) is u7 here. The ids are persisted,
