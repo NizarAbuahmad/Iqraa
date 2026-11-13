@@ -49,6 +49,17 @@ maths questions were checked by hand by a sub-agent and re-checked by script: **
    the lesson's numbers. For any other grade the clause is the empty string, so their prompts are unchanged (tested).
 3. **A fill-blank worksheet question printed two answer places** (its own «الإجابة: ____» and an answer box under
    it), every grade (`generators.ts`, `worksheetFillBlankSpace.test.ts`).
+4. **The offline lesson plan has a Grade 1 version** (`artifacts/mobile/services/ai/lessonPlanFirstGrade.ts`,
+   `lessonPlanFirstGrade.test.ts`) — the fallback when live AI fails. Every field is its own for a Grade 1 lesson
+   (judged by the lesson's book; a typed topic by the grade named): short concrete phases, writing only as copying,
+   assessment by watching and asking aloud, homework done with the family. The kind still decides the content —
+   the Arabic primer split into letter lessons («حرف الباء (ب)»: the sound with the vowels, the forms at the start,
+   middle and end, copying), mark lessons (tanween, shadda) and the five skill lessons; a surah is recited; maths
+   works with objects and keeps the book's objectives — and the style still decides the shape (show → together →
+   alone; explore before naming; pairs with one job each, then each child alone). The doc-grounded branch (a
+   teacher's uploaded file) is unchanged. Tested on all 279 Grade 1 lessons × 3 styles: nothing from the
+   older-class list («فقرة», «3-2-1», exit ticket, controlled experiment…), and the teacher's own first-person voice
+   (`teacherVoiceCheck.ts`); red before the change, green after.
 
 **Verified.** Each new test red before its fix, green after. `pnpm run typecheck`; math-practice suite; api-server
 `build` + `test`; mobile suite. **Not verified:** a live model's Grade 1 output with the new clause (no live run from
@@ -56,9 +67,9 @@ the session) — after merge, generate one Grade 1 Arabic letter plan, worksheet
 stems by a native reviewer.
 
 **Still open, found by the sweep:**
-- **The offline lesson plan is not Grade 1 aware** (the fallback when live AI fails): a «حرف الباء» plan asks
-  six-year-olds for a 4–5 sentence paragraph and a written exit ticket. The live prompt is fixed; the offline
-  blueprints (`lessonPlanBlueprints.ts`, `generators.ts` `lpObjectivesAr`/`lpHomework`) are not.
+- **The other offline Grade 1 generators are not Grade 1 aware**: the activity and slides fallbacks still use the
+  all-grades blueprints. (Quizzes and worksheets refuse offline for every subject but maths.) A plan built from a
+  teacher's uploaded file is not either.
 - **Maths, to check against the book:** thirds appear in «الأجزاء المتطابقة» and «الكسر كجزء من مجموعة» (the
   unit teaches halves and quarters); «ما العدد الذي ربعه 5؟» is hidden multiplication; «لوحة الأعداد» keys assume 1
   sits at the LEFT of each row; «0 + / − 0» items in «العدد صفر» come before units 3–4 teach the operations; sums to 23

@@ -32,6 +32,7 @@ import { buildActivityBlueprint } from './activityBlueprints.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { revisionPlanFromRequest } from './lessonPlanRevision.ts';
 import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts';
+import { firstGradePlan, isFirstGradeLesson } from './lessonPlanFirstGrade.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
@@ -1423,6 +1424,28 @@ export class MockAIService extends AIService {
           + `.\n${styleBlueprint.assessment}`,
         differentiation: styleBlueprint.differentiation,
         homework: `Short homework from the same ${fileLabel} thread: two practice items + one summary sentence on “${topic}”.`,
+      };
+    }
+
+    // Grade 1 is six-year-olds learning to read: a plan of its own, every field
+    // of it, instead of the paragraph-and-exit-ticket plan below (see
+    // `lessonPlanFirstGrade.ts`).
+    if (isFirstGradeLesson(kb, req.grade)) {
+      const g1 = firstGradePlan({ topic, kb, lang, kind, style, duration: dur, variant, customObjectives: req.objectives });
+      return {
+        title: lang === 'ar' ? `${topic} – خطة درس` : `${topic} – Lesson Plan`,
+        grade: req.grade, subject: req.subject, duration: dur,
+        objectives: g1.objectives,
+        materials: g1.materials,
+        ...(priorReview ? { priorReview } : {}),
+        introduction: g1.introduction,
+        mainActivity: g1.mainActivity,
+        guidedPractice: g1.guidedPractice,
+        independentPractice: g1.independentPractice,
+        closure: g1.closure,
+        assessment: g1.assessment,
+        differentiation: g1.differentiation,
+        homework: g1.homework,
       };
     }
 
