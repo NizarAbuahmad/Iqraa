@@ -210,22 +210,6 @@
    "lessonStartPage": 20
   },
   {
-   "file": "p027.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 27,
-   "rect": [
-    404.6,
-    0.0,
-    595.3,
-    211.8
-   ],
-   "unit": 1,
-   "lesson": 2,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "ِالنموذجُ الميكانيكيُّ الموجيُّ للذرَّة",
-   "lessonStartPage": 20
-  },
-  {
    "file": "p029b.png",
    "sourceId": "chem-s1-student-book",
    "pdfPage": 29,
@@ -298,22 +282,6 @@
     68.8,
     494.3,
     389.1
-   ],
-   "unit": 2,
-   "lesson": 2,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الخصائصُ الدوريةُ للعناصر",
-   "lessonStartPage": 39
-  },
-  {
-   "file": "p051.png",
-   "sourceId": "chem-s1-student-book",
-   "pdfPage": 51,
-   "rect": [
-    401.1,
-    0.0,
-    595.3,
-    211.8
    ],
    "unit": 2,
    "lesson": 2,
