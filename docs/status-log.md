@@ -80,6 +80,37 @@ stem with code that shares nothing with the generators, and checks every kind is
 always offered; breaking the overlap rule fails 2 of them. math-practice suite 1096 pass. Twelve sampled items and the
 mobile probe's six read by hand, keys correct.
 
+## Grade 10 figures: six unit-review figures the audit missed — 2026-11-13
+
+A re-check of Grade 10 after «Grade 10 checked against its books, and corrected» and «Grade 10 audit: book pages,
+figures and contents…» (both the same day). Those cover coverage, results, book pages and figures, so this only
+re-ran two automated checks over every served Grade 10 figure (521):
+- figures that sit outside their lesson's corrected page range
+- figures filed under a unit's last lesson just before the next unit
+
+**What changed.** Six figures on unit-review pages were still filed under the unit's last lesson. The audit's rule
+is to drop exactly these. Each was confirmed from the extracted page text («مراجعة الوحدة», numbered review
+questions) and by opening the image:
+- biology S1 `p018c`
+- biology S2 `p054b` (an endangered-amphibians pie chart)
+- earth S1 `p058b` and `p058c-v2`
+- earth S2 `p024b`, and `p055` (a whole page of review questions with a currents map)
+
+They now sit under no lesson. They are kept on disk rather than deleted, so this is easy to undo.
+
+**Looked at and left.**
+- Physics S1 `p056`: a position–time graph on lesson u2_l1's own «مراجعة الدرس» page, so it belongs to that lesson.
+  The audit's range for u2_l1 (36–55) skips that page. Page ranges are backed by rendered images in the bucket,
+  so the range is not changed here.
+- Physics S2 `p039` (three crops): friction's pros and cons, in the gap after u4_l2 «تطبيقات على القوى».
+- English "near the next unit" hits: real writing and reading lesson pages.
+- Maths S1 `p009`, `p015` and `p016`: left unmapped on purpose by the first review until they are uploaded.
+
+**Verified.** Red/green on a new `bookFigures.test.ts` block. The figure, page, asset, figure-view and slide tests
+pass (199), and so does `pnpm run typecheck`. The generated figure list only loses these six keys, so there is
+nothing to upload.
+**Not verified.** Not looked at in the running app.
+
 ## Grade 8 maths: offline questions for the four S2 lessons that had none — 2026-11-13
 
 **Why.** Grade 8 had already been checked against its books by earlier changes. One gap was left: four
@@ -109,6 +140,25 @@ failed with live AI off. The lessons are «رسم الأشكال ثلاثيّة 
 **Not done.** No worked steps for the four new generators, so they do not supply a worksheet's worked
 example (the solved slots walk on to a lesson that has working). The questions follow the objectives, not
 a book page, until a Grade 8 maths book is extracted.
+
+## Grade 4 PE: the technique steps, courts and first-aid pictures — 2026-11-13
+
+The 28 PE crops from «Grade 4 PE, vocational S2, social and arts figures» were the photos the colour detector found;
+it missed the teaching pictures, which are small figures on white. Looked at all 39 renders and boxed by hand: the
+numbered «النواحي الفنية» step blocks with their captions — football pp. 7, 10, 13, 16 and badminton grips pp. 24, 27,
+ready stance p. 33 — the ladder drill (p. 11), the futsal court (p. 12), the badminton net with its 6.1 m / 76 cm (p. 32),
+the four injury-prevention cards (p. 47, replacing the healthy-plate crop that was one of them), the equipment-safety
+cards (p. 48), the warm-up figures (p. 49) and the four first-aid steps الراحة، الثلج، الضغط، الرفع (p. 52). 14 crops;
+PE now has 41 on 11 of 13 lessons. All in `iqraa-public/figures/` under names checked free first.
+
+## Grade 4 vocational S2: six figures the detector missed — 2026-11-13
+
+A page-by-page look at the 36 vocational S2 renders (after «Grade 4 PE, vocational S2, social and arts figures»)
+found pictures the colour detector had not proposed, mostly photos on pale panels: the three facial-expression photos
+(p. 10, u1_l1), «التفكير خارج الصندوق» (p. 17, u1_l2), the boy at the electronics bench from the unit 2 opener (p. 21,
+u2_l1, cropped clear of the lesson list), three hair types (p. 52, u4_l1), a school bag being cleaned (p. 58, u4_l2) and
+potatoes and apples (p. 62, u4_l3). Boxed by hand on a 5% grid. Vocational S2 now has 26 crops on 9 of 16 lessons;
+three map rows added (u1_l1, u1_l2, u2_l1). The six PNGs are in `iqraa-public/figures/` under names checked free first.
 
 ## Grade 10 checked against its books, and corrected — 2026-11-13
 
