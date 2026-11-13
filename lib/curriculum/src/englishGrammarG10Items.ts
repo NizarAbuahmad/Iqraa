@@ -503,7 +503,7 @@ export const G10_ITEM_LESSONS: { lessonId: string; statement: string; items: Gra
         ['It can be very hot in Aqaba.', 'be', 'to be'],
         ['Flights can be late in bad weather.', 'be', 'being'],
         ['Winter in Irbid can get very cold.', 'get', 'gets'],
-        ['It can rain a lot in December.', 'rain', 'raining'],
+        ['It can rain a lot in winter.', 'rain', 'raining'],
       ]),
     ],
   },
