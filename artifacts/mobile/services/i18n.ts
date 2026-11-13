@@ -4,7 +4,7 @@
  * Usage: const { t } = useLanguage(); then t('key')
  */
 
-import { arCountPhrase, arMarksPhrase, arQuestionsPhrase, enMarksPhrase } from './arCount.ts';
+import { arCountPhrase, arHomeworkPhrase, arMarksPhrase, arQuestionsPhrase, enMarksPhrase } from './arCount.ts';
 import { formatMarks } from './studentAnswers.ts';
 import { NOTE_MAX, PHOTOS_MAX } from './homeworkSubmission.ts';
 
@@ -2752,6 +2752,15 @@ const translations = {
     childProjectOpenA11y: (title: string) => `اعرض مشروع الواجب: ${title}`,
     childProjectNote: 'ملاحظة مع المشروع',
     childProjectNotHandedIn: 'لم يُسلَّم المشروع بعد. ستظهر صوره هنا حين يُسلَّم.',
+    // «نظرة سريعة» at the top of a parent's «المدرسة» (services/childGlance.ts). Labels, not sentences, so no verb agrees with the child.
+    // Names and exam titles in first-strong isolates (U+2068 … U+2069), and never first: react-native-web's dir="auto"
+    // takes the line's direction from its first strong letter, so a line that opened with «سارة» in English read «at a glance سارة».
+    glanceTitle: (name: string) => (name ? `نظرة سريعة: \u2068${name}\u2069` : 'نظرة سريعة'),
+    glanceDue: (n: number) => (n === 0 ? 'لا واجبات مطلوبة خلال سبعة أيام' : `مطلوب خلال سبعة أيام: ${arHomeworkPhrase(n)}`),
+    glanceLate: (n: number) => `متأخّر: ${arHomeworkPhrase(n)}`,
+    glanceNextExam: (title: string, when: string) => `الاختبار القادم: \u2068${title}\u2069، ${when}`,
+    // The percent in a left-to-right isolate: bare, «85%» in an Arabic line can print as «%85».
+    glanceLastResult: (percent: number, title: string) => `آخر نتيجة: \u2066${percent}%\u2069 في \u2068${title}\u2069`,
     projectTitle: 'مشروع الواجب',
     projectDue: (d: string) => `آخر موعد للتسليم: ${d}`,
     projectPhotos: 'الصور',
@@ -3170,7 +3179,7 @@ const translations = {
     whatsNewGamesUpgradeTitle: 'ألعاب أغنى: شرح وأصوات وأفضل نتيجة',
     whatsNewGamesUpgradeBody: 'في ألعاب الأسئلة تظهر بعد الإجابة جملة تشرح السبب في كثير منها، وتصدر أصوات خفيفة ويهتز الهاتف قليلًا، وزر السماعة يكتمها. ويحفظ التطبيق أفضل نتيجة لك ويتيح لك إعادة الأسئلة التي أخطأت فيها. وتعرض «محافظات الأردن» خريطة بعد كل إجابة.',
     whatsNewParentSchoolTitle: 'المدرسة أولًا، ومشاريع أبنائك',
-    whatsNewParentSchoolBody: 'يفتح التطبيق الآن على «المدرسة»: واجبات أبنائك واختباراتهم وجدول حصصهم. وحين يُسلَّم مشروع واجب، اضغط «اعرض المشروع» تحته لترى صوره والملاحظة المرفقة.',
+    whatsNewParentSchoolBody: 'يفتح التطبيق الآن على «المدرسة»، وفي أعلاها نظرة سريعة على كلٍّ من أبنائك: الواجبات المطلوبة والمتأخرة، وأقرب اختبار، وآخر نتيجة. وحين يُسلَّم مشروع واجب، اضغط «اعرض المشروع» تحته لترى صوره والملاحظة المرفقة.',
     whatsNewFollowUsTitle: 'تابع «إقرأ»',
     whatsNewFollowUsBody: 'تجد في أسفل صفحة «حسابي» روابط حسابات «إقرأ» على إنستغرام وفيسبوك ويوتيوب ولينكدإن: شروح قصيرة، وأفكار للحصة، وأخبار ما يُضاف إلى التطبيق.',
     whatsNewDrawnFiguresTitle: 'رسوم بيانية ومتجهات في أسئلة الاختبار',
@@ -6372,6 +6381,11 @@ const translations = {
     childProjectOpenA11y: (title: string) => `View the project for ${title}`,
     childProjectNote: 'Note with the project',
     childProjectNotHandedIn: 'Not handed in yet. The photos will show here once it is.',
+    glanceTitle: (name: string) => (name ? `At a glance: \u2068${name}\u2069` : 'At a glance'),
+    glanceDue: (n: number) => (n === 0 ? 'No homework due in the next 7 days' : `Due in the next 7 days: ${n} ${n === 1 ? 'assignment' : 'assignments'}`),
+    glanceLate: (n: number) => `Late: ${n} ${n === 1 ? 'assignment' : 'assignments'}`,
+    glanceNextExam: (title: string, when: string) => `Next exam: \u2068${title}\u2069, ${when.charAt(0).toLowerCase()}${when.slice(1)}`,
+    glanceLastResult: (percent: number, title: string) => `Latest result: ${percent}% in \u2068${title}\u2069`,
     projectTitle: 'Homework project',
     projectDue: (d: string) => `Hand in by ${d}`,
     projectPhotos: 'Photos',
@@ -6779,7 +6793,7 @@ const translations = {
     whatsNewGamesUpgradeTitle: 'Richer games: explanations, sounds and your best score',
     whatsNewGamesUpgradeBody: 'In the question games, many now explain why after you answer, with soft sounds and a light vibration on phones; the speaker button mutes them. The app keeps your best score and lets you retry the questions you missed. The governorates game shows a map after each answer.',
     whatsNewParentSchoolTitle: 'School first, and your children’s projects',
-    whatsNewParentSchoolBody: 'The app now opens on School: your children’s homework, exams and timetable. When a homework project has been handed in, tap “View project” under it to see the photos and the note.',
+    whatsNewParentSchoolBody: 'The app now opens on School, with a quick look at each child at the top: homework due and late, the next exam and the latest result. When a homework project has been handed in, tap “View project” under it to see the photos and the note.',
     whatsNewFollowUsTitle: 'Follow Iqrra',
     whatsNewFollowUsBody: 'At the bottom of your Profile page you will find Iqrra on Instagram, Facebook, YouTube and LinkedIn: short how-tos, lesson ideas and news of what is coming to the app.',
     whatsNewDrawnFiguresTitle: 'Graphs and vectors in exam questions',

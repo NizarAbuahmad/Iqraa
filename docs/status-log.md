@@ -10,11 +10,28 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Parents: «المدرسة» first, and a read-only view of a handed-in project — 2026-11-13
+## Parents: «المدرسة» first, a quick look at each child, and a read-only view of a handed-in project — 2026-11-13
 
-Two changes from a review of the parent side.
+Three changes from a review of the parent side.
 
 **What changed.**
+- **«نظرة سريعة» at the top of a parent's «المدرسة».** One card for the child the picker shows: homework due in the
+  next seven days (Amman days, today included), how much is late, the next dated exam and its day, and the latest
+  released result (a link to «نتائج أبنائي»). Built from the three lists the screen already loads; no new API.
+  `services/childGlance.ts` decides what is true, under the same rules as the rows below it: «متأخّر» counts only
+  tracked, not-done, overdue items (an untracked item is never called late); «مطلوب» counts untracked items (a due day
+  is a calendar fact) but not a tracked item already done; a list that failed or has not loaded leaves its lines out
+  instead of showing zero; with neither list loaded the card is not drawn. The lines are labels («مطلوب خلال سبعة أيام:
+  واجبان»), not sentences, so no verb has to agree with the child's gender (`arHomeworkPhrase` in `arCount.ts`). No
+  amber: it means «now», and the rows below already carry it. Students do not get the card. Names and exam titles sit
+  in first-strong isolates and never first in a line: react-native-web's `dir="auto"` takes a line's direction from
+  its first strong letter, and the first draft's English title read «at a glance سارة» in the browser.
+  Verified: `childGlance.test.ts` (10 cases, including every line opening in the UI's own script; dropping
+  `canTrack` from the late count fails its case), mobile suite 9,294 tests 0 failures before the final copy
+  change, then the copy/guard tests (130) and the mobile typecheck after it. In the stubbed browser build: the card
+  shows due, late, next exam and latest result for the picked child in Arabic light and dark (phone) and English
+  (desktop), and the result line opens `/my-exams`. Not checked: a picker with two children switching the card, and
+  a phone.
 - **A parent sees their child's handed-in project.** The API route existed (`GET /parent/homework/:id/submissions`,
   `readForParent`), and nothing in the app called it. A project row on «المدرسة» now shows «اعرض المشروع» to a
   parent once the child has handed in (`showsChildProjectLink`: the student link's rule plus `submission !== 'none'`;
