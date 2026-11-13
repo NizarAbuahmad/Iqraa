@@ -53,4 +53,16 @@ describe('figureSvg: scenes', () => {
     assert.ok(id(a) && id(b) && id(a) !== id(b));
     assert.equal(id(figureSvg(proj, { id: 'q3' })), 'fig-q3');
   });
+  it('keeps only letters, digits, _ and - of a caller id; an id with none left gets its own', () => {
+    const id = (svg: string) => /<clipPath id="([^"]+)"/.exec(svg)?.[1];
+    const graph = resolveFigure({ kind: 'function-graph', functions: [{ expr: 'x' }], x: [-2, 2] })!;
+    for (const f of [proj, graph]) {
+      const svg = figureSvg(f, { id: 'q3"><script>x</script>' });
+      assert.equal(id(svg), 'fig-q3scriptxscript');
+      assert.ok(!svg.includes('<script') && svg.includes('url(#fig-q3scriptxscript)'));
+      assert.equal(id(figureSvg(f, { id: 'a b.c_d-1' })), 'fig-abc_d-1');
+      const fallback = id(figureSvg(f, { id: '"<>/ ()' }));
+      assert.ok(fallback && /^fig-clip-\d+$/.test(fallback), `fallback ${fallback}`);
+    }
+  });
 });

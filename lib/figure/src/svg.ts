@@ -18,6 +18,11 @@ const n = (v: number) => v.toFixed(1);
 let nextId = 0;
 const TONE: Record<string, string> = { 0: COLORS[0]!, 1: COLORS[1]!, 2: COLORS[2]!, ink: '#111827', muted: '#6b7280' };
 const tone = (t: Tone) => TONE[String(t)]!;
+/** The clip id: the caller's id cut to [A-Za-z0-9_-] (it lands in id="" and url(#…)), else a fresh one. */
+function clipIdFor(id: string | undefined): string {
+  const safe = (id ?? '').replace(/[^A-Za-z0-9_-]/g, '');
+  return safe ? `fig-${safe}` : `fig-clip-${++nextId}`;
+}
 
 function sceneBody(f: SceneFigure, w: number, h: number, lang: 'ar' | 'en'): string[] {
   const out: string[] = [];
@@ -48,7 +53,7 @@ export function figureSvg(figure: AnyFigure, opts: { lang?: 'ar' | 'en'; width?:
   const h = opts.height ?? 320;
   const lang = opts.lang ?? 'en';
   if (isSceneFigure(figure)) {
-    const clip = opts.id ? `fig-${opts.id}` : `fig-clip-${++nextId}`;
+    const clip = clipIdFor(opts.id);
     return [
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" overflow="hidden" role="img" aria-label="${esc(figureAltText(figure, lang))}">`,
       `<defs><clipPath id="${clip}"><rect width="${w}" height="${h}"/></clipPath></defs>`,
@@ -72,7 +77,7 @@ export function figureSvg(figure: AnyFigure, opts: { lang?: 'ar' | 'en'; width?:
   // The layout puts curve points far outside the box on purpose (steep branches
   // climb off-canvas), so everything is clipped to the box twice over: the root
   // `overflow="hidden"` and a clipPath on the drawing group.
-  const clipId = opts.id ? `fig-${opts.id}` : `fig-clip-${++nextId}`;
+  const clipId = clipIdFor(opts.id);
   const out: string[] = [];
   out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" overflow="hidden" role="img" aria-label="${esc(figureAltText(figure, lang))}">`);
   out.push(`<defs><clipPath id="${clipId}"><rect width="${w}" height="${h}"/></clipPath></defs>`);
