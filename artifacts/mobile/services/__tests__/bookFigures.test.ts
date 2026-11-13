@@ -491,3 +491,23 @@ describe('grade 9: a unit-opening page belongs to the unit it opens', () => {
     });
   }
 });
+
+describe('grade 10: no unit-review figure is filed under a lesson', () => {
+  // The grade 10 audit (2026-11-13) dropped every figure from a unit test,
+  // project, review or enrichment page filed under a unit's last lesson. A
+  // re-check the same day found six it missed, each on a page the book heads
+  // «مراجعة الوحدة» or that carries only the unit's numbered review questions
+  // (read from the extracted text and by opening the image). They are kept on
+  // disk and filed under no lesson.
+  const REVIEW: [string, number][] = [
+    ['bio-s1-student-book', 18], ['bio-s2-student-book', 54], ['earth-s1-student-book', 58],
+    ['earth-s2-student-book', 24], ['earth-s2-student-book', 55],
+  ];
+  it('files none of them under any lesson', () => {
+    const shown = lessonsWithFigures().flatMap(id => figuresForLesson(id).map(f => ({ id, f })));
+    for (const [src, page] of REVIEW) {
+      const hit = shown.find(({ f }) => f.sourceId === src && f.pdfPage === page);
+      assert.ok(!hit, `${src} p${page} is still shown on ${hit?.id}`);
+    }
+  });
+});
