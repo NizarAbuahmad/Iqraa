@@ -107,7 +107,7 @@ describe('routing: the five lessons are generated, not refused', () => {
     });
   }
   it('a lesson still without a generator keeps refusing', () => {
-    assert.equal(mathBankCovers('أشكال الانتشار', null, 10), false);
+    assert.equal(mathBankCovers('المصفوفات', null, 10), false);
   });
 });
 
@@ -123,7 +123,7 @@ describe('«حل معادلات خاصة»', () => {
         for (const w of item.wrongs) assert.notDeepEqual(listOf(w), realRoots(c), `a wrong option is right: ${p}`);
       } else if (p.startsWith('ما الجذر الحقيقي')) {
         kinds.add('cube');
-        const c = parsePoly(p.match(/المعادلة (.+) = 0/)![1]!);
+        const c = parsePoly(p.match(/للمعادلة (.+) = 0/)![1]!);
         const r = realRoots(c);
         assert.equal(r.length, 1, p);
         assert.ok(Math.abs(fracVal(item.answer) - r[0]!) < 1e-3, `${p} → ${item.answer}`);
@@ -185,7 +185,7 @@ describe('«تمثيل الاقترانات المثلثية»', () => {
         assert.ok(Math.abs(Math.cos(90 * rad)) < 1e-9 && Math.abs(Math.cos(270 * rad)) < 1e-9);
       } else if (p.includes('قيمتين')) {
         kinds.add('solve');
-        const m = p.match(/(sin|cos|tan) x = (−?[\d.]+)/)!;
+        const m = p.match(/(sin|cos|tan) x = (−?\d+(?:\.\d+)?)/)!;
         for (const d of item.answer.split(' ، ').map(s => Number(s.replace('°', '')))) {
           assert.ok(d >= 0 && d <= 360 && Math.abs(F[m[1] as N](d * rad) - num(m[2]!)) < 1e-9, `${p} → ${item.answer}`);
         }
@@ -209,7 +209,7 @@ describe('«حل مسائل ثلاثية الأبعاد»', () => {
       if (p.includes('قطره (من رأس')) {
         kinds.add('diagonal');
         assert.equal(Number(item.answer), Math.sqrt(n[0]! ** 2 + n[1]! ** 2 + n[2]! ** 2), p);
-      } else if (p.includes('بعده الثالث')) {
+      } else if (p.includes('الثالث')) {
         kinds.add('edge');
         assert.equal(Number(item.answer) ** 2 + n[0]! ** 2 + n[1]! ** 2, n[2]! ** 2, p);
       } else if (p.includes('الارتفاع الجانبي')) {
