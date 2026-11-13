@@ -73,6 +73,30 @@ describe('primary lessons: the ops come from the title', () => {
     }
   });
 
+  // Grade 1's tens and two-digit lessons have their own generators (early.ts);
+  // read as plain «add»/«sub» they drew the grade's sums within 20 («9 + 1»).
+  it('Grade 1 tens and two-digit lessons reach their own generators', () => {
+    for (const [title, test] of [
+      ['جمع العشرات', (n: number[]) => n.every(x => x % 10 === 0)],
+      ['طرح العشرات', (n: number[]) => n.every(x => x % 10 === 0)],
+      ['جمع عددين من منزلتين', (n: number[]) => n.filter(x => x >= 10).length >= 2],
+      ['طرح عددين من منزلتين', (n: number[]) => n.filter(x => x >= 10).length >= 2],
+    ] as Array<[string, (n: number[]) => boolean]>) {
+      assert.equal(ops(title), '-', title);
+      // As the app sends it: a lesson, whose blob is «title titleEn» (an anchored
+      // pattern missed it, 2026-11-13).
+      const kb = { id: 'x', titleAr: title, titleEn: 'Adding and subtracting', objectives: [], keyConceptsAr: [], keyConceptsEn: [] };
+      assert.equal(ops(lessonTitleBlob(title, kb)), '-', title);
+      const session = new Set<string>();
+      for (let i = 0; i < 20; i++) {
+        const q = takeElementaryMath('short_answer', title, kb, 1, 'medium', 'ar', 1, session)!;
+        assert.ok(q, title);
+        const n = (q.text.match(/\d+/g) ?? []).map(Number).filter(x => x !== 1 || !/عشرات/.test(q.text));
+        if (!/عشرات/.test(q.text)) assert.ok(test(n), `${title}: ${q.text}`);
+      }
+    }
+  });
+
   it('takeElementaryMath gives a refused lesson no items at all', () => {
     assert.equal(takeElementaryMath('multiple_choice', 'أضلاع الأشكال المستوية', null, 1, 'easy', 'ar', 1, new Set()), null);
   });
