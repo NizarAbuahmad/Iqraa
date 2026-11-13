@@ -31,10 +31,20 @@ import { DECK_ICON_NAMES, diagramLimitsAr, diagramLimitsEn } from "./promptSlide
 import { PROMPT_EXAMPLE_CHECKS } from "./lessonTeachingChecks.ts";
 import { figureFormatAr, figureFormatEn } from "./figurePrompt.ts";
 import { isMathContext } from "@workspace/math-practice";
+import { keyTermsTeachingClauseAr, keyTermsTeachingClauseEn, parseKeyTerms } from "./keyTerms.ts";
 
 /** Concept slides asked for. More is a lecture; fewer is not an explanation. */
 export const TEACHING_CONCEPTS_MIN = 3;
 export const TEACHING_CONCEPTS_MAX = 5;
+
+/** The ceiling when the book's key terms need more than five ideas (u6_l2 has seven). */
+export const TEACHING_CONCEPTS_MAX_WITH_TERMS = 8;
+
+/** The upper bound asked for: five, or one slide per key term up to eight. */
+export function teachingConceptsMax(b: Record<string, unknown>): number {
+  const terms = parseKeyTerms(b);
+  return terms ? Math.max(TEACHING_CONCEPTS_MAX, Math.min(TEACHING_CONCEPTS_MAX_WITH_TERMS, terms.length)) : TEACHING_CONCEPTS_MAX;
+}
 
 /** Drawings (a graph or vectors) a maths lesson may carry in all: on its concepts and its worked example. */
 export const LESSON_VISUALS_MAX = 2;
@@ -63,7 +73,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
 قواعد إلزامية:
 1. التزم بهذا الدرس وحده. لا تشرح محتوى الدرس التالي أو السابق، ولا تضع في المثال أو التدريب مهارةً لم يشرحها قسم الشرح.
 2. لا تخترع حقائق أو أرقامًا أو تواريخ أو إحصاءات غير واردة في محتوى الكتاب أعلاه أو من صميم المادة المعروفة لهذا الصف. الثوابت والقيم المعيارية التي يستعملها كل كتاب (عدد أفوجادرو 6.022×10²³، الكتل الذرية للعناصر الشائعة، π) مسموحة، واستعملها حيث يحتاجها الشرح.
-3. "concepts" من ${TEACHING_CONCEPTS_MIN} إلى ${TEACHING_CONCEPTS_MAX} شرائح، مرتّبة من الأساس إلى ما يُبنى عليه (المفهوم الذي يحتاجه غيره يأتي أولًا)، وكل شريحة فكرة واحدة فقط.
+3. "concepts" من ${TEACHING_CONCEPTS_MIN} إلى ${teachingConceptsMax(b)} شرائح، مرتّبة من الأساس إلى ما يُبنى عليه (المفهوم الذي يحتاجه غيره يأتي أولًا)، وكل شريحة فكرة واحدة فقط.
    - "title" هو الفكرة نفسها كجملة خبرية قصيرة («المول يربط عدد الجسيمات بكتلة المادة»)، لا تسمية («المول»)، ولا «الفكرة 1».
    - "points" من سطرين إلى أربعة: تفسير، ثم مثال قصير أو حالة خاصة. بلا رمز نقطة في أول السطر.
    - المثال في "points" مثال حقيقي بقيم أو بحالة محدّدة («مول واحد من الكربون كتلته 12 g»)، لا جملة عامة مثل «إذا عُرفت الكمية أمكن حسابها».
@@ -92,7 +102,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
      - "mindmap": ${limits.mindmap}؛ و"role" اختياري: "cause" للسبب و"effect" للنتيجة.
    - "icon": اسم أيقونة واحد من: ${DECK_ICON_NAMES.join(", ")}.
    - "chart": {"kind":"chart","chartType":"bar","categories":[..],"values":[..]} فقط من أرقام واردة في محتوى الكتاب أعلاه. لا تخترع أرقامًا أبدًا، ولا تجمع "chart" مع "shape".
-   - "photo": عبارة بحث إنجليزية من ٢-٥ كلمات لمشهد حقيقي (مكان، تجربة، ظاهرة)، لا لقاعدة رياضية؛ في فكرتين على الأكثر.
+   - "photo": عبارة بحث إنجليزية من ٢-٥ كلمات لمشهد حقيقي (مكان، تجربة، ظاهرة)، لا لقاعدة رياضية؛ في فكرتين على الأكثر. ومتى أضفت "photo" فاجعل أحد سطور "points" يقول ما يظهر في الصورة وكيف يوضّح الفكرة، فالصورة لا تُعرض بلا كلام يفسّرها.
 14. الدقة قبل الإرجاع — يقرأ هذا الشرحَ طالبٌ وحده، فلا أحد يصحّح خطأه:
    - "answer" في المثال والتدريب هو الناتج النهائي محسوبًا ومبسّطًا: عدد بوحدته، أو الأزواج المرتبة نفسها، أو العبارة بعد التبسيط. لا شرطة «—»، ولا وصف للطريقة («الحل هو نقطتا التقاطع»)، ولا عبارة لم تُحسب («63 × sin 30°» بل «31.5 cm²»).
    - تحقّق من كل إجابة: عوّضها في المسألة (في كل معادلة من النظام) وأعد كل عملية حسابية. إن لم تتحقق فغيّر أرقام المسألة لا الإجابة، واختر أرقامًا تعطي ناتجًا نظيفًا (عددًا صحيحًا أو كسرًا بسيطًا).
@@ -107,7 +117,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
    - لا تضع check إلا حين تكون الإجابة عددًا أو تعبيرًا أو أزواجًا مرتبة؛ والإجابة الوصفية (تفسير، تعريف، تركيب إلكتروني، مقارنة) لا check لها لأنها ليست عددًا. ولا تنسخ المثال أعلاه: "question" هو ما حسبتَه أنت في هذه المسألة.
 ${isMathContext(b.topic, null, b.subject) ? `16. رسم بياني أو متجهات (لدروس الرياضيات فقط): يجوز أن يحمل "concept" أو "workedExample" حقلًا اختياريًّا واحدًا اسمه "visual"، وبحدٍّ أقصى ${LESSON_VISUALS_MAX} في القسم كله. اكتب في "points" أو "problem" كل ما يحتاجه الطالب (الاقتران مكتوبًا أو مركّبات المتجه): الرسم يوضّح ولا يحمل المعلومة وحده.
 ${figureFormatAr()}
-` : ''}
+` : ''}${keyTermsTeachingClauseAr(b)}
 أعد JSON بهذا الشكل فقط:
 {
   "hook": { "question": "سؤال التمهيد", "teacherNote": "كيف يدير المعلّم النقاش حوله" },
@@ -133,7 +143,7 @@ Everything in "question", "title", "points", "problem", "steps" and "claim" is p
 Mandatory rules:
 1. Stay inside this lesson. Do not teach the next or the previous lesson's content, and do not put a skill in the example or the practice that the explanation did not teach.
 2. Never invent facts, figures, dates or statistics that are not in the textbook content above or core to this subject at this grade. Standard constants and values every textbook uses (Avogadro's number 6.022×10²³, atomic masses of common elements, π) are allowed — use them wherever the explanation needs them.
-3. "concepts" is ${TEACHING_CONCEPTS_MIN} to ${TEACHING_CONCEPTS_MAX} slides, ordered from the foundation to what builds on it (a concept others depend on comes first), exactly one idea per slide.
+3. "concepts" is ${TEACHING_CONCEPTS_MIN} to ${teachingConceptsMax(b)} slides, ordered from the foundation to what builds on it (a concept others depend on comes first), exactly one idea per slide.
    - "title" is the idea itself as a short claim ("A mole links a particle count to a mass"), never a label ("The mole") and never "Idea 1".
    - "points" is two to four lines: an explanation, then a short example or special case. No bullet character at the start.
    - The example in "points" is a real one, with values or a specific case ("one mole of carbon has a mass of 12 g"), never a general sentence like "if the amount is known it can be calculated".
@@ -162,7 +172,7 @@ Mandatory rules:
      - "mindmap": ${limits.mindmap}; "role" is optional: "cause" or "effect".
    - "icon": one icon name from: ${DECK_ICON_NAMES.join(", ")}.
    - "chart": {"kind":"chart","chartType":"bar","categories":[..],"values":[..]} only from figures in the textbook content above; never invent figures, and never put "chart" with "shape".
-   - "photo": a 2-5 word English search phrase for a real scene (a place, an experiment, a phenomenon), never for a maths rule; on two concepts at most.
+   - "photo": a 2-5 word English search phrase for a real scene (a place, an experiment, a phenomenon), never for a maths rule; on two concepts at most. When you add a "photo", make one line of "points" say what the photo shows and how it illustrates the idea; a photo is never projected without words that explain it.
 14. Accuracy before you return — a student reads this explanation alone, with nobody to catch a mistake:
    - "answer" in the worked example and the practice is the final result, worked out and simplified: a number with its unit, the ordered pairs themselves, or the simplified expression. Never a dash "—", never a description of the method ("the solution is the intersection points"), never an unevaluated expression (not "63 × sin 30°" but "31.5 cm²").
    - Check every answer: substitute it back into the problem (into every equation of a system) and redo every calculation. If it does not check, change the problem's numbers, not the answer, and pick numbers that give a clean result (a whole number or a simple fraction).
@@ -177,7 +187,7 @@ Mandatory rules:
    - Write a "check" only when the answer is a number, an expression or ordered pairs; a descriptive answer (an explanation, a definition, an electron configuration, a comparison) has no check, because it is no number. Do not copy the example above: "question" is what you computed in this problem.
 ${isMathContext(b.topic, null, b.subject) ? `16. A graph or vectors (maths lessons only): a "concept" or the "workedExample" may carry one optional "visual", at most ${LESSON_VISUALS_MAX} in the whole section. Write everything the student needs in "points" or "problem" (the function written out, the vector's components): the drawing illustrates and never carries the information alone.
 ${figureFormatEn()}
-` : ''}
+` : ''}${keyTermsTeachingClauseEn(b)}
 Return only JSON in this shape:
 {
   "hook": { "question": "The hook question", "teacherNote": "How the teacher runs the discussion" },

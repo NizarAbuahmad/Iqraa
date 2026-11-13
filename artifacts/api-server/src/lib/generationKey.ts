@@ -47,9 +47,13 @@ export const PROMPT_VERSION = "2026-10-04.1";
  *   2026-11-03 (second): rule 16. A maths lesson may ask for one `visual` (a
  *   graph or vectors) on a concept or the worked example; a row stored before
  *   this has none, so a maths lesson's pooled section would never draw one.
+ *   2026-11-13: a concept's photo must be explained in its points (the physics
+ *   review found an air-track photo projected with no word on why), and a
+ *   physics or chemistry lesson's key terms each get a concept. Pooled sections
+ *   from before have photos nobody explains.
  */
 const PROMPT_VERSION_BY_KIND: Readonly<Record<string, string>> = {
-  "lesson-teaching": "2026-11-03.2",
+  "lesson-teaching": "2026-11-13.1",
 };
 
 /** The version a kind's pool is keyed and stored under. */
