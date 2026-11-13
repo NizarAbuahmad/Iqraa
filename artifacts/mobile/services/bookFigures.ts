@@ -74,6 +74,8 @@ import g3SciS1 from '../../../knowledge-base/grade-3-science/figures/g3-science-
 import g3SciS2 from '../../../knowledge-base/grade-3-science/figures/g3-science-s2-student-book/index.json' with { type: 'json' };
 import g3SocialS2 from '../../../knowledge-base/grade-3-social/figures/g3-social-s2-student-book/index.json' with { type: 'json' };
 import g4ArtsS1 from '../../../knowledge-base/grade-4-art/figures/g4-arts-s1-student-book/index.json' with { type: 'json' };
+import g4MathS1 from '../../../knowledge-base/grade-4-math/figures/g4-math-s1-student-book/index.json' with { type: 'json' };
+import g4MathS2 from '../../../knowledge-base/grade-4-math/figures/g4-math-s2-student-book/index.json' with { type: 'json' };
 import g4SciS1 from '../../../knowledge-base/grade-4-science/figures/g4-science-s1-student-book/index.json' with { type: 'json' };
 import g4SciS2 from '../../../knowledge-base/grade-4-science/figures/g4-science-s2-student-book/index.json' with { type: 'json' };
 import g4SocialS1 from '../../../knowledge-base/grade-4-social/figures/g4-social-s1-student-book/index.json' with { type: 'json' };
@@ -169,6 +171,8 @@ const INDEXES: { sourceId: string; figures: BookFigure[] }[] = [
   g3SciS2 as { sourceId: string; figures: BookFigure[] },
   g3SocialS2 as { sourceId: string; figures: BookFigure[] },
   g4ArtsS1 as { sourceId: string; figures: BookFigure[] },
+  g4MathS1 as { sourceId: string; figures: BookFigure[] },
+  g4MathS2 as { sourceId: string; figures: BookFigure[] },
   g4SciS1 as { sourceId: string; figures: BookFigure[] },
   g4SciS2 as { sourceId: string; figures: BookFigure[] },
   g4SocialS1 as { sourceId: string; figures: BookFigure[] },
