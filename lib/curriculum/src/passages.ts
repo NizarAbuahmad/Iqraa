@@ -76,6 +76,28 @@ export function repairExtractionArtifacts(input: string): string {
     .replace(/ا([أإآ])ل/g, 'ال$1');
 }
 
+/**
+ * A word as the text layer spells it when a lam-alef inside it came out reversed:
+ * «صلاة» → «صالة», «مبطلات» → «مبطالت», «أخلاق» → «أخالق».
+ *
+ * The same ligature defect `repairExtractionArtifacts` undoes after the article,
+ * but mid-word it cannot be undone on the page: «صالة» and «سؤال» are real words,
+ * so rewriting «ال» to «لا» would corrupt them. It is undone on the query
+ * instead, and only in a book that never spells the term correctly — that
+ * absence is the defect's signature. Without that guard «ثلاث» would also match
+ * «ثالث» on every «الدرس الثالث». A final «لا» is left alone («ولا» → «وال» is on
+ * most pages). Found 2026-11-13 in the Grade 4 Islamic books, where «صلاة»
+ * appears 0 times and «صالة» 44, so no prayer lesson found its own pages.
+ *
+ * The variant is repaired like a page is, so «الإسلام» → «االسالم» is compared
+ * as the «الاسالم» a page would hold; `null` when there is no distinct variant.
+ */
+function withReversedLamAlef(term: string): string | null {
+  if (term.length < 3) return null;
+  const variant = repairExtractionArtifacts(term[0] + term.slice(1).replace(/لا(?!$)/g, 'ال'));
+  return variant === term ? null : variant;
+}
+
 /** The form everything is compared in. Repair first, then fold. */
 export function searchForm(input: string): string {
   return normalizeArabic(repairExtractionArtifacts(input));
@@ -150,7 +172,7 @@ function isListingPage(search: string, bookTitleTerms: readonly string[][]): boo
  * against the unit page ranges on each book's contents page: Grade 9 Islamic
  * S1/S2, 28 of 31 returned pages in the right unit (without the guards about
  * half were); Grade 10 geography S1, every page in order inside its unit; a
- * Grade 4 Arabic unit whose titles are the same skill names as its siblings'
+ * Grade 6 Arabic unit whose titles are the same skill names as its siblings'
  * gets no pages rather than another unit's.
  */
 interface TitleGuards {
@@ -234,15 +256,31 @@ export function hasExtractedText(sourceId: string): boolean {
  * the index. Four characters is generous for Arabic, where the definite article
  * is already two of them.
  */
-function queryTerms(parts: readonly string[]): string[] {
+function queryTerms(parts: readonly string[], minLength = 4): string[] {
   const seen = new Set<string>();
   for (const part of parts) {
     for (const token of searchForm(part).split(/[\s,،.؛:()«»"'\-–—/]+/)) {
-      if (token.length >= 4) seen.add(token);
+      if (token.length < minLength) continue;
+      if (token.length === 3 && SHORT_STOPWORDS.has(token)) continue;
+      seen.add(token);
     }
   }
   return [...seen].sort((a, b) => b.length - a.length);
 }
+
+/**
+ * Three-letter words that say nothing about a page, in search form.
+ *
+ * Only a lesson's own title is read down to three letters (`queryTerms(…, 3)`): a
+ * title is a handful of content words, and the one that names the lesson is
+ * often a bare three-letter root — «طرح», «جمع», «ضرب» — which the four-letter
+ * floor used to drop, leaving «طَرْحُ الأَعْدادِ» to be found by «الاعداد» alone.
+ */
+const SHORT_STOPWORDS: ReadonlySet<string> = new Set(
+  ['على', 'إلى', 'الى', 'هذا', 'هذه', 'ذلك', 'تلك', 'بين', 'عند', 'غير', 'بعض', 'كيف',
+    'ولا', 'فلا', 'بلا', 'فيه', 'عنه', 'كان', 'بعد', 'قبل', 'حول', 'فوق', 'رضي', 'صلي']
+    .map(w => searchForm(w)),
+);
 
 export interface PassageQuery {
   /** Catalog unit id, e.g. `kbu-math-s1-nccd-u2`. Scopes which books are read. */
@@ -256,6 +294,39 @@ export interface PassageQuery {
    * text in front of a teacher verbatim.
    */
   quotableOnly?: boolean;
+  /**
+   * The lesson asked about, when the caller knows it. Its own title, key terms
+   * and outcomes then outrank the rest of the unit's — see `LESSON_WEIGHT`.
+   * Ignored unless the lesson belongs to `unitId`. When absent, a term that is
+   * exactly the title of one lesson in the unit identifies it the same way.
+   */
+  lessonId?: string;
+}
+
+/**
+ * How much more a lesson's own term counts than a unit-wide one.
+ *
+ * Without it every lesson of a unit got the same pages: the unit's objectives
+ * are many and long and the lesson title is one or two words, so the unit
+ * opener and the guide's unit overview outscored the lesson's own pages. Measured
+ * 2026-11-13 on the 242 Grade 4 lessons whose page range is known, one of their
+ * own student-book pages reached the top four for 83 before this and 146 after
+ * (all grades: 363 → 523 of 2176; 4 gave 137, 16 gave 147) — weight alone,
+ * before the three-letter titles and the lam-alef variant. See the log,
+ * «Grade 4 review».
+ */
+const LESSON_WEIGHT = 8;
+
+/** The catalog lesson a query is about, if it can be told without guessing. */
+function queryLesson(query: PassageQuery) {
+  // An id outside the unit (or a legacy id the catalog does not carry) falls
+  // through to the title, rather than switching the lesson weighting off.
+  const byId = query.lessonId ? LESSONS.find(l => l.id === query.lessonId) : undefined;
+  if (byId?.unitId === query.unitId) return byId;
+  const inUnit = LESSONS.filter(l => l.unitId === query.unitId);
+  const titles = new Set((query.terms ?? []).map(searchForm));
+  const named = inUnit.filter(l => titles.has(searchForm(l.titleAr)));
+  return named.length === 1 ? named[0] : undefined;
 }
 
 /**
@@ -276,15 +347,15 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
   const objectives = getObjectivesForUnit(unitId);
   // Some books print no learning outcomes at all (Grade 9 Islamic Studies,
   // history, geography, civics, PE), so their units have no objectives. A
-  // caller that passes no `terms` — a unit/semester/book paper, the exam
-  // generator — then searched with nothing and got no pages, even for a book
-  // whose text is extracted. The unit's own lesson titles are what is left to
-  // describe it. Only as a fallback: where objectives exist they are the
-  // stronger description, and adding titles would re-rank every other unit.
-  const lessonTitles = objectives.length || query.terms?.length
+  // caller that passes no `terms` and no lesson — a unit/semester/book paper,
+  // the exam generator — then searched with nothing and got no pages, even for
+  // a book whose text is extracted. The unit's own lesson titles are what is
+  // left to describe it. Only as a fallback: where objectives exist they are
+  // the stronger description, and adding titles would re-rank every other unit.
+  const lessonTitles = objectives.length || query.terms?.length || query.lessonId
     ? []
     : LESSONS.filter(l => l.unitId === unitId).map(l => l.titleAr);
-  const terms = queryTerms([
+  const unitTerms = queryTerms([
     ...(query.terms ?? []),
     ...objectives.map(o => o.description),
     ...objectives.flatMap(o => o.skills ?? []),
@@ -292,16 +363,47 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
   ]);
   // Only the title fallback needs these; the other paths are left as they were.
   const fallback = lessonTitles.length ? titleGuardsFor(unitId) : null;
+  // The lesson's own words: its title, its key terms (the book's vocabulary
+  // box) and its own outcomes. For the many lessons whose book prints no
+  // outcomes these are the only terms there are, and a one-word title alone
+  // can never reach the two matches a page needs.
+  const lesson = queryLesson(query);
+  const lessonTerms = lesson
+    ? [
+      ...queryTerms([lesson.titleAr], 3),
+      ...queryTerms([
+        ...lesson.keywordsAr,
+        ...lesson.objectivesAr,
+        ...lesson.outcomes.flatMap(o => [o.descriptionAr, ...(o.skills ?? [])]),
+      ]),
+    ]
+    : [];
+  const weight = new Map<string, number>(unitTerms.map(t => [t, 1]));
+  for (const t of lessonTerms) weight.set(t, LESSON_WEIGHT);
+  const terms = [...weight.keys()];
   if (!terms.length) return [];
 
   const sources: CurriculumSource[] = itemsForUnitTags(tags)
     .filter(s => !quotableOnly || usePolicy(s) === 'quotable')
     .filter(s => hasExtractedText(s.id));
 
+  const variants = new Map<string, string>();
+  for (const t of terms) {
+    const r = withReversedLamAlef(t);
+    if (r) variants.set(t, r);
+  }
+
   const scored: Passage[] = [];
   for (const source of sources) {
     const policy = usePolicy(source);
-    for (const page of pagesFor(source.id)) {
+    const pages = pagesFor(source.id);
+    // Per book, because the defect is per book: the Grade 4 Islamic student
+    // book never spells «صلاة» right while its teacher guide does.
+    const reversedLamAlef = new Map<string, string>();
+    for (const [t, r] of variants) {
+      if (!pages.some(p => p.search.includes(t))) reversedLamAlef.set(t, r);
+    }
+    for (const page of pages) {
       if (fallback && !pageBelongsToUnit(fallback, unitId, source.id, page)) continue;
       // Longer terms are rarer and so more informative: «المماس» locating a page
       // means more than «الشكل» does. Length is a cheap stand-in for IDF over a
@@ -309,8 +411,9 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
       let score = 0;
       let matched = 0;
       for (const term of terms) {
-        if (page.search.includes(term)) {
-          score += term.length;
+        const reversed = reversedLamAlef.get(term);
+        if (page.search.includes(term) || (reversed !== undefined && page.search.includes(reversed))) {
+          score += term.length * weight.get(term)!;
           matched += 1;
         }
       }
