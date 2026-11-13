@@ -216,7 +216,7 @@ function layoutGraph(fig: FunctionGraph, box: Box): FigureLayout {
   return { viewport, curves, points, arrows: [], components: [] };
 }
 
-function arrowHead(from: Pt, to: Pt): [Pt, Pt, Pt] {
+export function arrowHead(from: Pt, to: Pt): [Pt, Pt, Pt] {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const len = Math.hypot(dx, dy) || 1;
