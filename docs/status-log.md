@@ -56,14 +56,21 @@ PR). **Not verified / left open — needs the PDFs or a decision:**
   `g4-math-s1-exercise-book`, `g4-arabic-s2-exercise-book` (≈0.3–3.6 «على» per 1000 Arabic words against 10–18 in
   clean books; the quality gates passed them). Social lessons mostly get no book text because of it.
 - **PE has no text at all**: no `g4-pe` source registered, so PE generation is never grounded in the book.
-- **Digital** is one book for both semesters (activity book p. 3, and units 6–10 cite semester-2 science and maths
-  units), filed entirely under semester 1. Moving u6–u10 changes 15 lesson ids — a decision.
+- ~~Digital filed entirely under semester 1~~ — done, see below.
 - **Missing figures**: maths, Arabic, Islamic, English, digital, PE and vocational S2 have no crops at all; reviewers
   listed the lessons that most need them (angles, protractor, symmetry, fraction and decimal models, Venn diagrams;
   the food pyramid; vocational S2 tool photos). Re-cropping the sliced ones that were kept is also open.
 - **Book-page ranges to re-render**: the removed entries above, maths S2 u9_l4–l6 (none), the three maths S2 concept
   activities that sit on the previous lesson (pp. 22, 37, 51), and the unit-end spill of every book's last lesson
   into the next unit's opener.
+- **Moved (owner's decision, same PR): Grade 4 digital units 6–10 are semester 2.** The activity book covers the
+  year («ثلاث لبنات تعلّم لكل فصل دراسي», p. 3; blocks 4–6 cite semester-2 science and maths units, pp. 82, 92, 102), so
+  `iqra_curriculum_g4_digital_sem2.json` / `g4DigitalSem2.ts` / `book-digital-4-s2` / `kb-digital-4-s2` now hold
+  u6–u10 (13 lessons) with the book's numbers, and semester 1 keeps u1–u5 (14). The book's two sources carry the bank
+  tag `g4-digital-s2` too, so semester-2 units read the same book (light lands on guide p. 50 and book p. 82).
+  `book-digital-4-s2` is appended to `MVP_BOOK_IDS`. **The 13 lessons' ids changed** from `kbl-g4-digital-s1-nccd-u6…`
+  to `kbl-g4-digital-s2-nccd-u6…` and there is no redirect: anything stored under an old id (a pooled generation, a
+  pacing-plan row, a saved material) no longer resolves to a lesson. Not checked how many such rows production holds.
 - English unit numbers are one higher than the book's («Welcome» is u1); vocational S1 `main_idea_ar` holds the review
   question, not the opener's «الفكرة الرئيسة», in 14 of 15 lessons; vocational S2 U5/U6 `general_idea_ar` are copies of
   their first lesson's; the hadith lessons do not carry their hadith; Islamic objectives could come from the guides'
