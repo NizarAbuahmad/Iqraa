@@ -415,6 +415,24 @@ export function detectSubjectAmbiguity(results: KBLesson[]): string[] | null {
 }
 
 /**
+ * Of these lessons, the ones this teacher teaches (their grade and subject, as
+ * `/setup-subjects` recorded them). «اختبار قصير عن التفاعلات الكيميائية» asked a
+ * grade 10 teacher «كيمياء أم علوم؟» because grade 8 Science has a lesson of the
+ * same title; she does not teach it. Nothing taught keeps the list as it was, and
+ * so does a teacher who has not set up (everything counts as taught).
+ */
+export function lessonsTheTeacherTeaches(
+  results: KBLesson[],
+  teaches: (subjectId: string, gradeId: string) => boolean,
+): KBLesson[] {
+  const taught = results.filter(lesson => {
+    const book = getBookForLesson(lesson);
+    return !book || teaches(book.subjectId, book.gradeId);
+  });
+  return taught.length > 0 ? taught : results;
+}
+
+/**
  * `isConfidentKbHit` only compares the top score against the runner-up
  * score — it has no notion of subject, because it lives in `kbSuggestion.ts`
  * to stay pure and fast to test. That is fine when the runner-up is a

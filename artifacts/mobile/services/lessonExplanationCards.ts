@@ -2,23 +2,34 @@
  * Turns a stored `lesson-teaching` artifact into the cards the student screen
  * draws.
  *
- * Pure (its one runtime import, slideLayout, is react-free), so it runs under
- * bare `node --test` (the screen itself cannot). The text is shown as stored, the same as the slide
+ * Pure (its runtime imports, slideLayout and `@workspace/figure`, are react-free),
+ * so it runs under bare `node --test` (the screen itself cannot). The text is shown as stored, the same as the slide
  * deck shows it, except that a leading list marker on a point or a step is
  * removed (`stripMarker`). Anything blank is dropped here, so the screen never renders
  * an empty card; an artifact with nothing usable yields no cards and the
  * screen says so.
  */
+import { resolveFigure, type Figure } from '@workspace/figure';
 import type { ActivitySlide, LessonTeachingOutput } from './ai/AIService.ts';
 import { payloadLines, usableConceptShape } from './slideLayout.ts';
 
 export type ExplanationCard =
   | { kind: 'hook'; text: string }
-  | { kind: 'concept'; title: string; points: string[]; misconception?: string }
-  | { kind: 'example'; problem: string; steps: string[]; answer: string }
+  | { kind: 'concept'; title: string; points: string[]; misconception?: string; visual?: Figure }
+  | { kind: 'example'; problem: string; steps: string[]; answer: string; visual?: Figure }
   | { kind: 'practice'; problem: string; hint?: string; answer?: string };
 
 const clean = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+
+/**
+ * An answer, or '' when the model wrote only a placeholder. A practice answer
+ * of «—» reached the first student review (2026-11-01); shown on a card it
+ * reads as the answer. Only punctuation counts as a placeholder, so «-3» stays.
+ */
+export const realAnswer = (value: unknown): string => {
+  const answer = clean(value);
+  return /^[\s\-–—_.…؟?]*$/u.test(answer) ? '' : answer;
+};
 
 // A leading list marker: a bullet or dash followed by a space, or a number in
 // Latin or Arabic-Indic digits written «1.» «1)» «(1)» followed by a space (or
@@ -51,6 +62,16 @@ export function stripMarker(text: string): string {
   // «- 1. اقسم»: what follows is itself a list number, not a quantity.
   if (AMBIGUOUS.test(t) && MATHS_NEXT.test(rest) && !LIST_NUMBER.test(rest)) return t;
   return rest;
+}
+
+/** Cards are built in render with no boundary above them, so a hostile stored value must not throw. */
+function drawing(raw: unknown): { visual: Figure } | Record<string, never> {
+  try {
+    const visual = resolveFigure(raw);
+    return visual ? { visual } : {};
+  } catch {
+    return {};
+  }
 }
 
 const cleanList = (values: unknown): string[] =>
@@ -94,17 +115,21 @@ export function buildExplanationCards(content: LessonTeachingOutput | null | und
       title,
       points: [...points, ...shapeLines(concept.shape, title, points)],
       ...(misconception ? { misconception } : {}),
+      ...drawing(concept.visual),
     });
   }
 
   const example = content.workedExample;
   const exampleProblem = clean(example?.problem);
-  if (exampleProblem) {
+  const exampleAnswer = realAnswer(example?.answer);
+  // A worked example without its answer teaches nothing on its own.
+  if (exampleProblem && exampleAnswer) {
     cards.push({
       kind: 'example',
       problem: exampleProblem,
       steps: cleanList(example?.steps),
-      answer: clean(example?.answer),
+      answer: exampleAnswer,
+      ...drawing(example?.visual),
     });
   }
 
@@ -112,7 +137,7 @@ export function buildExplanationCards(content: LessonTeachingOutput | null | und
   const practiceProblem = clean(practice?.problem);
   if (practiceProblem) {
     const hint = clean(practice?.hint);
-    const answer = clean(practice?.answer);
+    const answer = realAnswer(practice?.answer);
     cards.push({
       kind: 'practice',
       problem: practiceProblem,

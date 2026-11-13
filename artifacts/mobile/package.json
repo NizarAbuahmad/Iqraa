@@ -73,6 +73,7 @@
     "@react-navigation/elements": "^2.9.36",
     "@workspace/arabic-spelling": "workspace:*",
     "@workspace/exam-paper": "workspace:*",
+    "@workspace/figure": "workspace:*",
     "@workspace/math-practice": "workspace:*",
     "docx": "^9.7.1",
     "expo-audio": "~1.1.1",

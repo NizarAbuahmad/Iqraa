@@ -83,6 +83,21 @@ describe("stripTeacherNotes", () => {
     assert.deepEqual(stripTeacherNotes(stored), { concepts: [{ title: "المول", points: ["a"] }] });
   });
 
+  it("drops the machine check and its verdicts — Latin working a student was never written to read", () => {
+    const stored = {
+      workedExample: {
+        problem: "p", steps: ["s"], answer: "5.77 cm",
+        check: { topic: "evaluate", question: "10*sin(30°)/sin(60°)", answer: "5.77" },
+      },
+      practice: { problem: "q", answer: "4", check: { topic: "evaluate", question: "2*2", answer: "4" } },
+      verification: { workedExample: { code: "verified" }, practice: { code: "verified" } },
+    };
+    assert.deepEqual(stripTeacherNotes(stored), {
+      workedExample: { problem: "p", steps: ["s"], answer: "5.77 cm" },
+      practice: { problem: "q", answer: "4" },
+    });
+  });
+
   it("passes non-objects through and does not mutate its input", () => {
     assert.equal(stripTeacherNotes("text"), "text");
     assert.equal(stripTeacherNotes(null), null);

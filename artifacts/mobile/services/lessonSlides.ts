@@ -32,6 +32,7 @@ import { inlineSteps, MAX_STAT_VALUE_CHARS, resolveSlideLayout, usableConceptSha
 import { iconForTopic, isSectionIconName } from './deckIcons.ts';
 import { englishOnly } from './englishText.ts';
 import { isSpotTheMistake } from './spotTheMistake.ts';
+import { realAnswer } from './lessonExplanationCards.ts';
 
 /**
  * `slide` drawn in `shape` when the gate accepts its data, else exactly as it
@@ -220,7 +221,7 @@ export function usableTeaching(raw: LessonTeachingOutput | null | undefined): Us
     .filter(c => c.title && c.points.length > 0)
     .slice(0, TEACHING_CONCEPTS_MAX);
   const problem = str(raw?.workedExample?.problem);
-  const answer = str(raw?.workedExample?.answer);
+  const answer = realAnswer(raw?.workedExample?.answer);
   const steps = lines(raw?.workedExample?.steps, 6);
   // Only an answer long enough to mean something: «4» appears in half the
   // problems that have 4 as their answer, «(x−2)²+(y+3)²=25» in none of them.
@@ -239,7 +240,7 @@ export function usableTeaching(raw: LessonTeachingOutput | null | undefined): Us
       ? { problem, steps, answer }
       : null,
     practice: practiceProblem
-      ? { problem: practiceProblem, hint: str(raw?.practice?.hint), answer: str(raw?.practice?.answer) }
+      ? { problem: practiceProblem, hint: str(raw?.practice?.hint), answer: realAnswer(raw?.practice?.answer) }
       : null,
     mistake: mistakeClaim && mistakeAnswer
       ? { claim: mistakeClaim, hint: str(raw?.mistake?.hint), answer: mistakeAnswer }

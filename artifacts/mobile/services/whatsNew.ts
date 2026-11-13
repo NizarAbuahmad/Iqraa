@@ -26,12 +26,50 @@ export type WhatsNewEntry = {
   bodyKey: TranslationKey;
   /** Where «جرّبها» goes. Must be a screen every role in `roles` may open — the test checks. */
   route?: string;
+  /**
+   * A tool in `services/toolCatalog.ts` that this entry announces: its card on the
+   * Tools tab and in the chat "+" menu wears «جديد» (`newToolIds`). Tools are a
+   * teacher's, so `roles` must include `teacher` — the test checks.
+   */
+  toolId?: string;
 };
 
 const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
+  {
+    id: 'exam-drawn-figures',
+    date: '2026-11-03',
+    roles: ['teacher'],
+    titleKey: 'whatsNewDrawnFiguresTitle',
+    bodyKey: 'whatsNewDrawnFiguresBody',
+    route: '/evaluations',
+  },
+  {
+    id: 'exams-clearer-cards',
+    date: '2026-11-01',
+    roles: ['student', 'parent'],
+    titleKey: 'whatsNewExamsTitle',
+    bodyKey: 'whatsNewExamsBody',
+    route: '/my-exams',
+  },
+  {
+    id: 'play-spelling-game',
+    date: '2026-11-01',
+    roles: ALL_ROLES,
+    titleKey: 'whatsNewSpellingTitle',
+    bodyKey: 'whatsNewSpellingBody',
+    route: '/play/spelling',
+  },
+  {
+    id: 'play-games-upgrade',
+    date: '2026-10-30',
+    roles: ALL_ROLES,
+    titleKey: 'whatsNewGamesUpgradeTitle',
+    bodyKey: 'whatsNewGamesUpgradeBody',
+    route: '/play',
+  },
   {
     id: 'play-hub-filters',
     date: '2026-10-30',
@@ -96,6 +134,60 @@ export function unseenFor(opts: {
       return createdAt < at && now - at <= WHATS_NEW_MAX_AGE_DAYS * DAY_MS && !seen.includes(e.id);
     })
     .slice(0, WHATS_NEW_MAX_SHOWN);
+}
+
+// ─── «جديد» on a new tool's card ────────────────────────────────────────────
+
+/** A tool's «جديد» goes this many days after its entry's day, or at its first open, whichever is sooner. */
+export const NEW_TOOL_DAYS = 30;
+
+/** Per account, on this device: the tools opened since they were announced. */
+export function newToolOpenedKey(userId: string): string {
+  return `@iqra_new_tool_opened_v1:${userId}`;
+}
+
+/**
+ * The tools whose cards wear «جديد» for this account: announced by an entry for its
+ * role, after the account was made (to a newer account nothing is new), within
+ * `NEW_TOOL_DAYS`, and not opened since. `opened === 'all'` (unreadable storage)
+ * shows none.
+ */
+export function newToolIds(opts: {
+  role: TourRole;
+  createdAt: number;
+  opened: SeenIds;
+  now: number;
+  entries?: readonly WhatsNewEntry[];
+}): Set<string> {
+  const { role, createdAt, opened, now } = opts;
+  const ids = new Set<string>();
+  if (opened === 'all' || Number.isNaN(createdAt)) return ids;
+  for (const e of entriesFor(role, now, opts.entries)) {
+    if (!e.toolId) continue;
+    const at = entryTime(e.date);
+    if (createdAt < at && now - at <= NEW_TOOL_DAYS * DAY_MS && !opened.includes(e.toolId)) ids.add(e.toolId);
+  }
+  return ids;
+}
+
+/**
+ * The tools a pathname belongs to — a tool's screen or anything under it
+ * (`/ai-tools/classroom/builder` is the classroom). Opening it by any way in (its
+ * card, a link from Today, a deep link) clears its «جديد». Two catalog entries can
+ * share a screen, so this returns every match.
+ */
+export function toolIdsForPath(pathname: string, tools: readonly { id: string; route?: string }[]): string[] {
+  return tools
+    .filter(t => t.route && (pathname === t.route || pathname.startsWith(`${t.route}/`)))
+    .map(t => t.id);
+}
+
+/**
+ * The label a tool card wears, for the Tools tab and the chat "+" menu alike: a
+ * tool's own fixed label (GeoGebra's) first, else «جديد» while it is new.
+ */
+export function toolBadgeKey(tool: { id: string; badgeKey?: string }, newTools: ReadonlySet<string>): string | undefined {
+  return tool.badgeKey ?? (newTools.has(tool.id) ? 'whatsNewBadge' : undefined);
 }
 
 export type WhatsNewBlocker =

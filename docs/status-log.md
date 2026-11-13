@@ -10,6 +10,961 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A content report can say what is wrong — 2026-11-11
+
+The admin's «تقرير محتوى جديد» email of 2026-11-11 (a Grade 4 Arabic lesson plan, the second Grade 4 Arabic report in four
+days) said only *that* a paper was flagged. The report carried no reason: `ai_artifact_reports.reason` existed since the
+table was made, but `reportVariant` never wrote it and neither route accepted it, so it was `""` on every row.
+
+**What changed.** «بلّغ عن مشكلة» now opens a sheet (`components/ui/ReportProblemSheet.tsx`, replacing the bare confirm on
+the shared result row and on Slides) with an optional box, «ما المشكلة؟ (اختياري)». Empty is still one tap. The reason goes
+in the body of `POST /generate/variants/:id/retire` (`reportRequestBody`, sent only when non-empty), is normalised by
+`lib/reportReason.ts` (non-string or blank → none, control characters dropped, cut to 500 — the client box has the same
+`maxLength`), stored in the existing `reason` column (**no migration**), quoted in both blocks of the admin email
+(escaped, line breaks kept) and returned by `GET /moderation/artifact-reports`, where the card shows it above «عرض المحتوى».
+A failed send leaves the sheet open with the text still in it.
+
+**Verified.** Red/green: `reportReason.test.ts`, `artifactReportEmail.test.ts` (reason in both blocks, absent when empty,
+markup escaped), mobile `reportReason.test.ts`; `artifactReportReason.test.ts` scans the route → store → notification →
+list wiring, and was shown to fail when the reason was dropped from the notification call. `pnpm run typecheck`; api-server
+build + suite (2,913 pass, 0 skipped).
+
+**Not verified / limits.** The sheet and the admin card were **not** opened in a browser or on a device: a pooled result
+needs a live API and database. Nothing here exercises Postgres — the `reason` insert and the admin select are checked by
+type and by source scan only. The **student** report (`POST /student/lesson-explanation/:variantId/report`) still sends no
+reason, so its rows stay `""`; it would need the same sheet on the student screen. A second report by the same teacher on
+the same open artifact is still treated as a duplicate and does not update the first one's reason. The push to admins is
+unchanged (kind and lesson only); the reason is in the email and on the card. Reports filed before this change have no
+reason and show none.
+
+**Also in this PR: the E2E job is pinned to `ubuntu-24.04`.** The smoke test (`.github/workflows/e2e.yml`) failed twice on
+this PR before any test ran: `playwright install --with-deps chromium` ran apt against the Ubuntu 26.04 («resolute»)
+mirrors and could not resolve `archive.ubuntu.com`, `security.ubuntu.com` or `azure.archive.ubuntu.com` (exit 100 after
+~10 minutes), on two different runners. The last green E2E runs (Nov 5 and Nov 9) predate it. Nothing in the report-reason
+diff touches that workflow. The pin is the smallest change and affects only this job (the other workflows do not run apt).
+**Verified:** on the pinned runner the smoke test installed the browser and passed (about 3 minutes, 2026-11-13), so 24.04
+reaches the mirrors that 26.04 could not. **Not verified:** that `ubuntu-latest` itself had rolled to 26.04 (inferred from
+the apt log; the pin makes it moot) or that the DNS failure is gone for good rather than absent that day. E2E is not a
+required check, so this never gated merging.
+
+## Today's setup nudge no longer says "no plan" about a plan that exists — 2026-11-05
+
+A teacher added a pacing plan from the Today nudge «أضف الخطة» and the nudge kept saying «لا توجد خطة زمنية». Not a
+refresh bug: Today re-reads the schedule and the plans on every focus, nothing caches (client has no cache, the API
+sends `no-store`), and the plans screen is an ordinary pushed screen. The cause: the nudge never asked whether a plan
+exists, only whether the next period has a lesson (`timetableSetupStep`), and the plans form saves with a title and a
+class alone, so a plan with nothing dated in it left the nudge in its «no plan» wording.
+
+**What changed.** `timetableSetupStep` takes the plans and classes and has a third step, `schedule`: the next period's
+class has a plan (same class, same subject) but no dated lesson in it. Text «خطة … بلا دروس مجدولة بعد — أضف دروسها
+ليظهر هنا درس الحصة.», button «جدول الدروس», same destination as before (the plans screen opens the one matching
+plan). The plan filter now lives in one function, `plansForPeriod`, used by both `nextPeriodLesson` and the nudge, so
+the card and the nudge cannot disagree about which plans speak for a period. Both Today layouts (phone and desktop)
+carry the new wording.
+
+**Verified.** Red/green on `scheduleCalendar.test.ts` (3 new cases failed first, for the right reason; 2 boundary cases
+pin that another class's or another subject's plan still reads «no plan»); `pnpm run typecheck`; the whole mobile
+suite (9,192 pass, 0 fail, 10 skipped). **Not verified:** the screen itself in a browser or on a device (no API/DB
+in the session), and the Arabic wording by a native reviewer. No «ما الجديد» entry: a corrected nudge sentence, not a
+feature.
+## Admin users list: filter by channel (web / app) and by new or returning — 2026-11-03
+
+**What changed.** The admin «المستخدمون والحظر» screen (`app/admin/users.tsx`) gains two chip rows above the dates,
+on web and in the app alike:
+- **«انضم عبر»** — الكل · ويب · تطبيق · غير معروف. `تطبيق` is either store platform (`android`/`ios`), `غير معروف` a
+  null `signup_platform` (accounts from before 2 Oct). API: `GET /admin/users?channel=all|web|app|unknown`
+  (`parseUserChannel`, `lib/adminMetrics.ts`).
+- **«المستخدمون»** — الجميع · جدد · عائدون. It decides how the date range is read
+  (`?cohort=all|new|returning`, `parseUserCohort`): *جدد* = the account was made inside the range (what the range
+  already meant); *عائدون* = made **before** the range and came back inside it — a sign-in (`last_login`), an AI
+  generation or a saved material (the daily-activity chart's "active", plus a sign-in). The API refuses `returning`
+  with no `from`, so the screen ties the two: picking جدد/عائدون with no start day opens the «٧ أيام» window, and
+  «الكل» on the dates drops back to الجميع (`rangeForCohort` / `cohortForRange`, `services/adminUsers.ts`). A line
+  under the dates says which reading is in force. The dashboard's «جدد» tile (`?new=1`) now also lights «جدد».
+
+**Verified.** `adminUsersFilters.db.test.ts` (new, real Postgres through the built bundle): each channel, new inside
+the range combined with a channel, returning by each of the three signals alone, the end day honoured, an old account
+quiet in the window excluded, and the two 400s. Unit tests for both parsers and for the screen's query/range helpers
+(`adminUsers.test.ts`). Full api-server and mobile suites, monorepo typecheck. The screen was looked at in a browser
+(web build against a local API).
+
+**«هذا الشهر» clipped again, and «المحظورون فقط» off a narrow screen (2026-11-05).** An admin's
+Android screenshot from 2 Nov still showed «هذا الشهر» cut to «هذا», after the 31 Oct fix
+(`textBreakStrategy="simple"`, see «هذا الشهر» was clipped on Android). Either that phone had not
+received the update or greedy breaking was not enough; it cannot be told from here, so the label is
+now made unable to wrap at all: `FilterChip` (`components/admin/widgets.tsx`) sets
+`numberOfLines={1}` with `ellipsizeMode="clip"` (a pixel-short measurement clips a pixel instead of
+printing «…»). `adminFilterChip.test.ts` pins both props; it fails on the old source. Separately, at
+360px on web the search box would not shrink below a web `<input>`'s default width and pushed
+«المحظورون فقط» off the left edge; it now has `minWidth: 0`. Both seen fixed in a web build at 360
+and 430px (the label's `scrollWidth` equals its `clientWidth`). **Not** seen on an Android phone,
+which is where the clipping was reported.
+
+**Not verified / limits.** Not looked at on an Android device. `last_login` is stamped only at sign-in, not on token
+refresh, so someone who stays signed in and only browses is not "returning" unless they generated or saved
+something — the same blind spot the daily-activity chart documents. No «ما الجديد» entry: the screen is admin-only and
+those entries reach only teacher/student/parent roles.
+## Test accounts for every role: a seed script — 2026-11-03
+
+**What changed.** `pnpm --filter @workspace/api-server run seed:test-accounts`
+(`artifacts/api-server/scripts/seed-test-accounts.mjs`) writes a teacher, a student and a parent that are linked to one
+another: the teacher owns one grade-10 maths class with three roster rows, the student is linked `self` to the first row
+and the parent `guardian` to the same row. One account cannot hold all three roles (`users.role` is one value, and
+`lib/roleSwitch.ts` locks the switch once there is a class or a link), so this is three accounts, used side by side
+through the app's saved accounts. Each is email-verified, and has the grade/subject picks that skip `/setup-subjects`,
+`/setup-grade` and `/claim-required`. Password `IqrraTest-2026` unless `--password`; `--email-base you@gmail.com` gives
+`you+teacher@…` and so on. Terms acceptance is left unset, because nobody accepted terms. It is idempotent (matched by
+email, class name and roster name), and refuses an existing email with another role, a roster row already claimed by
+another student, and any database that is not local (or has `?host=`) unless `--allow-remote`. Documented in
+`LOCAL_SETUP.md` («Test accounts for every role»). No «ما الجديد» entry: nothing in the app changes.
+
+**Verified** against a throwaway local Postgres with all migrations applied: two runs (`created` then `updated`, still
+1 class, 3 roster rows, 1 `self` link and 1 `guardian` link); the remote-host and short-password refusals. Then I booted
+the built API against that database (`STUDENT_ACCOUNTS=true`, `AI_LIVE_MODE=false`) and signed in as each account:
+`/auth/me` shows the teacher with grade-10/mathematics, and the student and parent with `hasRosterLink: true`, grade-10
+and `guardianStatus: not_required`. `/classes` lists the class with `studentCount: 3`. `/parent/homework` lists the
+child with `canTrack: true`. `/student/homework` and `/parent/schedule` answer 200, `/classes` as the student answers
+403, and a wrong password answers 401.
+
+**Not verified:** signing in through the app's UI (only the API was driven), and running it against production. Nothing
+was written to production. With `GUARDIAN_APPROVAL` on, the student would still be `not_required`, because it has a live
+link; that was reasoned from `guardianStatus`, not run.
+
+## CI: the «migrations match schema» job stops fetching history it never reads — 2026-11-05
+
+The third of three jobs with `fetch-depth: 0` (after `destructive migrations acknowledged`, #1413, and Deploy's
+`what changed`, #1415). On 2026-11-03 this job hit its 10-minute limit inside `git fetch` twice on one PR (#1411), then
+passed on the next head. Unlike the other two it needs **no history at all**: it installs, runs `generate` and asks
+`git status --porcelain lib/db/migrations` whether a file changed, which is a working-tree question.
+
+**What changed.** `.github/workflows/ci.yml`, that job's checkout only: `fetch-depth: 0` removed, so it takes the default
+(the one commit). No `filter`, no timeout change, no script change. The destructive-SQL check, which did read history, lived
+in this job until 2026-10-11 (see `destructive-migration-ack.yml`); nothing left here does.
+
+**Checked** on a `--depth 1` clone of `main`, with the exact pnpm the job pins (11.18.0): `pnpm install --frozen-lockfile
+--filter @workspace/db...` 1.4 s (warm store; 8 s cold), `generate` printed «No schema changes», `git status --porcelain lib/db/migrations` was empty.
+**Negative control** on the same clone: one column added to `adminMetrics.ts` with no migration made `generate` write
+`0025_*.sql` and `git status` list three paths, so the job's check still fails when it should. A shallow checkout does not
+blunt it.
+
+**A correction to #1413 and #1415.** Their text says the lightweight fetch is «~5 MB, about a second». That figure was a
+**bare clone with no working tree**. A CI job also checks out the commit's files, and the repository is large: a depth-1
+clone here is 564 MB (the full history of all branches, 1.2 GB). So the real saving on those two jobs is roughly half the
+bytes plus no negotiation over 77 branches, not 200×. What actually shows the fix works is the runner timings, not that
+figure. (The comments inside `destructive-migration-ack.yml` and `deploy.yml` repeat the «~5 MB» wording; they are left as they
+are here because any edit to `deploy.yml`, even a comment, redeploys the API and the verifier. Correct them the next time that
+file is touched for a real reason.) `destructive migrations acknowledged` took 16–24 s on three heads (it was cut off at 300 s four times before),
+and Deploy's `what changed` took 17–18 s with a 12–13 s checkout on two merges.
+
+**Not verified.** It has not run on a runner; this PR's own `migrations match schema` run is the first. The
+`Migrations apply to an empty database` step needs Postgres, which was not available here, so it was not run; it does not
+read the checkout's history. Merging this touches `ci.yml`, which `deploy.yml`'s `what changed` job counts as a web change:
+expect the web bundle to redeploy (not the API or the verifier) and an OTA to `preview`.
+
+**Left alone.** The other two jobs keep `fetch-depth: 0` **with** `filter: blob:none` on purpose: one needs the merge base of
+`base...head`, the other checks that a `BEFORE` commit exists. These are the only two `fetch-depth: 0` left in
+`.github/workflows/`.
+
+## /play spelling game: from 5 rules to 15, 40 questions to 86 — 2026-11-04
+
+The game («كيف تُكتب؟») served five of the bank's 19 rules, because the tile shows a
+rule name and bare options, so a wrong option that is itself a word is a second
+defensible answer. The bank now marks those words `dictationOnly` (see the entry
+below, «Spelling bank: a word whose misspelling is itself a word…»), and
+`takeSpellingItems` never builds a choice from one. So the game no longer needs its
+own allowlist: it serves every rule except one, and gets only the words whose options
+were read and are not words.
+
+- **Served now: 15 rules, 86 distinct questions** (it was 5 and 40; counted over 3,000
+  seeded rounds). A round is still 8 words, none twice, at most 3 from one rule.
+- **Not served, and why.** `alif-tathniya-baad-hamza` is excluded
+  (`SPELLING_EXCLUDED_RULE_IDS`): its key marks «شيآن» correct and «شيئان» wrong, and
+  nobody has checked the Ministry book. Three more never appear because the bank
+  leaves them no choice-safe word: الألف الفارقة (the plural «يدعوا» is a word),
+  الأفعال الثلاثية (ى/ي: «رمي», «هدي» are words) and همزة الاستفهام (its options are
+  real verbs). They still come out as dictation in worksheets.
+- **One more word flagged in the bank, found by reading what the widened game would
+  show:** «احمد» beside «أحمد» is a real imperative («احمد الله»), the same kind of case
+  as «أستمع» beside «استمع». `hamza-wasl-qat` now has 4 flagged words, not 3; words
+  that can be asked as a choice are 104, not 105. This is a `lib/` change, so the merge
+  deploys the API (no schema, no migration).
+- **Removed:** the five-rule list, and the one-word `SPELLING_DROPPED_ANSWERS`
+  («ذلك»): the bank's data fix («ذالك» in place of the verb «دلك») made it unnecessary.
+  `BANK_CORRECT`, the cross-rule backstop, stays as a second line of defence.
+- **Verified:** I read all 53 questions the widening added (each answer with the three
+  wrong options it can show); one needed a flag (above). Tests: the game's
+  (`playGameSpelling.test.ts`: every rule that can make a choice is reachable and no
+  excluded rule ever is; a dictation-only word is never asked; rounds stay full), the
+  bank's 250, the API's 116 `spellingItems`, typecheck, the mobile suite. The longest
+  tile name was already served before, so no new wrapping case.
+- **Not verified / limits.** The reading is mine, not a linguist's or a teacher's, and
+  words nobody flagged are read, not proven: «أبن», «هده», «يصلى», «بير» and «قاريء»
+  (an older accepted spelling of «قارئ», which the rule marks wrong) stay as wrong
+  options because a pupil is unlikely to know them or the curriculum teaches the other
+  form. Not re-checked in a browser: the screens did not change. The «ما الجديد» text
+  for the game still says «منها التاء المربوطة واللام الشمسية و«هذا» و«هذه»», which is
+  true, only no longer all of it.
+
+## Grade 10 physics: semester 2's three introductory experiments, and the unit numbering pinned — 2026-11-03
+
+A teacher compared the app's Grade 10 physics with the two student books and reported four things: (1) no unit 3 exists in
+either book; (2) «الحركة الموجية» showed with unit 2 when it is a unit of its own with two lessons; (3) every lesson on
+offer was semester 2's, so no semester 1 file could be made; (4) unit numbers should be 4, 5, 6 in semester 2 and not
+1, 2, 3.
+
+**What the code already did, checked before changing anything.** Points 1, 2 and 4 are already how the data reads:
+semester 1 is units 1–2, semester 2 is units 4–6 in book order, wave motion is unit 6 with two lessons, and nothing
+generates a unit 3. Point 3 is not reproducible from the code either: both books are in `KB_BOOKS` and the picker lists
+S1 then S2 for Grade 10 physics. The unit picker prints a unit's title with no number, so **where the teacher saw
+«الوحدة الثانية» beside wave motion is not found** — a stale deploy, or a screen other than the picker, is the open
+guess. We asked for the screenshot; this change does not claim to have fixed 1–4 as seen.
+
+**What was wrong and is fixed.** `iqra_curriculum_g10_phys_sem2.json` said the semester 2 book has no
+«تجربة استهلالية», so semester 2 had no `lab` lessons. It does: «الكتلة والوزن» (p. 9), «خصائص الموائع» (p. 57) and
+«الموجات تنقل الطاقة ولا تنقل المادة» (p. 93), one at the head of each unit as in semester 1. They are added as
+`u4_lab`, `u5_lab`, `u6_lab` (order 0, no objectives, the book prints none), the file's `known_gaps` entry and the
+catalog header are corrected, and the page list in `source_books` now names pp. 9, 57 and 93. The English titles are
+translations (the extraction carries none); the Arabic «ولا» in the unit 6 title is restored from the extraction's
+«وال», which the lesson-1 main idea on p. 94 confirms.
+
+**Pinned.** `lib/curriculum/src/__tests__/physG10Structure.test.ts`: semester 1 units are [1, 2] and semester 2 [4, 5, 6]
+with no 3, in book order; wave motion is its own unit with the two lessons and none under fluids; the built catalogs'
+`order` is the book number; every unit of both semesters opens with its lab (order 0) and its lessons run 1..n.
+
+**Verified.** The new test failed 3 of 8 before the data change and passes after; `lib/curriculum` `pnpm test` 915/915 and
+`pnpm run verify` 0 errors.
+
+**Not verified / limits.** Not looked at on a running app; no periods for any semester 2 lesson (unchanged). No «ما الجديد»
+entry: three experiments appear in a lesson picker, which is not a feature to announce to every account.
+
+## Deploy: the «what changed» job stops downloading every file of every branch — 2026-11-04
+
+The same checkout problem as the entry below, in the job that **gates production deploys**. On #1413's merge (`28fda7c`)
+`deploy.yml`'s `what changed` job (`timeout-minutes: 5`, `fetch-depth: 0`) was cancelled inside `git fetch`, and every job
+behind it (`iqraa-api`, `iqraa-verifier`, `iqraa-web`, both schema jobs) was **skipped**. Nothing was lost that time — the
+merge touched only a workflow file — but a merge that did need a deploy would have shipped nothing, with no red job to say
+so (the trap `CLAUDE.md` describes: a skipped job is not a failure).
+
+**What changed.** `.github/workflows/deploy.yml`, the `changes` job only: checkout gains `filter: blob:none`, and
+`timeout-minutes` goes 5 → 10. The script is unchanged.
+
+**Measured, against the real remote, full clone vs `--filter=blob:none`.** `git diff --name-only BEFORE AFTER` returned the
+same file list (same hash) for ranges of 1, 3, 10, 40 and 120 commits (2 to 519 files), each in under 10 ms, and the clone
+stayed 5.4 MB, so no file contents were fetched on demand. `git cat-file -e` of an unknown commit still exits 128 in about a
+second, so the «No usable base commit; deploying everything» fallback still fires; a real commit exits 0.
+
+**What merging this does.** `deploy.yml` is on the API's and the verifier's own file lists, so merging it **deploys the API
+and the verifier to Cloud Run (same code, new revisions) and the web bundle**, then the OTA publish to `preview`. That is
+the existing rule working, not a side effect of this change.
+
+**Not verified.** It has not run on a runner; the first `what changed` run on the merge commit is the test, and its
+duration (and whether the three deploy jobs then ran) is what to read. A rename of a file whose contents git must compare
+would fetch those blobs on demand: slower, still correct; none of the ranges above needed it.
+
+## CI: the destructive-migrations check stops downloading every file of every branch — 2026-11-04
+
+On 2026-11-03 the check `destructive migrations acknowledged` was cancelled four times in a row on one PR (#1411, which
+adds no migration), each time at exactly its `timeout-minutes: 5`, inside `actions/checkout`'s `git fetch` and before its
+own step ran. The same job had taken ~30 s that morning and ~4 min on #1410. Its cause is the checkout, not the PR:
+`fetch-depth: 0` downloads the whole history of all 77 branches **with every file version**.
+
+**What changed.** `.github/workflows/destructive-migration-ack.yml` only: the checkout gains `filter: blob:none`
+(history kept, file contents fetched on demand) and `timeout-minutes` goes 5 → 10. The job's script is unchanged.
+
+**Measured, from this machine against the real remote.** Full clone 1.2 GB / 52 s (on a fast link); `--filter=blob:none`
+5.4 MB / 1 s. The job's own `git diff --name-only --diff-filter=A base...head -- 'lib/db/migrations/*.sql'`, run on both
+over a range that contains migrations, returned the same 2 files (same hash), and the lightweight clone stayed 5.4 MB, so
+the diff pulled no blobs; an empty range returned nothing. `filter` is an input of `actions/checkout@v4` (read from its
+`action.yml`).
+
+**Not verified.** It has not run on a runner yet — this PR's own run is the first. If the `base...head` diff ever needs a
+file's contents (for example to detect a renamed migration), git fetches just that blob on demand, which is slower but
+correct.
+
+**Left alone, on purpose.** `ci.yml`'s `migrations match schema` job (`fetch-depth: 0`, 10-minute limit; it timed out
+twice on #1411 and then passed) has the same checkout, but it installs dependencies and runs migrations, which could not
+be tried locally; `deploy.yml` also uses `fetch-depth: 0`. Both want the same look if they start timing out.
+
+## Student lesson cards can show a drawn graph or vectors — 2026-11-03
+
+**PR 3 of 3** of the answer to a teacher's feedback (some lessons need a graph or vector drawing and the app shows none;
+spec `docs/superpowers/specs/2026-11-03-drawn-figures-design.md`, plan `docs/superpowers/plans/2026-11-03-drawn-figures.md`).
+PR 1 shipped the shared gate and `FigureView`, PR 2 the exam questions. This one wires the same pieces into the student's
+lesson explanations. **No student sees a drawing on the day this merges**: the explanations students are served were
+approved before drawings existed, and none carries one. A drawing appears only after an admin regenerates explanations,
+opens the drawings as files and approves (below). For that reason there is **no student «ما الجديد» entry yet** — it was
+written, reviewed, and taken out again before this PR (commits `3851dc8`, `f3ba501`); add it the day the first drawn
+explanation is approved, with that day's date (`lesson-drawn-figures`, roles `student`, route `/curriculum`, strings in
+`i18n.ts`; `git show 3851dc8` has all of it).
+
+**What was built.**
+- *Cards.* A `concept` card and the `example` card carry `visual?: Figure`, passed through `resolveFigure` (never throws,
+  a refused drawing is dropped alone and the card keeps its words); a card with no drawing is unchanged. The lesson screen
+  (`app/curriculum/lesson-explanation.tsx`) draws it below the concept's points, and after the example's steps and
+  before its answer line (the spec first said "above"; corrected).
+- *Prompt.* On a **maths** lesson only (`isMathContext`), the `lesson-teaching` prompt gains rule 16 in both languages:
+  one optional `"visual"` per concept or worked example, at most 2 in the section (`LESSON_VISUALS_MAX`), the drawing
+  illustrates and never carries information alone, plus the format text from `figurePrompt.ts`. Rules 1–15 and every
+  non-maths prompt are unchanged (a chemistry lesson's prompt is byte-identical; traced by hand, pinned by substring).
+  `teachingVisualCounts` now reports `visual`, so the existing "lesson-teaching visuals" log line counts them.
+- *Pool version.* `lesson-teaching` moves from `2026-11-03.1` to `2026-11-03.2` (all subjects, chemistry included, even
+  though its prompt text is unchanged — the key is per kind).
+- *Admin review.* `pregenerate` writes each lesson drawing as an SVG beside the review file
+  (`<review>-figures/<lessonId>-<n>.svg`, concepts first then the example, the same order the cards use) and
+  `--approve` refuses an entry whose drawings have no file there (`entriesMissingFigures`), before any approve request.
+  The review file's content hash covers `visual`, so deleting or editing a drawing counts as an edit and the file is refused.
+- *Wording.* `figureFormatAr` now says «اقتران» (the Jordanian books' word) instead of «دالة». The exam prompt embeds only
+  the English format text, so no exam prompt text moved.
+
+**What the reviews found.** The final review found nothing that lets an unapproved or un-gated drawing reach a student
+(approval gate on `student_approved_at`; stored content is never updated after approval; the cards gate; the teacher's
+deck never reads `visual`). Its one Important finding was the student entry announcing drawings that nobody could see —
+removed (above). Everything else is under *Known limits*.
+
+**Verified.** Locally on the final code (`f3ba501` plus docs): `pnpm run typecheck` clean; `lib/figure` 82/82;
+exam-paper 14/14; math-verify 29/29; api-server build clean and 2,892/2,892 (0 skipped); mobile 9,201 passed, 0 failed,
+10 skipped (9,211 tests). The real lesson screen was opened (throwaway Postgres, built web bundle, a signed-in Grade 10
+maths student, an approved `lesson-teaching` row with a graph on a concept and vectors on the worked example planted by SQL
+in the throwaway database only): phone and desktop, Arabic and English, light and dark. Seen: the graph under the
+concept's points and the vectors between the steps and the answer, axis names and letters whole, x growing to the right in
+Arabic too, Arabic-Indic digits intact, dark mode legible, desktop figure capped at 520px at the text's edge, a concept
+without a drawing unchanged, the card readable with the drawing hidden. Each task was reviewed on its own; the branch had
+a final whole-branch review on the most capable model.
+
+**Not verified.**
+- **No live model has ever written a lesson `visual`.** The screenshots used hand-written content. The first
+  `pregenerate` run on maths lessons is the test: read the "lesson-teaching visuals" log line (if `visual` stays 0 on
+  maths lessons, add `visual` to the prompt's JSON output shape — it is taught today only by rule 16 and its examples) and
+  open every SVG.
+- Native iOS/Android; the «ما الجديد» dialog (nothing to show); the student in the screenshots was signed in with grade
+  and subject set directly, not linked through a class code (the student route needs no roster link); 8 of ~38
+  screenshots were opened by the implementer, the rest share the script and had clean DOM measures.
+- `lib/curriculum` tests and `python -X utf8 test_equations.py` were not run locally (neither is touched); CI runs them.
+
+**How drawings reach students (an admin action, not part of the merge).** Run `pregenerate --go` (maths lessons) **from
+`main` at or after this merge**, then open every SVG in `<review>-figures/` and compare it with the lesson's words, then
+`--approve`. The script prints its worst-case cost before spending (calls × `EST_COST_PER_CALL_USD` = $0.05). The newest
+approved row for a lesson and language wins, so approving a regenerated row replaces the old one for students; delete the
+entries you do not want replaced (chemistry, which has no drawings) from the review file first, because any entry you leave
+is regenerated and replaces its predecessor. The 55 previously approved explanations keep being served, without drawings,
+until then. Teachers' pooled `lesson-teaching` rows restart at the new version: the first teacher per lesson pays for a new
+teaching section. Android needs the manual production OTA (`gh workflow run mobile-update.yml -f branch=production`) for
+the screen change; the web bundle ships with the merge.
+
+**Known limits.**
+- **The admin is the only check that a lesson drawing matches the lesson's words.** Nothing in code ties it to the text or
+  to the example's `check` (unlike exams): the realistic failure is a graph of `x^2 + 4` beside points that say
+  `f(x) = x^2 − 4`. The SVG files are named by position among the *accepted* drawings, not by card, so a file cannot be
+  traced to its card by name — naming them by card (`<id>-concept2.svg`, `<id>-example.svg`) is the first follow-up.
+- The guard lives in the script. An admin running an older checkout, or a direct POST to
+  `/moderation/lesson-explanations/approve`, approves drawings nobody opened. It checks that a file exists, not what is in
+  it, and the figures folder is never cleared (a failed SVG write after a re-run could leave an old same-named file).
+  Rejecting only a drawing is not possible: removing it is an edit and the file is refused, so a bad drawing means a
+  rejected explanation.
+- The cap of 2 drawings is in the prompt only; the cards draw every drawing the gate accepts, and the admin sees all of them.
+- The drawing-format text is still worded for exams («علّم نقطةً ذكرها السؤال», "mark only a point the question names");
+  in a lesson it also stops the model marking a vertex in a concept about vertices — drawings are less useful, not unsafe.
+- Maths lessons only; the teacher's slide deck does not draw `visual`; practice cards carry none.
+- The guard's comment says "before any network call" but it runs after login (before any approve request); the rule says
+  "concept" in the singular; `reviewFigures` may list a drawing for a card the app drops (it errs toward showing more).
+- No native module and no migration; merging deploys the API and the web bundle.
+
+## Exam questions can carry a drawn graph or vector — 2026-11-03
+
+**PR 2 of 3** of the answer to a teacher's feedback (no outright errors, but some lessons need a graph or a vector drawing and
+the app puts none in the lesson or the exam; spec `docs/superpowers/specs/2026-11-03-drawn-figures-design.md`, plan
+`docs/superpowers/plans/2026-11-03-drawn-figures.md`). This is the first **user-visible** change: a maths exam question can
+now carry a drawing — a function's graph or vectors on the coordinate plane — that the teacher sees before publishing and the
+student sees with the question. Teachers get one «ما الجديد» entry (`exam-drawn-figures`, dated 2026-11-03, route
+`/evaluations`). Student lesson cards are PR 3.
+
+**What was built.**
+- *Generator.* On a **maths paper only**, the exam prompt offers the model an optional question-level `"visual"` (rule 9 +
+  the format text from `figurePrompt.ts`, every number read from the gate's limits; `GENERATION_PROMPT_VERSION` is now
+  `exam-gen-8`). `parseGeneratedQuestions` runs the PR 1 gate, ties a graph to the question's `check` (a different function
+  than the one checked → the drawing is dropped), drops the drawing beside an `equation_*` check (a curve shows the roots),
+  strips and records a drawing the model tucked inside `body`, and stores the accepted figure as `body.visual`. Every
+  drawing that is dropped is recorded with a reason in `visualsDropped`; the question always stays. The route logs
+  `exam visuals` (kept count + reasons) — that line is how the first live runs will show up.
+- *Storage and the student's copy.* `studentView.ts` sends a drawing only if the gate accepts it (outside every type's
+  allowlist, beside the book `figure`). Editing a question's **text or key removes its drawing** server-side
+  (`bodyAfterEdit`); a marks-, rubric- or difficulty-only edit keeps it; a client can never add or swap one (PATCH keeps
+  only the stored, re-gated drawing; POST strips it). The after-close review payload re-gates it too.
+- *Screens.* The teacher's evaluation screen and the student's `/take/CODE` render `QuestionVisual`; a question with its own
+  drawing does not also get the lesson's book-figure panel.
+- *First look at a real screen* (task B7): the app was run for real (throwaway Postgres + built web bundle + Playwright),
+  drawings were planted on exam questions, and ~300 screenshots were taken (phone and desktop, Arabic and English, light and
+  dark; teacher and student). What it found and fixed: the figure was 2px wider than its bordered box (the right and bottom
+  2px were cropped and «س» was cut to a stub); «ص» sat on the top tick number; letters sank into the dark card (letters now
+  4.5:1, lines 3:1); on a wide desktop the vectors shrank to a speck (figure capped at 520px, aligned to the text edge);
+  a y tick number at the very top edge was half cut (`PlaneGrid`, shared with the Math Corner grapher: the number is
+  skipped, the gridline stays; the grapher shots were pixel-identical before and after); and a curve's letter or a point's
+  letter sat on its own line (`placeLabel` in `lib/figure`: letters are placed ≥ 9px from their own line and inside the
+  box, pure and tested; a 4,000-figure fuzz found no letter outside the box and no NaN). A reviewer's suspicion that Arabic
+  negative ticks were reversed was checked at 8× zoom and is **wrong**: the minus is on the left («−٢»).
+
+**What the reviews found that the first tests did not.**
+- The prompt's own example marked the **root** of `x² − 4` — exactly the leak the prompt forbids; the position of a point
+  leaks as much as a label. The example now marks x = 1, and rule 9 says never to attach a drawing to a question whose
+  answer can be read straight off it.
+- A question like «حلّ س² − ٤ = ٠» with the parabola drawn passed every server check (the `check` tie skips equations).
+  `equation_linear`, `equation_quadratic` and `equation_exponential` now drop the drawing (`ANSWER_READABLE_FROM_DRAWING_TOPICS`,
+  a test forces any new check topic to be classified).
+- `POST /evaluations/:id/questions` stored a client-sent `visual` as given, which made the edit rule bypassable by delete +
+  re-add. Stripped.
+- The after-close answer review sent the raw stored body. Re-gated before anything draws it.
+
+**Verified.** Locally on the final code: `pnpm run typecheck` clean; `lib/figure` 82/82; exam-paper 14/14; math-verify
+29/29; api-server build clean and 2,887/2,887 (0 skipped); mobile 9,193 passed, 0 failed, 10 skipped. The DB-backed route
+tests (edit rule, forged drawing on edit and on add — 17/17 in their file) were run once on a throwaway Postgres 16 and are
+**required in CI**; the counts above do not include them unless a database was configured. Pinned prompts: rules 1–8 and
+every non-maths prompt are byte-identical to `exam-gen-7` (checked by parsing the diff). Each task was reviewed on its own,
+the branch had a final whole-branch review on the most capable model, and the one allowed fix wave got a scoped re-review.
+CI on the PR's head is the one to read.
+
+**Not verified.**
+- **No live model has ever written a `visual`.** The first live run is the real test: read the `exam visuals` log line and
+  read that paper's questions **and answer keys** by eye (CLAUDE.md: a model's Arabic reads fluently either way).
+- Android and iOS (the web build was built and looked at; no native device).
+- `MathSketchpad` shares `PlaneGrid` and has no screenshot (the one-line change was judged safe by reading: a number is skipped
+  only if it would be cut by the top edge).
+- The teacher's per-student **marking** screen (`evaluations/[id]/answers/[studentId]`) draws no figure — a teacher marking a
+  drawn question does not see the drawing (the stem is self-sufficient by rule; the same gap exists for book figures).
+- The DB-backed tests in CI were not seen running by me.
+
+**Known limits.**
+- **A drawing can still show an answer where only the prompt and the teacher's preview stand guard:** a question with no
+  `check` (a vertex, roots the model left unchecked, «find the components of the vector»); a `check` the parser rejects
+  (Arabic text, no `=`); a derivative check where the model also draws the derivative as a second curve (the tie accepts any
+  one matching curve); a «solve» question mislabelled with a non-equation topic.
+- A no-change save of a question can drop its drawing when the edit modal resends a rebuilt body that differs trivially
+  (a generated MCQ whose option ids are not a–d, a stem with trailing spaces). It fails safe (drawn → none, never wrong).
+- `visualsDropped` reaches the log line only; it is not stored in `generationParams`.
+- `exam-gen-8` is also stamped on non-maths papers, whose prompt is unchanged.
+- Cost: about +3.3k characters (roughly 800 tokens) on every maths exam request, including each retry and top-up.
+- The label letters avoid their own line but not tick numbers or other curves; `placeLabel` is an approximation of the font.
+- The desktop figure is capped at 520px; the Arabic prompt text `figureFormatAr` is unused until PR 3 and says «دالة» where the
+  Jordanian books say «اقتران» (to change before PR 3 sends it to a model).
+- Merging deploys the API and the web bundle; there is no migration and no native change.
+## lib/figure: a shared gate and geometry for drawn graphs and vectors — 2026-11-03
+
+A teacher's feedback: no outright scientific errors, but some lessons need a graph or a vector drawing and the app puts
+none in the lesson or the exam. This is **PR 1 of 3** of the answer (spec
+`docs/superpowers/specs/2026-11-03-drawn-figures-design.md`, plan `docs/superpowers/plans/2026-11-03-drawn-figures.md`):
+the pieces every later PR shares. **No screen draws a figure yet and nothing user-visible changed**, so there is no
+«ما الجديد» entry; PR 2 (exam questions) and PR 3 (student lesson cards) carry theirs.
+
+**What was built.** A new pure package `lib/figure` (`@workspace/figure`): `resolveFigure` (the one gate every figure
+passes, never repairs, never throws), `layoutFigure` (pure geometry: a figure and a box in, pixel primitives out),
+`figureAltText`, `figureSvg` (a standalone SVG for places with no React: the admin's review files in PR 3) and
+`figureConsistentWith` (a narrow guard against a drawing that shows a different function from the one a question's
+`check` verified). Two kinds: `function-graph` and `vectors`. Two moves, both byte-identical and both leaving a
+re-export behind so no caller or test changed: the viewport maths (`mathViewport.ts` → `lib/figure/src/viewport.ts`) and
+the expression compiler (`compileExpression` out of `deckVisuals.ts`). In the app, `components/ui/FigureView.tsx`
+(react-native-svg, backdrop from the Math Corner's `PlaneGrid`) and `QuestionVisual.tsx` exist and are **unused**.
+Wired like `lib/exam-paper`: root `tsconfig.json`, both `package.json` files, a CI step «Test figure core», the lockfile
+(two incidental pnpm-11 hunks rode along: a posthog snapshot key and a `deprecated:` line on `@smithy/core`).
+
+**What the reviews found that the first tests did not** (worth knowing for PRs 2 and 3, which trust this gate):
+- `figureConsistentWith` as planned broke out of its loop on the first mismatch, so a genuinely different function
+  looked like «too few points» and passed. Fixed; two tests.
+- The rule that stops two branches of `tan(x)` or `1/x` being joined across an asymptote had no test that failed
+  without it. It does now.
+- **The gate accepted figures that froze every renderer** — a domain one float step wide made `gridTicks` loop forever
+  (`k++` stops changing above 2^53), a tiny range threw a `RangeError` from `toFixed`. In PR 2 a model-written figure
+  would have hung a student's JS thread. Closed at four layers: new limits (`x` width ≥ 0.5, a given `y` ≥ 0.1 tall, no
+  sample beyond 1e9), a minimum span in the auto-fit, a hard guard in `ticksBetween`/`gridTicks` (this one also protects
+  the grapher), and a regression test over the five probes.
+- The gate kept a marked point that the geometry then silently dropped (auto-fit trimmed it off the box): a question
+  naming «A» would have shown a drawing without A. Auto-fit now includes marked points and a given `y` refuses a point
+  outside it.
+- A label could still carry a value as a number word («six», «ستة», «عشر») or a tatweel; now refused by a short
+  deny-list. Duplicate functions/vectors (their labels would land on one pixel) and non-string `check` input are refused.
+
+**Verified.** Locally on the final code: `pnpm run typecheck` clean; `lib/figure` 76/76; exam-paper 14/14;
+math-verify 29/29; api-server build clean and 2,842/2,842; mobile 9,187 passed, 0 failed, 10 skipped. CI was green on all
+six jobs on `b38286a` (everything up to the final-review fixes; the run on the final head is the PR's). The pictures were
+looked at: a parabola with a marked point, `1/x`, `tan(x)` and two vectors with component dashes, rendered to PNG in
+Chromium from `figureSvg` — smooth curves, branches split at the asymptotes with no connecting line, arrowheads the right
+way. The tick guard was swept over widths 320–4000 and scales from `MIN_SCALE` to `MAX_SCALE`: worst case 56 ticks, never
+an empty grid where one was expected. The api-server's esbuild bundles the package and its `./viewport` subpath.
+
+**Not verified.**
+- **`FigureView` has never been rendered**, because nothing uses it. Its clipping (outer `overflow: 'hidden'` plus a
+  `<G clipPath>`), dark mode and the way its axis names sit against `PlaneGrid`'s tick labels are read from code only;
+  PR 2 puts it on a screen and is where that gets looked at (two known cosmetic issues are listed below).
+- No live model has ever written a `visual`. That is PR 2's prompt and the first live run's job.
+- Android/iOS, and the Metro bundle (a screen has to import the component before it is bundled).
+
+**Known limits and deferred.** Label collisions (a curve's letter on the axis name at the right edge; the top y tick on
+«ص»; a vector's letter on a tick number); `FigureView`'s Svg is 2px wider/taller than its bordered View so the last 2px
+are cropped; the 2%–98% range trim cuts the end off an exponential (`2^x` leaves the canvas before `x` ends); a marked
+point right at an asymptote stretches the range and flattens the rest of the curve (`tan` with a point at 1.57); the
+number-word deny-list misses a few two-letter or variant spellings (`ست`, `سته`); `x^2` and `x ^ 2` count as different
+functions for the duplicate check; `figureSvg` prints Latin digits where the app shows Arabic-Indic; `figureSvg`'s clip
+id is per size, so two same-size figures on one HTML page share it (the root `overflow` still clips). The gate's numbers
+are conservative on purpose: a legitimate figure outside them is refused and the question or card shows words, as today.
+
+## Lesson explanations: the third review, a stronger model, and two linking bugs in the maths check — 2026-11-03
+
+**What the third prefill showed.** The run under the maths check (prompt `2026-11-02.1`, gpt-5.4-mini) generated all 50
+explanations; five reviewers read them blind (no verdicts shown), each answer recomputed. **25 fit, 25 not.** Not a
+better rate than the earlier runs (20 of 50, then 12 of 37), but not comparable either: it included the hardest
+lessons and a stricter reading of «a lab must not use later skills». The 25 rejects: about 8 wrong keys (π cm for 3π, a
+slope sign reversed, `c = 6 cm` for √84, a practice copied from its worked example), about 8 false or misleading
+statements (a true fact taught as a «misconception», a wrong date for Lewis, an unconditioned quadrant rule), 5 labs or
+«calculation» lessons that do not teach their own lesson, and 4 garbled texts (book-extraction artefacts such as
+«الأفالك», «جبـيب»).
+
+**What the maths check did.** Of the 8 wrong-key rejects it flagged 4: the law of cosines (`contradicted`), and three
+that it called `unlinked` (the prose differs from the model's own check: sectors, law of sines, maxima/minima). It missed
+4: sequences (the model computed its own wrong rule correctly), a slope-sign lab (`undecided`), cumulative-frequency
+quartiles (no check written), and a grouped mean keyed «19» for 19.23, which the rounding rule accepts. So the
+arithmetic check is worth having and covers about half of the wrong keys; the false statements and lesson mismatches
+are not arithmetic, and a person still reads every explanation. **`unlinked` carries signal** (3 of its 17 flags were
+real wrong answers), so it is shown, not hidden; `--approve` still blocks only `contradicted`.
+
+**Two bugs in the check, found by reading its flags.** (1) A unit after a bracket, a root or π was not a unit, so «8√3 cm»
+was refused against its own check «8√3»; and «π» was never «pi». (2) The prompt's output shape carried a concrete example
+check, which the model copied verbatim into chemistry lessons (`10*sin(30°)/sin(60°)` against «1s2 2s2 2p1»), each time
+an `unlinked` and a wasted retry.
+
+**Changed.**
+
+- `lessonTeachingChecks.ts`: a unit after `)` or π is stripped; a check identical to the prompt's own example
+  (`PROMPT_EXAMPLE_CHECKS`, the one place both the prompt and the guard read) is no check; an answer with no number in it
+  (digit, π, √) is no check and is not sent to the verifier. `keyLinking.toLatinMath` reads «π» as «pi».
+- `lessonTeachingPrompt.ts`: the output shape shows placeholders, not a worked check; both languages say a descriptive
+  answer (an explanation, a definition, an electron configuration) has no check and that the example is not to be copied.
+- **`lesson-teaching` now runs on the documents model** (`DOCUMENT_KINDS` in `aiBudget.ts`): Claude Sonnet 5.5 in
+  production (`AI_MODEL_DOCUMENTS`), as lesson plans, worksheets, quizzes and slide decks already do. The model is part of
+  the pool key. Version `2026-11-03.1`.
+- `pregenerate.ts`: the cost estimate per call rises from $0.01 to $0.05, so `--cap` means something against the dearer
+  model (the default `$1` cap now plans about 20 calls; use `--cap=3`).
+
+**Cost, and a trap.** Sonnet 5.5 is $2/$10 per million tokens against $0.75/$4.5 for gpt-5.4-mini: about 2.3x a call,
+roughly $0.035 against $0.013 with a retry (from the price table and the earlier run's ledger, not yet measured). A
+50-lesson run is about $2 to $3. **`deploy.yml` sets `AI_USER_BUDGET_USD=1` on every API deploy**, so a console edit to
+raise it is undone by the next merge; and the account's spend this month counts against it. A prefill needs it above
+the month's spend plus the run (set it to 5 for the run).
+
+**Verified.** Typecheck clean; mobile 9,185 pass, 0 fail, 10 skipped; api-server 2,842 / 2,842; math verifier 124/124
+(unchanged). New tests pin each linking case (including that «π cm» is still told from «3π cm» and that «√2 cm» is a
+value), the example guard, the no-number guard, the prompt's placeholders, and the model list.
+
+**Not verified.** Whether Sonnet writes better explanations: only a fourth prefill and a fourth review can say. The cost
+figures. That the Claude path returns this kind's JSON in the shape `assertUsableGeneration` wants (it does for the other
+document kinds; this one has not run on it). Of the 25 explanations the third review judged fit, the owner was given the
+command to approve them; this entry does not claim it ran.
+
+## Spend ceilings: Cloud Run instance caps and a smaller site-assistant cap, 2026-11-03
+
+**Why.** Follow-up to «Cloud Run bill: verifier scales to zero, API back to one vCPU» (2026-11-02). Two
+ways spend could grow with no one deciding it: Cloud Run had no instance ceiling beyond its own large
+default, and the iqrra.com assistant could spend up to $1 a day ($30 a month) on anonymous visitors.
+
+**Changed.** `deploy.yml`: `iqraa-api` `--max-instances 10`, `iqraa-verifier` `--max-instances 3`, and
+`SITE_BOT_BUDGET_USD_DAILY=0.3` on the API (it was set by hand to `1`; `--update-env-vars` now owns it, so a
+console edit no longer drifts). No code change: `getSiteAskDailyCapUsd` already parses a decimal.
+
+**Cost of it.** Past 10 API instances (800 requests in flight at `--concurrency 80`) requests queue rather
+than scale; nothing near a class sitting an exam reaches that. The assistant answers at most about $9 a
+month of non-starter questions, then the AI path refuses and the three fixed answers keep working.
+
+**Not verified.** That ten and three are the right ceilings: read Cloud Run's «Container instances» graph for
+a month and raise them if it ever sits at the cap. No test covers a workflow flag. Production was not touched
+by this PR; both services redeploy on merge.
+
+## A test database is dropped only after its connections have closed — 2026-11-02
+
+On #1381's first CI run, `homeworkSubmission.db.test.ts` ended red with every one of its 88 tests
+green: «Test hook "before" … generated asynchronous activity after the test ended … `terminating
+connection due to administrator command`» («would have caused the test to fail, but instead
+triggered an uncaughtException event»). A re-run passed. The shape — a file failing after its tests
+pass — was the signature of the harness, not of a test.
+
+**Cause.** `setupTestDb().drop()` did `await pool.end()` and then `DROP DATABASE … WITH (FORCE)`.
+pg-pool's `end()` calls `client.end()` on each idle client and resolves as soon as its list is
+empty — when each close has been *started*, not when the server has read it. FORCE kills every
+session still on the database; a client it reaches before its goodbye is told «terminating
+connection due to administrator command», emits `'error'`, pg-pool's idle listener re-emits it on
+the pool, and a pool with no `'error'` listener throws it as an uncaughtException. `node --test`
+attributes that to the hook that created the pool (the `before`), after the tests have finished.
+It affects every file that uses `setupTestDb`. It is rare because `dropDatabase` opens a new admin
+connection first, which usually gives the goodbyes time to land; a starved runner loses that race.
+
+**Change** (`src/test-support/testDb.ts`): the teardown is one exported function,
+`closeAndDropTestDb(pool, admin, name)`. It ends the pool, **waits until `pg_stat_activity` shows no
+session on the database** (up to 5 s; FORCE stays as the backstop for a session that never leaves),
+then drops. A no-op `'error'` listener is attached to the pool at that point only, so a connection
+that dies in the middle of a test still fails loudly. New test `testDbDrop.db.test.ts`: the pool talks
+to Postgres through a small proxy that holds client→server bytes for 400 ms (what a starved runner
+does to the goodbyes) and the teardown must not kill a live client. Red first: 12 of 12 clients killed,
+3 runs of 3; green with the fix, 3 of 3.
+
+**Verified:** the full api-server suite against a local Postgres 16 (3335 tests, 0 failed, 0 skipped);
+the mechanism in isolation (80 drops with a warm admin connection: 49 uncaught `terminating
+connection` errors on the pool, all on the pool emitter; with the wait or a listener, 0); `tsc` clean.
+
+**Not verified:** the CI failure itself was **not reproduced** — the real harness, old teardown, run
+30 times with all four cores busy, failed 0 times. So the link to that failure is the identical error
+text plus the mechanism above, not an observed before/after on `homeworkSubmission`. Nor can it be
+said that CI's flake rate is now zero, only that this cause is closed. Merging touches
+`artifacts/api-server/`, so `deploy.yml` redeploys the API: the code that runs is unchanged, only
+test support is.
+
+## Lesson explanations: the math verifier checks the worked example and the practice — 2026-11-02
+
+**Why.** Two prefill runs of student explanations were read line by line before approval: 20 of 50 rejected on
+prompt `2026-10-31.1`, then 12 of 37 on `2026-11-01.1` (which added an accuracy rule). The rule fixed ideas and left
+arithmetic: 5 cm for 10/√3, a mean of 4.8 for 5.2, a median of 20 for 20.9, (9, 63) for (9, 135), and the same
+lessons failed in both runs. Design: `docs/superpowers/specs/2026-11-02-lesson-explanation-verification-design.md`.
+
+**Changed.**
+
+- **Verifier** (`math-verifier/verify_core.py`): two key topics, `evaluate` (a closed expression, degrees as `30°`;
+  the key is compared rounded or truncated to the places it is written with, a whole-number key by rounding only, or
+  exactly) and `system_solutions` (`eq1; eq2` in x and y, compared as a set of points, surds included). A unit on the
+  key, prose, or a system with no real solution is `error`, never `distinct`. 35 new cases; 124/124.
+- **API** (`lib/lessonTeachingChecks.ts`, hooked into `generateContent` for `lesson-teaching` before the variant is
+  stored): the worked example and the practice may carry `check: { topic, question, answer }`. The verifier runs it;
+  `verified` needs the verifier's `equivalent` AND the prose stating the checked answer (`statesAnswer`, now exported
+  from `keyLinking.ts`). A `contradicted` or `unlinked` item asks the model once more, told what was computed and what
+  was written; the attempt with fewer problems is kept (the second on a tie), the other is billed. Verdicts are stored
+  as `content.verification`. Nothing is deleted; an unreachable or undecided verifier changes nothing.
+- **Prompt**: rule 15 and a `check` in both output shapes, in both languages. `lesson-teaching` moves to
+  `2026-11-02.1`, so the next prefill generates under it. `check` and `verification` are stripped from what a student
+  reads, with `teacherNote` and `mistake`.
+- **`pregenerate.ts`**: each review entry carries `verification` beside its text (and in its hash, so deleting a
+  verdict is an edit), and `--approve` refuses a `contradicted` entry, all or nothing, like an edited one. `unlinked`
+  and `undecided` are shown, not blocked.
+
+**Verified.** The real SymPy service, started locally, and the real client, on the actual answers from both reviews:
+every wrong one (5 cm, 4.8, 20, (9, 63), (1, 0)+(3, 2)) `contradicted`, every right one `verified`, a prose answer that
+differs from its own check `unlinked`. Typecheck clean; mobile 9,176 pass, 0 fail, 10 skipped; api-server 2,836 / 2,836;
+math verifier 124/124.
+
+**Not verified.** That a live model writes a usable `check` often enough, or that its retry fixes what was found: a
+third prefill and a third review are the only test. And what no calculation can see: of the 12 run-2 rejects about
+five were arithmetic of the kind this catches; the rest were false or loose statements (a sector between «two arcs», a
+quadrant rule without its sign condition, a lab that uses derivatives early). **A person still reads every
+explanation.** Also not done: the 13 lessons the second run never reached (the per-account monthly AI allowance
+stopped it, `429`), the six chemistry lessons among the rejects, and the 22 lessons without a reviewed explanation.
+
+## Generate: a second tap while the first is still running is refused, not run — 2026-11-02
+
+The app gives up on `POST /evaluations/:id/generate` after 45 s, and the model can take
+longer, so a teacher taps «generate» again while the first request is still writing. Both
+called the model; the second replaced the first's paper. (The write was already serialised
+by the row lock — see the question-edit entry — so this was spend and waiting, not a
+corrupt paper.)
+
+- **Claim in the database, not in memory.** `evaluations.generating_since` (migration
+  0024, one nullable column, additive) is set by a conditional `UPDATE` when a request
+  starts and cleared when it answers. `iqraa-api` runs on up to 20 instances, so a
+  `Map` would only stop a second tap that lands on the same one.
+  `lib/generationClaim.ts`: `claimGeneration`, `releaseBeforeResponding`.
+- A request that finds a live claim answers **429 `generation_in_progress`** with
+  `Retry-After: 30`, before anything that costs, and writes nothing. It does not touch the
+  other request's claim, and a release only frees its own (compared by timestamp), so a
+  slow first request cannot free a second one's after the first expired.
+- **Released before the response is written**, by wrapping `res.json` once: every exit of the
+  route (success, 502, 409, 429 from quota) goes through it. Cloud Run throttles the CPU
+  after a response, so a release that came after could stall and leave the exam refusing
+  the teacher's next regenerate.
+- **Expiry 330 s** = Cloud Run's request limit (`--timeout 300`) plus margin: no request outlives
+  it, so an expired claim is certainly dead. The trade: an instance that dies mid-call leaves
+  the exam refusing a regenerate for up to that long. The model client allows 120 s × 2
+  attempts per call and a paper can add a retry and a top-up, so a shorter expiry would have
+  let a long, legitimate generation be duplicated.
+- **App:** `generateFailure` maps 429 + `generation_in_progress` to a new line
+  («يجري توليد أسئلة هذا الاختبار الآن. انتظر دقيقة ثم أعد فتح الصفحة.») and reloads, instead of
+  «تعذّر توليد الأسئلة.», which would have been wrong: the first request is still running and
+  will finish. It is a 429, not a 409, on purpose: the web bundle that is live today maps
+  every 409 to «نُشر هذا الاختبار أو حُذف…», so a 409 would have told teachers the exam was
+  published; a 429 reaches old clients as the generic line.
+- Two older tests in `evaluationGenerateWrite.db.test.ts` encoded the old behaviour and were
+  changed on purpose: two overlapping requests now give one 200 and one 429 (still one paper),
+  and the «published while it was generating» test also waits on the claim `UPDATE`, which is
+  where a request now queues behind a held row.
+
+**Verified:** `routes/__tests__/evaluationGenerateClaim.db.test.ts` (5 tests, real Postgres):
+a control, a refused request on a claimed exam (nothing written, other claim untouched), a
+10-minute-old claim ignored, two overlapping requests (a trigger slows the first; the second
+is refused, the first finishes, the exam is free after), and a failed generation freeing the
+exam. Run before the fix: 3 of 5 failed (a fourth passed vacuously, nothing yet to leak).
+With the release wrapper removed, 4 of 5 fail. App: `evaluationGenerateError.test.ts` gained the
+429 case and the new line in both locales. Full suites: api-server 3339 / 3339, mobile 9186
+(9176 passed, 10 skipped, 0 failed; the skips are not from this change). Typecheck clean.
+
+**Not verified:** nothing was run with a real model (live mode off throughout), so the 330 s
+figure rests on the deploy timeout and the client's timeouts, not on measured generation times.
+The new line was never seen on a screen and the Arabic was not read by a native speaker. The
+other model-backed routes (`/worked-steps`, the scan routes) have no such claim. **Android:**
+installed binaries (1.5.0) show the generic line for this 429 until a 1.6.0 build.
+
+## Cloud Run bill: verifier scales to zero, API back to one vCPU, 2026-11-02
+
+**Why.** The Google Cloud bill went from US$1.05 (Sept) to US$22.57 (Oct), with a last-seven-days
+cost of US$5.88 (about US$1 a day) and a November forecast of US$38. Billing → Reports names the
+top SKU as "Services Min Instance CPU (Request-based billing)" at about US$0.63 a day, which matches
+the hand estimate for the idle CPU of the two warm instances (API 2 vCPU + verifier 1 vCPU at the
+idle rate, about US$0.65 a day). The jump follows `--min-instances 1` on the API (2026-09-26) and on
+the verifier (2026-09-28) and `--cpu 2` on the API (2026-10-19). Cloud Storage, Artifact Registry
+and Secret Manager are cents.
+
+**Changed.** `deploy.yml`: verifier `--min-instances 1` → `0`; API `--cpu 2` → `1` and
+`PASSWORD_HASH_WORKERS=2` → `1` (kept together). The API stays at `--min-instances 1`, so the splash
+screen still does not wait on a cold `/auth/me`. `docs/deploying.md` gains «Keeping the verifier
+warm» (a Cloud Scheduler job, created by hand). Expected bill: about US$10-11 a month.
+
+**Cost of it.** A cold verifier adds ~4.6 s to one request (client timeout 8 s; a timeout fails
+closed, no «تم التحقق»). A sign-up rush of 100 accounts takes ~38 s instead of ~19 s; a single
+sign-in is unchanged.
+
+**Not verified.** The savings are an estimate from the Billing console, not a measured result: read
+the SKU report a week after the deploy. The Scheduler job does not exist until someone creates it,
+and Cloud Run does not guarantee a warm instance survives. Production was not touched by this PR.
+
+## Forty-third live pass: four app questions the model improvised, one with a false «نعم», 2026-11-01
+
+**Why.** Thirty new questions on app.iqrra.com (22 answered well). Eight needed work; this PR takes the five that are ours.
+The worst: «هل يمكن رفع ملف PDF للدرس» was answered «نعم، بالتأكيد. يمكنك رفع ملف PDF هنا». Upload is off
+(`DOCUMENT_UPLOAD_ENABLED = false`, `services/features.ts`) and the app's own answer, `howUploadFile`, says so; the matcher
+missed the wording, so the model answered from nothing. The others got invented steps or a sample letter although the app has
+the real answer:
+
+- «كيف أحذف اختبارا نشرته» → invented a "delete/unpublish button". `howDeleteExam` says: close it first («أغلق الاختبار»), then delete.
+- «كيف أرسل رسالة لأولياء الأمور» → the model wrote a letter. `howParentMessage` is the letter tool and points to «الرسائل».
+- «How do I create a class?» → invented steps. `howAddClass`.
+- «اعطني اختبارا قصيرا عن التفاعلات الكيميائية» asked a grade 10 teacher «كيمياء أم علوم؟» (grade 8 Science has a lesson of that title).
+
+**Built.** New anchored rules in `appHelp.ts` for the upload question (file + a destination: the lesson, the chat, the app), a
+published-exam relative clause on delete («نشرته», «اللي نشرته»; accusative «اختبارا»), the plural «رسالة لأولياء الأمور»
+(English: «message to parents»), and «create/set up a class» (an anchored rule, not a keyword: a first attempt as a keyword
+captured «How can I create a class plan»). «رسالة جماعية…» and «message to **all** parents» keep the broadcast answer; the
+existing tests pinned that and caught my first version. For the subject question, `lessonsTheTeacherTeaches` (`kbContext.ts`)
+narrows the candidates to the grade and subject this teacher teaches (`useTeacherScope().isSubjectShown`) before
+`detectSubjectAmbiguity` runs, and when the question disappears the narrowed list is what the chat grounds on. A teacher
+who has not set up, or who teaches none of them, keeps the old list.
+
+**Verified.** `appHelp.test.ts` (11 wordings, two near-misses, and a test that fails if `DOCUMENT_UPLOAD_ENABLED` is flipped while
+`howUploadFile` still says «غير متاح»); `teacherTaughtLessons.test.ts` (5). The 813 historic questions give the same app-help
+answer before and after (0 changed). Typecheck clean. Not seen live yet.
+
+**Left.** «what is the Pythagorean theorem?» is refused as outside scope in English only (the Arabic version is answered); that is
+the model's wording, not a matcher. «جهّز نشاطا جماعيا عن الأعداد النسبية» offers three grade 7 lessons to a grade 10 teacher; it is
+asking which lesson, which is acceptable.
+
+## Student «اختباراتي» gets the parent screen's card — 2026-11-01
+
+The parent redesign (see «Parent screens: «نتائج أبنائي» and the school tab's exams and
+homework say what they mean») left the student's own list on the old card on purpose, so a
+student on the updated app still saw an hourglass beside a chip saying the same thing, a
+padlock beside a bare «مُغلق», the subject twice and the exam day in two date styles. A
+screenshot from a student's phone showed exactly that.
+
+What changed (`app/my-exams.tsx`, student view only in wording; the layout is now one for both roles):
+
+- One card for student and parent: subject, title, one status pill (`ExamStatusChip`), labelled
+  facts with one icon each (planned day, handed in, sent, time limit, marks), then — for an exam
+  that can be sat — a full-width «ابدأ» / «تابع» button at the 44-point touch height. The retake
+  bar, «راجع إجاباتك والحلول» and the tap-to-open result are unchanged.
+- The student's status wording is the existing one («جديد», «لم يُسلَّم بعد», «سُلِّم — بانتظار
+  النتيجة», «النتيجة متاحة», «امتحان ورقي»); `myExamsStateClosed` is now «مُغلق — لم يُسلَّم»
+  («Closed — not handed in») for both roles, since a bare «مُغلق» next to a padlock read as locked.
+- An empty «القادمة» heading is dropped for everyone: «لا توجد اختبارات قادمة الآن» stands alone.
+- `STATE_COLOR`, `STATE_ICON`, the old row styles and `metaSegments` (and its two tests) are
+  removed: nothing used them any more.
+- A «ما الجديد» entry (`exams-clearer-cards`, students and parents, route `/my-exams`) announces
+  both exam-screen changes, this one and the parent's, as the repo's convention asks for a visible
+  change. Existing student and parent accounts see it once on their home screen.
+
+**Verified:** `tsc` clean; `myExams`, `upcomingExams`, `designScale`, `iconSystem` and
+`celebrateMoments` green; the student's «اختباراتي» and the school tab rendered in a browser at
+phone width, light and dark, RTL, against a stub student (new, in-progress, handed-in, result with
+review, closed, paper exams).
+
+**Not verified:** a real student account or phone; the English layout; the start / continue button
+through to `/take/:code`; long titles beyond two lines. A device only shows this after the over-the-air
+update has downloaded and the app has been restarted (the app opens the saved version first).
+
+## «جديد» on a new tool's card, from its «ما الجديد» entry — 2026-11-01
+
+A follow-up to «ما الجديد» (its own entry, of the same day, is further down): the dialog tells a teacher once, and a
+badge on the card itself is what they meet when they next reach for a tool.
+
+- **One switch.** A `WHATS_NEW` entry may name a tool (`toolId`, an id from
+  `services/toolCatalog.ts`). That tool's card on the Tools tab (`app/(tabs)/ai-tools.tsx`)
+  and in the chat "+" menu (`badgeFor` in `app/(tabs)/iqra.tsx`) then wears «جديد» / "New",
+  in the slot the fixed `badgeKey` already used. A fixed label wins (`toolBadgeKey`).
+- **Who and how long** (`newToolIds`): an account made before the entry's day, whose role
+  the entry names (tools are a teacher's), from that day for `NEW_TOOL_DAYS` (30) days or
+  until the tool is first opened. A newer account sees no badges.
+- **"Opened" is any way in.** `useClearNewToolOnVisit`, mounted in `WhatsNewHost`, watches
+  the path and records a new tool when its screen or anything under it is open
+  (`toolIdsForPath`: `/ai-tools/classroom/builder` is the classroom; a look-alike path is
+  not). Only a tool that is new right now is recorded, so a tool opened long ago still gets
+  its badge if it is announced again. Recorded per account on the device
+  (`@iqra_new_tool_opened_v1:<id>`); a per-account session store (`whatsNewSession.ts`, now
+  holding both lists) clears the card at once. Unreadable storage shows no badges. Event:
+  `new_tool_opened` (`ids`).
+- **No entry names a tool yet,** so no card wears the badge until the next tool ships with
+  its entry.
+
+**Verified:** `whatsNew.test.ts` (31 tests; 8 new: who sees the badge and for how long, the
+path match, the label order, the session store, and that every real `toolId` is a catalog
+tool announced to teachers); `pnpm run typecheck`; the full mobile suite.
+**Not verified:** the badge has not been seen on a card in a browser or on a phone — no
+entry names a tool, and there is no database here to sign in against.
+
+## Lesson explanations: accuracy rule, placeholder answers, and «مولات» in the chemistry book — 2026-11-01
+
+**Why.** The first live prefill of student lesson explanations (`pregenerate.ts --go --only=lesson-teaching`,
+grade 10 maths + chemistry, 50 lessons, prompt `2026-10-31.1`) was reviewed entry by entry before approval: every
+number recomputed, every rule checked, each entry compared with its lesson's objectives. **20 of 50 were unfit for
+students** and were left out of the approval file:
+
+- wrong answers: a linear-quadratic system answered with (1, -1) and (4, 5), which satisfy neither equation; law of
+  sines a = 5 cm (it is 10√3/3 ≈ 5.77); a grouped mean of 54.5 (it is 53.5);
+- no answer: «—», «الحل هو نقطتا التقاطع…» (the method, not the points), «63 × sin 30° cm²» left unevaluated;
+- false rules: the sin/cos/tan quadrant rule stated for every k (it holds for k > 0); «the diameter is one arm of the
+  angle ⇒ right angle»; a hook calling «slope increases then decreases» a max/min test; atomic radius growing down a
+  group «sometimes»; the law of cosines as c² = a² + b² − 2ab cos A, contradicting the same entry's cos A formula;
+- a "tangent" through two points that lie on the curve (a secant), the error the entry itself warned about;
+- wrong lesson: a GeoGebra lab that precedes derivatives using derivatives; «الطاقة الممتصة والطاقة المنبعثة» teaching
+  the ΔH sign instead of specific heat; «حسابات الطاقة» with no calculation;
+- «موالت» / «موات» for «مولات» in three chemistry lessons — copied from the book text the model was given.
+
+**Changed.**
+
+- `lessonTeachingPrompt.ts`, rule 14 in both languages: the answer is the final result worked out and simplified (no
+  «—», no method description, no unevaluated expression); substitute every answer back and, if it fails, change the
+  problem's numbers, not the answer; a general rule holds for negative values or states its condition; the book's
+  triangle notation (c² = … − 2ab cos C); a lab uses only what the lab does; a calculation lesson calculates.
+  `lesson-teaching` moves to `2026-11-01.1` (`generationKey.ts`), so the next prefill regenerates instead of serving
+  the rejected rows again. Approved rows are read by lesson, not by version, so nothing students see changes.
+- `realAnswer` (`lessonExplanationCards.ts`): an answer made only of punctuation («—», «…», «؟») is no answer. The
+  student cards drop a worked example without a real answer and show a practice without one; `usableTeaching`
+  (`lessonSlides.ts`) does the same for the deck. «-3» is still an answer.
+- `untranspose.ts`: `CURATED_CORRECT` adds «مولات», «المولات», «مولاته», «مولاتها» to the ligature repair's evidence.
+  No OCR book uses the word twice, so the generated `repair-wordlists.json` never licensed the repair. The four
+  extracted chem-s2 files (student book, activity book, two packs) were corrected in place for those forms only —
+  67 words, every one checked in the diff. Re-running the whole ligature repair over the corpus was tried and not
+  kept: it rewrites ~75 unrelated words, some wrongly («غَالٍ» → «غَلٍا»), and regenerating the wordlists changes
+  thousands of entries (54 OCR books now, 22 then). Both are their own change.
+
+**Verified.** Typecheck clean. api-server 2,809/2,809. mobile 9,131 pass, 10 skipped, 0 fail. curriculum 906/907 —
+the one failure is `r2.test.ts`, which asserts R2 is unconfigured and this cloud container has R2 set; unrelated, and
+CI runs without it. `verify` 0 errors. New tests: the curated repair (`untranspose.test.ts`), the prompt's rule-14
+sentences (`lessonTeachingPrompt.test.ts`), placeholder answers on cards and in the deck.
+
+**Not verified.** That rule 14 lowers the error rate: only a new prefill and a second review can show that. The
+math verifier was not run here (no SymPy in this container); nothing in it changed.
+
+**Still to do after deploy.** Re-run the prefill with a fresh token and `--force`, review the new file, approve.
+The 30 entries that passed were approved on 2026-11-01 (`--approve`, «approved 30 of 30»); the 20 rejected were never approved, so those lessons keep whatever was approved before (the 2026-10-18 run) or show «قريبًا».
+
+## Exam screen: say why when a delete or a question change is refused — 2026-11-01
+
+The API now answers 409 when an exam was published, closed or removed while a
+question was being added, changed or deleted (`no_longer_draft`), and when an exam
+was published while it was being deleted (`still_published`). The app did not
+tell the teacher either: the exam screen showed «تعذّر حفظ السؤال.» /
+«تعذّر حذف الاختبار.» for every failure and kept showing a draft, and the three
+question modals (`EditQuestionModal`, `AddReadAloudModal`, `AddDictationModal`) printed
+the server's **English** `err.message` to an Arabic teacher («Only a draft can be edited»).
+
+- `services/evaluationEditError.ts` (pure, testable): `editRefusedAsNotDraft(err)` is a
+  409 on a question change; `archiveFailure(err)` is `still_published` on a delete.
+- Two new lines, both locales: `evaluationEditNoLongerDraft` («نُشر هذا الاختبار أو حُذف
+  أثناء التعديل، فلم يتغيّر شيء.») and `archiveEvaluationStillPublished` («نُشر هذا الاختبار
+  قبل لحظات، فلا يمكن حذفه. أغلِقه أولًا ثم احذفه.»).
+- The exam screen shows them and **reloads the exam** (`refetch`), so the delete button
+  and the question list match the exam as it now is. The three modals show the
+  translated line and call a new optional `onStale`, which the screen passes as `refetch`.
+  Dictation, which adds several questions in a row, keeps its «added N of M» line when some
+  went in, and reloads either way. Every other failure keeps the line it had.
+
+**Verified:** `services/__tests__/evaluationEditError.test.ts` (14 tests): the helper's cases,
+both locales' lines, and source-level checks that the screen and each modal are wired (the
+screens import React Native and cannot be loaded by the runner, as for
+`evaluationGenerateError.test.ts`). Two mutations (an `onStale` prop removed; a modal's catch
+put back) each failed the test, then were restored. Monorepo typecheck clean. Full mobile
+suite: 9059 tests, 9049 passed, 0 failed, 10 skipped (the skips are not from this change; I
+did not look into them).
+
+**Not verified:** the screens were never opened in a browser or on a device, so what a
+refused change looks like on screen (the error row, the reload) is read from the code, not
+seen; the Arabic lines were not read by a native speaker. `PUT …/questions/paper` (the paper
+grid) is unchanged: its only caller, `app/evaluations/new.tsx`, saves it straight after the
+draft is created. **Android:** `app.json` is 1.6.0 and the installed production binary 1.5.0,
+so a JS-only change reaches the web on deploy but no installed Android phone until a 1.6.0
+build is installed.
+
+## «ما الجديد»: entries for the games upgrades and the spelling game — 2026-11-01
+
+The /play changes of 2026-10-30 and 2026-11-01 merged before the «ما الجديد» rule
+existed, so existing users were told only about the six new games and the filter
+(`play-hub-filters`). Two entries added to `WHATS_NEW`, both for every role, both
+opening a public screen:
+
+- `play-games-upgrade` (dated 2026-10-30, the day the upgrades merged and reached
+  the web and the Android `production` channel): the one-line explanation after an
+  answer, the sounds and light vibration (the speaker button mutes them), the saved
+  best score with «retry the ones you missed», and the Jordan map in the governorates
+  game. Route `/play`.
+- `play-spelling-game` (dated 2026-11-01): «كيف تُكتب؟», Grades 2 to 7, names the
+  rule after each answer. Route `/play/spelling`.
+- **One existing entry's text changed, its id did not:** `play-hub-filters` said
+  "sixteen games", which was one short once the spelling game shipped. It no longer
+  states a count. A device that already saw it is unaffected (the id is what is
+  remembered).
+- **Who sees them:** an account made after an entry's day is not told (it met the
+  feature already); the dialog shows at most three entries a session, newest first,
+  and Profile → «ما الجديد» lists all. So an older account can now meet three game
+  notes in a row, then the tour note on the next launch.
+- **Verified:** `whatsNew.test.ts` (23 tests: keys exist in both languages, dates are
+  valid, each route is a real screen every named role may open), typecheck, the mobile
+  suite.
+- **Not verified / limits.** The Arabic is mine, read, not run through the
+  `arabic-copy-reviewer` skill, and the English is a plain translation. The upgrades
+  entry says explanations appear "in many" of the question games: they exist in the
+  seven text games (the six new ones and spelling) and not in flags, capitals or
+  elements. Nothing was seen on a device.
+
+## Chat: the lesson's subject colour on the strip and the heading — 2026-11-01
+
+The chat was the one lesson screen with no subject in it: Today's band wears the lesson's
+subject (`subjectTheme`), the generator screens' lesson card leads with its drawing
+(`subjectTile`), and the chat stayed brand teal and white whatever the lesson. Item #7 of the
+desktop chat review (see the entry below, «Chat on desktop: the composer joins the intro…»).
+
+**What changed.** Two marks, both from `subjectChipColor` (the existing helper that makes a
+subject's catalog colour readable on a given surface), so the chat borrows rather than invents:
+- **The lesson strip** (`CurrentLessonCard`, new optional `accent` prop) gets a 4px bar on its
+  start edge, in both its collapsed and expanded states, coloured against `colors.card`. The bar
+  is placed from the `isRTL` flag like the row direction, not with `start`, which follows
+  I18nManager and this app does not use that to lay out Arabic.
+- **The desktop intro heading** (`introColor` on `MessageBubble`) takes the subject colour when a
+  lesson is picked, coloured against `colors.background`: it sits on the page ground, not a card.
+  With no lesson it stays brand teal, as before.
+
+**Left alone, on purpose.** The Iqrra mark keeps its brand colour (it is the logo, not chrome),
+the chat is still not a corner (no `CornerThemeProvider`; a corner subject's colour comes from the
+same table Today reads, but the chat's buttons, chips and composer stay brand teal), and the strip's
+Start class button stays teal.
+
+**Pinned** (`subjectTheme.test.ts`): every subject's colour reads at 4.5:1 on the light and dark
+page ground (the helper was only tested on the cards), and the two call sites in `iqra.tsx` pass
+the right surface (`colors.background` for the heading, `colors.card` for the strip) — a wrong
+surface keeps compiling and silently loses contrast. The second test reads the source; the
+pattern was checked to fail on a swapped surface.
+
+**Verified:** `pnpm run typecheck` exit 0; `artifacts/mobile` `pnpm test` 8983 pass, 0 fail,
+10 skipped. **Not verified:** nothing was looked at in a browser, so how strong the bar and the
+heading read for each subject, in light and dark, is from the numbers (contrast), not the screen.
+
 ## A DB test's server can no longer answer from another test file's port — 2026-11-01
 
 Also on PR #1387, after the lock-probe fix below: «ends the dead end, with row-level security enforced»

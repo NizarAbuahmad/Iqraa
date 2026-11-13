@@ -29,6 +29,7 @@ import {
   type Difficulty,
   type EvaluationQuestion,
 } from '@/services/evaluations';
+import { editRefusedAsNotDraft } from '@/services/evaluationEditError';
 import {
   EDITABLE_TYPES,
   countGaps,
@@ -66,12 +67,15 @@ const DIFFICULTY_LABEL: Record<Difficulty, TranslationKey> = {
 
 export function EditQuestionModal({
   onClose,
+  onStale,
   evaluationId,
   objectiveIds,
   question,
   onSaved,
 }: {
   onClose: () => void;
+  /** The server refused because the exam is no longer a draft: the screen should reload it. */
+  onStale?: () => void;
   evaluationId: string;
   objectiveIds: string[];
   /** The question to edit; absent to add a new one. */
@@ -115,7 +119,13 @@ export function EditQuestionModal({
       onSaved(result.question, result.totalMarks);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('questionSaveFailed'));
+      if (editRefusedAsNotDraft(err)) {
+        // The server's own line is English; say it in the teacher's language.
+        setError(t('evaluationEditNoLongerDraft'));
+        onStale?.();
+      } else {
+        setError(err instanceof Error ? err.message : t('questionSaveFailed'));
+      }
     } finally {
       setBusy(false);
     }

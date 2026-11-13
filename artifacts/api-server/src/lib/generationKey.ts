@@ -34,9 +34,22 @@ export const PROMPT_VERSION = "2026-10-04.1";
  *   otherwise be served forever. Students are unaffected: their approved
  *   explanations are read by lesson, not by this key (`lessonExplanationStore.ts`).
  *   2026-10-31: concepts gained optional `shape`, `icon`, `chart` and `photo`.
+ *   2026-11-01: rule 14 (accuracy). The first student review of 50 pooled
+ *   sections rejected 17 for wrong or missing answers and false rules, and
+ *   the rejected ones would otherwise be served again on every prefill rerun.
+ *   2026-11-02: rule 15 and the `check` blocks. The worked example and the
+ *   practice are computed by the math verifier, and the route asks once more
+ *   when it disagrees; a row stored before this has no verdicts and would sit
+ *   in the pool looking unchecked forever.
+ *   2026-11-03: the check's examples became placeholders in the output shape
+ *   (the model had copied the example check into chemistry lessons), a descriptive
+ *   answer carries no check, and the kind moved to the documents model.
+ *   2026-11-03 (second): rule 16. A maths lesson may ask for one `visual` (a
+ *   graph or vectors) on a concept or the worked example; a row stored before
+ *   this has none, so a maths lesson's pooled section would never draw one.
  */
 const PROMPT_VERSION_BY_KIND: Readonly<Record<string, string>> = {
-  "lesson-teaching": "2026-10-31.1",
+  "lesson-teaching": "2026-11-03.2",
 };
 
 /** The version a kind's pool is keyed and stored under. */

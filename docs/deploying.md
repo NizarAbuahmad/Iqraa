@@ -158,6 +158,38 @@ curl -s https://iqraa-api-613126375862.europe-west1.run.app/api/healthz/verifier
 Front End reserves that path and answers with its own 404 before the container
 sees it. That looks like a broken deploy and is not one.
 
+### Keeping the verifier warm (cost, since 2026-11-02)
+
+`iqraa-verifier` runs with `--min-instances 0`: a warm idle instance billed ~$0.33
+a day and was a third of the Cloud Run bill (Billing → Reports → top SKU
+"Min Instance CPU"). A cold verifier adds ~4.6 s to one request, inside the app's
+8 s timeout; a timeout fails closed (no «تم التحقق» badge). A scheduled request
+every 5 minutes keeps it warm in practice. **Best effort:** Google does not
+guarantee an instance survives, so an occasional cold start still happens.
+
+Create the job once, by hand (Cloud Scheduler gives three jobs free per billing
+account; this adds ~8,600 requests a month, inside Cloud Run's free 2M). It hits
+the API's `/api/healthz/verifier`, which calls the verifier, so one job keeps both
+warm and needs no secret:
+
+```bash
+P="--project iqraa-auth-507315"
+gcloud scheduler jobs create http verifier-keepwarm $P \
+  --location europe-west1 \
+  --schedule "*/5 * * * *" \
+  --uri "https://iqraa-api-613126375862.europe-west1.run.app/api/healthz/verifier" \
+  --http-method GET \
+  --attempt-deadline 30s \
+  --max-retry-attempts 0 \
+  --format=none
+gcloud scheduler jobs run verifier-keepwarm --location europe-west1 $P
+gcloud scheduler jobs describe verifier-keepwarm --location europe-west1 $P \
+  --format='value(lastAttemptTime,status)'
+```
+
+To undo it all, set `--min-instances 1` on the verifier in `deploy.yml` and
+`gcloud scheduler jobs delete verifier-keepwarm --location europe-west1 $P`.
+
 A health check proves the container booted, and **that is all it proves.**
 `/healthz` is `res.json({ status: "ok" })` — a static literal that touches no
 database and no credential (`routes/health.ts`). This file claimed for a while
@@ -303,8 +335,8 @@ bottleneck.
 
 **Password hashing** runs in a worker thread (`lib/passwordHash.ts`) so a sign-up
 rush cannot stall the instance. Plain env vars again: `PASSWORD_HASH_WORKERS`
-(1–4, default 1 — match the service's vCPU; `deploy.yml` sets `--cpu 2` with
-`PASSWORD_HASH_WORKERS=2` for `iqraa-api`, so change them together) and `PASSWORD_HASH_MAX_PENDING`
+(1–4, default 1 — match the service's vCPU; `deploy.yml` sets `--cpu 1` with
+`PASSWORD_HASH_WORKERS=1` for `iqraa-api`, so change them together) and `PASSWORD_HASH_MAX_PENDING`
 (default 40: sign-in/sign-up requests in flight before the rest get `503
 hashing_busy`). After a deploy, `GET /api/healthz/pool` must show
 `hashing.degraded: false`; `true` means the worker file did not load and
@@ -323,7 +355,7 @@ effect is visible on the paper itself: `generationParams.bookItems` is
 `{ enabled, planned, supplied, drawn, ids }` on every live maths evaluation, so an
 unset flag reads `enabled: false` rather than looking like a bug. A paper made
 with book items tells the model what the book supplies and records
-`promptVersion` `exam-gen-7+book` (`exam-gen-6+book` before 2026-10-15), so usage rows with and without the flag stay
+`promptVersion` `exam-gen-8+book` (`exam-gen-7+book` before 2026-11-03, `exam-gen-6+book` before 2026-10-15), so usage rows with and without the flag stay
 comparable. Then generate one
 maths evaluation and check it; see "Real book items on the live model path" in
 `STATUS.md`.

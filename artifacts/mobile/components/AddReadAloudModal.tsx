@@ -34,6 +34,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { addEvaluationQuestion, type CompetencyKey, type EvaluationQuestion } from '@/services/evaluations';
+import { editRefusedAsNotDraft } from '@/services/evaluationEditError';
 import type { TranslationKey } from '@/services/i18n';
 import { objectiveLabel } from '@/services/curriculumData';
 import { palette } from '@/constants/colors';
@@ -61,12 +62,15 @@ export const COMPETENCIES: { key: CompetencyKey; label: TranslationKey }[] = [
 export function AddReadAloudModal({
   visible,
   onClose,
+  onStale,
   evaluationId,
   objectiveIds,
   onAdded,
 }: {
   visible: boolean;
   onClose: () => void;
+  /** The server refused because the exam is no longer a draft: the screen should reload it. */
+  onStale?: () => void;
   evaluationId: string;
   /** The objectives this evaluation was scoped to; the server refuses any other. */
   objectiveIds: string[];
@@ -111,7 +115,13 @@ export function AddReadAloudModal({
       setPassage('');
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('readAloudAddFailed'));
+      if (editRefusedAsNotDraft(err)) {
+        // The server's own line is English; say it in the teacher's language.
+        setError(t('evaluationEditNoLongerDraft'));
+        onStale?.();
+      } else {
+        setError(err instanceof Error ? err.message : t('readAloudAddFailed'));
+      }
     } finally {
       setBusy(false);
     }

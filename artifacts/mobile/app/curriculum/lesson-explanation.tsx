@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { BackButton } from '@/components/ui/BackButton';
+import { FigureView } from '@/components/ui/FigureView';
 import { getLessonById } from '@/services/curriculumData';
 import {
   getLessonExplanation,
@@ -175,6 +176,7 @@ export default function LessonExplanationScreen() {
           <View key={i} style={card}>
             <Text style={[styles.cardTitle, align, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold' }]}>{c.title}</Text>
             {c.points.map((p, j) => <Text key={j} style={body}>{p}</Text>)}
+            {c.visual ? <FigureView figure={c.visual} lang={lang} /> : null}
             {c.misconception ? (
               <View style={[styles.revealed, { backgroundColor: colors.muted, borderRadius: colors.radius }]}>
                 <Text style={[styles.cardLabel, align, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium' }]}>{t('lessonExplainCommonMistake')}</Text>
@@ -189,6 +191,7 @@ export default function LessonExplanationScreen() {
             {heading(t('lessonExplainExample'))}
             <Text style={[body, dir, styles.strong]}>{isolateForeignRuns(c.problem)}</Text>
             {c.steps.map((s, j) => <Text key={j} style={[body, dir]}>{`${j + 1}. `}{isolateForeignRuns(s)}</Text>)}
+            {c.visual ? <FigureView figure={c.visual} lang={lang} /> : null}
             {c.answer ? <Text style={[body, dir, styles.strong, { color: accent }]}>{`${t('lessonExplainAnswer')}: ${isolate(c.answer)}`}</Text> : null}
           </View>
         );

@@ -116,9 +116,10 @@ describeDb("generating into a draft evaluation, against a real database", () => 
       CREATE TRIGGER slow_question_insert BEFORE INSERT ON evaluation_questions
       FOR EACH STATEMENT EXECUTE FUNCTION slow_question_insert()`);
     try {
+      // One of the two writes the paper; the other is refused before it calls the model
+      // (evaluationGenerateClaim.db.test.ts). Either way the draft ends with one paper.
       const [a, b] = await Promise.all([generate(id), generate(id)]);
-      assert.equal(a.status, 200, a.text);
-      assert.equal(b.status, 200, b.text);
+      assert.deepEqual([a.status, b.status].sort(), [200, 429], `${a.text} / ${b.text}`);
     } finally {
       await db.pool.query(`DROP TRIGGER slow_question_insert ON evaluation_questions`);
     }
@@ -145,12 +146,15 @@ describeDb("generating into a draft evaluation, against a real database", () => 
       // Wait until the request is really queued behind our lock, not for a fixed time:
       // on a slow runner it could still be before its early draft check, which also
       // answers 409 and would let this test pass without reaching the lock at all.
-      // Only this file's database: pg_stat_activity lists the whole server, and the other
-      // race files, running in parallel, queue on the same query in theirs (seen in CI).
+      // It queues on its generation claim (an UPDATE of the evaluation, taken after that
+      // early check) and, once it has the claim, on the write's FOR UPDATE; either proves
+      // it is past the early check. Only this file's database: pg_stat_activity lists the
+      // whole server, and the other race files, running in parallel, queue on the same
+      // query in theirs (seen in CI).
       await waitUntil(async () => {
         const r = await db.pool.query<{ n: number }>(
           `SELECT count(*)::int AS n FROM pg_stat_activity
-            WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%from "evaluations"%for update%'`,
+            WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%"evaluations"%'`,
         );
         return r.rows[0].n > 0;
       });

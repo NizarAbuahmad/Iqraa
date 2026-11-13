@@ -34,6 +34,18 @@ test('an artifact with no worked example simply has no example card', () => {
   assert.deepEqual(cards.map(c => c.kind), ['hook', 'concept', 'concept', 'practice']);
 });
 
+test('an answer that is only a placeholder is no answer (pregen review, 2026-11-01)', () => {
+  // A model returned «—» as a practice answer; a student would have read the
+  // dash as the answer. No card shows it, and no example stands on one.
+  for (const answer of ['—', ' - ', '…', '؟', '...']) {
+    const cards = buildExplanationCards({ practice: { problem: 'مسألة', answer }, workedExample: { problem: 'م', steps: ['خطوة'], answer } });
+    assert.deepEqual(cards, [{ kind: 'practice', problem: 'مسألة' }], answer);
+  }
+  // A real answer that happens to start with a dash is still an answer.
+  const [card] = buildExplanationCards({ practice: { problem: 'مسألة', answer: '-3' } });
+  assert.equal(card!.kind === 'practice' && card!.answer, '-3');
+});
+
 test('practice keeps hint and answer only when they exist', () => {
   const cards = buildExplanationCards({ practice: { problem: 'مسألة', hint: '  ', answer: undefined } });
   assert.deepEqual(cards, [{ kind: 'practice', problem: 'مسألة' }]);
@@ -248,4 +260,35 @@ test('bullets and «N.» / «N)» markers keep their behaviour in front of maths
   assert.equal(stripMarker('* x = 4'), 'x = 4');
   assert.equal(stripMarker('1. 3x = 6'), '3x = 6');
   assert.equal(stripMarker('2) x = 4'), 'x = 4');
+});
+
+const vec = { kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 2], label: 'u' }] };
+
+test('a concept and a worked example carry a drawing the gate accepts', () => {
+  const cards = buildExplanationCards({
+    ...full,
+    concepts: [{ title: 'المتجه له مقدار واتجاه', points: ['u = ⟨3, 2⟩'], visual: { ...vec, junk: 1 } }],
+    workedExample: { ...full.workedExample, visual: vec },
+  } as never);
+  assert.deepEqual((cards.find(c => c.kind === 'concept') as { visual?: unknown }).visual, vec);
+  assert.deepEqual((cards.find(c => c.kind === 'example') as { visual?: unknown }).visual, vec);
+});
+
+test('a drawing the gate refuses is dropped alone — the card keeps its words', () => {
+  const bad = { kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 2], label: 'x=3' }] };
+  const cards = buildExplanationCards({ ...full, concepts: [{ title: 'ت', points: ['نقطة'], visual: bad }] } as never);
+  const concept = cards.find(c => c.kind === 'concept')!;
+  assert.equal('visual' in concept, false);
+  assert.deepEqual((concept as { points: string[] }).points, ['نقطة']);
+});
+
+test('a card with no drawing is unchanged', () => {
+  const [, first] = buildExplanationCards(full);
+  assert.equal('visual' in first!, false);
+});
+
+test('a hostile value does not throw', () => {
+  for (const visual of [null, 7, 'x', [], { kind: 'vectors', vectors: 5 }, { get kind(): string { throw new Error('boom'); } }]) {
+    assert.doesNotThrow(() => buildExplanationCards({ ...full, concepts: [{ title: 'ت', points: ['ن'], visual }] } as never));
+  }
 });

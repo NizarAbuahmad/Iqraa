@@ -42,11 +42,21 @@ jobs:
     name: destructive migrations acknowledged
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
+      # The check below reads which files the PR ADDED under lib/db/migrations
+      # (a tree comparison) and greps the ones it finds, so it needs the commits
+      # (for the `base...head` merge base) but not their file contents. A full
+      # `fetch-depth: 0` pulls every blob of every branch: ~1.2 GB, and on
+      # 2026-11-03 it outgrew the old 5-minute limit — the job was cancelled inside
+      # `git fetch` four times on one PR, before its own step ever ran, while the
+      # same job had taken ~30 s that morning. `blob:none` keeps the history and
+      # leaves the blobs to be fetched on demand: ~5 MB, about a second, and the
+      # same answer from the same `git diff` (checked against a full clone).
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - name: Destructive migrations are acknowledged
         env:

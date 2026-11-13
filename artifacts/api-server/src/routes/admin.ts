@@ -27,7 +27,7 @@ import { getBudgetStatus, getUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart } from "../lib/aiUsageLog.js";
 import { RATE_LIMITS } from "../lib/rateLimit.js";
 import { parseSchoolAssignment, parseSchoolIdFilter, parseSchoolInput } from "../lib/adminSchools.js";
-import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
+import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, parseUserChannel, parseUserCohort, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
 import { AMMAN_OFFSET_HOURS, addDays, ammanDay, ammanDayStart, buildDailySeries, parseDays } from "../lib/dailyActivity.js";
 import { configuredAutoMetrics } from "../lib/autoMetrics.js";
@@ -399,8 +399,9 @@ const offsetOf = (v: unknown) => {
 };
 
 /**
- * GET /admin/users?q=&status=all|suspended&role=&schoolId=&offset=
+ * GET /admin/users?q=&status=all|suspended&role=&schoolId=&from=&to=&channel=all|web|app|unknown&cohort=all|new|returning&offset=
  * Newest first, with this month's AI spend so a heavy user stands out.
+ * `from`/`to` is when the account was made, unless `cohort=returning` (parseUserCohort).
  */
 router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (req, res) => {
   try {
@@ -418,14 +419,39 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
       res.status(400).json({ error: String(msg) });
       return;
     }
+    const channel = parseUserChannel(req.query["channel"]);
+    if ("error" in channel) {
+      res.status(400).json({ error: channel.error });
+      return;
+    }
+    const cohort = parseUserCohort(req.query["cohort"], !!range.from);
+    if ("error" in cohort) {
+      res.status(400).json({ error: cohort.error });
+      return;
+    }
+    // Inside the range, on both ends; `to` is already the day after (parseDateRange).
+    const inRange = (col: SQL) =>
+      and(range.from ? sql`${col} >= ${range.from}` : undefined, range.to ? sql`${col} < ${range.to}` : undefined) ?? sql`true`;
+    // Came back inside the range: signed in, or did what the daily-activity chart counts
+    // as active. Table names written out for the same reason as `spend` below.
+    const cameBack = or(
+      inRange(sql`"users"."last_login"`),
+      sql`exists (select 1 from "ai_generations" where "ai_generations"."user_id" = "users"."id" and ${inRange(sql`"ai_generations"."created_at"`)})`,
+      sql`exists (select 1 from "saved_materials" where "saved_materials"."user_id" = "users"."id" and ${inRange(sql`"saved_materials"."created_at"`)})`,
+    );
     const where = and(
       q ? or(ilike(users.email, like), ilike(users.firstName, like), ilike(users.lastName, like)) : undefined,
       req.query["status"] === "suspended" ? isNotNull(users.suspendedAt) : undefined,
       // The schools screen lists teachers, and a school's own teachers.
       typeof req.query["role"] === "string" && req.query["role"] ? eq(users.role, req.query["role"]) : undefined,
       schoolId ? eq(users.schoolId, schoolId) : undefined,
-      range.from ? gte(users.createdAt, range.from) : undefined,
-      range.to ? lt(users.createdAt, range.to) : undefined,
+      channel.channel === "web" ? eq(users.signupPlatform, "web") : undefined,
+      channel.channel === "app" ? inArray(users.signupPlatform, ["android", "ios"]) : undefined,
+      channel.channel === "unknown" ? isNull(users.signupPlatform) : undefined,
+      // Returning: made before the range, back inside it. Otherwise the range is when it was made.
+      cohort.cohort === "returning" ? and(lt(users.createdAt, range.from!), cameBack) : undefined,
+      cohort.cohort !== "returning" && range.from ? gte(users.createdAt, range.from) : undefined,
+      cohort.cohort !== "returning" && range.to ? lt(users.createdAt, range.to) : undefined,
     );
     // Table names written out, not interpolated. In a single-table select drizzle
     // renders interpolated columns unqualified, so this once read `user_id = id`

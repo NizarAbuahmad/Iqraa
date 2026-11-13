@@ -44,6 +44,8 @@ export function toLatinMath(input: string): string {
   s = s.replace(/[⁻⁰¹²³⁴⁵⁶⁷⁸⁹]+/g, run =>
     "^" + [...run].map(c => (c === "⁻" ? "-" : String(SUPERSCRIPTS.indexOf(c)))).join(""));
   s = s.replace(/√\(/g, "sqrt(").replace(/√([0-9]+|[a-z])/gi, "sqrt($1)");
+  // π is «pi» to SymPy and to a model's `check`, but «π» in the prose a student reads.
+  s = s.replace(/π/g, "pi");
   // A variable is a letter standing alone. Inside an Arabic word it is just a
   // letter: «سم» (cm) is not «x·م», and «١٠ سم» used to become «10xم», which no
   // «10» could be found in.
@@ -160,14 +162,25 @@ export function linkCheck(question: GeneratedQuestion): KeyLink {
       ? { linked: true }
       : { linked: false, why: "the answer key is not the answer that was checked" };
   }
-  // A list of roots is stated in prose as «س = ١ و س = ٣», never as «x = 1, 3», so
-  // each root is looked for on its own — all of them, as whole expressions.
-  const haystack = squashMath(key.text);
-  const parts = answerParts(check.answer);
-  const stated = parts.length > 1 && parts.length <= MAX_LIST_PARTS
-    ? parts.every(part => containsExpression(haystack, part))
-    : containsExpression(haystack, target);
-  return stated
+  return statesAnswer(key.text, check.answer)
     ? { linked: true }
     : { linked: false, why: "the model answer does not state the answer that was checked" };
+}
+
+/**
+ * Does a prose answer state the answer that was checked?
+ *
+ * A list of roots is stated in prose as «س = ١ و س = ٣», never as «x = 1, 3», so
+ * each root is looked for on its own — all of them, as whole expressions.
+ * Exported because a lesson explanation's worked example is the same shape: a
+ * model answer in prose, and a Latin `check` the verifier can read.
+ */
+export function statesAnswer(prose: string, checkedAnswer: string): boolean {
+  const target = squashMath(checkedAnswer);
+  if (!target) return false;
+  const haystack = squashMath(prose);
+  const parts = answerParts(checkedAnswer);
+  return parts.length > 1 && parts.length <= MAX_LIST_PARTS
+    ? parts.every(part => containsExpression(haystack, part))
+    : containsExpression(haystack, target);
 }

@@ -28,18 +28,26 @@
  */
 
 import { DECK_ICON_NAMES, diagramLimitsAr, diagramLimitsEn } from "./promptSlidesPrompt.ts";
+import { PROMPT_EXAMPLE_CHECKS } from "./lessonTeachingChecks.ts";
+import { figureFormatAr, figureFormatEn } from "./figurePrompt.ts";
+import { isMathContext } from "@workspace/math-practice";
 
 /** Concept slides asked for. More is a lecture; fewer is not an explanation. */
 export const TEACHING_CONCEPTS_MIN = 3;
 export const TEACHING_CONCEPTS_MAX = 5;
 
+/** Drawings (a graph or vectors) a maths lesson may carry in all: on its concepts and its worked example. */
+export const LESSON_VISUALS_MAX = 2;
+
 /** What the model attached to its concepts — logged per section, see routes/generate.ts. */
-export function teachingVisualCounts(content: unknown): { concepts: number; shape: number; icon: number; chart: number; photo: number } {
+export function teachingVisualCounts(content: unknown): { concepts: number; shape: number; icon: number; chart: number; photo: number; visual: number } {
   const list = content !== null && typeof content === "object" && Array.isArray((content as { concepts?: unknown }).concepts)
     ? (content as { concepts: unknown[] }).concepts.filter((c): c is Record<string, unknown> => c !== null && typeof c === "object")
     : [];
   const has = (k: string) => list.filter(c => c[k] !== undefined && c[k] !== null && c[k] !== "").length;
-  return { concepts: list.length, shape: has("shape"), icon: has("icon"), chart: has("chart"), photo: has("photo") };
+  const example = content !== null && typeof content === "object" ? (content as { workedExample?: unknown }).workedExample : undefined;
+  const exampleVisual = example !== null && typeof example === "object" && (example as Record<string, unknown>)["visual"] ? 1 : 0;
+  return { concepts: list.length, shape: has("shape"), icon: has("icon"), chart: has("chart"), photo: has("photo"), visual: has("visual") + exampleVisual };
 }
 
 export function lessonTeachingPromptAr(b: any): string {
@@ -85,16 +93,30 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي لهذا ال�
    - "icon": اسم أيقونة واحد من: ${DECK_ICON_NAMES.join(", ")}.
    - "chart": {"kind":"chart","chartType":"bar","categories":[..],"values":[..]} فقط من أرقام واردة في محتوى الكتاب أعلاه. لا تخترع أرقامًا أبدًا، ولا تجمع "chart" مع "shape".
    - "photo": عبارة بحث إنجليزية من ٢-٥ كلمات لمشهد حقيقي (مكان، تجربة، ظاهرة)، لا لقاعدة رياضية؛ في فكرتين على الأكثر.
-
+14. الدقة قبل الإرجاع — يقرأ هذا الشرحَ طالبٌ وحده، فلا أحد يصحّح خطأه:
+   - "answer" في المثال والتدريب هو الناتج النهائي محسوبًا ومبسّطًا: عدد بوحدته، أو الأزواج المرتبة نفسها، أو العبارة بعد التبسيط. لا شرطة «—»، ولا وصف للطريقة («الحل هو نقطتا التقاطع»)، ولا عبارة لم تُحسب («63 × sin 30°» بل «31.5 cm²»).
+   - تحقّق من كل إجابة: عوّضها في المسألة (في كل معادلة من النظام) وأعد كل عملية حسابية. إن لم تتحقق فغيّر أرقام المسألة لا الإجابة، واختر أرقامًا تعطي ناتجًا نظيفًا (عددًا صحيحًا أو كسرًا بسيطًا).
+   - كل قاعدة عامة في "points" تصحّ في كل الحالات، ومنها القيم السالبة؛ وإن كانت تصحّ بشرط فاذكر الشرط.
+   - استعمل رموز الكتاب: في المثلث ABC الضلع a يقابل الزاوية A، فقانون جيب التمام c^2 = a^2 + b^2 - 2ab cos C.
+   - «معمل» أو «تجربة استهلالية» يسبق الدروس التي يمهّد لها: مثاله وتدريبه مما يفعله النشاط نفسه، لا مهارة من درس لاحق.
+   - إن طلبت نتاجات الدرس حسابًا فالمثال والتدريب حساب من هذا النوع، لا سؤال وصفي.
+15. فحص آلي للحساب: يجوز أن يحمل "workedExample" و"practice" حقل "check" بالأحرف اللاتينية فقط، يحسبه برنامج جبر رمزي ويقارنه بإجابتك، فيُعاد الرد إن اختلفا:
+   - "check": {"topic","question","answer"}. اكتب في "question" ما حسبتَه فعلًا، وفي "answer" الناتج نفسه الذي كتبتَه في "answer" أعلاه.
+   - "topic" واحد من: "evaluate" (تعبير عددي مغلق: "question" مثل "${PROMPT_EXAMPLE_CHECKS.evaluate.question}" أو "(1*1 + 4*4 + 5*7)/10"، والزاوية بالدرجات تُكتب 30°؛ و"answer" عدد بأرقام لاتينية بالتقريب الذي كتبتَه، لا وحدة ولا رمز ≈، أو صيغة دقيقة مثل "10*sqrt(3)/3")، و"system_solutions" (نظام معادلتين في x وy تفصل بينهما فاصلة منقوطة: "${PROMPT_EXAMPLE_CHECKS.system.question}"، و"answer" النقاط: "${PROMPT_EXAMPLE_CHECKS.system.answer}")، و"equation_linear" أو "equation_quadratic" (معادلة واحدة "x^2 - 5x + 6 = 0" والإجابة "x = 2 or x = 3")، و"derivative_polynomial" (الاقتران "x^3 - 4x" والإجابة "3x^2 - 4").
+   - لا تضع check إن لم يناسب أحد هذه المواضيع، ولا تكتب check لا يطابق ما حسبتَه فعلًا؛ غيابه أفضل من فحص لسؤال آخر.
+   - لا تضع check إلا حين تكون الإجابة عددًا أو تعبيرًا أو أزواجًا مرتبة؛ والإجابة الوصفية (تفسير، تعريف، تركيب إلكتروني، مقارنة) لا check لها لأنها ليست عددًا. ولا تنسخ المثال أعلاه: "question" هو ما حسبتَه أنت في هذه المسألة.
+${isMathContext(b.topic, null, b.subject) ? `16. رسم بياني أو متجهات (لدروس الرياضيات فقط): يجوز أن يحمل "concept" أو "workedExample" حقلًا اختياريًّا واحدًا اسمه "visual"، وبحدٍّ أقصى ${LESSON_VISUALS_MAX} في القسم كله. اكتب في "points" أو "problem" كل ما يحتاجه الطالب (الاقتران مكتوبًا أو مركّبات المتجه): الرسم يوضّح ولا يحمل المعلومة وحده.
+${figureFormatAr()}
+` : ''}
 أعد JSON بهذا الشكل فقط:
 {
   "hook": { "question": "سؤال التمهيد", "teacherNote": "كيف يدير المعلّم النقاش حوله" },
   "concepts": [
     { "title": "الفكرة كجملة خبرية", "points": ["سطر الشرح", "مثال قصير"], "teacherNote": "ما يؤكّد عليه المعلّم", "misconception": "الخطأ الشائع" }
   ],
-  "workedExample": { "problem": "نص المسألة بمعطياتها", "steps": ["الخطوة الأولى", "الخطوة الثانية"], "answer": "الإجابة النهائية" },
+  "workedExample": { "problem": "نص المسألة بمعطياتها", "steps": ["الخطوة الأولى", "الخطوة الثانية"], "answer": "الإجابة النهائية", "check": {"topic":"<evaluate | system_solutions | equation_linear | equation_quadratic | derivative_polynomial>","question":"<ما حسبتَه فعلًا>","answer":"<ناتجه>"} },
   "mistake": { "claim": "قالت سلمى: … (حلّ فيه خطأ واحد)", "hint": "أين تبحث", "answer": "الخطوة الخاطئة وتصحيحها" },
-  "practice": { "problem": "مسألة التدريب", "hint": "تلميح", "answer": "الإجابة" }
+  "practice": { "problem": "مسألة التدريب", "hint": "تلميح", "answer": "الإجابة", "check": {"topic":"<…>","question":"<ما حسبتَه فعلًا>","answer":"<ناتجه>"} }
 }`;
 }
 
@@ -141,15 +163,29 @@ Mandatory rules:
    - "icon": one icon name from: ${DECK_ICON_NAMES.join(", ")}.
    - "chart": {"kind":"chart","chartType":"bar","categories":[..],"values":[..]} only from figures in the textbook content above; never invent figures, and never put "chart" with "shape".
    - "photo": a 2-5 word English search phrase for a real scene (a place, an experiment, a phenomenon), never for a maths rule; on two concepts at most.
-
+14. Accuracy before you return — a student reads this explanation alone, with nobody to catch a mistake:
+   - "answer" in the worked example and the practice is the final result, worked out and simplified: a number with its unit, the ordered pairs themselves, or the simplified expression. Never a dash "—", never a description of the method ("the solution is the intersection points"), never an unevaluated expression (not "63 × sin 30°" but "31.5 cm²").
+   - Check every answer: substitute it back into the problem (into every equation of a system) and redo every calculation. If it does not check, change the problem's numbers, not the answer, and pick numbers that give a clean result (a whole number or a simple fraction).
+   - Every general rule in "points" holds in every case, including negative values; if it holds only under a condition, state the condition.
+   - Use the book's notation: in triangle ABC side a is opposite angle A, so the law of cosines is c^2 = a^2 + b^2 - 2ab cos C.
+   - A lab or an opening experiment comes before the lessons it leads into: its example and practice use what the activity itself does, never a skill from a later lesson.
+   - If the lesson's outcomes ask for a calculation, the example and the practice are calculations of that kind, not a descriptive question.
+15. An automatic check of the arithmetic: "workedExample" and "practice" may each carry a "check", in Latin characters only, that a symbolic-algebra program computes and compares with your answer; if they differ the reply is asked for again:
+   - "check": {"topic","question","answer"}. Put in "question" what you actually computed, and in "answer" the very result you wrote in "answer" above.
+   - "topic" is one of: "evaluate" (a closed numeric expression: "question" like "${PROMPT_EXAMPLE_CHECKS.evaluate.question}" or "(1*1 + 4*4 + 5*7)/10", angles in degrees written 30°; "answer" a number in Latin digits rounded the way you wrote it, no unit and no ≈ sign, or an exact form like "10*sqrt(3)/3"), "system_solutions" (two equations in x and y separated by a semicolon: "${PROMPT_EXAMPLE_CHECKS.system.question}", and "answer" the points: "${PROMPT_EXAMPLE_CHECKS.system.answer}"), "equation_linear" or "equation_quadratic" (one equation "x^2 - 5x + 6 = 0", answer "x = 2 or x = 3"), "derivative_polynomial" (the function "x^3 - 4x", answer "3x^2 - 4").
+   - Omit "check" when none of these fits, and never write a check that is not what you actually computed; no check is better than a check of a different question.
+   - Write a "check" only when the answer is a number, an expression or ordered pairs; a descriptive answer (an explanation, a definition, an electron configuration, a comparison) has no check, because it is no number. Do not copy the example above: "question" is what you computed in this problem.
+${isMathContext(b.topic, null, b.subject) ? `16. A graph or vectors (maths lessons only): a "concept" or the "workedExample" may carry one optional "visual", at most ${LESSON_VISUALS_MAX} in the whole section. Write everything the student needs in "points" or "problem" (the function written out, the vector's components): the drawing illustrates and never carries the information alone.
+${figureFormatEn()}
+` : ''}
 Return only JSON in this shape:
 {
   "hook": { "question": "The hook question", "teacherNote": "How the teacher runs the discussion" },
   "concepts": [
     { "title": "The idea as a claim", "points": ["An explanation line", "A short example"], "teacherNote": "What the teacher stresses", "misconception": "The common error" }
   ],
-  "workedExample": { "problem": "The problem with its givens", "steps": ["Step one", "Step two"], "answer": "The final answer" },
+  "workedExample": { "problem": "The problem with its givens", "steps": ["Step one", "Step two"], "answer": "The final answer", "check": {"topic":"<evaluate | system_solutions | equation_linear | equation_quadratic | derivative_polynomial>","question":"<what you actually computed>","answer":"<its result>"} },
   "mistake": { "claim": "Salma says: … (a solution with one error)", "hint": "Where to look", "answer": "The wrong step and its correction" },
-  "practice": { "problem": "The practice problem", "hint": "A hint", "answer": "The answer" }
+  "practice": { "problem": "The practice problem", "hint": "A hint", "answer": "The answer", "check": {"topic":"<…>","question":"<what you actually computed>","answer":"<its result>"} }
 }`;
 }

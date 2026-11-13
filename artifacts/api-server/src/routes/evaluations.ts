@@ -72,6 +72,7 @@ import {
 } from "../modules/assessment/bookQuestions.ts";
 import { relateAnswerKey } from "../lib/mathVerifierClient.ts";
 import { QUESTION_TYPES } from "../modules/assessment/questionTypes";
+import { bodyAfterEdit } from "../modules/assessment/questionVisual.ts";
 import {
   allocateQuestions,
   COMPETENCY_KEYS,
@@ -106,6 +107,7 @@ import {
 } from "../lib/aiBudget.ts";
 import { extractJSON } from "../lib/generationShape.ts";
 import { groundingForObjectives } from "../lib/grounding.ts";
+import { claimGeneration, releaseBeforeResponding } from "../lib/generationClaim.ts";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { recommendationsFor } from "../modules/assessment/recommend";
 import {
@@ -834,6 +836,22 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       return;
     }
 
+    // One generation at a time per exam. The app gives up after 45 s and the model can
+    // take longer, so a second tap arrives while the first is still writing; without
+    // this it starts a second model call that replaces the first's paper. Taken here,
+    // after the cheap refusals above and before anything that costs; freed before the
+    // response is written, whichever way the request ends (lib/generationClaim.ts).
+    const generationClaim = await claimGeneration(evaluation.id);
+    if (!generationClaim) {
+      res.setHeader("Retry-After", "30");
+      res.status(429).json({
+        error: "Questions are already being generated for this evaluation. Wait for them, then reload.",
+        code: "generation_in_progress",
+      });
+      return;
+    }
+    releaseBeforeResponding(res, generationClaim);
+
     /**
      * Which generator wrote this paper, and the one rule about it.
      *
@@ -983,7 +1001,18 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             model,
           };
         },
-      );
+      ).then(result => {
+        // The only way to see how a live model uses the optional `visual` field:
+        // what it proposed, what was kept, and why each dropped one was.
+        const kept = result.questions.filter(q => q.body["visual"]).length;
+        if (kept + result.visualsDropped.length > 0) {
+          logger.info(
+            { evaluationId: evaluation.id, kept, dropped: result.visualsDropped },
+            "exam visuals",
+          );
+        }
+        return result;
+      });
 
       let llm = await runLlm(avoid, false);
       if (avoid.length > 0) {
@@ -1470,7 +1499,14 @@ router.post("/evaluations/:id/questions", async (req: AuthenticatedRequest, res)
       ? req.body.difficulty
       : "standard";
 
-    const body = (req.body?.body ?? {}) as Record<string, unknown>;
+    // A drawing is never taken from the client (modules/assessment/questionVisual.ts):
+    // a new question has none, and PATCH only ever puts back the stored one.
+    const sentBody = (req.body?.body ?? {}) as Record<string, unknown>;
+    let body = sentBody;
+    if (sentBody && typeof sentBody === "object" && !Array.isArray(sentBody)) {
+      const { visual: _sentVisual, ...rest } = sentBody;
+      body = rest;
+    }
     const expectedAnswer = (req.body?.expectedAnswer ?? {}) as Record<string, unknown>;
     const rubric = (req.body?.rubric ?? null) as Record<string, unknown> | null;
 
@@ -1629,7 +1665,12 @@ router.patch(
               rubric: nextRubric,
             });
             if (problems.length > 0) return { fail: { status: 400, error: problems.join("; ") } };
-            patch["body"] = nextBody;
+            // A drawing is put back from the stored question only if nothing the
+            // student reads has changed (modules/assessment/questionVisual.ts).
+            patch["body"] = bodyAfterEdit(
+              { body: existing.body, expectedAnswer: existing.expectedAnswer },
+              { body: nextBody, expectedAnswer: nextAnswer },
+            );
             patch["expectedAnswer"] = nextAnswer;
             patch["rubric"] = nextRubric;
             // The verdict was about the question as generated, not as edited.

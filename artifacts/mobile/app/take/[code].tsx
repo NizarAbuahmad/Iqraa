@@ -70,6 +70,7 @@ import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import { QuestionFigure } from '@/components/ui/QuestionFigure';
+import { QuestionVisual } from '@/components/ui/QuestionVisual';
 import { Celebrate } from '@/components/ui/Celebrate';
 
 const ACCENT = palette.primary;
@@ -662,8 +663,9 @@ export default function TakeExamScreen() {
   // maths paper got the maths lesson's compass rose. Show it only where the
   // question itself points at a figure.
   // A question that carries its own figure (attached by the teacher on the
-  // worksheet it came from) shows that one, not the whole lesson's.
-  const examFigures = question && !question.body['figure'] && questionRefersToFigure(question.body)
+  // worksheet it came from) shows that one, not the whole lesson's. The same
+  // holds for a drawing the question carries itself (`body.visual`).
+  const examFigures = question && !question.body['figure'] && !question.body['visual'] && questionRefersToFigure(question.body)
     ? bookFigureRefsForLessons(lessonIds, lang === 'ar')
     : [];
   return (
@@ -719,6 +721,7 @@ export default function TakeExamScreen() {
             onLocal={r => answerLocal(question.id, r)}
             colors={colors}
             isRTL={isRTL}
+            lang={lang}
             align={align}
             t={t}
             token={token}
@@ -775,7 +778,7 @@ export default function TakeExamScreen() {
  * press one will not.
  */
 function QuestionCard({
-  question, response, onAnswer, onLocal, colors, isRTL, align, t, token,
+  question, response, onAnswer, onLocal, colors, isRTL, lang, align, t, token,
 }: {
   question: StudentQuestion;
   response: StudentResponse;
@@ -785,6 +788,7 @@ function QuestionCard({
   onLocal: (r: StudentResponse) => void;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
+  lang: 'ar' | 'en';
   align: 'left' | 'right';
   t: (key: TranslationKey, ...args: any[]) => string;
   /**
@@ -836,6 +840,8 @@ function QuestionCard({
 
       {/* The book figure the teacher attached to this question. */}
       <QuestionFigure body={body} captionColor={colors.mutedForeground} />
+      {/* The drawing the question itself carries (already gated by the server). */}
+      <QuestionVisual body={body} lang={lang} />
 
       {question.type === 'multiple_choice' && (
         <View style={{ gap: 10, marginTop: 16 }}>

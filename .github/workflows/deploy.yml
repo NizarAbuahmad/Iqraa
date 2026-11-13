@@ -62,15 +62,26 @@ jobs:
   changes:
     name: what changed
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     outputs:
       api: ${{ steps.filter.outputs.api }}
       verifier: ${{ steps.filter.outputs.verifier }}
       web: ${{ steps.filter.outputs.web }}
     steps:
+      # This job lists file NAMES (`git diff --name-only BEFORE AFTER`) and checks
+      # that BEFORE is a commit it has, so it needs the commits and not their file
+      # contents. A full `fetch-depth: 0` pulls every blob of every branch (~1.2 GB):
+      # on 2026-11-04 it outgrew the old 5-minute limit and this job was cancelled
+      # inside `git fetch`, which skipped every deploy job behind it (nothing shipped
+      # that time only because the merge needed no deploy). `blob:none` keeps the
+      # history and leaves the contents to be fetched on demand: ~5 MB. Checked
+      # against a full clone: the same file list for ranges of 1 to 120 commits,
+      # and an unknown BEFORE still fails fast, so the "deploy everything" fallback
+      # below still fires.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - id: filter
         env:
@@ -252,6 +263,31 @@ jobs:
       # run above shows is fine; more workers than vCPU only adds contention.
       # Cost: the always-on instance (--min-instances 1) now bills two vCPUs.
       #
+      # `--cpu 1` and PASSWORD_HASH_WORKERS=1 (2026-11-02, cost): the 2 vCPU
+      # always-on instance billed ~$0.43 a day idle on its own (the Billing
+      # report's top SKU, "Min Instance CPU", ~$0.63 a day with the verifier),
+      # taking the monthly bill from ~$1-2 (Sept) to ~$22 (Oct). Back on one
+      # vCPU the cost is the sign-up rush above: ~100 accounts in ~38 s instead
+      # of ~19 s. A single sign-in is unchanged, and chat/generation wait on the
+      # model and the database, not the CPU. Revert both numbers together if a
+      # class-sized sign-up burst starts to hurt.
+      #
+      # `--max-instances 10` (2026-11-03, cost): Cloud Run's default ceiling is
+      # far higher, so a traffic spike, a bot or a retry loop could scale out and
+      # bill every instance, and each extra instance opens its own pool of
+      # database connections (STATUS.md, Neon: 218 direct connections at the
+      # 0.5 CU maximum). Ten instances at `--concurrency 80` is 800 requests in
+      # flight, well above a class sitting an exam together, so ordinary use
+      # never reaches it; past it, requests queue instead of costing more.
+      # Raise it here if the run's "Container instances" graph ever sits at 10.
+      #
+      # SITE_BOT_BUDGET_USD_DAILY=0.3 (2026-11-03, cost): the iqrra.com assistant
+      # was set by hand to 1 a day, up to ~$30 a month of anonymous visitor
+      # questions. The three starter questions are answered from fixed text and
+      # cost nothing; only the rest reach the model. 0.3 is ~$9 a month at most,
+      # still counted in AI_BUDGET_USD. When it is spent the AI path refuses and
+      # the fixed answers keep working. Set it to 0 to switch the AI path off.
+      #
       # AI_MODEL_CHAT (added 2026-10-16): had been set by hand to gpt-5.4-nano,
       # which no eval had measured for chat (STATUS.md, "Decided 2026-08-22"),
       # and teachers found the answers weak. gpt-5.4-mini is what generation
@@ -265,11 +301,12 @@ jobs:
             --allow-unauthenticated \
             --port 8080 \
             --memory 512Mi \
-            --cpu 2 \
+            --cpu 1 \
             --concurrency 80 \
             --timeout 300 \
             --min-instances 1 \
-            --update-env-vars "GIT_SHA=${GITHUB_SHA::7},AI_USER_BUDGET_USD=1,AI_STUDENT_BUDGET_USD=0.20,AI_MODEL_CHAT=gpt-5.4-mini,PASSWORD_HASH_WORKERS=2"
+            --max-instances 10 \
+            --update-env-vars "GIT_SHA=${GITHUB_SHA::7},AI_USER_BUDGET_USD=1,AI_STUDENT_BUDGET_USD=0.20,AI_MODEL_CHAT=gpt-5.4-mini,PASSWORD_HASH_WORKERS=1,SITE_BOT_BUDGET_USD_DAILY=0.3"
 
       # gcloud reporting success is not evidence the new code is serving. It
       # has printed a success line while traffic stayed pinned to an older
@@ -318,6 +355,20 @@ jobs:
       # the worst-case ~10.5s stall fetchWithTimeout.ts describes — app to API
       # to verifier, two cold starts back to back. Same tradeoff: a small
       # continuous charge instead of scale-to-zero $0.
+      #
+      # `--min-instances 0` (2026-11-02, cost): that charge (~$0.22 a day of
+      # CPU, ~$0.11 of memory) was a third of the bill. The API stays warm, so
+      # the "two cold starts back to back" stall cannot recur: a cold verifier
+      # adds ~4.6s to one request, inside the 8s client timeout, and a timeout
+      # fails closed (no «تم التحقق» badge), never to a wrong key. A Cloud
+      # Scheduler ping keeps it warm in practice — docs/deploying.md, "Keeping
+      # the verifier warm". The job is created by hand, once; nothing here
+      # depends on it, and without it a cold start is the only difference.
+      #
+      # `--max-instances 3` (2026-11-03, cost): same reasoning as the API's cap.
+      # Each instance runs one worker process and serialises its checks (see
+      # `--concurrency` above), so more than three would only add cost; only the
+      # API calls it, and the API itself is capped at 10.
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy iqraa-verifier \
@@ -329,7 +380,8 @@ jobs:
             --cpu 1 \
             --concurrency 80 \
             --timeout 300 \
-            --min-instances 1
+            --min-instances 0 \
+            --max-instances 3
 
       - name: Verify it answers
         run: |

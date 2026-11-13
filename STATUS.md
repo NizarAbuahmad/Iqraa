@@ -29,7 +29,8 @@ Checked 2026-10-22:
   and the widget is on `www.iqrra.com` (`Site_Iqra`). The three starter questions are answered from
   fixed answers (`source: "curated"`); anything else goes to the AI path, capped by
   `SITE_BOT_BUDGET_USD_DAILY` (unset until 2026-10-27, then set to `1` a day by the owner, revision
-  `iqraa-api-00445-4fm`, read back as `1`) and counted in `AI_BUDGET_USD`. See «`اسأل إقرأ` is live on iqrra.com» in the log.
+  `iqraa-api-00445-4fm`, read back as `1`; **`deploy.yml` sets it to `0.3` from 2026-11-03**, so it reads
+  `0.3` once the first deploy after that merge has run) and counted in `AI_BUDGET_USD`. See «`اسأل إقرأ` is live on iqrra.com» in the log.
 - **Math verifier** `iqraa-verifier`: `/api/healthz/verifier` answers `ok`, self-test `pass`.
 - **Web app** `app.iqrra.com` (Cloudflare Pages): 200. **Landing** `iqrra.com` (separate repo
   `Site_Iqra`, Vercel) answers 308 to `www.iqrra.com`, which is 200.
@@ -73,7 +74,9 @@ Checked 2026-10-22:
 - 2026-10-31 — Homework submissions record their author (migration `0022`)
 - 2026-10-31 — Homework project submission — teacher screens (phase 3: the switch, the handed-in list, one project, «حذف المشروع»; what is left open is the item «Homework projects: what the teacher's app still cannot do…» below)
 - 2026-10-31 — Teacher can clear one student's project (the API; the app's button is the teacher-screens entry above)
-- 2026-10-31 — Slides: cycle, tree, Venn and mind-map diagrams; curriculum slides gain shapes, icons, charts and photos (untested against a live model)
+- 2026-10-31 — Slides: cycle, tree, Venn and mind-map diagrams; curriculum slides gain shapes, icons, charts and photos (Prompt Slides still untested against a live model)
+- 2026-11-03 — Student lesson explanations: 55 approved from the first two runs; the third run (50) was read blind, **25 fit, 25 not** (approval of the 25 given to the owner, not confirmed here); 11 lessons still have none. `lesson-teaching` now runs on Claude Sonnet 5.5 (2.3x the cost; a fourth run is the test) and the maths check lost two linking bugs («Lesson explanations: the third review…» in the log). `AI_USER_BUDGET_USD` is reset to `1` by every API deploy: raise it for a prefill run
+- 2026-11-03 — Drawn figures (graphs, vectors) in exams and student lessons: the shared package `lib/figure` (PR 1) and exam questions (PR 2: a maths question can carry a drawn graph or vector, teacher preview and student sitting, maths papers only, `exam-gen-8`) are merged; student lesson cards are PR 3, which lets the lesson prompt ask a maths lesson for a drawing and the student screen draw it, but **no student sees one until an admin re-runs `pregenerate`, opens the SVGs it writes and approves** (the student «ما الجديد» entry waits for that day) (spec `docs/superpowers/specs/2026-11-03-drawn-figures-design.md`, plan `docs/superpowers/plans/2026-11-03-drawn-figures.md`; entries «lib/figure: a shared gate and geometry for drawn graphs and vectors» and «Exam questions can carry a drawn graph or vector» in the log). **No live model has ever written a drawing**: after the first live maths paper, read the `exam visuals` log line and read that paper's questions and answer keys by eye.
 - **Screen recording of everyone is ON for the web app (since the 2026-10-29 re-run of Deploy
   #868) and not yet running on Android.** Web: the Contentsquare tag loads on `app.iqrra.com` (not
   the marketing website) because the `CONTENTSQUARE_TAG_ID` repository **variable** is set; delete
@@ -206,6 +209,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-11-01 — «جديد» on a new tool's card, from its «ما الجديد» entry
 - 2026-11-01 — «ما الجديد»: existing users are told about new features, once, in the app
 - 2026-11-01 — Grammar sheets stop mentioning pictures in the grades that have none
 - 2026-11-01 — Admin daily activity — new vs returning
@@ -243,4 +247,4 @@ The 30 newest dated entries, titles only; the text of each is in the [log](./doc
   before you rely on it: CLAUDE.md's first rule applies here too.
 - **A change users can see adds a «ما الجديد» entry** to `WHATS_NEW`
   (`artifacts/mobile/services/whatsNew.ts`), dated the day it merges, or says in the PR body
-  why it needs none.
+  why it needs none. An entry for a new tool sets `toolId`, so the tool's card wears «جديد».

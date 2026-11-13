@@ -29,7 +29,12 @@ concurrency:
 jobs:
   smoke:
     name: teacher to student smoke test
-    runs-on: ubuntu-latest
+    # Pinned, not `ubuntu-latest`: on 2026-11-11 `playwright install --with-deps`
+    # ran apt against the Ubuntu 26.04 («resolute») mirrors, could not resolve
+    # archive.ubuntu.com, and failed after ~10 minutes on two runners in a row
+    # (exit 100) before any test ran. The last green runs (Nov 5 and 9) predate
+    # that. Move to a newer release on purpose, not by a runner rollover.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
       postgres:

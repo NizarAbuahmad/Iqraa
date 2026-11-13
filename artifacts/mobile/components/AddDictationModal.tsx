@@ -50,6 +50,7 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { addEvaluationQuestion, type CompetencyKey, type EvaluationQuestion } from '@/services/evaluations';
+import { editRefusedAsNotDraft } from '@/services/evaluationEditError';
 import type { TranslationKey } from '@/services/i18n';
 import { objectiveLabel } from '@/services/curriculumData';
 import { palette } from '@/constants/colors';
@@ -104,6 +105,7 @@ function gradeNumber(gradeId: string | undefined): number | undefined {
 export function AddDictationModal({
   visible,
   onClose,
+  onStale,
   evaluationId,
   gradeId,
   objectiveIds,
@@ -111,6 +113,8 @@ export function AddDictationModal({
 }: {
   visible: boolean;
   onClose: () => void;
+  /** The server refused because the exam is no longer a draft: the screen should reload it. */
+  onStale?: () => void;
   evaluationId: string;
   /**
    * The grade this evaluation is for, so the bank does not offer a
@@ -193,10 +197,16 @@ export function AddDictationModal({
       // already added are on the exam, and telling the teacher "failed" would
       // send them to add the whole list again on top of half of it.
       if (added.length > 0) onAdded(added, total);
+      // Refused because the exam is no longer a draft (published or removed while the
+      // list was being added): the screen reloads, whatever was already added included.
+      const stale = editRefusedAsNotDraft(err);
+      if (stale) onStale?.();
       setError(
         added.length > 0
           ? t('dictationAddPartial', String(added.length), String(items.length))
-          : err instanceof Error ? err.message : t('dictationAddFailed'),
+          : stale
+            ? t('evaluationEditNoLongerDraft')
+            : err instanceof Error ? err.message : t('dictationAddFailed'),
       );
     } finally {
       setBusy(false);

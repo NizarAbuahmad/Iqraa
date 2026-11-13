@@ -213,7 +213,10 @@ describe("document model", () => {
       }
     }
   };
-  const DOCS = ["lesson-plan", "worksheet", "quiz", "prompt-slides"];
+  // `lesson-teaching` joined on 2026-11-03: the third prefill review rejected 25 of 50
+  // student explanations written by the cheap model, and the arithmetic check
+  // catches about half of the wrong answers, never the false statements.
+  const DOCS = ["lesson-plan", "worksheet", "quiz", "prompt-slides", "lesson-teaching"];
 
   it("tells Claude ids from OpenAI ids", () => {
     assert.equal(isClaudeModel("claude-sonnet-5-5"), true);
@@ -227,7 +230,7 @@ describe("document model", () => {
     });
   });
 
-  it("moves exactly the four document kinds to the configured model", () => {
+  it("moves exactly the five document kinds to the configured model", () => {
     withEnv(
       { AI_MODEL_GENERATE: "gpt-5.4-mini", AI_MODEL_DOCUMENTS: "claude-sonnet-5-5", ANTHROPIC_API_KEY: "k" },
       () => {
@@ -241,7 +244,7 @@ describe("document model", () => {
     withEnv(
       { AI_MODEL_GENERATE: "gpt-5.4-mini", AI_MODEL_DOCUMENTS: "claude-sonnet-5-5", ANTHROPIC_API_KEY: "k" },
       () => {
-        for (const kind of ["homework", "activity", "classroom-activity", "lesson-teaching", "infographic", "solve"]) {
+        for (const kind of ["homework", "activity", "classroom-activity", "infographic", "solve"]) {
           assert.equal(getDocumentModel(kind), "gpt-5.4-mini", kind);
         }
         // The call sites that talk to the OpenAI client read this one directly.

@@ -5,11 +5,16 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  NEW_TOOL_DAYS,
   WHATS_NEW,
   WHATS_NEW_MAX_AGE_DAYS,
   WHATS_NEW_MAX_SHOWN,
   entriesFor,
   entryTime,
+  newToolIds,
+  newToolOpenedKey,
+  toolBadgeKey,
+  toolIdsForPath,
   unseenFor,
   whatsNewBlocker,
   whatsNewSeenKey,
@@ -17,7 +22,15 @@ import {
   type WhatsNewInput,
 } from '../whatsNew.ts';
 import { TOUR_MAX_AGE_DAYS, TOUR_SINCE, tourDoneKey } from '../tour.ts';
-import { getSessionSeen, noteSeen, resetSessionSeen, withSessionSeen } from '../whatsNewSession.ts';
+import {
+  getSessionSeen,
+  getSessionToolsOpened,
+  noteSeen,
+  noteToolsOpened,
+  resetSessionSeen,
+  withSessionSeen,
+} from '../whatsNewSession.ts';
+import { ALL_TOOLS } from '../toolCatalog.ts';
 import { isNonTeacherRoute, isPublicRoute } from '../routeGating.ts';
 import translations from '../i18n.ts';
 
@@ -249,4 +262,93 @@ test('the session store passes unread and unreadable storage through, and keeps 
   assert.equal(getSessionSeen(), before, 'nothing new seen, same snapshot');
   const stored = ['a'];
   assert.equal(withSessionSeen(stored, getSessionSeen(), 't1'), stored, 'nothing to add, same array');
+});
+
+// ─── «جديد» on a new tool's card ────────────────────────────────────────────
+
+const toolEntry = (id: string, date: string, toolId: string, roles: WhatsNewEntry['roles'] = ['teacher']): WhatsNewEntry => ({
+  ...entry(id, date, roles),
+  toolId,
+});
+const TOOL_LIST = [
+  toolEntry('t-quiz', '2026-11-15', 'quiz'),
+  toolEntry('t-slides', '2026-11-01', 'slides'),
+  entry('no-tool', '2026-11-18'),
+];
+
+test('a tool announced after the account was made wears «جديد» until it is opened', () => {
+  const ids = newToolIds({ role: 'teacher', createdAt: OLD_ACCOUNT, opened: [], now: NOW, entries: TOOL_LIST });
+  assert.deepEqual([...ids].sort(), ['quiz', 'slides']);
+  const afterOpen = newToolIds({ role: 'teacher', createdAt: OLD_ACCOUNT, opened: ['quiz'], now: NOW, entries: TOOL_LIST });
+  assert.deepEqual([...afterOpen], ['slides']);
+});
+
+test('the badge goes after its days, even unopened', () => {
+  const list = [toolEntry('t', '2026-11-01', 'quiz')];
+  const at = entryTime('2026-11-01');
+  const still = newToolIds({ role: 'teacher', createdAt: OLD_ACCOUNT, opened: [], now: at + NEW_TOOL_DAYS * DAY, entries: list });
+  assert.equal(still.has('quiz'), true);
+  const gone = newToolIds({ role: 'teacher', createdAt: OLD_ACCOUNT, opened: [], now: at + NEW_TOOL_DAYS * DAY + 1, entries: list });
+  assert.equal(gone.size, 0);
+});
+
+test('to a newer account, a student or parent, or unreadable storage, no tool is new', () => {
+  const created = entryTime('2026-11-02');
+  assert.deepEqual([...newToolIds({ role: 'teacher', createdAt: created, opened: [], now: NOW, entries: TOOL_LIST })], ['quiz']);
+  assert.equal(newToolIds({ role: 'student', createdAt: OLD_ACCOUNT, opened: [], now: NOW, entries: TOOL_LIST }).size, 0);
+  assert.equal(newToolIds({ role: 'teacher', createdAt: OLD_ACCOUNT, opened: 'all', now: NOW, entries: TOOL_LIST }).size, 0);
+  assert.equal(newToolIds({ role: 'teacher', createdAt: NaN, opened: [], now: NOW, entries: TOOL_LIST }).size, 0);
+  // Not before its day.
+  const early = entryTime('2026-11-15') - 1;
+  assert.equal(newToolIds({ role: 'teacher', createdAt: OLD_ACCOUNT, opened: [], now: early, entries: TOOL_LIST }).has('quiz'), false);
+});
+
+test('a tool is opened by its screen or anything under it, never by a look-alike path', () => {
+  const tools = [
+    { id: 'classroom', route: '/ai-tools/classroom' },
+    { id: 'worksheet', route: '/ai-tools/worksheet' },
+    { id: 'homework', route: '/ai-tools/worksheet' },
+    { id: 'geogebra' },
+  ];
+  assert.deepEqual(toolIdsForPath('/ai-tools/classroom/builder', tools), ['classroom']);
+  assert.deepEqual(toolIdsForPath('/ai-tools/classroom', tools), ['classroom']);
+  assert.deepEqual(toolIdsForPath('/ai-tools/classroomx', tools), []);
+  assert.deepEqual(toolIdsForPath('/ai-tools/worksheet', tools), ['worksheet', 'homework']);
+  assert.deepEqual(toolIdsForPath('/', tools), []);
+});
+
+test('a fixed label wins over «جديد», which shows only while the tool is new', () => {
+  const fresh = new Set(['quiz', 'geogebra']);
+  assert.equal(toolBadgeKey({ id: 'quiz' }, fresh), 'whatsNewBadge');
+  assert.equal(toolBadgeKey({ id: 'geogebra', badgeKey: 'toolGeogebraBadge' }, fresh), 'toolGeogebraBadge');
+  assert.equal(toolBadgeKey({ id: 'slides' }, fresh), undefined);
+  for (const lang of ['ar', 'en'] as const) {
+    assert.equal(typeof (translations[lang] as Record<string, unknown>).whatsNewBadge, 'string');
+  }
+  assert.equal(translations.ar.whatsNewBadge, 'جديد');
+});
+
+test('a tool opened this session loses its badge at once, per account', () => {
+  resetSessionSeen();
+  noteToolsOpened('t1', ['quiz']);
+  const opened = withSessionSeen([], getSessionToolsOpened(), 't1');
+  assert.ok(opened !== null);
+  assert.equal(newToolIds({ role: 'teacher', createdAt: OLD_ACCOUNT, opened, now: NOW, entries: TOOL_LIST }).has('quiz'), false);
+  // The seen-notes list is a separate thing.
+  assert.deepEqual(getSessionSeen().ids, []);
+  assert.deepEqual(withSessionSeen([], getSessionToolsOpened(), 't2'), []);
+});
+
+test('the opened-tools key is per account and not the seen key', () => {
+  assert.equal(newToolOpenedKey('u1'), '@iqra_new_tool_opened_v1:u1');
+  assert.notEqual(newToolOpenedKey('u1'), whatsNewSeenKey('u1'));
+});
+
+test('every real entry’s toolId is a tool in the catalog, announced to teachers', () => {
+  const ids = new Set(ALL_TOOLS.map(t => t.id));
+  for (const e of WHATS_NEW) {
+    if (!e.toolId) continue;
+    assert.ok(ids.has(e.toolId), `${e.id}: no tool ${e.toolId} in toolCatalog.ts`);
+    assert.ok(e.roles.includes('teacher'), `${e.id} announces a tool but not to teachers`);
+  }
 });

@@ -137,6 +137,46 @@ KEY_CASES: list[tuple[str, str, str, str, str]] = [
     ("equation_quadratic", "x^2 - 5x + 6 = 0", "x = 2 أو x = 3", "equivalent", "set spelled with أو"),
     ("equation_linear", "2x + 5 = 13", "x = 4 فقط", "equivalent", "set spelled with فقط"),
     ("trigonometry_identity", "sin(x)", "cos(x)", "unsupported_topic", "topic with no solver"),
+    # ── `evaluate`: a closed expression, compared to the number the lesson shows.
+    # Every wrong key below is one the 2026-11-01 review of 50 generated lesson
+    # explanations actually found (5 cm for 10/√3, a mean of 4.8 for 5.2, a Q2 of
+    # 20 for 20.9); a pass here means the check would have caught it.
+    ("evaluate", "10*sin(30°)/sin(60°)", "5.77", "equivalent", "law of sines, rounded to 2 dp"),
+    ("evaluate", "10*sin(30°)/sin(60°)", "5.7735", "equivalent", "law of sines, 4 dp"),
+    ("evaluate", "10*sin(30 deg)/sin(60 deg)", "5.8", "equivalent", "law of sines, rounded to 1 dp"),
+    ("evaluate", "10*sin(30°)/sin(60°)", "5.7", "equivalent", "a truncated value is still that value"),
+    ("evaluate", "10*sin(30°)/sin(60°)", "6", "equivalent", "rounded to a whole number"),
+    ("evaluate", "10*sin(30°)/sin(60°)", "5", "distinct", "5 cm was keyed for 5.77 cm"),
+    ("evaluate", "10*sin(30°)/sin(60°)", "5.2", "distinct", "wrong at the first decimal"),
+    ("evaluate", "10*sin(30°)/sin(60°)", "10*sqrt(3)/3", "equivalent", "exact surd form"),
+    ("evaluate", "10*sin(30°)/sin(60°)", "10*sqrt(3)/2", "distinct", "wrong surd"),
+    ("evaluate", "(1*1 + 4*4 + 5*7)/10", "5.2", "equivalent", "grouped mean"),
+    ("evaluate", "(1*1 + 4*4 + 5*7)/10", "4.8", "distinct", "the grouped mean keyed as 4.8"),
+    ("evaluate", "19.5 + (10 - 8)/7*5", "20.9", "equivalent", "ogive median, 1 dp"),
+    ("evaluate", "19.5 + (10 - 8)/7*5", "20", "distinct", "the median keyed as the class limit"),
+    ("evaluate", "2*86", "172", "equivalent", "an integer key"),
+    ("evaluate", "10/3", "3.33", "equivalent", "repeating decimal"),
+    ("evaluate", "10/3", "3.34", "distinct", "off in the last place by rounding the wrong way"),
+    ("evaluate", "-7/2", "-3.5", "equivalent", "negative"),
+    ("evaluate", "1/2*12*7*sin(45°)", "21*sqrt(2)", "equivalent", "triangle area, exact"),
+    ("evaluate", "1/2*12*7*sin(45°)", "29.7", "equivalent", "triangle area, 1 dp"),
+    ("evaluate", "x + 1", "2", "error", "an unknown is not a value to compare"),
+    ("evaluate", "(1*1", "3", "error", "unparseable question"),
+    ("evaluate", "10/3", "الإجابة ثلاثة", "error", "prose key"),
+    ("evaluate", "10/3", "3.3 cm", "error", "a unit left on the key is not judged"),
+    # ── `system_solutions`: simultaneous equations in x and y, solutions as points.
+    ("system_solutions", "y = x^2 + 6x; y = -x^2 + 24x", "(0, 0), (9, 135)", "equivalent", "two parabolas"),
+    ("system_solutions", "y = x^2 + 6x; y = -x^2 + 24x", "(9, 135), (0, 0)", "equivalent", "order does not matter"),
+    ("system_solutions", "y = x^2 + 6x; y = -x^2 + 24x", "(0, 0) و (9, 135)", "equivalent", "Arabic 'and' between points"),
+    ("system_solutions", "y = x^2 + 6x; y = -x^2 + 24x", "(0, 0), (9, 63)", "distinct", "(9, 63) was keyed for (9, 135)"),
+    ("system_solutions", "y = x^2 + 6x; y = -x^2 + 24x", "(0, 0)", "distinct", "a missing solution"),
+    ("system_solutions", "y = x - 1; y = x^2 - 3x + 1", "(2 + sqrt(2), 1 + sqrt(2)), (2 - sqrt(2), 1 - sqrt(2))", "equivalent", "surd solutions"),
+    ("system_solutions", "y = x - 1; y = x^2 - 3x + 1", "(1, 0), (3, 2)", "distinct", "points that satisfy neither equation"),
+    ("system_solutions", "x + y = 5; x - y = 1", "(3, 2)", "equivalent", "a linear system"),
+    ("system_solutions", "y = x^2; y = x^2 + 1", "(0, 0)", "error", "no real solution: nothing to compare with"),
+    ("system_solutions", "y = x", "(1, 1)", "error", "one equation is not a system"),
+    ("system_solutions", "y = x^2 + 6x; y = -x^2 + 24x", "الحل نقطتا التقاطع", "error", "prose key"),
+    ("system_solutions", "((", "(1, 1)", "error", "unparseable question"),
 ]
 
 

@@ -38,18 +38,15 @@ import { getChildExams, getMyExams, retakeExam } from '@/services/studentExam';
 import { confirm } from '@/services/confirm';
 import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import {
-  MY_EXAM_STATE_KEY,
   canRetakeExam,
   childSummaryLine,
   formatExamDay,
-  metaSegments,
   myExamAction,
   myExamTitle,
   progressSummary,
   splitMyExams,
   subjectLabel,
   type MyExam,
-  type MyExamState,
   type ProgressSummary,
 } from '@/services/myExams';
 import { formatListDate } from '@/services/evaluationRow';
@@ -68,24 +65,6 @@ import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
 const ACCENT_FILL = palette.hero;
-
-const STATE_COLOR: Record<MyExamState, string> = {
-  available: ACCENT,
-  in_progress: palette.warning,
-  submitted: '#475467',
-  result: palette.success,
-  closed: '#667085',
-  paper: '#475467',
-};
-
-const STATE_ICON: Record<MyExamState, keyof typeof Ionicons.glyphMap> = {
-  available: 'sparkles-outline',
-  in_progress: 'time-outline',
-  submitted: 'hourglass-outline',
-  result: 'ribbon-outline',
-  closed: 'lock-closed-outline',
-  paper: 'document-text-outline',
-};
 
 /** A child's section for a parent; the student's own list is one unnamed group. */
 interface ExamGroup {
@@ -293,10 +272,10 @@ export default function MyExamsScreen() {
                           />
                         );
                       };
-                      // A parent has several children on one page, so an empty «القادمة»
-                      // under each is noise: the heading appears only when it has rows,
-                      // and «nothing upcoming» is one quiet line instead.
-                      const quietEmpty = isParent && upcoming.length === 0;
+                      // An empty «القادمة» heading over a «nothing upcoming» line is noise —
+                      // and a parent sees one per child. The heading appears only when it
+                      // has rows; «nothing upcoming» is one quiet line instead.
+                      const quietEmpty = upcoming.length === 0;
                       return (
                         <>
                           {quietEmpty ? null : <SectionTitle text={t('myExamsUpcoming')} colors={colors} align={align} />}
@@ -445,51 +424,34 @@ function ExamRow({
 }) {
   const align = isRTL ? 'right' : 'left';
   const action = myExamAction(exam);
-  // A state a future server adds degrades to «مُغلق» instead of a blank chip.
-  const stateColor = STATE_COLOR[exam.state] ?? STATE_COLOR.closed;
-  const stateIcon = STATE_ICON[exam.state] ?? STATE_ICON.closed;
   const subject = subjectLabel(exam.subjectId, lang);
-  const when =
-    exam.submittedAt
-      ? formatListDate(exam.submittedAt, lang)
-      : formatListDate(exam.publishedAt, lang);
-  const whenLine = when ? t(exam.submittedAt ? 'myExamsHandedInOn' : 'myExamsSentOn', when) : null;
   // The planned day, when the teacher set one. A paper exam's "sent" and
   // "handed in" times are when the teacher published it and typed the mark —
   // not what a family means by either — so a paper row shows only its day.
   const dayText = exam.examDate && isValidYmd(exam.examDate) ? formatExamDay(exam.examDate, lang) : null;
   const time = formatExamTime(exam.examTime);
-  const examWhen = dayText ? t('myExamsOnDate', time ? `${dayText} ${time}` : dayText) : null;
-  // Separate pieces in a wrapping row, spaced by a gap and with no separator
-  // character: one string under `numberOfLines` cut «· 10 …» mid-text, and a
-  // « ·» at the end of a piece dangled at the end of a wrapped line.
-  const meta = metaSegments([
-    subject,
-    examWhen,
-    exam.paper ? null : whenLine,
-    exam.timeLimitMin && !exam.paper ? t('myExamsTimeLimit', exam.timeLimitMin) : null,
-    exam.totalMarks ? t('myExamsMarks', formatMarks(exam.totalMarks)) : null,
-  ]);
 
   const levelKey = exam.result?.levelKey ? LEVEL_LABEL_KEY[exam.result.levelKey] : undefined;
 
-  // A parent's card: the title and its status first, then a few labelled facts
-  // (one icon each, nothing joined with dots). The planned day is left off once
-  // the paper is handed in: it would sit beside «سُلِّم» looking like a date in
-  // the future for something already done.
+  // The card, for a student and a parent alike: the title and its status first,
+  // then a few labelled facts (one icon each, nothing joined with dots), then —
+  // for a student, when the exam can be sat — the button. Only the wording of the
+  // status differs by role. The planned day is left off once the paper is handed
+  // in: it would sit beside «سُلِّم» looking like a date in the future for
+  // something already done.
   const rowDir = isRTL ? 'row-reverse' : 'row';
   const title = myExamTitle(exam, lang) || t('myExamsUntitled', subject ?? '');
   // «اختبار الكيمياء» already says «الكيمياء».
   const showSubject = Boolean(subject) && !title.includes(subject!);
   const handedIn = !exam.paper && exam.submittedAt ? formatListDate(exam.submittedAt, lang) : null;
-  const sentOn = !exam.paper && !handedIn && !examWhen ? formatListDate(exam.publishedAt, lang) : null;
+  const sentOn = !exam.paper && !handedIn && !dayText ? formatListDate(exam.publishedAt, lang) : null;
   const facts: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [];
   if (dayText && !handedIn) facts.push({ icon: 'calendar-outline', text: t('childResultsExamDay', time ? `${dayText} ${time}` : dayText) });
   if (handedIn) facts.push({ icon: 'checkmark-done-outline', text: t('myExamsHandedInOn', handedIn) });
   if (sentOn) facts.push({ icon: 'paper-plane-outline', text: t('myExamsSentOn', sentOn) });
   if (exam.timeLimitMin && !exam.paper) facts.push({ icon: 'time-outline', text: t('myExamsTimeLimit', exam.timeLimitMin) });
   if (exam.totalMarks) facts.push({ icon: 'ribbon-outline', text: t('childResultsOutOf', t('myExamsMarks', formatMarks(exam.totalMarks))) });
-  const parentTop = (
+  const top = (
     <View style={{ gap: SPACE.sm }}>
       <View style={{ flexDirection: rowDir, alignItems: 'flex-start', gap: SPACE.md }}>
         <View style={{ flex: 1, gap: 2 }}>
@@ -507,7 +469,7 @@ function ExamRow({
         ) : null}
       </View>
       <View style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.md, flexWrap: 'wrap' }}>
-        <ExamStatusChip state={exam.state} parent />
+        <ExamStatusChip state={exam.state} parent={parentView} />
         {exam.result ? (
           <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg }}>
             {exam.result.percent}%{levelKey ? ` · ${t(levelKey)}` : ''}
@@ -526,6 +488,16 @@ function ExamRow({
           ))}
         </View>
       ) : null}
+      {/* The one thing a student can do here. Drawn as a button but not a Pressable: the whole card is the button, and one inside it is invalid on the web build. */}
+      {action === 'start' || action === 'continue' ? (
+        <View style={{ flexDirection: rowDir, marginTop: SPACE.xs }}>
+          <View style={[styles.cta, styles.ctaWide, { backgroundColor: ACCENT_FILL }]}>
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label }}>
+              {t(action === 'start' ? 'myExamsStart' : 'myExamsContinue')}
+            </Text>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 
@@ -542,49 +514,7 @@ function ExamRow({
         { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 },
       ]}
     >
-      {parentView ? parentTop : (
-      <View style={[styles.rowTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <View style={[styles.stateIcon, { backgroundColor: stateColor + '1F' }]}>
-          <Ionicons name={stateIcon} size={20} color={stateColor} />
-        </View>
-        <View style={{ flex: 1, gap: 4 }}>
-          <Text numberOfLines={2} style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, lineHeight: 23, textAlign: align }}>
-            {myExamTitle(exam, lang) || t('myExamsUntitled', subject ?? '')}
-          </Text>
-          {meta.length > 0 ? (
-            <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', columnGap: SPACE.md, rowGap: SPACE.xxs }}>
-              {meta.map((segment, i) => (
-                <Text key={i} style={{ flexShrink: 1, color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 21, textAlign: align }}>
-                  {segment}
-                </Text>
-              ))}
-            </View>
-          ) : null}
-          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
-            <View style={[styles.chip, { backgroundColor: stateColor + '1A' }]}>
-              <Text style={{ color: stateColor, fontFamily: 'ReadexPro_600SemiBold', fontSize: 12 }}>
-                {t(MY_EXAM_STATE_KEY[exam.state] ?? 'myExamsStateClosed')}
-              </Text>
-            </View>
-            {exam.result ? (
-              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
-                {levelKey ? `${t(levelKey)} · ` : ''}{exam.result.percent}%
-              </Text>
-            ) : null}
-          </View>
-        </View>
-
-        {action === 'start' || action === 'continue' ? (
-          <View style={[styles.cta, { backgroundColor: ACCENT_FILL }]}>
-            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
-              {t(action === 'start' ? 'myExamsStart' : 'myExamsContinue')}
-            </Text>
-          </View>
-        ) : action === 'toggle_result' ? (
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mutedForeground} />
-        ) : null}
-      </View>
-      )}
+      {top}
 
       {open && exam.result ? (
         <View style={{ marginTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border, paddingTop: 14 }}>
@@ -646,10 +576,9 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', gap: 10, paddingHorizontal: 24, paddingTop: 48 },
   emptyIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   card: { borderWidth: 1, padding: 14 },
-  rowTop: { alignItems: 'flex-start', gap: 12 },
-  stateIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  chip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   retakeBar: { alignItems: 'center', gap: 12, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 14 },
   cta: { alignSelf: 'center', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  // The start / continue button spans the card, at the 44-point touch height.
+  ctaWide: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 44 },
   avatar: { width: 44, height: 44, borderRadius: RADIUS.pill, alignItems: 'center', justifyContent: 'center' },
 });

@@ -34,6 +34,7 @@ import {
   sanitizeDeckStructure,
 } from "../lib/promptSlidesPrompt.ts";
 import { lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lib/lessonTeachingPrompt.ts";
+import { problemsOf, settleTeaching } from "../lib/lessonTeachingChecks.ts";
 import {
   QUESTIONS_TOKENS,
   parseQuestions,
@@ -72,6 +73,7 @@ import {
   storeVariant,
 } from "../lib/artifactCache.ts";
 import { notifyAdminsOfArtifactReport } from "../lib/adminNotify.ts";
+import { normalizeReportReason } from "../lib/reportReason.ts";
 import { decideServe } from "../lib/variantPolicy.ts";
 import { SingleFlight } from "../lib/singleFlight.ts";
 import {
@@ -579,6 +581,44 @@ async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
           produced: quizWanted(body)! - still,
         };
       }
+    }
+
+    // A lesson explanation is read by a student with no one to catch a wrong
+    // answer, and the first two prefill runs showed the model keying 5 cm for
+    // 5.77 cm and (9, 63) for (9, 135). The worked example and the practice carry
+    // a Latin `check` the verifier can compute; a contradiction asks once more
+    // and the better attempt is stored with its verdicts. Nothing is dropped:
+    // see lib/lessonTeachingChecks.ts.
+    if (kind === "lesson-teaching") {
+      const settled = await settleTeaching(
+        chosen,
+        async (correction) =>
+          completeOnce({
+            ...completionArgs,
+            userPrompt:
+              args.userPrompt
+              + variationBlock({ variantIndex: decision.variantIndex, isArabic: args.isAr, avoid })
+              + correction,
+          }),
+        undefined,
+        args.isAr,
+      );
+      if (settled.discarded) {
+        // Paid for, not stored, so recorded with no artifact to its name.
+        recordUsage(settled.discarded.usage, model, { ...detail, artifactId: null, durationMs: settled.discarded.durationMs });
+      }
+      chosen = settled.chosen;
+      const unresolved = problemsOf(settled.verification);
+      logger.info(
+        {
+          kind,
+          strictKey: keys.strictKey,
+          retried: settled.discarded !== undefined,
+          workedExample: settled.verification.workedExample.code,
+          practice: settled.verification.practice.code,
+        },
+        unresolved.length ? "lesson-teaching checks: a contradiction survived" : "lesson-teaching checks",
+      );
     }
 
     // Stored only once, and only the artifact actually being served. Storing
@@ -1148,7 +1188,9 @@ generateRouter.post("/generate/variants/:id/retire", async (req: AuthenticatedRe
     res.status(404).json({ error: "No pooled variant to report." });
     return;
   }
-  const outcome = await reportVariant({ artifactId: id, reporterUserId: req.user!.id });
+  // Optional, and never a reason to refuse a report.
+  const reason = normalizeReportReason((req.body as { reason?: unknown } | undefined)?.reason);
+  const outcome = await reportVariant({ artifactId: id, reporterUserId: req.user!.id, reason });
   if (!outcome.ok) {
     // 404 for "no such variant" and for "already retired" alike: both mean
     // there is nothing left in the pool to report, which is what the caller
@@ -1169,7 +1211,7 @@ generateRouter.post("/generate/variants/:id/retire", async (req: AuthenticatedRe
   // approves in the same second) would only email and push the admins about
   // something one of them just did — 8 such mails on 2026-10-18.
   if (req.user!.role !== "system_admin") {
-    notifyAdminsOfArtifactReport({ kind: outcome.kind, lessonRef: outcome.lessonRef }).catch((err) =>
+    notifyAdminsOfArtifactReport({ kind: outcome.kind, lessonRef: outcome.lessonRef, reason }).catch((err) =>
       logger.error({ err, artifactId: id }, "admin artifact-report notification failed"),
     );
   }

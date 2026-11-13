@@ -125,6 +125,34 @@ export function parseDateRange(q: Record<string, unknown>): { from?: Date; to?: 
   return out;
 }
 
+/**
+ * `?channel=` on GET /admin/users: where the account was made. `app` is either
+ * store platform; `unknown` is a null `signup_platform` (accounts from before
+ * 2 Oct, or a client that does not send it). Absent, empty or `all` is no filter.
+ */
+export type UserChannel = "web" | "app" | "unknown";
+export function parseUserChannel(v: unknown): { channel?: UserChannel } | { error: string } {
+  if (v === undefined || v === "" || v === "all") return {};
+  if (v === "web" || v === "app" || v === "unknown") return { channel: v };
+  return { error: "channel must be all, web, app or unknown" };
+}
+
+/**
+ * `?cohort=` on GET /admin/users: how the date range is read.
+ * - absent / `all`: the range is when the account was made (as before).
+ * - `new`: the same — made inside the range — named, so the screen can say so.
+ * - `returning`: made BEFORE the range and came back inside it: signed in, generated
+ *   something with AI or saved a material there (the daily-activity chart's "active",
+ *   plus a sign-in). Needs `from`, or "before the range" means nothing.
+ */
+export type UserCohort = "new" | "returning";
+export function parseUserCohort(v: unknown, hasFrom: boolean): { cohort?: UserCohort } | { error: string } {
+  if (v === undefined || v === "" || v === "all") return {};
+  if (v !== "new" && v !== "returning") return { error: "cohort must be all, new or returning" };
+  if (v === "returning" && !hasFrom) return { error: "cohort=returning needs from" };
+  return { cohort: v };
+}
+
 const PLATFORMS = new Set(["android", "ios", "web"]);
 
 /** What the client said about itself at registration — see mobile services/clientPlatform.ts. */

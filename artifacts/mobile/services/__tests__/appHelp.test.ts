@@ -12,6 +12,7 @@ import { answerAppHelp, findAppPlaces, isAppHelpQuery } from '../appHelp.ts';
 import translations from '../i18n.ts';
 import { classifyChatIntent } from '../ai/intentRouter.ts';
 import { toolAskFromQuery } from '../chatToolAsk.ts';
+import { DOCUMENT_UPLOAD_ENABLED } from '../features.ts';
 
 const top = (q: string) => findAppPlaces(q)[0]?.id;
 
@@ -2742,3 +2743,45 @@ describe('the fortieth live pass — app questions the model had been answering 
     assert.match(ar, /رمز دخول جديد/);
   });
 });
+
+// Forty-third live pass: four app questions the model answered by improvising, one of them
+// a false «نعم» (it said a PDF can be uploaded to the lesson; upload is switched off).
+describe('the forty-third live pass — wordings the matcher missed', () => {
+  const t = (k: string) => `<${k}>`;
+  const steps: Array<[string, string, 'ar' | 'en']> = [
+    ['هل يمكن رفع ملف PDF للدرس', 'howUploadFile', 'ar'],
+    ['هل أستطيع رفع ملف وورد إلى المحادثة', 'howUploadFile', 'ar'],
+    ['Can I upload a PDF for the lesson', 'howUploadFile', 'en'],
+    ['Can I upload a PDF to the chat', 'howUploadFile', 'en'],
+    ['كيف أحذف اختبارا نشرته', 'howDeleteExam', 'ar'],
+    ['كيف أحذف امتحانا نشرته', 'howDeleteExam', 'ar'],
+    ['كيف احذف الاختبار اللي نشرته', 'howDeleteExam', 'ar'],
+    ['كيف أرسل رسالة لأولياء الأمور', 'howParentMessage', 'ar'],
+    ['How do I send a message to parents', 'howParentMessage', 'en'],
+    ['How do I create a class?', 'howAddClass', 'en'],
+    ['How do I set up a new class', 'howAddClass', 'en'],
+  ];
+  for (const [q, key, lang] of steps) {
+    it(`«${q}» → ${key}`, () => {
+      assert.equal(isAppHelpQuery(q), true);
+      assert.equal(answerAppHelp(q, lang, t).text, `<${key}>`);
+    });
+  }
+
+  // Near-misses that keep their own answer or stay with the model.
+  it('a group message to parents keeps the broadcast answer', () => {
+    assert.equal(answerAppHelp('كيف أرسل رسالة جماعية لأولياء الأمور', 'ar', t).text, '<howBroadcast>');
+  });
+  it('«create a class activity» is still an activity, «create a class plan» is not a class', () => {
+    assert.equal(answerAppHelp('how do i create a class activity', 'en', t).text, '<howMakeActivity>');
+    assert.notEqual(answerAppHelp('How can I create a class plan', 'en', t).text, '<howAddClass>');
+  });
+
+  // The answer is a claim about a switch. If the switch is flipped, this fails first.
+  it('«upload is not available» is true: DOCUMENT_UPLOAD_ENABLED is off', () => {
+    assert.equal(DOCUMENT_UPLOAD_ENABLED, false);
+    assert.match((translations.ar as unknown as Record<string, string>).howUploadFile, /غير متاح/);
+    assert.match((translations.en as unknown as Record<string, string>).howUploadFile, /not available/i);
+  });
+});
+

@@ -11,7 +11,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lessonTeachingPrompt.ts";
+import { LESSON_VISUALS_MAX, lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lessonTeachingPrompt.ts";
+import { PROMPT_EXAMPLE_CHECKS } from "../lessonTeachingChecks.ts";
 import { diagramLimitsAr, diagramLimitsEn, promptSlidesPromptAr, promptSlidesPromptEn } from "../promptSlidesPrompt.ts";
 import { assertUsableGeneration, missingFields, UnusableGenerationError } from "../generationShape.ts";
 
@@ -131,6 +132,51 @@ describe("lesson-teaching prompt", () => {
     });
   }
 
+  // From the first review of 50 pre-generated explanations (2026-11-01): 17
+  // were unfit for students on content (3 more for a misspelling the book
+  // text carried). Answers given as «—», as a description of the
+  // method, or as «63 × sin 30°»; answers that did not satisfy the problem
+  // ((1, -1) for a system it does not solve, 5 cm for 10/√3); a quadrant rule
+  // stated for every k that holds only for k > 0; the law of cosines written
+  // with cos A; a lab that used derivatives two lessons early; and calculation
+  // lessons whose example calculated nothing.
+  for (const [lang, build] of [["ar", lessonTeachingPromptAr], ["en", lessonTeachingPromptEn]] as const) {
+    it(`${lang}: pins the accuracy rules from the first student review`, () => {
+      const p = build(BODY);
+      const res = lang === "ar"
+        ? [/الناتج النهائي محسوبًا ومبسّطًا/, /«—»/, /«63 × sin 30°»/, /عوّضها في المسألة/, /فغيّر أرقام المسألة لا الإجابة/,
+          /ومنها القيم السالبة/, /2ab cos C/, /لا مهارة من درس لاحق/, /لا سؤال وصفي/]
+        : [/the final result, worked out and simplified/, /"—"/, /"63 × sin 30°"/, /substitute it back into the problem/,
+          /change the problem's numbers, not the answer/, /including negative values/, /2ab cos C/,
+          /never a skill from a later lesson/, /not a descriptive question/];
+      for (const re of res) assert.match(p, re, String(re));
+    });
+  }
+
+  // From the second prefill review (2026-11-02): the accuracy rule removed
+  // wrong ideas and not wrong arithmetic (5 cm for 5.77 cm, 4.8 for 5.2,
+  // (9, 63) for (9, 135)). The worked example and the practice now carry a
+  // Latin `check` the verifier computes — see lib/lessonTeachingChecks.ts.
+  for (const [lang, build] of [["ar", lessonTeachingPromptAr], ["en", lessonTeachingPromptEn]] as const) {
+    it(`${lang}: asks for a verifiable check on the worked example and the practice`, () => {
+      const p = build(BODY);
+      for (const re of lang === "ar"
+        ? [/"check"/, /evaluate/, /system_solutions/, /12\*sin\(30°\)\/sin\(45°\)/, /\(0, 0\), \(2, 8\)/, /لا تضع check/, /لا وحدة/, /لأنها ليست عددًا/]
+        : [/"check"/, /evaluate/, /system_solutions/, /12\*sin\(30°\)\/sin\(45°\)/, /\(0, 0\), \(2, 8\)/, /omit "check"/i, /no unit/i, /no number/i]) {
+        assert.match(p, re, String(re));
+      }
+      // …in the output shape too, or the model reads the rule and never writes one.
+      const shape = p.slice(p.lastIndexOf("{\n  \"hook\""));
+      assert.equal((shape.match(/"check"/g) ?? []).length >= 2, true, "both blocks show a check");
+      // …with placeholders, never a worked check: the model copied one into chemistry lessons
+      // that have no such number (third prefill review, 2026-11-03).
+      for (const e of Object.values(PROMPT_EXAMPLE_CHECKS)) {
+        assert.equal(shape.includes(e.question), false, `the output shape must not show ${e.question}`);
+      }
+      assert.match(shape, lang === "ar" ? /<ما حسبتَه فعلًا>/ : /<what you actually computed>/);
+    });
+  }
+
   it("en: pins the rules each earlier deck broke", () => {
     const p = lessonTeachingPromptEn(BODY);
     assert.match(p, /Stay inside this lesson/);
@@ -202,7 +248,31 @@ describe("teachingVisualCounts", () => {
       { title: "a", points: ["x"], shape: { layout: "cycle" }, icon: "drop" },
       { title: "b", points: ["y"], chart: { kind: "chart" }, photo: "water cycle" },
       { title: "c", points: ["z"] },
-    ] }), { concepts: 3, shape: 1, icon: 1, chart: 1, photo: 1 });
-    assert.deepEqual(teachingVisualCounts(null), { concepts: 0, shape: 0, icon: 0, chart: 0, photo: 0 });
+    ] }), { concepts: 3, shape: 1, icon: 1, chart: 1, photo: 1, visual: 0 });
+    assert.deepEqual(teachingVisualCounts(null), { concepts: 0, shape: 0, icon: 0, chart: 0, photo: 0, visual: 0 });
+  });
+});
+
+describe("lesson-teaching drawings", () => {
+  const MATH = { ...BODY, subject: "Mathematics", topic: "المتجهات في المستوى" };
+  for (const [lang, build, needle] of [["ar", lessonTeachingPromptAr, "رسم بياني أو متجهات"], ["en", lessonTeachingPromptEn, "graph or vectors"]] as const) {
+    it(`${lang}: a maths lesson may ask for a drawing, told to write everything in the words`, () => {
+      const p = build(MATH);
+      assert.ok(p.includes(needle), needle);
+      assert.ok(p.includes('"visual"') && p.includes('"function-graph"') && p.includes('"vectors"'));
+      assert.ok(p.includes(`${LESSON_VISUALS_MAX}`), "states the cap");
+    });
+    it(`${lang}: a chemistry lesson is not offered one`, () => {
+      const p = build(BODY);
+      assert.ok(!p.includes(needle) && !p.includes('"function-graph"') && !p.includes('"visual"'));
+    });
+  }
+
+  it("counts drawings on concepts and on the worked example", () => {
+    const counts = teachingVisualCounts({
+      concepts: [{ visual: { kind: "vectors" } }, {}, { visual: { kind: "function-graph" } }],
+      workedExample: { visual: { kind: "vectors" } },
+    });
+    assert.equal(counts.visual, 3);
   });
 });
