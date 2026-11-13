@@ -10,6 +10,94 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 6 audit: every lesson's book pages, figures and contents checked against the printed books — 2026-11-13
+
+A review of all eleven Grade 6 subjects: are all the books' lessons in the catalog, do generators give the right
+results, and are the book's images used properly. Every lesson's book pages and every Grade 6 figure were looked at
+as images (from the public bucket; NCCD is unreachable from the sandbox and the private bucket refused its token).
+
+**Book pages: most were wrong, and the cause is `scripts/map_lesson_pages.py`.** It finds a lesson's opener by its
+title in the largest type, which also matches the unit opener's «سأتعلم في هذه الوحدة» list, a contents page, a unit
+project — and, in Grade 6 Arabic, the NEXT lesson, because every unit repeats the same five titles and Grade 6's
+catalog titles lack the strand prefix («التحدث:») Grades 7 and 9 carry (spot-checked: those are right).
+- Arabic: all 50 lessons showed the previous lesson (listening showed the unit opener). Islamic: all 42 right; eight
+  unit-final lessons ran one page onto the next unit's opener. Maths S1: 9 of 12 wrong (u1_l5 on the unit 1 opener,
+  u2_l1 on the unit project, unit 3's two lessons on unit 2's pages). Social S2: all 4 wrong (u6_l1 began on the
+  contents page). Social S1: 6 of 8 began 1-2 pages late. Digital: all 8 showed another «لبنة». Vocational: every
+  unit's first lesson began on the unit opener. Science and PE: right starts, many unit-final lessons overran into the
+  review, the enrichment page or the next unit.
+- **Fix without re-rendering.** A `book-page-links.json` entry may now carry `rendered: {dir, startPage, endPage}`, the
+  folder its images actually sit in and the pages that folder holds (`bookPagesForLesson`, `upload-book-pages-r2`). The
+  right pages were usually already cut, under a neighbour's folder. 114 ranges corrected; **49 lessons whose right
+  pages were never cut now show none** instead of the wrong ones. Printed page = PDF page in every book checked.
+- `bookPage.test.ts` adds: a corrected range sits inside its folder's pages; every entry naming a folder agrees on what
+  it holds. Every URL the app builds for Grade 6 (936) answered 200; corrected first pages were viewed.
+
+**To re-render — not done here: NCCD drops every HTTPS connection from the sandbox (HTTP answers 503) and the private
+bucket refused its token, so no copy of these PDFs was reachable.** The page map is committed,
+`knowledge-base/g6-book-pages-to-render.json` (49 lessons, PDF paths as `extract-text` recorded them). On a machine
+with the PDFs: `IQRAA_PDF_ROOT=<checkout with the PDFs> python scripts/render_lesson_pages.py
+knowledge-base/g6-book-pages-to-render.json <out>`, then `pnpm --filter @workspace/curriculum run upload-book-pages-r2 --
+<out>`, then commit `book-page-links.json` and delete the page map. **The renderer was unsafe for this:** 11 of these
+lessons' folders are now read by other lessons (`rendered.dir`), and re-rendering into them would have replaced the
+pages those lessons show (the uploader replaces any image whose size changed). `target_dir` sends such a lesson to
+`<id>-v2` and `entry_for` records it; `book_entry` keeps a live-copy book record (science S1) instead of rewriting it
+as «our copy», which would make `verify_book_pages.py` re-cut the whole book (`scripts/test_render_lesson_pages.py`,
+8 tests, failed first; a dry run over the real file writes no folder another lesson reads). The ranges, PDF pages:
+- social S1: u1_l1 8-14, u1_l2 15-18, u1_l3 19-24, u2_l2 36-40, u2_l3 41-47, u3_l2 59-65, u3_l3 66-70, u3_l4 71-77,
+  u4_l1 82-87, u4_l2 88-94, u4_l3 95-99, u5_l1 104-108, u5_l3 113-117
+- social S2: u7_l1 26-35, u7_l2 36-42, u7_l3 43-49, u7_l4 50-54, u8_l1 60-66, u8_l2 67-74, u8_l3 75-79, u9_l1 84-89,
+  u10_l1 104-110, u10_l2 111-118, u10_l3 119-125
+- digital S1 (`digital-6-s1-student-book`, the activity book): u1_l1 6-7, u1_l2 8-18, u1_l3 19, u1_l4 20-23, u2_l1 24-25,
+  u2_l2 26-33, u2_l3 34-36, u2_l4 37-39, u2_l5 40-47, u3_l1 48-49, u3_l2 50-56, u3_l3 57-60, u3_l4 61-65, u4_l1 66-79,
+  u5_l1 80-97, u8_l4 133-143, u9_l1 144-157, u10_l1 158-175 (u7_l2 116 and u7_l3 116-120 share p116, as read)
+- maths S1: u1_l4 26-30, u1_l5 31-37, u3_l1 67-72, u3_l2 74-80, u3_l3 81-85, u3_l4 86-87; science S1 u4_l1 82-91
+- maths S2 has **no student book in the sources** (only the guide, exercise book and support guide), though the
+  catalog cites `g6-math-s2-student-book`; from the guide's contents its lessons start at 8, 14, 20, 24, 31, 38 / 46, 53,
+  59, 65, 70 / 80, 87, 95, 101, 108 / 120, 127, 133, 143, 151 (not seen).
+
+**Figures.** 94 checked. Three moved to their own lesson (a unit-review page inherits the unit's last lesson):
+S1 `p029-v2` → u1_l2, `p033b` → u2_l1; S2 `p094b-v2` → u8_l1. Dropped 21: wrong-lesson crops also cut badly, crops
+that slice a diagram or its labels (the cell pair, an axis-less graph, lone radio/TV icons), and vocational crops that
+are a whole unit-opener page, a slice of one, or mostly body text. Minor flaws (a page number inside, a sliver of the
+next photo) stayed. Four lessons now have none, having had only those. **Grade 6 has no figures** for maths, Arabic,
+Islamic, social, PE, vocational S2, digital, art or English (maths S1 was registered and not extracted, 2026-09-13).
+
+**Contents.** Arabic, Islamic, maths S1/S2, science, social, vocational, PE, digital and art match their books' contents
+(titles, order, units). **English did not:** the teacher's book says «There are 12 lessons in each main unit» (p. 9) and
+the catalog carried 9 — lessons 10 Literacy, 11 Writing and 12 (its Activity Book lesson) were missing from all eight
+units. Appended as `u*_l10..l12` (no id moved); lesson 2 is «Team Talk» as the books print, not «Fun Talk».
+
+**Results — found, not fixed here:**
+- Offline maths (no AI) answered 36 of 39 lessons with on-topic questions; every key read and correct. **Fixed here:**
+  the other three had no generator and now do, each following its book pages (`lib/math-practice`):
+  `dec_measure` for u3_l3 «القياس: تطبيقات العمليات على الأعداد العشرية» (pp. 81-84: «2.5m × 420cm» in m², «6.5L ÷
+  400mL», a rug's area, pies from «2kg, 800g»), `simpler_problem` for u3_l4 «خطة حل المسألة: حل مسألة أبسط» (pp. 86-87:
+  a rate with awkward decimals scaled to a new amount — distance, fuel, price — with the rounded «simpler problem»
+  answer as a distractor), `constructions` for u4_l5 «إنشاءات هندسية» (pp. 117-124: half a bisected segment, half a
+  bisected angle, the whole angle from its half as in question 13, the perpendicular bisector's 90°). Integer arithmetic
+  throughout, at most three decimals. `grade6Lessons.test.ts` recomputes every answer from its stem (failed first, no
+  generator); the full `math-practice` suite passes (959). Sample papers read and each key checked by hand. The API's
+  evaluation generator draws from the same bank, so a Grade 6 paper on these lessons can now carry self-marking items.
+  Offline non-maths lessons refuse (`no_question_bank`).
+- **Live grounding is thin for most of Grade 6.** With `unitId` + title (as the API asks), no book page at all for
+  social 26/32, vocational 18/23, PE 10/14, Arabic S2 12/25; Arabic S1 and art are grounded mainly in the contents page.
+  The vocational and social extractions are **reversed** («ةَيِبَرَعْلِ ا ةَرَزيجْلُ ا هْبِشْ» = شبه الجزيرة العربية;
+  vocational S1 has more reversed «ال» words than forward ones) and Arabic S1/S2 transpose 22-28% of definite articles —
+  yet all passed `rejectReason`, which had no reversed-line check. **Not repaired from the text:** beside the reversal the
+  lines carry stray «م» letters, words split by tabs and presentation-form glyphs, so any reconstruction would be a guess
+  handed to a model as the book. **Gated instead:** `reversedWordRate` (`scripts/textQuality.ts`) — of the words carrying
+  ة at one edge, the share where it comes first; real Arabic ~0.1-0.3, the fully reversed books 0.76-0.87 — and
+  `rejectReason` now refuses above `REVERSED_WORD_LIMIT` = 0.5, so an extraction falls back to OCR. Over the corpus it
+  refuses 13 files: Grade 6 social S1/S2, vocational S1/S2 and PE; Grade 5 social S1/S2, vocational S1/S2 and art; Grade 4
+  social S2 and vocational S1/S2. Partly reversed books under 0.5 still pass (Grade 4 social S1 at 0.46). Tested on a
+  synthetic reversal and on the real files, both ways. **Still to do, on a machine with the PDFs:**
+  `pnpm --filter @workspace/curriculum run extract-text --force --ocr g6-social-s1-student-book g6-social-s2-student-book
+  g6-voc-s1-student-book g6-voc-s2-student-book g6-pe-s1-student-book` (and the Grade 4/5 ones), then paste each printed
+  `extraction` block into `g10_sources.json`. Arabic S1/S2 (22-28% article transposition) are under every limit and stay.
+
+**Not verified:** the pages on a phone; the re-rendering above (needs the PDFs); English grounding (third-party by design).
+
 ## Grade 4 review: every book's lessons are in; retrieval finds a lesson's own pages; figures and page links on the wrong lesson removed — 2026-11-13
 
 Asked: review the Grade 4 subjects — are all the books' topics in, do generators get the right material, are the
@@ -104,6 +192,7 @@ In a browser (Expo web, 390 px, signed out): login's foot shows the link, tappin
 screen renders in light and dark, and a source link opens a new tab. **Not verified:** on an Android device;
 Settings and the credit line in a browser (both need a signed-in account; they typecheck and the test pins
 that they are wired); the two government sites themselves (this sandbox cannot reach them).
+
 ## A content report can say what is wrong — 2026-11-11
 
 The admin's «تقرير محتوى جديد» email of 2026-11-11 (a Grade 4 Arabic lesson plan, the second Grade 4 Arabic report in four
