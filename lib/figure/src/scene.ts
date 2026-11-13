@@ -153,21 +153,21 @@ function layoutProjectile(f: ProjectileFigure, box: Box): ScenePrim[] {
       return { x: O.x + x, y: O.y - x * tan * (1 - x / R) };
     });
     out.push({ t: 'poly', pts, tone: 0, role: 'path' });
-    out.push(text({ x: O.x + 40, y: O.y - 6 }, `${deg}°`, box, 'angle', 'muted'));
+    // Inside the angle, between the ground and the v0 arrow, so it never meets the vx label.
     const len = Math.min(unit * 0.22, R * 0.45);
+    const ang = polar(O, deg / 2, Math.max(36, len * 0.7));
+    out.push(text({ x: ang.x, y: ang.y }, `${deg}°`, box, 'angle', 'muted'));
     const tip = polar(O, deg, len);
     if (has('v0')) {
       out.push(arrow(O, tip, 1, 'v0'));
-      const at = polar(tip, deg + 90, 14 + 6.5);
-      out.push(text({ x: at.x, y: at.y }, tagged('v0', f.speed), box, 'v0-label', 1));
     }
     if (has('vx')) {
       out.push(arrow(O, { x: tip.x, y: O.y }, 2, 'vx', true));
-      out.push(text({ x: tip.x + 12, y: O.y - 6 }, 'vx', box, 'vx-label', 2));
+      out.push(text({ x: tip.x + 26, y: O.y - 4 }, 'vx', box, 'vx-label', 2));
     }
     if (has('vy')) {
       out.push(arrow(O, { x: O.x, y: tip.y }, 2, 'vy', true));
-      out.push(text({ x: O.x + 12, y: tip.y - 4 }, 'vy', box, 'vy-label', 2));
+      out.push(text({ x: O.x - 12, y: tip.y - 4 }, 'vy', box, 'vy-label', 2));
     }
     const apex = { x: O.x + R / 2, y: O.y - H };
     if (has('H')) {
@@ -177,6 +177,37 @@ function layoutProjectile(f: ProjectileFigure, box: Box): ScenePrim[] {
     if (has('R')) {
       out.push(line({ x: O.x, y: ground + 8 }, { x: O.x + R, y: ground + 8 }, 'muted', 'R'));
       out.push(text({ x: O.x + R / 2, y: ground + 22 }, 'R', box, 'R-label'));
+    }
+    if (has('v0')) {
+      // The first spot that crosses neither the path nor another word: above the arrow, then
+      // beside its tip inside the arch, then below it, then further out.
+      const s = tagged('v0', f.speed);
+      const half = (s.length * GLYPH) / 2;
+      const words = out.filter((p): p is Extract<ScenePrim, { t: 'text' }> => p.t === 'text');
+      const clear = (t: Extract<ScenePrim, { t: 'text' }>) => {
+        const h = (t.text.length * GLYPH) / 2;
+        const hit = (x: number, y: number, w: number, h2: number) =>
+          Math.abs(x - t.at.x) < h + w && y > t.at.y - 11 - h2 && y < t.at.y + 2 + h2;
+        return !pts.some(q => hit(q.x, q.y, 0, 0))
+          && !words.some(w => {
+            const wh = (w.text.length * GLYPH) / 2;
+            return Math.abs(w.at.x - t.at.x) < h + wh && w.at.y - 11 < t.at.y + 2 && w.at.y + 2 > t.at.y - 11;
+          });
+      };
+      const spots: Pt[] = [
+        polar(tip, deg + 90, 14 + 6.5),
+        { x: tip.x + 10 + half, y: tip.y },
+        { x: tip.x + 10 + half, y: tip.y - 16 },
+        polar(tip, deg - 90, 14 + 6.5),
+        polar(tip, deg, 16 + half),
+        { x: tip.x + 14 + half, y: tip.y + 20 },
+      ];
+      let pick: ScenePrim | null = null;
+      for (const sp of spots) {
+        const t = text(sp, s, box, 'v0-label', 1);
+        if (t.t === 'text' && clear(t)) { pick = t; break; }
+      }
+      out.push(pick ?? text(spots[0]!, s, box, 'v0-label', 1));
     }
     return out;
   }

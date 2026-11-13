@@ -107,6 +107,35 @@ describe('layoutScene: physics the drawing gets right', () => {
     assert.ok(Math.abs(Math.min(...tall.pts.map(q => q.y)) - (24 + 14)) <= 1, 'steep path still reaches Hmax');
   });
 
+  it('projectile: at every angle no words overlap, v0 clears the path, all words are inside', () => {
+    for (const box of [BOX, SMALL]) {
+      for (let angle = 10; angle <= 80; angle += 5) {
+        const f: SceneFigure = { kind: 'projectile', launch: 'ground', angle, speed: { n: 20, unit: 'm/s' }, marks: ['v0', 'vx', 'vy', 'H', 'R'] };
+        const prims = layoutScene(f, box).prims;
+        const words = prims.flatMap(p => (p.t === 'text' ? [p] : []));
+        const bx = (p: Extract<ScenePrim, { t: 'text' }>) => {
+          const h = (p.text.length * 7.2) / 2;
+          return { l: p.at.x - h, r: p.at.x + h, t: p.at.y - 11, b: p.at.y + 2 };
+        };
+        const tag = `${angle}° in ${box.w}x${box.h}`;
+        words.forEach((a, i) => {
+          const A = bx(a);
+          assert.ok(A.l >= 0 && A.r <= box.w && A.t >= 0 && A.b <= box.h, `${a.role} inside, ${tag}`);
+          words.slice(i + 1).forEach(b => {
+            const B = bx(b);
+            assert.ok(A.r <= B.l || B.r <= A.l || A.b <= B.t || B.b <= A.t, `${a.role} overlaps ${b.role}, ${tag}`);
+          });
+        });
+        const v0 = bx(one(prims, 'v0-label') as Extract<ScenePrim, { t: 'text' }>);
+        const path = one(prims, 'path');
+        if (path.t !== 'poly') return assert.fail('path');
+        for (const q of path.pts) {
+          assert.ok(!(q.x >= v0.l && q.x <= v0.r && q.y >= v0.t && q.y <= v0.b), `v0-label on the path at ${q.x},${q.y}, ${tag}`);
+        }
+      }
+    }
+  });
+
   it('circular: v is tangent and F points to the centre', () => {
     const prims = layoutScene(SAMPLES[7]!, BOX).prims;
     const v = one(prims, 'v');
