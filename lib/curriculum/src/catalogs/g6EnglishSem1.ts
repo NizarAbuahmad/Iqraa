@@ -7,7 +7,8 @@
  * © Pearson Education Limited and York Press, so all six sources are registered
  * `authority: 'third-party'` and none of their text is ever quoted. What is
  * carried is structure only: unit names as the contents page prints them, and
- * the nine-lesson sequence the Teacher's Book's "Unit walkthrough" states.
+ * the twelve-lesson sequence the Teacher's Book lists (p. 9: "There are 12
+ * lessons in each main unit").
  *
  * `objectives` and `vocabulary` are deliberately empty. The Teacher's Book does
  * print per-unit objectives, vocabulary and grammar in its "Scope and sequence"
@@ -18,9 +19,11 @@
  * — nccd sources — and every source here is third-party. The units and lessons
  * are for browsing and picking; nothing will generate from the book's text.
  *
- * The nine lessons are not extrapolated from one unit: the walkthrough (pp. 8-9)
- * presents the template as the shape of every unit, with lessons 4 and 7 named
- * as the Activity Book companions to 3 and 6.
+ * Twelve lessons a unit, not nine (corrected 2026-11-13). The walkthrough on
+ * pp. 8-9 shows lessons 1-9; p. 9 counts twelve and p. 12 shows lessons 10-12
+ * (Literacy, Writing, and the Activity Book lesson for Writing). Lessons 4, 7
+ * and 12 are the Activity Book companions to 3, 6 and 11. Lessons 10-12 were
+ * appended, so no existing lesson id moved.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
