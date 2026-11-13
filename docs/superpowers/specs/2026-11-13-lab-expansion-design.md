@@ -61,10 +61,9 @@ tools, and it serves one grade. Measured 2026-11-13:
 `app/curriculum/lab/index.tsx` gains a row of grade chips above the subject
 chips: «كل الصفوف» plus one chip per grade that has at least one lab item,
 derived from `LAB_ITEMS` like `SUBJECT_IDS` is today, in `MVP_GRADE_IDS` order.
-After this spec that is Grades 10, 9 and 5.
+After PR 1 that is Grades 10 and 5; Grade 9 joins with PR 2's law cards.
 
-- Initial grade: the first of `narrowToSelection(getVisibleGrades(), user?.gradeIds)`
-  that has lab items; `null` (all) if none does. Not persisted.
+- Initial grade: the first grade, in visible-grade order, that is one of the viewer's own grades (`user.gradeIds`) and has lab items; `null` (all grades) when the viewer has no grades picked or none of them has lab items. Not persisted. A grade tap resets a subject the new grade does not offer.
 - Subject chips show only subjects that have items **in the selected grade**.
   If a grade change leaves the picked subject with nothing, the subject resets
   to «الكل».
@@ -100,7 +99,7 @@ bypass `releasedVirtualLab`, the same hole `lessonShelf.test.ts` pins).
 
 **Test index rewrite.** `lessonIndex()` in `lab.test.ts` becomes a table of
 `{ file, gradeId, subject, semester }` covering G10 chem/phys/bio/earth, G9
-phys, G5 science, built through `lessonKbId` exactly as now. The test
+phys, G5 science, built through `lessonKbId` exactly as now. (PR 1 adds G10 earth and G5 science; G9 physics joins with PR 2, whose law cards need it.) The test
 "files every item under grade 10" becomes "files every item under its lesson's
 grade". `SLUG_BY_SUBJECT` gains `earth-science` and `science`. A grade added
 later is one row in that table.
