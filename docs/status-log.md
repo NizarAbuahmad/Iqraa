@@ -10,6 +10,19 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Raw NUL bytes out of `knowledgeBase.ts`, and a guard against them — 2026-11-13
+
+`resolveGroundedKbLesson`'s cache key used three raw NUL bytes (0x00) as separators, typed straight into the template
+literal. It worked, but `grep` called the file "binary file matches" and it looked exactly like the `sed -i` corruption
+CLAUDE.md warns about. They are now spelled `\u0000`: the same runtime string, so the same cache keys. The edit was made
+by a Node script that built both characters from code points, and `git diff` shows one changed line, not `Bin`.
+`services/__tests__/noNulBytes.test.ts` fails on any raw NUL in a `.ts`/`.tsx` file under the mobile app's `services`,
+`app`, `components`, `constants`, `context`, `hooks` and `scripts`; it failed on the old file (`knowledgeBase.ts:4755`)
+and passes on the new one. Note `grep -c -P '\x00' file` prints 0 *with* a NUL in the file, because grep in binary mode
+treats NUL as a line break; count with `grep -caP '\x00'`.
+**Verified:** the guard red before the fix and green after; mobile `pnpm test`; root `pnpm run typecheck`.
+**Not verified:** nothing scans `artifacts/api-server` or `lib/` for NULs (none there today).
+
 ## Grade 10 audit: book pages, figures and contents checked against the printed books — 2026-11-13
 
 The Grade 6–9 review («Grade 9 audit…»), repeated for all of Grade 10 (425 lessons). Every served page image and every
