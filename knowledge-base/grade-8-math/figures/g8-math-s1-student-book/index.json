@@ -12,10 +12,10 @@
     352.0
    ],
    "unit": 1,
-   "lesson": 2,
+   "lesson": 3,
    "lessonTitleEn": null,
-   "lessonTitleAr": "الدرس الجذورُ الصّمّاء",
-   "lessonStartPage": 13
+   "lessonTitleAr": "نظريةُ فيثاغورس الدرس",
+   "lessonStartPage": 22
   },
   {
    "file": "p026-v2.png",
@@ -272,22 +272,6 @@
    "lessonTitleEn": null,
    "lessonTitleAr": "ِتحليلُ ثالثياتِ الحدود الدرس",
    "lessonStartPage": 57
-  },
-  {
-   "file": "p079-v2.png",
-   "sourceId": "g8-math-s1-student-book",
-   "pdfPage": 79,
-   "rect": [
-    291.0,
-    124.0,
-    372.0,
-    198.0
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرسِحاالٌتٌ خاصٌةٌ ِمَِنَ التحليِل",
-   "lessonStartPage": 71
   },
   {
    "file": "p084-v2.png",
@@ -610,54 +594,6 @@
    "lessonStartPage": 113
   },
   {
-   "file": "p120.png",
-   "sourceId": "g8-math-s1-student-book",
-   "pdfPage": 120,
-   "rect": [
-    56.1,
-    436.3,
-    168.9,
-    568.6
-   ],
-   "unit": 3,
-   "lesson": 5,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرس المستقيماتُ المتوازيةُ والمتعامدة",
-   "lessonStartPage": 113
-  },
-  {
-   "file": "p121-v2.png",
-   "sourceId": "g8-math-s1-student-book",
-   "pdfPage": 121,
-   "rect": [
-    296.0,
-    369.5,
-    413.1,
-    481.0
-   ],
-   "unit": 3,
-   "lesson": 5,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرس المستقيماتُ المتوازيةُ والمتعامدة",
-   "lessonStartPage": 113
-  },
-  {
-   "file": "p121b.png",
-   "sourceId": "g8-math-s1-student-book",
-   "pdfPage": 121,
-   "rect": [
-    294.5,
-    475.1,
-    411.6,
-    594.7
-   ],
-   "unit": 3,
-   "lesson": 5,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرس المستقيماتُ المتوازيةُ والمتعامدة",
-   "lessonStartPage": 113
-  },
-  {
    "file": "p131.png",
    "sourceId": "g8-math-s1-student-book",
    "pdfPage": 131,
@@ -722,22 +658,6 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p137-v2.png",
-   "sourceId": "g8-math-s1-student-book",
-   "pdfPage": 137,
-   "rect": [
-    198.7,
-    79.0,
-    417.0,
-    450.0
-   ],
-   "unit": 4,
-   "lesson": 2,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "ِتطابقُ المثلثات الدرس",
-   "lessonStartPage": 132
-  },
-  {
    "file": "p138.png",
    "sourceId": "g8-math-s1-student-book",
    "pdfPage": 138,
@@ -778,22 +698,6 @@
     563.0,
     193.9,
     624.0
-   ],
-   "unit": 4,
-   "lesson": 3,
-   "lessonTitleEn": null,
-   "lessonTitleAr": "الدرس",
-   "lessonStartPage": 138
-  },
-  {
-   "file": "p146-v2.png",
-   "sourceId": "g8-math-s1-student-book",
-   "pdfPage": 146,
-   "rect": [
-    310.0,
-    530.2,
-    397.4,
-    621.8
    ],
    "unit": 4,
    "lesson": 3,
