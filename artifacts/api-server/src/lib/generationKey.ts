@@ -17,6 +17,7 @@
 import { createHash } from "node:crypto";
 
 import { parseCoverage } from "./coverage.ts";
+import { parseKeyTerms } from "./keyTerms.ts";
 
 /**
  * Bump when a prompt changes in a way that makes previously generated
@@ -47,9 +48,13 @@ export const PROMPT_VERSION = "2026-10-04.1";
  *   2026-11-03 (second): rule 16. A maths lesson may ask for one `visual` (a
  *   graph or vectors) on a concept or the worked example; a row stored before
  *   this has none, so a maths lesson's pooled section would never draw one.
+ *   2026-11-13: a concept's photo must be explained in its points (the physics
+ *   review found an air-track photo projected with no word on why), and a
+ *   physics or chemistry lesson's key terms each get a concept. Pooled sections
+ *   from before have photos nobody explains.
  */
 const PROMPT_VERSION_BY_KIND: Readonly<Record<string, string>> = {
-  "lesson-teaching": "2026-11-03.2",
+  "lesson-teaching": "2026-11-13.1",
 };
 
 /** The version a kind's pool is keyed and stored under. */
@@ -268,6 +273,14 @@ export function generationKeys(
       .update(JSON.stringify(coverage.lessons.map((l) => [l.code, l.id, l.title])))
       .digest("hex")
       .slice(0, 16);
+  }
+  // A lesson's key terms are rendered into the prompt as a checklist, so a
+  // request with them asks for a different artifact. Hashed as parsed, like
+  // the coverage table, so junk (which renders nothing) contributes nothing
+  // and a request without terms keeps its key.
+  const keyTerms = parseKeyTerms(body);
+  if (keyTerms) {
+    strict.keyTermsHash = createHash("sha256").update(JSON.stringify(keyTerms)).digest("hex").slice(0, 16);
   }
   if (context.length > 0) {
     strict.contextHash = createHash("sha256").update(context).digest("hex").slice(0, 16);

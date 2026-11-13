@@ -34,6 +34,14 @@ export interface AIRequest {
    */
   lessonId?: string;
   /**
+   * The lesson's key terms as its book prints them, for a physics or
+   * chemistry lesson only (`scienceKeyTerms` in services/kbContext.ts). The
+   * live prompts ask for every term to be covered; the server bounds the list
+   * and hashes it into the strict cache key. Absent for every other subject
+   * and for a wide scope. The offline generators ignore it.
+   */
+  keyTerms?: string[];
+  /**
    * A scope wider than one lesson — a unit, a semester or the whole book.
    *
    * `scopeKey` is id-only and part of the artifact pool's cache key, so a

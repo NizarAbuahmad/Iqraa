@@ -191,8 +191,13 @@ export interface UsableTeaching {
   mistake: { claim: string; hint: string; answer: string } | null;
 }
 
-/** More than this and the explanation stops being a section of the lesson. */
-const TEACHING_CONCEPTS_MAX = 5;
+/**
+ * More than this and the explanation stops being a section of the lesson. It
+ * was 5; a physics lesson whose book lists seven ideas (خصائص الحركة الموجية)
+ * now asks for up to 8 — `TEACHING_CONCEPTS_MAX_WITH_TERMS` in the API's
+ * lessonTeachingPrompt.ts — so the app keeps what the prompt asked for.
+ */
+const TEACHING_CONCEPTS_MAX = 8;
 
 /**
  * Keep only the parts of a generated explanation that can stand on a slide.

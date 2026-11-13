@@ -327,7 +327,7 @@ describe("prompt version per kind", () => {
   const body = { lessonId: "kbl-g10-chem-1", subject: "Chemistry", grade: "10", language: "arabic" };
 
   it("gives lesson-teaching its own version, and every other kind the global one", () => {
-    assert.equal(promptVersionFor("lesson-teaching"), "2026-11-03.2");
+    assert.equal(promptVersionFor("lesson-teaching"), "2026-11-13.1");
     for (const kind of ["worksheet", "quiz", "lesson-plan", "homework", "prompt-slides"]) {
       assert.equal(promptVersionFor(kind), PROMPT_VERSION, kind);
     }
@@ -338,5 +338,25 @@ describe("prompt version per kind", () => {
     const global = generationKeys("lesson-teaching", "m", body, PROMPT_VERSION);
     assert.notEqual(own.strictKey, global.strictKey);
     assert.deepEqual(generationKeys("worksheet", "m", body), generationKeys("worksheet", "m", body, PROMPT_VERSION));
+  });
+});
+
+describe("key terms", () => {
+  const body = { lessonId: "kbl-phys-s2-nccd-u6_l2", subject: "Physics", grade: "10", language: "arabic", topic: "خصائص الحركة الموجية" };
+  const k = (b: Record<string, unknown>) => generationKeys("quiz", "m", b);
+
+  it("move the strict key and not the coarse key", () => {
+    const withTerms = k({ ...body, keyTerms: ["حيود", "تداخل"] });
+    assert.notEqual(withTerms.strictKey, k(body).strictKey);
+    assert.equal(withTerms.coarseKey, k(body).coarseKey);
+  });
+
+  it("different lists are different artifacts", () => {
+    assert.notEqual(k({ ...body, keyTerms: ["حيود"] }).strictKey, k({ ...body, keyTerms: ["تداخل"] }).strictKey);
+  });
+
+  it("junk terms, which render nothing, leave the key exactly as it was", () => {
+    assert.deepEqual(k({ ...body, keyTerms: [] }), k(body));
+    assert.deepEqual(k({ ...body, keyTerms: ["x".repeat(61)] }), k(body));
   });
 });

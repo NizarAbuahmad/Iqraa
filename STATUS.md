@@ -72,6 +72,9 @@ Checked 2026-10-22:
 
 ## Open
 
+- The key-terms coverage change (2026-11-13) has had no live model run (OpenAI credit exhausted on 2026-11-13). First
+  live check: the u2_l2 quiz, the u6_l2 slides and one 10–12-term lesson (e.g. `kbl-phys-s2-nccd-u6_l1`), reading the
+  «key terms coverage» log line and every answer key.
 - 2026-11-13 — Grade 9 checked against its books and corrected; what is left needs the PDFs (nccd.gov.jo does not answer from cloud sessions): figures for 16 books, book pages for art / vocational / history S2, two missing download links, and a page check of the 11 books with no extracted text («Grade 9 checked against its books, and corrected» in the log)
 - 2026-11-13 — Grade 8 audit: no quotable extracted text, so live generation is ungrounded for all 358 lessons (needs the PDFs); 49 lessons still lack book pages (PE, maths S2, Arabic S2, social); four maths lessons have no offline questions («Grade 8 audit…» in the log)
 - 2026-11-13 — Grade 7 audit: Grade 7 has no extracted book text, so live generation is ungrounded for all 397 lessons (needs the PDFs); 24 creative-arts and social lessons still lack book pages; the English S2 figures p027/p043 wait for an upload and remap; the misplaced «ﷺ» in Grade 8/9 Islamic is unchecked («Grade 7 audit…» in the log)
@@ -215,6 +218,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-11-13 — Science lessons cover every key term of the book (physics and chemistry slides, quizzes, worksheets and homework; slide photos are explained; no live model output read yet)
 - 2026-11-01 — «جديد» on a new tool's card, from its «ما الجديد» entry
 - 2026-11-01 — «ما الجديد»: existing users are told about new features, once, in the app
 - 2026-11-01 — Grammar sheets stop mentioning pictures in the grades that have none

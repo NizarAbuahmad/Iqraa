@@ -14,8 +14,10 @@ import {
   buildAdaptationsDirective,
   figureCountForLesson,
   getUnitPriorKnowledge,
+  keyTermsField,
   nccdUnitId,
   resolveGeneratorGrounding,
+  scienceKeyTerms,
   type GeneratorGrounding,
 } from './kbContext.ts';
 import type { KbScope } from './knowledgeBase.ts';
@@ -62,6 +64,7 @@ export function buildWorksheetRequest(form: WorksheetForm, grounding: GeneratorG
     lessonId: grounding.lesson?.id,
     bookFigureCount: figureCountForLesson(grounding.lesson?.id),
     contextSource: 'curriculum' as const,
+    ...keyTermsField(scienceKeyTerms(grounding.lesson, form.lang === 'ar' ? 'ar' : 'en')),
     ...regenerationFields(form.regenerate === true, form.previous),
     includePriorReview: usePrior,
     priorKnowledge: usePrior ? unitPrior : undefined,
@@ -192,6 +195,7 @@ export function buildLessonTeachingRequest(
     unitId: nccdUnitId(grounding.lesson?.unitId),
     lessonId: grounding.lesson?.id,
     contextSource: 'curriculum' as const,
+    ...keyTermsField(scienceKeyTerms(grounding.lesson, form.lang === 'ar' ? 'ar' : 'en')),
     ...regen,
   };
 }

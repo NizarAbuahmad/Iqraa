@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LESSON_VISUALS_MAX, lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lessonTeachingPrompt.ts";
+import { LESSON_VISUALS_MAX, TEACHING_CONCEPTS_MAX, TEACHING_CONCEPTS_MIN, TEACHING_CONCEPTS_MAX_WITH_TERMS, teachingConceptsMax, lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lessonTeachingPrompt.ts";
 import { PROMPT_EXAMPLE_CHECKS } from "../lessonTeachingChecks.ts";
 import { diagramLimitsAr, diagramLimitsEn, promptSlidesPromptAr, promptSlidesPromptEn } from "../promptSlidesPrompt.ts";
 import { assertUsableGeneration, missingFields, UnusableGenerationError } from "../generationShape.ts";
@@ -275,4 +275,38 @@ describe("lesson-teaching drawings", () => {
     });
     assert.equal(counts.visual, 3);
   });
+});
+
+describe("lesson-teaching: key terms", () => {
+  const WAVES = ["انعكاس الموجة", "انكسار الموجة", "مبدأ تراكب الموجات", "تداخل", "حيود", "استقطاب", "تأثير دوبلر"];
+  const PHYS = { topic: "خصائص الحركة الموجية", subject: "Physics", grade: "الصف العاشر" };
+
+  it("widens the concept range only as far as the terms need, up to 8", () => {
+    assert.equal(teachingConceptsMax({}), TEACHING_CONCEPTS_MAX);
+    assert.equal(teachingConceptsMax({ keyTerms: ["أ", "ب", "ج", "د"] }), TEACHING_CONCEPTS_MAX);
+    assert.equal(teachingConceptsMax({ keyTerms: WAVES }), 7);
+    assert.equal(teachingConceptsMax({ keyTerms: [...WAVES, "ث", "خ", "ذ"] }), TEACHING_CONCEPTS_MAX_WITH_TERMS);
+    assert.equal(TEACHING_CONCEPTS_MAX_WITH_TERMS, 8);
+  });
+
+  for (const [lang, build] of [["ar", lessonTeachingPromptAr], ["en", lessonTeachingPromptEn]] as const) {
+    it(`${lang}: asks for 3–7 concepts and lists every term for a seven-term lesson`, () => {
+      const p = build({ ...PHYS, keyTerms: WAVES });
+      assert.ok(p.includes(lang === "ar" ? `من ${TEACHING_CONCEPTS_MIN} إلى 7 شرائح` : `${TEACHING_CONCEPTS_MIN} to 7 slides`));
+      for (const t of WAVES) assert.ok(p.includes(`- ${t}`), t);
+    });
+
+    it(`${lang}: keeps 3–5 and prints no term list without terms`, () => {
+      const p = build(PHYS);
+      assert.ok(p.includes(lang === "ar" ? `من ${TEACHING_CONCEPTS_MIN} إلى ${TEACHING_CONCEPTS_MAX} شرائح` : `${TEACHING_CONCEPTS_MIN} to ${TEACHING_CONCEPTS_MAX} slides`));
+      assert.ok(!p.includes(lang === "ar" ? "مصطلحات الدرس كما في الكتاب" : "key terms, as the book prints them"));
+    });
+
+    it(`${lang}: a photo must be explained in words, on every lesson`, () => {
+      const p = build(BODY);
+      assert.match(p, lang === "ar" ? /ومتى أضفت "photo" فاجعل أحد سطور "points" يصف هذا المشهد نفسه/ : /When you add a "photo", make one line of "points" describe that scene itself/);
+      assert.match(p, lang === "ar" ? /ولا تكتب «في الصورة» ولا «تُظهر الصورة»/ : /never write "in the photo" or "the photo shows"/);
+      assert.ok(!p.includes(lang === "ar" ? "يقول ما يظهر في الصورة" : "say what the photo shows"));
+    });
+  }
 });

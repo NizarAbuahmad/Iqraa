@@ -11,7 +11,7 @@ import { getT } from '@/services/i18n';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { groundingRequestFields, resolveGeneratorGrounding } from '@/services/kbContext';
+import { groundingRequestFields, keyTermsField, resolveGeneratorGrounding, scienceKeyTerms } from '@/services/kbContext';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
@@ -475,6 +475,8 @@ export default function QuizScreen() {
         unitId: lessonFields?.unitId,
         lessonId: lessonFields?.lessonId,
         bookFigureCount: lessonFields?.bookFigureCount,
+        // The lesson's book terms, physics and chemistry only — see AIRequest.keyTerms.
+        ...keyTermsField(lessonGrounding ? scienceKeyTerms(lessonGrounding.lesson, lang === 'ar' ? 'ar' : 'en') : undefined),
         // Curriculum-derived, so the artifact may be shared with any teacher
         // who asks the same question — see AIRequest.contextSource.
         contextSource: 'curriculum',
