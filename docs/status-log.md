@@ -10,6 +10,53 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 4 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
+
+The Grade 5–10 review («Grade 5 audit…»), repeated for Grade 4 (313 lessons, 18 catalogue books), on top of today's
+Grade 4 work («Grade 4 review…», the three «Grade 4 … figures» entries): every served lesson's first page, every
+unit-final lesson's last pages and every figure (550) were looked at as images. Printed page = PDF page in every book
+except English (PDF = printed + 2).
+
+**Book pages.**
+- **No lesson starts on the wrong page** in Arabic, Islamic or maths. The «Grade 4 review» left the unit-end spill open;
+  it is fixed here. Every unit-final lesson ran on: Arabic (10) into «حصاد الوحدة» and the next unit's opener and
+  «كفايات» page, Islamic (8) into the next opener or the closing page, maths (9) into «اختبار نهاية الوحدة», the next
+  opener and its project. Three maths lessons ended on the next lesson's «نشاط مفاهيمي» (S2 u6_l3, u7_l1, u7_l5); they
+  end before it now. The activity (p22, p37, p51) belongs at the head of the next lesson, whose cut pages start a page
+  later, so it waits for a render.
+- **Vocational S2:** u1_l1 started mid-lesson (p10; its opener is p8, never cut — it keeps 10–12); u1_l2 ran into the
+  unit-end guidance page and the unit 2 opener (13–20 → 13–18).
+- **Eight lessons get pages back** from folders the «Grade 4 review» unlinked (e2badafb) — the renders are still in
+  the bucket and the right pages are in them: PE u2_l3, u2_l4, u3_l2; social S1 u4_l4, u4_l5; vocational S2 u4_l1,
+  u4_l2; arts u3_l3. Each opener was viewed against its catalogue title.
+- 38 ranges set with `rendered` from images already cut; none lost. 156 of 313 lessons have pages, up from 148. Every
+  changed URL (127) answered 200.
+- **To render from the PDFs:** maths S2 u9_l4–l6 (93–103), the rest of PE, vocational S2 and social S2, the first pages
+  of vocational S2 u1_l1, and science, English, digital, arts and vocational S1, which have no page images. Ranges for
+  all of them, from the contents, are in the audit (digital's OCR'd contents lost most numbers: estimates only).
+
+**Contents.** Every book matches its catalogue in units, lessons, titles and order. Two contents pages disagree with the
+lesson's own opener (vocational S1 u4_l2 opens on p51, not p49; social S2 u8_l4 on p84, not p85); the opener wins.
+
+**Honorifics (Islamic).** All 13 «ﷺ» follow the Prophet, as the book prints them.
+
+**Figures.** 550 checked; 12 dropped, 3 moved, none newly reachable.
+- **Moved:** Arabic S1 unit-opener art p058, p084, p110 sat on the previous unit's lesson 5 (the index gave them unit
+  N−1); they go to the next unit's first lesson, the rule the Arabic figures entry set for p032 and S2 p058/p086.
+- **Dropped:** the major crops (Arabic S1 p082 and S2 p110, sliced figures; Islamic S2 p011, the taste map with its
+  labels cut; maths S2 p114, a bar chart cut at 700 where a bar reads 850, and p071b, a growing pattern with only its
+  bottom row; science S1 p038-v2, a life cycle missing its adult stage), and figures from pages no lesson owns (science
+  unit reviews and enrichment p049b, p039, p057c-v2, p071c-v2; social S2 p066, a review exercise; PE p022, the unit-end
+  checklist). Science p082b-v2 and p072b-v2 also come from review pages but the «Grade 4 review» placed them on purpose,
+  so they stay.
+- Minor flaws (stray text, a caption or panel edge cut) stay.
+
+**Results.** Offline maths covered 48 of 50 lessons, every sampled key correct by hand; the other two now have
+generators («Grade 4 maths: offline questions for the two «خطة حل المسألة» lessons», above).
+
+**Verified:** `bookPage`, `bookFigures`, `bookFigureAssets`, `lessonSlides`, `teachingPlanGrounding` (194), curriculum
+test (931) and verify (0 errors), typecheck. **Not verified:** the pages on a phone; anything needing the PDFs.
+
 ## Grade 4 maths: offline questions for the two «خطة حل المسألة» lessons — 2026-11-13
 
 The Grade 4 audit found two maths lessons with no offline questions at all: «خطة حل المسألة: الحل بأكثر من خطوة»
