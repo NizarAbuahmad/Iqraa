@@ -184,4 +184,21 @@ describe("the Grade 1 clause in the remaining live prompts", () => {
     assert.match(req("grade-1"), /Grade 1 mathematics: numbers only within the lesson's range/);
     for (const g of ["grade-2", "grade-10", undefined]) assert.ok(!req(g as never).includes(MARK_EN), String(g));
   });
+
+  it("a difficulty level stays one step within the lesson for Grade 1; other grades keep theirs", () => {
+    const hardQuiz = quizPromptAr({ ...G1_ARABIC, difficulty: "hard" });
+    assert.match(hardQuiz, /دون تبرير أو تحليل أو خطوات متعددة/);
+    assert.doesNotMatch(hardQuiz, /موقف غير مألوف يتطلب اختيار الأسلوب/);
+    const mediumSheet = worksheetPromptEn({ ...G1_MATH_EN, difficulty: "medium" });
+    assert.match(mediumSheet, /One step over the lesson's whole range/);
+    assert.doesNotMatch(mediumSheet, /two or three steps/);
+    assert.match(quizPromptAr({ ...G10, difficulty: "hard" }), /موقف غير مألوف يتطلب اختيار الأسلوب/);
+    const evaluation = (gradeId: string) => buildGenerationPrompt({
+      objectives: [{ id: "o1", description: "Numbers 1, 2, 3", descriptionAr: "قراءة الأعداد", effectiveBloomsLevel: "Remember", subjectId: "mathematics" } as never],
+      gradeId, assessmentTypes: ["multiple_choice"], count: 4, difficulty: "advanced", language: "ar",
+    } as never).user;
+    assert.match(evaluation("grade-1"), /a short one-step story/);
+    assert.doesNotMatch(evaluation("grade-1"), /Weight towards application and analysis/);
+    assert.match(evaluation("grade-10"), /Weight towards application and analysis/);
+  });
 });

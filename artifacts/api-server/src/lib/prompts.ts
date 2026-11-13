@@ -18,7 +18,7 @@ import {
 import { QUIZ_TYPE_ORDER, type QuizType } from "./generationShape.ts";
 import { coverageClauseAr, coverageClauseEn } from "./coverage.ts";
 import { revisionClauseAr, revisionClauseEn } from "./revision.ts";
-import { firstGradeClauseAr, firstGradeClauseEn, isFirstGrade } from "./firstGrade.ts";
+import { FIRST_GRADE_DIFFICULTY_AR, FIRST_GRADE_DIFFICULTY_EN, firstGradeClauseAr, firstGradeClauseEn, isFirstGrade } from "./firstGrade.ts";
 
 /** «السؤال الأول» … — how a ministry paper numbers its question blocks. */
 const ORDINAL_AR = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس"];
@@ -751,6 +751,10 @@ const WORKSHEET_BAND: Record<string, [string, string, string]> = {
   hard: ["medium", "hard", "hard"],
 };
 
+/** The level meanings for this request: Grade 1 has its own (`FIRST_GRADE_DIFFICULTY_*`). */
+const meaningAr = (b: any) => (isFirstGrade(b) ? FIRST_GRADE_DIFFICULTY_AR : DIFFICULTY_MEANING_AR);
+const meaningEn = (b: any) => (isFirstGrade(b) ? FIRST_GRADE_DIFFICULTY_EN : DIFFICULTY_MEANING_EN);
+
 function difficultyKey(b: any): string {
   const d = b.difficulty;
   return d === "easy" || d === "hard" || d === "mixed" ? d : "medium";
@@ -758,19 +762,19 @@ function difficultyKey(b: any): string {
 
 export function difficultyClauseAr(b: any): string {
   const key = difficultyKey(b);
-  if (key === "mixed") return `\nالمستوى: متنوّع. ${DIFFICULTY_MEANING_AR.mixed}`;
+  if (key === "mixed") return `\nالمستوى: متنوّع. ${meaningAr(b).mixed}`;
   const band = WORKSHEET_BAND[key];
   const label: Record<string, string> = { easy: "سهل", medium: "متوسط", hard: "صعب" };
-  return `\nالمستوى المطلوب: ${label[key]} — ${DIFFICULTY_MEANING_AR[key]}
+  return `\nالمستوى المطلوب: ${label[key]} — ${meaningAr(b)[key]}
 تدرّج الورقة (التزم به): القسم الأول ${label[band[0]]}، الثاني ${label[band[1]]}، الثالث ${label[band[2]]}.
 لا تجعل الأقسام الثلاثة بالمستوى نفسه — التدرّج هو الهدف، والمستوى المطلوب ينقل النطاق لا يلغيه.`;
 }
 
 export function difficultyClauseEn(b: any): string {
   const key = difficultyKey(b);
-  if (key === "mixed") return `\nDifficulty: mixed. ${DIFFICULTY_MEANING_EN.mixed}`;
+  if (key === "mixed") return `\nDifficulty: mixed. ${meaningEn(b).mixed}`;
   const band = WORKSHEET_BAND[key];
-  return `\nRequested difficulty: ${key} — ${DIFFICULTY_MEANING_EN[key]}
+  return `\nRequested difficulty: ${key} — ${meaningEn(b)[key]}
 Worksheet progression (follow it): section 1 ${band[0]}, section 2 ${band[1]}, section 3 ${band[2]}.
 Do not make all three sections the same level — the progression is the point; the requested level shifts the band rather than removing it.`;
 }
@@ -778,12 +782,12 @@ Do not make all three sections the same level — the progression is the point; 
 export function quizDifficultyClauseAr(b: any): string {
   const key = difficultyKey(b);
   const label: Record<string, string> = { easy: "سهل", medium: "متوسط", hard: "صعب", mixed: "متنوّع" };
-  return `\nمستوى الأسئلة: ${label[key]} — ${DIFFICULTY_MEANING_AR[key]}`;
+  return `\nمستوى الأسئلة: ${label[key]} — ${meaningAr(b)[key]}`;
 }
 
 export function quizDifficultyClauseEn(b: any): string {
   const key = difficultyKey(b);
-  return `\nQuestion difficulty: ${key} — ${DIFFICULTY_MEANING_EN[key]}`;
+  return `\nQuestion difficulty: ${key} — ${meaningEn(b)[key]}`;
 }
 
 // ─── Activity prompt builders ────────────────────────────────────────────────

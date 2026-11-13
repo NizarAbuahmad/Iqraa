@@ -43,6 +43,7 @@ export type { Misstep } from './missteps.ts';
 export { detectElementaryOp, elementaryOpsForTitle } from './elementary.ts';
 export { topicFor } from './topics.ts';
 export { sameKind, stemFrame } from './stemFrame.ts';
+export { firstGradeLoad } from './firstGradeDifficulty.ts';
 
 export interface PracticeLesson {
   id: string;

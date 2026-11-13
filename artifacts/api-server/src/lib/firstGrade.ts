@@ -193,3 +193,31 @@ export function firstGradeTypeNotesEn(types: readonly string[]): string {
   const lines = types.map(t => FIRST_GRADE_TYPE_NOTES_EN[t]).filter((x): x is string => !!x);
   return lines.length ? ["In this Grade 1 paper each type looks like this:", ...lines.map(l => `- ${l}`)].join("\n") : "";
 }
+
+/**
+ * What a difficulty level means for a Grade 1 paper. The all-grades meanings
+ * ask for two or three steps at medium and for analysis at hard, which the
+ * Grade 1 clause forbids; here a level moves within the lesson's own range and
+ * stays one step (Grade 1 sweep, 2026-11-13). The offline generators do the
+ * same (`firstGradeDifficulty.ts` in `@workspace/math-practice`).
+ */
+export const FIRST_GRADE_DIFFICULTY_AR: Readonly<Record<string, string>> = {
+  easy: "سؤال مباشر من خطوة واحدة: تعرّف أو عدّ أو اختيار، بأصغر أعداد الدرس وأكثر كلماته ألفة.",
+  medium: "خطوة واحدة على مدى الدرس كله، بصيغة أخرى للسؤال أحيانًا (العدد أو الحرف المفقود، الترتيب، ما قبل وما بعد).",
+  hard: "أكبر أعداد الدرس أو أقل كلماته ألفة، أو عدد أو حرف مفقود، أو قصة قصيرة من خطوة واحدة، أو مقارنة بين شيئين — دون تبرير أو تحليل أو خطوات متعددة، ودون الخروج عن مدى الدرس.",
+  mixed: "وزّع الأسئلة على المستويات الثلاثة (سهل / متوسط / صعب)، وكلها من خطوة واحدة ضمن مدى الدرس.",
+};
+
+export const FIRST_GRADE_DIFFICULTY_EN: Readonly<Record<string, string>> = {
+  easy: "A direct one-step question — recognise, count or choose — with the lesson's smallest numbers and most familiar words.",
+  medium: "One step over the lesson's whole range, sometimes asked another way (the missing number or letter, order, before and after).",
+  hard: "The lesson's largest numbers or least familiar words, a missing number or letter, a short one-step story, or comparing two things — never a justification, an analysis or several steps, and never past the lesson's range.",
+  mixed: "Spread the questions across the three levels, every one a single step within the lesson's range.",
+};
+
+/** An evaluation's levels, for a Grade 1 paper (`DIFFICULTY_NOTE` in `llmGenerator.ts` for every other grade). */
+export const FIRST_GRADE_EVALUATION_DIFFICULTY_EN: Readonly<Record<string, string>> = {
+  basic: FIRST_GRADE_DIFFICULTY_EN.easy!,
+  standard: FIRST_GRADE_DIFFICULTY_EN.medium!,
+  advanced: FIRST_GRADE_DIFFICULTY_EN.hard!,
+};

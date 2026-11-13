@@ -20,6 +20,7 @@ import { STATS_TOPICS } from './stats.ts';
 import { PROPORTION_TOPICS } from './proportion.ts';
 import { EARLY_TOPICS } from './early.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
+import { FIRST_GRADE_CHOICE, FIRST_GRADE_DRAWS, pickByDifficulty } from './firstGradeDifficulty.ts';
 import {
   gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tier, valueOf, wrongsFrom,
   type Ctx, type Draft, type Rng, type Topic,
@@ -2020,6 +2021,11 @@ export function topicFor(title: string, grade: number): Topic | null {
  * nearly every paper, and «أعد التجهيز» could no longer find a paper that
  * avoids the last one (`quizRegenerateStems.test.ts`). A generator makes new
  * numbers on every draw, so nothing is lost here.
+ *
+ * Grade 1 draws more and chooses by difficulty among the least-served kinds
+ * (`pickByDifficulty`): its generators take their numbers from the lesson's
+ * range and, but for a few, ignored `diff`, so an easy and a hard paper drew
+ * the same questions (Grade 1 sweep, 2026-11-13).
  */
 export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used: Set<string>, rng: Rng = Math.random, opts: { word?: boolean } = {}): ConcreteItem {
   const served = servedFrames(used);
@@ -2027,7 +2033,14 @@ export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used:
   let best: Draft | null = null;
   let bestServed = Infinity;
   let fresh = 0;
-  for (let attempt = 0; attempt < 25 && fresh < FRESH_DRAWS; attempt++) {
+  const byDifficulty = grade === 1;
+  /** Grade 1: every fresh draw of the least-served kinds, to choose among. */
+  let least: Draft[] = [];
+  const draws = byDifficulty ? FIRST_GRADE_DRAWS : FRESH_DRAWS;
+  // Grade 1 goes on drawing until the least-served kinds offer a choice of
+  // `FIRST_GRADE_CHOICE`, so a later item of a paper is chosen by difficulty too.
+  const enough = () => fresh >= draws && (!byDifficulty || least.length >= FIRST_GRADE_CHOICE);
+  for (let attempt = 0; attempt < 6 * draws && !enough(); attempt++) {
     d = topic.make({ rng, diff, grade, ...(opts.word ? { word: true } : {}) });
     if (used.has(`stem:${d.ar}`)) continue;
     fresh += 1;
@@ -2035,10 +2048,13 @@ export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used:
     if (n < bestServed) {
       best = d;
       bestServed = n;
+      least = [d];
+    } else if (n === bestServed && !least.some(x => x.ar === d!.ar)) {
+      least.push(d);
     }
-    if (n === 0) break;
+    if (n === 0 && !byDifficulty) break;
   }
-  d = best ?? d;
+  d = byDifficulty && least.length > 0 ? pickByDifficulty(least, diff, rng, x => x) : best ?? d;
   used.add(`stem:${d!.ar}`);
   used.add(`ask:${d!.ar}`);
   const wrongs = d!.wrongs.filter(w => w !== d!.answer).slice(0, 3);

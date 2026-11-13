@@ -36,7 +36,7 @@ import { MARKS_BY_COMPETENCY, competencyForBlooms, type CompetencyKey } from "./
 import type { BookSupplied } from "./bookQuestions.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { variationBlock } from "../../lib/variation.ts";
-import { firstGradeClauseEn, firstGradeTypeNotesEn } from "../../lib/firstGrade.ts";
+import { FIRST_GRADE_EVALUATION_DIFFICULTY_EN, firstGradeClauseEn, firstGradeTypeNotesEn } from "../../lib/firstGrade.ts";
 import { figureFormatEn } from "../../lib/figurePrompt.ts";
 import { figureConsistentWith, resolveFigure } from "@workspace/figure";
 
@@ -384,7 +384,7 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     "Allowed types and the exact JSON each must use:",
     contracts,
     "",
-    `Difficulty: ${req.difficulty}. ${DIFFICULTY_NOTE[req.difficulty]}`,
+    `Difficulty: ${req.difficulty}. ${req.gradeId === "grade-1" ? FIRST_GRADE_EVALUATION_DIFFICULTY_EN[req.difficulty] : DIFFICULTY_NOTE[req.difficulty]}`,
     "",
     "Each question object also needs:",
     '  "objectiveId": one of the ids above',
