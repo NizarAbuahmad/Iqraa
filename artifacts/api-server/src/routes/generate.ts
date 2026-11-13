@@ -34,6 +34,7 @@ import {
   sanitizeDeckStructure,
 } from "../lib/promptSlidesPrompt.ts";
 import { lessonTeachingPromptAr, lessonTeachingPromptEn, teachingVisualCounts } from "../lib/lessonTeachingPrompt.ts";
+import { missingKeyTerms, parseKeyTerms } from "../lib/keyTerms.ts";
 import { problemsOf, settleTeaching } from "../lib/lessonTeachingChecks.ts";
 import {
   QUESTIONS_TOKENS,
@@ -696,6 +697,25 @@ function withMeta(result: GenerateResult, grounding: Grounding | null): unknown 
 }
 
 /**
+ * Which of the lesson's key terms the reply never mentions — a measurement,
+ * not a gate (lib/keyTerms.ts). `variantId` / `servedReason` say whether this
+ * is a fresh generation or a pooled one served again, so a skipped term is not
+ * counted once per teacher.
+ */
+function logKeyTermCoverage(kind: string, body: Record<string, unknown>, result: GenerateResult): void {
+  const terms = parseKeyTerms(body);
+  if (!terms) return;
+  logger.info({
+    kind,
+    lessonId: typeof body.lessonId === "string" ? body.lessonId : undefined,
+    terms: terms.length,
+    missing: missingKeyTerms(terms, result.content),
+    variantId: result.variantId,
+    servedReason: result.servedReason,
+  }, "key terms coverage");
+}
+
+/**
  * AI live-mode-off and cap-exceeded are expected, user-facing states — not
  * server errors.
  *
@@ -772,6 +792,7 @@ generateRouter.post("/generate/worksheet", async (req: AuthenticatedRequest, res
       kind: "worksheet", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: worksheetTokens(body), body, isAr, userId: req.user?.id,
     });
+    logKeyTermCoverage("worksheet", body, result);
     res.json(withMeta(result, grounding));
   } catch (err) {
     respondAiError(err, res, "generate worksheet");
@@ -788,6 +809,7 @@ generateRouter.post("/generate/quiz", async (req: AuthenticatedRequest, res) => 
       kind: "quiz", systemPrompt: systemPrompt(isAr, { hasBookFigures: hasBookFigures(body) }), userPrompt: prompt,
       maxCompletionTokens: quizTokens(body), body, isAr, userId: req.user?.id,
     });
+    logKeyTermCoverage("quiz", body, result);
     res.json(withMeta(result, grounding));
   } catch (err) {
     respondAiError(err, res, "generate quiz");
@@ -808,6 +830,7 @@ generateRouter.post("/generate/homework", async (req: AuthenticatedRequest, res)
       maxCompletionTokens: worksheetTokens(body), body: { ...body, homework: true }, isAr,
       userId: req.user?.id,
     });
+    logKeyTermCoverage("homework", body, result);
     res.json(withMeta(result, grounding));
   } catch (err) {
     respondAiError(err, res, "generate homework");
@@ -906,6 +929,7 @@ generateRouter.post('/generate/lesson-teaching', async (req: AuthenticatedReques
       variantId: result.variantId,
       servedReason: result.servedReason,
     }, "lesson-teaching visuals");
+    logKeyTermCoverage("lesson-teaching", body, result);
     res.json(withMeta(result, grounding));
   } catch (err) {
     respondAiError(err, res, "generate lesson-teaching");
