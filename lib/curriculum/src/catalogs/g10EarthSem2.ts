@@ -5,9 +5,9 @@
  *
  * Same shape as Semester 1: every lesson is lesson-level data copied from the
  * student book's openers, and no period counts exist anywhere in this file —
- * `earth-s2-teacher-guide` extracts with the definite article transposed and
- * its extraction was never kept, same as the S1 guide. The PDF is intact in
- * R2 and needs a better extractor or OCR.
+ * `earth-s2-teacher-guide` was OCR'd on 2026-09-07, but its period column is
+ * lost except unit 4 (guide p. 25: 2/2/2), which is filled; every other
+ * `periods` stays null.
  *
  * Units are numbered 3, 4 and 5, continuing directly from Semester 1's 1 and
  * 2 — unlike physics, which has a gap at unit 3.
