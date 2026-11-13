@@ -67,7 +67,8 @@ Checked 2026-10-22:
   on every PR, not required: `migrations match schema`, `math verifier`,
   `destructive migrations acknowledged`.
 - Workflows: ci, deploy, deploy-rerun-stalled, destructive-migration-ack, e2e, mobile-build,
-  mobile-build-gradle, mobile-update, provider-eval, rls-neon-rehearsal, schema-check.
+  mobile-build-gradle, mobile-submit (Play upload, added 2026-11-13; needs the `PLAY_SERVICE_ACCOUNT_JSON`
+  secret — `docs/deploying.md`, «Submitting to Google Play»), mobile-update, provider-eval, rls-neon-rehearsal, schema-check.
 
 ## Open
 
