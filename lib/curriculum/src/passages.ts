@@ -83,12 +83,19 @@ export function repairExtractionArtifacts(input: string): string {
  * The same ligature defect `repairExtractionArtifacts` undoes after the article,
  * but mid-word it cannot be undone on the page: «صالة» and «سؤال» are real words,
  * so rewriting «ال» to «لا» would corrupt them. It is undone on the query
- * instead — a term also matches its reversed spelling. Found 2026-11-13 in the
- * Grade 4 Islamic books, where «صلاة» appears 0 times and «صالة» 44, so no
- * prayer lesson found its own pages.
+ * instead, and only in a book that never spells the term correctly — that
+ * absence is the defect's signature. Without that guard «ثلاث» would also match
+ * «ثالث» on every «الدرس الثالث». A final «لا» is left alone («ولا» → «وال» is on
+ * most pages). Found 2026-11-13 in the Grade 4 Islamic books, where «صلاة»
+ * appears 0 times and «صالة» 44, so no prayer lesson found its own pages.
+ *
+ * The variant is repaired like a page is, so «الإسلام» → «االسالم» is compared
+ * as the «الاسالم» a page would hold; `null` when there is no distinct variant.
  */
-function withReversedLamAlef(term: string): string {
-  return term.length > 2 ? term[0] + term.slice(1).replace(/لا/g, 'ال') : term;
+function withReversedLamAlef(term: string): string | null {
+  if (term.length < 3) return null;
+  const variant = repairExtractionArtifacts(term[0] + term.slice(1).replace(/لا(?!$)/g, 'ال'));
+  return variant === term ? null : variant;
 }
 
 /** The form everything is compared in. Repair first, then fold. */
@@ -150,7 +157,9 @@ function queryTerms(parts: readonly string[], minLength = 4): string[] {
   const seen = new Set<string>();
   for (const part of parts) {
     for (const token of searchForm(part).split(/[\s,،.؛:()«»"'\-–—/]+/)) {
-      if (token.length >= minLength && !SHORT_STOPWORDS.has(token)) seen.add(token);
+      if (token.length < minLength) continue;
+      if (token.length === 3 && SHORT_STOPWORDS.has(token)) continue;
+      seen.add(token);
     }
   }
   return [...seen].sort((a, b) => b.length - a.length);
@@ -159,13 +168,14 @@ function queryTerms(parts: readonly string[], minLength = 4): string[] {
 /**
  * Three-letter words that say nothing about a page, in search form.
  *
- * Only a lesson's own title is read down to three letters (`titleTerms`): a
+ * Only a lesson's own title is read down to three letters (`queryTerms(…, 3)`): a
  * title is a handful of content words, and the one that names the lesson is
  * often a bare three-letter root — «طرح», «جمع», «ضرب» — which the four-letter
  * floor used to drop, leaving «طَرْحُ الأَعْدادِ» to be found by «الاعداد» alone.
  */
 const SHORT_STOPWORDS: ReadonlySet<string> = new Set(
-  ['على', 'إلى', 'الى', 'عن', 'من', 'في', 'مع', 'هذا', 'هذه', 'ذلك', 'تلك', 'بين', 'عند', 'غير', 'بعض', 'كل', 'ثم', 'أو', 'او', 'ما', 'لا', 'كيف', 'ماذا', 'التي', 'الذي']
+  ['على', 'إلى', 'الى', 'هذا', 'هذه', 'ذلك', 'تلك', 'بين', 'عند', 'غير', 'بعض', 'كيف',
+    'ولا', 'فلا', 'بلا', 'فيه', 'عنه', 'كان', 'بعد', 'قبل', 'حول', 'فوق', 'رضي', 'صلي']
     .map(w => searchForm(w)),
 );
 
@@ -198,17 +208,18 @@ export interface PassageQuery {
  * opener and the guide's unit overview outscored the lesson's own pages. Measured
  * 2026-11-13 on the 242 Grade 4 lessons whose page range is known, one of their
  * own student-book pages reached the top four for 83 before this and 146 after
- * (all grades: 363 → 523 of 2176; 4 gave 137, 16 gave 147). See the log,
+ * (all grades: 363 → 523 of 2176; 4 gave 137, 16 gave 147) — weight alone,
+ * before the three-letter titles and the lam-alef variant. See the log,
  * «Grade 4 review».
  */
 const LESSON_WEIGHT = 8;
 
 /** The catalog lesson a query is about, if it can be told without guessing. */
 function queryLesson(query: PassageQuery) {
-  if (query.lessonId) {
-    const byId = LESSONS.find(l => l.id === query.lessonId);
-    return byId?.unitId === query.unitId ? byId : undefined;
-  }
+  // An id outside the unit (or a legacy id the catalog does not carry) falls
+  // through to the title, rather than switching the lesson weighting off.
+  const byId = query.lessonId ? LESSONS.find(l => l.id === query.lessonId) : undefined;
+  if (byId?.unitId === query.unitId) return byId;
   const inUnit = LESSONS.filter(l => l.unitId === query.unitId);
   const titles = new Set((query.terms ?? []).map(searchForm));
   const named = inUnit.filter(l => titles.has(searchForm(l.titleAr)));
@@ -255,20 +266,28 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
   for (const t of lessonTerms) weight.set(t, LESSON_WEIGHT);
   const terms = [...weight.keys()];
   if (!terms.length) return [];
-  const reversedLamAlef = new Map<string, string>();
-  for (const t of terms) {
-    const r = withReversedLamAlef(t);
-    if (r !== t) reversedLamAlef.set(t, r);
-  }
 
   const sources: CurriculumSource[] = itemsForUnitTags(tags)
     .filter(s => !quotableOnly || usePolicy(s) === 'quotable')
     .filter(s => hasExtractedText(s.id));
 
+  const variants = new Map<string, string>();
+  for (const t of terms) {
+    const r = withReversedLamAlef(t);
+    if (r) variants.set(t, r);
+  }
+
   const scored: Passage[] = [];
   for (const source of sources) {
     const policy = usePolicy(source);
-    for (const page of pagesFor(source.id)) {
+    const pages = pagesFor(source.id);
+    // Per book, because the defect is per book: the Grade 4 Islamic student
+    // book never spells «صلاة» right while its teacher guide does.
+    const reversedLamAlef = new Map<string, string>();
+    for (const [t, r] of variants) {
+      if (!pages.some(p => p.search.includes(t))) reversedLamAlef.set(t, r);
+    }
+    for (const page of pages) {
       // Longer terms are rarer and so more informative: «المماس» locating a page
       // means more than «الشكل» does. Length is a cheap stand-in for IDF over a
       // corpus this small.

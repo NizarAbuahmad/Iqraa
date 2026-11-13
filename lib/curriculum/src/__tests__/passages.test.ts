@@ -192,10 +192,34 @@ describe('passagesForUnit for one lesson', () => {
     assert.deepEqual(foreign.map(p => `${p.sourceId}:${p.page}`), plain.map(p => `${p.sourceId}:${p.page}`));
   });
 
-  it("reads a title's three-letter root, but not a three-letter stopword", () => {
-    // «طَرْحُ الأَعْدادِ» (pp. 26-29) used to be searched by «الاعداد» alone.
-    const ps = passagesForUnit({ unitId: 'kbu-g4-math-s1-nccd-u1', lessonId: 'kbl-g4-math-s1-nccd-u1_l6', quotableOnly: true });
-    assert.ok(ps.some(p => searchForm(p.text).includes(searchForm('طرح'))));
+  const pageIn = (ps: Passage[], sourceId: string, from: number, to: number) =>
+    ps.some(p => p.sourceId === sourceId && p.page >= from && p.page <= to);
+
+  it("reads a title's three-letter word", () => {
+    // «قِصَّةُ نَبِيِّ اللهِ سَيِّدِنا آدَمَ», pp. 22-26: «آدم» is the word that names
+    // it, and a four-letter floor left only «قصة», «نبي»… to find it with.
+    const ps = passagesForUnit({ unitId: 'kbu-g4-islamic-s1-nccd-u1', lessonId: 'kbl-g4-islamic-s1-nccd-u1_l5', quotableOnly: true });
+    assert.ok(pageIn(ps, 'g4-islamic-s1-student-book', 22, 26));
+  });
+
+  it('ignores a three-letter stopword in a title', () => {
+    const unitId = 'kbu-g4-islamic-s1-nccd-u1';
+    const plain = passagesForUnit({ unitId, terms: ['آدم'], quotableOnly: true });
+    const padded = passagesForUnit({ unitId, terms: ['آدم على'], quotableOnly: true });
+    assert.deepEqual(padded.map(p => `${p.sourceId}:${p.page}`), plain.map(p => `${p.sourceId}:${p.page}`));
+  });
+
+  it('finds «صلاة» in a book whose text layer spells it «صالة»', () => {
+    // The Grade 4 Islamic student books never spell «صلاة» right; their
+    // teacher guides do. «شروط صحة الصلاة» is pp. 58-62 and found no page at all.
+    const ps = passagesForUnit({ unitId: 'kbu-g4-islamic-s1-nccd-u3', lessonId: 'kbl-g4-islamic-s1-nccd-u3_l3', quotableOnly: true });
+    assert.ok(pageIn(ps, 'g4-islamic-s1-student-book', 58, 62));
+  });
+
+  it('falls back to the title when the lesson id is not in the unit', () => {
+    const viaTitle = passagesForUnit({ unitId: G4_DIV, terms: ['تقدير ناتج القسمة'], quotableOnly: true });
+    const legacyId = passagesForUnit({ unitId: G4_DIV, terms: ['تقدير ناتج القسمة'], lessonId: 'kbl-chem-1-1', quotableOnly: true });
+    assert.deepEqual(legacyId.map(p => `${p.sourceId}:${p.page}`), viaTitle.map(p => `${p.sourceId}:${p.page}`));
   });
 });
 
