@@ -235,11 +235,11 @@
         290.9,
         553.6
       ],
-      "unit": 2,
-      "lesson": 3,
+      "unit": null,
+      "lesson": null,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
-      "lessonStartPage": 50
+      "lessonStartPage": null
     },
     {
       "file": "p058c-v2.png",
@@ -251,11 +251,11 @@
         538.0,
         548.0
       ],
-      "unit": 2,
-      "lesson": 3,
+      "unit": null,
+      "lesson": null,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
-      "lessonStartPage": 50
+      "lessonStartPage": null
     }
   ]
 }
