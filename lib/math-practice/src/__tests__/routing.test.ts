@@ -30,7 +30,13 @@ describe('primary lessons: the ops come from the title', () => {
     ['ضرب الأعداد العشرية وقسمتها', 'dec_mul+dec_div'],
     ['النسبة المئوية من عدد', 'percent'],
     ['القيمة المنزلية ضمن الألوف', 'place'],
-    ['الضرب كجمع متكرر', 'add+mul'],
+    // «كجمع متكرر» / «كطرح متكرر» name the METHOD, not a second topic: the
+    // add/sub items are unrelated three-digit sums («228 + 91 + 153»), which
+    // took over 6 of 10 questions in the Grade 2 lesson (2026-11-13).
+    ['الضرب كجمع متكرر', 'mul'],
+    ['الضَّرْبُ كَجَمْعٍ مُتَكَرِّر', 'mul'],
+    ['القسمة كطرح متكرر', 'div'],
+    ['الْقِسْمَةُ كَطَرْحٍ مُتَكَرِّر', 'div'],
   ];
   for (const [title, expected] of cases) {
     it(`${title} → ${expected}`, () => assert.equal(ops(title), expected));

@@ -5,6 +5,7 @@
     "subject": "العلوم",
     "subject_en": "Science",
     "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
     "schema_version": "1.0",
     "source_books": [
       "كتاب الطالب لمادة العلوم الصف الثاني الفصل الثاني (g2-science-s2-student-book)"
