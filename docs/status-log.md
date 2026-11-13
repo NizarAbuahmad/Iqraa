@@ -17,23 +17,23 @@ Grade 4 work («Grade 4 review…», the three «Grade 4 … figures» entries):
 unit-final lesson's last pages and every figure (550) were looked at as images. Printed page = PDF page in every book
 except English (PDF = printed + 2).
 
-**Book pages.**
-- **No lesson starts on the wrong page** in Arabic, Islamic or maths. The «Grade 4 review» left the unit-end spill open;
-  it is fixed here. Every unit-final lesson ran on: Arabic (10) into «حصاد الوحدة» and the next unit's opener and
-  «كفايات» page, Islamic (8) into the next opener or the closing page, maths (9) into «اختبار نهاية الوحدة», the next
-  opener and its project. Three maths lessons ended on the next lesson's «نشاط مفاهيمي» (S2 u6_l3, u7_l1, u7_l5); they
-  end before it now. The activity (p22, p37, p51) belongs at the head of the next lesson, whose cut pages start a page
-  later, so it waits for a render.
-- **Vocational S2:** u1_l1 started mid-lesson (p10; its opener is p8, never cut — it keeps 10–12); u1_l2 ran into the
-  unit-end guidance page and the unit 2 opener (13–20 → 13–18).
+**Book pages.** Merged with «Grade 4, second pass…» (#1456), which landed first and trimmed the same unit-end spill:
+its 23 entries stand (Arabic ends on «حصاد الوحدة», Islamic before the next opener, maths S2 u6_l3/u7_l1/u7_l5 before
+the next «نشاط مفاهيمي», vocational S2 u1_l2, maths S2 «الزمن» 93–95). This audit agrees on every start (none wrong)
+and adds what that pass left:
+- **Maths unit-final lessons (8, + S2 u6_l4):** they still ran into «اختبار نهاية الوحدة», the *next* unit's opener and
+  the next unit's «مشروع الوحدة» (#1456 kept the project as "the unit's own"; in these books the project page follows
+  the unit opener, so it belongs to the unit that starts there). Cut back to the lesson: S1 u1_l6 26–29, u2_l4 44–45,
+  u3_l5 63–65, u4_l3 78–81, u5_l5 101–103; S2 u6_l4 23–27, u7_l7 55–57, u8_l5 77–79, u10_l5 126–127.
 - **Eight lessons get pages back** from folders the «Grade 4 review» unlinked (e2badafb) — the renders are still in
   the bucket and the right pages are in them: PE u2_l3, u2_l4, u3_l2; social S1 u4_l4, u4_l5; vocational S2 u4_l1,
   u4_l2; arts u3_l3. Each opener was viewed against its catalogue title.
-- 38 ranges set with `rendered` from images already cut; none lost. 156 of 313 lessons have pages, up from 148. Every
-  changed URL (127) answered 200.
-- **To render from the PDFs:** maths S2 u9_l4–l6 (93–103), the rest of PE, vocational S2 and social S2, the first pages
-  of vocational S2 u1_l1, and science, English, digital, arts and vocational S1, which have no page images. Ranges for
-  all of them, from the contents, are in the audit (digital's OCR'd contents lost most numbers: estimates only).
+- 16 entries changed with `rendered`, none lost: 157 of 313 lessons have pages, up from 149. Every changed URL
+  answered 200.
+- **To render from the PDFs:** maths S2 «المحيط» and «المساحة» (96–103), the rest of PE, vocational S2 and social S2,
+  vocational S2 u1_l1's first two pages (it opens mid-lesson on p10; its opener is p8), and science, English, digital,
+  arts and vocational S1, which have no page images. Ranges for all of them, from the contents, are in the audit
+  (digital's OCR'd contents lost most numbers: estimates only).
 
 **Contents.** Every book matches its catalogue in units, lessons, titles and order. Two contents pages disagree with the
 lesson's own opener (vocational S1 u4_l2 opens on p51, not p49; social S2 u8_l4 on p84, not p85); the opener wins.
@@ -79,6 +79,46 @@ unchanged. Grade 4 offline maths now covers all 50 lessons.
 stem with code that shares nothing with the generators, and checks every kind is drawn and the one-step wrong option is
 always offered; breaking the overlap rule fails 2 of them. math-practice suite 1096 pass. Twelve sampled items and the
 mobile probe's six read by hand, keys correct.
+
+## Grade 4, second pass: generator output, page ends, and place value up to hundred thousands — 2026-11-13
+
+The earlier Grade 4 review (below, «Grade 4 review: every book's lessons are in…») covered coverage, retrieval and
+figures. This pass adds the parts of the Grades 1–3 reviews it did not run: what the offline generators produce, and
+the first and last page of every book-page entry.
+
+**Generators (offline), all 313 lessons.**
+- Grounding by lesson id is exact for every lesson.
+- The number-agreement scan finds nothing: no «2 قطع», «5 يومًا» or «10 قرشًا». No question prints «الإجابة:»
+  twice.
+- The 121 keys the checker could recompute are right. Its 13 «wrong» and 14 «unsolvable» flags are its own misreads:
+  fractions read as decimals, «أقرب عشرة آلاف» read as «عشرة», and true/false items.
+- **Fixed:** «القيمة المنزلية ضمن مئات الألوف» asked about 119, 827 and «900 + 80». The place-value digit count was
+  min(grade, 2/3/4 by tier), so Grade 4 never passed 4 digits. Grades 4 and 5 now start their tiers higher: Grade 4
+  draws 4/5/6 digits, Grade 5 («ضمن الملايين») 5/6/7. Grades 1–3 are unchanged.
+- That change exposed a second bug: the place-name list stopped at «الألوف», so a 7-digit number printed «منزلة
+  undefined». It now runs to «الملايين», and the test's own solver reads two-word place names.
+  (`elementary.test.ts` «place value reaches the range the lesson names».)
+- **Weak, not fixed:**
+  - «تمثيل البيانات بالنقاط» draws mostly bar-chart and table questions; one kind of question is a dot plot.
+  - «الانعكاس» writes its line as «x = 7» in an Arabic stem.
+
+**Book pages.** I opened the first and the last page of all 148 entries.
+- **First pages:** all 148 open on their own lesson. Three math S2 lessons open on the book's «نشاط مفاهيمي» page for
+  the same topic, and vocational S2 u1_l1 opens on one of its own activity pages; these are left.
+- **Last pages:** 22 ran on, the «unit-end spill» the earlier review left open. Each is trimmed:
+  - Arabic: the ten «أبني لغتي» lessons ran onto the next unit's cover and «كفايات» page, or the closing page. Each
+    now ends on «حصاد الوحدة».
+  - Islamic: 8 ran onto the next unit's cover or the closing page.
+  - Math S2: three ran onto the next lesson's «نشاط مفاهيمي» page (pp. 22, 37, 51).
+  - Vocational S2: u1_l2 ran onto unit 2's cover.
+  - Math «مشروع الوحدة» pages stay: they are the unit's own.
+- **Math S2 «الزمن» (u9_l4) gains pages 93–95.** The earlier review cut u9_l3 to pp. 91–92, but its folder still
+  holds 91–95, and p. 93 is «الدرس 4 الزمن». It reads them through `rendered`. «المحيط» and «المساحة» are not in any
+  folder.
+- All 23 changed entries were checked through `bookPagesForLesson`: first and last image, by eye.
+
+**Verified:** see the PR. The new test was first seen failing. **Not run:** the pages on a phone, live AI, and
+anything needing the PDFs (see the earlier entry's open list, which this pass does not change).
 
 ## Grade 10 figures: six unit-review figures the audit missed — 2026-11-13
 
