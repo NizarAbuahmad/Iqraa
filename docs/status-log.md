@@ -43,6 +43,72 @@ covering a long outage would need a delayed re-run of the failed web job (the pa
 is not built. I did not read wrangler's source: the step relies only on a failed attempt publishing nothing and a repeat
 attempt deploying the same files, not on wrangler skipping files it already uploaded.
 
+## Grade 2 maths: offline questions for the four problem-solving lessons — 2026-11-14
+
+The Grade 2 audit (below) found four maths lessons with no offline questions. Each now has a generator in
+`lib/math-practice/src/topics.ts` (`grades: [2, 2]`), sized to its unit — S1 is adding and subtracting within 999, S2
+the 2, 3, 4, 5 and 10 tables and dividing by them:
+
+- **`guess_check_g2`** — «خطة حل المسألة: التخمين والتحقق» (S1 u3_l7): two numbers from their sum and difference
+  (every wrong pair breaks one of the two conditions); which two of four numbers make a total, drawn so only one pair
+  does; the number that added to itself makes N.
+- **`multi_step_g2`** — «… الحل بأكثر من خطوة» (S1 u4_l7): money after a gift and a purchase, riders on a bus, pages
+  two children read («قرأ خالد 9 صفحات أكثر منه»). The number a child gets by stopping after the first step is always
+  an option.
+- **`find_pattern_g2`** — «… البحث عن نمط» (S2 u6_l8): the next or the missing number in a skip-counting pattern, and
+  boxes of pens continued to the n-th box («صندوق فيه 5 أقلام، وصندوقان فيهما 10 أقلام…»).
+- **`choose_op_g2`** — «مهارة حل المسألة: اختيار العملية» (S2 u7_l8): a one-step story for each operation; either
+  «أي عملية نستعمل…» (the four names are listed in the stem, so it works as short answer), or solve it, with what the
+  other operations give on the same two numbers as the wrong options.
+
+Grade 2 offline maths now covers all 61 lessons. Grade 1 has the same «التخمين والتحقق» and «اختيار العملية» titles
+and still no generator for them — not done here.
+
+**Verified:** `grade2Lessons.test.ts` (13, written first and seen failing) recomputes every key from its stem with code
+that shares nothing with the generators, checks every kind is drawn, that only one pair makes the total, that the
+one-step slip is offered, and that no number or option passes 999; math-practice 1225 pass; the mobile suite (9,270
+pass, 0 fail); typecheck; 36 sampled items read by hand, keys right and the counted nouns agree («11 صفحةً», «9 صفحات», «30 تفاحةً», «15 قلمًا»).
+
+No «ما الجديد» entry: offline questions for lessons that had none, not a new feature.
+## Grade 5 review: the last three maths lessons, the second pass's weak items, and social S2 u7_l4 — 2026-11-14
+
+«Grade 5 audit…» and «Grade 5 maths…» (both 2026-11-13, below) covered pages, figures, contents and every maths quiz. A
+sweep of all 317 lessons through the offline plan, quiz, worksheet and activity found what they left: every lesson grounds
+by id and plans and activities generate for all, but 3 of 52 maths lessons gave no full paper. This change closes those and
+the items both entries listed as open.
+
+**Maths (`lib/math-practice`).**
+- **«خطة حل المسألة: أنشئ جدولًا»** (S1 u1_l5) and **«خطة حل المسألة (أرسم نموذجًا)»** (S2 u7_l4) had no questions; they
+  were refused «as in Grades 3–4», which now serve theirs, as do Grades 6 and 7. `make_table_g5` and `draw_model_g5` (`g5.ts`)
+  follow the books' worked examples and «أتدرب» problems: S1 pp. 24-25 — a ratio table (green and red balls), a daily
+  amount that grows, outfits, ways to pay with 5- and 10-piastre coins; S2 pp. 56-57 — a bar model as an equation: «أقل
+  بمقدار», a bill that fell, equal parts (336 km in 3 hours), equal groups (whales), and which equation a model shows.
+- **«تصنيف الأشكال الرباعية»** («أصنف الأشكال الرباعية حسب أضلاعها وزواياها») ran out at 5 of 10 questions. Grade 5 now
+  also classifies a shape from its sides and one angle, picks the true (or false) «every X is a Y» statement, and counts
+  pairs of parallel sides (`quadClassify`, `geometry.ts`; Grade 6's angle sum is untouched).
+- **«قسمة الكسور»** could print «2/2 ÷ 3/3»: its fractions are now proper, in both kinds that draw a/b.
+- **«إذا اشترى 2 من الكتب»** now reads «كتابين» (and «3 كتب», «11 كتابًا»). The unused × and ÷ `wordAr` («25 صفوف … 23
+  مقاعد», «على 25 مجموعات») agree through `counted`, so they are right if a word kind ever shows them.
+
+**Social S2.** Unit 7 has four lessons: the audit read pp. 71-76 as «دول المغرب العربي» and u7_l3 as pp. 63-70. `u7_l4` is
+added (a new id after the others, title only like every lesson in this file, whose extracted text is scrambled); the
+`known_gaps` note that said u7_l3 ran to p. 88 is corrected, and unit 8's note records the audit's two lessons.
+
+**Verified.**
+- `g5.test.ts` recomputes every new key by building what the plan builds — the table row by row, the pattern day by day,
+  every outfit, every way to pay — and solves the model's equation; `geometry.test.ts` classifies each shape from its printed
+  sides and angle and checks each statement against the true list; a new test draws 400 «قسمة الكسور» questions and finds no
+  «n/n» (it fails on the old code); `algebra.test.ts` reads «كتابين» and fails on «2 من الكتب».
+- Planted bugs — the ratio table counting green, the coin count off by one, the model adding, the classifying angle swapped
+  — each made a test fail.
+- Sample questions for every new kind read by hand, keys correct. Sweep: 52 of 52 maths lessons give a full paper (49 before);
+  the new social lesson grounds by id and gets a plan and an activity.
+- math-practice and curriculum tests pass, curriculum `verify` 0 errors; the PR body has the rest of the CI set.
+
+**Not done.** Rendering the pages the audit listed (maths S2, science, social, PE S1 u2_l3) needs the PDFs; u7_l4 gets no
+book pages until then. The three social S1 titles the audit found printed differently stay, because a renamed title loses
+exact-title grounding (the book's wording is in the audit entry).
+
 ## Grade 6 review: the four «weak, not fixed» maths lessons from the second pass — 2026-11-14
 
 The Grade 6 audit and «Grade 6, second pass» (both below) covered pages, figures, contents and every maths quiz against
@@ -140,6 +206,16 @@ now starts at 3. The seeded `tamyiz.test.ts` found it once this PR's draws shift
 
 **Not run:** live AI, and anything needing the PDFs. Whether each chemistry item is the best question for its lesson
 is a chemistry teacher's call.
+## Grade 4 arts: the string-marionette picture for «الدُّمى الْمَسْرَحِيَّةُ» — 2026-11-14
+
+The arts books have page images for one lesson only: u3_l3 «الدُّمى الْمَسْرَحِيَّةُ», pp. 80–82, served from the
+`kbl-g4-arts-s1-nccd-u3_l4` render folder. With its four crops drawn on those pages, one picture was missing. The lesson
+names four puppet types, and the string marionette (p. 80, «دُمى الْخُيوطِ») was the only one with no crop. It is added
+as `p080d.png`, with its label, because `p080b` and `p080c` are taken in the bucket. Its lesson comes from the existing
+`figure-lesson-map.json` row, so no new row was needed. Arts S1 now has 55 crops. **Verified:** figure tests (39 pass),
+typecheck, the PNG returns 200 from `iqraa-public`. **Not done:** the rest of the arts book has no page images and no
+PDF reachable from here, so its other gaps (the qanun and the Picasso pages) are still open.
+
 
 ## Grade 2 audit: book pages, contents, honorifics and offline maths checked — 2026-11-14
 
@@ -175,9 +251,10 @@ full, «رضي الله عنه/عنها» follows أبو هريرة, خديجة,
   lesson's regrouping. Multiplication with regrouping already had this exception.
 - «كم وجهًا لـمتوازي المستطيلات؟» → «لمتوازي المستطيلات» (`li` in `early.ts` put a tatweel before a word with no
   article; «لـ 3» and «لـ x» stay, a preposition cannot join a digit).
-- **Not fixed:** four lessons get no offline questions — S1 u3_l7 «خطة حل المسألة: التخمين والتحقق», u4_l7 «… الحل
-  بأكثر من خطوة», S2 u6_l8 «… البحث عن نمط», u7_l8 «مهارة حل المسألة: اختيار العملية». The other 57 lessons' probe
-  items (171) were read by hand: every key right.
+- Four lessons got no offline questions — S1 u3_l7 «خطة حل المسألة: التخمين والتحقق», u4_l7 «… الحل بأكثر من
+  خطوة», S2 u6_l8 «… البحث عن نمط», u7_l8 «مهارة حل المسألة: اختيار العملية»; they have generators since «Grade 2
+  maths: offline questions for the four problem-solving lessons» (above). The other 57 lessons' probe items (171) were
+  read by hand: every key right.
 
 **Verified:** `columnRegroup.test.ts` (28, written first: all red without the change) recomputes every key column by
 column, checks each lesson's rule and that the slip is offered, and drives `takeElementaryMath`; `elementary.test.ts`'s
