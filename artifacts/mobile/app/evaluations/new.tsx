@@ -54,6 +54,7 @@ import { pickMarkSheetPhotos } from '@/services/documents/pick';
 import { blankMarkCount, gridFromScan, totalMismatch } from '@/services/paperScan';
 import { scanErrorKey } from '@/services/scanErrors';
 import { groupObjectivesByLesson } from '@/services/objectiveLessons';
+import { selectionForGrade, typesOffered } from '@/services/evaluationTypes';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -331,6 +332,11 @@ export default function NewEvaluationScreen() {
   // books on offer, so a teacher with two grades is never shown the other ten.
   const [pickedFilter, setPickedFilter] = useState(NO_BOOK_FILTER);
   const bookLookup = useCallback((id: string) => getBookById(id), []);
+  /** A Grade 1 book is offered only the types a six-year-old can answer (`services/evaluationTypes.ts`). */
+  const bookGradeId = bookId ? getBookById(bookId)?.gradeId : undefined;
+  useEffect(() => {
+    setSelectedTypes(prev => selectionForGrade(bookGradeId, prev));
+  }, [bookGradeId]);
   const bookFilter = resolveBookFilter(scopedBooks, bookLookup, pickedFilter);
   const gradeIds = facetIds(scopedBooks, bookLookup, 'gradeId');
   const subjectIds = facetIds(scopedBooks, bookLookup, 'subjectId', { gradeId: bookFilter.gradeId });
@@ -602,7 +608,7 @@ export default function NewEvaluationScreen() {
               {t('assessmentTypesLabel')}
             </Text>
             <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {ALL_TYPES.map(type => (
+              {typesOffered(bookGradeId, ALL_TYPES).map(type => (
                 <CheckboxRow
                   key={type}
                   label={t(TYPE_LABEL_KEY[type])}

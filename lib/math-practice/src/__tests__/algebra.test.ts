@@ -430,7 +430,12 @@ describe('algebra generators: kinds added 2026-10-16', () => {
           assert.ok([3, 7.5, 13].every(v => same(inX(item.answer)(v), want(v))), `${p} → ${item.answer}`);
           for (const w of item.wrongs) assert.ok(![3, 7.5, 13].every(v => same(inX(w)(v), want(v))), `${w} also says ${p}`);
         } else if (k === 'numeric') assert.equal(Number(item.answer), fn(p.split('العددي ')[1]!.replace(/\.$/, ''))(0), p);
-        else if (k === 'shopper') { const [a, b, n] = nums(p); assert.equal(Number(item.answer), a! * n! + b!, p); }
+        else if (k === 'shopper') {
+          // two books are «كتابين», never «2 من الكتب» (2026-11-14)
+          assert.ok(!/ \d+ من الكتب/.test(p), `the count does not agree: ${p}`);
+          const [a, b, n = has(p, 'كتابين') ? 2 : NaN] = nums(p);
+          assert.equal(Number(item.answer), a! * n! + b!, p);
+        }
       }
       assert.equal(kinds.size, id === 'expr_g4' ? 5 : 3, `${id}: ${[...kinds]}`);
     }
@@ -1147,7 +1152,7 @@ describe('algebra generators: kinds added for thin lessons', () => {
 describe('algebra routing', () => {
   const cases: Array<[string, number, string | null]> = [
     ['المقادير والمتغيرات', 4, 'expr_g4'], ['معادلات الجمع والطرح', 5, 'eq_add_sub'], ['معادلات الضرب والقسمة', 5, 'eq_mul_div'],
-    ['المعادلات', 6, 'eq_mixed'], ['الخصائص الجبرية', 6, 'distribute'], ['المتتاليات', 7, 'seq_basic'], ['المتتاليات', 10, null],
+    ['المعادلات', 6, 'eq_mixed'], ['الخصائص الجبرية', 6, 'distribute'], ['المتتاليات', 7, 'seq_basic'], ['المتتاليات', 10, 'g10_sequences'],
     ['جمع المقادير الجبرية وطرحها', 7, 'poly_addsub'], ['ضرب المقادير الجبرية', 7, 'poly_mul'], ['حالات خاصة من ضرب المقادير الجبرية', 7, 'poly_special'],
     ['حل المعادلات', 7, 'solve_eq'], ['حل المتباينات بالجمع والطرح', 8, 'ineq_add'], ['حل المتباينات متعددة الخطوات', 8, 'ineq_multi'],
     ['حل نظام من معادلتين خطيتين بالحذف', 8, 'sys_elim'], ['التحليل بإخراج العامل المشترك الأكبر', 8, 'factor_gcf'],

@@ -17,6 +17,23 @@
 import { createHash } from "node:crypto";
 
 import { parseCoverage } from "./coverage.ts";
+import { isFirstGrade } from "./firstGrade.ts";
+import { EARLY_DIFFICULTY_KINDS, EARLY_DIFFICULTY_VERSION, earlyGradeOf } from "./earlyGrade.ts";
+
+/**
+ * The kinds whose prompt carries the Grade 1 clause (`firstGrade.ts`), and the
+ * date it entered them. A Grade 1 request of one of these kinds is keyed with
+ * this date, so an artifact pooled before the clause existed — a «حرف الباء»
+ * plan that asks six-year-olds for a paragraph — is never served again. Every
+ * other grade's key leaves the field out (`hash` drops `undefined`), so no
+ * other pool restarts. Bump the date when the clause changes.
+ */
+export const FIRST_GRADE_KINDS: ReadonlySet<string> = new Set([
+  "lesson-plan", "worksheet", "homework", "quiz", "activity",
+  // the clause reached these the same day, in a second change
+  "lesson-teaching", "prompt-slides", "classroom-activity", "infographic",
+]);
+export const FIRST_GRADE_CLAUSE_VERSION = "2026-11-13";
 
 /**
  * Bump when a prompt changes in a way that makes previously generated
@@ -238,6 +255,10 @@ export function generationKeys(
     // different artifact, and sharing a coarse key with the lesson activity
     // is how the two came to be identical in the first place.
     activityVariant: normalizeValue(body.activityVariant),
+    // Only on a Grade 1 request of a kind whose prompt has the Grade 1 clause.
+    firstGrade: FIRST_GRADE_KINDS.has(kind) && isFirstGrade(body) ? FIRST_GRADE_CLAUSE_VERSION : undefined,
+    // Only on a grade 2–4 worksheet, homework or quiz: its level wording is its own (`earlyGrade.ts`).
+    earlyDifficulty: EARLY_DIFFICULTY_KINDS.has(kind) && earlyGradeOf(body) ? EARLY_DIFFICULTY_VERSION : undefined,
   };
 
   const strict: Record<string, unknown> = { ...shared };

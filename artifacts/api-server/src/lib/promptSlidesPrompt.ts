@@ -27,6 +27,8 @@
  * only what it must not be.
  */
 
+import { firstGradeClauseAr, firstGradeClauseEn } from "./firstGrade.ts";
+
 /** Hard ceiling on slide count — also enforced server-side after parsing. */
 export const MAX_PROMPT_SLIDES = 20;
 
@@ -356,7 +358,7 @@ ${slideCountLine(b, true)}
 - لا تستعمل LaTeX ولا شرطة مائلة عكسية (\\frac، \\theta، \\times) في أي حقل؛ اكتب x^2 و3/4 و×.
 - اكتب المعادلات بالحرفين اللاتينيين x و y حتى داخل النص العربي، فالتطبيق يرسم المنحنى من المعادلة الواردة في النص.
 - "durationSeconds": صفر لشرائح الشرح، و45-60 لشرائح السؤال.
-- لا تُضِف حقل "verified" أو "verifiedBy" إطلاقًا.`;
+- لا تُضِف حقل "verified" أو "verifiedBy" إطلاقًا.${firstGradeClauseAr(b, "visual", { ifLesson: true })}`;
 }
 
 export function promptSlidesPromptEn(b: any): string {
@@ -511,7 +513,7 @@ Mandatory rules:
 - Never write LaTeX or a backslash (\\frac, \\theta, \\times) in any field: write x^2, 3/4 and ×.
 - Write equations with latin x and y even inside other prose — the app plots the curve from the equation stated in the text.
 - "durationSeconds": zero for teaching slides, 45-60 for question slides.
-- Never add a "verified" or "verifiedBy" field.`;
+- Never add a "verified" or "verifiedBy" field.${firstGradeClauseEn(b, "visual", { ifLesson: true })}`;
 }
 
 /** Fields that only mean something when a verifier actually ran. */
