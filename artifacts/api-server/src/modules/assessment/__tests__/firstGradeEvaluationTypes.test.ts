@@ -14,7 +14,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { FIRST_GRADE_EVALUATION_TYPES } from "@workspace/exam-paper";
+import { FIRST_GRADE_DEFAULT_TYPES, FIRST_GRADE_EVALUATION_TYPES } from "@workspace/exam-paper";
 import { buildGenerationPrompt } from "../llmGenerator.ts";
 import { FIRST_GRADE_TYPE_NOTES_EN } from "../../../lib/firstGrade.ts";
 import { TYPE_CONTRACTS } from "../llmGenerator.ts";
@@ -51,5 +51,14 @@ describe("the question types of a Grade 1 evaluation", () => {
     assert.match(g1, /practical_task: something the child does with objects while the teacher watches/);
     assert.doesNotMatch(g1, /matching: three or four pairs/, "a type the paper does not hold is not described");
     assert.doesNotMatch(system("grade-2", ["fill_blank"]), /In this Grade 1 paper/);
+  });
+
+  it("migration 0025 narrows stored drafts to the same list and default", () => {
+    const sql = readFileSync(path.join(repoRoot, "lib/db/migrations/0025_grade1_evaluation_types.sql"), "utf8");
+    const lists = [...sql.matchAll(/IN \(([^)]*)\)/g)].map(m => [...m[1]!.matchAll(/'([a-z_]+)'/g)].map(x => x[1]));
+    assert.equal(lists.length, 2, "the allowed list appears twice (kept, and what is out)");
+    for (const l of lists) assert.deepEqual(l, [...FIRST_GRADE_EVALUATION_TYPES]);
+    assert.match(sql, new RegExp(`'${JSON.stringify([...FIRST_GRADE_DEFAULT_TYPES]).replace(/,/g, ", ").replace(/[[\]]/g, "\\$&")}'::jsonb`));
+    assert.match(sql, /"status" = 'draft'/);
   });
 });

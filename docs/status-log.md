@@ -185,18 +185,30 @@ maths questions were checked by hand by a sub-agent and re-checked by script: **
     `isFirstGrade` reads. A grade 2–4 worksheet, homework or quiz carries `earlyDifficulty: "2026-11-14"` in its
     pool key, so a paper pooled under the old wording is not served again. Every other key is unchanged, pinned by
     literal keys (`earlyGradeDifficulty.test.ts`).
+13. **Older Grade 1 draft evaluations are rewritten to the allowed types** (2026-11-14, migration
+    `0025_grade1_evaluation_types.sql`, data only). A Grade 1 evaluation still in draft keeps only the types it held
+    from `FIRST_GRADE_EVALUATION_TYPES`, in order, and one with none of them gets multiple choice and true/false.
+    - Published and closed papers are not touched: their types describe questions they already hold, and they can no
+      longer be generated into.
+    - Running the migration a second time changes nothing. It **cannot be undone by reverting**: the old types are not
+      kept anywhere.
+    - Tests: `grade1EvaluationTypesMigration.db.test.ts` runs the SQL on real rows (mixed, written-only and allowed
+      drafts; published, closed; Grade 2). `firstGradeEvaluationTypes.test.ts` fails if the migration's lists drift
+      from `lib/exam-paper`.
+    - A worksheet sent to a class as an evaluation (`fromWorksheet`) still stores the types of its own questions; a
+      Grade 1 one is narrowed when generated, like any other.
     - **Live:** a Grade 1 quiz, worksheet or evaluation gets Grade 1 level meanings (`FIRST_GRADE_DIFFICULTY_*` in
       `firstGrade.ts`): one step within the lesson's range, with hard being the largest numbers, a missing number,
       a short story or a comparison. The all-grades meanings had asked for "two or three steps" and "analysis".
 
 **Verified.** Each new test red before its fix, green after. `pnpm run typecheck`; math-practice suite; api-server
-`build` + `test`; mobile suite. **Not verified:** a live model's Grade 1 output with the new clause (no live run from
+`build` + `test`; mobile suite. On 2026-11-14 the api-server suite also ran against a local Postgres 16 with every
+migration applied (3,487 pass, none skipped), so the evaluation routes' database tests ran too. **Not verified:** a live model's Grade 1 output with the new clause (no live run from
 the session) — after merge, generate one Grade 1 Arabic letter plan, worksheet and quiz and read them; the new Arabic
 stems by a native reviewer.
 
 **Still open, found by the sweep:**
-- A live model's output for the item 9–12 prompts has not been read. An older Grade 1 evaluation's stored types are narrowed when it is
-  generated, not rewritten in the database.
+- A live model's output for the item 9–12 prompts has not been read.
 - **Maths, still to check against the PDF:** the book's own number-chart direction (the generator no longer depends
   on it) and whether «الأنماط الهندسية» uses «معين».
 - **Grade 1 books need ingesting** (text, figures, book pages) from a machine that can reach the PDFs —
