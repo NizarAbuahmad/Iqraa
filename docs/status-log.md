@@ -95,6 +95,436 @@ RTL and dark mode.
 not signed R2 links (the route itself is covered by the API's own tests). Whether replay masking hides the photos is
 unverified, as for the student's and the teacher's project screens (STATUS.md, «Screen recording»).
 
+## Grade 3 maths: offline questions for the four lessons that had none — 2026-11-14
+
+The Grade 3 audit found four maths lessons with no offline questions. Each now has a generator in
+`lib/math-practice/src/topics.ts` (`grades: [3, 3]`), from the lesson's objective and, where the book is reachable, its
+pages:
+
+- **`hindi_numerals`** — «الأرقام الهندية» (S1 u1_l7). Numbers up to the thousands written only in ٠-٩: the greatest
+  or smallest of four numbers made of the same digits, the value of a digit («قيمة الرقم ٦ في ٤٨٦٩» → 60), the digit in
+  a place. Every question needs the Hindi digits **read**; none asks for them **written**, because marking folds ٧ and 7
+  to one value (`answersMatch` in the API, `toLatinDigits` in the app), so «اكتب 4708 بالأرقام الهندية» would mark «4708»
+  right — the reason `early.test.ts` and `geometry.test.ts` pinned this lesson as refused, now updated. Writing them
+  stays the teacher's to check. A digit asked about appears once in its number, or the question has two answers.
+- **`guess_check`** — «خطة حل المسألة: التخمين والتحقق» (S2 u7_l6, problems on multiplication): two numbers from their
+  sum and product, chickens and sheep from heads and legs, pens and notebooks from the count and the total paid, the
+  number that times itself makes a square.
+- **`four_steps`** — «مهارة حل المسألة: استعمال الخطوات الأربع» (S2 u8_l6, pp. 36–37): what the remainder means — round
+  up (56 people at tables of 6 need 10), round down (stories at 4 JD with 30 JD), or the remainder itself. The other
+  reading of the quotient is always a wrong option.
+- **`frac_div`** — «الكسور والقسمة» (S2 u9_l8): a unit fraction of a two-digit number by division, no remainder: bare,
+  in a story, and «ما جملة القسمة…» (63 ÷ 7, against 63 × 7 and 7 ÷ 63).
+
+Whole numbers only, positive wrong options; nothing sets `verified` or a `check`. Grade 3 offline maths now covers all 70
+lessons.
+
+**Verified:** `grade3Lessons.test.ts` (13, written first and seen failing) recomputes every key from its stem with code
+that shares nothing with the generators, checks every kind is drawn, that a Hindi-numeral stem carries no Latin digit,
+and that no option is a decimal; making «round up» drop the remainder fails 2 of them. math-practice 1138 pass. Thirty
+sampled items read by hand, keys correct (the first read found «٤ في ١٠٤٤», a digit appearing twice, and a 24.5 option;
+both fixed and now tested).
+
+**Merged with `main` (2026-11-14, morning).** `main`'s tightened counted-noun test (`tamyiz.test.ts`, from «Grade 3
+review…» below) caught «لدى سلمى 10 قلمًا» in the `frac_div` story — 3 to 10 take the genitive plural; the stem now goes
+through `counted` («10 أقلام», «12 قلمًا»). That review lists these four lessons as having no bank; this entry closes
+it. math-practice 1159 pass after the merge.
+
+## Grade 3 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-14
+
+The Grade 4–10 review («Grade 4 audit…»), repeated for Grade 3 (254 lessons), on top of «Grade 3 review: Arabic S2 pages
+one lesson early…». Every served lesson's first and last pages and all 91 figures were looked at as images; printed page =
+PDF page in every book seen. No Grade 3 book has extracted text, so contents were rebuilt from unit openers, per-unit
+contents lists and lesson openers.
+
+**Book pages.** No lesson starts on the wrong page; the review's Arabic S2 fix holds for all 25 lessons. What it left:
+- **Unit-final lessons ran onto the unit's closing pages** (the review trimmed only the next unit's cover): Arabic (10)
+  onto «حصاد الوحدة», PE (5) onto «مراجعة الوحدة» and «مشروع الوحدة (أنا أستطيع)», arts u3_l10 onto «ملحق رقم 1». Each
+  now ends on the lesson's own last page — the Grade 5–10 rule. Grade 4 Arabic keeps «حصاد الوحدة», a choice the
+  «Grade 4, second pass» made; the two grades differ there.
+- 16 ranges changed (all trimmed, reading the same folders); none lost. Every changed URL (36) answered 200.
+- **Kept as is:** science S2 u4_l2 starts mid-lesson (the review's known gap) but every page is its own.
+- **To render from the PDFs:** Arabic S1 u5_l2's last page (p112, only in u5_l3's folder); social S1 u1_l1's review page
+  (p11), u2_l2 (36–41) and u3_l2 (54–58) — openers seen, but no folder holds them; arts u2_l10 «أغنية بينغو» (in 56–59, not
+  seen); all of maths S1, science S1 and the rest of science S2 and social S2. Maths S2's unmapped lessons follow a strict
+  2-page layout (ranges inferred in the audit, not seen).
+
+**Contents.** Every book seen matches its catalogue in units, lessons and order. **Fixed:** social S1 u2_l2 is printed
+«الالتزام بالأنظمة والتعليمات» (p36); the catalogue had «الالتزام بأنظمة التعاملات» (its main idea already matched the
+book). PE S1 u1_l4 is printed «رمي الكرة ومسكها» (catalogue «مهارة الرمي والمسك»), left. English has no page images or text.
+
+**Honorifics.** Both «ﷺ» (Islamic S1 u3_l2) follow the Prophet, as the book prints them; the spelled-out honorifics in the
+main ideas are right.
+
+**Figures (science, social).** 91 checked; 8 dropped, none moved. Science S2 p051b-v2 (traffic signs from the page before
+unit 6) sat on «الأحافير»; science S1's unit 3 review and «تقويم الأداء» crops (p069b, p070, p070b-v2, p071-v2, p072b) sat
+on «الآلات البسيطة», and two unit 1 end-matter crops (p030-v2, p032-v2) on u1_l3 — judged from the crops and the S2 layout,
+since science S1 has no page images. 17 minor crop flaws stay.
+
+**Results.** Offline maths: 66 of 70 lessons got questions, every sampled key correct by hand; the other four now have
+generators («Grade 3 maths: offline questions for the four lessons that had none», above).
+
+**Verified:** `bookPage`, `bookFigures`, `bookFigureAssets`, `lessonSlides`, `teachingPlanGrounding` (199), curriculum test
+(931) and verify (0 errors), typecheck. **Not verified:** the pages on a phone; anything needing the PDFs.
+## Grade 7, second pass: two Arabic agreement slips in the offline maths — 2026-11-14
+
+Follows «Grade 7 review: offline maths for the three lessons that had none…» (below). That review gave Grade 7's last
+three maths lessons generators (`g7.ts`). This pass had written the same three independently; when the two met on
+`main`, the review's `g7.ts` and tests were kept and this pass's copy dropped. What remains is what this pass found
+reading every question of every Grade 7 maths quiz (all keys right):
+- «وتكررت العملية 8 مرة» now reads «8 مرات» (`prob_g7`, through `tamyiz`); the stem reader in `stats.test.ts`
+  reads both.
+- «قُسّم مبلغ 28 دينارًا بين أشخاص بنسبة 1 : 3» now names «شخصين» or «ثلاثة أشخاص» by the ratio's parts
+  (`proportional_division`).
+- «في 2 ساعات» (`unit_rate`) was found too; `main` had already fixed it the same way.
+- Pinned in `topics.test.ts` «Grade 7 counted nouns agree with their numbers».
+- **Weak, not fixed:** «المتتاليات» (linear sequences) also draws geometric ones («3، 6، 12، 24»).
+
+**Verified:** `lib/math-practice` tests pass. **Not run:** live AI.
+
+## Grade 7 review: offline maths for the three lessons that had none, and a sweep of every lesson — 2026-11-13
+
+**What was already done.** «Grade 7 audit: book pages, figures, contents and honorifics…» (below, the same day)
+checked every Grade 7 lesson's book pages and figures as images, rebuilt each book's lesson list from its unit
+openers (every book matched the catalog), and fixed «ﷺ» after people other than the Prophet. That review is not
+repeated here; the public book-page bucket is not reachable from this session, so nothing was re-read from a page.
+
+**Sweep.** Every Grade 7 lesson (397) was run through the offline lesson plan, quiz, worksheet and activity:
+- Every lesson grounds on itself by id. Lesson plans and activities generate for all 397.
+- Maths: all 43 lessons give a full 10-question quiz and a worksheet (40 before this change).
+- Every other subject refuses the quiz and the worksheet offline with `NoQuestionBankError`. That is the design:
+  only maths and chemistry have real offline questions, and Grade 7 has no chemistry. Production runs live AI.
+- Exact-title lookup lands on another lesson for 33 titles (24 of them generic English S2 headings such as
+  «المفردات»). The generator screens ground by id, so this is the known title trap, not a new break.
+
+**What changed.** `lib/math-practice/src/g7.ts` adds one computed generator for each lesson that had none:
+- «خطة حل المسألة: الحل العكسي» (S1 u1_l6, `g7_work_backward`): a number machine, money spent then half the
+  rest, two fractions of what is left, a temperature that fell then rose, the latest time to wake up.
+- «التطابق» (S2 u6_l1, `g7_congruence`): the corresponding side and angle from a correspondence written in letter
+  order, an angle from its partner or from the angle sum, a perimeter, and x from two corresponding sides.
+- «خطة حل المسألة: الرسم» (S2 u6_l5, `g7_draw_diagram`): posts along a fence and round a rectangle, cuts in a
+  plank, handshakes, a snail in a well, two houses on a road, square tables in a row.
+
+Each is limited to Grade 7 and matched on the exact folded title, which is unique in the catalog. There is no
+extracted Grade 7 book, so the kinds follow the lessons' NCCD objectives. `geometry.test.ts` and
+`topics.test.ts` had pinned «التطابق» and «خطة حل المسألة: الرسم» (G7) as refused; they now name the new
+generators and keep a refused case at another grade.
+
+**Verified.**
+- `g7Lessons.test.ts` recomputes every key from the printed Arabic stem by its own route: the story replayed
+  forward from the key, the correspondence read off the letters, the sketch simulated (posts laid one by one, the
+  snail stepped day by day, handshakes counted pair by pair). Three planted wrong formulas each fail it.
+- About 50 sample items were read and checked by hand. Nothing is `verified` and no item carries a `check`.
+- math-practice tests pass, and the PR body has the rest of the CI set.
+
+**Not done.**
+- Needs the book pages: Arabic S1 u1_l1 has no topic and u5_l4 is cut short. Science S1's `known_gaps` still says
+  unit 3 prints no «الفكرة العامة» box; the audit found it on p50, but that was not re-checked here.
+- No worked steps for the three new generators, so they do not supply a worksheet's worked example.
+- Grade 7 still has no extracted text, so live prompts get no book pages (Tracks A and B of
+  `docs/adding-a-book.md`).
+
+## Book-page renderers stop a unit's last lesson before the next unit's opener — 2026-11-13
+
+**Why.** Both renderers ended a lesson on the page before the next lesson opens
+(`map_lesson_pages.ranges`, `verify_book_pages.lesson_ranges`). At a unit's end the next lesson is a new unit's
+first, so its cover, lesson list and competencies page were shown as the end of the previous unit's last lesson —
+found on about 40 of 99 unit-final lessons in Grades 5 and 8 (entry below).
+
+**What changed.** New `scripts/unit_openers.py`: `trim_end(start, end, text_of)` walks a unit-final lesson's end
+back over the next unit's opener pages (at most 4, never past its start). Both renderers call it only when the next
+lesson is in another unit (`ranges(..., units, text_of)`, `lesson_ranges(..., text_of)`); without those arguments
+they behave as before. A page is an opener when, read as letter multisets (the text layers swap, glue and garble
+letters, so nothing compares strings):
+- it heads a lesson list — «دروس الوحدة» / «قائمة الدروس», in that order (a sentence saying «دروس وحدة …» is not);
+- it is a competencies page — 700+ letters naming four of the five language skills (the title «كفايات» itself
+  often extracts as nonsense);
+- it is the English overview — all six skill headings;
+- it is a cover — at most 180 letters naming a unit ordinal that the lesson's own content pages do not (the
+  Arabic books carry «الوحدة التاسعة» as a running header, and an exercise page of blank lines is as short).
+A unit's end («نهاية / مراجعة / حصاد الوحدة») is never an opener.
+
+**Verified.** Calibrated on the committed text of every book in `extracted/` (167 unit-final lessons): 31 would be
+trimmed, all in Arabic, Islamic and PE books, and the trimmed pages were checked against their page images — G5
+Arabic's cover + «كفايات» (2 pages a unit), Islamic's «دروس الوحدة» covers, PE covers, G4 Arabic and Islamic.
+Two false positives found that way are fixed and pinned (`scripts/test_unit_openers.py`, 14 tests, real pages): a
+G6 exercise page under its own unit's header, and four skill names turning up in a scrambled G6 page; a third, the
+PE «نهاية الوحدة» page, is pinned too. `python -m unittest scripts/test_unit_openers.py` (CI does not run script
+tests; it needs `pip install pymupdf` to import the renderers).
+
+**Not done.** No book was re-rendered: the PDFs are not reachable from the session, so `book-page-links.json` is
+unchanged and the fix applies at the next render. Maths («مشروع الوحدة»), social and vocational openers are not
+recognised — their text layers name the unit by a digit or not at all — so those lessons end as before.
+
+## Grade 3 review: wrong book pages withdrawn, calendar Arabic fixed, gaps listed — 2026-11-13
+
+A review of all 15 Grade 3 catalogs (60 units, 254 lessons) against the books, the figures and what the
+generators produce. NCCD was unreachable from the session (connection reset on every request), so the books were
+read through what the repo already holds: the rendered lesson pages and figure crops in the public R2 bucket.
+
+**Fixed.**
+- **«صفحة الكتاب» showed the wrong pages for 29 Grade 3 lessons; those entries are removed** from
+  `knowledge-base/book-page-links.json`, so those lessons show no pages rather than another lesson's. Checked by
+  opening the images: **Arabic S2** (24 lessons) is shifted by one lesson throughout — the speaking lesson shows
+  the listening lesson, reading shows speaking, writing shows reading (u6_l1 had no entry at all); **Maths S2**
+  (all 4 entries) — u8_l6 opens on the unit-8 project, u9_l3 on the unit-9 opener, u11_l4 «اللتر والمللتر» on
+  «الكيلومتر», u12_l4 on lesson 3; **Science S2** u4_l2 runs 17 pages into the Earth lesson («الخريطة
+  الجغرافية»). All came from `render_lesson_pages.py` placing lessons by title in our own copy. The images in R2
+  are untouched (nothing deletes them; the app simply no longer asks for them). Re-render these three books with
+  the PDFs (`IQRAA_PDF_ROOT=… python scripts/render_lesson_pages.py`, then `upload-book-pages-r2`) and open page 1
+  of a few lessons before uploading.
+- **The same fault outside Grade 3, two books.** Grade 5 science S2's only entry, u9_l1 «السرعة», showed pages
+  30-49 (a unit-7 lesson review through «الكثافة») and is removed. Grade 8 vocational S1 u1_l1 ran to p19 and
+  u1_l2 to p21, four pages into «تنظيم الوقت» and onto the unit-2 opener; they are cut back to p6-13 and p14-19,
+  checked against the images (p13 is lesson 1's «التقويم», p14 opens «الدرس الثاني», p20 is the unit-2 opener).
+  Cutting back needs no upload: images 1..k are already in the bucket.
+- **Grades 5 and 8, sampled then checked book by book.** Page 1 of three lessons in each of the 29 Grade 5 and
+  Grade 8 books with pages (81 lessons) was opened; 74 were on their lesson. The four books that failed were then
+  opened lesson by lesson (49 lessons), every page of the long ranges:
+  - Grade 8 Arabic S2: u8_l4 (writing) showed lesson 5, «أبني لغتي» — removed; the other 13 are right.
+  - Grade 8 Arabic S1: u5_l5 «الفعل المضارع» was the unit's «حصاد الوحدة» — removed; the lesson itself is p129-131,
+    inside u5_l4's images, so u5_l4 is cut back to p126-128 (its writing lesson). The other 23 are right.
+  - Grade 5 social S1: u1_l2 ran onto lesson 3's opener (cut to p15-20); u1_l3 ran through the unit review and
+    three lessons of unit 2 (cut to p22-27); u2_l1 «الملك وصلاحياته» showed lesson 3's «صلاحيات مجلس الوزراء» onward
+    (the lesson is p30-34) — removed. u4_l3 (p88-92, the end of the lesson and the unit review) is kept.
+  - Grade 5 social S2: u5_l3 opened on lesson 2 (its own start, p18, is image 5), u6_l1 «مفاهيم اقتصادية» showed the
+    services lesson, u8_l2 «التراث الثقافي» opened on lesson 1 «الثقافة» (its own start, p87, is image 6) — all three
+    removed. A range can only be cut from its end without re-rendering, so a lesson whose right pages begin
+    inside its folder, or sit in another lesson's folder, goes until it is re-rendered from the PDF.
+- **Grades 5 and 8, the other 23 books, every lesson.** Page 1 of all 400 remaining lessons was opened (read in
+  three batches by sub-agents, every flag re-checked here by eye) and the last page of every unit's final lesson (99).
+  - **No first page is on the wrong lesson.** Printed lesson numbers and titles match in all 400, including every
+    Arabic book's listen/speak/read/write/language order (none has Grade 3 Arabic S2's one-lesson shift).
+  - **Five ranges ran on into the next unit**, now cut back to where their unit ends (checked on the images):
+    Grade 8 financial literacy u2_l1 p34-53 → 34-39 (p40 opens lesson 2); social S1 u3_l5 71-83 → 71-75 and u4_l3
+    89-108 → 89-95 (each swallowed the next unit's cover and first lesson); social S2 u9_l3 70-85 → 70-77; vocational
+    S2 u4_l2 49-57 → 49-55 (p56-57 are unit 5's cover and lesson list).
+  - **Left as they are, for a re-render:** three ranges stop after a unit cover and one page (social S1 u4_l1
+    p76-77, social S2 u7_l1 p6-7 and u10_l1 p78-79) — the right start, cut short, because the lesson's other pages sit
+    in the previous lesson's images. About 40 unit-final lessons across these books end with one page of the NEXT
+    unit's opener («كفايات الوحدة» in Arabic, the unit cover in Islamic, social and PE, «مشروع الوحدة» in maths):
+    one extra page, not wrong content, and it comes from how the renderers end a lesson at the next lesson's start
+    rather than at the next unit's opener — a fix for `verify_book_pages.py` / `render_lesson_pages.py`, not
+    hand edits. Two English pages are borderline (S1 u4_l7 opens on a culture page before 7A; S2 u7_l3 is one page
+    that ends 2A and starts 3A); the right lesson is in both.
+  - Catalog text, not pages: Grade 8 Islamic S2 u3_l3 is titled «عمرُ بنُ عبدِ العزيزِ ﷺ» — ﷺ is the Prophet's
+    honorific; not changed here.
+- **A test now catches a range that swallows another lesson** (`bookPage.test.ts`): no lesson's pages may contain
+  the start page of a different lesson as the figure index records it. It failed on exactly these two books before
+  the fix. A wider rule, «no two lessons share a page», was tried and dropped: ~30 ranges in Grades 6-10 overlap,
+  many by design (`verify_book_pages.py` lets a curriculum lesson span book lessons, and labs share pages), and
+  sorting the real faults from those needs the images opened one by one — not done here.
+- **The calendar and money stems' Arabic** (`lib/math-practice/src/early.ts`): «ما اليوم بعد 9 يومًا؟»,
+  «كم يومًا في 2 أسابيع؟», «بعد 1 يومًا» now read «بعد 9 أيام», «في أسبوعين», «بعد يوم واحد»; «لدفع 100 دينارًا»
+  reads «100 دينار»; «بنظام 24 ساعة» reads «ساعةً». The agreement test (`tamyiz.test.ts`) never saw any of it: its
+  look-ahead counted «؟» (U+061F) as a letter, so a counted noun that ends a question was skipped. It now stops
+  at letters and marks only, and lists days, weeks and hours.
+- **Ones and twos, Grades 1, 2 and 7.** The test skipped any count under 3, so «2 أقلام», «على 2 مجموعات», «2 قطع
+  من فئة 10 قروش» (Grade 2 `equal_groups_a/b`, Grade 1 `coins_a/b/c`) and «في 2 ساعات» (Grade 7 `unit_rate`)
+  shipped; so did «20 قطع» for «20 قطعةً» and «10 قرشًا» for «10 قروش». They now read «قلمان», «على مجموعتين»,
+  «مجموعتان متساويتان» (nominative, with its adjective), «قطعتان», «في ساعتين», «20 قطعةً», «10 قروش». The test now
+  fails a digit 1 or 2 before a counted noun, except in a unit fact («1 متر = 100 سنتيمتر», printed that way in the
+  books) and a fraction's denominator («1/4 مجموعة»); it also lists groups, pieces and qirsh. Red first on exactly
+  these generators. The recompute tests read the dual back as 2 (`twoAsDigit`).
+
+**Verified.** Red first: the tightened `tamyiz.test.ts` failed on 46 calendar stems and 2 banknote stems, then
+passed after the fix; `lib/math-practice` 949/949; `pnpm run typecheck`; the mobile suite. 16 further lessons'
+first pages (Arabic S1, Islamic S1/S2, PE S1/S2, arts, social S1/S2) were opened and are on the right lesson. All
+85 lesson figures of the three Grade 3 books that have figures answer 200 from R2, and the per-lesson contact
+sheets were read: each figure sits under its own lesson (the `p003*` front-matter crops are correctly unmapped).
+The offline maths generator was run for all 70 maths lessons the way the quiz screen calls it (grounded by
+lesson id, all 70 grounded to themselves): 66 produce a quiz and worksheet, and ~660 quiz items were read by hand
+— every answer key is correct.
+
+**Not fixed — gaps, for the owner.**
+- **No Grade 3 book text reaches the live model.** Grade 3 has no row in `g10_sources.json` and no
+  `extracted/g3-*.json` (Grades 4-6 have 32-41 each), so live generation for every Grade 3 lesson is grounded on
+  the catalog summary alone — for Arabic, the lesson title alone (title-only catalogs). Needs the PDFs (tracks A-B
+  of `docs/adding-a-book.md`).
+- **Figures exist for 3 of 15 books** (Science S1/S2, Social S2); Maths, Arabic, Islamic, PE, arts and Social S1
+  have none — the contents-route placement did not reproduce their catalogs (2026-09-19). **Book pages:** Maths
+  S1, Science S1 and both English books have none; Social S1 lacks u2_l2 and u3_l2, arts lacks u2_l10. Social S2
+  now has 2 of 9.
+- **English is unit-level** (2 lessons per unit, «Vocabulary & Grammar» / «Listening & Speaking»), S1 built from
+  the teacher's book; the book's per-unit lessons are not in the catalog (its own `known_gaps`).
+- **Offline (no live AI) works for maths only**: every non-maths Grade 3 lesson answers «No offline question
+  bank», by design; 4 maths lessons have no bank either (u1_l7 «الأرقام الهندية», u7_l6 and u8_l6 problem-solving,
+  u9_l8 «الكسور والقسمة»). Some items fit their lesson loosely: u3_l4 «الطرح مع وجود أصفار» draws mostly
+  subtractions without zeros, u6_l2 «الزوايا» asks in degrees (whether the Grade 3 book uses degrees was not
+  checked).
+- **Learning outcomes**: only Maths and English carry objectives; the other 11 catalogs record why in
+  `known_gaps` (the student books print none).
+- **Not checked:** whether NCCD's 2026-2027 semester-1 editions (the catalog's `pdfUrl`s) changed any lesson —
+  every Grade 3 page and figure here is from our older copy; the live AI path (no model call was made).
+
+**Merged with `main` (2026-11-13, evening).** While this was open, `main` gained a `rendered: {dir, startPage,
+endPage}` field on a page entry — a lesson can show images stored under another lesson's folder, or part of a
+range — and used it to re-point Grade 3 Arabic S2 (every lesson onto the next folder, as found above), maths S2,
+science S2 u4_l2, Grade 8 Arabic S1 u5_l5 and to trim the Grade 8 social and vocational ranges here a little
+tighter (without the unit review). Where both sides changed an entry, `main`'s is kept; this branch's removals and
+trims stand only where `main` left the entry as it was (Grade 5 science and social, Grade 8 Arabic S2 u8_l4,
+financial literacy, vocational S2 u4_l2, Grade 5 social S1 u1_l2/u1_l3). The Grade 1/2/7 counted-noun fix met
+`main`'s own (counts drawn from 3 up); this branch's `counted`/`days`/`weeks`/`pieces`/`pens` keep the counts of 1
+and 2 and write them as words, and `main`'s `dinarsAfterPreposition` is kept on the new `counted`.
+
+No «ما الجديد» entry: wrong pages withdrawn and a grammar fix, not a feature.
+
+## Grade 6, second pass: what the offline maths asks against each lesson's outcomes, and a page-end check — 2026-11-14
+
+The Grade 6 audit (below, «Grade 6 audit: every lesson's book pages, figures and contents…») covered pages, figures
+and contents, and gave three maths lessons generators. This pass adds what the Grades 1–5 reviews ran: what the offline
+generators produce for all 358 lessons, measured against each lesson's NCCD outcomes.
+
+**Generators (offline).**
+- Grounding by lesson id is exact for all 358 lessons. All 39 maths lessons serve a paper.
+- I read every question of every maths quiz against the lesson's outcomes, and every key is right.
+- **Fixed, where a lesson did not ask what its outcome names:**
+  - «الأشكال الرباعية»: the outcome is «مجموع قياسات زوايا الشكل الرباعي». The paper only named shapes, and ran
+    out at 5 of 10 questions. Grade 6 now asks the angle sum about 60% of the time: the fourth angle, three equal
+    angles, a parallelogram's neighbouring angle, and the sum itself. Grade 5 is unchanged.
+  - «أولويات العمليات الحسابية»: the outcome names «مقادير عددية تحوي قوى وجذورًا». Powers came only on hard papers,
+    and roots never. A Grade 6+ medium paper now mixes plain expressions with ones carrying a power or a square root,
+    and a hard paper always has one. The evaluator reads «√49». Grades 4–5 are unchanged.
+  - `pct_conv` offered «1.6400000000000001» for «اكتب 64% على صورة عدد عشري». A default «answer ± 1» was added in
+    floating point; the step is now formatted.
+  - Pinned in `geometry.test.ts` and `topics.test.ts`. Each new test was first seen failing.
+- **Weak, not fixed:**
+  - «الجذر التربيعي والجذر التكعيبي»: cube roots are 1 draw in 5, so a 10-question paper can have none.
+  - «النسبة المئوية من عدد» routes to the shared `percent` op, so about 3 questions in 10 are conversions or a
+    shaded grid rather than a percent of a number.
+  - «جمع البيانات»: no question tells numerical from qualitative data, an outcome of the lesson.
+  - «6.2 ساعات»: a decimal count keeps the plural.
+
+**Book pages.** I checked the audit's 167 non-digital ranges (of 178) against the books' per-page text.
+- No range runs onto a unit test, a unit opener, «حصاد الوحدة», a review, «نهاية الوحدة», an enrichment page or a
+  blank page.
+- Every maths S1 range starts on its «الدرس» page.
+- Digital literacy (11 ranges) has no student-book text to check.
+- Nothing changed.
+
+**Verified:** `lib/math-practice` 1115 tests pass; `mathLessonKinds.test.ts` passes. **Not run:** live AI, and anything
+needing the PDFs (the audit's re-render list stands).
+
+## Grade 4 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
+
+The Grade 5–10 review («Grade 5 audit…»), repeated for Grade 4 (313 lessons, 18 catalogue books), on top of today's
+Grade 4 work («Grade 4 review…», the three «Grade 4 … figures» entries): every served lesson's first page, every
+unit-final lesson's last pages and every figure (550) were looked at as images. Printed page = PDF page in every book
+except English (PDF = printed + 2).
+
+**Book pages.** Merged with «Grade 4, second pass…» (#1456), which landed first and trimmed the same unit-end spill:
+its 23 entries stand (Arabic ends on «حصاد الوحدة», Islamic before the next opener, maths S2 u6_l3/u7_l1/u7_l5 before
+the next «نشاط مفاهيمي», vocational S2 u1_l2, maths S2 «الزمن» 93–95). This audit agrees on every start (none wrong)
+and adds what that pass left:
+- **Maths unit-final lessons (8, + S2 u6_l4):** they still ran into «اختبار نهاية الوحدة», the *next* unit's opener and
+  the next unit's «مشروع الوحدة» (#1456 kept the project as "the unit's own"; in these books the project page follows
+  the unit opener, so it belongs to the unit that starts there). Cut back to the lesson: S1 u1_l6 26–29, u2_l4 44–45,
+  u3_l5 63–65, u4_l3 78–81, u5_l5 101–103; S2 u6_l4 23–27, u7_l7 55–57, u8_l5 77–79, u10_l5 126–127.
+- **Eight lessons get pages back** from folders the «Grade 4 review» unlinked (e2badafb) — the renders are still in
+  the bucket and the right pages are in them: PE u2_l3, u2_l4, u3_l2; social S1 u4_l4, u4_l5; vocational S2 u4_l1,
+  u4_l2; arts u3_l3. Each opener was viewed against its catalogue title.
+- 16 entries changed with `rendered`, none lost: 157 of 313 lessons have pages, up from 149. Every changed URL
+  answered 200.
+- **To render from the PDFs:** maths S2 «المحيط» and «المساحة» (96–103), the rest of PE, vocational S2 and social S2,
+  vocational S2 u1_l1's first two pages (it opens mid-lesson on p10; its opener is p8), and science, English, digital,
+  arts and vocational S1, which have no page images. Ranges for all of them, from the contents, are in the audit
+  (digital's OCR'd contents lost most numbers: estimates only).
+
+**Contents.** Every book matches its catalogue in units, lessons, titles and order. Two contents pages disagree with the
+lesson's own opener (vocational S1 u4_l2 opens on p51, not p49; social S2 u8_l4 on p84, not p85); the opener wins.
+
+**Honorifics (Islamic).** All 13 «ﷺ» follow the Prophet, as the book prints them.
+
+**Figures.** 550 checked; 12 dropped, 3 moved, none newly reachable.
+- **Moved:** Arabic S1 unit-opener art p058, p084, p110 sat on the previous unit's lesson 5 (the index gave them unit
+  N−1); they go to the next unit's first lesson, the rule the Arabic figures entry set for p032 and S2 p058/p086.
+- **Dropped:** the major crops (Arabic S1 p082 and S2 p110, sliced figures; Islamic S2 p011, the taste map with its
+  labels cut; maths S2 p114, a bar chart cut at 700 where a bar reads 850, and p071b, a growing pattern with only its
+  bottom row; science S1 p038-v2, a life cycle missing its adult stage), and figures from pages no lesson owns (science
+  unit reviews and enrichment p049b, p039, p057c-v2, p071c-v2; social S2 p066, a review exercise; PE p022, the unit-end
+  checklist). Science p082b-v2 and p072b-v2 also come from review pages but the «Grade 4 review» placed them on purpose,
+  so they stay.
+- Minor flaws (stray text, a caption or panel edge cut) stay.
+
+**Results.** Offline maths covered 48 of 50 lessons, every sampled key correct by hand; the other two now have
+generators («Grade 4 maths: offline questions for the two «خطة حل المسألة» lessons», above).
+
+**Verified:** `bookPage`, `bookFigures`, `bookFigureAssets`, `lessonSlides`, `teachingPlanGrounding` (194), curriculum
+test (931) and verify (0 errors), typecheck. **Not verified:** the pages on a phone; anything needing the PDFs.
+
+## Grade 4 maths: offline questions for the two «خطة حل المسألة» lessons — 2026-11-13
+
+The Grade 4 audit found two maths lessons with no offline questions at all: «خطة حل المسألة: الحل بأكثر من خطوة»
+(S1 u2_l4) and «خطة حل المسألة: استعمال شكل ڤن» (S2 u10_l5). Each now has a generator in
+`lib/math-practice/src/topics.ts`, built from the lesson's own pages in the student book (S1 pp. 44–45, S2 pp. 126–127):
+
+- **`multi_step`** — two operations, as the book's worked example and «أتدرب» problems: a daily amount over two named
+  months (Rami's 23 laps a day in آب and أيلول), pay per hour over a year's 52 weeks, books on two kinds of shelf, words a
+  minute over «ساعة وربعًا», photos in several albums. The wrong options always include stopping after the first step
+  (one month, one week, the shelf count, one hour, one album).
+- **`venn_plan`** — two groups and their overlap: the total (the book's 20 + 30 − 15), one group only (18 − 4), and the
+  reverse (the total and one group known, the other wanted). Adding the groups without taking off the overlap is always
+  a wrong option for the total.
+
+Both are Grade 4 only (`grades: [4, 4]`), whole numbers, positive wrong options; nothing sets `verified` or a `check`.
+The existing Venn generators (`venn_g3`, `venn_g4` for «تمثيل البيانات بأشكال ڤن», `venn_g9`) are other lessons and
+unchanged. Grade 4 offline maths now covers all 50 lessons.
+
+**Verified:** `grade4Lessons.test.ts` (8, written first and seen failing) recomputes every key from the numbers in its own
+stem with code that shares nothing with the generators, and checks every kind is drawn and the one-step wrong option is
+always offered; breaking the overlap rule fails 2 of them. math-practice suite 1096 pass. Twelve sampled items and the
+mobile probe's six read by hand, keys correct.
+
+## Grade 5 maths: offline questions for five more lessons, and the sizes Grade 5 names — 2026-11-13
+
+Follows «Grade 5 audit: book pages, figures, contents…» (below), whose «Results» listed five maths lessons with
+no offline questions (it sampled three keys per lesson). This change reads every question of every Grade 5 maths quiz,
+fixes the sizes, and serves those five.
+
+**Generators (offline), all 317 lessons.**
+- Grounding by lesson id is exact for every lesson, and no screen lands on another subject.
+- Only maths has offline banks, as in every grade. Before this change, 45 of its 52 lessons served a paper. I read
+  every question of every maths quiz.
+- The keys are right. The checker's 21 «wrong» and 7 «unsolvable» flags are its own misreads: fractions compared as
+  decimals, four-digit «أكبر عدد» items read as three digits, and true/false items.
+- **Fixed: Grade 5 drew Grade 4 sizes.**
+  - «القيمة المنزلية ضمن الملايين» never passed 6 digits on a medium paper. Grade 5 now draws 6/7/8 digits, and
+    «عشرات الملايين» joins the place names. The book's unit opener uses 8924080.
+  - «ضرب الأعداد» names up to 3 digits × 2 digits but drew «4 × 16» and «12 × 6». Papers now draw 2-digit × 1-digit
+    on easy, 3-digit × 1-digit or 2-digit × 2-digit on medium, and 3-digit × 2-digit on hard. With a 3-digit
+    factor there is no «735 + 735 + … = ؟ × 735».
+  - «قسمة الأعداد» names a divisor of one or two digits, but no divisor was ever above 10. A dividend now has at most
+    3 digits, and the divisor is two digits on half the medium papers and on all hard ones.
+  - Grades 4 and 6 are unchanged (`elementary.test.ts` «Grade 5 multiplies and divides the sizes its lessons name»).
+- **New:** `lib/math-practice/src/g5.ts` serves the five lessons that threw `NoQuestionBankError`, each with answers
+  recomputed from the stem in `g5.test.ts`:
+  - «الضرب الذهني»: zeros, a missing factor, doubling, halving and doubling, the distributive property.
+  - «المضلعات»: name ↔ sides, vertices, perimeter ↔ side, «ليس مضلعًا».
+  - «السؤال الإحصائي»: which question is statistical, yes/no, the most frequent answer in a list of answers.
+  - «التمثيل بالخطوط» and «التمثيل بالأعمدة المزدوجة»: the graph's values are given in words. Each kind has its own
+    story (temperatures, a library's visitors, a plant's height; sports, subjects, the way to school, books
+    borrowed). The first draft put four questions under one paragraph, and `mathLessonKinds.test.ts` counted that
+    as one kind of question.
+  - Polygon names start at four sides: a triangle is «مثلث», with its own lessons.
+  - The two «خطة حل المسألة» lessons stay unserved, as in Grades 3 and 4.
+- **Weak, not fixed:**
+  - The direct × item's unused `wordAr` (no `kind: 'word'`, so it is never shown) reads «في الصف 25 صفوف … 23
+    مقاعد». The ÷ twin would read «على 25 مجموعات». Neither reaches a paper today; they would if either item became a
+    word problem.
+  - «تصنيف الأشكال الرباعية» runs out at 5 questions of 10.
+  - «قسمة الكسور» can print «2/2» and «3/3».
+  - «يمثّل المقدار 6n + 4 … إذا اشترى 2 من الكتب».
+  - Triangles are named ABC, the convention across the whole bank.
+
+**Book pages:** an independent check of the same ranges, from the books' per-page text
+(`lib/curriculum/src/data/extracted/`: lesson openers, «اختبار نهاية الوحدة», unit openers), agreed with the audit on
+135 of its 155 entries. The other 20 differ by one closing page («حصاد الوحدة», «نهاية الوحدة», the next lesson's
+«نشاط مفاهيمي»), where the audit's choice is kept: p. 80 of maths S1, for one, is u4_l2's lead-in. This change adds
+`bookPage.test.ts` «Grade 5 pages (audit 2026-11-13)», which pins the audit's social, science, maths and Arabic ranges
+(it fails on the pre-audit data).
+
+**Verified:** see the PR. **Not run:** live AI.
+
 ## Grade 5 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
 
 The Grade 6–10 review («Grade 9 audit…»), repeated for Grade 5 (317 lessons in 18 catalogue books). Every served
@@ -217,6 +647,25 @@ They now sit under no lesson. They are kept on disk rather than deleted, so this
 pass (199), and so does `pnpm run typecheck`. The generated figure list only loses these six keys, so there is
 nothing to upload.
 **Not verified.** Not looked at in the running app.
+
+## Grade 4 Arabic: 35 pictures the colour detector missed — 2026-11-13
+
+All 266 Arabic renders were looked at with the existing crops outlined, after «Grade 4 Arabic and Islamic figures».
+The detector had missed pictures on pale or white ground and large full-page art: the Jordan map (S1 p. 65), the
+Raghadan palace (p. 69), the food pyramid and food groups (pp. 90, 91, 93), the water-cycle drawing (p. 117), the bee
+pictures (pp. 119–121), the unit 7 and unit 10 openers (S2 pp. 32, 112), Shahrayar and the merchant (pp. 13–14), Juha's
+market and story scenes (pp. 60, 67), the fable animals (pp. 88, 92, 95, 98, 110), the trap-and-doves story (p. 108) and
+others. 52 boxes were drawn and 17 dropped on review (mostly text or a fragment); 35 kept, 2 of them trimmed. Lesson by
+page range, unit-opener art to the next unit's first lesson, as before. All PNGs are in `iqraa-public/figures/` under
+names checked free first.
+
+**Re-cut on 2026-11-14.** «Grade 4 audit…» (#1469) dropped sliced Arabic crops, which prompted a second look at these 35
+on a contact sheet with each box drawn on its page. Nine were cut wrong and are re-cut whole under new names, because the
+bucket keeps a key's old bytes. Four were sliced: the fable grid (S2 p110b → p110c, its top row cut off), the bee photo
+(S1 p119 → p119b), the honeycomb (S1 p121 → p121b) and the horse (S2 p028 → p028b). Five had dragged in text: the food
+groups (S1 p091 → p091b), the cartoon bee (S1 p120 → p120b), the word tree (S1 p080 → p080b), Shahrayar (S2 p014 →
+p014b) and the firefighter (S2 p132 → p132b). With #1469's two drops, Arabic has 112 crops. **Not verified:** the
+other 26 were judged from the contact sheet's thumbnails only.
 
 ## Grade 8 maths: offline questions for the four S2 lessons that had none — 2026-11-13
 
