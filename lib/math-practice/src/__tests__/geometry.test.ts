@@ -532,7 +532,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
         const v = [...given[0]!].find(c => given[1]!.includes(c))!;
         const third = sideOf(...('ABC'.replace(v, '').split('') as [string, string]));
         assert.equal(item.answer, has(p, 'بحالة SSS') ? `${third} ≅ ${corrA(third)}` : `∠${v} ≅ ∠${corrA(v)}`, p);
-      } else if (has(p, 'بأي حالة يتطابق المثلثان')) {
+      } else if (has(p, 'بأي حالة يتطابق المثلثان') && has(p, 'في المثلثين')) {
         saw('congruence_a', 'marked parts');
         const sides = [...p.matchAll(/([A-C]{2}) ≅ ([D-F]{2})/g)].map(m => m[1]!);
         const angles = [...p.matchAll(/∠([A-C]) ≅ ∠([D-F])/g)].map(m => m[1]!);
@@ -565,7 +565,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
         const corr = (v: string) => 'DEF'['ABC'.indexOf(v)];
         const need = has(p, 'بحالة ASA') ? other : off;
         assert.equal(item.answer, `∠${need} ≅ ∠${corr(need)}`, p);
-      } else if (has(p, 'بأي حالة يتطابق المثلثان')) {
+      } else if (has(p, 'بأي حالة يتطابق المثلثان') && has(p, 'في المثلثين')) {
         saw('congruence_b', 'marked parts');
         // the side is included between the two marked angles only when it joins them
         const angles = [...p.matchAll(/∠([A-C]) ≅ ∠([D-F])/g)].map(m => m[1]!);
