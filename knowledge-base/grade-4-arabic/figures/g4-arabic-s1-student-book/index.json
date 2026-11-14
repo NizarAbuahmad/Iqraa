@@ -363,11 +363,11 @@
         534.1,
         651.3
       ],
-      "unit": 2,
-      "lesson": 5,
-      "lessonTitleEn": "I Build My Language (Imitating Language Patterns)",
-      "lessonTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
-      "lessonStartPage": 54
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "lessonStartPage": 60
     },
     {
       "file": "p060.png",
@@ -578,30 +578,14 @@
       "lessonStartPage": 75
     },
     {
-      "file": "p080.png",
+      "file": "p080b.png",
       "sourceId": "g4-arabic-s1-student-book",
       "pdfPage": 80,
       "rect": [
-        70.6,
-        172.2,
-        297.6,
-        499.9
-      ],
-      "unit": 3,
-      "lesson": 5,
-      "lessonTitleEn": "I Build My Language (Imitating Language Patterns)",
-      "lessonTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
-      "lessonStartPage": 80
-    },
-    {
-      "file": "p082.png",
-      "sourceId": "g4-arabic-s1-student-book",
-      "pdfPage": 82,
-      "rect": [
-        306.2,
-        523.7,
-        437.1,
-        734.6
+        72.3,
+        205.8,
+        312.5,
+        497.4
       ],
       "unit": 3,
       "lesson": 5,
@@ -619,11 +603,11 @@
         542.6,
         600.3
       ],
-      "unit": 3,
-      "lesson": 5,
-      "lessonTitleEn": "I Build My Language (Imitating Language Patterns)",
-      "lessonTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
-      "lessonStartPage": 80
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "lessonStartPage": 86
     },
     {
       "file": "p086.png",
@@ -674,14 +658,14 @@
       "lessonStartPage": 90
     },
     {
-      "file": "p091.png",
+      "file": "p091b.png",
       "sourceId": "g4-arabic-s1-student-book",
       "pdfPage": 91,
       "rect": [
-        131.0,
-        102.9,
-        535.8,
-        357.1
+        187.1,
+        172.2,
+        493.2,
+        338.0
       ],
       "unit": 4,
       "lesson": 2,
@@ -795,11 +779,11 @@
         493.2,
         561.2
       ],
-      "unit": 4,
-      "lesson": 5,
-      "lessonTitleEn": "I Build My Language (Imitating Language Patterns)",
-      "lessonTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
-      "lessonStartPage": 105
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "lessonStartPage": 112
     },
     {
       "file": "p112.png",
@@ -850,14 +834,14 @@
       "lessonStartPage": 116
     },
     {
-      "file": "p119.png",
+      "file": "p119b.png",
       "sourceId": "g4-arabic-s1-student-book",
       "pdfPage": 119,
       "rect": [
-        196.4,
-        120.5,
-        488.1,
-        253.8
+        123.3,
+        155.2,
+        482.6,
+        365.6
       ],
       "unit": 5,
       "lesson": 3,
@@ -866,14 +850,14 @@
       "lessonStartPage": 119
     },
     {
-      "file": "p120.png",
+      "file": "p120b.png",
       "sourceId": "g4-arabic-s1-student-book",
       "pdfPage": 120,
       "rect": [
-        59.5,
-        301.4,
-        238.1,
-        595.2
+        63.8,
+        382.6,
+        233.0,
+        563.3
       ],
       "unit": 5,
       "lesson": 3,
@@ -882,14 +866,14 @@
       "lessonStartPage": 119
     },
     {
-      "file": "p121.png",
+      "file": "p121b.png",
       "sourceId": "g4-arabic-s1-student-book",
       "pdfPage": 121,
       "rect": [
-        59.5,
-        39.5,
-        285.7,
-        238.1
+        57.8,
+        107.1,
+        238.1,
+        280.6
       ],
       "unit": 5,
       "lesson": 3,

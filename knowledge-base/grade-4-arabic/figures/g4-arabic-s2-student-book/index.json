@@ -66,13 +66,13 @@
       "lessonStartPage": 13
     },
     {
-      "file": "p014.png",
+      "file": "p014b.png",
       "sourceId": "g4-arabic-s2-student-book",
       "pdfPage": 14,
       "rect": [
-        60.0,
-        539.5,
-        285.7,
+        59.5,
+        549.3,
+        229.6,
         707.8
       ],
       "unit": 6,
@@ -114,14 +114,14 @@
       "lessonStartPage": 13
     },
     {
-      "file": "p028.png",
+      "file": "p028b.png",
       "sourceId": "g4-arabic-s2-student-book",
       "pdfPage": 28,
       "rect": [
-        89.7,
-        142.8,
-        226.2,
-        317.1
+        63.8,
+        221.1,
+        255.1,
+        425.1
       ],
       "unit": 6,
       "lesson": 5,
@@ -642,30 +642,14 @@
       "lessonStartPage": 103
     },
     {
-      "file": "p110.png",
-      "sourceId": "g4-arabic-s2-student-book",
-      "pdfPage": 110,
-      "rect": [
-        370.8,
-        493.1,
-        486.4,
-        637.7
-      ],
-      "unit": 9,
-      "lesson": 5,
-      "lessonTitleEn": "I Build My Language (Imitating the Pattern of a Verbal Sentence Negated with 'ma' and 'la')",
-      "lessonTitleAr": "أَبْني لُغَتي (مُحاكاةُ نَمَطِ الْجُمْلَةِ الْفِعْلِيَّةِ الْمَنْفِيَّةِ بِـ «ما» وَ«لا»)",
-      "lessonStartPage": 109
-    },
-    {
-      "file": "p110b.png",
+      "file": "p110c.png",
       "sourceId": "g4-arabic-s2-student-book",
       "pdfPage": 110,
       "rect": [
         59.5,
-        285.7,
-        547.7,
-        729.9
+        218.9,
+        548.5,
+        740.6
       ],
       "unit": 9,
       "lesson": 5,
@@ -834,14 +818,14 @@
       "lessonStartPage": 119
     },
     {
-      "file": "p132.png",
+      "file": "p132b.png",
       "sourceId": "g4-arabic-s2-student-book",
       "pdfPage": 132,
       "rect": [
         59.5,
-        79.1,
-        327.4,
-        317.1
+        97.8,
+        305.3,
+        340.1
       ],
       "unit": 10,
       "lesson": 4,

@@ -482,22 +482,6 @@
       "lessonStartPage": 70
     },
     {
-      "file": "p071b.png",
-      "sourceId": "g4-math-s2-student-book",
-      "pdfPage": 71,
-      "rect": [
-        65.5,
-        293.7,
-        248.8,
-        334.5
-      ],
-      "unit": 8,
-      "lesson": 3,
-      "lessonTitleEn": "Geometric Patterns",
-      "lessonTitleAr": "الأَنْماطُ الهَنْدَسِيَّةُ",
-      "lessonStartPage": 70
-    },
-    {
       "file": "p072.png",
       "sourceId": "g4-math-s2-student-book",
       "pdfPage": 72,
@@ -666,22 +650,6 @@
         559.8,
         335.9,
         709.0
-      ],
-      "unit": 10,
-      "lesson": 2,
-      "lessonTitleEn": "Bar Graphs",
-      "lessonTitleAr": "تَمْثيلُ البَياناتِ بِالأَعْمِدَةِ",
-      "lessonStartPage": 112
-    },
-    {
-      "file": "p114.png",
-      "sourceId": "g4-math-s2-student-book",
-      "pdfPage": 114,
-      "rect": [
-        315.5,
-        218.0,
-        467.3,
-        384.8
       ],
       "unit": 10,
       "lesson": 2,
