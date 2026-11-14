@@ -18,6 +18,8 @@ import {
 import { QUIZ_TYPE_ORDER, type QuizType } from "./generationShape.ts";
 import { coverageClauseAr, coverageClauseEn } from "./coverage.ts";
 import { revisionClauseAr, revisionClauseEn } from "./revision.ts";
+import { FIRST_GRADE_DIFFICULTY_AR, FIRST_GRADE_DIFFICULTY_EN, firstGradeClauseAr, firstGradeClauseEn, isFirstGrade } from "./firstGrade.ts";
+import { earlyDifficultyAr, earlyDifficultyEn, earlyGradeOf } from "./earlyGrade.ts";
 
 /** «السؤال الأول» … — how a ministry paper numbers its question blocks. */
 const ORDINAL_AR = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس"];
@@ -275,7 +277,7 @@ export function lessonPlanPromptAr(b: any): string {
   return `أنشئ خطة درس كاملة لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}"، مدتها ${b.duration ?? 45} دقيقة.
 ${b.objectives ? `الأهداف المحددة:\n${b.objectives}` : ""}
 ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
-${lessonStyleClauseAr(b)}${kindBlockAr(b)}${revisionClauseAr(b, "plan")}
+${lessonStyleClauseAr(b)}${kindBlockAr(b)}${revisionClauseAr(b, "plan")}${firstGradeClauseAr(b, "plan")}
 ${teacherVoiceAr(b, hasPriorReview)}
 ${hasPriorReview ? `
 خصّص 5-10 دقائق في بداية الحصة لمراجعة معارف سابقة قد لا يتقنها بعض الطلبة، واكتب خطة هذه المراجعة في حقل "priorReview". هذه مراجعة تمهيدية وليست من أهداف هذا الدرس، فلا تُدرجها ضمن "objectives".
@@ -317,7 +319,7 @@ export function lessonPlanPromptEn(b: any): string {
   return `Create a complete lesson plan for ${b.subject}, ${b.grade}, on the topic "${b.topic}", duration ${b.duration ?? 45} minutes.
 ${b.objectives ? `Specified objectives:\n${b.objectives}` : ""}
 ${b.additionalContext ? `Additional context: ${b.additionalContext}` : ""}
-${lessonStyleClauseEn(b)}${kindBlockEn(b)}${revisionClauseEn(b, "plan")}
+${lessonStyleClauseEn(b)}${kindBlockEn(b)}${revisionClauseEn(b, "plan")}${firstGradeClauseEn(b, "plan")}
 ${hasPriorReview ? `
 Set aside 5-10 minutes at the start of the lesson to review prior material some students may not have fully grasped, and put that review plan in a "priorReview" field. This is a warm-up review, not one of this lesson's own objectives — do not list it under "objectives".
 ${priorConcepts ? `Curriculum concepts to review verbatim (do not invent others):\n- ${priorConcepts.join("\n- ")}` : ""}
@@ -437,8 +439,9 @@ export function worksheetPromptAr(b: any): string {
   const isHW = b.homework;
   const types = worksheetModelTypes(b.questionTypes);
   const wantsWP = types.includes("word_problem");
-  // Worked example, half-solved question and `solution` rows only where there is a calculation to model.
-  const example = !isHW && usesWorkedExample(b);
+  // Worked example, half-solved question and `solution` rows only where there is a calculation to model —
+  // and never for Grade 1, whose clause forbids multi-step working and «explain» items.
+  const example = !isHW && usesWorkedExample(b) && !isFirstGrade(b);
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
     : null;
@@ -450,7 +453,7 @@ ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
 ${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}${coverageClauseAr(b, !!example)}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
-${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}
+${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}${firstGradeClauseAr(b, "paper")}
 أعد JSON بالشكل الآتي (بالعربية):
 {
   "title": "عنوان الورقة",
@@ -482,7 +485,7 @@ export function worksheetPromptEn(b: any): string {
   const isHW = b.homework;
   const types = worksheetModelTypes(b.questionTypes);
   const wantsWP = types.includes("word_problem");
-  const example = !isHW && usesWorkedExample(b);
+  const example = !isHW && usesWorkedExample(b) && !isFirstGrade(b);
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
     : null;
@@ -494,7 +497,7 @@ ${worksheetTypeShapesEn(types)}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
 ${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}${coverageClauseEn(b, !!example)}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
-${example ? workedExampleRuleEn(n) : isHW ? "" : worksheetKindRuleEn(b, n)}
+${example ? workedExampleRuleEn(n) : isHW ? "" : worksheetKindRuleEn(b, n)}${firstGradeClauseEn(b, "paper")}
 Return JSON in this exact shape:
 {
   "title": "Worksheet title",
@@ -592,7 +595,7 @@ ${quizDifficultyClauseAr(b)}
 ${types.map(t => `- ${QUIZ_TYPE_CONTRACT_AR[t]}`).join("\n")}
 العلامات: مجموع "points" لكل الأسئلة يساوي ${marks} بالضبط؛ أسئلة الاختيار وصح/خطأ وأكمل علامة أو علامتان للسؤال، والأسئلة المفتوحة أكثر.
 
-${QUIZ_VARIETY_RULE_AR}${coverageClauseAr(b)}
+${QUIZ_VARIETY_RULE_AR}${coverageClauseAr(b)}${firstGradeClauseAr(b, "paper")}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 أعد JSON بالشكل الآتي (بالعربية):
 {
@@ -628,7 +631,7 @@ The JSON shape of each type:
 ${types.map(t => `- ${QUIZ_TYPE_CONTRACT_EN[t]}`).join("\n")}
 Marks: the "points" of all questions sum to exactly ${marks}; choice, true/false and fill-blank items carry one or two marks each, open questions more.
 
-${QUIZ_VARIETY_RULE_EN}${coverageClauseEn(b)}
+${QUIZ_VARIETY_RULE_EN}${coverageClauseEn(b)}${firstGradeClauseEn(b, "paper")}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 Return JSON in this exact shape:
 {
@@ -749,6 +752,22 @@ const WORKSHEET_BAND: Record<string, [string, string, string]> = {
   hard: ["medium", "hard", "hard"],
 };
 
+/**
+ * The level meanings for this request: Grade 1 has its own
+ * (`FIRST_GRADE_DIFFICULTY_*`), grades 2–4 theirs (`earlyGrade.ts`), and grade 5
+ * and up the ones above.
+ */
+const meaningAr = (b: any) => {
+  if (isFirstGrade(b)) return FIRST_GRADE_DIFFICULTY_AR;
+  const g = earlyGradeOf(b);
+  return g ? earlyDifficultyAr(g) : DIFFICULTY_MEANING_AR;
+};
+const meaningEn = (b: any) => {
+  if (isFirstGrade(b)) return FIRST_GRADE_DIFFICULTY_EN;
+  const g = earlyGradeOf(b);
+  return g ? earlyDifficultyEn(g) : DIFFICULTY_MEANING_EN;
+};
+
 function difficultyKey(b: any): string {
   const d = b.difficulty;
   return d === "easy" || d === "hard" || d === "mixed" ? d : "medium";
@@ -756,19 +775,19 @@ function difficultyKey(b: any): string {
 
 export function difficultyClauseAr(b: any): string {
   const key = difficultyKey(b);
-  if (key === "mixed") return `\nالمستوى: متنوّع. ${DIFFICULTY_MEANING_AR.mixed}`;
+  if (key === "mixed") return `\nالمستوى: متنوّع. ${meaningAr(b).mixed}`;
   const band = WORKSHEET_BAND[key];
   const label: Record<string, string> = { easy: "سهل", medium: "متوسط", hard: "صعب" };
-  return `\nالمستوى المطلوب: ${label[key]} — ${DIFFICULTY_MEANING_AR[key]}
+  return `\nالمستوى المطلوب: ${label[key]} — ${meaningAr(b)[key]}
 تدرّج الورقة (التزم به): القسم الأول ${label[band[0]]}، الثاني ${label[band[1]]}، الثالث ${label[band[2]]}.
 لا تجعل الأقسام الثلاثة بالمستوى نفسه — التدرّج هو الهدف، والمستوى المطلوب ينقل النطاق لا يلغيه.`;
 }
 
 export function difficultyClauseEn(b: any): string {
   const key = difficultyKey(b);
-  if (key === "mixed") return `\nDifficulty: mixed. ${DIFFICULTY_MEANING_EN.mixed}`;
+  if (key === "mixed") return `\nDifficulty: mixed. ${meaningEn(b).mixed}`;
   const band = WORKSHEET_BAND[key];
-  return `\nRequested difficulty: ${key} — ${DIFFICULTY_MEANING_EN[key]}
+  return `\nRequested difficulty: ${key} — ${meaningEn(b)[key]}
 Worksheet progression (follow it): section 1 ${band[0]}, section 2 ${band[1]}, section 3 ${band[2]}.
 Do not make all three sections the same level — the progression is the point; the requested level shifts the band rather than removing it.`;
 }
@@ -776,12 +795,12 @@ Do not make all three sections the same level — the progression is the point; 
 export function quizDifficultyClauseAr(b: any): string {
   const key = difficultyKey(b);
   const label: Record<string, string> = { easy: "سهل", medium: "متوسط", hard: "صعب", mixed: "متنوّع" };
-  return `\nمستوى الأسئلة: ${label[key]} — ${DIFFICULTY_MEANING_AR[key]}`;
+  return `\nمستوى الأسئلة: ${label[key]} — ${meaningAr(b)[key]}`;
 }
 
 export function quizDifficultyClauseEn(b: any): string {
   const key = difficultyKey(b);
-  return `\nQuestion difficulty: ${key} — ${DIFFICULTY_MEANING_EN[key]}`;
+  return `\nQuestion difficulty: ${key} — ${meaningEn(b)[key]}`;
 }
 
 // ─── Activity prompt builders ────────────────────────────────────────────────
@@ -848,7 +867,7 @@ ${b.objectives ? `هدف النشاط: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additionalContext}` : ""}
 
 بنية هذا النوع من الأنشطة — التزم بها ولا تستبدلها ببنية عامة:
-${rule}${revisionClauseAr(b, "activity")}
+${rule}${revisionClauseAr(b, "activity")}${firstGradeClauseAr(b, "activity")}
 
 قواعد عامة:
 - مجموع durationMin لكل الخطوات يجب أن يساوي ${dur} بالضبط.
@@ -882,7 +901,7 @@ ${b.objectives ? `Lesson objective: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ""}
 
 Structure required for this format — follow it, do not substitute a generic one:
-${rule}${revisionClauseEn(b, "activity")}
+${rule}${revisionClauseEn(b, "activity")}${firstGradeClauseEn(b, "activity")}
 
 General rules:
 - The durationMin values must sum to exactly ${dur}.
@@ -940,7 +959,7 @@ ${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additional
   "keyFacts": [{ "label": "مصطلح", "value": "تعريف قصير" }],
   "sections": [{ "heading": "عنوان القسم", "icon": "bulb-outline", "points": ["نقطة 1", "نقطة 2"] }],
   "takeaway": "الفكرة الأهم في جملة"
-}`;
+}${firstGradeClauseAr(b, "visual")}`;
 }
 
 export function infographicPromptEn(b: any): string {
@@ -962,5 +981,5 @@ Return JSON in this exact shape:
   "keyFacts": [{ "label": "Term", "value": "Short definition" }],
   "sections": [{ "heading": "Section heading", "icon": "bulb-outline", "points": ["point 1", "point 2"] }],
   "takeaway": "The single most important idea"
-}`;
+}${firstGradeClauseEn(b, "visual")}`;
 }

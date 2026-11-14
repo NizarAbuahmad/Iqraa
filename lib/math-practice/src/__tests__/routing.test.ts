@@ -93,7 +93,9 @@ describe('primary lessons: the ops come from the title', () => {
       for (let i = 0; i < 20; i++) {
         const q = takeElementaryMath('short_answer', title, kb, 1, 'medium', 'ar', 1, session)!;
         assert.ok(q, title);
-        const n = (q.text.match(/\d+/g) ?? []).map(Number).filter(x => x !== 1 || !/عشرات/.test(q.text));
+        // «إذا كان 7 + 2 = 9، فما ناتج 70 + 20؟» quotes the one-digit fact first; the tens follow «فما ناتج».
+        const asked = /إذا كان/.test(q.text) ? q.text.slice(q.text.indexOf('فما ناتج')) : q.text;
+        const n = (asked.match(/\d+/g) ?? []).map(Number).filter(x => x !== 1 || !/عشرات/.test(q.text));
         if (!/عشرات/.test(q.text)) assert.ok(test(n), `${title}: ${q.text}`);
       }
     }

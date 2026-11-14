@@ -13,7 +13,7 @@ import { gcd, int, numWrongs, pick, tamyiz, wrongsFrom, type Draft, type Rng, ty
 import { fmtDec } from './elementary.ts';
 
 type D = 'easy' | 'medium' | 'hard';
-type Gen = (c: { rng: Rng; diff: D; grade: number }) => Draft;
+type Gen = (c: { rng: Rng; diff: D; grade: number; word?: boolean }) => Draft;
 const T = (id: string, match: RegExp, grades: [number, number], make: Gen): Topic => ({ id, match, grades, make });
 const span = (diff: D, a: number, b: number, c: number) => (diff === 'easy' ? a : diff === 'medium' ? b : c);
 const ints = (ans: number, cands: number[]) => numWrongs(ans, cands.filter(Number.isInteger));
@@ -78,23 +78,15 @@ const countingRange = (id: string, match: RegExp, lo: number, hi: number) => T(i
 });
 
 const zero = T('count_zero', /^العدد صفر$/, [1, 1], ({ rng }) => {
-  // 0 a sum or difference with zero in it (one kind: «ما ناتج …؟»), 1 a box emptied, 2 the missing number,
-  // 3 the smallest or largest of four numbers, 4 counting down to zero, 5 what zero means.
+  // The book's objective is reading and writing zero; + and − come in units 3–4, so
+  // nothing here is a sum or a difference (Grade 1 review, 2026-11-13).
+  // 0 the number before 1, 1 a box emptied, 2 zero in digits, 3 the smallest or largest
+  // of four numbers, 4 counting down to zero, 5 what zero means.
   const k = pick(rng, [0, 1, 2, 3, 4, 5]);
   const n = int(rng, 3, 9);
-  if (k === 0) {
-    const op = pick(rng, [0, 1, 2]);
-    if (op === 0) return { eq: `${n} − ${n}`, answer: '0', wrongs: ints(0, [n, 1, 2 * n, n - 1]), ar: `ما ناتج ${n} − ${n}؟`, en: `What is ${n} − ${n}?` };
-    if (op === 1) return { eq: `${n} + 0`, answer: String(n), wrongs: ints(n, [0, n + 1, n - 1, 2 * n]), ar: `ما ناتج ${n} + 0؟`, en: `What is ${n} + 0?` };
-    return { eq: `${n} − 0`, answer: String(n), wrongs: ints(n, [0, n + 1, n - 1, 2 * n]), ar: `ما ناتج ${n} − 0؟`, en: `What is ${n} − 0?` };
-  }
+  if (k === 0) return { eq: '1', answer: '0', wrongs: ints(0, [2, 1, 10, 9]), ar: 'ما العدد الذي يأتي قبل العدد 1؟', en: 'Which number comes just before 1?' };
   if (k === 1) return { eq: `${n}`, answer: '0', wrongs: ints(0, [n, 1, n - 1, 2]), ar: `في صندوق ${n} كرات، أُخرجت الكرات كلها. كم كرة بقيت في الصندوق؟`, en: `A box has ${n} balls and all of them are taken out. How many balls are left in the box?` };
-  if (k === 2) {
-    // «n + ؟ = n» and «n − ؟ = n» hide a zero; «n − ؟ = 0» hides n
-    const form = pick(rng, [0, 1, 2]);
-    const [eq, ans] = form === 0 ? [`${n} + ؟ = ${n}`, 0] : form === 1 ? [`${n} − ؟ = ${n}`, 0] : [`${n} − ؟ = 0`, n];
-    return { eq, answer: String(ans), wrongs: ints(ans, ans === 0 ? [n, 1, 2 * n, 2] : [0, n + 1, n - 1, 2 * n]), ar: `أوجد العدد المجهول: ${eq}`, en: `Find the missing number: ${eq}` };
-  }
+  if (k === 2) return { eq: 'صفر', answer: '0', wrongs: ['10', '1', '6'], ar: 'اكتب العدد «صفر» بالأرقام.', en: 'Write the number “zero” in digits.' };
   if (k === 3) {
     const list = shuffle(rng, [0, ...shuffle(rng, [1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 3)]), big = rng() < 0.5;
     const ans = big ? Math.max(...list) : 0;
@@ -109,17 +101,46 @@ const zero = T('count_zero', /^العدد صفر$/, [1, 1], ({ rng }) => {
 
 const ordinal = T('ordinal', /^العد الترتيبي$/, [1, 1], ({ rng }) => {
   const k = int(rng, 1, 9), kind = pick(rng, [0, 1, 2]);
-  if (kind === 0) return { eq: `${k + 1}`, answer: String(k), wrongs: ints(k, [k + 1, k - 1, k + 2, 10 - k]), ar: `يقف خالد في الصف في المكان ${ORD[k]}. كم طفلًا يقف أمامه؟`, en: `Khaled stands in place number ${k + 1} in a line. How many children stand in front of him?` };
+  if (kind === 0) return { eq: `${k + 1}`, answer: String(k), wrongs: ints(k, [k + 1, k - 1, k + 2, 10 - k]), ar: `يقف خالد في الصف في المكان ${ORD[k]} من الأمام. كم طفلًا يقف أمامه؟`, en: `Khaled stands in place number ${k + 1} in a line. How many children stand in front of him?` };
   if (kind === 1) return { eq: ORD[k - 1]!, answer: String(k), wrongs: ints(k, [k + 1, k - 1, k + 2, 10 - k]), ar: `أي رقم يدل على الترتيب «${ORD[k - 1]}»؟`, en: `Which number stands for the ordinal «${ORD[k - 1]}»?` };
   return { eq: ORD[k - 1]!, answer: ORD[k]!, wrongs: others(rng, ORD[k]!, ORD), ar: `ما الترتيب الذي يأتي بعد «${ORD[k - 1]}»؟`, en: `Which ordinal comes after «${ORD[k - 1]}»?` };
 });
 
-const tensOnes = (id: string, match: RegExp) => T(id, match, [1, 1], ({ rng }) => {
-  const t = int(rng, 1, 9), o = int(rng, 1, 9), n = t * 10 + o, k = pick(rng, [0, 1, 2, 3]);
+/**
+ * Three Grade 1 lessons, three banks (they used to share one, so «العشرات» asked about ones):
+ * `tens` — whole tens and reading them; `mixed` — tens and ones; `model` — a number shown with
+ * tens rods and ones cubes. Counts of 3–9 where a noun follows, so never «1 عشرات».
+ */
+const tensOnes = (id: string, match: RegExp, mode: 'tens' | 'mixed' | 'model') => T(id, match, [1, 1], ({ rng }) => {
+  if (mode === 'tens') {
+    const t = int(rng, 2, 9), kt = pick(rng, [0, 1, 2, 3]);
+    if (kt === 0) return { eq: `${t * 10}`, answer: String(t), wrongs: ints(t, [t * 10, t + 1, t - 1, 10]), ar: `كم عشرة في العدد ${t * 10}؟`, en: `How many tens are in ${t * 10}?` };
+    if (kt === 1) { const u = Math.max(3, t); return { eq: `${u}`, answer: String(u * 10), wrongs: ints(u * 10, [u, u * 100, u * 10 + 1, (u + 1) * 10]), ar: `ما العدد الذي يتكون من ${u} عشرات؟`, en: `Which number is made of ${u} tens?` }; }
+    if (kt === 2) return { eq: TENS_W[t]!, answer: String(t * 10), wrongs: ints(t * 10, [t, t * 10 + 10, t * 10 - 10, t + 10]), ar: `اكتب العدد «${TENS_W[t]}» بالأرقام.`, en: `Write the number “${t * 10}” in digits.` };
+    const o = int(rng, 1, 9), n = t * 10 + o;
+    return { eq: `${n}`, answer: String(t), wrongs: ints(t, [o, n, t + 1, t - 1]), ar: `كم عشرة في العدد ${n}؟`, en: `How many tens are in ${n}?` };
+  }
+  if (mode === 'model') {
+    const t = int(rng, 3, 9), o = int(rng, 3, 9), n = t * 10 + o, km = pick(rng, [0, 1, 2, 3, 4]);
+    if (km === 4 && t !== o) {
+      // which model shows the number: the tens and ones swapped is the classic slip (so t ≠ o)
+      const right = `${t} أعمدة و ${o} مكعبات`, swapped = `${o} أعمدة و ${t} مكعبات`;
+      return { eq: `${n}`, answer: right, wrongs: [...new Set([swapped, `${t} أعمدة و ${o + 1 > 9 ? o - 1 : o + 1} مكعبات`, `${t + 1 > 9 ? t - 1 : t + 1} أعمدة و ${o} مكعبات`])].filter(w => w !== right).slice(0, 3), ar: `أيّ تمثيل يُظهر العدد ${n} بأعمدة العشرات ومكعبات الآحاد؟`, en: `Which model shows ${n} with tens rods and ones cubes?` };
+    }
+    if (km === 0) return { eq: `${t}, ${o}`, answer: String(n), wrongs: ints(n, [o * 10 + t, t + o, n + 10, n - 1]), ar: `عدد مُمثَّل بـ ${t} أعمدة عشرات و ${o} مكعبات آحاد. ما العدد؟`, en: `A number is shown with ${t} tens rods and ${o} ones cubes. What is the number?` };
+    if (km === 1) return { eq: `${n}`, answer: String(t), wrongs: ints(t, [o, n, t + 1, t - 1]), ar: `نمثّل العدد ${n} بأعمدة العشرات ومكعبات الآحاد. كم عمود عشرات نحتاج؟`, en: `We show ${n} with tens rods and ones cubes. How many tens rods do we need?` };
+    if (km === 2) return { eq: `${n}`, answer: String(o), wrongs: ints(o, [t, n, o + 1, o - 1]), ar: `نمثّل العدد ${n} بأعمدة العشرات ومكعبات الآحاد. كم مكعب آحاد نحتاج؟`, en: `We show ${n} with tens rods and ones cubes. How many ones cubes do we need?` };
+    // a story: some rods and cubes are put on the table, then one more rod
+    return { eq: `${t}, ${o}`, answer: String(n + 10), wrongs: ints(n + 10, [n, n + 1, t + o + 1, n + 20]), word: true, ar: `وضعت سلمى على الطاولة ${t} أعمدة عشرات و ${o} مكعبات آحاد، ثم أضافت عمود عشرات آخر. ما العدد الذي أصبحت تمثّله؟`, en: `Salma puts ${t} tens rods and ${o} ones cubes on the table, then adds one more tens rod. What number do they show now?` };
+  }
+  const k = pick(rng, [0, 1, 2, 3]);
+  // «3 عشرات و 7 آحاد»: counts of 3–9, so never «1 عشرات» or «2 آحاد»
+  const t = k >= 2 ? int(rng, 3, 9) : int(rng, 1, 9), o = k === 2 ? int(rng, 3, 9) : int(rng, 1, 9), n = t * 10 + o;
   if (k === 0) return { eq: `${n}`, answer: String(t), wrongs: ints(t, [o, n, t + 1, t - 1]), ar: `كم عشرة في العدد ${n}؟`, en: `How many tens are in ${n}?` };
-  if (k === 1) return { eq: `${n}`, answer: String(o), wrongs: ints(o, [t, n, o + 1, o - 1]), ar: `كم آحادًا في العدد ${n}؟`, en: `How many ones are in ${n}?` };
+  if (k === 1) return { eq: `${n}`, answer: String(o), wrongs: ints(o, [t, n, o + 1, o - 1]), ar: `ما رقم الآحاد في العدد ${n}؟`, en: `How many ones are in ${n}?` };
   if (k === 2) return { eq: `${t}, ${o}`, answer: String(n), wrongs: ints(n, [o * 10 + t, t + o, n + 10, n - 1]), ar: `${t} عشرات و ${o} آحاد: ما العدد؟`, en: `${t} tens and ${o} ones: what is the number?` };
-  return { eq: `${t}`, answer: String(t * 10), wrongs: ints(t * 10, [t, t * 100, t * 10 + 1, (t + 1) * 10]), ar: `ما العدد الذي يتكون من ${t} عشرات؟`, en: `Which number is made of ${t} tens?` };
+  // the tens digit (whole tens are the «العشرات» lesson's own)
+  return { eq: `${n}`, answer: String(t), wrongs: ints(t, [o, n, t + 1, t - 1]), ar: `ما رقم العشرات في العدد ${n}؟`, en: `What is the tens digit of ${n}?` };
 });
 
 const hundreds = (id: string, match: RegExp) => T(id, match, [2, 2], ({ rng }) => {
@@ -192,7 +213,7 @@ const numberChart = T('number_chart', /^لوحه الاعداد$/, [1, 1], ({ rn
       const col = (n - 1) % 10 + 1, r = n + (down ? 10 : -10) * rows + (right ? 1 : -1) * steps;
       if (r < 1 || r > 100 || (right ? col + steps > 10 : col - steps < 1)) continue;
       const tens = (down ? 10 : -10) * rows, ones = (right ? 1 : -1) * steps;
-      return { eq: `${n}, ${r}`, answer: String(r), wrongs: ints(r, [n + tens - ones, n - tens + ones, n + (down ? 1 : -1) * rows + (right ? 10 : -10) * steps, r + 10, r - 10, r + 1]), ar: `ابدأ من العدد ${n} في لوحة الأعداد من 1 إلى 100، و${down ? 'انزل' : 'اصعد'} ${CHART_ROWS(rows)} في العمود نفسه، ثم تحرّك ${CHART_STEPS(steps)} إلى ${right ? 'اليمين' : 'اليسار'} في الصف نفسه. عند أي عدد تصل؟ (في كل صف 10 أعداد)`, en: `Start at ${n} on the 1–100 number chart (10 numbers in each row), go ${down ? 'down' : 'up'} ${rows} row${rows === 1 ? '' : 's'} in the same column, then move ${steps} step${steps === 1 ? '' : 's'} to the ${right ? 'right' : 'left'} in the same row. Which number do you reach?` };
+      return { eq: `${n}, ${r}`, answer: String(r), wrongs: ints(r, [n + tens - ones, n - tens + ones, n + (down ? 1 : -1) * rows + (right ? 10 : -10) * steps, r + 10, r - 10, r + 1]), ar: `ابدأ من العدد ${n} في لوحة الأعداد من 1 إلى 100، و${down ? 'انزل' : 'اصعد'} ${CHART_ROWS(rows)} في العمود نفسه، ثم عُدّ ${CHART_STEPS(steps)} ${right ? 'إلى الأمام' : 'إلى الخلف'} في الصف نفسه. عند أي عدد تصل؟ (في كل صف 10 أعداد)`, en: `Start at ${n} on the 1–100 number chart (10 numbers in each row), go ${down ? 'down' : 'up'} ${rows} row${rows === 1 ? '' : 's'} in the same column, then count ${steps} step${steps === 1 ? '' : 's'} ${right ? 'forward' : 'back'} in the same row. Which number do you reach?` };
     }
   }
   if (k === 5) {
@@ -203,9 +224,9 @@ const numberChart = T('number_chart', /^لوحه الاعداد$/, [1, 1], ({ rn
   }
   if (k === 0) { const n = int(rng, 1, 90); return { eq: `${n}`, answer: String(n + 10), wrongs: ints(n + 10, [n + 1, n - 10, n + 9, n + 11]), ar: `في لوحة الأعداد (كل صف فيه 10 أعداد) ما العدد الذي يقع تحت العدد ${n} مباشرة؟`, en: `On a number chart with 10 numbers in each row, which number is directly below ${n}?` }; }
   if (k === 1) { const n = int(rng, 11, 100); return { eq: `${n}`, answer: String(n - 10), wrongs: ints(n - 10, [n - 1, n + 10, n - 9, n - 11]), ar: `في لوحة الأعداد (كل صف فيه 10 أعداد) ما العدد الذي يقع فوق العدد ${n} مباشرة؟`, en: `On a number chart with 10 numbers in each row, which number is directly above ${n}?` }; }
-  if (k === 2) { let n = int(rng, 1, 99); if (n % 10 === 0) n -= 1; return { eq: `${n}`, answer: String(n + 1), wrongs: ints(n + 1, [n - 1, n + 10, n + 2, n - 10]), ar: `في لوحة الأعداد (كل صف فيه 10 أعداد) ما العدد الذي يقع على يمين العدد ${n} مباشرة في الصف نفسه؟`, en: `On a number chart with 10 numbers in each row, which number is directly to the right of ${n} in the same row?` }; }
+  if (k === 2) { let n = int(rng, 1, 99); if (n % 10 === 0) n -= 1; return { eq: `${n}`, answer: String(n + 1), wrongs: ints(n + 1, [n - 1, n + 10, n + 2, n - 10]), ar: `في لوحة الأعداد، ما العدد الذي يزيد على العدد ${n} بـ 1؟`, en: `On the number chart, which number is 1 more than ${n}?` }; }
   let n = int(rng, 2, 100); if (n % 10 === 1) n += 1;
-  return { eq: `${n}`, answer: String(n - 1), wrongs: ints(n - 1, [n + 1, n - 10, n - 2, n + 10]), ar: `في لوحة الأعداد (كل صف فيه 10 أعداد) ما العدد الذي يقع على يسار العدد ${n} مباشرة في الصف نفسه؟`, en: `On a number chart with 10 numbers in each row, which number is directly to the left of ${n} in the same row?` };
+  return { eq: `${n}`, answer: String(n - 1), wrongs: ints(n - 1, [n + 1, n - 10, n - 2, n + 10]), ar: `في لوحة الأعداد، ما العدد الذي يقل عن العدد ${n} بـ 1؟`, en: `On the number chart, which number is 1 less than ${n}?` };
 });
 
 const countUpDown = T('count_up_down', /^العد تصاعديا وتنازليا$/, [1, 1], ({ rng }) => {
@@ -274,7 +295,7 @@ const nearestTen = T('nearest_ten_g1', /^التقدير$/, [1, 1], ({ rng }) => 
     const n = int(rng, 11, 49);
     if (n % 10 === 5) continue;
     const near = Math.round(n / 10) * 10;
-    return { eq: `${n}`, answer: String(near), wrongs: ints(near, [near + 10, near - 10, near + 20, near - 20]), ar: `أي عدد من مضاعفات العشرة الآتية أقرب إلى العدد ${n}؟ (10، 20، 30، 40، 50)`, en: `Which of these tens is closest to ${n}? (10, 20, 30, 40, 50)` };
+    return { eq: `${n}`, answer: String(near), wrongs: ints(near, [near + 10, near - 10, near + 20, near - 20, near + 30, near - 30].filter(v => v >= 10 && v <= 50)), ar: `أي عدد من مضاعفات العشرة الآتية أقرب إلى العدد ${n}؟ (10، 20، 30، 40، 50)`, en: `Which of these tens is closest to ${n}? (10, 20, 30, 40, 50)` };
   }
 });
 
@@ -322,11 +343,14 @@ const makeTen = T('make_ten', /^مكونات العدد 10$/, [1, 1], ({ rng }) 
   if (k === 1) return { eq: `${a}`, answer: String(10 - a), wrongs: ints(10 - a, [a, a + 1, 10, 9 - a]), ar: `10 = ${a} + ___`, en: `10 = ${a} + ___` };
   const good = `${a} + ${10 - a}`;
   const bad = shuffle(rng, [`${a} + ${9 - a > 0 ? 9 - a : 8}`, `${a} + ${11 - a}`, `${a + 1} + ${10 - a}`, `${a} + ${a}`]).filter(p => { const [x, y] = p.split(' + ').map(Number); return x! + y! !== 10; });
-  return { eq: good, answer: good, wrongs: [...new Set(bad)].slice(0, 3), ar: `أي جمع مما يأتي ناتجه 10؟`, en: 'Which of these sums makes 10?' };
+  const shown = shuffle(rng, [good, ...[...new Set(bad)].slice(0, 3)]);
+  // the sums are in the stem too: a short-answer or true/false form has no options to point at
+  return { eq: good, answer: good, wrongs: [...new Set(bad)].slice(0, 3), ar: `أي جمع مما يأتي ناتجه 10: ${shown.join('، ')}؟`, en: `Which of these sums makes 10: ${shown.join(', ')}?` };
 });
 
 const addProps = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng }) => {
-  const hi = grade === 1 ? 9 : 99, a = int(rng, 2, hi), b = int(rng, 2, hi), c = int(rng, 2, hi), k = pick(rng, [0, 1, 2, 3, 4]);
+  // Grade 1 adds within 20 (book unit 3), so the three-number grouping stays there
+  const hi = grade === 1 ? 9 : 99, a = int(rng, 2, hi), b = int(rng, 2, hi), c = int(rng, 2, grade === 1 ? Math.max(2, Math.min(hi, 20 - a - b)) : hi), k = pick(rng, [0, 1, 2, 3, 4]);
   if (k === 3) return { eq: `${a} + ${b}`, answer: String(a + b), wrongs: ints(a + b, [a + b + 1, a + b - 1, a, b]), ar: `إذا كان ${a} + ${b} = ${a + b}، فما ناتج ${b} + ${a}؟`, en: `If ${a} + ${b} = ${a + b}, what is ${b} + ${a}?` };
   if (k === 4) {
     // three numbers: two of them make a ten (Grade 1) or a hundred (Grade 2), so add those first
@@ -351,10 +375,11 @@ const relatedFacts = (id: string, grade: number) => T(id, /^الحقائق ال�
 });
 
 const missingNumber = T('missing_number', /^العدد المفقود$/, [1, 1], ({ rng, diff }) => {
-  const a = int(rng, 1, span(diff, 9, 12, 15)), b = int(rng, 1, span(diff, 9, 12, 15)), s = a + b, k = pick(rng, [0, 1, 2, 3, 4]);
+  // within 20, as the book's addition and subtraction units are
+  const a = int(rng, 1, span(diff, 9, 12, 15)), b = int(rng, 1, Math.min(span(diff, 9, 12, 15), 20 - a)), s = a + b, k = pick(rng, [0, 1, 2, 3, 4]);
   if (k === 4) {
     // a story: some balls, then b more, and we know how many there are now
-    const c = int(rng, 3, 9), t = a + c;
+    const c = int(rng, 3, Math.min(9, 20 - a)), t = a + c;
     return { eq: `${c}, ${t}`, answer: String(a), wrongs: ints(a, [t + c, c, t, a + 1]), ar: `كان مع سلمى بعض الكرات، فأعطتها أمها ${c} كرات أخرى فأصبح عدد كراتها ${t}. كم كرة كانت معها؟`, en: `Salma had some balls. Her mother gave her ${c} more and now she has ${t}. How many balls did she have at first?` };
   }
   if (k === 0) return { eq: `${a}, ${s}`, answer: String(b), wrongs: ints(b, [a, s, b + 1, b - 1]), ar: `${a} + ___ = ${s}`, en: `${a} + ___ = ${s}` };
@@ -383,40 +408,93 @@ const mentalG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1
   return { eq: `${m}, 9`, answer: String(r9), wrongs: ints(r9, [add ? m + 10 : m - 10, add ? m + 8 : m - 8, r9 + 2, r9 - 2]), ar: `${m} ${add ? '+' : '−'} 9 = ___ (فكّر: ${add ? 'أضف 10 ثم انقص 1' : 'انقص 10 ثم أضف 1'})`, en: `${m} ${add ? '+' : '−'} 9 = ___ (think: ${add ? 'add 10 then take away 1' : 'take away 10 then add 1'})` };
 });
 
-// Grade 1 S2 «جمع العشرات / طرح العشرات»: multiples of ten up to 90. These
-// lessons used to draw the grade's generic sums within 20 («9 + 1»).
-const tensG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1], ({ rng }) => {
-  const op = add ? '+' : '−';
-  let a = 0, b = 0;
-  do { a = int(rng, 1, 8); b = int(rng, 1, 8); } while (add ? a + b > 9 : a <= b);
-  const A = a * 10, B = b * 10, R = add ? A + B : A - B, r = R / 10, k = pick(rng, [0, 1, 2, 3]);
-  if (k === 1) {
-    // Counted tens start at 3: «1 عشرات / 2 عشرات» is not Arabic (one ten, two tens).
+// Grade 1 lessons that used to fall through to generic one-digit drills: a
+// «جمع العشرات» quiz asked «3 + ؟ = 4» and nothing about tens (swept
+// 2026-11-13). Each is about its own lesson's skill, within its own numbers.
+
+/** «برتقالة واحدة / برتقالتان / 5 برتقالات / 12 برتقالةً» */
+const oranges = (n: number) => (n === 1 ? 'برتقالة واحدة' : n === 2 ? 'برتقالتان' : `${n} ${tamyiz(n, 'برتقالات', 'برتقالةً', 'برتقالة')}`);
+
+/** Wrong options a Grade 1 child could meet: none past 99. */
+const g1 = (ans: number, cands: number[]) => ints(ans, cands.filter(v => v <= 99));
+
+/**
+ * Whole tens: «30 + 40», never past 90. Also counted as tens, «3 عشرات + 4 عشرات»
+ * (from main's version of this generator, merged 2026-11-14), counts of 3 or more:
+ * «1 عشرات / 2 عشرات» is not Arabic.
+ */
+const tensG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1], ({ rng, word }) => {
+  const a = add ? int(rng, 1, 8) : int(rng, 2, 9), b = add ? int(rng, 1, 9 - a) : int(rng, 1, a - 1);
+  const A = a * 10, B = b * 10, r = add ? A + B : A - B, op = add ? '+' : '−', k = word ? 2 : pick(rng, [0, 1, 2, 3, 4]);
+  if (k === 4) {
     let c = 0, d = 0;
     do { c = int(rng, 3, 9); d = int(rng, 3, 9); } while (add ? c + d > 9 : c <= d);
     const e = add ? c + d : c - d;
-    return { eq: `${c}t ${op} ${d}t`, answer: String(e), wrongs: ints(e, [add ? c - d : c + d, e + 1, e - 1, e * 10]), ar: `${c} عشرات ${op} ${d} عشرات = ___ عشرات`, en: `${c} tens ${op} ${d} tens = ___ tens` };
+    return { eq: `${c}t ${op} ${d}t`, answer: String(e), wrongs: g1(e, [add ? c - d : c + d, e + 1, e - 1, e * 10]), ar: `${c} عشرات ${op} ${d} عشرات = ___ عشرات`, en: `${c} tens ${op} ${d} tens = ___ tens` };
   }
-  if (k === 2) return { eq: `${A}, ${R}`, answer: String(B), wrongs: ints(B, [R, A, B + 10, B - 10]), ar: `${A} ${op} ___ = ${R}`, en: `${A} ${op} ___ = ${R}` };
-  if (k === 3) return { eq: `word ${A} ${op} ${B}`, answer: String(R), wrongs: ints(R, [add ? A - B : A + B, R + 10, R - 10, r]), ar: add ? `مع رامي ${qirsh(A)}، وأعطاه والده ${qirsh(B)}. كم قرشًا أصبح معه؟` : `مع رامي ${qirsh(A)}، أنفق منها ${qirsh(B)}. كم قرشًا بقي معه؟`, en: add ? `Rami has ${A} qirsh and his father gives him ${B} qirsh. How many qirsh does he have now?` : `Rami has ${A} qirsh and spends ${B} qirsh. How many qirsh are left?` };
-  return { eq: `${A} ${op} ${B}`, answer: String(R), wrongs: ints(R, [add ? A - B : A + B, R + 10, R - 10, r]), ar: `${A} ${op} ${B} = ___`, en: `${A} ${op} ${B} = ___` };
+  const near = [add ? A - B : A + B, r + 10, r - 10, add ? a + b : a - b, r - 20];
+  if (k === 1) return { eq: `${A} ${op} ${B}`, answer: String(r), wrongs: g1(r, near), ar: `إذا كان ${a} ${op} ${b} = ${add ? a + b : a - b}، فما ناتج ${A} ${op} ${B}؟`, en: `If ${a} ${op} ${b} = ${add ? a + b : a - b}, what is ${A} ${op} ${B}?` };
+  if (k === 2) return { eq: `${A} ${op} ${B}`, answer: String(r), wrongs: g1(r, near), word: true, ar: add ? `في علبة ${pens(A)}، فأضاف إليها المعلم ${pens(B)}. كم قلمًا أصبح في العلبة؟` : `في علبة ${pens(A)}، فأخذ الطلبة منها ${pens(B)}. كم قلمًا بقي في العلبة؟`, en: add ? `A box has ${A} pencils and the teacher puts in ${B} more. How many pencils are in the box now?` : `A box has ${A} pencils and the students take ${B} of them. How many pencils are left?` };
+  if (k === 3) return { eq: `${A}, ${r}`, answer: String(B), wrongs: g1(B, [b, r, B + 10, B - 10]), ar: `${A} ${op} ___ = ${r}`, en: `${A} ${op} ___ = ${r}` };
+  return { eq: `${A} ${op} ${B}`, answer: String(r), wrongs: g1(r, near), ar: `${A} ${op} ${B} = ___`, en: `${A} ${op} ${B} = ___` };
 });
 
-// Grade 1 S2 «جمع / طرح عددين من منزلتين»: two two-digit numbers with nothing
-// to regroup (regrouping is Grade 2's unit 3). They drew sums within 20.
-const twoDigitG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1], ({ rng }) => {
-  const op = add ? '+' : '−';
-  let x = 0, y = 0;
-  do { x = int(rng, 10, 99); y = int(rng, 10, 99); }
-  while (add ? (x % 10) + (y % 10) > 9 || x + y > 99 : x <= y || x % 10 < y % 10 || x - y < 10);
-  const r = add ? x + y : x - y, k = pick(rng, [0, 1, 2, 3]);
-  if (k === 1) return { eq: `${x}, ${r}`, answer: String(y), wrongs: ints(y, [r, x, y + 10, y + 1]), ar: `${x} ${op} ___ = ${r}`, en: `${x} ${op} ___ = ${r}` };
-  if (k === 2) {
-    const t = Math.floor(r / 10);
-    return { eq: `tens ${x} ${op} ${y}`, answer: String(t), wrongs: ints(t, [r % 10, Math.floor(x / 10), t + 1, t - 1]), ar: `${add ? 'اجمع' : 'اطرح'} الآحاد ثم العشرات: ${x} ${op} ${y}. كم عشرة في الناتج؟`, en: `${add ? 'Add' : 'Subtract'} the ones, then the tens: ${x} ${op} ${y}. How many tens are in the answer?` };
-  }
-  if (k === 3) return { eq: `word ${x} ${op} ${y}`, answer: String(r), wrongs: ints(r, [add ? x - y : x + y, r + 10, r - 10, r + 1]), ar: add ? `مع ليلى ${qirsh(x)}، وأعطتها جدتها ${qirsh(y)}. كم قرشًا أصبح معها؟` : `مع ليلى ${qirsh(x)}، أنفقت منها ${qirsh(y)}. كم قرشًا بقي معها؟`, en: add ? `Layla has ${x} qirsh and her grandmother gives her ${y} qirsh. How many qirsh does she have now?` : `Layla has ${x} qirsh and spends ${y} qirsh. How many qirsh are left?` };
-  return { eq: `${x} ${op} ${y}`, answer: String(r), wrongs: ints(r, [add ? x - y : x + y, r + 10, r - 10, r + 1]), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
+/** Two two-digit numbers, no regrouping: the ones and the tens each stay within 9. */
+const twoDigitG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1], ({ rng, word }) => {
+  let t1: number, o1: number, t2: number, o2: number;
+  if (add) { t1 = int(rng, 1, 8); t2 = int(rng, 1, 9 - t1); o1 = int(rng, 0, 8); o2 = int(rng, o1 === 0 ? 1 : 0, 9 - o1); }
+  else { t1 = int(rng, 2, 9); t2 = int(rng, 1, t1 - 1); o1 = int(rng, 1, 9); o2 = int(rng, 0, o1); }
+  const x = t1 * 10 + o1, y = t2 * 10 + o2, r = add ? x + y : x - y, op = add ? '+' : '−', k = word ? 2 : pick(rng, [0, 1, 2, 3, 4]);
+  // From main's version of this generator (merged 2026-11-14): the tens of the result, column by column.
+  if (k === 4) { const t = Math.floor(r / 10); return { eq: `tens ${x} ${op} ${y}`, answer: String(t), wrongs: g1(t, [r % 10, t1, t + 1, t - 1, t + 2]), ar: `${add ? 'اجمع' : 'اطرح'} الآحاد ثم العشرات: ${x} ${op} ${y}. كم عشرة في الناتج؟`, en: `${add ? 'Add' : 'Subtract'} the ones, then the tens: ${x} ${op} ${y}. How many tens are in the answer?` }; }
+  const near = [add ? x - y : x + y, r + 10, r - 10, r + 1, r - 1, r - 2];
+  if (k === 1) { const o = add ? o1 + o2 : o1 - o2; return { eq: `${x} ${op} ${y}`, answer: String(o), wrongs: g1(o, [o1, o2, add ? t1 + t2 : t1 - t2, o + 1, o + 2]), ar: `ما رقم الآحاد في ناتج ${x} ${op} ${y}؟`, en: `What is the ones digit of ${x} ${op} ${y}?` }; }
+  if (k === 2) return { eq: `${x} ${op} ${y}`, answer: String(r), wrongs: g1(r, near), word: true, ar: add ? `مع سلمى ${qirsh(x)}، وأعطتها جدّتها ${qirsh(y)}. كم قرشًا أصبح معها؟` : `مع رامي ${qirsh(x)}، دفع منها ${qirsh(y)} ثمنَ دفتر. كم قرشًا بقي معه؟`, en: add ? `Salma has ${x} qirsh and her grandmother gives her ${y} qirsh. How many qirsh does she have now?` : `Rami has ${x} qirsh and buys a notebook for ${y} qirsh. How many qirsh are left?` };
+  if (k === 3) return { eq: `${x}, ${r}`, answer: String(y), wrongs: g1(y, [x, r, y + 10, y - 10, y + 1]), ar: `${x} ${op} ___ = ${r}`, en: `${x} ${op} ___ = ${r}` };
+  return { eq: `${x} ${op} ${y}`, answer: String(r), wrongs: g1(r, near), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
+});
+
+/** Subtraction read off a double: 2n − n = n. */
+const subDoubles = T('sub_doubles_g1', /^الطرح باستعمال الضعف$/, [1, 1], ({ rng, word }) => {
+  const n = int(rng, word ? 3 : 2, 9), d = 2 * n, k = word ? 3 : pick(rng, [0, 1, 2, 3]);
+  const wr = ints(n, [d, n + 1, n - 1, d + n]);
+  if (k === 1) return { eq: `${d} − ${n}`, answer: String(n), wrongs: wr, ar: `${d} − ${n} = ___ (فكّر: ${n} + ${n} = ${d})`, en: `${d} − ${n} = ___ (think: ${n} + ${n} = ${d})` };
+  if (k === 2) return { eq: `${d}, ${n}`, answer: String(n), wrongs: wr, ar: `${d} − ___ = ${n}`, en: `${d} − ___ = ${n}` };
+  // 3 or more given away, so the object reads «3 كرات», never the nominative «كرتان»
+  if (k === 3 && n >= 3) return { eq: `${d} − ${n}`, answer: String(n), wrongs: wr, word: true, ar: `مع ليلى ${balls(d)}، أعطت أختها ${balls(n)}. كم كرة بقيت معها؟`, en: `Layla has ${d} balls and gives her sister ${n}. How many balls does she have left?` };
+  return { eq: `${d} − ${n}`, answer: String(n), wrongs: wr, ar: `إذا كان ${n} + ${n} = ${d}، فما ناتج ${d} − ${n}؟`, en: `If ${n} + ${n} = ${d}, what is ${d} − ${n}?` };
+});
+
+/** A teen minus a one-digit number that crosses ten: 13 − 5 = 13 − 3 − 2. */
+const subMakeTen = T('sub_make_ten_g1', /^الطرح بايجاد عشره$/, [1, 1], ({ rng, word }) => {
+  const o = int(rng, 1, 8), x = 10 + o, y = int(rng, Math.max(o + 1, word ? 3 : 0), 9), r = x - y, rest = y - o, k = word ? 3 : pick(rng, [0, 1, 2, 3]);
+  if (k === 1) return { eq: `${x} − ${y}`, answer: String(rest), wrongs: g1(rest, [o, y, r, rest + 1]), ar: `لإيجاد ${x} − ${y}: نطرح ${o} أولًا لنصل إلى 10، ثم نطرح ___`, en: `To find ${x} − ${y}: take away ${o} first to reach 10, then take away ___` };
+  if (k === 2) return { eq: `${x} − ${y}`, answer: String(rest), wrongs: g1(rest, [o, y, r, rest + 1]), ar: `أكمل: ${x} − ${y} = 10 − ___`, en: `Complete: ${x} − ${y} = 10 − ___` };
+  // 3 or more eaten, so the count is a digit a child reads, not the word «برتقالتان»
+  if (k === 3 && y >= 3) return { eq: `${x} − ${y}`, answer: String(r), wrongs: g1(r, [r + 1, r - 1, r + 10, rest]), word: true, ar: `في سلة ${oranges(x)}، أُكلت منها ${oranges(y)}. كم برتقالةً بقيت في السلة؟`, en: `A basket has ${x} oranges and the family eats ${y}. How many oranges are left?` };
+  return { eq: `${x} − ${y}`, answer: String(r), wrongs: g1(r, [r + 1, r - 1, r + 10, rest]), ar: `ما ناتج ${x} − ${y}؟`, en: `What is ${x} − ${y}?` };
+});
+
+/** Adding past ten by first making ten: 8 + 5 = 8 + 2 + 3. */
+const addMakeTen = T('add_make_ten_g1', /^الجمع بالاكمال الي العشره$/, [1, 1], ({ rng, word }) => {
+  const a = int(rng, 6, 9), b = int(rng, Math.max(11 - a, word ? 3 : 0), 9), s = a + b, need = 10 - a, rest = b - need, k = word ? 4 : pick(rng, [0, 1, 2, 3, 4]);
+  // 3 or more added, so the count reads «3 برتقالات», never the word «برتقالتان»
+  if (k === 4 && b >= 3) return { eq: `${a} + ${b}`, answer: String(s), wrongs: g1(s, [s + 1, s - 1, s + 10, rest]), word: true, ar: `في سلة ${oranges(a)}، ووُضعت فيها ${oranges(b)} أخرى. كم برتقالةً أصبحت في السلة؟`, en: `A basket has ${a} oranges and ${b} more are put in. How many oranges are in the basket now?` };
+  if (k === 1) return { eq: `${a} + ${b}`, answer: String(rest), wrongs: g1(rest, [need, b, s, rest + 1]), ar: `لإيجاد ${a} + ${b}: نأخذ ${need} من ${b} لنكمل ${a} إلى 10، فيبقى ___`, en: `To find ${a} + ${b}: take ${need} from ${b} to make ${a} up to 10, which leaves ___` };
+  if (k === 2) return { eq: `${a} + ${b}`, answer: String(rest), wrongs: g1(rest, [need, b, s, rest + 1]), ar: `أكمل: ${a} + ${b} = 10 + ___`, en: `Complete: ${a} + ${b} = 10 + ___` };
+  if (k === 3) return { eq: `${a}`, answer: String(need), wrongs: g1(need, [a, 10, need + 1, need - 1]), ar: `${a} + ___ = 10`, en: `${a} + ___ = 10` };
+  return { eq: `${a} + ${b}`, answer: String(s), wrongs: g1(s, [s + 1, s - 1, s + 10, rest]), ar: `ما ناتج ${a} + ${b}؟`, en: `What is ${a} + ${b}?` };
+});
+
+/** Three one-digit addends, the total within 20. */
+const addThree = T('add_three_g1', /^جمع ثلاثه اعداد$/, [1, 1], ({ rng, word }) => {
+  const lo = word ? 3 : 1, a = int(rng, lo, 7), b = int(rng, lo, 7), c = int(rng, lo, Math.min(7, 18 - a - b)), s = a + b + c, k = word ? 2 : pick(rng, [0, 1, 2, 3]);
+  const near = [s + 1, s - 1, a + b, b + c, s + 10];
+  if (k === 1) { const x = int(rng, 1, 9), y = 10 - x, m = int(rng, 1, 9), t = 10 + m; return { eq: `${x} + ${m} + ${y}`, answer: String(t), wrongs: g1(t, [t + 1, t - 1, x + m, m + y]), ar: `ابدأ بالعددين اللذين مجموعهما 10: ${x} + ${m} + ${y} = ___`, en: `Start with the two numbers that make 10: ${x} + ${m} + ${y} = ___` }; }
+  // 3 or more each, so every count is a digit a child reads («3 كرات»), never a word («كرتان»)
+  if (k === 2 && Math.min(a, b, c) >= 3) return { eq: `${a} + ${b} + ${c}`, answer: String(s), wrongs: g1(s, near), word: true, ar: `مع سامي ${balls(a)}، ومع علي ${balls(b)}، ومع هيا ${balls(c)}. كم كرة معهم جميعًا؟`, en: `Sami has ${a} balls, Ali has ${b} and Haya has ${c}. How many balls do they have altogether?` };
+  if (k === 3) return { eq: `${a} + ${b}, ${s}`, answer: String(c), wrongs: g1(c, [s, a, b, c + 1]), ar: `${a} + ${b} + ___ = ${s}`, en: `${a} + ${b} + ___ = ${s}` };
+  return { eq: `${a} + ${b} + ${c}`, answer: String(s), wrongs: g1(s, near), ar: `${a} + ${b} + ${c} = ___`, en: `${a} + ${b} + ${c} = ___` };
 });
 
 // ─── shapes ─────────────────────────────────────────────────────────────────
@@ -429,7 +507,32 @@ const solids = T('solid_names', /^المجسمات$/, [1, 2], ({ rng }) => {
 });
 
 const PLANE: Array<[string, number]> = [['المثلث', 3], ['المربع', 4], ['المستطيل', 4], ['الخماسي المنتظم', 5], ['السداسي المنتظم', 6]];
-const planeShapes = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng }) => {
+/** Grade 1 names only these (book unit 8); the pentagon and hexagon are later. */
+const PLANE_G1: Array<[string, number]> = [['المثلث', 3], ['المربع', 4], ['المستطيل', 4]];
+const G1_SHAPE_NAMES = ['المثلث', 'المربع', 'المستطيل', 'الدائرة'];
+/** Things in a classroom and a home, and the flat shape each looks like. */
+const LOOKS_LIKE: Array<[string, string, string]> = [
+  ['باب الصف', 'المستطيل', 'the classroom door'], ['ساعة الحائط', 'الدائرة', 'the wall clock'], ['قطعة الجبنة المثلثة', 'المثلث', 'a triangle of cheese'],
+  ['بلاطة الأرض المربعة', 'المربع', 'a square floor tile'], ['عجلة الدراجة', 'الدائرة', 'a bicycle wheel'], ['السبورة', 'المستطيل', 'the board'],
+];
+const planeShapes = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, grade }) => {
+  if (grade === 1 && id === 'plane_shapes') {
+    // «الأشكال المستوية» names the shapes; counting sides and vertices is the next lesson
+    const kn = pick(rng, [0, 1, 2, 2]);
+    if (kn === 0) return { eq: '3', answer: 'المثلث', wrongs: ['المربع', 'المستطيل', 'الدائرة'], ar: 'أي شكل له 3 أضلاع و 3 رؤوس؟', en: 'Which shape has 3 sides and 3 vertices?' };
+    if (kn === 1) return { eq: '0', answer: 'الدائرة', wrongs: ['المثلث', 'المربع', 'المستطيل'], ar: 'أي شكل ليس له أضلاع ولا رؤوس؟', en: 'Which shape has no sides and no vertices?' };
+    const [thing, shape, thingEn] = pick(rng, LOOKS_LIKE);
+    return { eq: thing, answer: shape, wrongs: G1_SHAPE_NAMES.filter(x => x !== shape), ar: `أي شكل يشبه ${thing}؟`, en: `Which shape does ${thingEn} look like?` };
+  }
+  if (grade === 1) {
+    const k1 = pick(rng, [0, 1, 2, 3]);
+    if (k1 === 2) return { eq: '3', answer: 'المثلث', wrongs: ['المربع', 'المستطيل', 'الدائرة'], ar: 'أي شكل له 3 أضلاع و 3 رؤوس؟', en: 'Which shape has 3 sides and 3 vertices?' };
+    if (k1 === 3) return { eq: '0', answer: 'الدائرة', wrongs: ['المثلث', 'المربع', 'المستطيل'], ar: 'أي شكل ليس له أضلاع ولا رؤوس؟', en: 'Which shape has no sides and no vertices?' };
+    const [nm1, c1] = pick(rng, PLANE_G1);
+    return k1 === 0
+      ? { eq: nm1, answer: String(c1), wrongs: ints(c1, [c1 + 1, c1 - 1, c1 + 2, 2 * c1]), ar: `كم ضلعًا ${li(nm1)}؟`, en: `How many sides does the ${nm1} have?` }
+      : { eq: nm1, answer: String(c1), wrongs: ints(c1, [c1 + 1, c1 - 1, c1 + 2, 2 * c1]), ar: `كم رأسًا ${li(nm1)}؟`, en: `How many vertices does the ${nm1} have?` };
+  }
   const k = pick(rng, [0, 1, 2]);
   const [name, n] = pick(rng, PLANE);
   if (k === 0) return { eq: name, answer: String(n), wrongs: ints(n, [n + 1, n - 1, n + 2, 2 * n]), ar: `كم ضلعًا ${li(name)}؟`, en: `How many sides does the ${name} have?` };
@@ -462,10 +565,10 @@ const geoPattern = T('geo_pattern', /^الانماط الهندسيه$/, [1, 4],
     if (k === 2) {
       // a position beyond the part shown, found from the unit
       const pos = int(rng, len * 2 + 3, 12), at = unit[(pos - 1) % len]!;
-      return { eq: shown.join(' '), answer: SHAPES_AR[at]!, wrongs: SHAPES3.filter(s => s !== at).map(s => SHAPES_AR[s]!), ar: `يستمر النمط: ${shown.join(' ')} … ما الشكل رقم ${pos} فيه؟ (اكتب اسمه)`, en: `The pattern ${shown.join(' ')} … keeps going. Which shape is number ${pos}?${NAMES}` };
+      return { eq: shown.join(' '), answer: SHAPES_AR[at]!, wrongs: SHAPES3.filter(s => s !== at).map(s => SHAPES_AR[s]!), ar: `يستمر النمط: ${shown.join(' ')} … ما الشكل رقم ${pos} فيه؟`, en: `The pattern ${shown.join(' ')} … keeps going. Which shape is number ${pos}?${NAMES}` };
     }
     const next = unit[(len * 2 + 1) % len]!;
-    return { eq: shown.join(' '), answer: SHAPES_AR[next]!, wrongs: SHAPES3.filter(s => s !== next).map(s => SHAPES_AR[s]!), ar: `ما الشكل التالي في النمط: ${shown.join(' ')} ___ ؟ (اكتب اسمه)`, en: `What shape comes next in the pattern ${shown.join(' ')} ___ ? (name it: دائرة = circle, مثلث = triangle, مربع = square, معين = diamond)` };
+    return { eq: shown.join(' '), answer: SHAPES_AR[next]!, wrongs: SHAPES3.filter(s => s !== next).map(s => SHAPES_AR[s]!), ar: `ما الشكل التالي في النمط: ${shown.join(' ')} ___ ؟`, en: `What shape comes next in the pattern ${shown.join(' ')} ___ ? (name it: دائرة = circle, مثلث = triangle, مربع = square, معين = diamond)` };
   }
   const first = int(rng, 3, 6), d = int(rng, 2, span(diff, 3, 4, 6)), n = int(rng, 5, 7), kind = pick(rng, [0, 1, 2]);
   if (kind === 1) {
@@ -490,7 +593,8 @@ const geoPattern = T('geo_pattern', /^الانماط الهندسيه$/, [1, 4],
 // ─── fractions ──────────────────────────────────────────────────────────────
 
 const halfQuarter = (id: string, match: RegExp, name: 'نصف' | 'ربع') => T(id, match, [1, 1], ({ rng }) => {
-  const d = name === 'نصف' ? 2 : 4, q = int(rng, 1, name === 'نصف' ? 10 : 5), n = d * q, k = pick(rng, [0, 0, 1, 2, 3]);
+  // no «ما العدد الذي نصفه …؟» (k 3): that is multiplication, which Grade 1 does not do
+  const d = name === 'نصف' ? 2 : 4, q = int(rng, 1, name === 'نصف' ? 10 : 5), n = d * q, k = pick(rng, [0, 0, 1, 2]);
   const nameEn = name === 'نصف' ? 'half' : 'a quarter';
   if (k === 2) {
     // a share of a few balls: 4–10 of them, so «كرات» is the right plural
@@ -502,6 +606,8 @@ const halfQuarter = (id: string, match: RegExp, name: 'نصف' | 'ربع') => T(
   return { eq: name, answer: String(d), wrongs: ints(d, [d + 1, d - 1, 2 * d, 3]), ar: `كم ${name === 'نصف' ? 'نصفًا' : 'ربعًا'} في الكل الواحد؟`, en: `How many ${name === 'نصف' ? 'halves' : 'quarters'} make one whole?` };
 });
 const PARTS: Array<[number, string]> = [[2, 'نصف'], [3, 'ثلث'], [4, 'ربع']];
+/** Grade 1's unit 9 teaches the half and the quarter — no third. */
+const PARTS_G1: Array<[number, string]> = [[2, 'نصف'], [4, 'ربع']];
 /** «جزأين متطابقين» / «3 أجزاء متطابقة» */
 const sameParts = (d: number) => (d === 2 ? 'جزأين متطابقين' : `${d} أجزاء متطابقة`);
 /** [one, the one, two of them, English] — things a Grade 1 child cuts into equal parts. */
@@ -511,37 +617,35 @@ const WHOLES: Array<[string, string, string, string]> = [
 const PART_EN: Record<string, string> = { 'نصف': 'half', 'ثلث': 'third', 'ربع': 'quarter' };
 const equalParts = T('equal_parts', /^الاجزاء المتطابقه$/, [1, 1], ({ rng }) => {
   // 0 name a part, 1 parts left after some are eaten, 2 cubes in each part, 3 which of two parts is bigger, 4 how many parts from a part's name.
-  const [d, name] = pick(rng, PARTS), [one, the, two, en] = pick(rng, WHOLES), k = pick(rng, [0, 1, 2, 3, 4]);
+  const [d, name] = pick(rng, PARTS_G1), [one, the, two, en] = pick(rng, WHOLES), k = pick(rng, [0, 1, 2, 3, 4]);
   if (k === 1) {
     const e = int(rng, 1, d - 1), eaten = e === 1 ? 'جزء واحد' : e === 2 ? 'جزآن' : `${e} أجزاء`;
     return { eq: `${d}, ${e}`, answer: String(d - e), wrongs: ints(d - e, [d, d + e, e === d - e ? d + 1 : e, 2 * d]), ar: `قُسّمت ${one} إلى ${sameParts(d)}، وأُكل منها ${eaten}. كم جزءًا بقي؟`, en: `A ${en} is cut into ${d} equal parts and ${e} of them ${e === 1 ? 'is' : 'are'} eaten. How many parts are left?` };
   }
   if (k === 2) {
-    const q = int(rng, 2, 6), n = d * q;
+    const q = int(rng, 2, 3), n = d * q;
     return { eq: `${n}, ${d}`, answer: String(q), wrongs: ints(q, [n, n - d, q + 1, q - 1, d]), ar: `قطار مكعبات عددها ${n} قُسّم إلى ${sameParts(d)}. كم مكعبًا في كل جزء؟`, en: `A train of ${n} cubes is split into ${d} equal parts. How many cubes are in each part?` };
   }
   if (k === 3) {
     // the fewer the parts, the bigger each one
-    const pair = shuffle(rng, PARTS), [d1, n1] = pair[0]!, [d2, n2] = pair[1]!, big = rng() < 0.5;
+    const pair = shuffle(rng, PARTS_G1), [d1, n1] = pair[0]!, [d2, n2] = pair[1]!, big = rng() < 0.5;
     const ans = `ال${(big ? d1 < d2 : d1 > d2) ? n1 : n2}`;
-    const third = `ال${pair[2]![1]}`;
-    return { eq: `${d1}, ${d2}`, answer: ans, wrongs: [ans === `ال${n1}` ? `ال${n2}` : `ال${n1}`, third, 'متساويان'], ar: `${two} متساويتان، قُسّمت الأولى إلى ${sameParts(d1)} والثانية إلى ${sameParts(d2)}. أيّ الجزأين ${big ? 'أكبر' : 'أصغر'}: ال${n1} أم ال${n2}؟`, en: `Two equal ${en}s: the first is cut into ${d1} equal parts and the second into ${d2}. Which part is ${big ? 'bigger' : 'smaller'}: a ${PART_EN[n1]} or a ${PART_EN[n2]}? (نصف = half, ثلث = third, ربع = quarter)` };
+    return { eq: `${d1}, ${d2}`, answer: ans, wrongs: [ans === `ال${n1}` ? `ال${n2}` : `ال${n1}`, 'متساويان', 'الكل'], ar: `${two} متساويتان، قُسّمت الأولى إلى ${sameParts(d1)} والثانية إلى ${sameParts(d2)}. أيّ الجزأين ${big ? 'أكبر' : 'أصغر'}: ال${n1} أم ال${n2}؟`, en: `Two equal ${en}s: the first is cut into ${d1} equal parts and the second into ${d2}. Which part is ${big ? 'bigger' : 'smaller'}: a ${PART_EN[n1]} or a ${PART_EN[n2]}? (نصف = half, ثلث = third, ربع = quarter)` };
   }
   if (k === 4) return { eq: name, answer: String(d), wrongs: ints(d, [d + 1, d - 1, 2 * d, d + 2]), ar: `قُسّمت ${one} إلى أجزاء متطابقة، كل جزء منها ${name} ${the}. كم جزءًا فيها؟`, en: `A ${en} is cut into equal parts, and each part is a ${PART_EN[name]} of the ${en}. How many parts are there?` };
-  return { eq: `${d}`, answer: name, wrongs: [...PARTS.map(p => p[1]).filter(x => x !== name), 'كل'], ar: `قُسّمت ${one} إلى ${sameParts(d)}. ماذا يسمّى كل جزء منها؟`, en: `A ${en} is cut into ${d} equal parts. What is each part called? (نصف = half, ثلث = third, ربع = quarter)` };
+  return { eq: `${d}`, answer: name, wrongs: [...PARTS_G1.map(p => p[1]).filter(x => x !== name), 'كل', 'ضعف'], ar: `قُسّمت ${one} إلى ${sameParts(d)}. ماذا يسمّى كل جزء منها؟`, en: `A ${en} is cut into ${d} equal parts. What is each part called? (نصف = half, ثلث = third, ربع = quarter)` };
 });
-const PART_NAMES = ['النصف', 'الثلث', 'الربع'];
 const fractionOfSetG1 = T('fraction_of_set_g1', /^الكسر كجزء من مجموعه$/, [1, 1], ({ rng }) => {
   // at least 3 balls in the group, so it is «4 كرات» or «12 كرةً», never «2 كرات»
-  const [d, name] = pick(rng, PARTS), q = int(rng, d === 2 ? 2 : 1, d === 2 ? 8 : d === 3 ? 4 : 3), n = d * q, k = pick(rng, [0, 1, 2]);
+  const [d, name] = pick(rng, PARTS_G1), q = int(rng, d === 2 ? 2 : 1, d === 2 ? 8 : 3), n = d * q, k = pick(rng, [0, 1, 2]);
   const named = `ال${name}`;
   if (k === 1) {
-    // the part is known, find the whole group
-    return { eq: `${name}, ${q}`, answer: String(n), wrongs: ints(n, [q, q + d, n + q, n - q, n + d]), ar: `أخذ سامي ${name} الكرات التي في الصندوق، فكان معه ${balls(q)}. كم كرة كانت في الصندوق؟`, en: `Sami took ${name === 'نصف' ? 'half' : name === 'ثلث' ? 'a third' : 'a quarter'} of the balls in the box and had ${q}. How many balls were in the box?` };
+    // the part is taken away: how many are left (finding the whole from a part is multiplication)
+    return { eq: `${n}, ${name}`, answer: String(n - q), wrongs: ints(n - q, [q, n, n - q + 1, n - q - 1, n + q]), ar: `في صندوق ${balls(n)}، أخذ سامي ${name}ها. كم كرة بقيت في الصندوق؟`, en: `A box has ${n} balls and Sami takes ${name === 'نصف' ? 'half' : 'a quarter'} of them. How many balls are left in the box?` };
   }
   if (k === 2) {
     // name the part: q of n is a half, a third or a quarter
-    return { eq: `${q}, ${n}`, answer: named, wrongs: [...PART_NAMES.filter(x => x !== named), 'الكل'], ar: `في مجموعة ${balls(n)}، منها ${redBalls(q)}. ما الجزء الذي تمثله الكرات الحمراء من المجموعة: النصف أم الثلث أم الربع؟`, en: `A group has ${n} balls and ${q} of them are red. What part of the group are the red balls: a half, a third or a quarter? (النصف = half, الثلث = third, الربع = quarter)` };
+    return { eq: `${q}, ${n}`, answer: named, wrongs: [named === 'النصف' ? 'الربع' : 'النصف', 'الكل', 'الضعف'], ar: `في مجموعة ${balls(n)}، منها ${redBalls(q)}. ما الجزء الذي تمثله الكرات الحمراء من المجموعة: النصف أم الربع؟`, en: `A group has ${n} balls and ${q} of them are red. What part of the group are the red balls: a half or a quarter? (النصف = half, الربع = quarter)` };
   }
   return { eq: `${n}`, answer: String(q), wrongs: ints(q, [n, q + 1, q - 1, n - q]), ar: `في مجموعة ${balls(n)}، كم كرة في ${name} المجموعة؟`, en: `A group has ${n} balls. How many balls are in ${name === 'نصف' ? 'half' : name === 'ثلث' ? 'a third' : 'a quarter'} of the group?` };
 });
@@ -1077,10 +1181,44 @@ const decimalMoney = T('decimal_money', /^الاعداد العشريه والن
   return { eq: `${dec(a)}, ${dec(b)}`, answer: dec(hi), wrongs: wrongsFrom(dec(hi), [dec(lo), dec(hi + 10), dec(hi - 10), dec(hi + lo)], j => dec(hi + Math.abs(j))), ar: `أي المبلغين أكبر: ${dec(a)} دينارًا أم ${dec(b)} دينارًا؟ (اكتب المبلغ الأكبر)`, en: `Which amount is larger: ${dec(a)} dinars or ${dec(b)} dinars? (write the larger amount)` };
 });
 
+/** The three Grade 1 coin lessons used to share one bank; each now asks its own thing. */
 const coins = (id: string, match: RegExp) => T(id, match, [1, 1], ({ rng }) => {
-  const v = pick(rng, [5, 10]), n = int(rng, 2, 6), w = v === 5 ? 10 : 5, m = int(rng, 2, 4), k = pick(rng, [0, 1, 2]);
-  if (k === 0) return { eq: `${v}, ${n}`, answer: String(v * n), wrongs: ints(v * n, [v + n, v * n + v, n, v * n - 1]), ar: `مع ليلى ${n === 2 ? 'قطعتان نقديتان' : `${n} قطع نقدية`}، قيمة كل منها ${v} قروش. كم قرشًا معها؟`, en: `Layla has ${n} coins worth ${v} qirsh each. How many qirsh does she have?` };
-  if (k === 1) return { eq: `${v}, ${n}, ${w}, ${m}`, answer: String(v * n + w * m), wrongs: ints(v * n + w * m, [v + n + w + m, v * n, w * m, v * n + w * m + v]), ar: `مع ليلى ${pieces(n)} من فئة ${v} قروش و ${pieces(m)} من فئة ${w} قروش. كم قرشًا معها؟`, en: `Layla has ${n} coins of ${v} qirsh and ${m} coins of ${w} qirsh. How many qirsh does she have?` };
+  // counts of 3 or more, so «3 قطع», never «2 قطع» (it is «قطعتان»)
+  const v = pick(rng, [5, 10]), n = int(rng, 3, 6), w = v === 5 ? 10 : 5, m = int(rng, 3, 4);
+  const k = id === 'coins_a' ? pick(rng, [0, 1, 5]) : id === 'coins_b' ? pick(rng, [2, 4, 6]) : pick(rng, [3, 7, 8]);
+  if (k === 5) {
+    // telling the coins apart: which is worth more
+    const [x, y] = shuffle(rng, pick(rng, [[1, 5], [5, 10], [10, 25], [25, 50], [5, 25], [10, 50]] as Array<[number, number]>)), big = Math.max(x!, y!);
+    const name = (c: number) => (c === 1 ? 'قرش واحد' : qirsh(c));
+    return { eq: `${x}, ${y}`, answer: name(big), wrongs: [name(Math.min(x!, y!)), 'متساويتان', name(x! + y!)], ar: `أيّ القطعتين أكبر قيمة: قطعة ${name(x!)} أم قطعة ${name(y!)}؟`, en: `Which coin is worth more: ${x} qirsh or ${y} qirsh?` };
+  }
+  if (k === 6) {
+    // the same amount made another way: complete it
+    const [a, b, gap] = pick(rng, [[10, 10, 5], [10, 5, 10], [25, 10, 15], [10, 10, 30], [25, 5, 20]] as Array<[number, number, number]>), total = a + b + gap;
+    return { eq: `${total}, ${a}, ${b}`, answer: String(gap), wrongs: ints(gap, [total, a + b, gap + 5, gap - 5]), ar: `أكمل: ${qirsh(total)} = ${qirsh(a)} + ${qirsh(b)} + ___`, en: `Complete: ${total} qirsh = ${a} qirsh + ${b} qirsh + ___ qirsh` };
+  }
+  if (k === 7) {
+    // not enough yet: how much more
+    const have = v * n, price = have + 5 * int(rng, 1, 4);
+    return { eq: `${price}, ${have}`, answer: String(price - have), wrongs: ints(price - have, [price, have, price + have, price - have + 5]), word: true, ar: `ثمن قصة ${qirsh(price)}، ومع ليلى ${qirsh(have)} فقط. كم قرشًا ينقصها لتشتري القصة؟`, en: `A story book costs ${price} qirsh and Layla has only ${have} qirsh. How many more qirsh does she need?` };
+  }
+  if (k === 8) {
+    // paying with one kind of coin
+    const c = pick(rng, [5, 10]), cnt = int(rng, 3, 6), price = c * cnt;
+    return { eq: `${price}, ${c}`, answer: String(cnt), wrongs: ints(cnt, [price, c, cnt + 1, cnt - 1]), word: true, ar: `دفع سامي ثمن عصير ${qirsh(price)} بقطع من فئة ${qirsh(c)} فقط. كم قطعة دفع؟`, en: `Sami pays ${price} qirsh for a juice using only ${c}-qirsh coins. How many coins does he pay?` };
+  }
+  if (k === 4) {
+    // one bigger coin in smaller coins of one kind
+    const [big, small] = pick(rng, [[10, 5], [25, 5], [50, 10], [50, 25], [50, 5]] as Array<[number, number]>), c = big / small;
+    return { eq: `${big}, ${small}`, answer: String(c), wrongs: ints(c, [c + 1, c - 1, big, c * 2]), ar: `كم قطعة من فئة ${qirsh(small)} تساوي قطعة واحدة من فئة ${qirsh(big)}؟`, en: `How many ${small}-qirsh coins make one ${big}-qirsh coin?` };
+  }
+  if (k === 3) {
+    // buying: what is left after paying
+    const total = v * n, p = 5 * int(rng, 1, total / 5 - 1), left = total - p;
+    return { eq: `${total}, ${p}`, answer: String(left), wrongs: ints(left, [total + p, total, p, left + 5]), word: true, ar: `مع سامي ${qirsh(total)}، اشترى بها لعبة ثمنها ${qirsh(p)}. كم قرشًا بقي معه؟`, en: `Sami has ${total} qirsh and buys a toy for ${p} qirsh. How many qirsh does he have left?` };
+  }
+  if (k === 0) return { eq: `${v}, ${n}`, answer: String(v * n), wrongs: ints(v * n, [v + n, v * n + v, n, v * n - 1]), ar: `مع ليلى ${n} قطع نقدية، قيمة كل منها ${v} قروش. كم قرشًا معها؟`, en: `Layla has ${n} coins worth ${v} qirsh each. How many qirsh does she have?` };
+  if (k === 1) return { eq: `${v}, ${n}, ${w}, ${m}`, answer: String(v * n + w * m), wrongs: ints(v * n + w * m, [v + n + w + m, v * n, w * m, v * n + w * m + v]), ar: `مع ليلى ${n} قطع من فئة ${v} قروش و ${m} قطع من فئة ${w} قروش. كم قرشًا معها؟`, en: `Layla has ${n} coins of ${v} qirsh and ${m} coins of ${w} qirsh. How many qirsh does she have?` };
   const total = v * n;
   return { eq: `${total}, ${v}`, answer: String(n), wrongs: ints(n, [total, v, n + 1, n - 1]), ar: `كم قطعة من فئة ${v} قروش تلزم لتكوين ${qirsh(total)}؟`, en: `How many coins of ${v} qirsh make ${total} qirsh?` };
 });
@@ -1122,15 +1260,15 @@ const weekDays = T('week_days', /^ايام الاسبوع$/, [1, 1], ({ rng }) =
     const fwd = rng() < 0.5, ans = DAYS[(i + (fwd ? 2 : 5)) % 7]!;
     return { eq: DAYS[i]!, answer: ans, wrongs: [DAYS[(i + (fwd ? 1 : 6)) % 7]!, DAYS[i]!, DAYS[(i + (fwd ? 3 : 4)) % 7]!], ar: fwd ? `إذا كان أمس يوم ${DAYS[i]}، فما اليوم غدًا؟` : `إذا كان غدًا يوم ${DAYS[i]}، فما اليوم أمس؟`, en: fwd ? `If yesterday was ${DAYS[i]}, what day is tomorrow? (Arabic day names)` : `If tomorrow is ${DAYS[i]}, what day was yesterday? (Arabic day names)` };
   }
-  if (k === 0) return { eq: DAYS[i]!, answer: DAYS[(i + 1) % 7]!, wrongs: others(rng, DAYS[(i + 1) % 7]!, DAYS), ar: `ما اليوم الذي يأتي بعد يوم ${DAYS[i]}؟ (الأسبوع يبدأ بالأحد)`, en: `Which day comes after ${DAYS[i]}? (the week starts on Sunday)` };
-  if (k === 1) return { eq: DAYS[i]!, answer: DAYS[(i + 6) % 7]!, wrongs: others(rng, DAYS[(i + 6) % 7]!, DAYS), ar: `ما اليوم الذي يأتي قبل يوم ${DAYS[i]}؟ (الأسبوع يبدأ بالأحد)`, en: `Which day comes before ${DAYS[i]}? (the week starts on Sunday)` };
+  if (k === 0) return { eq: DAYS[i]!, answer: DAYS[(i + 1) % 7]!, wrongs: others(rng, DAYS[(i + 1) % 7]!, DAYS), ar: `ما اليوم الذي يأتي بعد يوم ${DAYS[i]}؟`, en: `Which day comes after ${DAYS[i]}?` };
+  if (k === 1) return { eq: DAYS[i]!, answer: DAYS[(i + 6) % 7]!, wrongs: others(rng, DAYS[(i + 6) % 7]!, DAYS), ar: `ما اليوم الذي يأتي قبل يوم ${DAYS[i]}؟`, en: `Which day comes before ${DAYS[i]}?` };
   return { eq: '', answer: '7', wrongs: ['5', '6', '10'], ar: 'كم يومًا في الأسبوع؟', en: 'How many days are in a week?' };
 });
 
 /** How the hour is read aloud: «السابعة والنصف». */
 const HOUR_W = ['الواحدة', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة', 'الثامنة', 'التاسعة', 'العاشرة', 'الحادية عشرة', 'الثانية عشرة'];
 const hourTime = (id: string, match: RegExp, half: boolean) => T(id, match, [1, 1], ({ rng }) => {
-  const h = int(rng, 1, 11), j = int(rng, 1, 3), hh = (h + j - 1) % 12 + 1;
+  const h = int(rng, 1, 11);
   const pad = (m: number) => String(m).padStart(2, '0');
   if (!half) {
     const k = pick(rng, [0, 1, 2]);
@@ -1140,11 +1278,11 @@ const hourTime = (id: string, match: RegExp, half: boolean) => T(id, match, [1, 
       return { eq: ans, answer: ans, wrongs: wrongsFrom(ans, [`12:${pad(5 * h)}`, `${h}:12`, `${h % 12 + 1}:00`, `${(h + 10) % 12 + 1}:00`], q => `${(h + Math.abs(q)) % 12 + 1}:00`), ar: `عقرب الدقائق عند العدد 12، وعقرب الساعات عند العدد ${h}. ما الوقت؟`, en: `The minute hand points to 12 and the hour hand points to ${h}. What time is it?` };
     }
     if (k === 2) {
-      // from one whole hour to another, on the same morning or afternoon
-      const s = int(rng, 1, 9), d = int(rng, 1, Math.min(4, 12 - s)), e = s + d;
-      return { eq: `${s}:00, ${e}:00`, answer: String(d), wrongs: ints(d, [e, s + e, d + 1, d + 2, d - 1]), ar: `بدأ سامي اللعب الساعة ${s}:00 وانتهى الساعة ${e}:00. كم ساعة لعب؟`, en: `Sami started playing at ${s}:00 and stopped at ${e}:00. How many hours did he play?` };
+      // a digital clock read aloud — the book reads whole hours on both clocks, not elapsed time
+      const g = int(rng, 1, 12), ans = `${HOUR_W[g - 1]} تمامًا`;
+      return { eq: `${g}:00`, answer: ans, wrongs: [`${HOUR_W[g % 12]} تمامًا`, `${HOUR_W[g - 1]} والنصف`, `${HOUR_W[(g + 10) % 12]} تمامًا`], ar: `تعرض ساعة رقمية الوقت ${g}:00. كيف نقرأ هذا الوقت؟`, en: `A digital clock shows ${g}:00. How do we say this time in Arabic?` };
     }
-    return { eq: `${h}:00, ${j}`, answer: `${hh}:00`, wrongs: wrongsFrom(`${hh}:00`, [`${h}:00`, `${hh % 12 + 1}:00`, `${(hh + 10) % 12 + 1}:00`, `${h}:30`], k => `${(hh + Math.abs(k)) % 12 + 1}:00`), ar: `الساعة الآن ${h}:00. ما الوقت بعد ${j === 1 ? 'ساعة واحدة' : j === 2 ? 'ساعتين' : '3 ساعات'}؟`, en: `It is ${h}:00 now. What time will it be in ${j} hour${j === 1 ? '' : 's'}?` };
+    return { eq: `${h}:00`, answer: `${h}:00`, wrongs: wrongsFrom(`${h}:00`, [`${h % 12 + 1}:00`, `${(h + 10) % 12 + 1}:00`, `${h}:30`], k => `${(h + Math.abs(k)) % 12 + 1}:00`), ar: `الساعة الآن ${HOUR_W[h - 1]} تمامًا. كيف تعرض الساعة الرقمية هذا الوقت؟`, en: `It is ${h} o’clock. How does a digital clock show this time?` };
   }
   const k = pick(rng, [0, 1, 2, 3, 3]);
   if (k === 3) {
@@ -1157,7 +1295,8 @@ const hourTime = (id: string, match: RegExp, half: boolean) => T(id, match, [1, 
     const g = int(rng, 1, 12), next = g % 12 + 1;
     return { eq: `${g}:30`, answer: `${g}:30`, wrongs: wrongsFrom(`${g}:30`, [`${next}:30`, `${g}:06`, `6:${String((g * 5) % 60).padStart(2, '0')}`, `${g}:00`], j => `${(g + Math.abs(j)) % 12 + 1}:30`), ar: `عقرب الساعات بين ${g} و ${next}، وعقرب الدقائق عند العدد 6. ما الوقت؟`, en: `The hour hand is between ${g} and ${next} and the minute hand points to 6. What time is it?` };
   }
-  if (k === 2) return { eq: `${h}:30`, answer: `${h}:00`, wrongs: wrongsFrom(`${h}:00`, [`${h}:30`, `${h % 12 + 1}:00`, `${(h + 10) % 12 + 1}:30`, `${h}:15`], j => `${(h + Math.abs(j)) % 12 + 1}:00`), ar: `تشير الساعة إلى ${h}:30. ما الوقت قبل نصف ساعة؟`, en: `A clock shows ${h}:30. What time was it half an hour earlier?` };
+  // reading the time, not elapsed time: the half hour said aloud, shown on a digital clock
+  if (k === 2) return { eq: `${h}:30`, answer: `${h}:30`, wrongs: wrongsFrom(`${h}:30`, [`${h}:00`, `${h % 12 + 1}:30`, `${(h + 10) % 12 + 1}:30`, `6:${String(h * 5).padStart(2, '0')}`], j => `${(h + Math.abs(j)) % 12 + 1}:30`), ar: `الساعة الآن ${HOUR_W[h - 1]} والنصف. كيف تعرض الساعة الرقمية هذا الوقت؟`, en: `It is half past ${h}. How does a digital clock show this time?` };
   return { eq: `${h}:00`, answer: `${h}:30`, wrongs: wrongsFrom(`${h}:30`, [`${h}:00`, `${h % 12 + 1}:00`, `${h}:15`, `${h % 12 + 1}:30`], k => `${(h + Math.abs(k)) % 12 + 1}:30`), ar: `الساعة الآن ${h}:00. ما الوقت بعد نصف ساعة؟`, en: `It is ${h}:00 now. What time will it be in half an hour?` };
 });
 
@@ -1248,12 +1387,21 @@ const UNIT_STORY: Record<string, (n: number) => [string, string]> = {
   mass: n => [`كتلة حقيبة ${n} مكعبات كبيرة، وكتلة المكعب الكبير تساوي كتلة مكعبين صغيرين. كم مكعبًا صغيرًا كتلة الحقيبة؟`, `A bag has the mass of ${n} big cubes, and a big cube has the mass of two small cubes. How many small cubes is the mass of the bag?`],
   capacity: n => [`سعة دلو ${n} أكواب كبيرة، وسعة الكوب الكبير تساوي سعة كوبين صغيرين. كم كوبًا صغيرًا سعة الدلو؟`, `A bucket holds ${n} big cups, and a big cup holds as much as two small cups. How many small cups does the bucket hold?`],
 };
+/** Three things in order, smallest first, for «A is longer than B…» items. */
+const TRIPLES: Record<string, Array<[string, string, string, string]>> = {
+  length: [['الممحاة', 'القلم', 'المسطرة', 'The pencil is longer than the eraser and the ruler is longer than the pencil. Which is the longest?'], ['الإصبع', 'الشبر', 'الذراع', 'A hand span is longer than a finger and an arm is longer than a span. Which is the longest?']],
+  mass: [['الريشة', 'التفاحة', 'البطيخة', 'An apple is heavier than a feather and a watermelon is heavier than the apple. Which is the heaviest?'], ['القلم', 'الكتاب', 'الحقيبة', 'A book is heavier than a pencil and a bag is heavier than the book. Which is the heaviest?']],
+  capacity: [['الملعقة', 'الكوب', 'الدلو', 'A cup holds more than a spoon and a bucket holds more than the cup. Which holds the most?'], ['الفنجان', 'الإبريق', 'الحوض', 'A jug holds more than a small cup and a tub holds more than the jug. Which holds the most?']],
+};
+const MOST: Record<string, [string, string]> = { length: ['أطول', 'الأطول'], mass: ['أثقل', 'الأثقل'], capacity: ['أكبر سعة', 'الأكبر سعة'] };
 const compareMeasure = (id: string, match: RegExp, what: string, bigWord: string, en: string, big: string, what3: string) => T(id, match, [1, 1], ({ rng }) => {
   const a = int(rng, 2, 14); let b = int(rng, 2, 14); while (b === a) b = int(rng, 2, 14);
-  const k = pick(rng, [0, 1, 2, 3, 3]);
-  if (k === 3) {
-    const n = int(rng, 3, 7), [ar, enS] = UNIT_STORY[en]!(n);
-    return { eq: `${n}, 2`, answer: String(2 * n), wrongs: ints(2 * n, [n, n + 2, 2 * n + 1, 2 * n - 1, n * n]), ar, en: enS };
+  // comparing and ordering only; measuring with a non-standard unit is the next lesson (`unitsNonStd`)
+  const k = pick(rng, [0, 1, 2]);
+  if (rng() < 0.3) {
+    // two comparisons, then the extreme of three: no numbers, the book's own way of comparing
+    const [x, y, z, er] = pick(rng, TRIPLES[en]!), most = MOST[en]!;
+    return { eq: `${x} ${y} ${z}`, answer: z, wrongs: [x, y, 'متساوية'], ar: `${y} ${most[0]} من ${x}، و${z} ${most[0]} من ${y}. أيّها ${most[1]}؟`, en: `${er}` };
   }
   if (k === 2) {
     // order three things: ascending puts the smallest first, descending the largest
@@ -1306,9 +1454,250 @@ const centimetre = T('cm_lengths', /^السنتيمتر$/, [2, 2], ({ rng }) => 
   return { eq: `${a}`, answer: String(a * 2), wrongs: ints(a * 2, [a, a + 2, a * 3, a * 2 + 1]), ar: `طول قلم ${a} سم. ما طول قلمين مثله إذا وُضعا طرفًا إلى طرف؟`, en: `A pencil is ${a} cm long. How long are two such pencils placed end to end?` };
 });
 
+
+// ─── Grade 1 lessons that had no bank, or shared one (review, 2026-11-13) ─────
+// Each asks what its lesson's own objective («أتعلّم اليوم») names, in words a
+// six-year-old's teacher reads aloud — no picture needed. Three kinds or more each
+// (`mathLessonKinds.test.ts`).
+
+/** Four distinct options: the answer and three others from a list. */
+const fourOf = (rng: Rng, ans: string, pool: readonly string[]) => others(rng, ans, pool);
+
+// «الموقع والاتجاه»: positions relative to each other; right and left.
+const OPPOSITES: Array<[string, string]> = [['فوق', 'تحت'], ['أمام', 'خلف'], ['داخل', 'خارج'], ['قريب', 'بعيد'], ['يمين', 'يسار']];
+const POS_WORDS = ['فوق', 'تحت', 'أمام', 'خلف', 'داخل', 'خارج', 'قريب', 'بعيد', 'يمين', 'يسار'];
+const KIDS = ['هيا', 'سلمى', 'ليلى', 'ريم', 'سارة'];
+const THINGS: Array<[string, string]> = [['الكرة', 'the ball'], ['القطة', 'the cat'], ['الحقيبة', 'the bag'], ['الدمية', 'the doll']];
+const PLACES: Array<[string, string]> = [['الطاولة', 'the table'], ['الكرسي', 'the chair'], ['الصندوق', 'the box'], ['السرير', 'the bed']];
+const position = T('position_g1', /^الموقع والاتجاه$/, [1, 1], ({ rng }) => {
+  const k = pick(rng, [0, 1, 2, 3]);
+  if (k === 0) {
+    const [a, b] = pick(rng, OPPOSITES), flip = rng() < 0.5, w = flip ? b : a, ans = flip ? a : b;
+    return { eq: w, answer: ans, wrongs: fourOf(rng, ans, POS_WORDS.filter(x => x !== w)), ar: `ما عكس كلمة «${w}»؟`, en: `What is the opposite of «${w}»? (Arabic position words)` };
+  }
+  if (k === 1) {
+    // a queue named from the front: who is just behind someone
+    const kids = shuffle(rng, KIDS).slice(0, 4), i = int(rng, 0, 2), ans = kids[i + 1]!;
+    return { eq: kids.join(', '), answer: ans, wrongs: kids.filter(x => x !== ans), ar: `تقف أربع طالبات في طابور من الأمام إلى الخلف: ${kids.join('، ')}. من تقف خلف ${kids[i]} مباشرة؟`, en: `Four girls stand in a queue from front to back: ${kids.join(', ')}. Who stands just behind ${kids[i]}?` };
+  }
+  if (k === 2) {
+    // one thing placed relative to another, and the relation read back the other way
+    const [thing, thingEn] = pick(rng, THINGS), [place, placeEn] = pick(rng, PLACES), [rel, inv] = pick(rng, [['فوق', 'تحت'], ['تحت', 'فوق'], ['أمام', 'خلف'], ['خلف', 'أمام']] as Array<[string, string]>);
+    return { eq: `${thing} ${rel} ${place}`, answer: inv, wrongs: fourOf(rng, inv, ['فوق', 'تحت', 'أمام', 'خلف', 'داخل'].filter(x => x !== inv)), ar: `إذا كانت ${thing} ${rel} ${place}، فإن ${place} ___ ${thing}.`, en: `If ${thingEn} is ${rel === 'فوق' ? 'on' : rel === 'تحت' ? 'under' : rel === 'أمام' ? 'in front of' : 'behind'} ${placeEn}, then ${placeEn} is ___ ${thingEn}. (Arabic position word)` };
+  }
+  // right and left on one's own body
+  const right = rng() < 0.5, ans = right ? 'اليسرى' : 'اليمنى';
+  return { eq: right ? 'اليمنى' : 'اليسرى', answer: ans, wrongs: [right ? 'اليمنى' : 'اليسرى', 'الأمامية', 'العليا'], ar: `رفعت يدي ${right ? 'اليمنى' : 'اليسرى'}، ثم رفعت يدي الأخرى. ما اسم اليد الأخرى؟`, en: `I raise my ${right ? 'right' : 'left'} hand, then my other hand. Which hand is the other one? (اليمنى = right, اليسرى = left)` };
+});
+
+// «التصنيف وفق خاصية واحدة»: sorting by one property — kind, or colour.
+const GROUPS: Array<[string, string[]]> = [
+  ['الفواكه', ['تفاحة', 'موزة', 'برتقالة', 'عنب', 'فراولة']],
+  ['الحيوانات', ['قطة', 'أرنب', 'حصان', 'بقرة', 'خروف']],
+  ['الأدوات المدرسية', ['قلم', 'ممحاة', 'مسطرة', 'دفتر', 'مبراة']],
+  ['الملابس', ['قميص', 'حذاء', 'قبعة', 'معطف', 'جورب']],
+];
+const RED = ['كرة حمراء', 'تفاحة حمراء', 'فراولة حمراء', 'وردة حمراء', 'سيارة حمراء'];
+const YELLOW = ['موزة صفراء', 'ليمونة صفراء', 'زهرة صفراء', 'قبعة صفراء', 'حافلة صفراء'];
+const classifyOne = T('classify_one_g1', /^التصنيف وفق خاصيه واحده$/, [1, 1], ({ rng }) => {
+  const k = pick(rng, [0, 1, 2, 3]);
+  const [gi, go] = shuffle(rng, [0, 1, 2, 3]).slice(0, 2) as [number, number];
+  const [gName, gItems] = GROUPS[gi]!, [, oItems] = GROUPS[go]!;
+  if (k === 0) {
+    // the odd one out
+    const odd = pick(rng, oItems), shown = shuffle(rng, [...shuffle(rng, gItems).slice(0, 3), odd]);
+    return { eq: shown.join(', '), answer: odd, wrongs: shown.filter(x => x !== odd), ar: `أيّ هذه لا ينتمي إلى المجموعة: ${shown.join('، ')}؟`, en: `Which one does not belong: ${shown.join(', ')}? (Arabic words)` };
+  }
+  if (k === 1) {
+    // sorted by colour: how many of one colour
+    const r = int(rng, 2, 4), y = int(rng, 1, 3), list = shuffle(rng, [...shuffle(rng, RED).slice(0, r), ...shuffle(rng, YELLOW).slice(0, y)]), askRed = rng() < 0.5, c = askRed ? r : y;
+    return { eq: list.join(', '), answer: String(c), wrongs: ints(c, [r + y, askRed ? y : r, c + 1, c - 1]), ar: `صنّفت هيا هذه الأشياء حسب اللون: ${list.join('، ')}. كم شيئًا ${askRed ? 'أحمر' : 'أصفر'} عندها؟`, en: `Haya sorts these by colour: ${list.join(', ')}. How many ${askRed ? 'red' : 'yellow'} things does she have?` };
+  }
+  if (k === 2) {
+    // which group a thing goes in
+    const item = pick(rng, gItems), names = GROUPS.map(g => g[0]);
+    return { eq: item, answer: gName, wrongs: names.filter(x => x !== gName), ar: `في أيّ مجموعة نضع «${item}»؟`, en: `Which group does «${item}» go in? (Arabic group names)` };
+  }
+  // the rule behind a sorted group
+  const shown = shuffle(rng, gItems).slice(0, 4), names = GROUPS.map(g => g[0]);
+  return { eq: shown.join(', '), answer: gName, wrongs: names.filter(x => x !== gName), ar: `وُضعت هذه الأشياء معًا في مجموعة واحدة: ${shown.join('، ')}. على أيّ أساس صُنّفت؟`, en: `These were put together in one group: ${shown.join(', ')}. What is the group? (Arabic group names)` };
+});
+
+// «التصنيف وفق أكثر من خاصية»: two properties at once — shape and colour, colour and size.
+const SHAPE_COL: Array<[string, string, string]> = [['مربع', 'أحمر', 'أزرق'], ['مثلث', 'أحمر', 'أزرق'], ['دائرة', 'حمراء', 'زرقاء']];
+const classifyTwo = T('classify_two_g1', /^التصنيف وفق اكثر من خاصيه$/, [1, 1], ({ rng }) => {
+  const k = pick(rng, [0, 1, 2]);
+  if (k === 0) {
+    // count the things that have both properties
+    const items = Array.from({ length: int(rng, 6, 8) }, () => { const [s, red, blue] = pick(rng, SHAPE_COL); return rng() < 0.5 ? `${s} ${red}` : `${s} ${blue}`; });
+    const [s, red, blue] = pick(rng, SHAPE_COL), isRed = rng() < 0.5, want = `${s} ${isRed ? red : blue}`;
+    if (!items.includes(want)) items[int(rng, 0, items.length - 1)] = want;
+    const c = items.filter(x => x === want).length, sameShape = items.filter(x => x.startsWith(`${s} `)).length;
+    const plural = s === 'دائرة' ? `دائرةً ${isRed ? 'حمراء' : 'زرقاء'}` : `${s}ًا ${isRed ? 'أحمر' : 'أزرق'}`;
+    return { eq: items.join(', '), answer: String(c), wrongs: ints(c, [sameShape, items.length, c + 1, c - 1]), ar: `عند سامي هذه الأشكال: ${items.join('، ')}. كم ${plural} عنده؟`, en: `Sami has these shapes: ${items.join(', ')}. How many ${isRed ? 'red' : 'blue'} ${s === 'مربع' ? 'squares' : s === 'مثلث' ? 'triangles' : 'circles'} does he have?` };
+  }
+  if (k === 1) {
+    // the one thing with both properties
+    const [thing, colA, colB] = pick(rng, [['كرة', 'حمراء', 'زرقاء'], ['سيارة', 'حمراء', 'صفراء'], ['قبعة', 'خضراء', 'زرقاء']] as Array<[string, string, string]>);
+    const all = [`${thing} ${colA} كبيرة`, `${thing} ${colA} صغيرة`, `${thing} ${colB} كبيرة`, `${thing} ${colB} صغيرة`];
+    const ans = pick(rng, all), [, col, size] = ans.split(' ');
+    return { eq: ans, answer: ans, wrongs: all.filter(x => x !== ans), ar: `أيّ هذه ${col} و${size} معًا: ${shuffle(rng, all).join('، ')}؟`, en: `Which of these is both ${col === 'حمراء' ? 'red' : col === 'زرقاء' ? 'blue' : col === 'صفراء' ? 'yellow' : 'green'} and ${size === 'كبيرة' ? 'big' : 'small'}? (Arabic)` };
+  }
+  // which box a new shape goes in, when the boxes are sorted by shape and colour
+  const [s, red, blue] = pick(rng, SHAPE_COL), isRed = rng() < 0.5, item = `${s} ${isRed ? red : blue}`;
+  const box = (sh: string, r: boolean) => { const row = SHAPE_COL.find(x => x[0] === sh)!; return `صندوق «${sh} ${r ? row[1] : row[2]}»`; };
+  const other = pick(rng, SHAPE_COL.filter(x => x[0] !== s))[0];
+  const ans = box(s, isRed);
+  return { eq: item, answer: ans, wrongs: [box(s, !isRed), box(other, isRed), box(other, !isRed)], ar: `رتّبت المعلمة الأشكال في صناديق حسب الشكل واللون. في أيّ صندوق نضع «${item}»؟`, en: `The teacher sorts shapes into boxes by shape and colour. Which box does «${item}» go in? (Arabic)` };
+});
+
+// «خطة حل المسألة: التخمين والتحقق»: guess, check, adjust.
+const guessCheck = T('guess_check_g1', /^خطه حل المساله التخمين والتحقق$/, [1, 1], ({ rng }) => {
+  const k = pick(rng, [0, 1, 2]);
+  if (k === 0) {
+    // two numbers from their sum and difference
+    // the sum stays within 20, like every Grade 1 sum before unit 6
+    const b = int(rng, 2, 8), d = int(rng, 1, Math.min(6, 20 - 2 * b)), a = b + d, s = a + b;
+    const big = rng() < 0.5, ans = big ? a : b;
+    return { eq: `${s}, ${d}`, answer: String(ans), wrongs: ints(ans, [big ? b : a, s, d, ans + 1]), word: true, ar: `عددان مجموعهما ${s}، والعدد الأكبر يزيد على الأصغر بـ ${d}. خمّن ثم تحقّق: ما العدد ${big ? 'الأكبر' : 'الأصغر'}؟`, en: `Two numbers add up to ${s}, and the bigger is ${d} more than the smaller. Guess and check: what is the ${big ? 'bigger' : 'smaller'} number?` };
+  }
+  if (k === 1) {
+    // a number thought of, from what it became
+    const x = int(rng, 1, 7) * (rng() < 0.5 ? 1 : 10), y0 = int(rng, 2, 5) * 10 + int(rng, 0, 9), y = Math.max(y0, x + 3), n = y - x;
+    return { eq: `${x}, ${y}`, answer: String(n), wrongs: ints(n, [y + x, y, x, n + 1, n - 1].filter(v => v <= 99)), ar: `فكّرت هيا في عدد، ثم أضافت إليه ${x} فأصبح ${y}. ما العدد الذي فكّرت فيه؟ (خمّن ثم تحقّق)`, en: `Haya thinks of a number, adds ${x} and gets ${y}. What number did she think of? (guess and check)` };
+  }
+  // coins: how many of each, from the count and the total
+  const cnt = int(rng, 3, 5), tens = int(rng, 1, cnt - 1), total = 10 * tens + 5 * (cnt - tens);
+  return { eq: `${cnt}, ${total}`, answer: String(tens), wrongs: ints(tens, [cnt - tens, cnt, tens + 1, total / 10]), word: true, ar: `مع سامي ${cnt} قطع نقدية، بعضها من فئة 10 قروش وبعضها من فئة 5 قروش، ومجموعها ${qirsh(total)}. كم قطعة من فئة 10 قروش معه؟`, en: `Sami has ${cnt} coins, some 10-qirsh and some 5-qirsh, worth ${total} qirsh in all. How many 10-qirsh coins does he have?` };
+});
+
+// «مهارة حل المسألة: اختيار العملية»: is it adding or taking away?
+const OP_STORIES: Array<(a: number, b: number, add: boolean) => [string, string]> = [
+  (a, b, add) => [`في الحافلة ${a} طالبًا، ثم ${add ? 'صعد إليها' : 'نزل منها'} ${b} طلاب.`, `${a} pupils are on the bus, then ${b} ${add ? 'get on' : 'get off'}.`],
+  (a, b, add) => [`في المكتبة ${a} كتابًا، ثم ${add ? 'أُضيف إليها' : 'استُعير منها'} ${b} كتب.`, `The library has ${a} books, then ${b} ${add ? 'are added' : 'are borrowed'}.`],
+  (a, b, add) => [`في الحديقة ${a} عصفورًا، ثم ${add ? 'حطّ فيها' : 'طار منها'} ${b} عصافير.`, `${a} birds are in the garden, then ${b} ${add ? 'land' : 'fly away'}.`],
+];
+const chooseOp = T('choose_op_g1', /^مهاره حل المساله اختيار العمليه$/, [1, 1], ({ rng }) => {
+  const k = pick(rng, [0, 1, 2]), add = rng() < 0.5;
+  const a = int(rng, 2, 8) * 10 + int(rng, 1, 5), b = int(rng, 3, 9), [st, stEn] = pick(rng, OP_STORIES)(a, b, add), r = add ? a + b : a - b;
+  if (k === 0) {
+    const ans = add ? 'الجمع' : 'الطرح';
+    return { eq: `${a} ${add ? '+' : '−'} ${b}`, answer: ans, wrongs: [add ? 'الطرح' : 'الجمع', 'العدّ إلى الخلف', 'لا نحتاج إلى عملية'], ar: `${st} أيّ عملية نستعمل لنعرف العدد الآن: الجمع أم الطرح؟`, en: `${stEn} Which operation tells us how many there are now: adding or taking away?` };
+  }
+  if (k === 1) {
+    // the number sentence that fits
+    const ans = `${a} ${add ? '+' : '−'} ${b}`;
+    return { eq: ans, answer: ans, wrongs: [`${a} ${add ? '−' : '+'} ${b}`, `${b} + ${b}`, `${a} ${add ? '+' : '−'} ${b + 1}`], ar: `${st} أيّ جملة عددية تناسب المسألة؟`, en: `${stEn} Which number sentence fits the problem?` };
+  }
+  return { eq: `${a} ${add ? '+' : '−'} ${b}`, answer: String(r), wrongs: ints(r, [add ? a - b : a + b, a, r + 10, r + 1]), word: true, ar: `${st} اختر العملية المناسبة ثم احسب: كم العدد الآن؟`, en: `${stEn} Choose the right operation and work it out: how many are there now?` };
+});
+
+// «ترتيب الأعمال اليومية»: ordering a day's activities by when they happen.
+const DAY_ACTS: Array<[string, string]> = [
+  ['أستيقظ من النوم', 'في الصباح'], ['أتناول الفطور', 'في الصباح'], ['أذهب إلى المدرسة', 'في الصباح'],
+  ['أعود من المدرسة', 'في الظهر'], ['أتناول الغداء', 'في الظهر'], ['أكتب واجباتي', 'في المساء'],
+  ['أتناول العشاء', 'في المساء'], ['أنام', 'في الليل'],
+];
+const TIMES = ['في الصباح', 'في الظهر', 'في المساء', 'في الليل'];
+const dailyOrder = T('daily_order_g1', /^ترتيب الاعمال اليوميه$/, [1, 1], ({ rng }) => {
+  const k = pick(rng, [0, 1, 2]);
+  if (k === 0) {
+    // which comes first (or last) of four
+    const idx = shuffle(rng, DAY_ACTS.map((_, i) => i)).slice(0, 4), first = rng() < 0.5, at = first ? Math.min(...idx) : Math.max(...idx);
+    const shown = idx.map(i => DAY_ACTS[i]![0]), ans = DAY_ACTS[at]![0];
+    return { eq: shown.join(', '), answer: ans, wrongs: shown.filter(x => x !== ans), ar: `أيّ هذه الأعمال أقوم به ${first ? 'أولًا' : 'آخرًا'} في يوم المدرسة: ${shown.join('، ')}؟`, en: `Which of these do I do ${first ? 'first' : 'last'} on a school day: ${shown.join(', ')}? (Arabic)` };
+  }
+  if (k === 1) {
+    // what comes next
+    const i = int(rng, 0, DAY_ACTS.length - 2), ans = DAY_ACTS[i + 1]![0];
+    return { eq: DAY_ACTS[i]![0], answer: ans, wrongs: fourOf(rng, ans, DAY_ACTS.map(x => x[0]).filter(x => x !== DAY_ACTS[i]![0])), ar: `في يوم المدرسة: ما العمل الذي يأتي بعد «${DAY_ACTS[i]![0]}» مباشرة؟`, en: `On a school day, what comes right after «${DAY_ACTS[i]![0]}»? (Arabic)` };
+  }
+  // the time of day an activity belongs to
+  const [act, time] = pick(rng, DAY_ACTS.filter(a => a[0] !== 'أكتب واجباتي'));
+  return { eq: act, answer: time, wrongs: TIMES.filter(x => x !== time), ar: `في أيّ وقت من اليوم يكون عادةً: «${act}»؟`, en: `When do I usually do «${act}»? (Arabic times of day)` };
+});
+
+// Data: «جداول البيانات», «تمثيل البيانات بالصور», «تفسير بيانات ممثلة بالصور» — a table read, a
+// picture graph made, a picture graph read. They shared one bank (`read_data_g12`).
+const PETS: Array<[string, string]> = [['القطط', 'cats'], ['الكلاب', 'dogs'], ['العصافير', 'birds'], ['الأرانب', 'rabbits']];
+/** Three categories with distinct counts 2–7 (so «the most» and «the fewest» have one answer). */
+const threeCounts = (rng: Rng) => shuffle(rng, [2, 3, 4, 5, 6, 7]).slice(0, 3);
+/** One context per kind of question, so each kind reads as its own task (`sameKind`). */
+const TABLE_CTX = [
+  { lead: 'سأل المعلم طلبة الصف عن فاكهتهم المفضلة، وسجّل الإجابات في جدول:', en: 'The teacher asked about favourite fruits and recorded them in a table:', cats: ['التفاح', 'الموز', 'البرتقال', 'العنب'] },
+  { lead: 'صوّت طلبة الصف على مكان الرحلة، وهذا جدول الأصوات:', en: 'The class voted on where to go on a trip; the votes are:', cats: ['الحديقة', 'المتحف', 'المزرعة', 'الشاطئ'] },
+  { lead: 'سجّلت سلمى في جدول عدد القصص التي قرأها كل صديق من أصدقائها:', en: 'Salma recorded in a table how many stories each friend read:', cats: ['هيا', 'ريم', 'علي', 'سامي'] },
+  { lead: 'يبيّن جدول المزرعة عدد الحيوانات فيها:', en: 'The farm table shows the number of animals:', cats: ['الأبقار', 'الخراف', 'الدجاج', 'الأحصنة'] },
+] as const;
+const dataTable = T('data_table_g1', /^جداول البيانات$/, [1, 1], ({ rng }) => {
+  const k = pick(rng, [0, 1, 2, 3]), ctx = TABLE_CTX[k]!, cats = shuffle(rng, [...ctx.cats]).slice(0, 3), vs = threeCounts(rng);
+  const data = cats.map((c, i) => `${c}: ${vs[i]}`).join('، '), ar = `${ctx.lead} ${data}.`, en = `${ctx.en} ${cats.map((c, i) => `${c} ${vs[i]}`).join(', ')}.`;
+  if (k === 0) { const i = int(rng, 0, 2); return { eq: data, answer: String(vs[i]), wrongs: ints(vs[i]!, [...vs.filter((_, j) => j !== i), vs[i]! + 1]), ar: `${ar} كم طالبًا اختار ${cats[i]}؟`, en: `${en} How many chose ${cats[i]}? (Arabic)` }; }
+  if (k === 1) { const most = rng() < 0.5, at = vs.indexOf(most ? Math.max(...vs) : Math.min(...vs)); return { eq: data, answer: cats[at]!, wrongs: [...cats.filter((_, j) => j !== at), ctx.cats.find(c => !cats.includes(c))!], ar: `${ar} أيّ مكان حصل على ${most ? 'أكثر' : 'أقل'} الأصوات؟`, en: `${en} Which place got the ${most ? 'most' : 'fewest'} votes? (Arabic)` }; }
+  if (k === 2) { const t = vs.reduce((a, b) => a + b, 0); return { eq: data, answer: String(t), wrongs: ints(t, [Math.max(...vs), t + 1, t - 1, t + 10]), ar: `${ar} كم قصةً قرؤوا جميعًا؟`, en: `${en} How many stories did they read altogether?` }; }
+  const [i, j] = [vs.indexOf(Math.max(...vs)), vs.indexOf(Math.min(...vs))], d = vs[i]! - vs[j]!;
+  return { eq: data, answer: String(d), wrongs: ints(d, [vs[i]! + vs[j]!, vs[i]!, d + 1, d - 1]), ar: `${ar} بكم يزيد عدد ${cats[i]} على عدد ${cats[j]}؟`, en: `${en} How many more ${cats[i]} than ${cats[j]}? (Arabic)` };
+});
+const pictoMake = T('picto_make_g1', /^تمثيل البيانات بالصور$/, [1, 1], ({ rng }) => {
+  const [p1, p2] = shuffle(rng, PETS).slice(0, 2) as [[string, string], [string, string]], [a, b] = threeCounts(rng) as [number, number], k = pick(rng, [0, 1, 2]);
+  if (k === 0) {
+    // drawing a row: one ★ for each animal, some already drawn
+    const drawn = int(rng, 1, a - 1);
+    return { eq: `${a}, ${drawn}`, answer: String(a - drawn), wrongs: ints(a - drawn, [a, drawn, a + drawn, a - drawn + 1]), ar: `نمثّل ${p1[0]} بالصور: ★ لكل حيوان. عدد ${p1[0]} ${a}، ورسم سامي في صفها: ${stars(drawn)}. كم ★ بقي عليه أن يرسم؟`, en: `We show ${p1[1]} with pictures, one ★ each. There are ${a}, and Sami has drawn ${drawn}. How many more ★ must he draw?` };
+  }
+  if (k === 1) {
+    // the whole graph: how many pictures in all
+    return { eq: `${a}, ${b}`, answer: String(a + b), wrongs: ints(a + b, [a, b, a + b + 1, Math.abs(a - b)]), ar: `نريد أن نمثّل بالصور: ${p1[0]} ${a}، و${p2[0]} ${b}، صورة لكل حيوان. كم صورة نرسم كلّها؟`, en: `We want a picture graph of ${a} ${p1[1]} and ${b} ${p2[1]}, one picture each. How many pictures do we draw in all?` };
+  }
+  // which row is longer once drawn
+  const ans = a > b ? `صف ${p1[0]}` : `صف ${p2[0]}`;
+  return { eq: `${a}, ${b}`, answer: ans, wrongs: [a > b ? `صف ${p2[0]}` : `صف ${p1[0]}`, 'متساويان', 'لا نعرف قبل الرسم'], ar: `نمثّل بالصور: ${p1[0]} ${a}، و${p2[0]} ${b}، صورة لكل حيوان. أيّ الصفين يكون أطول؟`, en: `A picture graph shows ${a} ${p1[1]} and ${b} ${p2[1]}, one picture each. Which row is longer?` };
+});
+const PICTO_CTX = [
+  { lead: 'في التمثيل بالصور لحيوانات الحديقة (كل ★ حيوان واحد):', en: 'In the picture graph of the zoo animals (each ★ is one animal):', cats: ['القطط', 'الكلاب', 'العصافير', 'الأرانب'] },
+  { lead: 'مثّلت هيا بالصور ألوان السيارات التي مرّت أمام المدرسة (كل ★ سيارة واحدة):', en: 'Haya drew a picture graph of the colours of cars passing the school (each ★ is one car):', cats: ['الحمراء', 'البيضاء', 'الزرقاء', 'السوداء'] },
+  { lead: 'يبيّن التمثيل بالصور عدد الكرات في مخزن الملعب (كل ★ كرة واحدة):', en: 'The picture graph shows the balls in the sports store (each ★ is one ball):', cats: ['كرات القدم', 'كرات السلة', 'كرات الطائرة', 'كرات التنس'] },
+  { lead: 'مثّل الطلبة بالصور عدد الأيام الممطرة في كل شهر (كل ★ يوم واحد):', en: 'The pupils drew the rainy days of each month (each ★ is one day):', cats: ['تشرين الأول', 'تشرين الثاني', 'كانون الأول', 'كانون الثاني'] },
+] as const;
+const pictoRead = T('picto_read_g1', /^تفسير بيانات ممثله بالصور$/, [1, 1], ({ rng }) => {
+  const k = pick(rng, [0, 1, 2, 3]), ctx = PICTO_CTX[k]!, cats = shuffle(rng, [...ctx.cats]).slice(0, 3), vs = threeCounts(rng);
+  const data = cats.map((c, i) => `${c}: ${stars(vs[i]!)}`).join('، '), ar = `${ctx.lead} ${data}.`, en = `${ctx.en} ${cats.map((c, i) => `${c}: ${stars(vs[i]!)}`).join(', ')}.`;
+  if (k === 0) { const i = int(rng, 0, 2); return { eq: data, answer: String(vs[i]), wrongs: ints(vs[i]!, [...vs.filter((_, j) => j !== i), vs[i]! + 1]), ar: `${ar} كم عدد ${cats[i]}؟`, en: `${en} How many ${cats[i]} are there? (Arabic)` }; }
+  if (k === 1) { const most = rng() < 0.5, at = vs.indexOf(most ? Math.max(...vs) : Math.min(...vs)); return { eq: data, answer: cats[at]!, wrongs: [...cats.filter((_, j) => j !== at), ctx.cats.find(c => !cats.includes(c))!], ar: `${ar} أيّ لون ${most ? 'أكثر' : 'أقل'} عددًا؟`, en: `${en} Which colour has the ${most ? 'most' : 'fewest'} cars? (Arabic)` }; }
+  if (k === 2) { const t = vs.reduce((a, b) => a + b, 0); return { eq: data, answer: String(t), wrongs: ints(t, [Math.max(...vs), t + 1, t - 1, t + 10]), ar: `${ar} كم كرةً في المخزن كلّه؟`, en: `${en} How many balls are in the store altogether?` }; }
+  const [i, j] = [vs.indexOf(Math.max(...vs)), vs.indexOf(Math.min(...vs))], d = vs[i]! - vs[j]!;
+  return { eq: data, answer: String(d), wrongs: ints(d, [vs[i]! + vs[j]!, vs[i]!, d + 1, d - 1]), ar: `${ar} بكم يومًا تزيد أيام المطر في ${cats[i]} على أيامه في ${cats[j]}؟`, en: `${en} How many more rainy days in ${cats[i]} than in ${cats[j]}? (Arabic)` };
+});
+
+// «وحدات الطول / الكتلة / السعة غير القياسية»: measuring with a non-standard unit — apart from comparing.
+const UNITS_NS: Record<string, { pairs: Array<[string, string]>; q: string; what: string; obj: string[]; fit: Array<[string, string, string[]]> }> = {
+  length: { pairs: [['مشبك الورق', 'القلم'], ['عود الثقاب', 'الشبر'], ['القلم', 'الخطوة']], q: 'أطول', what: 'طول', obj: ['الطاولة', 'السبورة', 'الباب'],
+    fit: [['طول ملعب المدرسة', 'الخطوة', ['مشبك الورق', 'عود الثقاب', 'الممحاة']], ['طول الكتاب', 'مشبك الورق', ['الخطوة', 'الحبل', 'الباب']]] },
+  mass: { pairs: [['البلية', 'المكعب'], ['المكعب', 'التفاحة']], q: 'أثقل', what: 'كتلة', obj: ['الحقيبة', 'الكتاب', 'البطيخة'],
+    fit: [['كتلة قلم', 'المشبك', ['البطيخة', 'الحقيبة', 'الكرسي']], ['كتلة حقيبة', 'المكعب', ['الريشة', 'حبة الأرز', 'الورقة']]] },
+  capacity: { pairs: [['الملعقة', 'الكوب'], ['الكوب', 'الإبريق']], q: 'تتسع لكمية أكبر', what: 'سعة', obj: ['الدلو', 'القِدر', 'الحوض'],
+    fit: [['سعة الحوض', 'الدلو', ['الملعقة', 'الكأس الصغيرة', 'القطّارة']], ['سعة الكوب', 'الملعقة', ['الدلو', 'البرميل', 'الحوض']]] },
+};
+const unitsNonStd = (id: string, match: RegExp, key: 'length' | 'mass' | 'capacity') => T(id, match, [1, 1], ({ rng }) => {
+  const u = UNITS_NS[key]!, k = pick(rng, [0, 1, 2]);
+  if (k === 0) {
+    // the same thing measured twice: fewer units means the bigger unit
+    const [small, big] = pick(rng, u.pairs), nb = int(rng, 2, 6), ns = nb * int(rng, 2, 3), obj = pick(rng, u.obj);
+    const swap = rng() < 0.5, [first, nf, second, n2] = swap ? [big, nb, small, ns] : [small, ns, big, nb];
+    return { eq: `${nf}, ${n2}`, answer: big, wrongs: [small, 'متساويتان', 'لا نعرف'], ar: `${key === 'length' ? 'قيس' : 'قيست'} ${u.what} ${obj} مرتين: بوحدة «${first}» فكان القياس ${nf}، وبوحدة «${second}» فكان القياس ${n2}. أيّ الوحدتين ${u.q}؟`, en: `${obj} is measured twice: with «${first}» the measure is ${nf}, with «${second}» it is ${n2}. Which unit is bigger? (Arabic)` };
+  }
+  if (k === 1) {
+    // the suitable unit
+    const [what, ans, wrong] = pick(rng, u.fit);
+    return { eq: what, answer: ans, wrongs: wrong, ar: `أيّ وحدة أنسب لقياس ${what}؟`, en: `Which unit is best for measuring ${what}? (Arabic)` };
+  }
+  const n = int(rng, 3, 7), [ar, en] = UNIT_STORY[key]!(n);
+  return { eq: `${n}, 2`, answer: String(2 * n), wrongs: ints(2 * n, [n, n + 2, 2 * n + 1, 2 * n - 1, n * n]), ar, en };
+});
+
 export const EARLY_TOPICS: readonly Topic[] = [
   countingRange('count_123', /^الاعداد 1 2 3$/, 1, 3), countingRange('count_45', /^العددان 4 5$/, 4, 5), countingRange('count_678', /^الاعداد 6 7 8$/, 6, 8), countingRange('count_910', /^العددان 9 10$/, 9, 10),
-  zero, ordinal, tensOnes('tens_ones_a', /^العشرات$/), tensOnes('tens_ones_b', /^الاحاد والعشرات$/), tensOnes('tens_ones_c', /^تمثيل الاعداد ضمن منزلتين$/),
+  zero, ordinal, tensOnes('tens_ones_a', /^العشرات$/, 'tens'), tensOnes('tens_ones_b', /^الاحاد والعشرات$/, 'mixed'), tensOnes('tens_ones_c', /^تمثيل الاعداد ضمن منزلتين$/, 'model'),
   hundreds('hundreds_a', /^المئات$/), hundreds('hundreds_b', /^الاعداد ضمن ثلاث منازل$/), readWrite, thousands,
   evenOdd('even_odd_g1', /^الاعداد الزوجيه والاعداد الفرديه$/, 1), evenOdd('even_odd_g2', /^الاعداد الزوجيه والاعداد الفرديه$/, 2),
   numberChart, countUpDown,
@@ -1322,6 +1711,7 @@ export const EARLY_TOPICS: readonly Topic[] = [
   mentalG1('mental_add', /^الجمع الذهني$/, true), mentalG1('mental_sub', /^الطرح الذهني$/, false),
   tensG1('tens_add_g1', /^جمع العشرات$/, true), tensG1('tens_sub_g1', /^طرح العشرات$/, false),
   twoDigitG1('two_digit_add_g1', /^جمع عددين من منزلتين$/, true), twoDigitG1('two_digit_sub_g1', /^طرح عددين من منزلتين$/, false),
+  subDoubles, subMakeTen, addMakeTen, addThree,
   solids, planeShapes('plane_shapes', /^الاشكال المستويه$/, [1, 2]), planeShapes('plane_sides_g1', /^اضلاع الاشكال المستويه ورؤوسها$/, [1, 1]), planeShapes('plane_sides_g2', /^الاضلاع والرؤوس$/, [2, 2]),
   solidParts, geoPattern,
   halfQuarter('half', /^النصف$/, 'نصف'), halfQuarter('quarter', /^الربع$/, 'ربع'), equalParts, fractionOfSetG1, fractionOfSetG3,
@@ -1339,9 +1729,11 @@ export const EARLY_TOPICS: readonly Topic[] = [
   coins('coins_a', /^القطع النقديه$/), coins('coins_b', /^القطع النقديه المتساويه$/), coins('coins_c', /^استعمال القطع النقديه$/), dinar, banknotes,
   weekDays, hourTime('hour_full', /^الوقت بالساعات الكامله$/, false), hourTime('hour_half', /^الوقت بنصف الساعه$/, true),
   nearestMinutes('time_5', /^الوقت لاقرب 5 دقائق$/, 5), nearestMinutes('time_15', /^الوقت لاقرب ربع ساعه$/, 15), monthsOfYear, amPm, calendar,
-  compareMeasure('compare_len', /^مقارنه الاطوال وترتيبها$|^وحدات الطول غير القياسيه$/, 'أطوال', 'الأطول', 'length', 'longest', 'أطوال'),
-  compareMeasure('compare_mass', /^مقارنه الكتل وترتيبها$|^وحدات الكتله غير القياسيه$/, 'كتلتا', 'الأثقل', 'mass', 'heaviest', 'كتل'),
-  compareMeasure('compare_cap', /^مقارنه السعات وترتيبها$|^وحدات السعه غير القياسيه$/, 'سعتا', 'الأكبر سعة', 'capacity', 'largest', 'سعات'),
+  compareMeasure('compare_len', /^مقارنه الاطوال وترتيبها$/, 'أطوال', 'الأطول', 'length', 'longest', 'أطوال'),
+  compareMeasure('compare_mass', /^مقارنه الكتل وترتيبها$/, 'كتلتا', 'الأثقل', 'mass', 'heaviest', 'كتل'),
+  compareMeasure('compare_cap', /^مقارنه السعات وترتيبها$/, 'سعتا', 'الأكبر سعة', 'capacity', 'largest', 'سعات'),
+  unitsNonStd('units_len_g1', /^وحدات الطول غير القياسيه$/, 'length'), unitsNonStd('units_mass_g1', /^وحدات الكتله غير القياسيه$/, 'mass'), unitsNonStd('units_cap_g1', /^وحدات السعه غير القياسيه$/, 'capacity'),
+  position, classifyOne, classifyTwo, guessCheck, chooseOp, dailyOrder, dataTable, pictoMake, pictoRead,
   centimetre, unitsG2('units_m_g2', /^المتر$/, 'متر', 'سنتيمتر', 100, 'metre', 'centimetres'),
   unitsG2('units_kg_g2', /^الغرام والكيلوغرام$/, 'كيلوغرام', 'غرام', 1000, 'kilogram', 'grams'), unitsG2('units_l_g2', /^اللتر والمليلتر$/, 'لتر', 'مليلتر', 1000, 'litre', 'millilitres'),
 ];

@@ -1010,7 +1010,7 @@ const pyth = T('pythagoras', /^نظريه فيثاغورس$/, [8, 8], ({ rng, di
  * 2026-11-14 this generator's «(3 ، 4)» points and «x = 7» lines were Grade 6 work in a Grade 4 stem.
  */
 const squaresAr = (n: number) => `${n} ${tamyiz(n, 'مربعات', 'مربعًا', 'مربع')}`;
-const reflectLine = T('reflect_line', /^الانعكاس$/, [4, 4], ({ rng, diff }) => {
+const reflectLine: Topic = { ...T('reflect_line', /^الانعكاس$/, [4, 4], ({ rng, diff }) => {
   // 0 where the image of a vertex lies, 1 squares between a vertex and its image, 2 the grid line the image is on,
   // 3 a side's length after the reflection, 4 what a reflection keeps.
   const k = pick(rng, diff === 'easy' ? [0, 0, 1, 3] : [0, 1, 2, 3, 4]);
@@ -1059,7 +1059,7 @@ const reflectLine = T('reflect_line', /^الانعكاس$/, [4, 4], ({ rng, diff
     ar: 'أيّ مما يأتي يبقى كما هو في صورة الشكل بالانعكاس حول محور؟',
     en: 'Which of these stays the same in the image of a shape after a reflection in a mirror line?',
   };
-});
+}), ownsDifficulty: true };
 
 const translate = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng, diff }) => {
   const m = span(diff, 5, 8, 10);
