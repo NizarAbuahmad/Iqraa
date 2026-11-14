@@ -53,7 +53,9 @@ function recompute(eq: string): string | null {
 describe('the lesson decides the operation', () => {
   const cases: Array<[string, string | null]> = [
     ['الْجَمْعُ', 'add'],
-    ['الطَّرْحُ مَعَ إِعادَةِ التَّجْميعِ (1)', 'sub'],
+    ['الطَّرْحُ', 'sub'],
+    // Regrouping is its own generator (early.ts `columnTopics`, columnRegroup.test.ts), not the drill.
+    ['الطَّرْحُ مَعَ إِعادَةِ التَّجْميعِ (1)', null],
     ['الضَّرْبُ في 2', 'mul'],
     ['الْقِسْمَةُ عَلى 5', 'div'],
     ['مُقارَنَةُ الكُسورِ وَالأَعْدادِ الكَسْرِيَّةِ وَتَرْتيبُها', 'frac_compare'],
