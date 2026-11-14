@@ -67,7 +67,9 @@ export function elementaryOpsForTitle(title: string): ElementaryOp[] {
     if (/عشري|decimal/i.test(t)) return ['dec_compare'];
     return /الاعداد|numbers/i.test(t) ? ['compare'] : [];
   }
-  if (/مئوي|percent/i.test(t)) return /والكسور/.test(t) ? [] : ['percent'];
+  // «النسبة المئوية والكسور…» converts (pct_conv); Grade 6 «النسبة المئوية من عدد» has its own generator (pct_of_g6),
+  // since the shared op is a third conversions and grids
+  if (/مئوي|percent/i.test(t)) return /والكسور|من عدد/.test(t) ? [] : ['percent'];
   if (UNSERVED.test(t)) return [];
   // Grade 1's tens and two-digit lessons have their own generators (early.ts
   // `tensG1`, `twoDigitG1`); as plain add/sub they drew sums within 20. Not

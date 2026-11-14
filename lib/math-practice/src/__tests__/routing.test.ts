@@ -28,7 +28,9 @@ describe('primary lessons: the ops come from the title', () => {
     ['قسمة الكسور', 'frac_div'],
     ['جمع الأعداد العشرية وطرحها', 'dec+dec_sub'],
     ['ضرب الأعداد العشرية وقسمتها', 'dec_mul+dec_div'],
-    ['النسبة المئوية من عدد', 'percent'],
+    // Grade 5's lesson; Grade 6 «النسبة المئوية من عدد» has its own generator (pct_of_g6, topics.test.ts)
+    ['النسبة المئوية', 'percent'],
+    ['النسبة المئوية من عدد', '-'],
     ['القيمة المنزلية ضمن الألوف', 'place'],
     // «كجمع متكرر» / «كطرح متكرر» name the METHOD, not a second topic: the
     // add/sub items are unrelated three-digit sums («228 + 91 + 153»), which
