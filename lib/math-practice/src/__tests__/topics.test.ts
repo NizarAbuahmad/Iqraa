@@ -445,6 +445,11 @@ describe('answers recomputed from the stem', () => {
       if (has(p, 'أوجد مربع العدد')) { kinds.add('square'); assert.equal(ans, x! ** 2, p); }
       else if (has(p, '√')) { kinds.add('root'); assert.equal(ans ** 2, x, p); }
       else if (has(p, '∛')) { kinds.add('cube'); assert.equal(ans ** 3, x, p); }
+      else if (has(p, 'مكعب حجمه')) { kinds.add('cube edge'); assert.equal(ans ** 3, x, p); }
+      else if (has(p, 'مكعب كامل')) {
+        kinds.add('perfect cube');
+        for (const o of listOf(p)) assert.equal(Number.isInteger(Math.round(Math.cbrt(Number(o)) * 1e9) / 1e9), o === item.answer, `${p}: ${o}`);
+      }
       else if (has(p, '³')) { kinds.add('cube'); assert.equal(ans, x! ** 3, p); }
       else if (has(p, 'ما طول ضلعها')) { kinds.add('side'); assert.equal(ans ** 2, x, p); }
       else if (has(p, 'ما مساحته')) { kinds.add('area'); assert.equal(ans, x! ** 2, p); }
@@ -453,7 +458,41 @@ describe('answers recomputed from the stem', () => {
         for (const o of listOf(p)) assert.equal(Number.isInteger(Math.sqrt(Number(o))), o === item.answer, `${p}: ${o}`);
       } else assert.fail(`unknown stem: ${p}`);
     }
-    assert.equal(kinds.size, 6, [...kinds].join());
+    assert.equal(kinds.size, 8, [...kinds].join());
+  });
+
+  it('Grade 6 «الجذر التربيعي والجذر التكعيبي» asks a cube about half the time (it was one in five)', () => {
+    const t = topicFor('الجَذْرُ التَّرْبيعيُّ وَالجَذْرُ التَّكْعيبيُّ', 6)!;
+    assert.equal(t.id, 'squares');
+    let cubes = 0;
+    for (let i = 0; i < 400; i++) if (/∛|³|مكعب/.test(makeTopicItem(t, 6, TIERS[i % 3]!, new Set(), seeded(i + 7)).promptAr!)) cubes++;
+    assert.ok(cubes >= 160 && cubes <= 240, `cubes in 400: ${cubes}`);
+    for (let i = 0; i < 200; i++) assert.ok(!/∛|³|مكعب/.test(makeTopicItem(t, 5, TIERS[i % 3]!, new Set(), seeded(i + 7)).promptAr!), 'Grade 5 has no cubes');
+  });
+
+  it('Grade 6 «النسبة المئوية من عدد»: every item is a percent of something, and the key is p% of it', () => {
+    const title = 'النِّسْبَةُ المِئَويَّةُ مِنْ عَدَدٍ';
+    assert.equal(topicFor(title, 6)?.id, 'pct_of_g6');
+    assert.ok(mathBankCovers(title, null, 6));
+    assert.equal(topicFor(title, 5), null);
+    const kinds = new Set<string>();
+    for (const { item } of draws('pct_of_g6', 300)) {
+      const p = item.promptAr!;
+      const pct = Number(p.match(/(\d+)%/)![1]);
+      const whole = Number(p.match(/(\d+)(?:kg|L|m| دينار| دنانير| طالب| طلاب|\.)/)![1]);
+      assert.ok(whole >= 20, `too small a whole: ${p}`);
+      const part = (pct * whole) / 100;
+      assert.ok(Number.isInteger(part), p);
+      let want = part;
+      if (has(p, 'بعد الخصم')) { kinds.add('after'); want = whole - part; }
+      else if (has(p, 'قيمة الخصم')) kinds.add('discount');
+      else if (has(p, 'النادي')) kinds.add('people');
+      else if (/kg|L|m/.test(p)) kinds.add('quantity');
+      else { kinds.add('number'); assert.ok(p.startsWith('أوجد'), p); }
+      assert.equal(Number(item.answer), want, p);
+      assert.ok(!/[٪]|على صورة|شبكة/.test(p), `not a percent of something: ${p}`);
+    }
+    assert.deepEqual([...kinds].sort(), ['after', 'discount', 'number', 'people', 'quantity']);
   });
 
   it('powers: as a power, its value, as repeated multiplication, a number as a power of a base', () => {
@@ -544,6 +583,15 @@ describe('answers recomputed from the stem', () => {
       if (!m || !p.includes('قُسّم مبلغ') || p.includes('بين أخوين')) continue;
       const parts = m[1]!.split(' : ').length;
       assert.ok(p.includes(parts === 2 ? 'بين شخصين' : 'بين ثلاثة أشخاص'), `${parts} shares: ${p}`);
+    }
+  });
+
+  it('Grade 8 counted nouns and verbs agree (Grade 8 audit, 2026-11-14)', () => {
+    // «2 بناطيل», «2 أنواع من الحلوى», «لجنة من 2 طلاب», «فبأي حالة تتطابق المثلثان» and «إذا كان زاويتان» were printed.
+    for (const { item } of draws('counting', 600)) assert.ok(!/(?:^|[^\d])2 (?:قمصان|بناطيل|أنواع|طلاب)/.test(item.promptAr!), item.promptAr);
+    for (const id of ['congruence_a', 'congruence_b']) for (const { item } of draws(id, 300)) {
+      const p = item.promptAr!;
+      assert.ok(!p.includes('تتطابق المثلثان') && !/إذا كان (?:ثلاثة|زاويتان)/.test(p), p);
     }
   });
 

@@ -43,6 +43,255 @@ covering a long outage would need a delayed re-run of the failed web job (the pa
 is not built. I did not read wrangler's source: the step relies only on a failed attempt publishing nothing and a repeat
 attempt deploying the same files, not on wrangler skipping files it already uploaded.
 
+## Grade 6 review: the four «weak, not fixed» maths lessons from the second pass — 2026-11-14
+
+The Grade 6 audit and «Grade 6, second pass» (both below) covered pages, figures, contents and every maths quiz against
+its outcomes. A sweep of all 358 lessons through the offline plan, quiz, worksheet and activity found nothing new: every
+lesson grounds by id, all 39 maths lessons give a full paper. This change fixes what the second pass listed as weak:
+- **«الجذر التربيعي والجذر التكعيبي»** («أجد الجذور التربيعية والتكعيبية للأعداد»): a cube was one draw in five, so a
+  paper could hold none. Grade 6 now draws a cube half the time (about 200 of 400 in the test), in four kinds — a cube
+  root, a cube, a cube's edge from its volume, which number is a perfect cube. Grade 5 has no cubes, as before.
+- **«النسبة المئوية من عدد»** («أجد النسبة المئوية من عدد، ومن كمية»): it reached the shared `percent` op, a third of
+  whose items convert or read a grid. It now has `pct_of_g6`: a percent of a number, of a measured quantity, of a group of
+  people, a discount, and (hard) the price after it; whole answers; a whole of at least 20 (no 4-dinar bicycle).
+  `elementaryOpsForTitle` sends only this title away from `percent`; Grade 5 «النسبة المئوية» keeps it.
+- **«جمع البيانات»** (numerical/categorical data, population and sample, the questionnaire; vocabulary adds discrete and
+  continuous): it shared `freq_table`, so nothing told the data types apart and most items were a table's mean or median.
+  It now has `collect_data_g6`: which data is categorical or numerical, which numerical data is discrete or continuous,
+  the population or the sample of a survey, a sample or population size, which sample represents a school fairly, and
+  which questionnaire question collects numerical or categorical data. (The first four alone are two kinds by `sameKind`
+  — `mathLessonKinds.test.ts` caught it — so the last two were added.) `freq_table` keeps «الجداول التكرارية» and
+  loses the sample question it had carried only for this lesson.
+- **«6.2 ساعات»**: `simpler_problem`'s two times are never whole, and a decimal count takes the singular — «3.7 ساعة».
+- **«11 دينار»**: the same generator's cheese price, when it came out whole, kept «دينار»; it now agrees («11 دينارًا»,
+  «5 دنانير»). `tamyiz.test.ts` (new on `main`) found it once this change's new generators shifted its seeded draws.
+
+**Verified.** New tests recompute every key from its stem (`topics.test.ts`: p% of the printed whole, the cube kinds, the
+Grade 6 cube share; `stats.test.ts`: each data item's class from fixed lists); `routing.test.ts` pins the routing and
+`grade6Lessons.test.ts` the singular. Each fix was broken on purpose once — cubes back to one in five, a wrong percent
+key, the old routing, categorical and numerical swapped, the plural — and each made a test fail. Samples read by hand,
+keys correct. math-practice passes; the sweep gives 39 of 39 full maths quizzes. The PR body has the rest of the CI set.
+
+**Not done.** «6.2 ساعات»-style plurals after a decimal elsewhere were searched for (`fmtDec(…) <plural>`); this was the
+only one. Everything the audit left for the PDFs.
+
+## Grade 9 review: Grade 9 chemistry in the Grade 9 book's terms, the dispersion and sets lessons' own content — 2026-11-14
+
+The generators were run over all 423 Grade 9 lessons, and every question of every maths and chemistry quiz was read
+against the lesson's outcomes and the book's extracted text. Grounding by lesson id is exact for all 423. All 32 maths
+and 8 chemistry lessons serve a paper.
+
+**Maths.** Every key read was right: sets and intervals, compound inequalities, two-variable inequalities, functions,
+graphs, parabolas and transformations, all four methods for quadratics, distance and point-to-line distance,
+proportional parts, bisectors, centroid and orthocentre, trig ratios and their uses, exponents, radicals and radical
+equations, rational expressions and equations, dispersion, grouped data, Venn diagrams and geometric probability.
+Two lessons were asking things other than what their book teaches:
+- **«مقاييس التشتت»** drew range in half its questions and IQR in a quarter. The book only recalls both from Grade 8
+  («تعلمت سابقا»). It teaches variance and standard deviation dividing by n, for a list and for a frequency table, and
+  y = ax + b → μy = aμx + b, σy = |a|σx (S2 pp.120–131). None of the table, the variance or the transformation was ever
+  asked. `dispersion` now asks those five, keyed and pinned in `stats.test.ts`, with no range or IQR. Its table kind
+  rejects equal frequencies, which always gave variance 2.
+- **«المجموعات والفترات»** asked «ما نوع الفترة» (closed / open / half-open). The book never names an interval that way;
+  its words are «محدودة / غير محدودة». It sorts sets as empty, singleton, finite and infinite (S1 p.10), and its exercise
+  asks exactly that (p.15). The kind now asks «حدّد نوع المجموعة {x | x ∈ Z، …}: خالية، أم مفردة، أم منتهية، أم غير منتهية؟»
+  (`algebra.test.ts` recomputes the type from the bounds).
+
+**Chemistry.**
+- **The Grade 9 lesson «التوزيع الإلكتروني والجدول الدوري» was served the Grade 10 bank:** «1s² 2s² 2p⁶ 3s² 3p⁶ 4s²»,
+  4s before 3d, how Fe²⁺ forms and unpaired electrons. The Grade 9 book writes arrangements as energy levels
+  («2, 8, 8, 2») for the representative elements up to calcium (S1 p.20) and never uses a subshell.
+  - A new family, `electron_shells`, is detected by the lesson's own name ahead of `electron_config`. It holds 15 items
+    on arrangements of atoms and ions, period and group, size and reactivity down a group and across a period, and noble
+    gases, each with worked steps.
+  - `grade9Chemistry.test.ts` recomputes every keyed arrangement from Z and the ion's charge.
+- **Atomic models:** «أتتبع تطور النماذج الذرية» had no item. Four are added: cathode rays, Thomson's model, and
+  Rutherford's two conclusions (S1 pp.13–15).
+- **acids_bases (Grade 9 only):**
+  - Two items asked «100 / 1000 مرة (المقياس لوغاريتمي)». The book's pH lesson (p.44) compares pH values of solutions
+    at equal concentration and never mentions a logarithm, so they now ask which acid / base is stronger, and why.
+  - A moles item (0.1 mol H₂SO₄ → 0.2 mol NaOH) was replaced: Grade 9 has no mole. The new item asks what a precipitate
+    shows (Pb(NO₃)₂ + KI, p.55). «مؤشرات حدوث التفاعل الكيميائي» is an outcome no item asked.
+- **The book's words:** zinc is «الخارصين» throughout the Grade 9 books (never «الزنك»), and the indicator is «تبّاع
+  الشمس» (never «عباد الشمس»). The Grade 9 families and their steps now say so; no Grade 10 item used either word.
+- Metal activity, corrosion and protection, redox, galvanic and electrolytic cells all match the S2 book.
+
+**Book pages and figures.**
+- Every Grade 9 range in a book with extracted text was checked against it: no lesson runs into a unit test, unit
+  review, summary, glossary or enrichment page. English, civics, financial literacy, geography, history and PE have no
+  extracted text and were not checked this way. Every gap between lessons is unit-end or unit-opener material, except two.
+- **Maths S2 p.30** (the medians exploration) and **p.39** (the trig-ratio investigation) open u5_l3 and u5_l4 but were
+  never cut. The other explorations and extensions are their own lab lessons. `rendered` cannot reach them: no folder
+  holds those pages. `knowledge-base/g9-book-pages-to-render.json` lists the two widened ranges for
+  `scripts/render_lesson_pages.py`, the same route as `g6-book-pages-to-render.json`. Not rendered here: the PDF is not
+  in the checkout and the bucket needs credentials.
+- Of the 440 mapped Grade 9 figures, 434 sit on a page of the lesson they are filed under. The other six are on the
+  page just before it: chemistry, physics and maths ones are the unit's opening experiment or the lesson's exploration,
+  filed under the lesson they open. The geography and English ones are in books with no text to check.
+- 65 lessons have no pages: vocational 30, arts 25, history 6, Arabic 3, PE 1.
+
+**Also fixed:** `g7_work_backward` could print «فبقي معه 2 دينارًا» (halves twice at the smallest start). Its multiple
+now starts at 3. The seeded `tamyiz.test.ts` found it once this PR's draws shifted the sequence.
+
+**Verified:**
+- `lib/math-practice`: 1167 tests pass.
+- Full mobile suite: 9,270 pass. api-server: 2,923 pass. Curriculum: 930 pass; the one failure is `r2.test.ts`,
+  which asserts R2 is unconfigured and this environment has it configured (nothing in `lib/curriculum` changed).
+- Typecheck is clean.
+
+**Not run:** live AI, and anything needing the PDFs. Whether each chemistry item is the best question for its lesson
+is a chemistry teacher's call.
+
+## Grade 2 audit: book pages, contents, honorifics and offline maths checked — 2026-11-14
+
+The Grade 3–10 audit («Grade 3 audit…»), repeated for Grade 2 (236 lessons), on top of «Grade 2 review: coverage,
+images, and four generator fixes», which opened page 1 of the 23 lessons that have pages.
+
+**Book pages.** Only Islamic S1 (4), Islamic S2 (5) and PE S1 (14) have pages, and the git history of
+`book-page-links.json` holds no other Grade 2 range. All 115 images were looked at; printed page = PDF page in all three
+books.
+- **Three PE unit-final lessons ran onto «مراجعة الوحدة»**: u1_l4 14–18 → 14–15, u2_l5 28–32 → 28–29, u3_l5 42–45 →
+  42–43 (p16 and p44 re-checked here: each opens the review). Trimmed from the end, so the same folders serve them.
+- The other 20 are right at both ends. Islamic S1 u3_l2 (58–63) ends on «أختبر معلوماتي» question 2, which may go on to
+  p64 — not rendered, not seen; left.
+- Unmapped: Islamic S2 u1_l2 «سورة النصر» sits in p17–26 (the gap in its unit) and S1 u1_l3 probably opens on p20 —
+  neither seen. They, and every Grade 2 book but these two, need rendering from the PDFs.
+
+**Contents.** No contents page or unit opener falls inside a served range, so only the 23 lesson openers could be
+compared: every lesson number matches its catalog position, and 22 titles match. **Fixed:** PE u1_l3 is printed
+«رَكْلُ الكُرَةِ» (p11); the catalog had «رَكْلُ كُرَةٍ» (title_en now "Kicking the Ball").
+
+**Honorifics.** The catalogs' three «ﷺ» follow the Prophet. On the pages, the Prophet's honorific is written out in
+full, «رضي الله عنه/عنها» follows أبو هريرة, خديجة, أبو بكر and عمر, «عليه السلام» follows prophets. Nothing to change.
+
+**Offline maths (61 lessons).**
+- **The regrouping lessons got the plain drill — in Grades 2 and 3.** «الجمع/الطرح مع إعادة التجميع (1)/(2)» and
+  «الطرح مع وجود أصفار» (Grade 2), and Grade 3's «الجمع مع إعادة التجميع 1/2», «الطرح مع إعادة التجميع» and «الطرح مع
+  وجود أصفار», were claimed by `elementaryOpsForTitle` as plain «جمع/طرح», so 46–61% of their sums needed any
+  regrouping (by chance) and the zeros lesson put a zero to work in 6% (Grade 2) and 15% (Grade 3). Each catalog
+  objective names the lesson's column («إعادة تجميع الآحاد / العشرات / المئات», «أحدهما يحوي أصفارًا»);
+  `columnTopics` in `early.ts` now draws until that column regroups, in three kinds — the sum or difference, a story,
+  the digit a regrouping changes — and offers the classic slip as a wrong option (the carry dropped, the smaller digit
+  taken from the larger, the lending column not reduced). Through the app's path, 100% of the items now need the
+  lesson's regrouping. Multiplication with regrouping already had this exception.
+- «كم وجهًا لـمتوازي المستطيلات؟» → «لمتوازي المستطيلات» (`li` in `early.ts` put a tatweel before a word with no
+  article; «لـ 3» and «لـ x» stay, a preposition cannot join a digit).
+- **Not fixed:** four lessons get no offline questions — S1 u3_l7 «خطة حل المسألة: التخمين والتحقق», u4_l7 «… الحل
+  بأكثر من خطوة», S2 u6_l8 «… البحث عن نمط», u7_l8 «مهارة حل المسألة: اختيار العملية». The other 57 lessons' probe
+  items (171) were read by hand: every key right.
+
+**Verified:** `columnRegroup.test.ts` (28, written first: all red without the change) recomputes every key column by
+column, checks each lesson's rule and that the slip is offered, and drives `takeElementaryMath`; `elementary.test.ts`'s
+case that pinned «الطرح مع إعادة التجميع (1)» to the drill now pins it away; math-practice 1207 pass; 54 sampled
+regrouping items read by hand, keys right; curriculum test (931) and verify (0 errors); mobile book-page, figure, bank
+and slide tests (213); the full mobile suite (9,270 pass, 0 fail); typecheck. **Not verified:** anything needing
+the PDFs; the pages on a phone.
+
+No «ما الجديد» entry: corrections, not a feature.
+## Grade 8, second pass: Arabic agreement in counting and congruence, and a clearer perpendicular item — 2026-11-14
+
+The Grade 8 audit (below, «Grade 8 audit: book pages, figures, contents and honorifics…») covered pages, figures,
+contents and honorifics. «Grade 8 maths: offline questions for the four S2 lessons…» gave the last four maths lessons
+generators. This pass runs the generators over all 358 lessons and reads every question of every maths quiz against
+the lesson's outcomes. Grade 8 has no extracted book text, so a text-based page check is impossible; the audit
+viewed every page as an image.
+
+**Generators (offline).**
+- Grounding by lesson id is exact for all 358 lessons. All 37 maths lessons serve a paper.
+- Every key read was right: inequalities, systems, factoring, slopes, quartiles, solids of revolution and congruence.
+- **Fixed, Arabic agreement:**
+  - «عد النواتج» printed «2 بناطيل», «2 أنواع من الحلوى», «لجنة من 2 طلاب» and «اختيار 2 طلاب». A count of two
+    now takes the dual: «بنطالان», «نوعان», «طالبين», «قميصان».
+  - The congruence-criterion stems read «إذا كان زاويتان… فبأي حالة تتطابق المثلثان». They now read «إذا كانت
+    زاويتان / ثلاثة أضلاع» and «يتطابق المثلثان».
+  - Pinned in `topics.test.ts` «Grade 8 counted nouns and verbs agree».
+  - `stats.test.ts` reads a dual back as 2.
+  - `geometry.test.ts` used the old typo to tell the two congruence kinds apart; it now uses their structure
+    («في المثلثين ABC و DEF:»).
+- **Clarified:** «زاويتان متجاورتان قياسهما (2x + 11)° و (x + 28)°… تجعل المستقيمين متعامدين» could be read as a
+  linear pair, which makes x the value at which the two are EQUAL. That x gives 45° each, not 90°. The key sums the two to
+  90°, so the stem now says «تكوّنان معًا الزاوية بين مستقيمين».
+- **Noted, not changed:** `dilate_g8` asks a negative scale factor («ومعامله −3»), while the lesson's outcome reads
+  «ومعامله k>0». The code marks this as deliberate for Grade 8; whether the book prints negative factors could not be
+  checked without the PDF.
+
+**Verified:**
+- `lib/math-practice`: 1145 tests pass.
+- Full mobile suite: 9,270 pass.
+- Typecheck is clean.
+
+**Not run:** live AI, and anything needing the PDFs.
+
+## Grade 3 maths: offline questions for the four lessons that had none — 2026-11-14
+
+The Grade 3 audit found four maths lessons with no offline questions. Each now has a generator in
+`lib/math-practice/src/topics.ts` (`grades: [3, 3]`), from the lesson's objective and, where the book is reachable, its
+pages:
+
+- **`hindi_numerals`** — «الأرقام الهندية» (S1 u1_l7). Numbers up to the thousands written only in ٠-٩: the greatest
+  or smallest of four numbers made of the same digits, the value of a digit («قيمة الرقم ٦ في ٤٨٦٩» → 60), the digit in
+  a place. Every question needs the Hindi digits **read**; none asks for them **written**, because marking folds ٧ and 7
+  to one value (`answersMatch` in the API, `toLatinDigits` in the app), so «اكتب 4708 بالأرقام الهندية» would mark «4708»
+  right — the reason `early.test.ts` and `geometry.test.ts` pinned this lesson as refused, now updated. Writing them
+  stays the teacher's to check. A digit asked about appears once in its number, or the question has two answers.
+- **`guess_check`** — «خطة حل المسألة: التخمين والتحقق» (S2 u7_l6, problems on multiplication): two numbers from their
+  sum and product, chickens and sheep from heads and legs, pens and notebooks from the count and the total paid, the
+  number that times itself makes a square.
+- **`four_steps`** — «مهارة حل المسألة: استعمال الخطوات الأربع» (S2 u8_l6, pp. 36–37): what the remainder means — round
+  up (56 people at tables of 6 need 10), round down (stories at 4 JD with 30 JD), or the remainder itself. The other
+  reading of the quotient is always a wrong option.
+- **`frac_div`** — «الكسور والقسمة» (S2 u9_l8): a unit fraction of a two-digit number by division, no remainder: bare,
+  in a story, and «ما جملة القسمة…» (63 ÷ 7, against 63 × 7 and 7 ÷ 63).
+
+Whole numbers only, positive wrong options; nothing sets `verified` or a `check`. Grade 3 offline maths now covers all 70
+lessons.
+
+**Verified:** `grade3Lessons.test.ts` (13, written first and seen failing) recomputes every key from its stem with code
+that shares nothing with the generators, checks every kind is drawn, that a Hindi-numeral stem carries no Latin digit,
+and that no option is a decimal; making «round up» drop the remainder fails 2 of them. math-practice 1138 pass. Thirty
+sampled items read by hand, keys correct (the first read found «٤ في ١٠٤٤», a digit appearing twice, and a 24.5 option;
+both fixed and now tested).
+
+**Merged with `main` (2026-11-14, morning).** `main`'s tightened counted-noun test (`tamyiz.test.ts`, from «Grade 3
+review…» below) caught «لدى سلمى 10 قلمًا» in the `frac_div` story — 3 to 10 take the genitive plural; the stem now goes
+through `counted` («10 أقلام», «12 قلمًا»). That review lists these four lessons as having no bank; this entry closes
+it. math-practice 1159 pass after the merge.
+
+## Grade 3 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-14
+
+The Grade 4–10 review («Grade 4 audit…»), repeated for Grade 3 (254 lessons), on top of «Grade 3 review: Arabic S2 pages
+one lesson early…». Every served lesson's first and last pages and all 91 figures were looked at as images; printed page =
+PDF page in every book seen. No Grade 3 book has extracted text, so contents were rebuilt from unit openers, per-unit
+contents lists and lesson openers.
+
+**Book pages.** No lesson starts on the wrong page; the review's Arabic S2 fix holds for all 25 lessons. What it left:
+- **Unit-final lessons ran onto the unit's closing pages** (the review trimmed only the next unit's cover): Arabic (10)
+  onto «حصاد الوحدة», PE (5) onto «مراجعة الوحدة» and «مشروع الوحدة (أنا أستطيع)», arts u3_l10 onto «ملحق رقم 1». Each
+  now ends on the lesson's own last page — the Grade 5–10 rule. Grade 4 Arabic keeps «حصاد الوحدة», a choice the
+  «Grade 4, second pass» made; the two grades differ there.
+- 16 ranges changed (all trimmed, reading the same folders); none lost. Every changed URL (36) answered 200.
+- **Kept as is:** science S2 u4_l2 starts mid-lesson (the review's known gap) but every page is its own.
+- **To render from the PDFs:** Arabic S1 u5_l2's last page (p112, only in u5_l3's folder); social S1 u1_l1's review page
+  (p11), u2_l2 (36–41) and u3_l2 (54–58) — openers seen, but no folder holds them; arts u2_l10 «أغنية بينغو» (in 56–59, not
+  seen); all of maths S1, science S1 and the rest of science S2 and social S2. Maths S2's unmapped lessons follow a strict
+  2-page layout (ranges inferred in the audit, not seen).
+
+**Contents.** Every book seen matches its catalogue in units, lessons and order. **Fixed:** social S1 u2_l2 is printed
+«الالتزام بالأنظمة والتعليمات» (p36); the catalogue had «الالتزام بأنظمة التعاملات» (its main idea already matched the
+book). PE S1 u1_l4 is printed «رمي الكرة ومسكها» (catalogue «مهارة الرمي والمسك»), left. English has no page images or text.
+
+**Honorifics.** Both «ﷺ» (Islamic S1 u3_l2) follow the Prophet, as the book prints them; the spelled-out honorifics in the
+main ideas are right.
+
+**Figures (science, social).** 91 checked; 8 dropped, none moved. Science S2 p051b-v2 (traffic signs from the page before
+unit 6) sat on «الأحافير»; science S1's unit 3 review and «تقويم الأداء» crops (p069b, p070, p070b-v2, p071-v2, p072b) sat
+on «الآلات البسيطة», and two unit 1 end-matter crops (p030-v2, p032-v2) on u1_l3 — judged from the crops and the S2 layout,
+since science S1 has no page images. 17 minor crop flaws stay.
+
+**Results.** Offline maths: 66 of 70 lessons got questions, every sampled key correct by hand; the other four now have
+generators («Grade 3 maths: offline questions for the four lessons that had none», above).
+
+**Verified:** `bookPage`, `bookFigures`, `bookFigureAssets`, `lessonSlides`, `teachingPlanGrounding` (199), curriculum test
+(931) and verify (0 errors), typecheck. **Not verified:** the pages on a phone; anything needing the PDFs.
 ## Grade 7, second pass: two Arabic agreement slips in the offline maths — 2026-11-14
 
 Follows «Grade 7 review: offline maths for the three lessons that had none…» (below). That review gave Grade 7's last

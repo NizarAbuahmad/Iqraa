@@ -532,7 +532,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
         const v = [...given[0]!].find(c => given[1]!.includes(c))!;
         const third = sideOf(...('ABC'.replace(v, '').split('') as [string, string]));
         assert.equal(item.answer, has(p, 'بحالة SSS') ? `${third} ≅ ${corrA(third)}` : `∠${v} ≅ ∠${corrA(v)}`, p);
-      } else if (has(p, 'بأي حالة يتطابق المثلثان')) {
+      } else if (has(p, 'بأي حالة يتطابق المثلثان') && has(p, 'في المثلثين')) {
         saw('congruence_a', 'marked parts');
         const sides = [...p.matchAll(/([A-C]{2}) ≅ ([D-F]{2})/g)].map(m => m[1]!);
         const angles = [...p.matchAll(/∠([A-C]) ≅ ∠([D-F])/g)].map(m => m[1]!);
@@ -565,7 +565,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
         const corr = (v: string) => 'DEF'['ABC'.indexOf(v)];
         const need = has(p, 'بحالة ASA') ? other : off;
         assert.equal(item.answer, `∠${need} ≅ ∠${corr(need)}`, p);
-      } else if (has(p, 'بأي حالة يتطابق المثلثان')) {
+      } else if (has(p, 'بأي حالة يتطابق المثلثان') && has(p, 'في المثلثين')) {
         saw('congruence_b', 'marked parts');
         // the side is included between the two marked angles only when it joins them
         const angles = [...p.matchAll(/∠([A-C]) ≅ ∠([D-F])/g)].map(m => m[1]!);
@@ -1083,8 +1083,9 @@ describe('geometry routing', () => {
     ['المتر والسنتيمتر', 3, 'units_m'], ['الزمن', 4, 'time_g45'], ['الفترات الزمنية (1)', 3, 'time_g3'], ['قراءة الوقت باستعمال (و، إلا)', 3, 'time_words'],
     // lessons that stay refused: no generator is about them
     // («رسم الأشكال ثلاثية الأبعاد» is Grade 8 only since 2026-11-13: g8Lessons.test.ts;
-    // «التطابق» is Grade 7 only since 2026-11-13: g7Lessons.test.ts)
-    ['الأرقام الهندية', 3, null], ['رسم الأشكال ثلاثية الأبعاد', 7, null], ['التطابق', 7, 'g7_congruence'], ['التطابق', 8, null],
+    // «التطابق» is Grade 7 only since 2026-11-13: g7Lessons.test.ts;
+    // «الأرقام الهندية» is covered since 2026-11-14: early.test.ts, grade3Lessons.test.ts)
+    ['رسم الأشكال ثلاثية الأبعاد', 7, null], ['التطابق', 7, 'g7_congruence'], ['التطابق', 8, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {

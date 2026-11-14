@@ -227,15 +227,17 @@ const experimental = T('experimental', /^الاحتمال التجريبي$/, [7
 
 const nPr = (n: number, r: number) => { let p = 1; for (let i = 0; i < r; i++) p *= n - i; return p; };
 const fact = (n: number) => nPr(n, n);
+/** «نوعان» / «5 أنواع»: a count of 2 takes the dual, not «2 أنواع» (Grade 8 audit, 2026-11-14). */
+const kinds = (n: number) => (n === 2 ? 'نوعان' : `${n} أنواع`);
 const counting = T('counting', /^عد النواتج$/, [8, 8], ({ rng, diff }) => {
   const k = pick(rng, diff === 'easy' ? [0, 1] : [0, 1, 2, 3, 4]);
-  if (k === 0) { const a = int(rng, 2, 6), b = int(rng, 2, 6); return { eq: `${a}, ${b}`, answer: String(a * b), wrongs: countOpts(a * b, [a + b, a * b + a, a ** b, a * b - b]), ar: `لدى سامر ${a} قمصان و ${b} بناطيل. كم زيًّا مختلفًا (قميص وبنطال) يمكنه تكوينه؟`, en: `Sami has ${a} shirts and ${b} pairs of trousers. How many different outfits (a shirt and a pair of trousers) can he make?` }; }
-  if (k === 1) { const a = int(rng, 2, 5), b = int(rng, 2, 5), c = int(rng, 2, 4); return { eq: `${a}, ${b}, ${c}`, answer: String(a * b * c), wrongs: countOpts(a * b * c, [a + b + c, a * b + c, a * b * c + a, (a + b) * c]), ar: `في مطعم ${a} أنواع من الطبق الرئيسي و ${b} أنواع من العصير و ${c} أنواع من الحلوى. كم وجبة مختلفة (طبق وعصير وحلوى) يمكن اختيارها؟`, en: `A restaurant offers ${a} main dishes, ${b} drinks and ${c} desserts. How many different meals (one of each) can be chosen?` }; }
+  if (k === 0) { const a = int(rng, 2, 6), b = int(rng, 2, 6); return { eq: `${a}, ${b}`, answer: String(a * b), wrongs: countOpts(a * b, [a + b, a * b + a, a ** b, a * b - b]), ar: `لدى سامر ${a === 2 ? 'قميصان' : `${a} قمصان`} و${b === 2 ? 'بنطالان' : ` ${b} بناطيل`}. كم زيًّا مختلفًا (قميص وبنطال) يمكنه تكوينه؟`, en: `Sami has ${a} shirts and ${b} pairs of trousers. How many different outfits (a shirt and a pair of trousers) can he make?` }; }
+  if (k === 1) { const a = int(rng, 2, 5), b = int(rng, 2, 5), c = int(rng, 2, 4); return { eq: `${a}, ${b}, ${c}`, answer: String(a * b * c), wrongs: countOpts(a * b * c, [a + b + c, a * b + c, a * b * c + a, (a + b) * c]), ar: `في مطعم ${kinds(a)} من الطبق الرئيسي و${b === 2 ? 'نوعان' : ` ${b} أنواع`} من العصير و${c === 2 ? 'نوعان' : ` ${c} أنواع`} من الحلوى. كم وجبة مختلفة (طبق وعصير وحلوى) يمكن اختيارها؟`, en: `A restaurant offers ${a} main dishes, ${b} drinks and ${c} desserts. How many different meals (one of each) can be chosen?` }; }
   if (k === 2) { const n = int(rng, 3, span(diff, 5, 6, 7)); return { eq: `${n}`, answer: String(fact(n)), wrongs: countOpts(fact(n), [n * n, fact(n - 1), 2 * n, fact(n) + n]), ar: `بكم طريقة مختلفة يمكن ترتيب ${n} كتب مختلفة على رف في صف واحد؟`, en: `In how many different ways can ${n} different books be arranged in a row on a shelf?` }; }
   const n = int(rng, 4, span(diff, 6, 8, 9)), r = int(rng, 2, 3);
-  if (k === 3) return { eq: `${n}, ${r}`, answer: String(nPr(n, r)), wrongs: countOpts(nPr(n, r), [n ** r, nPr(n, r) / fact(r), n * r, nPr(n, r + 1)]), ar: `بكم طريقة يمكن اختيار ${r} طلاب من ${n} طلاب لشغل ${r === 2 ? 'منصبي الرئيس ونائبه' : 'مناصب الرئيس ونائبه وأمين السر'} (الترتيب مهم)؟`, en: `In how many ways can ${r} students from ${n} be chosen to fill ${r === 2 ? 'the posts of president and deputy' : 'the posts of president, deputy and secretary'} (order matters)?` };
+  if (k === 3) return { eq: `${n}, ${r}`, answer: String(nPr(n, r)), wrongs: countOpts(nPr(n, r), [n ** r, nPr(n, r) / fact(r), n * r, nPr(n, r + 1)]), ar: `بكم طريقة يمكن اختيار ${r === 2 ? 'طالبين' : `${r} طلاب`} من ${n} طلاب لشغل ${r === 2 ? 'منصبي الرئيس ونائبه' : 'مناصب الرئيس ونائبه وأمين السر'} (الترتيب مهم)؟`, en: `In how many ways can ${r} students from ${n} be chosen to fill ${r === 2 ? 'the posts of president and deputy' : 'the posts of president, deputy and secretary'} (order matters)?` };
   const c = nPr(n, r) / fact(r);
-  return { eq: `${n}, ${r}`, answer: String(c), wrongs: countOpts(c, [nPr(n, r), n * r, c + n, nPr(n, r) / 2]), ar: `بكم طريقة يمكن اختيار لجنة من ${r} طلاب من بين ${n} طلاب (الترتيب غير مهم)؟`, en: `In how many ways can a committee of ${r} students be chosen from ${n} students (order does not matter)?` };
+  return { eq: `${n}, ${r}`, answer: String(c), wrongs: countOpts(c, [nPr(n, r), n * r, c + n, nPr(n, r) / 2]), ar: `بكم طريقة يمكن اختيار لجنة من ${r === 2 ? 'طالبين' : `${r} طلاب`} من بين ${n} طلاب (الترتيب غير مهم)؟`, en: `In how many ways can a committee of ${r} students be chosen from ${n} students (order does not matter)?` };
 });
 
 const compound = T('compound_prob', /^احتمال الحوادث المركبه$/, [8, 8], ({ rng, diff }) => {
@@ -543,17 +545,105 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
 });
 
 /**
- * Since 2026-10-16 also the population and the sample (جمع البيانات), and the
- * mean and median of data already organised in a frequency table.
+ * Grade 6 «جمع البيانات» (S2 u8_l1). Its outcomes: «أتعرف البيانات العددية والنوعية», «أتعرف المجتمع والعينة»,
+ * «أتعرف الاستبانة كأداة لجمع البيانات»; its vocabulary adds discrete and continuous data and the sample size.
+ * Until 2026-11-14 it shared `freq_table`, so no question told numerical from categorical data and most asked a
+ * frequency-table mean or median, which is another lesson. Kinds: which data is categorical / numerical, which
+ * numerical data is discrete / continuous, the population or the sample of a described survey, and a sample size.
  */
-const freqTable = T('freq_table', /^(?:الجداول التكراريه|جمع البيانات)$/, [6, 6], ({ rng, diff }) => {
-  const n = span(diff, 15, 20, 25), hi = span(diff, 4, 5, 6);
-  const kind = pick(rng, [0, 0, 1, 2, 3]); // 0: the frequency of a value, or the most frequent value
-  if (kind === 1) { // population and sample
-    const P = 100 * int(rng, 3, 9), s = 5 * int(rng, 4, 16), sample = rng() < 0.6;
-    const ans = sample ? s : P;
-    return { eq: `${P}, ${s}`, answer: String(ans), wrongs: countOpts(ans, [sample ? P : s, P - s, P + s, sample ? s * 2 : P / 2]), ar: `أراد مدير مدرسة فيها ${P} طالب معرفة الرياضة المفضلة لدى طلبتها، فاختار منهم ${s} طالبًا عشوائيًا ووزّع عليهم استبانة. ما حجم ${sample ? 'العينة' : 'المجتمع'}؟`, en: `A head teacher of a school with ${P} students wants to know their favourite sport, so picks ${s} of them at random and gives them a questionnaire. What is the size of the ${sample ? 'sample' : 'population'}?` };
+const CATEGORICAL: Array<[string, string]> = [
+  ['اللون المفضل لدى طلبة الصف', 'the favourite colour of the pupils in a class'],
+  ['نوع الرياضة المفضلة لدى الطلبة', "pupils' favourite sport"],
+  ['وسيلة المواصلات التي يأتي بها الطالب إلى المدرسة', 'how each pupil travels to school'],
+  ['فصيلة دم كل طالب', "each pupil's blood group"],
+  ['المادة الدراسية المفضلة لدى الطلبة', "pupils' favourite school subject"],
+  ['نوع الفاكهة المفضلة لدى أفراد الأسرة', "family members' favourite fruit"],
+];
+const DISCRETE: Array<[string, string]> = [
+  ['عدد الإخوة لكل طالب', 'the number of brothers and sisters each pupil has'],
+  ['عدد الكتب التي قرأها كل طالب في شهر', 'the number of books each pupil read in a month'],
+  ['عدد الأهداف في كل مباراة', 'the number of goals in each match'],
+  ['عدد الطلبة في كل صف', 'the number of pupils in each class'],
+];
+const CONTINUOUS: Array<[string, string]> = [
+  ['أطوال طلبة الصف', 'the heights of the pupils in a class'],
+  ['كتل الحقائب المدرسية', 'the masses of school bags'],
+  ['درجات الحرارة العظمى اليومية', 'the daily highest temperatures'],
+  ['الزمن الذي يستغرقه كل طالب للوصول إلى المدرسة', 'the time each pupil takes to reach school'],
+];
+/** Questions a questionnaire could ask: [question, its data is numerical]. */
+const SURVEY_QUESTIONS: Array<[string, boolean]> = [
+  ['كم عدد إخوتك؟', true], ['كم ساعة تنام في الليلة؟', true], ['كم كتابًا قرأت هذا الشهر؟', true], ['كم عمرك بالسنوات؟', true],
+  ['ما لونك المفضل؟', false], ['ما رياضتك المفضلة؟', false], ['كيف تأتي إلى المدرسة؟', false], ['ما مادتك الدراسية المفضلة؟', false],
+];
+const collectData = T('collect_data_g6', /^جمع البيانات$/, [6, 6], ({ rng }) => {
+  // 0 categorical / numerical, 1 discrete / continuous, 2 the population or the sample, 3 a size,
+  // 4 the sample that represents the school, 5 the questionnaire question that collects a given type
+  const kind = pick(rng, [0, 1, 2, 3, 4, 5]);
+  if (kind === 4) {
+    const P = 100 * int(rng, 4, 9), s = 10 * int(rng, 4, 8);
+    const fair = `${s} ${tamyiz(s, 'طلاب', 'طالبًا', 'طالب')} يُختارون عشوائيًا من صفوف المدرسة جميعها`;
+    const biased = shuffle(rng, ['لاعبو فريق كرة السلة في المدرسة', 'طلبة الصف الأول وحدهم', `أول ${s} ${tamyiz(s, 'طلاب', 'طالبًا', 'طالب')} يصلون إلى المدرسة صباحًا`, 'طلبة شعبة واحدة من الصف السادس']).slice(0, 3);
+    return {
+      eq: `fair sample ${P} ${s}`, answer: fair, wrongs: biased,
+      ar: `أراد معلم معرفة متوسط أطوال طلبة مدرسة فيها ${P} ${tamyiz(P, 'طلاب', 'طالبًا', 'طالب')}. أيّ العينات الآتية تمثّل طلبة المدرسة أفضل تمثيل؟`,
+      en: `A teacher wants the mean height of the ${P} students of a school. Which sample best represents the school?`,
+    };
   }
+  if (kind === 5) {
+    const numeric = rng() < 0.5;
+    const [ans] = pick(rng, SURVEY_QUESTIONS.filter(q => q[1] === numeric));
+    const wrongs = shuffle(rng, SURVEY_QUESTIONS.filter(q => q[1] !== numeric)).slice(0, 3).map(q => q[0]);
+    return {
+      eq: `survey ${numeric ? 'num' : 'cat'} ${ans}`, answer: ans, wrongs,
+      ar: `يعدّ طالب استبانة لصفه. أيّ الأسئلة الآتية تكون إجاباته بيانات ${numeric ? 'عددية' : 'نوعية'}؟`,
+      en: `A pupil is writing a questionnaire for the class. Which question's answers are ${numeric ? 'numerical' : 'categorical'} data?`,
+    };
+  }
+  if (kind === 0) {
+    // one of a kind among three of the other
+    const askCat = rng() < 0.5;
+    const NUM = [...DISCRETE, ...CONTINUOUS];
+    const [ans, ansEn] = pick(rng, askCat ? CATEGORICAL : NUM);
+    const others = shuffle(rng, askCat ? NUM : CATEGORICAL).slice(0, 3);
+    return {
+      eq: `type ${askCat ? 'cat' : 'num'} ${ans}`, answer: ans, wrongs: others.map(o => o[0]),
+      ar: `أيّ البيانات الآتية بيانات ${askCat ? 'نوعية' : 'عددية'}؟`,
+      en: `Which of these is ${askCat ? 'categorical' : 'numerical'} data? (${[ansEn, ...others.map(o => o[1])].join('; ')})`,
+    };
+  }
+  if (kind === 1) {
+    const askCont = rng() < 0.5;
+    const [ans, ansEn] = pick(rng, askCont ? CONTINUOUS : DISCRETE);
+    const others = shuffle(rng, askCont ? DISCRETE : CONTINUOUS).slice(0, 3);
+    return {
+      eq: `type ${askCont ? 'continuous' : 'discrete'} ${ans}`, answer: ans, wrongs: others.map(o => o[0]),
+      ar: `أيّ البيانات العددية الآتية بيانات ${askCont ? 'متصلة' : 'منفصلة'}؟`,
+      en: `Which of these numerical data is ${askCont ? 'continuous' : 'discrete'}? (${[ansEn, ...others.map(o => o[1])].join('; ')})`,
+    };
+  }
+  const P = 100 * int(rng, 3, 9), s = 5 * int(rng, 4, 16);
+  const story = `أراد مدير مدرسة فيها ${P} ${tamyiz(P, 'طلاب', 'طالبًا', 'طالب')} معرفة الرياضة المفضلة لدى طلبتها، فاختار منهم ${s} ${tamyiz(s, 'طلاب', 'طالبًا', 'طالب')} عشوائيًا ووزّع عليهم استبانة.`;
+  const storyEn = `A head teacher of a school with ${P} students wants to know their favourite sport, so picks ${s} of them at random and gives them a questionnaire.`;
+  if (kind === 2) {
+    const askPop = rng() < 0.5;
+    const pop = `طلبة المدرسة جميعهم (${P})`, sample = `الطلبة الذين اختارهم المدير (${s})`;
+    return {
+      eq: `${askPop ? 'population' : 'sample'} ${P} ${s}`, answer: askPop ? pop : sample, wrongs: [askPop ? sample : pop, 'مدير المدرسة', 'الاستبانة'],
+      ar: `${story} ما ${askPop ? 'المجتمع' : 'العينة'} في هذه الدراسة؟`,
+      en: `${storyEn} What is the ${askPop ? 'population' : 'sample'} in this survey?`,
+    };
+  }
+  const sampleAsk = rng() < 0.6, ans = sampleAsk ? s : P;
+  return { eq: `${P}, ${s}`, answer: String(ans), wrongs: countOpts(ans, [sampleAsk ? P : s, P - s, P + s, sampleAsk ? s * 2 : P / 2]), ar: `${story} ما حجم ${sampleAsk ? 'العينة' : 'المجتمع'}؟`, en: `${storyEn} What is the size of the ${sampleAsk ? 'sample' : 'population'}?` };
+});
+
+/** The mean and median of data already organised in a frequency table, since 2026-10-16. */
+const freqTable = T('freq_table', /^الجداول التكراريه$/, [6, 6], ({ rng, diff }) => {
+  const n = span(diff, 15, 20, 25), hi = span(diff, 4, 5, 6);
+  // 0: the frequency of a value, or the most frequent value; 2, 3: a table's mean or median. The population and the
+  // sample (once kind 1, for «جمع البيانات») moved to `collect_data_g6` on 2026-11-14.
+  const kind = pick(rng, [0, 0, 2, 3]);
   if (kind === 2 || kind === 3) { // mean or median of a frequency table (value: frequency)
     for (;;) {
       const vals = Array.from({ length: hi }, (_, i) => i + 1), f = vals.map(() => int(rng, 1, 8));
@@ -645,21 +735,54 @@ const grouped = (id: string, match: RegExp, grades: [number, number]) => T(id, m
 
 // ─── dispersion (Grade 9) ───────────────────────────────────────────────────
 
+/**
+ * Grade 9 «مقاييس التشتت», as the book teaches it (student book S2 pp.120–131): variance and
+ * standard deviation dividing by n, for a list and for a frequency table, and what y = ax + b does
+ * to them — μy = aμx + b, σy = |a|σx. Range and IQR are only recalled there (Grade 8), and until
+ * 2026-11-14 they were three draws in four while the table and the transformation were never asked.
+ */
 const dispersion = T('dispersion', /^مقاييس التشتت$/, [9, 9], ({ rng, diff }) => {
-  const k = pick(rng, diff === 'easy' ? [0, 1] : [0, 1, 2, 3]);
-  if (k === 0 || k === 1) {
-    const n = int(rng, 6, 9), xs = Array.from({ length: n }, () => int(rng, 3, 60));
-    const r = Math.max(...xs) - Math.min(...xs);
-    if (r === 0) return dispersion.make({ rng, diff, grade: 9 });
-    return { eq: list(xs), answer: String(r), wrongs: countOpts(r, [r + 1, Math.max(...xs), r - 1, Math.round(sum(xs) / n)]), ar: `ما مدى القيم: ${list(xs)}؟`, en: `What is the range of ${listEn(xs)}?` };
+  const k = pick(rng, diff === 'easy' ? [0, 3] : [0, 1, 2, 3, 4]);
+  if (k === 0) { // variance of a list: a whole-number mean and a whole-number variance
+    for (let attempt = 0; attempt < 5000; attempt++) {
+      const n = pick(rng, diff === 'easy' ? [4, 5] : [5, 6, 7]);
+      const xs = dataWithMean(rng, n, 2, diff === 'easy' ? 20 : 30), m = sum(xs) / n;
+      const ss = sum(xs.map(x => (x - m) ** 2));
+      if (ss === 0 || ss % n !== 0) continue;
+      const v = ss / n;
+      return { eq: list(xs), answer: String(v), wrongs: countOpts(v, [ss, Math.round(Math.sqrt(v)), Math.round(ss / (n - 1)), v + 1, m]), ar: `ما تباين القيم: ${list(xs)}؟ (استعمل القسمة على n)`, en: `What is the variance of ${listEn(xs)}? (divide by n)` };
+    }
   }
-  if (k === 2) { // interquartile range: even n, Q1 and Q3 are the medians of the lower and upper halves
-    const n = pick(rng, [8, 10, 12]);
-    const xs = sorted(Array.from({ length: n }, () => int(rng, 2, 60)));
-    const lowerHalf = xs.slice(0, n / 2), upperHalf = xs.slice(n / 2);
-    const iqr = median(upperHalf) - median(lowerHalf);
-    const shown = shuffle(rng, xs);
-    return { eq: list(shown), answer: n1(iqr), wrongs: decOpts(iqr, [Math.max(...xs) - Math.min(...xs), median(upperHalf), iqr + 1, iqr / 2].map(v => Math.round(v * 2) / 2).filter(v => v !== iqr && v > 0), 0.5), ar: `ما المدى الربيعي للقيم: ${list(shown)}؟ (الربيع الأول والثالث هما وسيطا النصفين الأدنى والأعلى للقيم المرتبة)`, en: `What is the interquartile range of ${listEn(shown)}? (Q1 and Q3 are the medians of the lower and upper halves of the ordered data)` };
+  if (k === 2) { // variance of a frequency table
+    for (let attempt = 0; attempt < 5000; attempt++) {
+      // Values one or two apart and uneven frequencies: five consecutive values at one frequency
+      // each has variance 2, and that was most of what the sampler found.
+      const x0 = int(rng, 0, 2), step = pick(rng, [1, 2]);
+      const rows = Array.from({ length: 5 }, (_, i) => [x0 + step * i, int(rng, 1, 8)] as const);
+      if (new Set(rows.map(r => r[1])).size < 3) continue;
+      const N = sum(rows.map(r => r[1])), sxf = sum(rows.map(([x, f]) => x * f));
+      if (sxf % N !== 0) continue;
+      const mu = sxf / N, ss = sum(rows.map(([x, f]) => f * (x - mu) ** 2));
+      if (ss % N !== 0) continue;
+      const v = ss / N;
+      const table = rows.map(([x, f]) => `${x}: ${f}`).join('، '), tableEn = rows.map(([x, f]) => `${x}: ${f}`).join(', ');
+      return { eq: table, answer: String(v), wrongs: countOpts(v, [ss, mu, v + 1, v * 2, Math.round(sum(rows.map(([x]) => (x - mu) ** 2)) / 5)]), ar: `يبين الجدول التكراري الآتي (عدد الأطفال: عدد العائلات) عدد الأطفال في ${N} ${N > 10 ? 'عائلةً' : 'عائلات'}: ${table}. ما تباين عدد الأطفال؟`, en: `The frequency table (children: families) gives the number of children in ${N} families: ${tableEn}. What is the variance of the number of children?` };
+    }
+  }
+  if (k === 3 || k === 4) { // y = ax + b: the mean moves with both, the spread only with |a|
+    const mx = int(rng, 10, 40), sx = int(rng, 2, 9);
+    const a = k === 3 ? (diff === 'easy' ? 1 : int(rng, 2, 5)) : pick(rng, diff === 'hard' ? [-3, -2, 2, 3, 4] : [1, 2, 3, 4, 5]);
+    const b = pick(rng, [-1, 1]) * int(rng, 1, 10);
+    const rule = `y = ${a === 1 ? '' : a === -1 ? '−' : a < 0 ? `−${-a}` : a}x ${b < 0 ? '−' : '+'} ${Math.abs(b)}`;
+    const head = `بيانات وسطها الحسابي ${mx} وانحرافها المعياري ${sx}. حُوّلت كل قيمة x فيها إلى ${rule}.`;
+    const headEn = `A data set has mean ${mx} and standard deviation ${sx}. Each value x is transformed to ${rule}.`;
+    const fmt = (v: number) => (v < 0 ? `−${-v}` : String(v));
+    if (k === 3) {
+      const ans = a * mx + b;
+      return { eq: rule, answer: fmt(ans), wrongs: countOpts(ans, [mx + b, a * mx, mx, a * mx - b, a * (mx + b)]).map(w => fmt(Number(w))), ar: `${head} ما الوسط الحسابي للبيانات بعد التحويل؟`, en: `${headEn} What is the mean of the data after the transformation?` };
+    }
+    const ans = Math.abs(a) * sx;
+    return { eq: rule, answer: String(ans), wrongs: countOpts(ans, [sx, Math.abs(a) * sx + b, sx + b, a * a * sx, a * sx].filter(v => v > 0)), ar: `${head} ما الانحراف المعياري للبيانات بعد التحويل؟`, en: `${headEn} What is the standard deviation of the data after the transformation?` };
   }
   // standard deviation: rejection-sample a small set whose population variance is a perfect square
   for (let attempt = 0; attempt < 5000; attempt++) {
@@ -671,7 +794,7 @@ const dispersion = T('dispersion', /^مقاييس التشتت$/, [9, 9], ({ rng
     if (!Number.isInteger(sd) || sd === 0) continue;
     return { eq: list(xs), answer: String(sd), wrongs: countOpts(sd, [v, sd + 1, m, sd * 2, Math.sqrt(ss / (n - 1)) | 0]), ar: `ما الانحراف المعياري للقيم: ${list(xs)}؟ (استعمل القسمة على n)`, en: `What is the standard deviation of ${listEn(xs)}? (divide by n)` };
   }
-  return dispersion.make({ rng, diff: 'easy', grade: 9 });
+  return dispersion.make({ rng, diff: 'medium', grade: 9 });
 });
 
 // ─── Grade 10: scatter, cumulative frequency, grouped data ──────────────────
@@ -789,7 +912,7 @@ export const STATS_TOPICS: readonly Topic[] = [
   stemLeaf,
   readData('read_data_g12', /^(?:جداول البيانات|تمثيل البيانات بالصور|تفسير بيانات ممثله بالصور|تفسير البيانات الممثله بالصور|تفسير البيانات الممثله بجدول الاشارات|جمع البيانات وتنظيمها)$/, [1, 2]),
   readData('read_data_g34', /^(?:تمثيل البيانات بالاعمده|تفسير البيانات الممثله بالاعمده|تمثيل البيانات بالنقاط)$/, [3, 4]),
-  freqTable,
+  freqTable, collectData,
   grouped('grouped_g6', /^الجداول والمخططات التكراريه ذات الفئات$/, [6, 6]), grouped('grouped_g9', /^(?:الجداول التكراريه ذات الفئات|المدرجات التكراريه)$/, [9, 9]),
   dispersion, scatter, cumulative, groupedMean,
 ];
