@@ -245,7 +245,11 @@ export default function TakeExamScreen() {
       setError(t(takeErrorKey(err, 'takeStartFailed')));
       // A taken name sends them back to the list rather than stranding them:
       // the usual cause is tapping the wrong name, and the fix is to pick again.
-      setPhase(err instanceof StudentExamError && err.code === 'name_taken' ? 'pick' : 'error');
+      // So does a name with its own account (`sign_in_required`): either it is
+      // not theirs, or it is and the message says to sign in.
+      const backToList = err instanceof StudentExamError
+        && (err.code === 'name_taken' || err.code === 'sign_in_required');
+      setPhase(backToList ? 'pick' : 'error');
       if (err instanceof StudentExamError && err.code === 'name_taken' && code) {
         openExam(code).then(d => setRoster(d.students)).catch(() => {});
       }

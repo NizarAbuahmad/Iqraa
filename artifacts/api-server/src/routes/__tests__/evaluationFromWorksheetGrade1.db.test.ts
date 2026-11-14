@@ -111,8 +111,10 @@ describeDb("a worksheet sent as an evaluation, against a real database", () => {
     assert.equal(published.status, 200, published.text);
     const code = published.json.evaluation.shareCode as string;
     assert.ok(code, published.text);
-    // Sara (sA1) is on class c1's roster; a claim starts her sitting and hands her the paper.
-    const sitting = await call(server, "POST", `/take/${code}/claim`, undefined, { studentId: w.students.sA1 });
+    // Sara (sA1) is on class c1's roster and has her own account (studentA), so she
+    // starts signed in (`claim-self`); a tap on a name with an account is refused
+    // (`sign_in_required`, takeClaimLinkedName.db.test.ts).
+    const sitting = await call(server, "POST", `/take/${code}/claim-self`, w.users.studentA);
     assert.equal(sitting.status, 201, sitting.text);
     const questions = sitting.json.questions as { type: string; body: Record<string, unknown> }[];
     const day = questions.find(q => q.body["prompt"] === "ما اليوم الذي يأتي بعد الثلاثاء؟");

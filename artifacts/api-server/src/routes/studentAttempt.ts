@@ -74,7 +74,7 @@ import {
   examDeadline,
   isPastDeadline,
 } from "../modules/assessment/studentResponse.ts";
-import { gradeSubmission } from "../modules/assessment/attemptGrading.ts";
+import { handInAttempt } from "../modules/assessment/attemptGrading.ts";
 import { attemptAudioKey, deleteAttemptAudio } from "../lib/attemptAudio.ts";
 import { inAudience } from "../modules/assessment/audience.ts";
 import { evaluationAudience } from "../lib/evaluationAudience.ts";
@@ -433,6 +433,27 @@ router.post("/take/:code/claim", async (req, res) => {
       return;
     }
 
+    // A name with its own student account is claimed by signing in
+    // (`claim-self`), never by a tap. The tap proves nothing, so before this a
+    // classmate holding the link could start — and hand in a blank paper —
+    // under that student's name, and the student's own sign-in then resumed
+    // the stranger's paper. A parent's `guardian` link is not the child's
+    // account and does not count; at most one `self` link exists per row
+    // (`roster_links_one_self_idx`). Names with no account, the common case
+    // and the reason the link exists, claim exactly as before.
+    const [ownAccount] = await db
+      .select({ userId: rosterLinks.userId })
+      .from(rosterLinks)
+      .where(and(eq(rosterLinks.studentId, member.id), eq(rosterLinks.relation, "self")))
+      .limit(1);
+    if (ownAccount) {
+      res.status(403).json({
+        error: "This name has its own student account. Sign in to start.",
+        code: "sign_in_required",
+      });
+      return;
+    }
+
     await claimAttemptFor(res, evaluation, member);
   } catch (err) {
     logger.error({ err }, "claim student attempt failed");
@@ -522,8 +543,10 @@ async function attemptForToken(header: string | undefined) {
  * enforced nowhere, so a twenty-minute quiz took answers for the six hours
  * the token lasts; a closed exam (which could not be closed at all until
  * `POST /evaluations/:id/close` existed) kept taking them until the share
- * code expired a week later. Handing in stays allowed after both — what the
- * student wrote in time is theirs to submit — only new answers are refused.
+ * code expired a week later. Handing in stays allowed after the clock runs
+ * out — what the student wrote in time is theirs to submit — only new answers
+ * are refused. Closing goes further: it hands every open sitting in itself
+ * (`handInOpenSittings`), so after a close there is nothing left to submit.
  */
 async function writeGate(attempt: { evaluationId: string; startedAt: Date | null }) {
   const [evaluation] = await db
@@ -951,38 +974,18 @@ router.post("/take/attempt/submit", async (req, res) => {
       return;
     }
 
-    const now = new Date();
-    // Under the attempt's row lock, the same one `writeAnswerIfOpen` takes: an
-    // autosave or a transcription in flight either lands before this (and is
-    // graded) or sees the paper is in and refuses — never after grading.
-    const handedIn = await db.transaction(async tx => {
-      const [open] = await tx
-        .select({ submittedAt: attempts.submittedAt })
-        .from(attempts)
-        .where(eq(attempts.id, attempt.id))
-        .for("update");
-      if (!open || open.submittedAt) return false;
-      await tx
-        .update(attemptAnswers)
-        .set({ isFinal: true, updatedAt: now })
-        .where(eq(attemptAnswers.attemptId, attempt.id));
-      await tx
-        .update(attempts)
-        .set({ status: "submitted", submittedAt: now, updatedAt: now })
-        .where(eq(attempts.id, attempt.id));
-      return true;
-    });
+    // The same path closing the exam takes (`handInOpenSittings`): under the
+    // attempt's row lock, so an autosave in flight lands before grading or not
+    // at all.
+    const { handedIn, gradingError } = await handInAttempt(attempt);
     if (!handedIn) {
       res.json({ submitted: true, alreadySubmitted: true });
       return;
     }
-
-    try {
-      await gradeSubmission({ ...attempt, submittedAt: now });
-    } catch (err) {
+    if (gradingError) {
       // Handed in is the fact that matters to the student; a grading failure
       // is the teacher's to see, and their own submit route re-runs it.
-      logger.error({ err, attemptId: attempt.id }, "grading on student submit failed");
+      logger.error({ err: gradingError, attemptId: attempt.id }, "grading on student submit failed");
     }
 
     res.json({ submitted: true });
