@@ -8,7 +8,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import pageLinks from '../../../../knowledge-base/book-page-links.json' with { type: 'json' };
+import figureMap from '../../../../knowledge-base/figure-lesson-map.json' with { type: 'json' };
 import { BOOK_PAGES_BASE_URL, bookPagesForLesson, lessonsWithFigures, type BookPageLink } from '../bookFigures.ts';
 import { KB_BOOKS, KB_LESSONS, KB_UNITS } from '../knowledgeBase.ts';
 
@@ -16,6 +21,18 @@ const { books, lessons } = pageLinks as {
   books: Record<string, { pages: number }>;
   lessons: Record<string, { sourceId: string; startPage: number; endPage: number; aspect: number }>;
 };
+
+/** Every committed figure index (`knowledge-base/<book>/figures/<sourceId>/index.json`), as the scripts read them. */
+const KB_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../knowledge-base');
+const figureIndexes: Array<{ sourceId: string; figures: Array<{ unit: number | null; lesson: number | null; lessonStartPage?: number | null }> }> =
+  readdirSync(KB_DIR).flatMap(book => {
+    const dir = path.join(KB_DIR, book, 'figures');
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir)
+      .map(source => path.join(dir, source, 'index.json'))
+      .filter(existsSync)
+      .map(file => JSON.parse(readFileSync(file, 'utf8')));
+  });
 
 describe('book-page-links.json', () => {
   it('lists at least one lesson', () => {
@@ -92,6 +109,33 @@ describe('book-page-links.json', () => {
     assert.ok(checked > 0, 'no lessons from the page-only subjects to check');
   });
 
+  it("no lesson's pages run past the start of another lesson the figures place", () => {
+    // Grade 3 science S2 u4_l2 ran 17 pages into the Earth lesson, and grade 8
+    // vocational u1_l1 four pages into u1_l2: a range that swallows a lesson start
+    // the figure extractor read off the book shows the class the wrong lesson.
+    const kbOf = new Map(figureMap.entries.map(e => [`${e.sourceId}|${e.unit}|${e.lesson}`, e.kbLessonId]));
+    const starts: Array<{ sourceId: string; page: number; kb: string }> = [];
+    for (const index of figureIndexes) {
+      for (const f of index.figures) {
+        const kb = kbOf.get(`${index.sourceId}|${f.unit}|${f.lesson}`);
+        if (f.lessonStartPage && kb) starts.push({ sourceId: index.sourceId, page: f.lessonStartPage, kb });
+      }
+    }
+    assert.ok(starts.length > 100, `only ${starts.length} lesson starts read`);
+    const bad = new Set<string>();
+    for (const [id, l] of Object.entries(lessons)) {
+      for (const s of starts) {
+        // Ending ON the next lesson's recorded start is allowed: Grade 4 maths prints a
+        // «نشاط مفاهيمي» page between two lessons that the figures give to the next lesson
+        // and the range to the last — one shared page, not a lesson swallowed.
+        if (s.sourceId === l.sourceId && s.kb !== id && l.startPage < s.page && s.page < l.endPage) {
+          bad.add(`${id} p${l.startPage}-${l.endPage} contains the start of ${s.kb} (p${s.page})`);
+        }
+      }
+    }
+    assert.deepEqual([...bad], []);
+  });
+
   it('a book without a live copy (pdfUrl null) was rendered from ours, and says so', () => {
     for (const [id, book] of Object.entries(books as Record<string, { pdfUrl?: string | null; source?: string }>)) {
       if (book.pdfUrl === null) assert.ok(book.source, `${id} has no pdfUrl and no source`);
@@ -134,6 +178,36 @@ describe('Grade 3 Arabic semester 2 and maths pages (audit 2026-11-13)', () => {
     assert.equal(bookPagesForLesson(`${M}u9_l3`)!.page, 48);
     assert.equal(bookPagesForLesson(`${M}u9_l3`)!.urls[0], `${BOOK_PAGES_BASE_URL}/${M}u9_l3/7.jpg`);
     assert.equal(bookPagesForLesson(`${M}u8_l1`)!.page, 26);
+  });
+});
+
+describe('Grade 5 pages (audit 2026-11-13)', () => {
+  // Set by the Grade 5 audit (read as images) and confirmed independently from
+  // the books' own page text (lesson openers, «اختبار نهاية الوحدة», unit openers).
+  const G = 'kbl-g5-';
+  const at = (id: string, i: number) => bookPagesForLesson(`${G}${id}`)!.urls[i];
+  it('social studies lessons read their own pages, not the next unit\'s', () => {
+    // «الملك وصلاحياته الدستورية» opened on p. 40, the middle of «السلطة التنفيذية»
+    const king = bookPagesForLesson(`${G}social-s1-nccd-u2_l1`)!;
+    assert.equal(king.page, 30);
+    assert.equal(king.urls[0], `${BOOK_PAGES_BASE_URL}/${G}social-s1-nccd-u1_l3/9.jpg`);
+    assert.equal(at('social-s1-nccd-u3_l1', 0), `${BOOK_PAGES_BASE_URL}/${G}social-s1-nccd-u2_l1/11.jpg`);
+    assert.equal(bookPagesForLesson(`${G}social-s2-nccd-u6_l1`)!.page, 28);
+    assert.equal(bookPagesForLesson(`${G}social-s2-nccd-u8_l2`)!.page, 87);
+  });
+  it('«السرعة» shows no pages: its folder holds the body-systems lessons', () => {
+    assert.equal(bookPagesForLesson(`${G}science-s2-nccd-u9_l1`), null);
+    assert.equal(at('science-s2-nccd-u7_l2', 0), `${BOOK_PAGES_BASE_URL}/${G}science-s2-nccd-u9_l1/2.jpg`);
+    assert.equal(bookPagesForLesson(`${G}science-s2-nccd-u7_l3`)!.page, 36);
+  });
+  it('a maths lesson stops before the unit test, and lesson 2 of unit 4 has its pages', () => {
+    assert.equal(lessons[`${G}math-s1-nccd-u2_l5`]!.endPage, 49); // p. 50 is «اختبار نهاية الوحدة»
+    assert.equal(lessons[`${G}math-s1-nccd-u4_l1`]!.endPage, 79); // p. 80 is u4_l2's «نشاط مفاهيمي»
+    assert.equal(at('math-s1-nccd-u4_l2', 0), `${BOOK_PAGES_BASE_URL}/${G}math-s1-nccd-u4_l1/6.jpg`);
+  });
+  it('an Arabic unit\'s last lesson stops before «حصاد الوحدة» and the next unit\'s cover', () => {
+    assert.equal(lessons[`${G}arabic-s1-nccd-u1_l5`]!.endPage, 28);
+    assert.equal(lessons[`${G}arabic-s2-nccd-u10_l5`]!.endPage, 133);
   });
 });
 

@@ -22,6 +22,8 @@ import { EARLY_TOPICS } from './early.ts';
 import { G10_LESSON_TOPICS } from './grade10.ts';
 import { G10_TOPICS } from './g10.ts';
 import { G8_TOPICS } from './g8.ts';
+import { G7_TOPICS } from './g7.ts';
+import { G5_TOPICS } from './g5.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
 import {
   gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tier, valueOf, wrongsFrom,
@@ -838,9 +840,9 @@ const powers: Topic = {
 
 // ─── order of operations ────────────────────────────────────────────────────
 
-type Tok = number | string; // numbers, '+ − × ÷', '(' ')', or «5²» as a string
+type Tok = number | string; // numbers, '+ − × ÷', '(' ')', or «5²» / «√49» as a string
 
-const val = (t: Tok): number => (typeof t === 'number' ? t : t.endsWith('²') ? Number(t.slice(0, -1)) ** 2 : NaN);
+const val = (t: Tok): number => (typeof t === 'number' ? t : t.endsWith('²') ? Number(t.slice(0, -1)) ** 2 : t.startsWith('√') ? Math.sqrt(Number(t.slice(1))) : NaN);
 
 /** Correct value: parentheses and precedence honoured; null if a division is not exact. */
 function evalPrec(tokens: Tok[]): number | null {
@@ -893,12 +895,15 @@ function opsShape(rng: Rng, diff: DiffTier, grade: number, flat: boolean): { sha
   for (let attempt = 0; attempt < 100; attempt++) {
     const n = () => int(rng, 2, t === 0 ? 9 : 12);
     const [a, b, c, d] = [n(), n(), n(), n()];
+    // Grade 6 names «مقادير تحوي قوى وجذورًا»: a medium paper mixes them in, a hard one always has one
+    // (powers came only on hard and roots never, Grade 6 audit, 2026-11-14).
     const powers = grade >= 6 && t >= 1;
+    const plain: Tok[][] = [['(', a, '+', b, ')', '×', c], ['(', a + c, '−', b, ')', '×', d], [a, '×', b, '−', c * d, '÷', c], [a, '+', b, '×', c, '−', d]];
+    const raised: Tok[][] = [[a, '+', `${b}²`, '×', c], [`${a}²`, '−', '(', b, '+', c, ')', '×', d], [a, '×', '(', b, '+', c, ')', '−', `${d}²`], ['(', a, '+', b, ')', '×', c, '−', `${d}²`],
+      [`√${b * b}`, '+', a, '×', c], [a, '×', `√${c * c}`, '−', d], ['(', `√${a * a}`, '+', b, ')', '×', c], [`${a}²`, '−', `√${b * b}`, '×', c]];
     const shapes: Tok[][] = t === 0
       ? [[a, '+', b, '×', c], [b * c + int(rng, 2, 9), '−', b, '×', c], [a, '+', b * c, '÷', c]]
-      : t === 1 || !powers
-        ? [['(', a, '+', b, ')', '×', c], ['(', a + c, '−', b, ')', '×', d], [a, '×', b, '−', c * d, '÷', c], [a, '+', b, '×', c, '−', d]]
-        : [[a, '+', `${b}²`, '×', c], [`${a}²`, '−', '(', b, '+', c, ')', '×', d], [a, '×', '(', b, '+', c, ')', '−', `${d}²`], ['(', a, '+', b, ')', '×', c, '−', `${d}²`]];
+      : !powers ? plain : t === 1 ? [...plain, ...raised] : raised;
     const shape = pick(rng, flat ? shapes.filter(s => !s.includes('(')) : shapes);
     const v = evalPrec(shape);
     const ltr = evalLtr(shape), np = evalNoParens(shape);
@@ -1549,7 +1554,8 @@ const pctConv: Topic = {
     }
     if (kind === 2) {
       const ans = fmtDec(p, 2);
-      return { eq: `${p}%`, answer: ans, wrongs: wrongsFrom(ans, [fmtDec(p, 1), fmtDec(p * 10, 2), String(p)]), ar: `اكتب ${p}% على صورة عدد عشري.`, en: `Write ${p}% as a decimal.` };
+      // `near` formats its own steps: the default «answer ± 1» printed 0.64 + 1 as «1.6400000000000001»
+      return { eq: `${p}%`, answer: ans, wrongs: wrongsFrom(ans, [fmtDec(p, 1), fmtDec(p * 10, 2), String(p)], k => (p + 10 * k > 0 ? fmtDec(p + 10 * k, 2) : '')), ar: `اكتب ${p}% على صورة عدد عشري.`, en: `Write ${p}% as a decimal.` };
     }
     const ans = `${p}%`;
     const dec = fmtDec(p, 2);
@@ -1978,6 +1984,342 @@ const simplerProblem: Topic = {
   },
 };
 
+// ─── Grade 4: the two «خطة حل المسألة» lessons ──────────────────────────────
+//
+// Both follow the Grade 4 student book (S1 pp. 44-45, S2 pp. 126-127): the
+// worked example and the «أتدرب» problems give each kind. The distractor that
+// matters is the pupil who stops after the first step (one month, one week,
+// one album) or adds the two groups of a Venn diagram without taking off the
+// overlap; it is always offered.
+
+/** Three positive whole-number wrong options: the candidates that are above zero, then the answer plus a step. */
+const posWrongs = (ans: number, cands: number[], step: number) =>
+  wrongsFrom(String(ans), cands.filter(x => x > 0), k => String(ans + step * Math.abs(k)));
+
+/** Months as the Jordanian calendar names them, with their days. February is left out: it has two lengths. */
+const MONTHS: Array<[string, string, number]> = [
+  ['كانون الثاني', 'January', 31], ['آذار', 'March', 31], ['نيسان', 'April', 30], ['أيار', 'May', 31],
+  ['حزيران', 'June', 30], ['تموز', 'July', 31], ['آب', 'August', 31], ['أيلول', 'September', 30],
+  ['تشرين الأول', 'October', 31], ['تشرين الثاني', 'November', 30], ['كانون الأول', 'December', 31],
+];
+/** A typing time in words, its English, and its minutes. */
+const DURATIONS: Array<[string, string, number]> = [
+  ['نصف ساعة', 'half an hour', 30], ['ساعة وربعًا', 'an hour and a quarter', 75],
+  ['ساعة ونصفًا', 'an hour and a half', 90], ['ساعتين', 'two hours', 120],
+];
+
+/**
+ * Grade 4 «خطة حل المسألة: الحل بأكثر من خطوة»: a problem that needs two
+ * operations — a daily amount over two named months (the book's Rami swims 23
+ * laps a day in August and September), pay per hour over a year's 52 weeks,
+ * books on two kinds of shelf, words a minute over «ساعة وربعًا», photos in
+ * several albums.
+ */
+const multiStep: Topic = {
+  id: 'multi_step', match: /^خطه حل المساله الحل باكثر من خطوه$/, grades: [4, 4],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const k = pick(rng, [0, 1, 2, 3, 4]);
+    if (k === 0) {
+      const i = int(rng, 0, MONTHS.length - 2);
+      const [m1, e1, d1] = MONTHS[i]!, [m2, e2, d2] = MONTHS[i + 1]!;
+      const n = int(rng, [11, 15, 25][t]!, [25, 45, 95][t]!);
+      const ans = n * (d1 + d2);
+      return {
+        eq: `${n} × (${d1} + ${d2})`, answer: String(ans), wrongs: posWrongs(ans, [n * d1, d1 + d2, n + d1 + d2], 10),
+        ar: `يسبح رامي ${n} لفّةً في المسبح كل يوم. كم لفّةً يسبح في شهري ${m1} و${m2}؟`,
+        en: `Rami swims ${n} laps of the pool every day. How many laps does he swim in ${e1} and ${e2}?`,
+      };
+    }
+    if (k === 1) {
+      const r = int(rng, 3, 9), h = int(rng, 3, [4, 5, 6][t]!), ans = r * h * 52;
+      return {
+        eq: `${r} × ${h} × 52`, answer: String(ans), wrongs: posWrongs(ans, [r * h, r * h * 12, r * 52], 10),
+        ar: `تعمل سمر في شركة، وتتلقى ${r} دنانير عن كل ساعة عمل إضافي. إذا كانت تعمل ${h} ساعات إضافية كل أسبوع، فكم دينارًا تستحق عن العمل الإضافي في العام الواحد؟`,
+        en: `Samar earns ${r} JD for every hour of overtime. If she works ${h} hours of overtime every week, how many JD does she earn for overtime in one year?`,
+      };
+    }
+    if (k === 2) {
+      const a = int(rng, 11, [25, 45, 60][t]!), b = int(rng, 11, [20, 30, 40][t]!), c = int(rng, 11, [15, 20, 25][t]!);
+      const ans = (a + b) * c;
+      return {
+        eq: `(${a} + ${b}) × ${c}`, answer: String(ans), wrongs: posWrongs(ans, [a + b, a * c, a + b * c], 10),
+        ar: `تحتوي مكتبة على ${a} رفًّا لكتب الخيال العلمي، و${b} رفًّا لكتب التاريخ. إذا كان يوضع على الرف الواحد ${c} كتابًا، فكم كتابًا يمكن أن يوضع على رفوف المكتبة؟`,
+        en: `A library has ${a} shelves of science-fiction books and ${b} shelves of history books. If each shelf holds ${c} books, how many books can the library's shelves hold?`,
+      };
+    }
+    if (k === 3) {
+      const [dAr, dEn, min] = pick(rng, t === 0 ? DURATIONS.slice(0, 2) : DURATIONS);
+      const w = int(rng, [11, 20, 40][t]!, [40, 70, 99][t]!), ans = w * min;
+      return {
+        eq: `${w} × ${min}`, answer: String(ans), wrongs: posWrongs(ans, [w * 60, w + min, w * (min + 15)], 10),
+        ar: `يستطيع هشام طباعة ${w} كلمةً في الدقيقة. إذا استغرقت ${dAr} لطباعة تقرير، فكم كلمةً في التقرير؟`,
+        en: `Hisham can type ${w} words a minute. If typing a report took him ${dEn}, how many words are in the report?`,
+      };
+    }
+    const p = int(rng, 4, [6, 8, 9][t]!), g = int(rng, 11, [40, 90, 150][t]!), n = int(rng, 3, 5), ans = p * g * n;
+    return {
+      eq: `${p} × ${g} × ${n}`, answer: String(ans), wrongs: posWrongs(ans, [p * g, g * n, p + g + n], 10),
+      ar: `تتسع صفحة ألبوم الصور لـ ${p} صور، ويحتوي الألبوم الواحد على ${g} صفحةً. كم صورةً يمكن أن تضع ريم في ${n} ألبومات؟`,
+      en: `A photo-album page holds ${p} photos, and one album has ${g} pages. How many photos can Reem put in ${n} albums?`,
+    };
+  },
+};
+
+/** One Venn-diagram setting: who, the two groups, and how each question about them is worded. */
+interface VennCtx {
+  total(a: number, b: number, c: number): [string, string];
+  only(a: number, b: number, c: number): [string, string];
+}
+const VENN: VennCtx[] = [
+  {
+    total: (a, b, c) => [
+      `يفضّل ${a} طالبًا من طلبة الصف الرابع مشاهدة مباريات كرة القدم، ويفضّل ${b} طالبًا مشاهدة أفلام الكرتون، بينما يفضّل ${c} منهم مشاهدة الاثنين معًا. إذا كان كل طالب يفضّل واحدًا منهما على الأقل، فما عدد طلبة الصف؟`,
+      `${a} pupils in Grade 4 like watching football matches, ${b} like watching cartoons, and ${c} of them like both. If every pupil likes at least one of the two, how many pupils are in the class?`],
+    only: (a, b, c) => [
+      `يفضّل ${a} طالبًا من طلبة الصف الرابع مشاهدة مباريات كرة القدم، ويفضّل ${b} طالبًا مشاهدة أفلام الكرتون، بينما يفضّل ${c} منهم مشاهدة الاثنين معًا. ما عدد الطلبة الذين يفضّلون مشاهدة مباريات كرة القدم فقط؟`,
+      `${a} pupils like watching football matches, ${b} like watching cartoons, and ${c} of them like both. How many pupils like watching football matches only?`],
+  },
+  {
+    total: (a, b, c) => [
+      `لاحظت مربّية في إحدى الحضانات أن ${a} طفلًا يحبون الحليب، و${b} طفلًا يحبون العصير، و${c} منهم يحبون الحليب والعصير معًا. إذا كان كل طفل يحب واحدًا منهما على الأقل، فما عدد الأطفال في الحضانة؟`,
+      `A nursery carer noticed that ${a} children like milk, ${b} like juice, and ${c} of them like both. If every child likes at least one of the two, how many children are in the nursery?`],
+    only: (a, b, c) => [
+      `لاحظت مربّية في إحدى الحضانات أن ${a} طفلًا يحبون الحليب، و${b} طفلًا يحبون العصير، و${c} منهم يحبون الحليب والعصير معًا. ما عدد الأطفال الذين يحبون الحليب فقط؟`,
+      `${a} children in a nursery like milk, ${b} like juice, and ${c} of them like both. How many children like milk only?`],
+  },
+  {
+    total: (a, b, c) => [
+      `في نادٍ رياضي قاعة للأجهزة ومسبح. في أحد الأيام استعمل ${a} زائرًا قاعة الأجهزة، و${b} زائرًا المسبح، و${c} منهم استعملوا الاثنين. إذا كان كل زائر استعمل أحدهما على الأقل، فكم زائرًا زار النادي في ذلك اليوم؟`,
+      `A sports club has a gym and a pool. One day ${a} visitors used the gym, ${b} used the pool, and ${c} of them used both. If every visitor used at least one, how many visitors came to the club that day?`],
+    only: (a, b, c) => [
+      `في نادٍ رياضي قاعة للأجهزة ومسبح. في أحد الأيام استعمل ${a} زائرًا قاعة الأجهزة، و${b} زائرًا المسبح، و${c} منهم استعملوا الاثنين. كم زائرًا استعمل قاعة الأجهزة فقط؟`,
+      `One day ${a} visitors used a club's gym, ${b} used its pool, and ${c} of them used both. How many visitors used the gym only?`],
+  },
+];
+
+/**
+ * Grade 4 «خطة حل المسألة: استعمال شكل ڤن»: two groups and their overlap. The
+ * book's example asks for the class size (20 + 30 − 15); its exercises also
+ * ask for one group only (18 − 4), and the reverse — the total and one group
+ * known, the other wanted.
+ */
+const vennPlan: Topic = {
+  id: 'venn_plan', match: /^خطه حل المساله استعمال شكل ڤن$/, grades: [4, 4],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const k = pick(rng, [0, 1, 2]);
+    if (k === 2) {
+      const T = int(rng, [20, 25, 30][t]!, [30, 40, 45][t]!), x = int(rng, 11, T - 5), both = int(rng, 2, Math.min(x - 1, [6, 9, 14][t]!));
+      const ans = T - x + both;
+      return {
+        eq: `${T} − ${x} + ${both}`, answer: String(ans), wrongs: posWrongs(ans, [T - x, T - x - both, x + both], 1),
+        ar: `في صف ${T} طالبًا، جميعهم يشتركون في النشاط الرياضي أو في نشاط المسرح أو في كليهما. إذا كان ${x} طالبًا يشتركون في النشاط الرياضي، و${both} منهم يشتركون في النشاطين معًا، فكم طالبًا يشترك في نشاط المسرح؟`,
+        en: `In a class of ${T} pupils, every pupil takes part in sport or drama or both. If ${x} pupils take part in sport and ${both} of them take part in both, how many pupils take part in drama?`,
+      };
+    }
+    const a = int(rng, [11, 15, 20][t]!, [30, 60, 99][t]!), b = int(rng, [11, 15, 20][t]!, [30, 60, 99][t]!);
+    const c = int(rng, 2, Math.min(a, b) - 1 > [9, 14, 30][t]! ? [9, 14, 30][t]! : Math.min(a, b) - 1);
+    const ctx = pick(rng, VENN);
+    if (k === 0) {
+      const ans = a + b - c, [ar, en] = ctx.total(a, b, c);
+      return { eq: `${a} + ${b} − ${c}`, answer: String(ans), wrongs: posWrongs(ans, [a + b, a + b + c, a + b - 2 * c], 1), ar, en };
+    }
+    const ans = a - c, [ar, en] = ctx.only(a, b, c);
+    return { eq: `${a} − ${c}`, answer: String(ans), wrongs: posWrongs(ans, [a, a + c, b - c], 1), ar, en };
+  },
+};
+
+// ─── Grade 3: the four lessons that had no offline questions ────────────────
+//
+// «الأرقام الهندية» (S1 u1_l7), «خطة حل المسألة: التخمين والتحقق» (S2 u7_l6),
+// «مهارة حل المسألة: استعمال الخطوات الأربع» (S2 u8_l6, pp. 36-37: the meaning
+// of the remainder) and «الكسور والقسمة» (S2 u9_l8: a unit fraction of a
+// two-digit number by division, no remainder). Each wrong option is a slip the
+// lesson is about.
+
+const HINDI_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+const toHindi = (n: number | string) => String(n).replace(/[0-9]/g, d => HINDI_DIGITS[Number(d)]!);
+/** Digits a pupil confuses with each: ٢/٣, ٤/٦, ٧/٨, ٠/٥, ١/٩. */
+const LOOKALIKE: Record<number, number[]> = { 0: [5, 1], 1: [9, 7], 2: [3, 6], 3: [2, 4], 4: [6, 3], 5: [0, 6], 6: [4, 2], 7: [8, 1], 8: [7, 9], 9: [1, 8] };
+/** The same digits in another order, or one digit changed: what a pupil writes when reading or copying them wrongly. */
+function digitSlips(rng: Rng, n: number): number[] {
+  const s = String(n), out: number[] = [];
+  const add = (t: string) => { const v = Number(t); if (t[0] !== '0' && v !== n && !out.includes(v)) out.push(v); };
+  add([...s].reverse().join(''));
+  for (let i = 0; i + 1 < s.length; i++) add(s.slice(0, i) + s[i + 1] + s[i] + s.slice(i + 2));
+  for (let i = 0; i < s.length; i++) for (const d of LOOKALIKE[Number(s[i])]!) add(s.slice(0, i) + d + s.slice(i + 1));
+  return shuffle(rng, out).slice(0, 3);
+}
+const g3Number = (rng: Rng, diff: DiffTier): number => {
+  const n = int(rng, [100, 1000, 1000][tier(diff)]!, [999, 4999, 9999][tier(diff)]!);
+  const s = String(n), once = [...s].some(c => c !== '0' && s.split(c).length === 2);
+  return new Set(s).size > 1 && once ? n : g3Number(rng, diff); // a repdigit has no reordering, and a place question needs a digit that appears once
+};
+
+const PLACE_G3: Array<[number, string, string]> = [[1, 'الآحاد', 'ones'], [10, 'العشرات', 'tens'], [100, 'المئات', 'hundreds'], [1000, 'الألوف', 'thousands']];
+
+/**
+ * Grade 3 «الأرقام الهندية»: read numbers up to the thousands written in the
+ * digits ٠-٩. Every question needs the Hindi digits READ, and none asks for
+ * them WRITTEN: marking folds ٧ and 7 to one value (`answersMatch` in the API,
+ * `toLatinDigits` in the app), so «اكتب 4708 بالأرقام الهندية» would mark
+ * «4708» right. Writing them is the teacher's to check.
+ */
+const hindiNumerals: Topic = {
+  id: 'hindi_numerals', match: /^الارقام الهنديه$/, grades: [3, 3],
+  make({ rng, diff }) {
+    const k = pick(rng, [0, 1, 2, 3]);
+    const n = g3Number(rng, diff);
+    if (k === 0 || k === 1) {
+      // the greatest or smallest of four numbers made of the same digits
+      const set = shuffle(rng, [n, ...digitSlips(rng, n)]);
+      const pickV = k === 0 ? Math.max(...set) : Math.min(...set);
+      const [ar, en] = k === 0 ? ['أكبر', 'greatest'] : ['أصغر', 'smallest'];
+      return {
+        eq: `${k === 0 ? 'max' : 'min'}(${set.join(', ')})`, answer: toHindi(pickV), wrongs: set.filter(x => x !== pickV).map(toHindi),
+        ar: `ما ${ar} عدد بين الأعداد الآتية: ${set.map(toHindi).join('، ')}؟`,
+        en: `Which is the ${en} of these numbers: ${set.map(toHindi).join(', ')}?`,
+      };
+    }
+    // a digit that is not zero and appears once, in a place the number has: «٤» in ١٠٤٤ would be 40 and 4 at once
+    const digitAt = (q: number) => Math.floor(n / q) % 10;
+    const count = (d: number) => PLACE_G3.filter(([q]) => q <= n && digitAt(q) === d).length;
+    const places = PLACE_G3.filter(([p]) => p <= n && digitAt(p) !== 0 && count(digitAt(p)) === 1);
+    const [p, pAr, pEn] = pick(rng, places);
+    const dig = Math.floor(n / p) % 10;
+    if (k === 2) {
+      // its value: «٧» in ٤٧٠٨ is 700; the wrong options are the digit alone and the other places' values
+      const value = dig * p;
+      const others = PLACE_G3.map(([q]) => dig * q).filter(v => v !== value);
+      return {
+        eq: `${dig} × ${p} in ${n}`, answer: String(value), wrongs: wrongsFrom(String(value), [dig, ...others]),
+        ar: `ما قيمة الرقم ${toHindi(dig)} في العدد ${toHindi(n)}؟`,
+        en: `What is the value of the digit ${toHindi(dig)} in the number ${toHindi(n)}?`,
+      };
+    }
+    // the digit in a place: a different place's digit, or a look-alike, is the slip
+    const otherDigits = PLACE_G3.filter(([q]) => q !== p && q <= n).map(([q]) => Math.floor(n / q) % 10);
+    const cands = [...new Set([...otherDigits, ...LOOKALIKE[dig]!, ...range(0, 9)])].filter(x => x !== dig);
+    return {
+      eq: `digit at ${p} of ${n}`, answer: toHindi(dig), wrongs: cands.slice(0, 3).map(toHindi),
+      ar: `ما الرقم الذي في منزلة ${pAr} في العدد ${toHindi(n)}؟`,
+      en: `Which digit is in the ${pEn} place of ${toHindi(n)}?`,
+    };
+  },
+};
+
+/** Grade 3 «خطة حل المسألة: التخمين والتحقق»: problems on multiplication solved by guessing, checking and guessing again. */
+const guessCheck: Topic = {
+  id: 'guess_check', match: /^خطه حل المساله التخمين والتحقق$/, grades: [3, 3],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const k = pick(rng, [0, 1, 2, 3]);
+    if (k === 0) {
+      const a = int(rng, 2, [6, 8, 9][t]!), b = int(rng, a + 1, [7, 9, 10][t]! + (a >= [7, 9, 10][t]! ? 1 : 0));
+      const S = a + b, P = a * b, pair = (x: number, y: number) => `${Math.min(x, y)} و ${Math.max(x, y)}`;
+      const cands = [pair(a - 1, b + 1), pair(a + 1, b - 1), pair(1, P), pair(a, b + 1), pair(a - 1, b)]
+        .filter(s => s !== pair(a, b) && !s.startsWith('0 ') && !s.includes(' 0'));
+      return {
+        eq: `x + y = ${S}, x × y = ${P}`, answer: pair(a, b), wrongs: [...new Set(cands)].slice(0, 3),
+        ar: `عددان مجموعهما ${S} وحاصل ضربهما ${P}. ما العددان؟`,
+        en: `Two numbers add up to ${S} and multiply to ${P}. What are they?`,
+      };
+    }
+    if (k === 1) {
+      const H = int(rng, [5, 6, 8][t]!, [8, 10, 12][t]!), sheep = int(rng, 1, H - 1), L = 4 * sheep + 2 * (H - sheep);
+      return {
+        eq: `4s + 2(${H} − s) = ${L}`, answer: String(sheep), wrongs: posWrongs(sheep, [H - sheep, Math.floor(L / 4), H], 1),
+        ar: `في مزرعة دجاج وخراف، عددها معًا ${H}، وعدد أرجلها ${L}. كم خروفًا في المزرعة؟`,
+        en: `A farm has chickens and sheep, ${H} animals in all with ${L} legs. How many sheep are there?`,
+      };
+    }
+    if (k === 2) {
+      for (;;) {
+        const a = int(rng, 3, 6), b = int(rng, a + 1, 9), N = int(rng, 4, [6, 8, 10][t]!), nb = int(rng, 1, N - 1);
+        const T = a * (N - nb) + b * nb;
+        if (T < 11) continue;
+        return {
+          eq: `${a}(${N} − n) + ${b}n = ${T}`, answer: String(nb), wrongs: posWrongs(nb, [N - nb, N, Math.floor(T / b)], 1),
+          ar: `اشترت سلمى أقلامًا ثمن الواحد منها ${counted(a, 'دنانير', 'دينارًا', 'دينار')}، ودفاتر ثمن الواحد منها ${counted(b, 'دنانير', 'دينارًا', 'دينار')}، فاشترت ${counted(N, 'قطع', 'قطعةً', 'قطعة')} ودفعت ${T} دينارًا. كم دفترًا اشترت؟`,
+          en: `Salma bought pens at ${a} JD each and notebooks at ${b} JD each: ${N} items for ${T} JD. How many notebooks did she buy?`,
+        };
+      }
+    }
+    const n = int(rng, [2, 4, 6][t]!, [6, 9, 10][t]!), sq = n * n;
+    return {
+      eq: `n × n = ${sq}`, answer: String(n), wrongs: posWrongs(n, [sq % 2 === 0 ? sq / 2 : 2 * n, n + 1, n - 1], 1),
+      ar: `ما العدد الذي إذا ضُرب في نفسه كان الناتج ${sq}؟`, en: `Which number multiplied by itself makes ${sq}?`,
+    };
+  },
+};
+
+/**
+ * Grade 3 «مهارة حل المسألة: استعمال الخطوات الأربع» (S2 pp. 36-37): a
+ * division with a remainder, and what the remainder means. 56 people at
+ * tables of 6 need 10 tables (round up); with 37 JD at 4 JD each you can buy 9
+ * (round down); or the question is the remainder itself.
+ */
+const fourSteps: Topic = {
+  id: 'four_steps', match: /^مهاره حل المساله استعمال الخطوات الاربع$/, grades: [3, 3],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    let k = 0, N = 0;
+    for (;;) {
+      k = int(rng, 3, [6, 8, 9][t]!); N = int(rng, 20, [50, 80, 99][t]!);
+      if (N % k !== 0) break;
+    }
+    const q = Math.floor(N / k), r = N % k, up = q + 1;
+    const kind = pick(rng, [0, 0, 1, 1, 2]);
+    if (kind === 0) {
+      const [ar, en] = pick(rng, [
+        [`يحضر ${N} شخصًا حفلًا، وتتسع الطاولة الواحدة لـ ${k} أشخاص. ما عدد الطاولات اللازمة ليجلس الحضور جميعهم؟`, `${N} people come to a party and each table seats ${k}. How many tables are needed so everyone can sit?`],
+        [`تُباع عبوات الماء في صناديق، في كل صندوق ${k} عبوات. يحتاج أحمد إلى ${N} عبوةً. ما عدد الصناديق التي يجب أن يشتريها؟`, `Water bottles come in boxes of ${k}. Ahmad needs ${N} bottles. How many boxes must he buy?`],
+        [`تقرأ ياسمين ${k} كتب كل شهر. كم شهرًا تحتاج لقراءة ${N} كتابًا؟`, `Yasmeen reads ${k} books a month. How many months does she need to read ${N} books?`],
+      ] as const);
+      return { eq: `⌈${N} ÷ ${k}⌉`, answer: String(up), wrongs: posWrongs(up, [q, r, up + 1], 1), ar, en };
+    }
+    if (kind === 1) {
+      const [ar, en] = pick(rng, [
+        [`مع سلمى ${N} دينارًا، وثمن القصة الواحدة ${k} دنانير. ما أكبر عدد من القصص يمكنها أن تشتري؟`, `Salma has ${N} JD and one story book costs ${k} JD. What is the greatest number of books she can buy?`],
+        [`لدى خبّاز ${N} بيضةً، ويحتاج كل قالب كعك إلى ${k} بيضات. ما أكبر عدد من القوالب يمكنه أن يصنع؟`, `A baker has ${N} eggs and each cake needs ${k} eggs. What is the greatest number of cakes he can make?`],
+      ] as const);
+      return { eq: `⌊${N} ÷ ${k}⌋`, answer: String(q), wrongs: posWrongs(q, [up, r, q - 1], 1), ar, en };
+    }
+    return {
+      eq: `${N} mod ${k}`, answer: String(r), wrongs: posWrongs(r, [q, k - r, up], 1),
+      ar: `قُسّم ${N} طالبًا إلى مجموعات، في كل مجموعة ${k} طلاب. كم طالبًا يبقى دون مجموعة كاملة؟`,
+      en: `${N} pupils are put into groups of ${k}. How many pupils are left without a full group?`,
+    };
+  },
+};
+
+/** Grade 3 «الكسور والقسمة»: a unit fraction of a two-digit number, found by dividing (no remainder). */
+const fracDiv: Topic = {
+  id: 'frac_div', match: /^الكسور والقسمه$/, grades: [3, 3],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const d = int(rng, 2, [5, 8, 10][t]!);
+    const q = int(rng, Math.ceil(10 / d), Math.min(Math.floor(99 / d), [10, 12, 20][t]!));
+    const N = d * q;
+    const k = pick(rng, [0, 1, 2]);
+    if (k === 2) {
+      return {
+        eq: `${N} ÷ ${d}`, answer: `${N} ÷ ${d}`,
+        wrongs: [`${N} × ${d}`, `${d} ÷ ${N}`, d === 2 ? `${N} − ${d}` : `${N} ÷ 2`],
+        ar: `ما جملة القسمة التي نجد بها 1/${d} العدد ${N}؟`, en: `Which division finds 1/${d} of ${N}?`,
+      };
+    }
+    const wrongs = posWrongs(q, [N * d, N - d, d], 1);
+    if (k === 0) return { eq: `${N} ÷ ${d}`, answer: String(q), wrongs, ar: `ما 1/${d} العدد ${N}؟`, en: `What is 1/${d} of ${N}?` };
+    return {
+      eq: `${N} ÷ ${d}`, answer: String(q), wrongs,
+      ar: `لدى سلمى ${counted(N, 'أقلام', 'قلمًا', 'قلم')}، أعطت 1/${d} منها لأخيها. كم قلمًا أعطته؟`,
+      en: `Salma has ${N} pens and gave 1/${d} of them to her brother. How many pens did she give him?`,
+    };
+  },
+};
+
 /** Specific titles first; the more general patterns after. */
 export const TOPICS: readonly Topic[] = [
   roundDec, roundWhole, estSumDec,
@@ -1991,7 +2333,7 @@ export const TOPICS: readonly Topic[] = [
   mixedImproper, fracDec, decPlace, pctConv, ratioEquiv, ratioSimplest,
   ratCompare, ratOp('rat_addsub', /جمع الاعداد النسبيه/, ['+', '−']), ratOp('rat_muldiv', /ضرب الاعداد النسبيه/, ['×', '÷']),
   repeating, expLaws,
-  decMeasure, simplerProblem,
+  decMeasure, simplerProblem, multiStep, vennPlan, hindiNumerals, guessCheck, fourSteps, fracDiv,
   ...ALGEBRA_TOPICS,
   ...GEOMETRY_TOPICS,
   ...STATS_TOPICS,
@@ -2000,6 +2342,8 @@ export const TOPICS: readonly Topic[] = [
   ...G10_LESSON_TOPICS,
   ...G10_TOPICS,
   ...G8_TOPICS,
+  ...G7_TOPICS,
+  ...G5_TOPICS,
 ];
 
 /** The generator for a lesson title and grade, or null when none is about it. */

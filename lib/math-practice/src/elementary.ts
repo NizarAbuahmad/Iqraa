@@ -125,7 +125,7 @@ const ADD_MAX: Record<number, number> = { 1: 20, 2: 999, 3: 9999, 4: 99999, 5: 9
 /** Times tables for × and ÷ by grade (Grade 2 teaches 2–5). */
 const TABLE_MAX: Record<number, number> = { 1: 2, 2: 5, 3: 10, 4: 10, 5: 10, 6: 10 };
 /** The widest number a grade's place-value lesson names: G3 «ضمن الألوف», G4 «ضمن مئات الألوف», G5 «ضمن الملايين». */
-const PLACE_DIGITS: Record<number, number> = { 1: 2, 2: 3, 3: 4, 4: 6, 5: 7, 6: 7 };
+const PLACE_DIGITS: Record<number, number> = { 1: 2, 2: 3, 3: 4, 4: 6, 5: 8, 6: 7 };
 
 const TIER_SCALE: Record<DiffTier, number> = { easy: 0.1, medium: 0.5, hard: 1 };
 
@@ -312,8 +312,8 @@ const listEn = (xs: readonly (string | number)[]) => xs.join(', ');
 const q = (s: string) => s.replace(/؟/g, '?');
 
 // Up to millions: Grade 4 asks within «مئات الألوف», Grade 5 within «الملايين».
-const PLACE_AR = ['الآحاد', 'العشرات', 'المئات', 'الألوف', 'عشرات الألوف', 'مئات الألوف', 'الملايين'];
-const PLACE_EN = ['ones', 'tens', 'hundreds', 'thousands', 'ten thousands', 'hundred thousands', 'millions'];
+const PLACE_AR = ['الآحاد', 'العشرات', 'المئات', 'الألوف', 'عشرات الألوف', 'مئات الألوف', 'الملايين', 'عشرات الملايين'];
+const PLACE_EN = ['ones', 'tens', 'hundreds', 'thousands', 'ten thousands', 'hundred thousands', 'millions', 'ten millions'];
 
 /** «345» → «300 + 40 + 5», zero digits left out. */
 const expanded = (digits: number[]) =>
@@ -496,11 +496,13 @@ function subKinds(base: Base, max: number, rng: Rng): ConcreteItem {
   }
 }
 
-function mulKinds(base: Base, a: number, bMax: number, rng: Rng): ConcreteItem {
-  switch (int(rng, 1, 3)) {
+function mulKinds(base: Base, a: number, bMax: number, rng: Rng, bMin = 2): ConcreteItem {
+  const kind = int(rng, 1, 3);
+  // «735 + 735 + … = ؟ × 735» is the Grade 2 meaning of ×, not a Grade 5 drill
+  switch (kind === 2 && a >= 100 ? 3 : kind) {
     case 1: {
       // The missing factor; the lesson's table stays the known one.
-      const b = int(rng, 2, bMax);
+      const b = int(rng, bMin, bMax);
       const p = a * b;
       const eq = rng() < 0.5 ? `${a} × ؟ = ${p}` : `؟ × ${a} = ${p}`;
       return ask(base, eq, String(b), wrongNums(b, rng, [b + 1, b - 1, p - a, a]),
@@ -515,7 +517,7 @@ function mulKinds(base: Base, a: number, bMax: number, rng: Rng): ConcreteItem {
         `أكمل بالعدد المناسب: ${eq}`, `Fill in the missing number: ${q(eq)}`);
     }
     default: {
-      const b = int(rng, 3, Math.max(3, bMax));
+      const b = int(rng, Math.max(3, bMin), Math.max(3, bMax));
       const p = a * b;
       const wr = wrongNums(p, rng, [a + b, p + a, p - a, p + 10]);
       const eq = `word:${b} × ${a}`;
@@ -1030,10 +1032,18 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
     }
     case 'mul': {
       // Grades 4+ go past the tables: a two-digit factor on medium/hard.
-      const a = table ?? (grade >= 4 && diff !== 'easy' ? int(rng, 11, diff === 'hard' ? 99 : 30) : int(rng, 2, tableMax));
-      const bMax = grade >= 5 && diff === 'hard' ? 99 : 10;
-      if (int(rng, 0, 3) > 0) return mulKinds(base, a, bMax, rng);
-      const b = int(rng, 2, bMax);
+      // Grade 5 «ضرب الأعداد» names up to 3 digits × 2 digits: a 2-digit by a
+      // 1-digit number on easy, a 3-digit by a 1-digit or a 2-digit by a
+      // 2-digit on medium, a 3-digit by a 2-digit on hard (Grade 5 audit).
+      const g5 = grade === 5 && table === null;
+      const wide = g5 && (diff === 'hard' || (diff === 'medium' && rng() < 0.5));
+      const a = table ?? (g5
+        ? (diff === 'easy' ? int(rng, 12, 99) : diff === 'hard' || !wide ? int(rng, 100, 999) : int(rng, 11, 99))
+        : grade >= 4 && diff !== 'easy' ? int(rng, 11, diff === 'hard' ? 99 : 30) : int(rng, 2, tableMax));
+      const bMax = g5 ? (wide ? 99 : 9) : grade >= 5 && diff === 'hard' ? 99 : 10;
+      const bMin = wide ? 11 : 2;
+      if (int(rng, 0, 3) > 0) return mulKinds(base, a, bMax, rng, bMin);
+      const b = int(rng, bMin, bMax);
       const p = a * b;
       return {
         ...base, eq: `${a} × ${b}`, answer: String(p),
@@ -1043,8 +1053,14 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'div': {
-      const b = table ?? int(rng, 2, tableMax);
-      const q = table ? int(rng, 1, 10) : grade >= 4 && diff !== 'easy' ? int(rng, 11, diff === 'hard' ? 250 : 60) : int(rng, 1, 10);
+      // Grade 5 «قسمة الأعداد» divides a number of up to 3 digits by one of one
+      // or two digits; Grade 4 keeps a one-digit divisor (Grade 5 audit).
+      const g5 = grade === 5 && table === null;
+      const twoDigit = g5 && (diff === 'hard' || (diff === 'medium' && rng() < 0.5));
+      const b = table ?? (twoDigit ? int(rng, 11, diff === 'hard' ? 49 : 25) : int(rng, 2, g5 ? 9 : tableMax));
+      const q = table ? int(rng, 1, 10)
+        : g5 ? (twoDigit ? int(rng, 2, Math.floor(999 / b)) : diff === 'easy' ? int(rng, 2, 10) : int(rng, 11, Math.floor(999 / b)))
+        : grade >= 4 && diff !== 'easy' ? int(rng, 11, diff === 'hard' ? 250 : 60) : int(rng, 1, 10);
       if (int(rng, 0, 5) > 0) return divKinds(base, b, q, grade, diff, rng);
       const a = b * q;
       return {

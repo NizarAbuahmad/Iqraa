@@ -531,9 +531,29 @@ const QUADS: Array<[string, string, string]> = [
   ['شبه منحرف', 'زوج واحد فقط من الأضلاع المتقابلة متوازٍ', 'exactly one pair of parallel sides'],
 ];
 const quadName = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng }) => {
+  // Grade 6 «الأشكال الرباعية» is about the angle sum (Grade 6 audit, 2026-11-14): half its items use it.
+  if (grade >= 6 && rng() < 0.6) return quadAngles(rng);
   const [n, ar, en] = pick(rng, QUADS);
   return { eq: n, answer: n, wrongs: names(rng, n, QUADS.map(q => q[0])), ar: `أي شكل رباعي له الخصائص الآتية: ${ar}؟`, en: `Which quadrilateral has these properties: ${en}?` };
 });
+/** The 360° angle sum: the fourth angle, three equal angles, a parallelogram's neighbouring angle, the sum itself. */
+function quadAngles(rng: Rng) {
+  const k = pick(rng, [0, 0, 1, 2, 3]);
+  if (k === 0) {
+    let a = 0, b = 0, c = 0, d = 0;
+    do { a = int(rng, 50, 140); b = int(rng, 50, 140); c = int(rng, 50, 140); d = 360 - a - b - c; } while (d < 40 || d > 160);
+    return { eq: `quad ${a}, ${b}, ${c}`, answer: `${d}°`, wrongs: deg(d, [360 - a - b, 180 - d, d + 10, d - 10]), ar: `قياسات ثلاث زوايا في شكل رباعي ${a}° و ${b}° و ${c}°. ما قياس الزاوية الرابعة؟`, en: `Three angles of a quadrilateral measure ${a}°, ${b}° and ${c}°. What does the fourth angle measure?` };
+  }
+  if (k === 1) {
+    const x = pick(rng, [70, 75, 80, 85, 95, 100, 105, 110]), d = 360 - 3 * x;
+    return { eq: `quad 3x + ${d}`, answer: `${x}°`, wrongs: deg(x, [(180 - d) / 3, 360 - d, d, x + 10]), ar: `في شكل رباعي ثلاث زوايا متساوية في القياس، وقياس الزاوية الرابعة ${d}°. ما قياس كل من الزوايا الثلاث المتساوية؟`, en: `A quadrilateral has three equal angles and a fourth angle of ${d}°. What does each of the equal angles measure?` };
+  }
+  if (k === 2) {
+    const a = int(rng, 40, 140); const ans = 180 - a;
+    return { eq: `para ${a}`, answer: `${ans}°`, wrongs: deg(ans, [a, 360 - a, ans + 10, ans - 10]), ar: `في متوازي الأضلاع ABCD قياس الزاوية A يساوي ${a}°. ما قياس الزاوية B؟`, en: `In parallelogram ABCD, angle A measures ${a}°. What does angle B measure?` };
+  }
+  return { eq: 'quad sum', answer: '360°', wrongs: ['180°', '90°', '540°'], ar: 'ما مجموع قياسات الزوايا الداخلية لأي شكل رباعي؟', en: 'What is the sum of the interior angles of any quadrilateral?' };
+}
 
 const SHAPE_BASES: Array<[number, string, string]> = [[3, 'مثلثية', 'triangular'], [4, 'رباعية', 'square'], [5, 'خماسية', 'pentagonal'], [6, 'سداسية', 'hexagonal']];
 /** The solid's name by its base, and a net's base faces: [one, two of them]. */
