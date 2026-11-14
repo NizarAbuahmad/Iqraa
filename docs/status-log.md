@@ -37,6 +37,45 @@ one-step slip is offered, and that no number or option passes 999; math-practice
 pass, 0 fail); typecheck; 36 sampled items read by hand, keys right and the counted nouns agree («11 صفحةً», «9 صفحات», «30 تفاحةً», «15 قلمًا»).
 
 No «ما الجديد» entry: offline questions for lessons that had none, not a new feature.
+## Grade 5 review: the last three maths lessons, the second pass's weak items, and social S2 u7_l4 — 2026-11-14
+
+«Grade 5 audit…» and «Grade 5 maths…» (both 2026-11-13, below) covered pages, figures, contents and every maths quiz. A
+sweep of all 317 lessons through the offline plan, quiz, worksheet and activity found what they left: every lesson grounds
+by id and plans and activities generate for all, but 3 of 52 maths lessons gave no full paper. This change closes those and
+the items both entries listed as open.
+
+**Maths (`lib/math-practice`).**
+- **«خطة حل المسألة: أنشئ جدولًا»** (S1 u1_l5) and **«خطة حل المسألة (أرسم نموذجًا)»** (S2 u7_l4) had no questions; they
+  were refused «as in Grades 3–4», which now serve theirs, as do Grades 6 and 7. `make_table_g5` and `draw_model_g5` (`g5.ts`)
+  follow the books' worked examples and «أتدرب» problems: S1 pp. 24-25 — a ratio table (green and red balls), a daily
+  amount that grows, outfits, ways to pay with 5- and 10-piastre coins; S2 pp. 56-57 — a bar model as an equation: «أقل
+  بمقدار», a bill that fell, equal parts (336 km in 3 hours), equal groups (whales), and which equation a model shows.
+- **«تصنيف الأشكال الرباعية»** («أصنف الأشكال الرباعية حسب أضلاعها وزواياها») ran out at 5 of 10 questions. Grade 5 now
+  also classifies a shape from its sides and one angle, picks the true (or false) «every X is a Y» statement, and counts
+  pairs of parallel sides (`quadClassify`, `geometry.ts`; Grade 6's angle sum is untouched).
+- **«قسمة الكسور»** could print «2/2 ÷ 3/3»: its fractions are now proper, in both kinds that draw a/b.
+- **«إذا اشترى 2 من الكتب»** now reads «كتابين» (and «3 كتب», «11 كتابًا»). The unused × and ÷ `wordAr` («25 صفوف … 23
+  مقاعد», «على 25 مجموعات») agree through `counted`, so they are right if a word kind ever shows them.
+
+**Social S2.** Unit 7 has four lessons: the audit read pp. 71-76 as «دول المغرب العربي» and u7_l3 as pp. 63-70. `u7_l4` is
+added (a new id after the others, title only like every lesson in this file, whose extracted text is scrambled); the
+`known_gaps` note that said u7_l3 ran to p. 88 is corrected, and unit 8's note records the audit's two lessons.
+
+**Verified.**
+- `g5.test.ts` recomputes every new key by building what the plan builds — the table row by row, the pattern day by day,
+  every outfit, every way to pay — and solves the model's equation; `geometry.test.ts` classifies each shape from its printed
+  sides and angle and checks each statement against the true list; a new test draws 400 «قسمة الكسور» questions and finds no
+  «n/n» (it fails on the old code); `algebra.test.ts` reads «كتابين» and fails on «2 من الكتب».
+- Planted bugs — the ratio table counting green, the coin count off by one, the model adding, the classifying angle swapped
+  — each made a test fail.
+- Sample questions for every new kind read by hand, keys correct. Sweep: 52 of 52 maths lessons give a full paper (49 before);
+  the new social lesson grounds by id and gets a plan and an activity.
+- math-practice and curriculum tests pass, curriculum `verify` 0 errors; the PR body has the rest of the CI set.
+
+**Not done.** Rendering the pages the audit listed (maths S2, science, social, PE S1 u2_l3) needs the PDFs; u7_l4 gets no
+book pages until then. The three social S1 titles the audit found printed differently stay, because a renamed title loses
+exact-title grounding (the book's wording is in the audit entry).
+
 ## Grade 6 review: the four «weak, not fixed» maths lessons from the second pass — 2026-11-14
 
 The Grade 6 audit and «Grade 6, second pass» (both below) covered pages, figures, contents and every maths quiz against
