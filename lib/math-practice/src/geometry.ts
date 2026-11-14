@@ -533,9 +533,51 @@ const QUADS: Array<[string, string, string]> = [
 const quadName = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng }) => {
   // Grade 6 «الأشكال الرباعية» is about the angle sum (Grade 6 audit, 2026-11-14): half its items use it.
   if (grade >= 6 && rng() < 0.6) return quadAngles(rng);
+  // Grade 5 «تصنيف الأشكال الرباعية» had only the five property sentences and ran
+  // out at 5 questions of 10 (status log, 2026-11-13).
+  if (grade === 5 && rng() < 0.7) return quadClassify(rng);
   const [n, ar, en] = pick(rng, QUADS);
   return { eq: n, answer: n, wrongs: names(rng, n, QUADS.map(q => q[0])), ar: `أي شكل رباعي له الخصائص الآتية: ${ar}؟`, en: `Which quadrilateral has these properties: ${en}?` };
 });
+/** «المربع»… with the article, and the English name. */
+const QUAD_THE: Record<string, [string, string]> = {
+  'مربع': ['المربع', 'a square'], 'مستطيل': ['المستطيل', 'a rectangle'], 'معين': ['المعين', 'a rhombus'],
+  'متوازي أضلاع': ['متوازي الأضلاع', 'a parallelogram'], 'شبه منحرف': ['شبه المنحرف', 'a trapezoid'],
+};
+/**
+ * Grade 5: classify a quadrilateral by its sides and angles («أصنّف الأشكال
+ * الرباعية حسب أضلاعها وزواياها»): name it from its side lengths and angles, in
+ * order round the shape (the most precise name — a square is also a rectangle);
+ * count its pairs of parallel sides or its right angles; a rectangle's or a
+ * parallelogram's opposite side.
+ */
+function quadClassify(rng: Rng) {
+  const k = pick(rng, [0, 0, 1, 2, 3, 3]);
+  if (k === 0) {
+    const equal = rng() < 0.5, right = rng() < 0.5;
+    const name = equal ? (right ? 'مربع' : 'معين') : right ? 'مستطيل' : 'متوازي أضلاع';
+    const l = int(rng, 3, 12);
+    let w = l;
+    if (!equal) while (w === l) w = int(rng, 2, 12);
+    const a = right ? 90 : pick(rng, [50, 55, 60, 65, 70, 75, 80, 100, 105, 110, 115, 120, 125, 130]);
+    const sides = `${l} سم و ${w} سم و ${l} سم و ${w} سم`, angles = `${a}° و ${180 - a}° و ${a}° و ${180 - a}°`;
+    return { eq: `quad ${l}, ${w}, ${a}`, answer: name, wrongs: names(rng, name, QUADS.map(q => q[0])), ar: `شكل رباعي أطوال أضلاعه بالترتيب ${sides}، وقياسات زواياه بالترتيب ${angles}. ما أدقّ اسم لهذا الشكل؟`, en: `A quadrilateral has sides of ${l} cm, ${w} cm, ${l} cm and ${w} cm in order, and angles of ${a}°, ${180 - a}°, ${a}° and ${180 - a}° in order. What is its most precise name?` };
+  }
+  if (k === 1) {
+    const [n] = pick(rng, QUADS), ans = n === 'شبه منحرف' ? 1 : 2;
+    return { eq: `parallel ${n}`, answer: String(ans), wrongs: ['1', '2', '3', '4'].filter(x => x !== String(ans)), ar: `كم زوجًا من الأضلاع المتوازية في ${QUAD_THE[n]![0]}؟`, en: `How many pairs of parallel sides does ${QUAD_THE[n]![1]} have?` };
+  }
+  if (k === 2) {
+    const n = pick(rng, ['مربع', 'مستطيل']);
+    return { eq: `right ${n}`, answer: '4', wrongs: ['1', '2', '3'], ar: `كم زاوية قائمة في ${QUAD_THE[n]![0]}؟`, en: `How many right angles does ${QUAD_THE[n]![1]} have?` };
+  }
+  const n = pick(rng, ['مستطيل', 'متوازي أضلاع']), p = int(rng, 4, 15);
+  let q = p;
+  while (q === p) q = int(rng, 2, 12);
+  const [ask, ans] = rng() < 0.5 ? ['CD', p] : ['DA', q];
+  return { eq: `opp ${n} ${p}, ${q}, ${ask}`, answer: String(ans), wrongs: pos(ans, [ans === p ? q : p, p + q, 2 * (p + q), Math.abs(p - q)]), ar: `في ${QUAD_THE[n]![0]} ABCD طول الضلع AB يساوي ${p} سم، وطول الضلع BC يساوي ${q} سم. ما طول الضلع ${ask} بالسنتيمتر؟`, en: `In ${QUAD_THE[n]![1].replace(/^an? /, '')} ABCD, AB is ${p} cm and BC is ${q} cm. How long is ${ask}, in centimetres?` };
+}
+
 /** The 360° angle sum: the fourth angle, three equal angles, a parallelogram's neighbouring angle, the sum itself. */
 function quadAngles(rng: Rng) {
   const k = pick(rng, [0, 0, 1, 2, 3]);
@@ -936,23 +978,29 @@ const pyth = T('pythagoras', /^نظريه فيثاغورس$/, [8, 8], ({ rng, di
 
 // ─── transformations and the coordinate plane ───────────────────────────────
 
+/**
+ * Grade 4 has no equations, so a mirror line is named by where it crosses an
+ * axis, in the bank's point notation: «المستقيم الرأسي المار بالنقطة (7 ، 0)»,
+ * not «x = 7» inside an Arabic stem (status log, 2026-11-13).
+ */
 const reflectLine = T('reflect_line', /^الانعكاس$/, [4, 4], ({ rng, diff }) => {
   const a = int(rng, 3, 8), x = int(rng, 1, a - 1), y = int(rng, 1, 9);
   const dx = a - x;
+  const vertical = `المستقيم الرأسي المار بالنقطة ${pt(a, 0)}`, verticalEn = `the vertical line through ${pt(a, 0)}`;
   // 0 in a vertical line, 1 in a horizontal line, 2 find the mirror line from a point and its image, 3 how far a point is from its image.
   const k = pick(rng, [0, 1, 2, 3]);
   if (k === 1) {
     const b = int(rng, 3, 8), yy = int(rng, 1, b - 1), xx = int(rng, 1, 9);
     const img: [number, number] = [xx, 2 * b - yy];
-    return { eq: `h ${pt(xx, yy)}, ${b}`, answer: pt(...img), wrongs: ptOpts(img, [[xx, yy], [xx, b], [2 * b - yy, xx], [2 * b - xx, yy], [xx, b + yy]]), ar: `انعكاس النقطة ${pt(xx, yy)} حول المستقيم الأفقي y = ${b}. ما إحداثيات صورتها؟`, en: `Reflect the point ${pt(xx, yy)} in the horizontal line y = ${b}. What are the coordinates of the image?` };
+    return { eq: `h ${pt(xx, yy)}, ${b}`, answer: pt(...img), wrongs: ptOpts(img, [[xx, yy], [xx, b], [2 * b - yy, xx], [2 * b - xx, yy], [xx, b + yy]]), ar: `عُكِست النقطة ${pt(xx, yy)} حول المستقيم الأفقي المار بالنقطة ${pt(0, b)}. ما إحداثيات صورتها؟`, en: `What are the coordinates of the image of ${pt(xx, yy)} after a reflection in the horizontal line through ${pt(0, b)}?` };
   }
   if (k === 2) {
-    const x2 = a + dx;
-    return { eq: `mirror ${pt(x, y)}, ${pt(x2, y)}`, answer: `x = ${a}`, wrongs: wrongsFrom(`x = ${a}`, [`x = ${x2 - x}`, `y = ${y}`, `x = ${x + x2}`, `y = ${a}`], j => `x = ${a + Math.abs(j)}`), ar: `صورة النقطة ${pt(x, y)} بالانعكاس حول مستقيم رأسي هي النقطة ${pt(x2, y)}. ما معادلة محور الانعكاس؟`, en: `The image of ${pt(x, y)} after a reflection in a vertical line is ${pt(x2, y)}. What is the equation of the line of reflection?` };
+    const x2 = a + dx, ans: [number, number] = [a, 0];
+    return { eq: `mirror ${pt(x, y)}, ${pt(x2, y)}`, answer: pt(...ans), wrongs: ptOpts(ans, [[x2 - x, 0], [x + x2, 0], [a, y], [0, a]]), ar: `صورة النقطة ${pt(x, y)} بالانعكاس حول مستقيم رأسي هي النقطة ${pt(x2, y)}. في أي نقطة يقطع محور الانعكاس المحور الأفقي؟`, en: `The image of ${pt(x, y)} after a reflection in a vertical line is ${pt(x2, y)}. At which point does the line of reflection cross the horizontal axis?` };
   }
-  if (k === 3) return { eq: `dist ${pt(x, y)}, ${a}`, answer: String(2 * dx), wrongs: pos(2 * dx, [dx, a, 2 * a, x + a, 2 * dx + 1]), ar: `ما المسافة بالوحدات بين النقطة ${pt(x, y)} وصورتها بالانعكاس حول المستقيم الرأسي x = ${a}؟`, en: `What is the distance, in units, between ${pt(x, y)} and its image after a reflection in the vertical line x = ${a}?` };
+  if (k === 3) return { eq: `dist ${pt(x, y)}, ${a}`, answer: String(2 * dx), wrongs: pos(2 * dx, [dx, a, 2 * a, x + a, 2 * dx + 1]), ar: `ما المسافة بالوحدات بين النقطة ${pt(x, y)} وصورتها بالانعكاس حول ${vertical}؟`, en: `What is the distance, in units, between ${pt(x, y)} and its image after a reflection in ${verticalEn}?` };
   const ans: [number, number] = [a + dx, y];
-  return { eq: pt(x, y), answer: pt(...ans), wrongs: ptOpts(ans, [[x, y], [a, y], [x + dx, y], [y, a + dx], [a + dx, -y]]), ar: `انعكاس النقطة ${pt(x, y)} حول المستقيم الرأسي x = ${a}. ما إحداثيات صورتها؟`.replace(`x = ${a}`, `x = ${a}`), en: `Reflect the point ${pt(x, y)} in the vertical line x = ${a}. What are the coordinates of the image?` };
+  return { eq: pt(x, y), answer: pt(...ans), wrongs: ptOpts(ans, [[x, y], [a, y], [x + dx, y], [y, a + dx], [a + dx, -y]]), ar: `عُكِست النقطة ${pt(x, y)} حول ${vertical}. ما إحداثيات صورتها؟`, en: `What are the coordinates of the image of ${pt(x, y)} after a reflection in ${verticalEn}?` };
 });
 
 const translate = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng, diff }) => {

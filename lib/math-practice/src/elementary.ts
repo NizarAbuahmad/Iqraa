@@ -303,6 +303,9 @@ const STUDENT = noun('طالب', 'طالبان', 'طلاب', 'طالبًا');
 /** Genitive dual: «على طالبَين». */
 const STUDENT_GEN = noun('طالب', 'طالبَين', 'طلاب', 'طالبًا');
 const SCHOOL_GEN = noun('مدرسة', 'مدرستَين', 'مدارس', 'مدرسة');
+const SEAT = noun('مقعد', 'مقعدان', 'مقاعد', 'مقعدًا');
+/** Genitive dual: «على مجموعتَين». */
+const GROUP_GEN = noun('مجموعة', 'مجموعتَين', 'مجموعات', 'مجموعةً');
 
 /** «n noun» as Arabic counts it. `n` is at least 2 — no word problem here counts one thing. */
 function counted(n: number, w: Noun): string {
@@ -829,6 +832,14 @@ function unitFractionOf(base: Base, rng: Rng): ConcreteItem {
   }
 }
 
+/** A proper fraction in lowest terms, numerator up to 5 and denominator up to 9: «2/3», «5/8». */
+function properFraction(rng: Rng): [number, number] {
+  for (;;) {
+    const d = int(rng, 2, 9), n = int(rng, 1, Math.min(5, d - 1));
+    if (gcd(n, d) === 1) return [n, d];
+  }
+}
+
 function fracDivKinds(base: Base, rng: Rng): ConcreteItem {
   switch (int(rng, 1, 3)) {
     case 1: {
@@ -849,7 +860,8 @@ function fracDivKinds(base: Base, rng: Rng): ConcreteItem {
     }
     default: {
       // A fraction divided by a whole number.
-      const [a, b, n] = [int(rng, 1, 5), int(rng, 2, 9), int(rng, 2, 6)];
+      const [a, b] = properFraction(rng);
+      const n = int(rng, 2, 6);
       return withText(fractionItem(base, `bywhole:${a}/${b} ÷ ${n}`, a, b * n, [frac(a * n, b), frac(a, b + n), frac(n, a * b)]),
         `أوجد ناتج قسمة الكسر ${a}/${b} على العدد ${n}.`, `Divide the fraction ${a}/${b} by ${n}.`);
     }
@@ -1054,8 +1066,8 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       return {
         ...base, eq: `${a} × ${b}`, answer: String(p),
         wrongs: numericWrongs(p, rng, [a, -a, b, -b, 10]),
-        wordAr: `في الصف ${a} صفوف من المقاعد، وفي كل صف ${b} مقاعد. كم مقعدًا في الصف؟`,
-        wordEn: `A classroom has ${a} rows with ${b} seats each. How many seats are there?`,
+        wordAr: `في قاعة المدرسة ${counted(a, ROW)} من المقاعد، وفي كل صف ${counted(b, SEAT)}. كم مقعدًا في القاعة؟`,
+        wordEn: `The school hall has ${a} rows with ${b} seats each. How many seats are there?`,
       };
     }
     case 'div': {
@@ -1072,7 +1084,7 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       return {
         ...base, eq: `${a} ÷ ${b}`, answer: String(q),
         wrongs: numericWrongs(q, rng, [1, -1, 2, b, -2]),
-        wordAr: `وُزِّع ${a} قلمًا بالتساوي على ${b} مجموعات. كم قلمًا لكل مجموعة؟`,
+        wordAr: `وُزِّع ${counted(a, PEN)} بالتساوي على ${counted(b, GROUP_GEN)}. كم قلمًا لكل مجموعة؟`,
         wordEn: `${a} pencils are shared equally among ${b} groups. How many does each group get?`,
       };
     }
@@ -1180,9 +1192,11 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       // fractions — «2/6 ÷ 3/2» is Grade 5 work.
       if (grade <= 3) return unitFractionOf(base, rng);
       if (int(rng, 0, 3) > 0) return fracDivKinds(base, rng);
-      const [a, b, c, d] = [int(rng, 1, 5), int(rng, 2, 9), int(rng, 1, 5), int(rng, 2, 9)];
+      // Fractions as a book prints them — «3/4 ÷ 1/2», never «3/6 ÷ 4/4» (status log, 2026-11-13).
+      const [a, b] = properFraction(rng);
+      const [c, d] = properFraction(rng);
       return fractionItem(base, `${a}/${b} ÷ ${c}/${d}`, a * d, b * c, [
-        frac(a * c, b * d), frac(b * c, a * d), `${a * d}/${b + c}`, frac(a * d + 1, b * c),
+        frac(a * c, b * d), frac(b * c, a * d), frac(a * d, b + c), frac(a * d + 1, b * c),
       ]);
     }
     case 'dec_sub': {

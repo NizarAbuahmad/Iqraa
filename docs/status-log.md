@@ -10,6 +10,48 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Offline maths, Grades 4 and 5: the weak spots the second passes left — 2026-11-14
+
+The Grade 4 and Grade 5 second passes listed «weak, not fixed» items in the offline maths bank (`lib/math-practice`);
+this fixes five of them. A same-day review of Grades 4–6 re-checked their figures and found nothing to move. This
+branch first fixed Grade 6's four weak lessons too. «Grade 6 review: the four «weak, not fixed» maths lessons…»
+(below) landed first with the same fixes, so its Grade 6 code stands and only the Grade 4 and 5 parts are carried
+here.
+
+**Grade 5**
+- **«تصنيف الأشكال الرباعية»** ran out at 5 of 10. `quadClassify` (`geometry.ts`) adds new kinds: the precise name
+  from sides and angles, counting parallel pairs, counting right angles, and an opposite side's length.
+- **«قسمة الكسور»** printed «2/2» and «3/3». Operands are now proper fractions in lowest terms (`properFraction`),
+  and one distractor that was raw text now goes through `frac()`.
+- **The unused × and ÷ word problems** read «25 صفوف … 23 مقاعد» and «على 25 مجموعات». They now go through
+  `counted()`, with two new nouns (`SEAT`, `GROUP_GEN`). The ambiguous «الصف» is now «قاعة المدرسة».
+
+**Grade 4**
+- **«تمثيل البيانات بالنقاط»** drew mostly bar-chart and table questions. It now has its own `dot_plot_g4`
+  (`stats.ts`): every question is a dot plot described in text, in seven kinds. The bar-graph lessons keep
+  `read_data_g34`.
+- **«الانعكاس»** wrote «x = 7» inside an Arabic stem, and Grade 4 has no equations. The mirror line is now
+  «المستقيم الرأسي المار بالنقطة (7 ، 0)», and the "equation of the mirror line" question becomes «في أي نقطة يقطع
+  محور الانعكاس المحور الأفقي؟».
+
+**Also:** `tamyiz.test.ts` gains «a noun after a decimal is never the plural», which scans every topic generator.
+It passes against the Grade 6 review's fix and guards it.
+
+**Verified.**
+- Every new test was first seen failing.
+- Two existing tests now accept the new wording. The reflection checks still recompute each answer, and the
+  `quad_name_g5` check leaves the new Grade 5 kinds to `g5.test.ts`.
+- `lib/math-practice` 1226/1226, the mobile suite 9270 pass / 0 fail, api-server build + tests 2923/0, root
+  typecheck.
+- Generated questions for the four changed lessons were read in Arabic, and every key was checked by hand.
+
+**Not fixed.**
+- `frac_mul` can still print «2/2».
+- «تمثيل البيانات بالأعمدة» still asks a dot-plot question now and then.
+- Live AI was not run.
+
+No «ما الجديد» entry: these change which questions an offline paper draws; they add no feature.
+
 ## Grade 6 review: the four «weak, not fixed» maths lessons from the second pass — 2026-11-14
 
 The Grade 6 audit and «Grade 6, second pass» (both below) covered pages, figures, contents and every maths quiz against
