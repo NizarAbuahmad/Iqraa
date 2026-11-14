@@ -735,21 +735,54 @@ const grouped = (id: string, match: RegExp, grades: [number, number]) => T(id, m
 
 // ─── dispersion (Grade 9) ───────────────────────────────────────────────────
 
+/**
+ * Grade 9 «مقاييس التشتت», as the book teaches it (student book S2 pp.120–131): variance and
+ * standard deviation dividing by n, for a list and for a frequency table, and what y = ax + b does
+ * to them — μy = aμx + b, σy = |a|σx. Range and IQR are only recalled there (Grade 8), and until
+ * 2026-11-14 they were three draws in four while the table and the transformation were never asked.
+ */
 const dispersion = T('dispersion', /^مقاييس التشتت$/, [9, 9], ({ rng, diff }) => {
-  const k = pick(rng, diff === 'easy' ? [0, 1] : [0, 1, 2, 3]);
-  if (k === 0 || k === 1) {
-    const n = int(rng, 6, 9), xs = Array.from({ length: n }, () => int(rng, 3, 60));
-    const r = Math.max(...xs) - Math.min(...xs);
-    if (r === 0) return dispersion.make({ rng, diff, grade: 9 });
-    return { eq: list(xs), answer: String(r), wrongs: countOpts(r, [r + 1, Math.max(...xs), r - 1, Math.round(sum(xs) / n)]), ar: `ما مدى القيم: ${list(xs)}؟`, en: `What is the range of ${listEn(xs)}?` };
+  const k = pick(rng, diff === 'easy' ? [0, 3] : [0, 1, 2, 3, 4]);
+  if (k === 0) { // variance of a list: a whole-number mean and a whole-number variance
+    for (let attempt = 0; attempt < 5000; attempt++) {
+      const n = pick(rng, diff === 'easy' ? [4, 5] : [5, 6, 7]);
+      const xs = dataWithMean(rng, n, 2, diff === 'easy' ? 20 : 30), m = sum(xs) / n;
+      const ss = sum(xs.map(x => (x - m) ** 2));
+      if (ss === 0 || ss % n !== 0) continue;
+      const v = ss / n;
+      return { eq: list(xs), answer: String(v), wrongs: countOpts(v, [ss, Math.round(Math.sqrt(v)), Math.round(ss / (n - 1)), v + 1, m]), ar: `ما تباين القيم: ${list(xs)}؟ (استعمل القسمة على n)`, en: `What is the variance of ${listEn(xs)}? (divide by n)` };
+    }
   }
-  if (k === 2) { // interquartile range: even n, Q1 and Q3 are the medians of the lower and upper halves
-    const n = pick(rng, [8, 10, 12]);
-    const xs = sorted(Array.from({ length: n }, () => int(rng, 2, 60)));
-    const lowerHalf = xs.slice(0, n / 2), upperHalf = xs.slice(n / 2);
-    const iqr = median(upperHalf) - median(lowerHalf);
-    const shown = shuffle(rng, xs);
-    return { eq: list(shown), answer: n1(iqr), wrongs: decOpts(iqr, [Math.max(...xs) - Math.min(...xs), median(upperHalf), iqr + 1, iqr / 2].map(v => Math.round(v * 2) / 2).filter(v => v !== iqr && v > 0), 0.5), ar: `ما المدى الربيعي للقيم: ${list(shown)}؟ (الربيع الأول والثالث هما وسيطا النصفين الأدنى والأعلى للقيم المرتبة)`, en: `What is the interquartile range of ${listEn(shown)}? (Q1 and Q3 are the medians of the lower and upper halves of the ordered data)` };
+  if (k === 2) { // variance of a frequency table
+    for (let attempt = 0; attempt < 5000; attempt++) {
+      // Values one or two apart and uneven frequencies: five consecutive values at one frequency
+      // each has variance 2, and that was most of what the sampler found.
+      const x0 = int(rng, 0, 2), step = pick(rng, [1, 2]);
+      const rows = Array.from({ length: 5 }, (_, i) => [x0 + step * i, int(rng, 1, 8)] as const);
+      if (new Set(rows.map(r => r[1])).size < 3) continue;
+      const N = sum(rows.map(r => r[1])), sxf = sum(rows.map(([x, f]) => x * f));
+      if (sxf % N !== 0) continue;
+      const mu = sxf / N, ss = sum(rows.map(([x, f]) => f * (x - mu) ** 2));
+      if (ss % N !== 0) continue;
+      const v = ss / N;
+      const table = rows.map(([x, f]) => `${x}: ${f}`).join('، '), tableEn = rows.map(([x, f]) => `${x}: ${f}`).join(', ');
+      return { eq: table, answer: String(v), wrongs: countOpts(v, [ss, mu, v + 1, v * 2, Math.round(sum(rows.map(([x]) => (x - mu) ** 2)) / 5)]), ar: `يبين الجدول التكراري الآتي (عدد الأطفال: عدد العائلات) عدد الأطفال في ${N} ${N > 10 ? 'عائلةً' : 'عائلات'}: ${table}. ما تباين عدد الأطفال؟`, en: `The frequency table (children: families) gives the number of children in ${N} families: ${tableEn}. What is the variance of the number of children?` };
+    }
+  }
+  if (k === 3 || k === 4) { // y = ax + b: the mean moves with both, the spread only with |a|
+    const mx = int(rng, 10, 40), sx = int(rng, 2, 9);
+    const a = k === 3 ? (diff === 'easy' ? 1 : int(rng, 2, 5)) : pick(rng, diff === 'hard' ? [-3, -2, 2, 3, 4] : [1, 2, 3, 4, 5]);
+    const b = pick(rng, [-1, 1]) * int(rng, 1, 10);
+    const rule = `y = ${a === 1 ? '' : a === -1 ? '−' : a < 0 ? `−${-a}` : a}x ${b < 0 ? '−' : '+'} ${Math.abs(b)}`;
+    const head = `بيانات وسطها الحسابي ${mx} وانحرافها المعياري ${sx}. حُوّلت كل قيمة x فيها إلى ${rule}.`;
+    const headEn = `A data set has mean ${mx} and standard deviation ${sx}. Each value x is transformed to ${rule}.`;
+    const fmt = (v: number) => (v < 0 ? `−${-v}` : String(v));
+    if (k === 3) {
+      const ans = a * mx + b;
+      return { eq: rule, answer: fmt(ans), wrongs: countOpts(ans, [mx + b, a * mx, mx, a * mx - b, a * (mx + b)]).map(w => fmt(Number(w))), ar: `${head} ما الوسط الحسابي للبيانات بعد التحويل؟`, en: `${headEn} What is the mean of the data after the transformation?` };
+    }
+    const ans = Math.abs(a) * sx;
+    return { eq: rule, answer: String(ans), wrongs: countOpts(ans, [sx, Math.abs(a) * sx + b, sx + b, a * a * sx, a * sx].filter(v => v > 0)), ar: `${head} ما الانحراف المعياري للبيانات بعد التحويل؟`, en: `${headEn} What is the standard deviation of the data after the transformation?` };
   }
   // standard deviation: rejection-sample a small set whose population variance is a perfect square
   for (let attempt = 0; attempt < 5000; attempt++) {
@@ -761,7 +794,7 @@ const dispersion = T('dispersion', /^مقاييس التشتت$/, [9, 9], ({ rng
     if (!Number.isInteger(sd) || sd === 0) continue;
     return { eq: list(xs), answer: String(sd), wrongs: countOpts(sd, [v, sd + 1, m, sd * 2, Math.sqrt(ss / (n - 1)) | 0]), ar: `ما الانحراف المعياري للقيم: ${list(xs)}؟ (استعمل القسمة على n)`, en: `What is the standard deviation of ${listEn(xs)}? (divide by n)` };
   }
-  return dispersion.make({ rng, diff: 'easy', grade: 9 });
+  return dispersion.make({ rng, diff: 'medium', grade: 9 });
 });
 
 // ─── Grade 10: scatter, cumulative frequency, grouped data ──────────────────

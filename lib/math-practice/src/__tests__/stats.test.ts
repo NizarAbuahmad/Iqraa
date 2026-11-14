@@ -570,13 +570,43 @@ describe('statistics: answers recomputed', () => {
     assert.equal(groupedKinds.grouped_g9!.size, 7, `grouped_g9 kinds: ${[...groupedKinds.grouped_g9!]}`);
   });
 
-  it('dispersion', () => {
-    for (const item of draws('dispersion', 400)) {
-      const p = item.promptAr!, xs = dataList(p.split('؟')[0]! + '؟');
-      if (has(p, 'المدى الربيعي')) { const s = sorted(xs), h = s.length / 2; assert.equal(Number(item.answer), median(s.slice(h)) - median(s.slice(0, h)), p); }
-      else if (has(p, 'الانحراف المعياري')) { const m = sum(xs) / xs.length; assert.equal(Number(item.answer), Math.sqrt(sum(xs.map(x => (x - m) ** 2)) / xs.length), p); }
-      else assert.equal(Number(item.answer), Math.max(...xs) - Math.min(...xs), p);
+  // Grade 9 «مقاييس التشتت» teaches variance and standard deviation (÷ n), for a list and for a
+  // frequency table, and what y = ax + b does to the mean and the standard deviation (student book
+  // S2 pp.120–131). Range and IQR are only recalled there, from Grade 8 — they used to be three in
+  // every four draws, and variance, the table and the transformation were never asked (found
+  // 2026-11-14, Grade 9 review).
+  it('dispersion asks what the Grade 9 lesson teaches, and keys it right', () => {
+    const num = (s: string) => Number(s.replace('−', '-'));
+    const kinds = new Set<string>();
+    for (const item of draws('dispersion', 600)) {
+      const p = item.promptAr!;
+      assert.ok(!has(p, 'المدى'), `range or IQR is Grade 8 recall: ${p}`);
+      assert.ok(!item.wrongs.includes(item.answer), p);
+      if (has(p, 'بعد التحويل')) {
+        const m = p.match(/وسطها الحسابي (\d+) وانحرافها المعياري (\d+)\. .*y = (−?\d*)x ([+−]) (\d+)/)!;
+        assert.ok(m, p);
+        const mx = Number(m[1]), sx = Number(m[2]);
+        const a = m[3] === '' ? 1 : m[3] === '−' ? -1 : num(m[3]!), b = (m[4] === '−' ? -1 : 1) * Number(m[5]);
+        if (has(p, 'ما الوسط الحسابي')) { kinds.add('transformMean'); assert.equal(num(item.answer), a * mx + b, p); }
+        else { kinds.add('transformSd'); assert.ok(has(p, 'ما الانحراف المعياري'), p); assert.equal(num(item.answer), Math.abs(a) * sx, p); }
+        continue;
+      }
+      if (has(p, 'الجدول التكراري')) {
+        kinds.add('tableVariance');
+        const rows = [...p.matchAll(/(\d+): (\d+)/g)].map(r => [Number(r[1]), Number(r[2])] as const);
+        const N = sum(rows.map(r => r[1])), mu = sum(rows.map(([x, f]) => x * f)) / N;
+        assert.equal(Number(item.answer), sum(rows.map(([x, f]) => f * (x - mu) ** 2)) / N, p);
+        continue;
+      }
+      const xs = dataList(p.split('؟')[0]! + '؟'), m = sum(xs) / xs.length;
+      const v = sum(xs.map(x => (x - m) ** 2)) / xs.length;
+      if (has(p, 'ما تباين')) { kinds.add('variance'); assert.equal(Number(item.answer), v, p); }
+      else { kinds.add('sd'); assert.ok(has(p, 'الانحراف المعياري'), p); assert.equal(Number(item.answer), Math.sqrt(v), p); }
     }
+    assert.deepEqual([...kinds].sort(), ['sd', 'tableVariance', 'transformMean', 'transformSd', 'variance']);
+    // A table of equal frequencies over consecutive values always has variance 2.
+    const tableKeys = new Set(draws('dispersion', 600).filter(i => has(i.promptAr!, 'الجدول التكراري')).map(i => i.answer));
+    assert.ok(tableKeys.size >= 4, `table variances drawn: ${[...tableKeys]}`);
   });
 
   it('Grade 10: scatter, cumulative frequency, grouped data', () => {
