@@ -12,6 +12,7 @@ import { GEOMETRY_TOPICS } from '../geometry.ts';
 import { STATS_TOPICS } from '../stats.ts';
 import { PROPORTION_TOPICS } from '../proportion.ts';
 import { G5_TOPICS } from '../g5.ts';
+import { G7_TOPICS } from '../g7.ts';
 import { mathBankCovers, takeElementaryMath, type DiffTier } from '../index.ts';
 import type { ConcreteItem } from '../index.ts';
 
@@ -61,7 +62,7 @@ function value(s: string): number | null {
 
 describe('every generator, every grade, every tier', () => {
   // algebra, geometry, stats, proportion and Grade 5 have their own shape tests (some answers have fewer than three wrong options)
-  const OWN = new Set([...ALGEBRA_TOPICS, ...GEOMETRY_TOPICS, ...STATS_TOPICS, ...PROPORTION_TOPICS, ...G5_TOPICS].map(t => t.id));
+  const OWN = new Set([...ALGEBRA_TOPICS, ...GEOMETRY_TOPICS, ...STATS_TOPICS, ...PROPORTION_TOPICS, ...G5_TOPICS, ...G7_TOPICS].map(t => t.id));
   for (const t of TOPICS.filter(t => !OWN.has(t.id))) {
     it(`${t.id}: well-formed items with three distinct wrong options`, () => {
       for (const { item, grade, diff } of draws(t.id, 240)) {
@@ -535,6 +536,18 @@ describe('answers recomputed from the stem', () => {
     }
   });
 
+  it('Grade 7 counted nouns agree with their numbers (Grade 7 audit, 2026-11-14)', () => {
+    // «في 2 ساعات», «تكررت العملية 8 مرة» and «بين أشخاص بنسبة 1 : 3» were printed.
+    for (const { item } of draws('unit_rate', 600)) assert.ok(!/(?:^|[^\d])2 ساعات/.test(item.promptAr!), item.promptAr);
+    for (const { item } of draws('prob_g7', 600)) assert.ok(!/(?:^|[^\d])(?:[3-9]|10) مرة/.test(item.promptAr!), item.promptAr);
+    for (const { item } of draws('proportional_division', 600)) {
+      const p = item.promptAr!, m = p.match(/بنسبة ((?:\d+ : )+\d+)/);
+      if (!m || !p.includes('قُسّم مبلغ') || p.includes('بين أخوين')) continue;
+      const parts = m[1]!.split(' : ').length;
+      assert.ok(p.includes(parts === 2 ? 'بين شخصين' : 'بين ثلاثة أشخاص'), `${parts} shares: ${p}`);
+    }
+  });
+
   it('percent conversions never print a float artefact (Grade 6 audit, 2026-11-14)', () => {
     // «اكتب 64% على صورة عدد عشري» offered «1.6400000000000001».
     for (const { item } of draws('pct_conv', 600)) for (const s of [item.answer, ...item.wrongs]) assert.ok(!/\d\.\d{4,}/.test(s), `${item.promptAr}: ${s}`);
@@ -882,10 +895,12 @@ describe('routing', () => {
     ['جمع الأعداد الكسرية وطرحها', 6, 'mixed_addsub'],
     ['النسبة المئوية والكسور العادية', 6, 'pct_conv'],
     ['قوانين الأسس الصحيحة', 7, 'exp_laws'],
-    // a title no generator is about, and a grade outside a generator's range
-    ['خطة حل المسألة: الرسم', 7, null],
+    // Grade 7's plan and congruence lessons are served since 2026-11-14 (g7.test.ts)
+    ['خطة حل المسألة: الرسم', 7, 'draw_diagram_g7'],
+    ['التطابق', 7, 'congruence_g7'],
+    // a grade outside a generator's range
     ['العوامل', 8, null],
-    ['التطابق', 7, null],
+    ['خطة حل المسألة: الرسم', 8, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {

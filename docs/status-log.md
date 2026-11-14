@@ -10,6 +10,38 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 7, second pass: offline maths for the last three lessons, and three agreement slips — 2026-11-14
+
+The Grade 7 audit (below, «Grade 7 audit: book pages, figures, contents and honorifics…») covered pages, figures,
+contents and honorifics, and sampled three maths keys a lesson. This pass runs the generators over all 397 lessons and
+reads every question of every maths quiz against the lesson's outcomes. Grade 7 has no extracted book text, so a
+text-based page check is impossible; the audit viewed every page as an image.
+
+**Generators (offline).**
+- Grounding by lesson id is exact for all 397 lessons.
+- Every key of the 40 served maths lessons is right, and each lesson asks what its outcomes name.
+- **New, `lib/math-practice/src/g7.ts`:** the three lessons that threw `NoQuestionBankError`, each with answers
+  recomputed from the stem in `g7.test.ts`:
+  - «التطابق»: the corresponding side, a side's length, an angle given directly or through the 180° sum, a congruent
+    quadrilateral's perimeter, x from (mx + c) = L, and «هل الشكلان متطابقان؟» (congruent vs only similar).
+  - «خطة حل المسألة: الحل العكسي»: a number puzzle undone step by step, money (half, then a fixed amount, then
+    what is left), and the latest wake-up time.
+  - «خطة حل المسألة: الرسم»: posts along a fence (n + 1), cuts into pieces ((n − 1) cuts), handshakes, and a
+    climbing snail.
+  - A plan lesson is served with problems its plan solves, as Grade 6 «حل مسألة أبسط» and Grade 4's two plans are.
+  - The Grade 8 triangle-congruence generators are untouched; the routing tables now expect the three Grade 7
+    titles to be served.
+- **Fixed, Arabic number agreement:**
+  - «قطعت سيارة 66 كم في 2 ساعات» now reads «ساعتين» (`unit_rate`).
+  - «وتكررت العملية 8 مرة» now reads «8 مرات» (`prob_g7`, through `tamyiz`).
+  - «قُسّم مبلغ 28 دينارًا بين أشخاص بنسبة 1 : 3» now names «شخصين» or «ثلاثة أشخاص» by the ratio's parts
+    (`proportional_division`).
+  - Pinned in `topics.test.ts`; the stem readers in `stats.test.ts` read the new wording.
+- **Weak, not fixed:** «المتتاليات» (linear sequences) also draws geometric ones («3، 6، 12، 24»).
+
+**Verified:** `lib/math-practice` 1137 tests pass; `mathLessonKinds.test.ts` passes with the three lessons served.
+**Not run:** live AI, and anything needing the PDFs.
+
 ## Grade 6, second pass: what the offline maths asks against each lesson's outcomes, and a page-end check — 2026-11-14
 
 The Grade 6 audit (below, «Grade 6 audit: every lesson's book pages, figures and contents…») covered pages, figures
