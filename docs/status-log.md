@@ -81,6 +81,22 @@ generators («Grade 3 maths: offline questions for the four lessons that had non
 
 **Verified:** `bookPage`, `bookFigures`, `bookFigureAssets`, `lessonSlides`, `teachingPlanGrounding` (199), curriculum test
 (931) and verify (0 errors), typecheck. **Not verified:** the pages on a phone; anything needing the PDFs.
+## Grade 7, second pass: two Arabic agreement slips in the offline maths — 2026-11-14
+
+Follows «Grade 7 review: offline maths for the three lessons that had none…» (below). That review gave Grade 7's last
+three maths lessons generators (`g7.ts`). This pass had written the same three independently; when the two met on
+`main`, the review's `g7.ts` and tests were kept and this pass's copy dropped. What remains is what this pass found
+reading every question of every Grade 7 maths quiz (all keys right):
+- «وتكررت العملية 8 مرة» now reads «8 مرات» (`prob_g7`, through `tamyiz`); the stem reader in `stats.test.ts`
+  reads both.
+- «قُسّم مبلغ 28 دينارًا بين أشخاص بنسبة 1 : 3» now names «شخصين» or «ثلاثة أشخاص» by the ratio's parts
+  (`proportional_division`).
+- «في 2 ساعات» (`unit_rate`) was found too; `main` had already fixed it the same way.
+- Pinned in `topics.test.ts` «Grade 7 counted nouns agree with their numbers».
+- **Weak, not fixed:** «المتتاليات» (linear sequences) also draws geometric ones («3، 6، 12، 24»).
+
+**Verified:** `lib/math-practice` tests pass. **Not run:** live AI.
+
 ## Grade 7 review: offline maths for the three lessons that had none, and a sweep of every lesson — 2026-11-13
 
 **What was already done.** «Grade 7 audit: book pages, figures, contents and honorifics…» (below, the same day)

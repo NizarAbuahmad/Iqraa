@@ -9,8 +9,8 @@
  * is given by its values in words («السبت: 18°، الأحد: 21°…»), never as a
  * picture the paper cannot show.
  *
- * The two problem-solving-plan lessons («خطة حل المسألة») stay unserved, as in
- * Grades 3 and 4: they teach a method, which a question bank cannot drill.
+ * The two problem-solving-plan lessons («خطة حل المسألة») stay unserved here;
+ * Grades 4, 6 and 7 serve theirs with problems the plan solves.
  */
 import { int, numWrongs, pick, tamyiz, type Draft, type Rng, type Topic } from './topicKit.ts';
 
