@@ -840,9 +840,9 @@ const powers: Topic = {
 
 // ─── order of operations ────────────────────────────────────────────────────
 
-type Tok = number | string; // numbers, '+ − × ÷', '(' ')', or «5²» as a string
+type Tok = number | string; // numbers, '+ − × ÷', '(' ')', or «5²» / «√49» as a string
 
-const val = (t: Tok): number => (typeof t === 'number' ? t : t.endsWith('²') ? Number(t.slice(0, -1)) ** 2 : NaN);
+const val = (t: Tok): number => (typeof t === 'number' ? t : t.endsWith('²') ? Number(t.slice(0, -1)) ** 2 : t.startsWith('√') ? Math.sqrt(Number(t.slice(1))) : NaN);
 
 /** Correct value: parentheses and precedence honoured; null if a division is not exact. */
 function evalPrec(tokens: Tok[]): number | null {
@@ -895,12 +895,15 @@ function opsShape(rng: Rng, diff: DiffTier, grade: number, flat: boolean): { sha
   for (let attempt = 0; attempt < 100; attempt++) {
     const n = () => int(rng, 2, t === 0 ? 9 : 12);
     const [a, b, c, d] = [n(), n(), n(), n()];
+    // Grade 6 names «مقادير تحوي قوى وجذورًا»: a medium paper mixes them in, a hard one always has one
+    // (powers came only on hard and roots never, Grade 6 audit, 2026-11-14).
     const powers = grade >= 6 && t >= 1;
+    const plain: Tok[][] = [['(', a, '+', b, ')', '×', c], ['(', a + c, '−', b, ')', '×', d], [a, '×', b, '−', c * d, '÷', c], [a, '+', b, '×', c, '−', d]];
+    const raised: Tok[][] = [[a, '+', `${b}²`, '×', c], [`${a}²`, '−', '(', b, '+', c, ')', '×', d], [a, '×', '(', b, '+', c, ')', '−', `${d}²`], ['(', a, '+', b, ')', '×', c, '−', `${d}²`],
+      [`√${b * b}`, '+', a, '×', c], [a, '×', `√${c * c}`, '−', d], ['(', `√${a * a}`, '+', b, ')', '×', c], [`${a}²`, '−', `√${b * b}`, '×', c]];
     const shapes: Tok[][] = t === 0
       ? [[a, '+', b, '×', c], [b * c + int(rng, 2, 9), '−', b, '×', c], [a, '+', b * c, '÷', c]]
-      : t === 1 || !powers
-        ? [['(', a, '+', b, ')', '×', c], ['(', a + c, '−', b, ')', '×', d], [a, '×', b, '−', c * d, '÷', c], [a, '+', b, '×', c, '−', d]]
-        : [[a, '+', `${b}²`, '×', c], [`${a}²`, '−', '(', b, '+', c, ')', '×', d], [a, '×', '(', b, '+', c, ')', '−', `${d}²`], ['(', a, '+', b, ')', '×', c, '−', `${d}²`]];
+      : !powers ? plain : t === 1 ? [...plain, ...raised] : raised;
     const shape = pick(rng, flat ? shapes.filter(s => !s.includes('(')) : shapes);
     const v = evalPrec(shape);
     const ltr = evalLtr(shape), np = evalNoParens(shape);
@@ -1551,7 +1554,8 @@ const pctConv: Topic = {
     }
     if (kind === 2) {
       const ans = fmtDec(p, 2);
-      return { eq: `${p}%`, answer: ans, wrongs: wrongsFrom(ans, [fmtDec(p, 1), fmtDec(p * 10, 2), String(p)]), ar: `اكتب ${p}% على صورة عدد عشري.`, en: `Write ${p}% as a decimal.` };
+      // `near` formats its own steps: the default «answer ± 1» printed 0.64 + 1 as «1.6400000000000001»
+      return { eq: `${p}%`, answer: ans, wrongs: wrongsFrom(ans, [fmtDec(p, 1), fmtDec(p * 10, 2), String(p)], k => (p + 10 * k > 0 ? fmtDec(p + 10 * k, 2) : '')), ar: `اكتب ${p}% على صورة عدد عشري.`, en: `Write ${p}% as a decimal.` };
     }
     const ans = `${p}%`;
     const dec = fmtDec(p, 2);
