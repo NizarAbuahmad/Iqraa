@@ -26,7 +26,7 @@ import { G7_TOPICS } from './g7.ts';
 import { G5_TOPICS } from './g5.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
 import {
-  gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tier, valueOf, wrongsFrom,
+  dinars, gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tamyiz, tier, valueOf, wrongsFrom,
   type Ctx, type Draft, type Rng, type Topic,
 } from './topicKit.ts';
 
@@ -766,16 +766,33 @@ const lcmT: Topic = {
   },
 };
 
-/** Square and square root; a square's side from its area (or area from side); which number is a perfect square; Grade 6 cubes. */
+/**
+ * Square and square root; a square's side from its area (or area from side); which number is a perfect square; Grade 6 cubes.
+ *
+ * Grade 6's only lesson here is «الجذر التربيعي والجذر التكعيبي» («أجد الجذور التربيعية والتكعيبية للأعداد»). Until
+ * 2026-11-14 a cube was one draw in five, so a 10-question paper could hold none; Grade 6 now draws a cube half the time,
+ * in four kinds: a cube root, a cube, a cube's edge from its volume, and which number is a perfect cube.
+ */
 const squares: Topic = {
   id: 'squares', match: /مربع العدد|الجذر التربيعي/, grades: [5, 6],
   make({ rng, diff, grade }) {
-    const k = pick(rng, grade >= 6 ? [0, 1, 2, 3, 4] : [0, 1, 2, 3]);
+    const k = pick(rng, grade >= 6 ? [0, 1, 2, 3, 4, 4, 4, 4] : [0, 1, 2, 3]);
     if (k === 4) {
       const b = int(rng, 2, diff === 'hard' ? 10 : 6);
-      return rng() < 0.5
-        ? { eq: `∛${b ** 3}`, answer: String(b), wrongs: numWrongs(b, [b * 3, b * b, b + 1]), ar: `أوجد قيمة ∛${b ** 3}.`, en: `Find ∛${b ** 3}.` }
-        : { eq: `${b}³`, answer: String(b ** 3), wrongs: numWrongs(b ** 3, [b * 3, b * b, b ** 3 + b]), ar: `أوجد قيمة ${b}³.`, en: `Find ${b}³.` };
+      const c = b ** 3;
+      const kind = pick(rng, [0, 1, 2, 3]);
+      if (kind === 2) {
+        return { eq: `cube volume ${c}`, answer: String(b), wrongs: numWrongs(b, [c / 3 | 0, c / 6 | 0, b * b, b + 1].filter(x => x !== b)), ar: `مكعب حجمه ${c} سم³. ما طول حرفه بالسنتيمتر؟`, en: `A cube has a volume of ${c} cm³. How long is its edge, in centimetres?` };
+      }
+      if (kind === 3) {
+        const ans = String(c);
+        const wrongs = [c + 1, c - 1, b * b * (b + 1), b * b * 3].filter((x, i, a) => x !== c && a.indexOf(x) === i).slice(0, 3).map(String);
+        const L = listed(rng, ans, wrongs);
+        return { eq: `perfect cube ${L.en}`, answer: ans, wrongs, ar: `أيّ الأعداد الآتية مكعب كامل: ${L.ar}؟`, en: `Which of these numbers is a perfect cube: ${L.en}?` };
+      }
+      return kind === 0
+        ? { eq: `∛${c}`, answer: String(b), wrongs: numWrongs(b, [b * 3, b * b, b + 1]), ar: `أوجد قيمة ∛${c}.`, en: `Find ∛${c}.` }
+        : { eq: `${b}³`, answer: String(c), wrongs: numWrongs(c, [b * 3, b * b, c + b]), ar: `أوجد قيمة ${b}³.`, en: `Find ${b}³.` };
     }
     const b = int(rng, k === 3 ? 4 : 2, diff === 'easy' ? 10 : diff === 'medium' ? 15 : 25);
     if (k === 2) {
@@ -1563,6 +1580,47 @@ const pctConv: Topic = {
   },
 };
 
+/**
+ * Grade 6 «النسبة المئوية من عدد» (S2 u6_l5): «أجد النسبة المئوية من عدد، ومن كمية». It used to reach the
+ * shared `percent` operation, where about 3 questions in 10 were a conversion or a shaded grid. Every item here
+ * asks a percent of something: a bare number, a measured quantity, a group of people, a price (the discount,
+ * or on hard papers what is left to pay). Every answer is a whole number.
+ */
+const pctOf: Topic = {
+  id: 'pct_of_g6', match: /^النسبه المئويه من عدد$/, grades: [6, 6],
+  make({ rng, diff }) {
+    const p = pick(rng, diff === 'easy' ? [10, 20, 25, 50, 75] : diff === 'medium' ? [5, 15, 30, 40, 60, 80] : [12, 35, 45, 65, 85, 4]);
+    // n a multiple of 100/gcd(p, 100), so p% of n is whole
+    const step = 100 / gcd(p, 100);
+    const lo = Math.ceil((diff === 'easy' ? 20 : 40) / step), hi = Math.max(lo + 1, Math.floor((diff === 'hard' ? 900 : 400) / step));
+    const n = step * int(rng, lo, hi); // never a 4-dinar bicycle
+    const v = (p * n) / 100;
+    const cands = [(p * n) / 10, n - v, p, v * 10, n / p].filter(c => Number.isInteger(c) && c > 0);
+    const kind = pick(rng, diff === 'hard' ? [0, 1, 2, 3, 4] : [0, 1, 2, 3]);
+    if (kind === 1) {
+      const [what, unit, howMany, used, thing, usedEn] = pick(rng, [
+        ['كيس أرز كتلته', 'kg', 'كيلوغرامًا', 'استُهلك', 'a bag of rice of mass', 'used'],
+        ['خزان ماء سعته', 'L', 'لترًا', 'استُعمل', 'a water tank holding', 'used'],
+        ['حبل طوله', 'm', 'مترًا', 'قُطع', 'a rope of length', 'cut off'],
+      ] as const);
+      return { eq: `${p}% of ${n}${unit}`, answer: String(v), wrongs: numWrongs(v, cands), ar: `${what} ${n}${unit}، ${used} ${p}% منه. كم ${howMany} ${used}؟`, en: `From ${thing} ${n}${unit}, ${p}% was ${usedEn}. How many ${unit} was that?` };
+    }
+    if (kind === 2) {
+      return { eq: `${p}% of ${n} students`, answer: String(v), wrongs: numWrongs(v, cands), ar: `في مدرسة ${n} ${tamyiz(n, 'طلاب', 'طالبًا', 'طالب')}، ${p}% منهم يشاركون في النادي العلمي. كم طالبًا يشارك في النادي العلمي؟`, en: `A school has ${n} students and ${p}% of them are in the science club. How many students are in the club?` };
+    }
+    if (kind === 3 || kind === 4) {
+      const after = kind === 4;
+      const ans = after ? n - v : v;
+      return {
+        eq: `${p}% off ${n} ${after ? 'after' : 'discount'}`, answer: String(ans), wrongs: numWrongs(ans, after ? [v, n + v, n - p, ...cands] : cands),
+        ar: `سعر دراجة ${dinars(n)}، وعليها خصم ${p}%. ${after ? 'كم دينارًا يدفع المشتري بعد الخصم؟' : 'كم دينارًا قيمة الخصم؟'}`,
+        en: `A bicycle costs ${n} JD with a ${p}% discount. ${after ? 'How many JD does the buyer pay after the discount?' : 'How many JD is the discount?'}`,
+      };
+    }
+    return { eq: `${p}% × ${n}`, answer: String(v), wrongs: numWrongs(v, cands), ar: `أوجد ${p}% من ${n}.`, en: `Find ${p}% of ${n}.` };
+  },
+};
+
 /** A ratio in simplest form; a unit rate (the lesson's «معدل الوحدة»); and a class's ratio of boys to girls, or of girls to all. */
 const ratioSimplest: Topic = {
   id: 'ratio', match: /^النسبه$/, grades: [6, 7],
@@ -1956,7 +2014,8 @@ const simplerProblem: Topic = {
       return {
         eq: `${d1}km / ${fmtDec(t1, 1)}h × ${fmtDec(t2, 2)}h`, answer: ans,
         wrongs: wrongsFrom(ans, [Number.isInteger(simple) ? simple : r * Math.round(t2 / 100), r * Math.round(t2 / 100), fmtDec(r * t1 * t2, 3)], j => fmtDec(d2n + 100 * Math.abs(j) * 5, 2)),
-        ar: `قطع يزيد بشاحنته مسافة ${d1}km في ${fmtDec(t1, 1)} ساعات. كم كيلومترًا يقطع في ${fmtDec(t2, 2)} ساعات إذا سار بالسرعة نفسها؟`,
+        // both times are never whole (notTens), and a decimal count takes the singular: «3.7 ساعة», not «3.7 ساعات»
+        ar: `قطع يزيد بشاحنته مسافة ${d1}km في ${fmtDec(t1, 1)} ساعة. كم كيلومترًا يقطع في ${fmtDec(t2, 2)} ساعة إذا سار بالسرعة نفسها؟`,
         en: `Yazeed drove his truck ${d1}km in ${fmtDec(t1, 1)} hours. How many kilometres will he drive in ${fmtDec(t2, 2)} hours at the same speed?`,
       };
     }
@@ -1978,7 +2037,9 @@ const simplerProblem: Topic = {
     return {
       eq: `${c1}JD / ${fmtDec(m10, 1)}kg × ${g2}g`, answer: ans,
       wrongs: wrongsFrom(ans, [fmtDec(P * g2, 2), fmtDec((P * g2) / 10, 3), fmtDec(P, 2)], j => fmtDec((P * g2) / 100 + 10 * Math.abs(j), 3)),
-      ar: `إذا كان سعر ${fmtDec(m10, 1)}kg من الجبن ${c1} دينار، فما سعر ${g2}g من الجبن نفسه بالدينار؟`,
+      // a whole price agrees with its number («11 دينارًا», «5 دنانير»); a decimal one keeps «دينار». P·m10 ≥ 1650,
+      // so the price is never 1 or 2 dinars, which would be written as the noun alone
+      ar: `إذا كان سعر ${fmtDec(m10, 1)}kg من الجبن ${(P * m10) % 1000 === 0 ? dinars((P * m10) / 1000) : `${c1} دينار`}، فما سعر ${g2}g من الجبن نفسه بالدينار؟`,
       en: `If ${fmtDec(m10, 1)}kg of cheese costs ${c1} JD, what does ${g2}g of the same cheese cost, in JD?`,
     };
   },
@@ -2330,7 +2391,7 @@ export const TOPICS: readonly Topic[] = [
   intOp('int_add', /جمع الاعداد الصحيحه/, '+'), intOp('int_sub', /طرح الاعداد الصحيحه/, '−'), intOp('int_muldiv', /ضرب الاعداد الصحيحه/, '×÷'),
   equivFrac,
   mixedOp('mixed_addsub', /(?:جمع|طرح).*الاعداد الكسريه/, ['+', '−']), mixedOp('mixed_mul', /ضرب الاعداد الكسريه/, ['×']), mixedOp('mixed_div', /قسمه الاعداد الكسريه/, ['÷']),
-  mixedImproper, fracDec, decPlace, pctConv, ratioEquiv, ratioSimplest,
+  mixedImproper, fracDec, decPlace, pctConv, pctOf, ratioEquiv, ratioSimplest,
   ratCompare, ratOp('rat_addsub', /جمع الاعداد النسبيه/, ['+', '−']), ratOp('rat_muldiv', /ضرب الاعداد النسبيه/, ['×', '÷']),
   repeating, expLaws,
   decMeasure, simplerProblem, multiStep, vennPlan, hindiNumerals, guessCheck, fourSteps, fracDiv,
