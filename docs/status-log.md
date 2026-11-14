@@ -10,6 +10,43 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 3 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-14
+
+The Grade 4–10 review («Grade 4 audit…»), repeated for Grade 3 (254 lessons), on top of «Grade 3 review: Arabic S2 pages
+one lesson early…». Every served lesson's first and last pages and all 91 figures were looked at as images; printed page =
+PDF page in every book seen. No Grade 3 book has extracted text, so contents were rebuilt from unit openers, per-unit
+contents lists and lesson openers.
+
+**Book pages.** No lesson starts on the wrong page; the review's Arabic S2 fix holds for all 25 lessons. What it left:
+- **Unit-final lessons ran onto the unit's closing pages** (the review trimmed only the next unit's cover): Arabic (10)
+  onto «حصاد الوحدة», PE (5) onto «مراجعة الوحدة» and «مشروع الوحدة (أنا أستطيع)», arts u3_l10 onto «ملحق رقم 1». Each
+  now ends on the lesson's own last page — the Grade 5–10 rule. Grade 4 Arabic keeps «حصاد الوحدة», a choice the
+  «Grade 4, second pass» made; the two grades differ there.
+- 16 ranges changed (all trimmed, reading the same folders); none lost. Every changed URL (36) answered 200.
+- **Kept as is:** science S2 u4_l2 starts mid-lesson (the review's known gap) but every page is its own.
+- **To render from the PDFs:** Arabic S1 u5_l2's last page (p112, only in u5_l3's folder); social S1 u1_l1's review page
+  (p11), u2_l2 (36–41) and u3_l2 (54–58) — openers seen, but no folder holds them; arts u2_l10 «أغنية بينغو» (in 56–59, not
+  seen); all of maths S1, science S1 and the rest of science S2 and social S2. Maths S2's unmapped lessons follow a strict
+  2-page layout (ranges inferred in the audit, not seen).
+
+**Contents.** Every book seen matches its catalogue in units, lessons and order. **Fixed:** social S1 u2_l2 is printed
+«الالتزام بالأنظمة والتعليمات» (p36); the catalogue had «الالتزام بأنظمة التعاملات» (its main idea already matched the
+book). PE S1 u1_l4 is printed «رمي الكرة ومسكها» (catalogue «مهارة الرمي والمسك»), left. English has no page images or text.
+
+**Honorifics.** Both «ﷺ» (Islamic S1 u3_l2) follow the Prophet, as the book prints them; the spelled-out honorifics in the
+main ideas are right.
+
+**Figures (science, social).** 91 checked; 8 dropped, none moved. Science S2 p051b-v2 (traffic signs from the page before
+unit 6) sat on «الأحافير»; science S1's unit 3 review and «تقويم الأداء» crops (p069b, p070, p070b-v2, p071-v2, p072b) sat
+on «الآلات البسيطة», and two unit 1 end-matter crops (p030-v2, p032-v2) on u1_l3 — judged from the crops and the S2 layout,
+since science S1 has no page images. 17 minor crop flaws stay.
+
+**Results.** Offline maths: 66 of 70 lessons get questions, every sampled key correct by hand. None for «الأرقام الهندية»,
+«خطة حل المسألة: التخمين والتحقق», «مهارة حل المسألة: استعمال الخطوات الأربع» and «الكسور والقسمة».
+
+**Verified:** `bookPage`, `bookFigures`, `bookFigureAssets`, `lessonSlides`, `teachingPlanGrounding` (199), curriculum test
+(931) and verify (0 errors), typecheck. **Not verified:** the pages on a phone; anything needing the PDFs.
+
 ## Grade 4 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
 
 The Grade 5–10 review («Grade 5 audit…»), repeated for Grade 4 (313 lessons, 18 catalogue books), on top of today's
