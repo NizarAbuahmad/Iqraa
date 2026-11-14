@@ -10,47 +10,80 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Offline maths, Grades 4 and 5: the weak spots the second passes left — 2026-11-14
+## Offline maths, Grade 4: dot plots for «تمثيل البيانات بالنقاط», and no «x = 7» in «الانعكاس» — 2026-11-14
 
-The Grade 4 and Grade 5 second passes listed «weak, not fixed» items in the offline maths bank (`lib/math-practice`);
-this fixes five of them. A same-day review of Grades 4–6 re-checked their figures and found nothing to move. This
-branch first fixed Grade 6's four weak lessons too. «Grade 6 review: the four «weak, not fixed» maths lessons…»
-(below) landed first with the same fixes, so its Grade 6 code stands and only the Grade 4 and 5 parts are carried
-here.
+The Grade 4 second pass listed two «weak, not fixed» items in the offline maths bank (`lib/math-practice`); this
+fixes both. A same-day review of Grades 4–6 re-checked their figures and found nothing to move.
 
-**Grade 5**
-- **«تصنيف الأشكال الرباعية»** ran out at 5 of 10. `quadClassify` (`geometry.ts`) adds new kinds: the precise name
-  from sides and angles, counting parallel pairs, counting right angles, and an opposite side's length.
-- **«قسمة الكسور»** printed «2/2» and «3/3». Operands are now proper fractions in lowest terms (`properFraction`),
-  and one distractor that was raw text now goes through `frac()`.
-- **The unused × and ÷ word problems** read «25 صفوف … 23 مقاعد» and «على 25 مجموعات». They now go through
-  `counted()`, with two new nouns (`SEAT`, `GROUP_GEN`). The ambiguous «الصف» is now «قاعة المدرسة».
+This branch first fixed Grade 6's and Grade 5's weak items too. «Grade 6 review: the four «weak, not fixed» maths
+lessons…» and «Grade 5 review: the last three maths lessons, the second pass's weak items…» (below) landed first
+with the same fixes, so their code stands and only Grade 4 is carried here.
 
-**Grade 4**
-- **«تمثيل البيانات بالنقاط»** drew mostly bar-chart and table questions. It now has its own `dot_plot_g4`
-  (`stats.ts`): every question is a dot plot described in text, in seven kinds. The bar-graph lessons keep
-  `read_data_g34`.
-- **«الانعكاس»** wrote «x = 7» inside an Arabic stem, and Grade 4 has no equations. The mirror line is now
-  «المستقيم الرأسي المار بالنقطة (7 ، 0)», and the "equation of the mirror line" question becomes «في أي نقطة يقطع
-  محور الانعكاس المحور الأفقي؟».
-
-**Also:** `tamyiz.test.ts` gains «a noun after a decimal is never the plural», which scans every topic generator.
-It passes against the Grade 6 review's fix and guards it.
+- **«تمثيل البيانات بالنقاط»** drew mostly bar-chart and table questions; one kind in seven was a dot plot.
+  - It now has its own `dot_plot_g4` (`stats.ts`): every question is a dot plot, described in text with one dot per
+    pupil.
+  - The seven kinds: at or above a value, exactly a value, below a value, the difference between two values, the
+    value with the most dots, the total, and how many dots to draw over a value of a raw list.
+  - The bar-graph lessons keep `read_data_g34`.
+- **«الانعكاس»** wrote «x = 7» inside an Arabic stem, and Grade 4 has no equations.
+  - The mirror line is now «المستقيم الرأسي المار بالنقطة (7 ، 0)».
+  - The "equation of the mirror line" question becomes «في أي نقطة يقطع محور الانعكاس المحور الأفقي؟».
+- **Also:** `tamyiz.test.ts` gains «a noun after a decimal is never the plural», which scans every topic generator. It
+  passes against the Grade 6 review's fix and guards it.
 
 **Verified.**
-- Every new test was first seen failing.
-- Two existing tests now accept the new wording. The reflection checks still recompute each answer, and the
-  `quad_name_g5` check leaves the new Grade 5 kinds to `g5.test.ts`.
-- `lib/math-practice` 1226/1226, the mobile suite 9270 pass / 0 fail, api-server build + tests 2923/0, root
+- The new `grade4Lessons.test.ts` cases were first seen failing.
+- `geometry.test.ts`'s reflection checks parse the new wording and still recompute every answer from the
+  coordinates.
+- `lib/math-practice` 1229/1229, the mobile suite 9270 pass / 0 fail, api-server build + tests 2923/0, root
   typecheck.
-- Generated questions for the four changed lessons were read in Arabic, and every key was checked by hand.
+- Generated questions for both lessons were read in Arabic, and every key was checked by hand: «أقل من كتابين» → 1
+  from the plot, and the line between (7 ، 2) and (9 ، 2) crosses at (8 ، 0).
 
 **Not fixed.**
-- `frac_mul` can still print «2/2».
 - «تمثيل البيانات بالأعمدة» still asks a dot-plot question now and then.
 - Live AI was not run.
 
 No «ما الجديد» entry: these change which questions an offline paper draws; they add no feature.
+
+## Grade 5 review: the last three maths lessons, the second pass's weak items, and social S2 u7_l4 — 2026-11-14
+
+«Grade 5 audit…» and «Grade 5 maths…» (both 2026-11-13, below) covered pages, figures, contents and every maths quiz. A
+sweep of all 317 lessons through the offline plan, quiz, worksheet and activity found what they left: every lesson grounds
+by id and plans and activities generate for all, but 3 of 52 maths lessons gave no full paper. This change closes those and
+the items both entries listed as open.
+
+**Maths (`lib/math-practice`).**
+- **«خطة حل المسألة: أنشئ جدولًا»** (S1 u1_l5) and **«خطة حل المسألة (أرسم نموذجًا)»** (S2 u7_l4) had no questions; they
+  were refused «as in Grades 3–4», which now serve theirs, as do Grades 6 and 7. `make_table_g5` and `draw_model_g5` (`g5.ts`)
+  follow the books' worked examples and «أتدرب» problems: S1 pp. 24-25 — a ratio table (green and red balls), a daily
+  amount that grows, outfits, ways to pay with 5- and 10-piastre coins; S2 pp. 56-57 — a bar model as an equation: «أقل
+  بمقدار», a bill that fell, equal parts (336 km in 3 hours), equal groups (whales), and which equation a model shows.
+- **«تصنيف الأشكال الرباعية»** («أصنف الأشكال الرباعية حسب أضلاعها وزواياها») ran out at 5 of 10 questions. Grade 5 now
+  also classifies a shape from its sides and one angle, picks the true (or false) «every X is a Y» statement, and counts
+  pairs of parallel sides (`quadClassify`, `geometry.ts`; Grade 6's angle sum is untouched).
+- **«قسمة الكسور»** could print «2/2 ÷ 3/3»: its fractions are now proper, in both kinds that draw a/b.
+- **«إذا اشترى 2 من الكتب»** now reads «كتابين» (and «3 كتب», «11 كتابًا»). The unused × and ÷ `wordAr` («25 صفوف … 23
+  مقاعد», «على 25 مجموعات») agree through `counted`, so they are right if a word kind ever shows them.
+
+**Social S2.** Unit 7 has four lessons: the audit read pp. 71-76 as «دول المغرب العربي» and u7_l3 as pp. 63-70. `u7_l4` is
+added (a new id after the others, title only like every lesson in this file, whose extracted text is scrambled); the
+`known_gaps` note that said u7_l3 ran to p. 88 is corrected, and unit 8's note records the audit's two lessons.
+
+**Verified.**
+- `g5.test.ts` recomputes every new key by building what the plan builds — the table row by row, the pattern day by day,
+  every outfit, every way to pay — and solves the model's equation; `geometry.test.ts` classifies each shape from its printed
+  sides and angle and checks each statement against the true list; a new test draws 400 «قسمة الكسور» questions and finds no
+  «n/n» (it fails on the old code); `algebra.test.ts` reads «كتابين» and fails on «2 من الكتب».
+- Planted bugs — the ratio table counting green, the coin count off by one, the model adding, the classifying angle swapped
+  — each made a test fail.
+- Sample questions for every new kind read by hand, keys correct. Sweep: 52 of 52 maths lessons give a full paper (49 before);
+  the new social lesson grounds by id and gets a plan and an activity.
+- math-practice and curriculum tests pass, curriculum `verify` 0 errors; the PR body has the rest of the CI set.
+
+**Not done.** Rendering the pages the audit listed (maths S2, science, social, PE S1 u2_l3) needs the PDFs; u7_l4 gets no
+book pages until then. The three social S1 titles the audit found printed differently stay, because a renamed title loses
+exact-title grounding (the book's wording is in the audit entry).
 
 ## Grade 6 review: the four «weak, not fixed» maths lessons from the second pass — 2026-11-14
 

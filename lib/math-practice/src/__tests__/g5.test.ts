@@ -9,8 +9,7 @@ import assert from 'node:assert/strict';
 
 import { TOPICS, makeTopicItem, topicFor } from '../topics.ts';
 import { G5_TOPICS } from '../g5.ts';
-import { makeElementaryItem } from '../elementary.ts';
-import { itemStem, mathBankCovers, type ConcreteItem, type DiffTier } from '../index.ts';
+import { mathBankCovers, takeElementaryMath, beginMathPracticeSession, type ConcreteItem, type DiffTier } from '../index.ts';
 
 const TIERS: DiffTier[] = ['easy', 'medium', 'hard'];
 function seeded(seed: number) {
@@ -184,12 +183,79 @@ describe('Grade 5 generators: answers recomputed from the stem', () => {
   });
 });
 
+describe('Grade 5 problem-solving plans: answers recomputed from the stem (2026-11-14)', () => {
+  it('make a table: the table is built row by row', () => {
+    const kinds = new Set<string>();
+    for (const item of draws('make_table_g5')) {
+      const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      if (has(p, 'كرات خضراء وحمراء')) {
+        kinds.add('ratio');
+        const green = has(p, 'كرة خضراء واحدة') ? 1 : has(p, 'كرتين') ? 2 : n[0]!;
+        const red = n[has(p, 'كرة خضراء واحدة') || has(p, 'كرتين') ? 0 : 1]!, total = n[n.length - 1]!;
+        let g = 0, r = 0;
+        while (g + r < total) { g += green; r += red; }
+        assert.equal(g + r, total, `the total is not a whole number of rows: ${p}`);
+        assert.equal(a, r, p);
+      } else if (has(p, 'ادّخرت هند')) {
+        kinds.add('pattern');
+        const [s, d, day] = n as [number, number, number];
+        let v = s;
+        for (let i = 1; i < day; i++) v += d;
+        assert.equal(a, v, p);
+      } else if (has(p, 'قمصان') || has(p, 'قميصًا')) {
+        kinds.add('outfits');
+        let c = 0;
+        for (let i = 0; i < n[0]!; i++) for (let j = 0; j < n[1]!; j++) c++;
+        assert.equal(a, c, p);
+      } else {
+        kinds.add('coins');
+        const N = n[0]!;
+        let ways = 0;
+        for (let tens = 0; tens * 10 <= N; tens++) if ((N - tens * 10) % 5 === 0) ways++;
+        assert.equal(a, ways, p);
+      }
+    }
+    assert.deepEqual([...kinds].sort(), ['coins', 'outfits', 'pattern', 'ratio']);
+  });
+
+  it('draw a model: the equation the model gives is solved', () => {
+    const kinds = new Set<string>();
+    for (const item of draws('draw_model_g5')) {
+      const p = item.promptAr!, n = nums(p);
+      if (has(p, 'أيّ المعادلات')) {
+        kinds.add('equation');
+        const [b, a] = n as [number, number];
+        assert.equal(item.answer, `x + ${a} = ${b}`, p);
+        continue;
+      }
+      const x = Number(item.answer);
+      if (has(p, 'أقل منه بمقدار')) { kinds.add('fewer'); assert.equal(x + n[1]!, n[0], p); }
+      else if (has(p, 'انخفضت')) { kinds.add('drop'); assert.equal(x - n[0]!, n[1], p); }
+      else if (has(p, 'الساعة الواحدة')) { kinds.add('equal parts'); assert.equal(n[1]! * x, n[0], p); }
+      else { kinds.add('groups'); assert.equal(x, n[0]! * n[1]!, p); }
+    }
+    assert.deepEqual([...kinds].sort(), ['drop', 'equal parts', 'equation', 'fewer', 'groups']);
+  });
+});
+
+describe('Grade 5 «قسمة الكسور» never prints a fraction equal to 1 (2026-11-14)', () => {
+  it('no «2/2» or «3/3» in 400 questions', () => {
+    for (let i = 0; i < 400; i++) {
+      if (i % 20 === 0) beginMathPracticeSession();
+      const q = takeElementaryMath('multiple_choice', 'قِسْمَةُ الكُسورِ', null, 5, TIERS[i % 3]!, 'ar', 1);
+      assert.ok(q, 'an item comes back');
+      for (const m of q.text.matchAll(/(?<![\d.])(\d+)\/(\d+)(?![\d.])/g)) assert.notEqual(m[1], m[2], q.text);
+    }
+  });
+});
+
 describe('Grade 5 routing', () => {
   const cases: Array<[string, string | null]> = [
     ['الضَّرْبُ الذِّهْنِيُّ', 'mental_mul_g5'], ['الْمُضَلَّعاتُ', 'polygons_g5'], ['السُّؤالُ الإِحْصائِيُّ', 'stat_question_g5'],
     ['التَّمْثيلُ بِالخُطوطِ', 'line_graph_g5'], ['التَّمْثيلُ بِالأَعْمِدَةِ المُزْدَوَجَةِ', 'double_bar_g5'],
-    // a problem-solving plan is a method, not a skill a question bank can drill; it stays refused as in Grades 3–4
-    ['خُطَّةُ حَلِّ المَسْأَلَةِ: أُنْشِئُ جَدْوَلًا', null], ['خُطَّةُ حَلِّ الْمَسْأَلَةِ (أَرْسُمُ نَموذَجًا)', null],
+    // the two problem-solving plans were refused until 2026-11-14, when Grades 3, 4, 6 and 7 already served theirs;
+    // they now get the problems their book pages solve with the plan (S1 pp. 24-25, S2 pp. 56-57)
+    ['خُطَّةُ حَلِّ المَسْأَلَةِ: أُنْشِئُ جَدْوَلًا', 'make_table_g5'], ['خُطَّةُ حَلِّ الْمَسْأَلَةِ (أَرْسُمُ نَموذَجًا)', 'draw_model_g5'],
   ];
   for (const [title, id] of cases) {
     it(`${title} → ${id ?? 'refused'}`, () => {
@@ -199,113 +265,5 @@ describe('Grade 5 routing', () => {
   }
   it('only Grade 5 gets them', () => {
     for (const t of G5_TOPICS) assert.deepEqual(t.grades, [5, 5], t.id);
-  });
-});
-
-/**
- * Weak spots the Grade 5 change (status log, 2026-11-13) left open: «تصنيف
- * الأشكال الرباعية» ran out at 5 questions of 10, «قسمة الكسور» printed «2/2»,
- * and the unused × and ÷ word problems read «25 صفوف … 23 مقاعد», «على 25
- * مجموعات».
- */
-describe('Grade 5 second pass', () => {
-  it('«تصنيف الأشكال الرباعية»: a 10-question paper fills with ten different questions, each key recomputed', () => {
-    const gen = topicFor('تَصْنيفُ الأَشْكالِ الرُّباعِيَّةِ', 5)!;
-    assert.equal(gen.id, 'quad_name_g5');
-    // properties → name, as the generator's sentences put them (checked by hand)
-    const BY_PROPS: Array<[string, string]> = [
-      ['أربعة أضلاع متساوية الطول وأربع زوايا قائمة', 'مربع'], ['وأربع زوايا قائمة، وأضلاعه الأربعة غير متساوية', 'مستطيل'],
-      ['أربعة أضلاع متساوية الطول وزواياه غير قائمة', 'معين'], ['وزواياه غير قائمة وأضلاعه الأربعة غير متساوية', 'متوازي أضلاع'], ['زوج واحد فقط', 'شبه منحرف'],
-    ];
-    const NAMES = ['مربع', 'مستطيل', 'معين', 'متوازي أضلاع', 'شبه منحرف'];
-    const kinds = new Set<string>();
-    for (let s = 0; s < 120; s++) {
-      const used = new Set<string>(), rng = seeded(s * 2654435761 + 9);
-      const stems = new Set<string>();
-      for (let i = 0; i < 10; i++) {
-        const item = makeTopicItem(gen, 5, TIERS[s % 3]!, used, rng);
-        const p = item.promptAr!;
-        stems.add(p);
-        assert.ok(!item.wrongs.includes(item.answer), p);
-        let m: RegExpMatchArray | null;
-        if ((m = p.match(/أطوال أضلاعه بالترتيب (\d+) سم و (\d+) سم و (\d+) سم و (\d+) سم، وقياسات زواياه بالترتيب (\d+)° و (\d+)° و (\d+)° و (\d+)°/))) {
-          kinds.add('measures');
-          const [a, b, c, d, w, x, y, z] = m.slice(1).map(Number);
-          assert.equal(w! + x! + y! + z!, 360, p);
-          assert.ok(a === c && b === d && w === y && x === z, `opposite sides and angles equal: ${p}`);
-          const want = a === b ? (w === 90 ? 'مربع' : 'معين') : w === 90 ? 'مستطيل' : 'متوازي أضلاع';
-          assert.equal(item.answer, want, p);
-          assert.ok(item.wrongs.every(o => NAMES.includes(o)) && item.wrongs.length === 3, p);
-        } else if ((m = p.match(/^كم زوجًا من الأضلاع المتوازية في (.+)؟$/))) {
-          kinds.add('parallel');
-          assert.equal(item.answer, m[1] === 'شبه المنحرف' ? '1' : '2', p);
-        } else if ((m = p.match(/^كم زاوية قائمة في (المربع|المستطيل)؟$/))) {
-          kinds.add('right');
-          assert.equal(item.answer, '4', p);
-        } else if ((m = p.match(/^في (المستطيل|متوازي الأضلاع) ABCD طول الضلع AB يساوي (\d+) سم، وطول الضلع BC يساوي (\d+) سم\. ما طول الضلع (CD|DA) بالسنتيمتر؟$/))) {
-          kinds.add('opposite');
-          assert.notEqual(m[2], m[3], p);
-          assert.equal(item.answer, m[4] === 'CD' ? m[2] : m[3], p);
-        } else {
-          const hit = BY_PROPS.find(([w]) => p.includes(w));
-          assert.ok(hit && p.startsWith('أي شكل رباعي له الخصائص الآتية'), `unknown stem: ${p}`);
-          kinds.add('properties');
-          assert.equal(item.answer, hit[1], p);
-        }
-      }
-      assert.equal(stems.size, 10, `paper ${s} repeated a question:\n${[...stems].join('\n')}`);
-    }
-    assert.deepEqual([...kinds].sort(), ['measures', 'opposite', 'parallel', 'properties', 'right']);
-  });
-
-  it('«قسمة الكسور» prints every fraction in lowest terms, never n/n or a whole number over 1', () => {
-    const lowest = (s: string, where: string) => {
-      for (const m of s.matchAll(/(?<![\d/])(\d+)\/(\d+)(?![\d/])/g)) {
-        const [n, d] = [Number(m[1]), Number(m[2])];
-        assert.ok(d > 1 && n % d !== 0, `«${m[0]}» is a whole number: ${where}`);
-        let [x, y] = [n, d];
-        while (y) [x, y] = [y, x % y];
-        assert.equal(x, 1, `«${m[0]}» is not in lowest terms: ${where}`);
-      }
-    };
-    let seen = 0;
-    for (let s = 0; s < 40; s++) {
-      const used = new Set<string>(), rng = seeded(s * 97 + 1);
-      for (let i = 0; i < 30; i++) {
-        const item = makeElementaryItem('قسمة الكسور', 5, TIERS[i % 3]!, used, rng);
-        const p = itemStem(item, true);
-        for (const t of [p, item.answer, ...item.wrongs]) lowest(t, `${p} → ${item.answer} | ${item.wrongs.join(' | ')}`);
-        seen++;
-      }
-    }
-    assert.ok(seen >= 1200);
-  });
-
-  it('the × and ÷ word problems agree with their numbers, though no paper shows them yet', () => {
-    // [plural (3–10), accusative singular (11–99), genitive singular (100, 200…)]
-    const FORMS: Array<[string, string, string]> = [['صفوف', 'صفًّا', 'صف'], ['مقاعد', 'مقعدًا', 'مقعد'], ['أقلام', 'قلمًا', 'قلم'], ['مجموعات', 'مجموعةً', 'مجموعة']];
-    const want = (n: number, f: [string, string, string]) => { const r = n % 100; return r >= 3 && r <= 10 ? f[0] : n >= 100 && r <= 2 ? f[2] : f[1]; };
-    let read = 0;
-    for (const [title, grade] of [['ضرب الأعداد', 5], ['قسمة الأعداد', 5], ['ضرب الأعداد', 4], ['قسمة الأعداد', 4]] as const) {
-      const used = new Set<string>(), rng = seeded(grade * 31 + title.length);
-      for (let i = 0; i < 1500; i++) {
-        if (i % 30 === 0) used.clear();
-        const item = makeElementaryItem(title, grade, TIERS[i % 3]!, used, rng);
-        if (item.kind === 'word' || !item.wordAr) continue;
-        // marks off, so «صفًّا» matches whichever order its shadda and tanween were typed in
-        const bare = (s: string) => s.replace(/[ً-ْ]/g, '');
-        const w = bare(item.wordAr);
-        for (const f0 of FORMS) {
-          const f = f0.map(bare) as [string, string, string];
-          for (const m of w.matchAll(new RegExp(`(\\d+) (${f.join('|')})(?![\\u0621-\\u065F\\u0670-\\u06FF])`, 'g'))) {
-            read++;
-            const n = Number(m[1]);
-            assert.ok(n >= 3, `write ${n} as the noun itself: ${w}`);
-            assert.equal(m[2], want(n, f), `«${m[0]}»: ${w}`);
-          }
-        }
-      }
-    }
-    assert.ok(read > 100, `only ${read} counted nouns read`);
   });
 });
