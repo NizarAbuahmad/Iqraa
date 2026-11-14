@@ -535,6 +535,18 @@ describe('answers recomputed from the stem', () => {
     }
   });
 
+  it('Grade 7 counted nouns agree with their numbers (Grade 7 audit, 2026-11-14)', () => {
+    // «تكررت العملية 8 مرة» and «بين أشخاص بنسبة 1 : 3» were printed («في 2 ساعات» is fixed and pinned elsewhere).
+    for (const { item } of draws('unit_rate', 600)) assert.ok(!/(?:^|[^\d])2 ساعات/.test(item.promptAr!), item.promptAr);
+    for (const { item } of draws('prob_g7', 600)) assert.ok(!/(?:^|[^\d])(?:[3-9]|10) مرة/.test(item.promptAr!), item.promptAr);
+    for (const { item } of draws('proportional_division', 600)) {
+      const p = item.promptAr!, m = p.match(/بنسبة ((?:\d+ : )+\d+)/);
+      if (!m || !p.includes('قُسّم مبلغ') || p.includes('بين أخوين')) continue;
+      const parts = m[1]!.split(' : ').length;
+      assert.ok(p.includes(parts === 2 ? 'بين شخصين' : 'بين ثلاثة أشخاص'), `${parts} shares: ${p}`);
+    }
+  });
+
   it('percent conversions never print a float artefact (Grade 6 audit, 2026-11-14)', () => {
     // «اكتب 64% على صورة عدد عشري» offered «1.6400000000000001».
     for (const { item } of draws('pct_conv', 600)) for (const s of [item.answer, ...item.wrongs]) assert.ok(!/\d\.\d{4,}/.test(s), `${item.promptAr}: ${s}`);
@@ -883,9 +895,12 @@ describe('routing', () => {
     ['النسبة المئوية والكسور العادية', 6, 'pct_conv'],
     ['قوانين الأسس الصحيحة', 7, 'exp_laws'],
     // a title no generator is about, and a grade outside a generator's range
-    ['خطة حل المسألة: الرسم', 7, null],
+    // (the two Grade 7 lessons once listed here have generators since 2026-11-13: g7Lessons.test.ts)
+    ['خطة حل المسألة: الرسم', 7, 'g7_draw_diagram'],
+    ['خطة حل المسألة: الرسم', 6, null],
     ['العوامل', 8, null],
-    ['التطابق', 7, null],
+    ['التطابق', 7, 'g7_congruence'],
+    ['التطابق', 9, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {

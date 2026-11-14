@@ -160,7 +160,7 @@ describe('probability and counting: answers recomputed', () => {
       }
       let want: number;
       if (has(p, 'مكعب')) { const key = Object.keys(DICE).find(k => p.endsWith(`ظهور ${k}؟`))!; want = [1, 2, 3, 4, 5, 6].filter(DICE[key]!).length / 6; assert.ok(Math.abs(frac(item.answer) - want) < 1e-9, p); continue; }
-      if (has(p, 'يُتوقَّع')) { const N = Number(p.match(/تكررت العملية (\d+) مرة/)![1]); assert.equal(Number(item.answer), (N * counts[0]!) / t, p); continue; }
+      if (has(p, 'يُتوقَّع')) { const N = Number(p.match(/تكررت العملية (\d+) (?:مرة|مرةً|مرات)/)![1]); assert.equal(Number(item.answer), (N * counts[0]!) / t, p); continue; }
       if (has(p, 'ألّا تكون')) want = (t - counts[0]!) / t;
       else { const m = p.match(/تكون (?:الكرة )?(حمراء|زرقاء|خضراء|صفراء)/)!; want = counts[COLORS.indexOf(m[1]!)]! / t; }
       assert.ok(Math.abs(frac(item.answer) - want) < 1e-9, `${p} → ${item.answer}`);
