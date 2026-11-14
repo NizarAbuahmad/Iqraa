@@ -36,4 +36,15 @@ describe('grades 1–4 difficulty', () => {
       assert.ok(calls >= 15, `grade ${g} drew ${calls}`);
     }
   });
+
+  it('a generator that owns its difficulty is drawn as it decides, not by load', () => {
+    // reflect_line (Grade 4) asks «what does a reflection keep?» — no numbers, so the lightest
+    // question there is — only at medium and hard; chosen by load it was never asked (merged 2026-11-14).
+    const topic = topicFor('الانعكاس', 4)!;
+    assert.equal(topic.ownsDifficulty, true);
+    let calls = 0;
+    const counted = { ...topic, make: (c: Parameters<typeof topic.make>[0]) => { calls++; return topic.make(c); } };
+    makeTopicItem(counted, 4, 'hard', new Set(), () => 0.42);
+    assert.equal(calls, 1, 'drawn once, as grade 5 is');
+  });
 });

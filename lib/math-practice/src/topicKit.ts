@@ -18,6 +18,13 @@ export interface Topic {
   /** Grades the generator's numbers are sized for, inclusive. */
   grades: [number, number];
   make(c: Ctx): Draft;
+  /**
+   * The generator sets its own difficulty (which kinds it asks at each level, not just how big the
+   * numbers are), so the grades 1–4 choice by load (`earlyDifficulty.ts`) leaves it alone. Without
+   * this, a kind a generator keeps for medium and hard but that has no numbers — the lightest
+   * question there is — would never be chosen at those levels.
+   */
+  ownsDifficulty?: boolean;
 }
 
 export const tier = (d: DiffTier) => (d === 'easy' ? 0 : d === 'medium' ? 1 : 2);

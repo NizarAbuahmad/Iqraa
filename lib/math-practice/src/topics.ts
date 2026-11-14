@@ -2618,7 +2618,7 @@ export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used:
   let best: Draft | null = null;
   let bestServed = Infinity;
   let fresh = 0;
-  const byDifficulty = choosesByDifficulty(grade);
+  const byDifficulty = choosesByDifficulty(grade) && !topic.ownsDifficulty;
   /** Grades 1–4: every fresh draw of the least-served kinds, to choose among. */
   let least: Draft[] = [];
   const draws = byDifficulty ? EARLY_DRAWS : FRESH_DRAWS;
