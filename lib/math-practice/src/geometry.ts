@@ -533,9 +533,50 @@ const QUADS: Array<[string, string, string]> = [
 const quadName = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng }) => {
   // Grade 6 «الأشكال الرباعية» is about the angle sum (Grade 6 audit, 2026-11-14): half its items use it.
   if (grade >= 6 && rng() < 0.6) return quadAngles(rng);
+  // Grade 5 «تصنيف الأشكال الرباعية» classifies by sides and angles; naming alone ran out at five (2026-11-14).
+  if (grade === 5 && rng() < 0.6) return quadClassify(rng);
   const [n, ar, en] = pick(rng, QUADS);
   return { eq: n, answer: n, wrongs: names(rng, n, QUADS.map(q => q[0])), ar: `أي شكل رباعي له الخصائص الآتية: ${ar}؟`, en: `Which quadrilateral has these properties: ${en}?` };
 });
+/**
+ * Grade 5 «تصنيف الأشكال الرباعية» («أصنف الأشكال الرباعية حسب أضلاعها وزواياها»): a shape from its four side lengths
+ * and one angle, which «every X is a Y» statement is true (or false), and how many pairs of parallel sides a shape has.
+ */
+const QUAD_TRUE = ['كل مربع مستطيل', 'كل مربع معين', 'كل مستطيل متوازي أضلاع', 'كل معين متوازي أضلاع', 'كل مربع متوازي أضلاع'];
+const QUAD_FALSE = ['كل مستطيل مربع', 'كل معين مربع', 'كل متوازي أضلاع مستطيل', 'كل شبه منحرف متوازي أضلاع', 'كل متوازي أضلاع معين', 'كل مستطيل معين'];
+function quadClassify(rng: Rng): Draft {
+  const k = pick(rng, [0, 0, 1, 2]);
+  if (k === 0) {
+    // sides a, b, a, b (a = b for the equal-sided shapes) and one angle
+    const kind = pick(rng, ['مربع', 'مستطيل', 'معين', 'متوازي أضلاع'] as const);
+    const a = int(rng, 3, 12);
+    let b = a;
+    if (kind === 'مستطيل' || kind === 'متوازي أضلاع') { b = int(rng, 3, 12); if (b === a) b = a + 2; }
+    const angle = kind === 'مربع' || kind === 'مستطيل' ? 90 : pick(rng, [50, 60, 70, 75, 80, 110, 120]);
+    const sides = `${a} سم، ${b} سم، ${a} سم، ${b} سم`;
+    return {
+      eq: `classify ${a},${b} ${angle}`, answer: kind, wrongs: names(rng, kind, ['مربع', 'مستطيل', 'معين', 'متوازي أضلاع', 'شبه منحرف']),
+      ar: `شكل رباعي فيه كل ضلعين متقابلين متوازيان، وأطوال أضلاعه بالترتيب ${sides}، وقياس إحدى زواياه ${angle}°. ما أدق اسم لهذا الشكل؟`,
+      en: `A quadrilateral has both pairs of opposite sides parallel, sides of ${a} cm, ${b} cm, ${a} cm and ${b} cm in order, and one angle of ${angle}°. What is its most exact name?`,
+    };
+  }
+  if (k === 1) {
+    const askTrue = rng() < 0.6;
+    const ans = pick(rng, askTrue ? QUAD_TRUE : QUAD_FALSE);
+    return {
+      eq: `statement ${askTrue ? 'true' : 'false'} ${ans}`, answer: ans, wrongs: shuffle(rng, askTrue ? QUAD_FALSE : QUAD_TRUE).slice(0, 3),
+      ar: `أيّ العبارات الآتية ${askTrue ? 'صحيحة' : 'خاطئة'}؟`,
+      en: `Which of these statements is ${askTrue ? 'true' : 'false'}?`,
+    };
+  }
+  const [shape, pairs] = pick(rng, [['المربع', 2], ['المستطيل', 2], ['المعين', 2], ['متوازي الأضلاع', 2], ['شبه المنحرف', 1]] as const);
+  return {
+    eq: `parallel pairs ${shape}`, answer: String(pairs), wrongs: ['3', '4', String(3 - pairs)],
+    ar: `كم زوجًا من الأضلاع المتقابلة المتوازية في ${shape}؟`,
+    en: `How many pairs of parallel opposite sides does a ${{ 'المربع': 'square', 'المستطيل': 'rectangle', 'المعين': 'rhombus', 'متوازي الأضلاع': 'parallelogram', 'شبه المنحرف': 'trapezoid' }[shape]} have?`,
+  };
+}
+
 /** The 360° angle sum: the fourth angle, three equal angles, a parallelogram's neighbouring angle, the sum itself. */
 function quadAngles(rng: Rng) {
   const k = pick(rng, [0, 0, 1, 2, 3]);
