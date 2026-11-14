@@ -479,6 +479,7 @@ const CATS: Array<[string, string]> = [['التفاح', 'apples'], ['الموز'
  * draw (Grade 2); and for Grades 3–4, reading a bar that ends between two lines
  * of its scale, how many squares a bar takes, and (Grade 4) counting a dot plot.
  */
+
 const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, diff, grade }) => {
   const m = grade <= 1 ? 6 : grade === 2 ? 9 : span(diff, 12, 20, 30);
   const k = grade <= 2 ? 3 : 4;
@@ -491,7 +492,7 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
   const whereEn = key === 2 ? `In a picture graph each picture stands for ${key} fruits; the numbers of pictures are: ` : 'The table shows how many students prefer each fruit: ';
   const tab = cats.map((c, i) => `${c[0]}: ${counts[i]}`).join('، ');
   const tabEn = cats.map((c, i) => `${c[1]}: ${counts[i]}`).join(', ');
-  const q = pick(rng, grade === 1 ? [0, 1, 3, 4, 5] : grade === 2 ? [0, 1, 3, 4, 5, 6, 7] : grade === 3 ? [0, 1, 2, 3, 8, 9] : [0, 1, 2, 3, 8, 9, 10]);
+  const q = pick(rng, grade === 1 ? [0, 1, 3, 4, 5] : grade === 2 ? [0, 1, 3, 4, 5, 6, 7] : [0, 1, 2, 3, 8, 9]); // the dot plot (once 10) is `dot_plot_g4`'s lesson since 2026-11-14
   if (q === 8) { // read a bar that ends halfway between two lines of the scale
     const step = pick(rng, [2, 10]), lo = step * int(rng, 1, span(diff, 4, 6, 8)), v = lo + step / 2, [f, fEn] = pick(rng, CATS);
     return { eq: `${step}, ${lo}, ${lo + step}`, answer: String(v), wrongs: countOpts(v, [lo, lo + step, lo + 1, v + step]), ar: `في تمثيل بالأعمدة لعدد الطلاب الذين يفضلون كل نوع من الفاكهة، يزيد تدريج المحور الرأسي ${step} عند كل خط. ينتهي عمود ${f} في منتصف المسافة بين الخطين ${lo} و ${lo + step}. كم طالبًا يفضّل ${f}؟`, en: `In a bar graph of the fruits pupils prefer, the vertical scale goes up by ${step} at each line. The bar for ${fEn} ends halfway between the lines ${lo} and ${lo + step}. How many pupils prefer ${fEn}?` };
@@ -499,16 +500,6 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
   if (q === 9) { // represent: how many squares a bar takes when each square stands for several pupils
     const per = pick(rng, [2, 5, 10]), sq = int(rng, 2, 9), v = per * sq, [f, fEn] = pick(rng, CATS);
     return { eq: `${v}, ${per}`, answer: String(sq), wrongs: countOpts(sq, [v, v - per, sq + 1, sq - 1, per]), ar: `تمثّل ريم بيانات صفها بالأعمدة على ورقة مربعات، ويمثل كل مربع في العمود ${per === 2 ? 'طالبين' : `${per} طلاب`}. إذا كان عدد الطلاب الذين يفضلون ${f} ${v}، فكم مربعًا يكون طول عموده؟`, en: `Reem draws her class's data as a bar graph on squared paper, and each square of a bar stands for ${per} pupils. If ${v} pupils prefer ${fEn}, how many squares tall is its bar?` };
-  }
-  if (q === 10) { // a dot plot: count the dots at or above a value
-    const top = 6, cs = Array.from({ length: top }, () => int(rng, 0, span(diff, 4, 5, 6))), v = int(rng, 3, 5);
-    cs[v - 1] = Math.max(1, cs[v - 1]!); // a dot at the value itself, so «or more» differs from «more than»
-    const below = int(rng, 0, v - 2);
-    cs[below] = Math.max(1, cs[below]!);
-    const dots = (c: number) => (c ? '●'.repeat(c) : '(لا نقاط)'), plot = cs.map((c, i) => `${i + 1}: ${dots(c)}`).join('، ');
-    const plotEn = cs.map((c, i) => `${i + 1}: ${c ? '●'.repeat(c) : '(no dots)'}`).join(', ');
-    const at = sum(cs.slice(v - 1)), above = sum(cs.slice(v)), all = sum(cs);
-    return { eq: plot, answer: String(at), wrongs: countOpts(at, [above, all - at, all, at + 1]), ar: `يبين التمثيل بالنقاط الآتي عدد الساعات التي قضاها كل طالب في القراءة خلال أسبوع، وكل نقطة تمثل طالبًا واحدًا: ${plot}. كم طالبًا قرأ ${v} ساعات أو أكثر؟`, en: `The dot plot shows how many hours each pupil spent reading in a week, one dot per pupil: ${plotEn}. How many pupils read for ${v} hours or more?` };
   }
   if (q === 4) { // organise raw data: how often one value occurs
     const L = grade <= 1 ? int(rng, 6, 8) : int(rng, 8, 10), top = grade <= 1 ? 6 : 9;
@@ -542,6 +533,56 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
   if (q === 2) { const d = vals[hi]! - vals[lo]!; return { eq: tab, answer: String(d), wrongs: countOpts(d, [vals[hi]!, d + 1, d - 1, vals[hi]! + vals[lo]!]), ar: `${head} بكم يزيد عدد الأكثر على عدد الأقل؟`, en: `${headEn} By how many does the largest exceed the smallest?` }; }
   const t = sum(vals);
   return { eq: tab, answer: String(t), wrongs: countOpts(t, [t - 1, t + 1, Math.max(...vals), t + key]), ar: `${head} ما المجموع الكلي؟`, en: `${headEn} What is the total?` };
+});
+
+/** What a Grade 4 dot plot counts — one dot per pupil — and how a value is said with its noun. */
+const DOT_DATA: Array<{ ar: string; en: string; say: (v: number) => string; unitEn: string }> = [
+  { ar: 'عدد الساعات التي قضاها كل طالب في القراءة خلال أسبوع', en: 'how many hours each pupil spent reading in a week', say: v => (v === 1 ? 'ساعة واحدة' : v === 2 ? 'ساعتين' : `${v} ساعات`), unitEn: 'hour' },
+  { ar: 'عدد الكتب التي قرأها كل طالب خلال شهر', en: 'how many books each pupil read in a month', say: v => (v === 1 ? 'كتابًا واحدًا' : v === 2 ? 'كتابين' : `${v} كتب`), unitEn: 'book' },
+];
+/**
+ * Grade 4 «تمثيل البيانات بالنقاط» («أمثّل البيانات باستعمال النقاط، وأفسّرها»).
+ * The plot is written out: «1: ●●●، 2: ●●، 3: (لا نقاط)…», values 1 to 6.
+ * Reading it — how many at a value, at or above it, below it, the difference
+ * between two values, the value with the most dots, how many in all — and
+ * drawing it: how many dots go over a value of a raw list. It used to share the
+ * bar-graph generator, which drew a dot plot one question in seven.
+ */
+const dotPlot = T('dot_plot_g4', /^تمثيل البيانات بالنقاط$/, [4, 4], ({ rng, diff }) => {
+  const d = pick(rng, DOT_DATA);
+  const en = (v: number) => `${v} ${d.unitEn}${v === 1 ? '' : 's'}`;
+  const k = pick(rng, [0, 1, 2, 3, 4, 5, 6]);
+  if (k === 6) { // draw: a raw list, and the dots over one value
+    const xs = Array.from({ length: span(diff, 10, 12, 15) }, () => int(rng, 1, 6)), v = pick(rng, xs), c = xs.filter(x => x === v).length;
+    return { eq: list(xs), answer: String(c), wrongs: countOpts(c, [c + 1, c - 1, v, xs.length - c]), ar: `سجّلت معلمة ${d.ar}، فكانت: ${list(xs)}. عند تمثيل هذه البيانات بالنقاط، كم نقطة تُرسم فوق العدد ${v}؟`, en: `A teacher recorded ${d.en}: ${listEn(xs)}. When these data are shown in a dot plot, how many dots go above ${v}?` };
+  }
+  let cs: number[];
+  do cs = Array.from({ length: 6 }, () => int(rng, 0, span(diff, 4, 5, 6)));
+  while (cs.filter(c => c > 0).length < 3 || cs.filter(c => c === Math.max(...cs)).length > 1);
+  // at or above v, exactly v, or fewer than v: a dot at v and one below it, so each differs from its neighbour reading
+  const v = int(rng, 2, 5);
+  if (k <= 2) {
+    cs[v - 1] = Math.max(1, cs[v - 1]!);
+    const below = int(rng, 0, v - 2);
+    cs[below] = Math.max(1, cs[below]!);
+  }
+  const plot = cs.map((c, i) => `${i + 1}: ${c ? '●'.repeat(c) : '(لا نقاط)'}`).join('، ');
+  const plotEn = cs.map((c, i) => `${i + 1}: ${c ? '●'.repeat(c) : '(no dots)'}`).join(', ');
+  const all = sum(cs), top = cs.indexOf(Math.max(...cs)) + 1;
+  if (k === 4) return { eq: plot, answer: String(top), wrongs: countOpts(top, [Math.max(...cs), cs.indexOf(Math.min(...cs)) + 1, top === 6 ? 5 : top + 1, top === 1 ? 2 : top - 1]), ar: `فوق أيّ عدد يقع أكبر عدد من النقاط في التمثيل بالنقاط الآتي، الذي يبين ${d.ar}؟ ${plot}`, en: `Above which number are the most dots in this dot plot of ${d.en}? ${plotEn}` };
+  if (k === 5) return { eq: plot, answer: String(all), wrongs: countOpts(all, [6, all - 1, all + 1, Math.max(...cs)]), ar: `كم طالبًا يمثّلهم التمثيل بالنقاط الآتي، الذي يبين ${d.ar}، إذا كانت كل نقطة تمثل طالبًا واحدًا؟ ${plot}`, en: `How many pupils does this dot plot of ${d.en} show, one dot per pupil? ${plotEn}` };
+  const head = `يبين التمثيل بالنقاط الآتي ${d.ar}، وكل نقطة تمثل طالبًا واحدًا: ${plot}.`;
+  const headEn = `The dot plot shows ${d.en}, one dot per pupil: ${plotEn}.`;
+  if (k === 3) { // the difference between two values
+    const vs = shuffle(rng, [1, 2, 3, 4, 5, 6]).filter(x => cs[x - 1]! > 0);
+    const a = vs[0]!, b = vs.slice(1).find(x => cs[x - 1]! < cs[a - 1]!) ?? vs.find(x => cs[x - 1]! > cs[a - 1]!)!;
+    const [hi, lo] = cs[a - 1]! > cs[b - 1]! ? [a, b] : [b, a], diffN = cs[hi - 1]! - cs[lo - 1]!;
+    return { eq: `${plot}; ${hi} − ${lo}`, answer: String(diffN), wrongs: countOpts(diffN, [cs[hi - 1]! + cs[lo - 1]!, cs[hi - 1]!, Math.abs(hi - lo), diffN + 1]), ar: `${head} بكم يزيد عدد الطلاب الذين قرؤوا ${d.say(hi)} على عدد الذين قرؤوا ${d.say(lo)}؟`, en: `${headEn} How many more pupils read ${en(hi)} than ${en(lo)}?` };
+  }
+  const atV = cs[v - 1]!, from = sum(cs.slice(v - 1)), under = sum(cs.slice(0, v - 1));
+  if (k === 0) return { eq: `${plot}; ≥ ${v}`, answer: String(from), wrongs: countOpts(from, [from - atV, all - from, all, from + 1]), ar: `${head} كم طالبًا قرأ ${d.say(v)} أو أكثر؟`, en: `${headEn} How many pupils read ${en(v)} or more?` };
+  if (k === 1) return { eq: `${plot}; = ${v}`, answer: String(atV), wrongs: countOpts(atV, [from, v, atV + 1, all - atV]), ar: `${head} كم طالبًا قرأ ${d.say(v)} بالضبط؟`, en: `${headEn} How many pupils read exactly ${en(v)}?` };
+  return { eq: `${plot}; < ${v}`, answer: String(under), wrongs: countOpts(under, [under + atV, all - under, v - 1, under + 1]), ar: `${head} كم طالبًا قرأ أقل من ${d.say(v)}؟`, en: `${headEn} How many pupils read fewer than ${en(v)}?` };
 });
 
 /**
@@ -910,8 +951,10 @@ export const STATS_TOPICS: readonly Topic[] = [
   medianModeT('median_mode_g5', /^الوسيط والمنوال$/, [5, 5], ['median', 'mode', 'medianMissing', 'modeContext']), medianModeT('range_g5', /^المدي$/, [5, 5], ['range', 'rangeTable', 'rangeEnd']),
   medianModeT('median_mode_range_g7', /^الوسيط والمنوال والمدي$/, [7, 7], ['median', 'mode', 'range', 'medianMissing', 'bestMeasure']),
   stemLeaf,
-  readData('read_data_g12', /^(?:جداول البيانات|تمثيل البيانات بالصور|تفسير بيانات ممثله بالصور|تفسير البيانات الممثله بالصور|تفسير البيانات الممثله بجدول الاشارات|جمع البيانات وتنظيمها)$/, [1, 2]),
-  readData('read_data_g34', /^(?:تمثيل البيانات بالاعمده|تفسير البيانات الممثله بالاعمده|تمثيل البيانات بالنقاط)$/, [3, 4]),
+  readData('read_data_g12', /^(?:جداول البيانات|تمثيل البيانات بالصور|تفسير بيانات ممثله بالصور|تفسير البيانات الممثله بالصور|تفسير البيانات الممثله بجدول الاشارات|جمع البيانات وتنظيمها)$/, [2, 2]),
+  // Grade 1's three data lessons have one generator each in early.ts (they shared this one)
+  // «تمثيل البيانات بالنقاط» has its own generator since 2026-11-14 (`dot_plot_g4`): here it was one kind among bar charts
+  readData('read_data_g34', /^(?:تمثيل البيانات بالاعمده|تفسير البيانات الممثله بالاعمده)$/, [3, 4]), dotPlot,
   freqTable, collectData,
   grouped('grouped_g6', /^الجداول والمخططات التكراريه ذات الفئات$/, [6, 6]), grouped('grouped_g9', /^(?:الجداول التكراريه ذات الفئات|المدرجات التكراريه)$/, [9, 9]),
   dispersion, scatter, cumulative, groupedMean,
