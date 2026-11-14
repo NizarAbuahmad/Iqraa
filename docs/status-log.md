@@ -10,6 +10,31 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 4 review: reflection on the book's square grid, and no dot plot left in the bar-chart lessons — 2026-11-14
+
+Follows «Offline maths, Grade 4: dot plots…» (below), which landed first with the same two items from the Grade 4 second
+pass. Its `dot_plot_g4` and its tests (`grade4Lessons.test.ts`) stand; this review's own dot-plot generator was dropped in
+the merge. Before that, a sweep of all 313 Grade 4 lessons through the offline plan, quiz, worksheet and activity found
+nothing new: every lesson grounds by id, plans and activities generate for all, and all 50 maths lessons give a full paper.
+
+- **«الانعكاس»** (S1 u5_l6, «أرسم صورة شكل بالانعكاس حول محور، وأصفه»). The entry below renamed «x = 7» as «المستقيم الرأسي
+  المار بالنقطة (7 ، 0)», but the questions still asked for an image's coordinates — Grade 6 work. The Grade 4 book
+  (S1 pp. 114-119, read in the teacher guide's reproduced pages) has no coordinates at all: it reflects a shape on a square
+  grid in a drawn vertical or horizontal line, a vertex and its image the same number of squares from it, and no measure
+  changes. `reflect_line` now asks exactly that: on which side and how far the image of a vertex lies, how many squares
+  between a vertex and its image, which numbered grid line the image is on, a rectangle's length after the reflection, and
+  what a reflection keeps.
+- **«تمثيل البيانات بالأعمدة»** no longer draws a dot-plot question (the entry below lists it as not fixed): `read_data_g34`'s
+  Grade 4 pool drops the dot-plot kind, which is `dot_plot_g4`'s lesson.
+
+**Verified.** `geometry.test.ts` recomputes each reflection key from the printed counts (the image on the other side at the
+same distance, twice the distance between, the grid line as far past the mirror as the vertex is before it) and fails on a
+coordinate or an equation in a stem; `stats.test.ts` checks the bar-chart lessons draw no dot plot. Planted bugs — the
+reflection distance halved, the image on the same side — each failed a test. Samples read by hand, keys correct.
+math-practice passes; the PR body has the rest of the CI set.
+
+**Not done.** Everything the earlier Grade 4 entries left for the PDFs (pages to render, social/vocational re-OCR, PE text).
+
 ## Offline maths, Grade 4: dot plots for «تمثيل البيانات بالنقاط», and no «x = 7» in «الانعكاس» — 2026-11-14
 
 The Grade 4 second pass listed two «weak, not fixed» items in the offline maths bank (`lib/math-practice`); this
