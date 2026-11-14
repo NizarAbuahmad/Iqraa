@@ -543,17 +543,105 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
 });
 
 /**
- * Since 2026-10-16 also the population and the sample (جمع البيانات), and the
- * mean and median of data already organised in a frequency table.
+ * Grade 6 «جمع البيانات» (S2 u8_l1). Its outcomes: «أتعرف البيانات العددية والنوعية», «أتعرف المجتمع والعينة»,
+ * «أتعرف الاستبانة كأداة لجمع البيانات»; its vocabulary adds discrete and continuous data and the sample size.
+ * Until 2026-11-14 it shared `freq_table`, so no question told numerical from categorical data and most asked a
+ * frequency-table mean or median, which is another lesson. Kinds: which data is categorical / numerical, which
+ * numerical data is discrete / continuous, the population or the sample of a described survey, and a sample size.
  */
-const freqTable = T('freq_table', /^(?:الجداول التكراريه|جمع البيانات)$/, [6, 6], ({ rng, diff }) => {
-  const n = span(diff, 15, 20, 25), hi = span(diff, 4, 5, 6);
-  const kind = pick(rng, [0, 0, 1, 2, 3]); // 0: the frequency of a value, or the most frequent value
-  if (kind === 1) { // population and sample
-    const P = 100 * int(rng, 3, 9), s = 5 * int(rng, 4, 16), sample = rng() < 0.6;
-    const ans = sample ? s : P;
-    return { eq: `${P}, ${s}`, answer: String(ans), wrongs: countOpts(ans, [sample ? P : s, P - s, P + s, sample ? s * 2 : P / 2]), ar: `أراد مدير مدرسة فيها ${P} طالب معرفة الرياضة المفضلة لدى طلبتها، فاختار منهم ${s} طالبًا عشوائيًا ووزّع عليهم استبانة. ما حجم ${sample ? 'العينة' : 'المجتمع'}؟`, en: `A head teacher of a school with ${P} students wants to know their favourite sport, so picks ${s} of them at random and gives them a questionnaire. What is the size of the ${sample ? 'sample' : 'population'}?` };
+const CATEGORICAL: Array<[string, string]> = [
+  ['اللون المفضل لدى طلبة الصف', 'the favourite colour of the pupils in a class'],
+  ['نوع الرياضة المفضلة لدى الطلبة', "pupils' favourite sport"],
+  ['وسيلة المواصلات التي يأتي بها الطالب إلى المدرسة', 'how each pupil travels to school'],
+  ['فصيلة دم كل طالب', "each pupil's blood group"],
+  ['المادة الدراسية المفضلة لدى الطلبة', "pupils' favourite school subject"],
+  ['نوع الفاكهة المفضلة لدى أفراد الأسرة', "family members' favourite fruit"],
+];
+const DISCRETE: Array<[string, string]> = [
+  ['عدد الإخوة لكل طالب', 'the number of brothers and sisters each pupil has'],
+  ['عدد الكتب التي قرأها كل طالب في شهر', 'the number of books each pupil read in a month'],
+  ['عدد الأهداف في كل مباراة', 'the number of goals in each match'],
+  ['عدد الطلبة في كل صف', 'the number of pupils in each class'],
+];
+const CONTINUOUS: Array<[string, string]> = [
+  ['أطوال طلبة الصف', 'the heights of the pupils in a class'],
+  ['كتل الحقائب المدرسية', 'the masses of school bags'],
+  ['درجات الحرارة العظمى اليومية', 'the daily highest temperatures'],
+  ['الزمن الذي يستغرقه كل طالب للوصول إلى المدرسة', 'the time each pupil takes to reach school'],
+];
+/** Questions a questionnaire could ask: [question, its data is numerical]. */
+const SURVEY_QUESTIONS: Array<[string, boolean]> = [
+  ['كم عدد إخوتك؟', true], ['كم ساعة تنام في الليلة؟', true], ['كم كتابًا قرأت هذا الشهر؟', true], ['كم عمرك بالسنوات؟', true],
+  ['ما لونك المفضل؟', false], ['ما رياضتك المفضلة؟', false], ['كيف تأتي إلى المدرسة؟', false], ['ما مادتك الدراسية المفضلة؟', false],
+];
+const collectData = T('collect_data_g6', /^جمع البيانات$/, [6, 6], ({ rng }) => {
+  // 0 categorical / numerical, 1 discrete / continuous, 2 the population or the sample, 3 a size,
+  // 4 the sample that represents the school, 5 the questionnaire question that collects a given type
+  const kind = pick(rng, [0, 1, 2, 3, 4, 5]);
+  if (kind === 4) {
+    const P = 100 * int(rng, 4, 9), s = 10 * int(rng, 4, 8);
+    const fair = `${s} ${tamyiz(s, 'طلاب', 'طالبًا', 'طالب')} يُختارون عشوائيًا من صفوف المدرسة جميعها`;
+    const biased = shuffle(rng, ['لاعبو فريق كرة السلة في المدرسة', 'طلبة الصف الأول وحدهم', `أول ${s} ${tamyiz(s, 'طلاب', 'طالبًا', 'طالب')} يصلون إلى المدرسة صباحًا`, 'طلبة شعبة واحدة من الصف السادس']).slice(0, 3);
+    return {
+      eq: `fair sample ${P} ${s}`, answer: fair, wrongs: biased,
+      ar: `أراد معلم معرفة متوسط أطوال طلبة مدرسة فيها ${P} ${tamyiz(P, 'طلاب', 'طالبًا', 'طالب')}. أيّ العينات الآتية تمثّل طلبة المدرسة أفضل تمثيل؟`,
+      en: `A teacher wants the mean height of the ${P} students of a school. Which sample best represents the school?`,
+    };
   }
+  if (kind === 5) {
+    const numeric = rng() < 0.5;
+    const [ans] = pick(rng, SURVEY_QUESTIONS.filter(q => q[1] === numeric));
+    const wrongs = shuffle(rng, SURVEY_QUESTIONS.filter(q => q[1] !== numeric)).slice(0, 3).map(q => q[0]);
+    return {
+      eq: `survey ${numeric ? 'num' : 'cat'} ${ans}`, answer: ans, wrongs,
+      ar: `يعدّ طالب استبانة لصفه. أيّ الأسئلة الآتية تكون إجاباته بيانات ${numeric ? 'عددية' : 'نوعية'}؟`,
+      en: `A pupil is writing a questionnaire for the class. Which question's answers are ${numeric ? 'numerical' : 'categorical'} data?`,
+    };
+  }
+  if (kind === 0) {
+    // one of a kind among three of the other
+    const askCat = rng() < 0.5;
+    const NUM = [...DISCRETE, ...CONTINUOUS];
+    const [ans, ansEn] = pick(rng, askCat ? CATEGORICAL : NUM);
+    const others = shuffle(rng, askCat ? NUM : CATEGORICAL).slice(0, 3);
+    return {
+      eq: `type ${askCat ? 'cat' : 'num'} ${ans}`, answer: ans, wrongs: others.map(o => o[0]),
+      ar: `أيّ البيانات الآتية بيانات ${askCat ? 'نوعية' : 'عددية'}؟`,
+      en: `Which of these is ${askCat ? 'categorical' : 'numerical'} data? (${[ansEn, ...others.map(o => o[1])].join('; ')})`,
+    };
+  }
+  if (kind === 1) {
+    const askCont = rng() < 0.5;
+    const [ans, ansEn] = pick(rng, askCont ? CONTINUOUS : DISCRETE);
+    const others = shuffle(rng, askCont ? DISCRETE : CONTINUOUS).slice(0, 3);
+    return {
+      eq: `type ${askCont ? 'continuous' : 'discrete'} ${ans}`, answer: ans, wrongs: others.map(o => o[0]),
+      ar: `أيّ البيانات العددية الآتية بيانات ${askCont ? 'متصلة' : 'منفصلة'}؟`,
+      en: `Which of these numerical data is ${askCont ? 'continuous' : 'discrete'}? (${[ansEn, ...others.map(o => o[1])].join('; ')})`,
+    };
+  }
+  const P = 100 * int(rng, 3, 9), s = 5 * int(rng, 4, 16);
+  const story = `أراد مدير مدرسة فيها ${P} ${tamyiz(P, 'طلاب', 'طالبًا', 'طالب')} معرفة الرياضة المفضلة لدى طلبتها، فاختار منهم ${s} ${tamyiz(s, 'طلاب', 'طالبًا', 'طالب')} عشوائيًا ووزّع عليهم استبانة.`;
+  const storyEn = `A head teacher of a school with ${P} students wants to know their favourite sport, so picks ${s} of them at random and gives them a questionnaire.`;
+  if (kind === 2) {
+    const askPop = rng() < 0.5;
+    const pop = `طلبة المدرسة جميعهم (${P})`, sample = `الطلبة الذين اختارهم المدير (${s})`;
+    return {
+      eq: `${askPop ? 'population' : 'sample'} ${P} ${s}`, answer: askPop ? pop : sample, wrongs: [askPop ? sample : pop, 'مدير المدرسة', 'الاستبانة'],
+      ar: `${story} ما ${askPop ? 'المجتمع' : 'العينة'} في هذه الدراسة؟`,
+      en: `${storyEn} What is the ${askPop ? 'population' : 'sample'} in this survey?`,
+    };
+  }
+  const sampleAsk = rng() < 0.6, ans = sampleAsk ? s : P;
+  return { eq: `${P}, ${s}`, answer: String(ans), wrongs: countOpts(ans, [sampleAsk ? P : s, P - s, P + s, sampleAsk ? s * 2 : P / 2]), ar: `${story} ما حجم ${sampleAsk ? 'العينة' : 'المجتمع'}؟`, en: `${storyEn} What is the size of the ${sampleAsk ? 'sample' : 'population'}?` };
+});
+
+/** The mean and median of data already organised in a frequency table, since 2026-10-16. */
+const freqTable = T('freq_table', /^الجداول التكراريه$/, [6, 6], ({ rng, diff }) => {
+  const n = span(diff, 15, 20, 25), hi = span(diff, 4, 5, 6);
+  // 0: the frequency of a value, or the most frequent value; 2, 3: a table's mean or median. The population and the
+  // sample (once kind 1, for «جمع البيانات») moved to `collect_data_g6` on 2026-11-14.
+  const kind = pick(rng, [0, 0, 2, 3]);
   if (kind === 2 || kind === 3) { // mean or median of a frequency table (value: frequency)
     for (;;) {
       const vals = Array.from({ length: hi }, (_, i) => i + 1), f = vals.map(() => int(rng, 1, 8));
@@ -789,7 +877,7 @@ export const STATS_TOPICS: readonly Topic[] = [
   stemLeaf,
   readData('read_data_g12', /^(?:جداول البيانات|تمثيل البيانات بالصور|تفسير بيانات ممثله بالصور|تفسير البيانات الممثله بالصور|تفسير البيانات الممثله بجدول الاشارات|جمع البيانات وتنظيمها)$/, [1, 2]),
   readData('read_data_g34', /^(?:تمثيل البيانات بالاعمده|تفسير البيانات الممثله بالاعمده|تمثيل البيانات بالنقاط)$/, [3, 4]),
-  freqTable,
+  freqTable, collectData,
   grouped('grouped_g6', /^الجداول والمخططات التكراريه ذات الفئات$/, [6, 6]), grouped('grouped_g9', /^(?:الجداول التكراريه ذات الفئات|المدرجات التكراريه)$/, [9, 9]),
   dispersion, scatter, cumulative, groupedMean,
 ];

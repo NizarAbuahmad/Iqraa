@@ -83,7 +83,9 @@ describe('Grade 6 lessons that had no offline questions', () => {
       const p = item.promptAr!;
       tidy(item.answer, p);
       const got = Number(item.answer);
-      let m = p.match(/مسافة ([\d.]+)km في ([\d.]+) ساعات.+في ([\d.]+) ساعات/);
+      // a decimal count of hours takes the singular «ساعة»; the plural is a wording bug (2026-11-14)
+      assert.ok(!/[\d.]+ ساعات/.test(p), `«ساعات» after a decimal: ${p}`);
+      let m = p.match(/مسافة ([\d.]+)km في ([\d.]+) ساعة.+في ([\d.]+) ساعة/);
       if (m) { kinds.add('distance'); close(got, (Number(m[1]) / Number(m[2])) * Number(m[3]), p); continue; }
       m = p.match(/([\d.]+)L من الوقود لقطع مسافة ([\d.]+)km.+مسافة ([\d.]+)km/);
       if (m) { kinds.add('fuel'); close(got, (Number(m[1]) / Number(m[2])) * Number(m[3]), p); continue; }

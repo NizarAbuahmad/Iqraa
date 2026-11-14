@@ -10,6 +10,36 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 6 review: the four «weak, not fixed» maths lessons from the second pass — 2026-11-14
+
+The Grade 6 audit and «Grade 6, second pass» (both below) covered pages, figures, contents and every maths quiz against
+its outcomes. A sweep of all 358 lessons through the offline plan, quiz, worksheet and activity found nothing new: every
+lesson grounds by id, all 39 maths lessons give a full paper. This change fixes what the second pass listed as weak:
+- **«الجذر التربيعي والجذر التكعيبي»** («أجد الجذور التربيعية والتكعيبية للأعداد»): a cube was one draw in five, so a
+  paper could hold none. Grade 6 now draws a cube half the time (about 200 of 400 in the test), in four kinds — a cube
+  root, a cube, a cube's edge from its volume, which number is a perfect cube. Grade 5 has no cubes, as before.
+- **«النسبة المئوية من عدد»** («أجد النسبة المئوية من عدد، ومن كمية»): it reached the shared `percent` op, a third of
+  whose items convert or read a grid. It now has `pct_of_g6`: a percent of a number, of a measured quantity, of a group of
+  people, a discount, and (hard) the price after it; whole answers; a whole of at least 20 (no 4-dinar bicycle).
+  `elementaryOpsForTitle` sends only this title away from `percent`; Grade 5 «النسبة المئوية» keeps it.
+- **«جمع البيانات»** (numerical/categorical data, population and sample, the questionnaire; vocabulary adds discrete and
+  continuous): it shared `freq_table`, so nothing told the data types apart and most items were a table's mean or median.
+  It now has `collect_data_g6`: which data is categorical or numerical, which numerical data is discrete or continuous,
+  the population or the sample of a survey, a sample or population size, which sample represents a school fairly, and
+  which questionnaire question collects numerical or categorical data. (The first four alone are two kinds by `sameKind`
+  — `mathLessonKinds.test.ts` caught it — so the last two were added.) `freq_table` keeps «الجداول التكرارية» and
+  loses the sample question it had carried only for this lesson.
+- **«6.2 ساعات»**: `simpler_problem`'s two times are never whole, and a decimal count takes the singular — «3.7 ساعة».
+
+**Verified.** New tests recompute every key from its stem (`topics.test.ts`: p% of the printed whole, the cube kinds, the
+Grade 6 cube share; `stats.test.ts`: each data item's class from fixed lists); `routing.test.ts` pins the routing and
+`grade6Lessons.test.ts` the singular. Each fix was broken on purpose once — cubes back to one in five, a wrong percent
+key, the old routing, categorical and numerical swapped, the plural — and each made a test fail. Samples read by hand,
+keys correct. math-practice passes; the sweep gives 39 of 39 full maths quizzes. The PR body has the rest of the CI set.
+
+**Not done.** «6.2 ساعات»-style plurals after a decimal elsewhere were searched for (`fmtDec(…) <plural>`); this was the
+only one. Everything the audit left for the PDFs.
+
 ## Grade 7 review: offline maths for the three lessons that had none, and a sweep of every lesson — 2026-11-13
 
 **What was already done.** «Grade 7 audit: book pages, figures, contents and honorifics…» (below, the same day)
