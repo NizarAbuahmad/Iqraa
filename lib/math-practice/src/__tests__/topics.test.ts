@@ -883,9 +883,12 @@ describe('routing', () => {
     ['النسبة المئوية والكسور العادية', 6, 'pct_conv'],
     ['قوانين الأسس الصحيحة', 7, 'exp_laws'],
     // a title no generator is about, and a grade outside a generator's range
-    ['خطة حل المسألة: الرسم', 7, null],
+    // (the two Grade 7 lessons once listed here have generators since 2026-11-13: g7Lessons.test.ts)
+    ['خطة حل المسألة: الرسم', 7, 'g7_draw_diagram'],
+    ['خطة حل المسألة: الرسم', 6, null],
     ['العوامل', 8, null],
-    ['التطابق', 7, null],
+    ['التطابق', 7, 'g7_congruence'],
+    ['التطابق', 9, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {
