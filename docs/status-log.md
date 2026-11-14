@@ -177,6 +177,86 @@ container's R2 setting; mobile suite 9213 pass, 0 fail (10 skipped); api-server
 build + tests 2899/2899; repo `pnpm run typecheck` clean. (The maths figures
 from that day describe code since replaced by `main`'s; see above.)
 
+## Grade 2 audit: book pages, contents, honorifics and offline maths checked — 2026-11-14
+
+The Grade 3–10 audit («Grade 3 audit…»), repeated for Grade 2 (236 lessons), on top of «Grade 2 review: coverage,
+images, and four generator fixes», which opened page 1 of the 23 lessons that have pages.
+
+**Book pages.** Only Islamic S1 (4), Islamic S2 (5) and PE S1 (14) have pages, and the git history of
+`book-page-links.json` holds no other Grade 2 range. All 115 images were looked at; printed page = PDF page in all three
+books.
+- **Three PE unit-final lessons ran onto «مراجعة الوحدة»**: u1_l4 14–18 → 14–15, u2_l5 28–32 → 28–29, u3_l5 42–45 →
+  42–43 (p16 and p44 re-checked here: each opens the review). Trimmed from the end, so the same folders serve them.
+- The other 20 are right at both ends. Islamic S1 u3_l2 (58–63) ends on «أختبر معلوماتي» question 2, which may go on to
+  p64 — not rendered, not seen; left.
+- Unmapped: Islamic S2 u1_l2 «سورة النصر» sits in p17–26 (the gap in its unit) and S1 u1_l3 probably opens on p20 —
+  neither seen. They, and every Grade 2 book but these two, need rendering from the PDFs.
+
+**Contents.** No contents page or unit opener falls inside a served range, so only the 23 lesson openers could be
+compared: every lesson number matches its catalog position, and 22 titles match. **Fixed:** PE u1_l3 is printed
+«رَكْلُ الكُرَةِ» (p11); the catalog had «رَكْلُ كُرَةٍ» (title_en now "Kicking the Ball").
+
+**Honorifics.** The catalogs' three «ﷺ» follow the Prophet. On the pages, the Prophet's honorific is written out in
+full, «رضي الله عنه/عنها» follows أبو هريرة, خديجة, أبو بكر and عمر, «عليه السلام» follows prophets. Nothing to change.
+
+**Offline maths (61 lessons).**
+- **The regrouping lessons got the plain drill — in Grades 2 and 3.** «الجمع/الطرح مع إعادة التجميع (1)/(2)» and
+  «الطرح مع وجود أصفار» (Grade 2), and Grade 3's «الجمع مع إعادة التجميع 1/2», «الطرح مع إعادة التجميع» and «الطرح مع
+  وجود أصفار», were claimed by `elementaryOpsForTitle` as plain «جمع/طرح», so 46–61% of their sums needed any
+  regrouping (by chance) and the zeros lesson put a zero to work in 6% (Grade 2) and 15% (Grade 3). Each catalog
+  objective names the lesson's column («إعادة تجميع الآحاد / العشرات / المئات», «أحدهما يحوي أصفارًا»);
+  `columnTopics` in `early.ts` now draws until that column regroups, in three kinds — the sum or difference, a story,
+  the digit a regrouping changes — and offers the classic slip as a wrong option (the carry dropped, the smaller digit
+  taken from the larger, the lending column not reduced). Through the app's path, 100% of the items now need the
+  lesson's regrouping. Multiplication with regrouping already had this exception.
+- «كم وجهًا لـمتوازي المستطيلات؟» → «لمتوازي المستطيلات» (`li` in `early.ts` put a tatweel before a word with no
+  article; «لـ 3» and «لـ x» stay, a preposition cannot join a digit).
+- **Not fixed:** four lessons get no offline questions — S1 u3_l7 «خطة حل المسألة: التخمين والتحقق», u4_l7 «… الحل
+  بأكثر من خطوة», S2 u6_l8 «… البحث عن نمط», u7_l8 «مهارة حل المسألة: اختيار العملية». The other 57 lessons' probe
+  items (171) were read by hand: every key right.
+
+**Verified:** `columnRegroup.test.ts` (28, written first: all red without the change) recomputes every key column by
+column, checks each lesson's rule and that the slip is offered, and drives `takeElementaryMath`; `elementary.test.ts`'s
+case that pinned «الطرح مع إعادة التجميع (1)» to the drill now pins it away; math-practice 1207 pass; 54 sampled
+regrouping items read by hand, keys right; curriculum test (931) and verify (0 errors); mobile book-page, figure, bank
+and slide tests (213); the full mobile suite (9,270 pass, 0 fail); typecheck. **Not verified:** anything needing
+the PDFs; the pages on a phone.
+
+No «ما الجديد» entry: corrections, not a feature.
+## Grade 8, second pass: Arabic agreement in counting and congruence, and a clearer perpendicular item — 2026-11-14
+
+The Grade 8 audit (below, «Grade 8 audit: book pages, figures, contents and honorifics…») covered pages, figures,
+contents and honorifics. «Grade 8 maths: offline questions for the four S2 lessons…» gave the last four maths lessons
+generators. This pass runs the generators over all 358 lessons and reads every question of every maths quiz against
+the lesson's outcomes. Grade 8 has no extracted book text, so a text-based page check is impossible; the audit
+viewed every page as an image.
+
+**Generators (offline).**
+- Grounding by lesson id is exact for all 358 lessons. All 37 maths lessons serve a paper.
+- Every key read was right: inequalities, systems, factoring, slopes, quartiles, solids of revolution and congruence.
+- **Fixed, Arabic agreement:**
+  - «عد النواتج» printed «2 بناطيل», «2 أنواع من الحلوى», «لجنة من 2 طلاب» and «اختيار 2 طلاب». A count of two
+    now takes the dual: «بنطالان», «نوعان», «طالبين», «قميصان».
+  - The congruence-criterion stems read «إذا كان زاويتان… فبأي حالة تتطابق المثلثان». They now read «إذا كانت
+    زاويتان / ثلاثة أضلاع» and «يتطابق المثلثان».
+  - Pinned in `topics.test.ts` «Grade 8 counted nouns and verbs agree».
+  - `stats.test.ts` reads a dual back as 2.
+  - `geometry.test.ts` used the old typo to tell the two congruence kinds apart; it now uses their structure
+    («في المثلثين ABC و DEF:»).
+- **Clarified:** «زاويتان متجاورتان قياسهما (2x + 11)° و (x + 28)°… تجعل المستقيمين متعامدين» could be read as a
+  linear pair, which makes x the value at which the two are EQUAL. That x gives 45° each, not 90°. The key sums the two to
+  90°, so the stem now says «تكوّنان معًا الزاوية بين مستقيمين».
+- **Noted, not changed:** `dilate_g8` asks a negative scale factor («ومعامله −3»), while the lesson's outcome reads
+  «ومعامله k>0». The code marks this as deliberate for Grade 8; whether the book prints negative factors could not be
+  checked without the PDF.
+
+**Verified:**
+- `lib/math-practice`: 1145 tests pass.
+- Full mobile suite: 9,270 pass.
+- Typecheck is clean.
+
+**Not run:** live AI, and anything needing the PDFs.
+
 ## Grade 3 maths: offline questions for the four lessons that had none — 2026-11-14
 
 The Grade 3 audit found four maths lessons with no offline questions. Each now has a generator in
