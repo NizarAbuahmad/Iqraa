@@ -46,6 +46,8 @@ export type ChemFamily =
   | 'acids_bases'
   | 'metal_activity'
   | 'redox'
+  /** Grade 9 «التوزيع الإلكتروني والجدول الدوري»: energy levels («2, 8, 1»), not subshells. */
+  | 'electron_shells'
   | 'general_chem';
 
 /**
@@ -136,6 +138,11 @@ export function detectChemFamily(raw: string): ChemFamily {
   // The lesson's own name, ahead of periodic trends on purpose: its key terms include «طاقة التأين»
   // (ionization energy), which the periodic-trends pattern below would take as that lesson. Deliberately
   // narrow — the name of the lesson, not its topic words, so the periodic-properties lesson is untouched.
+  // The Grade 9 lesson «التوزيع الإلكتروني والجدول الدوري», by its own name and ahead of everything
+  // electron_config would take: its book writes arrangements as energy levels («2, 8, 8, 2») for the
+  // representative elements up to calcium and never uses a subshell, so the Grade 10 bank — «1s² 2s²…»,
+  // 4s before 3d, Fe²⁺ — asked a Grade 9 class what it had not been taught (found 2026-11-14).
+  if (/التوزيع الإلكتروني والجدول الدوري|electron configurations? and (the )?periodic table/i.test(blob)) return 'electron_shells';
   if (/التوزيع الإلكتروني للذرات|electronic configuration/i.test(blob)) return 'electron_config';
   if (/الخصائص الدورية|نصف القطر|طاقة التأين|الكهروسالبية|periodic (trend|propert)|atomic radius|ionization|electronegativ/i.test(blob)) return 'periodic_trends';
   if (/التوزيع الإلكتروني|المستويات الفرعية|أوربيتال|قاعدة هوند|أوفباو|باولي|electron config|orbital|subshell|hund|aufbau|pauli/i.test(blob)) return 'electron_config';
@@ -590,9 +597,9 @@ export const CHEM_BANK: ConcreteItem[] = [
     promptEn: 'A solution has pH = 3. What type is it?',
   },
   {
-    id: 'ch-ac-e2', family: 'acids_bases', diff: 'easy', eq: 'ورق عباد الشمس الأزرق + حمض',
+    id: 'ch-ac-e2', family: 'acids_bases', diff: 'easy', eq: 'ورق تبّاع الشمس الأزرق + حمض',
     answer: 'يتحول إلى الأحمر', wrongs: ['يتحول إلى الأخضر', 'يبقى أزرق', 'يفقد لونه'],
-    promptAr: 'ما لون ورق عباد الشمس الأزرق عند وضعه في محلول حمضي؟',
+    promptAr: 'ما لون ورق تبّاع الشمس الأزرق عند وضعه في محلول حمضي؟',
     promptEn: 'What colour does blue litmus paper turn in an acidic solution?',
   },
   {
@@ -604,27 +611,27 @@ export const CHEM_BANK: ConcreteItem[] = [
   {
     id: 'ch-ac-m2', family: 'acids_bases', diff: 'medium', eq: 'حمض + فلز نشط',
     answer: 'ملح وغاز الهيدروجين', wrongs: ['ملح وماء', 'ملح وغاز ثاني أكسيد الكربون', 'ملح وغاز الأكسجين'],
-    promptAr: 'ماذا ينتج من تفاعل حمض مع فلز نشط مثل الزنك؟',
+    promptAr: 'ماذا ينتج من تفاعل حمض مع فلز نشط مثل الخارصين؟',
     promptEn: 'What is produced when an acid reacts with an active metal such as zinc?',
   },
   {
-    id: 'ch-ac-h1', family: 'acids_bases', diff: 'hard', eq: 'pH من 5 إلى 3',
-    answer: 'تزداد الحموضة 100 مرة', wrongs: ['تزداد الحموضة مرتين', 'تقل الحموضة 100 مرة', 'تزداد الحموضة 10 مرات'],
-    promptAr: 'انخفض pH محلول من 5 إلى 3. كيف تغيّرت حموضته؟ (المقياس لوغاريتمي)',
-    promptEn: "A solution's pH drops from 5 to 3. How did its acidity change? (the scale is logarithmic)",
+    id: 'ch-ac-h1', family: 'acids_bases', diff: 'hard', eq: 'pH = 2 مقابل pH = 5، التركيز نفسه',
+    answer: 'الحمض الذي pH محلوله 2، لأن تركيز أيونات H⁺ فيه أكبر', wrongs: ['الحمض الذي pH محلوله 5، لأن قيمة pH له أكبر', 'لهما القوة نفسها لأن تركيزهما متساوٍ', 'الحمض الذي pH محلوله 2، لأن تركيز أيونات OH⁻ فيه أكبر'],
+    promptAr: 'محلولان لحمضين مختلفين لهما التركيز نفسه، الرقم الهيدروجيني pH لأحدهما 2 وللآخر 5. أيّ الحمضين أقوى؟ ولماذا؟',
+    promptEn: 'Solutions of two different acids have the same concentration; one has pH 2 and the other pH 5. Which acid is stronger, and why?',
   },
 
   // ── نشاط الفلزات (grade 9) ──
   {
     id: 'ch-ma-e1', family: 'metal_activity', diff: 'easy', eq: 'Zn + CuSO₄',
     answer: 'ZnSO₄ + Cu', wrongs: ['لا يحدث تفاعل', 'ZnCu + SO₄', 'ZnO + CuSO₃'],
-    promptAr: 'أكمل: Zn + CuSO₄ → ... علمًا أن الزنك أنشط من النحاس.',
+    promptAr: 'أكمل: Zn + CuSO₄ → ... علمًا أن الخارصين أنشط من النحاس.',
     promptEn: 'Complete: Zn + CuSO₄ → ... given that zinc is more active than copper.',
   },
   {
     id: 'ch-ma-m1', family: 'metal_activity', diff: 'medium', eq: 'Cu + ZnSO₄',
-    answer: 'لا يحدث تفاعل، لأن النحاس أقل نشاطًا من الزنك', wrongs: ['يحدث تفاعل وينتج CuSO₄ + Zn', 'يحدث تفاعل وينتج CuZn + SO₄', 'لا يحدث تفاعل، لأن الزنك أقل نشاطًا من النحاس'],
-    promptAr: 'هل يحدث تفاعل عند وضع قطعة نحاس في محلول كبريتات الزنك؟ علّل.',
+    answer: 'لا يحدث تفاعل، لأن النحاس أقل نشاطًا من الخارصين', wrongs: ['يحدث تفاعل وينتج CuSO₄ + Zn', 'يحدث تفاعل وينتج CuZn + SO₄', 'لا يحدث تفاعل، لأن الخارصين أقل نشاطًا من النحاس'],
+    promptAr: 'هل يحدث تفاعل عند وضع قطعة نحاس في محلول كبريتات الخارصين؟ علّل.',
     promptEn: 'Does a reaction occur when copper is placed in zinc sulfate solution? Explain.',
   },
   {
@@ -635,15 +642,15 @@ export const CHEM_BANK: ConcreteItem[] = [
   },
   {
     id: 'ch-ma-h1', family: 'metal_activity', diff: 'hard', eq: 'الجلفنة',
-    answer: 'الزنك أنشط من الحديد فيتأكسد بدلًا منه', wrongs: ['الزنك أقل نشاطًا فيمنع وصول الهواء فقط', 'الزنك يمنع الماء ولا علاقة له بالنشاط', 'الزنك يزيد صلابة الحديد فيقاوم الصدأ'],
-    promptAr: 'يُطلى الحديد بالزنك لحمايته من الصدأ. فسّر ذلك بدلالة سلسلة النشاط الكيميائي.',
+    answer: 'الخارصين أنشط من الحديد فيتأكسد بدلًا منه', wrongs: ['الخارصين أقل نشاطًا فيمنع وصول الهواء فقط', 'الخارصين يمنع الماء ولا علاقة له بالنشاط', 'الخارصين يزيد صلابة الحديد فيقاوم الصدأ'],
+    promptAr: 'يُطلى الحديد بالخارصين لحمايته من الصدأ. فسّر ذلك بدلالة سلسلة النشاط الكيميائي.',
     promptEn: 'Iron is coated with zinc to protect it from rust. Explain using the activity series.',
   },
 
   // ── التأكسد والاختزال (grade 9) ──
   {
     id: 'ch-rx-e1', family: 'redox', diff: 'easy', eq: 'Zn → Zn²⁺ + 2e⁻',
-    answer: 'تأكسد، لأن الزنك يفقد إلكترونين', wrongs: ['اختزال، لأن الزنك يكتسب إلكترونين', 'تأكسد، لأن الزنك يكتسب إلكترونين', 'اختزال، لأن الزنك يفقد إلكترونين'],
+    answer: 'تأكسد، لأن الخارصين يفقد إلكترونين', wrongs: ['اختزال، لأن الخارصين يكتسب إلكترونين', 'تأكسد، لأن الخارصين يكتسب إلكترونين', 'اختزال، لأن الخارصين يفقد إلكترونين'],
     promptAr: 'صنّف نصف التفاعل Zn → Zn²⁺ + 2e⁻ تأكسدًا أم اختزالًا، مع التعليل.',
     promptEn: 'Classify Zn → Zn²⁺ + 2e⁻ as oxidation or reduction, with a reason.',
   },
@@ -667,9 +674,130 @@ export const CHEM_BANK: ConcreteItem[] = [
   },
   {
     id: 'ch-rx-h1', family: 'redox', diff: 'hard', eq: 'Zn + Cu²⁺ → Zn²⁺ + Cu',
-    answer: 'الزنك عامل مختزل والنحاس Cu²⁺ عامل مؤكسد', wrongs: ['الزنك عامل مؤكسد والنحاس Cu²⁺ عامل مختزل', 'كلاهما عامل مؤكسد', 'كلاهما عامل مختزل'],
+    answer: 'الخارصين عامل مختزل والنحاس Cu²⁺ عامل مؤكسد', wrongs: ['الخارصين عامل مؤكسد والنحاس Cu²⁺ عامل مختزل', 'كلاهما عامل مؤكسد', 'كلاهما عامل مختزل'],
     promptAr: 'في التفاعل Zn + Cu²⁺ → Zn²⁺ + Cu، حدّد العامل المؤكسد والعامل المختزل.',
     promptEn: 'In Zn + Cu²⁺ → Zn²⁺ + Cu, identify the oxidising and the reducing agent.',
+  },
+
+  // ── التوزيع الإلكتروني والجدول الدوري (grade 9) ──
+  // As the Grade 9 book writes it (student book S1 pp.19–29): energy levels, «2, 8, 8, 2», for the
+  // representative elements up to calcium; size and reactivity across a period and down a group;
+  // why the noble gases do not react. No subshells — those are Grade 10's `electron_config`.
+  {
+    id: 'ch-es-e1', family: 'electron_shells', diff: 'easy', eq: 'Na: Z = 11',
+    answer: '2, 8, 1', wrongs: ['2, 9', '2, 8, 2', '1, 8, 2'],
+    promptAr: 'اكتب التوزيع الإلكتروني لذرة الصوديوم Na على مستويات الطاقة (Z = 11).',
+    promptEn: 'Write the arrangement of electrons in energy levels for a sodium atom, Na (Z = 11).',
+  },
+  {
+    id: 'ch-es-e2', family: 'electron_shells', diff: 'easy', eq: 'المستوى الأول',
+    answer: 'إلكترونان', wrongs: ['8 إلكترونات', 'إلكترون واحد', '18 إلكترونًا'],
+    promptAr: 'كم إلكترونًا يتسع له مستوى الطاقة الأول في الذرة كحد أقصى؟',
+    promptEn: 'What is the largest number of electrons the first energy level of an atom can hold?',
+  },
+  {
+    id: 'ch-es-e3', family: 'electron_shells', diff: 'easy', eq: '2, 8, 3',
+    answer: 'الدورة الثالثة', wrongs: ['الدورة الثانية', 'الدورة الأولى', 'الدورة الرابعة'],
+    promptAr: 'عنصر توزيعه الإلكتروني 2, 8, 3. في أيّ دورة من الجدول الدوري يقع؟',
+    promptEn: 'An element has the arrangement 2, 8, 3. Which period of the periodic table is it in?',
+  },
+  {
+    id: 'ch-es-e4', family: 'electron_shells', diff: 'easy', eq: 'المجموعة 1A',
+    answer: 'الفلزات القلوية', wrongs: ['الهالوجينات', 'الغازات النبيلة', 'الفلزات القلوية الأرضية'],
+    promptAr: 'ما الاسم الذي تُعرف به عناصر المجموعة الأولى (1A) في الجدول الدوري، باستثناء الهيدروجين؟',
+    promptEn: 'What are the elements of group 1 (1A) of the periodic table, other than hydrogen, called?',
+  },
+  {
+    id: 'ch-es-e5', family: 'electron_shells', diff: 'easy', eq: 'الحجم الذري في الدورة',
+    answer: 'يقل', wrongs: ['يزداد', 'لا يتغير', 'يزداد ثم يقل'],
+    promptAr: 'كيف يتغير الحجم الذري للعناصر في الدورة الواحدة بالاتجاه من اليسار إلى اليمين؟',
+    promptEn: 'How does atomic size change across a period, from left to right?',
+  },
+  {
+    id: 'ch-es-m1', family: 'electron_shells', diff: 'medium', eq: 'Ca: Z = 20',
+    answer: '2, 8, 8, 2', wrongs: ['2, 8, 10', '2, 8, 9, 1', '2, 18'],
+    promptAr: 'اكتب التوزيع الإلكتروني لذرة الكالسيوم Ca على مستويات الطاقة (Z = 20).',
+    promptEn: 'Write the arrangement of electrons in energy levels for a calcium atom, Ca (Z = 20).',
+  },
+  {
+    id: 'ch-es-m2', family: 'electron_shells', diff: 'medium', eq: 'Cl⁻: Z = 17',
+    answer: '2, 8, 8', wrongs: ['2, 8, 7', '2, 8, 6', '2, 8, 8, 1'],
+    promptAr: 'اكتب التوزيع الإلكتروني لأيون الكلوريد Cl⁻ على مستويات الطاقة (Z = 17).',
+    promptEn: 'Write the arrangement of electrons in energy levels for the chloride ion, Cl⁻ (Z = 17).',
+  },
+  {
+    id: 'ch-es-m3', family: 'electron_shells', diff: 'medium', eq: 'Mg²⁺: Z = 12',
+    answer: '2, 8', wrongs: ['2, 8, 2', '2, 8, 4', '2, 6'],
+    promptAr: 'اكتب التوزيع الإلكتروني لأيون المغنيسيوم Mg²⁺ على مستويات الطاقة (Z = 12).',
+    promptEn: 'Write the arrangement of electrons in energy levels for the magnesium ion, Mg²⁺ (Z = 12).',
+  },
+  {
+    id: 'ch-es-m4', family: 'electron_shells', diff: 'medium', eq: '2, 8, 6',
+    answer: 'المجموعة السادسة (6A) والدورة الثالثة', wrongs: ['المجموعة الثالثة (3A) والدورة السادسة', 'المجموعة السادسة (6A) والدورة الثانية', 'المجموعة الثامنة (8A) والدورة الثالثة'],
+    promptAr: 'عنصر توزيعه الإلكتروني 2, 8, 6. ما رقم مجموعته، وما رقم دورته في الجدول الدوري؟',
+    promptEn: 'An element has the arrangement 2, 8, 6. Which group and which period of the periodic table is it in?',
+  },
+  {
+    id: 'ch-es-m5', family: 'electron_shells', diff: 'medium', eq: 'عناصر المجموعة الواحدة',
+    answer: 'لأن لذراتها العدد نفسه من الإلكترونات في المستوى الخارجي', wrongs: ['لأن لذراتها العدد نفسه من مستويات الطاقة', 'لأن لها العدد الذري نفسه', 'لأن لذراتها الحجم نفسه'],
+    promptAr: 'لماذا تتشابه عناصر المجموعة الواحدة في الجدول الدوري في خصائصها الكيميائية؟',
+    promptEn: 'Why do the elements of one group of the periodic table have similar chemical properties?',
+  },
+  {
+    id: 'ch-es-m6', family: 'electron_shells', diff: 'medium', eq: 'Li و Ne',
+    answer: 'ذرة الليثيوم Li', wrongs: ['ذرة النيون Ne', 'لهما الحجم نفسه لأنهما في الدورة نفسها', 'لا يمكن المقارنة بينهما'],
+    promptAr: 'الليثيوم Li والنيون Ne في الدورة الثانية. أيّ الذرتين أكبر حجمًا؟',
+    promptEn: 'Lithium, Li, and neon, Ne, are in period 2. Which of the two atoms is larger?',
+  },
+  {
+    id: 'ch-es-h1', family: 'electron_shells', diff: 'hard', eq: 'Na و K',
+    answer: 'K، لأن ذرته أكبر حجمًا فيسهل فقد إلكترون مستواها الخارجي', wrongs: ['Na، لأن ذرته أصغر حجمًا فيسهل فقد إلكترونه', 'K، لأن في مستواه الخارجي إلكترونات أكثر', 'لهما النشاط نفسه لأنهما في المجموعة نفسها'],
+    promptAr: 'أيّ الفلزين أنشط كيميائيًا: الصوديوم Na أم البوتاسيوم K؟ فسّر إجابتك.',
+    promptEn: 'Which metal is more reactive, sodium Na or potassium K? Explain.',
+  },
+  {
+    id: 'ch-es-h2', family: 'electron_shells', diff: 'hard', eq: 'F و Cl',
+    answer: 'F، لأن ذرته أصغر حجمًا فيسهل عليها اكتساب الإلكترونات', wrongs: ['Cl، لأن ذرته أكبر حجمًا فيسهل عليها اكتساب الإلكترونات', 'F، لأن عدد مستويات الطاقة في ذرته أكبر', 'لهما النشاط نفسه لأن في المستوى الخارجي لكل منهما 7 إلكترونات'],
+    promptAr: 'أيّ العنصرين أنشط كيميائيًا: الفلور F أم الكلور Cl؟ فسّر إجابتك.',
+    promptEn: 'Which element is more reactive, fluorine F or chlorine Cl? Explain.',
+  },
+  {
+    id: 'ch-es-h3', family: 'electron_shells', diff: 'hard', eq: 'Ar: 2, 8, 8',
+    answer: 'لأن مستواه الخارجي ممتلئ بالإلكترونات', wrongs: ['لأن ذرته كبيرة الحجم جدًا', 'لأنه فلز قليل النشاط', 'لأن عدد بروتوناته يساوي عدد نيوتروناته'],
+    promptAr: 'توزيع الأرجون Ar الإلكتروني 2, 8, 8. لماذا لا يتفاعل بسهولة في الظروف العادية؟',
+    promptEn: 'Argon, Ar, has the arrangement 2, 8, 8. Why does it not react easily under ordinary conditions?',
+  },
+  {
+    id: 'ch-es-h4', family: 'electron_shells', diff: 'hard', eq: 'X: Z = 19',
+    answer: 'المجموعة الأولى، ويكوّن أيونًا موجبًا أحاديًا X⁺', wrongs: ['المجموعة الأولى، ويكوّن أيونًا سالبًا أحاديًا X⁻', 'المجموعة الثانية، ويكوّن أيونًا موجبًا ثنائيًا X²⁺', 'المجموعة الثامنة، ولا يكوّن أيونات'],
+    promptAr: 'عنصر X عدده الذري 19. في أيّ مجموعة يقع، وما الأيون الذي يكوّنه في تفاعلاته؟',
+    promptEn: 'An element X has atomic number 19. Which group is it in, and what ion does it form in its reactions?',
+  },
+
+  // ── مكونات الذرة: النماذج الذرية (grade 9, student book S1 pp.13–15) ──
+  {
+    id: 'ch-ab-e6', family: 'atom_basics', diff: 'easy', eq: 'الأشعة المهبطية',
+    answer: 'الإلكترونات', wrongs: ['البروتونات', 'النيوترونات', 'جسيمات ألفا'],
+    promptAr: 'تتكون الأشعة المهبطية في أنبوب التفريغ الكهربائي من جسيمات سالبة الشحنة. ما هذه الجسيمات؟',
+    promptEn: 'The cathode rays in a discharge tube are made of negatively charged particles. What are they?',
+  },
+  {
+    id: 'ch-ab-m7', family: 'atom_basics', diff: 'medium', eq: 'نموذج ثومسون',
+    answer: 'كرة متجانسة من الشحنات الموجبة غُرست فيها إلكترونات سالبة', wrongs: ['نواة صغيرة موجبة تدور حولها الإلكترونات', 'كرة مصمتة لا تحتوي على جسيمات مشحونة', 'نواة سالبة تدور حولها البروتونات'],
+    promptAr: 'كيف يصف نموذج ثومسون الذرة؟',
+    promptEn: "How does Thomson's model describe the atom?",
+  },
+  {
+    id: 'ch-ab-m8', family: 'atom_basics', diff: 'medium', eq: 'تجربة رذرفورد: نفاذ معظم جسيمات ألفا',
+    answer: 'أن معظم حجم الذرة فراغ', wrongs: ['أن الذرة كرة مصمتة من الشحنات الموجبة', 'أن النواة سالبة الشحنة', 'أن جسيمات ألفا سالبة الشحنة'],
+    promptAr: 'في تجربة رذرفورد، نفذت معظم جسيمات ألفا من صفيحة الذهب الرقيقة دون أن تنحرف. ماذا استنتج رذرفورد من ذلك؟',
+    promptEn: "In Rutherford's experiment most alpha particles passed straight through the thin gold foil. What did Rutherford conclude from this?",
+  },
+  {
+    id: 'ch-ab-h5', family: 'atom_basics', diff: 'hard', eq: 'تجربة رذرفورد: ارتداد عدد قليل جدًا من جسيمات ألفا',
+    answer: 'أن للذرة نواة موجبة صغيرة جدًا تتركز فيها كتلتها', wrongs: ['أن معظم حجم الذرة فراغ', 'أن الإلكترونات موزعة في كرة موجبة متجانسة', 'أن جسيمات ألفا اصطدمت بالإلكترونات فارتدت'],
+    promptAr: 'في تجربة رذرفورد، ارتدّ عدد قليل جدًا من جسيمات ألفا عند اصطدامها بصفيحة الذهب. ماذا استنتج رذرفورد من ذلك؟',
+    promptEn: "In Rutherford's experiment a very few alpha particles bounced back off the gold foil. What did Rutherford conclude from this?",
   },
 
   // ── عام: يُستعمل حين لا يُكتشف موضوع أدق ──
@@ -1253,9 +1381,9 @@ export const CHEM_BANK: ConcreteItem[] = [
     promptEn: 'Which of these substances is an acid: HCl, NaOH, NaCl, KOH?',
   },
   {
-    id: 'ch-ac-e5', family: 'acids_bases', diff: 'easy', eq: 'ورق عباد الشمس الأحمر + قاعدة',
+    id: 'ch-ac-e5', family: 'acids_bases', diff: 'easy', eq: 'ورق تبّاع الشمس الأحمر + قاعدة',
     answer: 'يتحول إلى الأزرق', wrongs: ['يبقى أحمر', 'يتحول إلى الأخضر', 'يتحول إلى الأصفر'],
-    promptAr: 'ما لون ورق عباد الشمس الأحمر عند وضعه في محلول قاعدي؟',
+    promptAr: 'ما لون ورق تبّاع الشمس الأحمر عند وضعه في محلول قاعدي؟',
     promptEn: 'What colour does red litmus paper turn in a basic solution?',
   },
   {
@@ -1289,16 +1417,16 @@ export const CHEM_BANK: ConcreteItem[] = [
     promptEn: 'What causes acid rain?',
   },
   {
-    id: 'ch-ac-h3', family: 'acids_bases', diff: 'hard', eq: 'pH = 12 مقابل pH = 9',
-    answer: 'pH = 12 أقوى قاعدية؛ تركيز OH⁻ فيه أكبر 1000 مرة', wrongs: ['pH = 9 أقوى قاعدية', 'pH = 12 أقوى قاعدية؛ تركيز OH⁻ فيه أكبر 3 مرات', 'متساويان، لأن كليهما قاعدي'],
-    promptAr: 'محلولان قاعديان رقماهما الهيدروجينيان 12 و9. أيّهما أقوى قاعدية، وكم مرة يزيد تركيز OH⁻ فيه عن الآخر؟ (المقياس لوغاريتمي)',
-    promptEn: 'Two basic solutions have pH 12 and pH 9. Which is more basic, and by what factor is its OH⁻ concentration larger? (the scale is logarithmic)',
+    id: 'ch-ac-h3', family: 'acids_bases', diff: 'hard', eq: 'pH = 12 مقابل pH = 9، التركيز نفسه',
+    answer: 'القاعدة التي pH محلولها 12، لأن تركيز أيونات OH⁻ فيها أكبر', wrongs: ['القاعدة التي pH محلولها 9، لأن قيمة pH لها أقل', 'لهما القوة نفسها لأن تركيزهما متساوٍ', 'القاعدة التي pH محلولها 12، لأن تركيز أيونات H⁺ فيها أكبر'],
+    promptAr: 'محلولان لقاعدتين مختلفتين لهما التركيز نفسه، الرقم الهيدروجيني pH لأحدهما 12 وللآخر 9. أيّ القاعدتين أقوى؟ ولماذا؟',
+    promptEn: 'Solutions of two different bases have the same concentration; one has pH 12 and the other pH 9. Which base is stronger, and why?',
   },
   {
-    id: 'ch-ac-h4', family: 'acids_bases', diff: 'hard', eq: '0.1 mol H₂SO₄ + NaOH',
-    answer: '0.2 mol', wrongs: ['0.1 mol', '0.05 mol', '0.4 mol'],
-    promptAr: 'كم مولًا من NaOH يلزم لتعادل 0.1 mol من H₂SO₄ تعادلًا تامًا؟ (H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O)',
-    promptEn: 'How many moles of NaOH are needed to neutralise 0.1 mol of H₂SO₄ completely? (H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O)',
+    id: 'ch-ac-h4', family: 'acids_bases', diff: 'hard', eq: 'Pb(NO₃)₂ + 2KI',
+    answer: 'تكوّن راسب أصفر، وهو يدل على حدوث تفاعل كيميائي', wrongs: ['تصاعد غاز الهيدروجين، وهو يدل على حدوث تفاعل كيميائي', 'تكوّن راسب أصفر، وهو تغيّر فيزيائي لا يدل على تفاعل', 'لا يحدث أي تغيّر لأن المحلولين ملحان'],
+    promptAr: 'عند خلط محلولي نترات الرصاص Pb(NO₃)₂ ويوديد البوتاسيوم KI يتكوّن يوديد الرصاص PbI₂. ما الذي يُشاهَد، وعلامَ يدل؟',
+    promptEn: 'Mixing solutions of lead nitrate, Pb(NO₃)₂, and potassium iodide, KI, forms lead iodide, PbI₂. What is seen, and what does it show?',
   },
   // ── نشاط الفلزات (تتمة) ──
   {
@@ -1328,7 +1456,7 @@ export const CHEM_BANK: ConcreteItem[] = [
   {
     id: 'ch-ma-m3', family: 'metal_activity', diff: 'medium', eq: 'Mg + ZnSO₄',
     answer: 'نعم، لأن Mg أنشط من Zn', wrongs: ['لا، لأن Mg أقل نشاطًا من Zn', 'لا، لأن Mg لا يتفاعل مع الأملاح', 'نعم، لأن Mg أقل نشاطًا من Zn'],
-    promptAr: 'هل يحلّ المغنيسيوم محل الزنك في محلول كبريتات الزنك ZnSO₄؟ علّل.',
+    promptAr: 'هل يحلّ المغنيسيوم محل الخارصين في محلول كبريتات الخارصين ZnSO₄؟ علّل.',
     promptEn: 'Does magnesium displace zinc from zinc sulfate solution, ZnSO₄? Explain.',
   },
   {
@@ -1424,8 +1552,8 @@ export const CHEM_BANK: ConcreteItem[] = [
   },
   {
     id: 'ch-rx-h4', family: 'redox', diff: 'hard', eq: 'خلية Zn | Cu',
-    answer: 'من قطب الزنك (المصعد) إلى قطب النحاس (المهبط)', wrongs: ['من قطب النحاس إلى قطب الزنك', 'عبر القنطرة الملحية من الزنك إلى النحاس', 'لا تسري إلكترونات في السلك'],
-    promptAr: 'في خلية جلفانية قطباها الزنك والنحاس، في أيّ اتجاه تسري الإلكترونات في السلك الخارجي؟',
+    answer: 'من قطب الخارصين (المصعد) إلى قطب النحاس (المهبط)', wrongs: ['من قطب النحاس إلى قطب الخارصين', 'عبر القنطرة الملحية من الخارصين إلى النحاس', 'لا تسري إلكترونات في السلك'],
+    promptAr: 'في خلية جلفانية قطباها الخارصين والنحاس، في أيّ اتجاه تسري الإلكترونات في السلك الخارجي؟',
     promptEn: 'In a galvanic cell with zinc and copper electrodes, in which direction do electrons flow in the external wire?',
   },
   // ── عام (تتمة) ──

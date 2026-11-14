@@ -22,6 +22,7 @@ import { CHEM_BANK, type ChemFamily } from '../index.ts';
 const FAMILIES: ChemFamily[] = [
   'atom_basics', 'atomic_structure', 'electron_config', 'periodic_trends', 'bonding', 'formulas',
   'equations', 'mole', 'stoichiometry', 'thermochem', 'calorimetry', 'acids_bases', 'metal_activity', 'redox', 'general_chem',
+  'electron_shells',
 ];
 const inFamily = (f: string) => CHEM_BANK.filter(i => i.family === f);
 const byId = (id: string) => {
@@ -200,8 +201,8 @@ describe('numeric chemistry items', () => {
     answerHas('ch-st-m4', `${0.5 * 2} mol`);
     // 2H2O → 2H2 + O2: 4 mol H2O → 2 mol O2
     answerHas('ch-st-e3', `${4 / 2} mol`);
-    // H2SO4 + 2NaOH: 0.1 mol → 0.2 mol NaOH
-    answerHas('ch-ac-h4', `${0.1 * 2} mol`);
+    // (ch-ac-h4 used to ask 0.1 mol H2SO4 → 0.2 mol NaOH. It is a Grade 9 item and the Grade 9
+    // book has no mole, so it now asks what a precipitate shows — grade9Chemistry.test.ts.)
   });
 
   it('energy', () => {
