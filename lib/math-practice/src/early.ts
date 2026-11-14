@@ -468,6 +468,80 @@ const subMakeTen = T('sub_make_ten', /^الطرح بايجاد عشره$/, [1, 1
   return { eq: `${a} − ${b}`, answer: String(r), wrongs: ints(r, [r + 1, r - 1, r + 10, b - o]), ar: `اطرح بإيجاد عشرة: ${a} − ${b} = ___`, en: `Subtract by finding ten: ${a} − ${b} = ___` };
 });
 
+// Grade 1's two problem-solving lessons (Grade 1 audit, 2026-11-14). They close
+// the units on adding and subtracting within two places, with nothing to
+// regroup, and Grade 1 knows only those two operations.
+const g1Opts = (ans: number, cands: number[]) => ints(ans, cands.filter(v => v > 0 && v <= 99));
+const riders = (n: number) => counted(n, 'راكب واحد', 'راكبان', 'ركاب', 'راكبًا', 'راكب');
+const cardsG1 = (n: number) => counted(n, 'بطاقة واحدة', 'بطاقتان', 'بطاقات', 'بطاقةً', 'بطاقة');
+
+/**
+ * «خطة حل المسألة: التخمين والتحقق» (S2 u6_l4): which two of four numbers make
+ * a total (one pair only, carry-free); two numbers within 20 from their sum and
+ * difference; the number that added to itself makes N.
+ */
+const guessCheckG1 = T('guess_check_g1', /^خطه حل المساله التخمين والتحقق$/, [1, 1], ({ rng, diff }) => {
+  const k = pick(rng, [0, 1, 2]);
+  if (k === 0) {
+    for (;;) {
+      const pool = diff === 'easy' ? [10, 20, 30, 40, 50, 60] : Array.from({ length: 51 }, (_, i) => 10 + i);
+      const xs = shuffle(rng, pool).slice(0, 4);
+      const sums = new Map<number, string[]>();
+      for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) {
+        const [p, q] = [xs[i]!, xs[j]!].sort((u, v) => u - v);
+        sums.set(p! + q!, [...(sums.get(p! + q!) ?? []), `${p} و ${q}`]);
+      }
+      const ok = [...sums].filter(([s, ps]) => ps.length === 1 && s <= 99 && (() => { const [p, q] = ps[0]!.split(' و ').map(Number); return (p! % 10) + (q! % 10) <= 9; })());
+      if (ok.length === 0) continue;
+      const [T0, [ans]] = pick(rng, ok) as [number, string[]];
+      const others = [...sums.values()].flat().filter(x => x !== ans);
+      return { eq: `${xs.join(',')}; ${T0}`, answer: ans!, wrongs: shuffle(rng, others).slice(0, 3), ar: `أي عددين من الأعداد ${xs.join('، ')} مجموعهما ${T0}؟ (اكتب الأصغر أولًا)`, en: `Which two of the numbers ${xs.join(', ')} add up to ${T0}? (smaller first)` };
+    }
+  }
+  if (k === 1) {
+    const D = int(rng, 3, diff === 'easy' ? 4 : 6), a = int(rng, 1, Math.floor((20 - D) / 2)), b = a + D, S = a + b;
+    const pairs = [[a + 1, b - 1], [a - 1, b + 1], [a, b + 1], [a + 1, b + 1]].filter(([x, y]) => x! > 0 && x! < y!).map(([x, y]) => `${x} و ${y}`);
+    return { eq: `${S}, ${D}`, answer: `${a} و ${b}`, wrongs: wrongsFrom(`${a} و ${b}`, pairs, j => `${a} و ${b + 2 * Math.abs(j)}`), ar: `عددان مجموعهما ${S} والفرق بينهما ${D}. ما العددان؟ (اكتب الأصغر أولًا)`, en: `Two numbers add up to ${S} and differ by ${D}. What are they? (smaller first)` };
+  }
+  const h = pick(rng, diff === 'easy' ? [2, 3, 4, 5, 6, 7, 8, 9, 10] : [3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40]), N = 2 * h;
+  return { eq: `x + x = ${N}`, answer: String(h), wrongs: g1Opts(h, [N, h + 1, h - 1, h + 10]), ar: `ما العدد الذي إذا جمعناه مع نفسه كان الناتج ${N}؟`, en: `What number added to itself makes ${N}?` };
+});
+
+/**
+ * «مهارة حل المسألة: اختيار العملية» (S2 u7_l4): a story that joins or puts
+ * together (add), or takes away or compares (subtract — «بكم تزيد» is the case
+ * children add by mistake). Either name the operation, or solve the story with
+ * the other operation's result among the options.
+ */
+const chooseOpG1 = T('choose_op_g1', /^مهاره حل المساله اختيار العمليه$/, [1, 1], ({ rng }) => {
+  const story = int(rng, 0, 3), add = story < 2;
+  let x = 0, y = 0;
+  do {
+    if (add) { x = int(rng, 10, 80); y = int(rng, 10, 80); }
+    else { x = int(rng, 20, 89); y = int(rng, 10, x - 1); }
+    // x + y stays within 99 for subtracting too: it is the slip offered as an option
+  } while (add ? (x % 10) + (y % 10) > 9 || x + y > 90 : x % 10 < y % 10 || x <= y || x + y > 99);
+  const [ar, en] = story === 0
+    ? [`مع ليلى ${qirsh(x)}، وأعطتها جدتها ${qirsh(y)}. كم قرشًا أصبح معها؟`, `Layla has ${x} qirsh and her grandmother gives her ${y}. How many qirsh does she have now?`]
+    : story === 1
+      ? [`في الحافلة ${riders(x)}، وصعد إليها ${riders(y)}. كم راكبًا فيها الآن؟`, `A bus has ${x} passengers and ${y} more get on. How many are on it now?`]
+      : story === 2
+        ? [`مع ليلى ${qirsh(x)}، أنفقت منها ${qirsh(y)}. كم قرشًا بقي معها؟`, `Layla has ${x} qirsh and spends ${y}. How many qirsh are left?`]
+        : [`مع سامي ${cardsG1(x)}، ومع خالد ${cardsG1(y)}. بكم تزيد بطاقات سامي على بطاقات خالد؟`, `Sami has ${x} cards and Khaled has ${y}. How many more cards does Sami have?`];
+  const r = add ? x + y : x - y, other = add ? x - y : x + y;
+  if (pick(rng, [0, 1]) === 0) {
+    // Grade 1 knows two operations, so «which operation» is a number sentence: the
+    // other operation, and each with a result 10 off, are the three wrong ones
+    const op = add ? '+' : '−', no = add ? '−' : '+';
+    const right = `${x} ${op} ${y} = ${r}`;
+    // subtracting takes the smaller number from the larger, as Grade 1 writes it
+    const [p, q] = add ? [Math.max(x, y), Math.min(x, y)] : [x, y], o = add ? p - q : other;
+    const wrong = [`${p} ${no} ${q} = ${o}`, `${x} ${op} ${y} = ${r + 10 <= 99 ? r + 10 : r - 10}`, `${p} ${no} ${q} = ${o + 10 <= 99 ? o + 10 : o - 10}`];
+    return { eq: `op:${ar}`, answer: right, wrongs: wrong, ar: `أي جملة عددية تحل المسألة الآتية؟ ${ar}`, en: `Which number sentence solves this problem? ${en}` };
+  }
+  return { eq: `${x} ${add ? '+' : '−'} ${y}`, answer: String(r), wrongs: g1Opts(r, [other, r + 10, r - 10, r + 1]), ar, en };
+});
+
 // ─── shapes ─────────────────────────────────────────────────────────────────
 
 const SOLIDS: Array<[string, string]> = [['كرة القدم', 'كرة'], ['حجر النرد', 'مكعب'], ['علبة المعلبات', 'أسطوانة'], ['قبعة الحفلات المدببة', 'مخروط'], ['علبة الأحذية', 'متوازي مستطيلات']];
@@ -1355,7 +1429,7 @@ export const EARLY_TOPICS: readonly Topic[] = [
   mentalG1('mental_add', /^الجمع الذهني$/, true), mentalG1('mental_sub', /^الطرح الذهني$/, false),
   tensG1('tens_add_g1', /^جمع العشرات$/, true), tensG1('tens_sub_g1', /^طرح العشرات$/, false),
   twoDigitG1('two_digit_add_g1', /^جمع عددين من منزلتين$/, true), twoDigitG1('two_digit_sub_g1', /^طرح عددين من منزلتين$/, false),
-  makeTenAdd, threeAddends, subDoubles, subMakeTen,
+  makeTenAdd, threeAddends, subDoubles, subMakeTen, guessCheckG1, chooseOpG1,
   solids, planeShapes('plane_shapes', /^الاشكال المستويه$/, [1, 2]), planeShapes('plane_sides_g1', /^اضلاع الاشكال المستويه ورؤوسها$/, [1, 1]), planeShapes('plane_sides_g2', /^الاضلاع والرؤوس$/, [2, 2]),
   solidParts, geoPattern,
   halfQuarter('half', /^النصف$/, 'نصف'), halfQuarter('quarter', /^الربع$/, 'ربع'), equalParts, fractionOfSetG1, fractionOfSetG3,

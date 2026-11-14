@@ -10,7 +10,7 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Grade 1 audit: every book page inside the ranges, four strategy lessons, two titles — 2026-11-14
+## Grade 1 audit: every book page inside the ranges, six maths lessons, two titles — 2026-11-14
 
 The Grade 2–10 audit, repeated for Grade 1 (279 lessons), on top of «Grade 1 review: book pages on the wrong unit…»,
 which opened the first and last page of every range. This pass opened every image of the 104 ranges (387 images:
@@ -53,14 +53,20 @@ to change.
   `subMakeTen` (a teen minus a one-digit number across ten, and its two steps) — and `elementaryOpsForTitle` hands them
   on, as it does the tens lessons. The earlier review listed two of these as not fixed.
 - «قيست أطوال شيئين» → «قيس طولا شيئين»: two lengths are a dual, as «كتلتا» and «سعتا» already were.
-- **Not fixed:** «التخمين والتحقق» (S2 u6_l4) and «اختيار العملية» (S2 u7_l4) get no offline questions (the Grade 2
-  generators are sized for Grade 2); four lessons stay refused on purpose — they need pictures (`early.test.ts`). The
-  other 60 lessons' probe items were read by hand: every key right.
+- **«التخمين والتحقق» (S2 u6_l4) and «اختيار العملية» (S2 u7_l4) had no offline questions** (the Grade 2 generators
+  are sized for Grade 2). `guessCheckG1`: which two of four numbers make a total (one pair, carry-free), two numbers
+  within 20 from their sum and difference, a number added to itself. `chooseOpG1`: a story that joins, puts together,
+  takes away or compares («بكم تزيد…», the one children add by mistake), two-digit and regrouping-free; either solve
+  it, with the other operation's result offered, or pick the number sentence that solves it — Grade 1 knows two
+  operations, so the four options are each operation with its result and with a result 10 off (the subtraction always
+  the larger number first: the shape test caught «24 − 33 = -9»). Four lessons stay refused on purpose — they need
+  pictures (`early.test.ts`); Grade 1 now gets questions for the other 62. The other 60 lessons' probe items were read
+  by hand: every key right.
 
-**Verified:** `grade1Strategies.test.ts` (10, written first: all red without the change) recomputes every key from its
+**Verified:** `grade1Strategies.test.ts` (10) and `grade1Lessons.test.ts` (5), written first: all red without the change; recomputes every key from its
 stem, checks the strategy holds on every draw (the sum crosses ten; exactly one pair makes 10; a double; a teen across
 ten), that every kind is drawn, the routing through `takeElementaryMath`, and the dual; through the app's path the
-make-ten and find-ten lessons use their strategy in 360 of 360 items; math-practice 1237 pass; curriculum test (931)
+make-ten and find-ten lessons use their strategy in 360 of 360 items; math-practice 1269 pass; curriculum test (931)
 and verify (0 errors); `bookPage`/`lessonSlides`/`noQuestionBank` (174); the mobile suite (9,270 pass, 0 fail); typecheck. **Not verified:** anything needing
 the PDFs; the pages on a phone.
 
