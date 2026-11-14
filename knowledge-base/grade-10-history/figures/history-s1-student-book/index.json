@@ -82,22 +82,6 @@
       "lessonStartPage": 18
     },
     {
-      "file": "p028.png",
-      "sourceId": "history-s1-student-book",
-      "pdfPage": 28,
-      "rect": [
-        364.2,
-        89.0,
-        595.3,
-        532.0
-      ],
-      "unit": 1,
-      "lesson": 5,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 28
-    },
-    {
       "file": "p032.png",
       "sourceId": "history-s1-student-book",
       "pdfPage": 32,
@@ -194,22 +178,6 @@
       "lessonStartPage": 56
     },
     {
-      "file": "p058.png",
-      "sourceId": "history-s1-student-book",
-      "pdfPage": 58,
-      "rect": [
-        54.3,
-        22.5,
-        552.7,
-        651.7
-      ],
-      "unit": 2,
-      "lesson": 4,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 56
-    },
-    {
       "file": "p063.png",
       "sourceId": "history-s1-student-book",
       "pdfPage": 63,
@@ -250,22 +218,6 @@
         68.6,
         446.0,
         399.5
-      ],
-      "unit": 2,
-      "lesson": 6,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 67
-    },
-    {
-      "file": "p076.png",
-      "sourceId": "history-s1-student-book",
-      "pdfPage": 76,
-      "rect": [
-        54.2,
-        274.7,
-        533.2,
-        530.0
       ],
       "unit": 2,
       "lesson": 6,

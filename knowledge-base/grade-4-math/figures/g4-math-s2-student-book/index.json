@@ -1,0 +1,853 @@
+{
+  "sourceId": "g4-math-s2-student-book",
+  "figures": [
+    {
+      "file": "p008.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 8,
+      "rect": [
+        63.4,
+        238.6,
+        226.2,
+        305.3
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": "Equivalent Fractions",
+      "lessonTitleAr": "الكُسورُ المُتَكافِئَةُ",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p009.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 9,
+      "rect": [
+        247.0,
+        376.6,
+        498.8,
+        485.0
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": "Equivalent Fractions",
+      "lessonTitleAr": "الكُسورُ المُتَكافِئَةُ",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p010.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 10,
+      "rect": [
+        252.2,
+        563.2,
+        521.7,
+        695.7
+      ],
+      "unit": 6,
+      "lesson": 1,
+      "lessonTitleEn": "Equivalent Fractions",
+      "lessonTitleAr": "الكُسورُ المُتَكافِئَةُ",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p013.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 13,
+      "rect": [
+        53.6,
+        230.9,
+        181.6,
+        307.8
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": "Adding and Subtracting Like Fractions",
+      "lessonTitleAr": "جَمْعُ الكُسورِ المُتَشابِهَةِ وَطَرْحُها",
+      "lessonStartPage": 13
+    },
+    {
+      "file": "p013b.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 13,
+      "rect": [
+        53.6,
+        395.1,
+        180.3,
+        505.6
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": "Adding and Subtracting Like Fractions",
+      "lessonTitleAr": "جَمْعُ الكُسورِ المُتَشابِهَةِ وَطَرْحُها",
+      "lessonStartPage": 13
+    },
+    {
+      "file": "p014.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 14,
+      "rect": [
+        71.0,
+        286.4,
+        313.4,
+        412.3
+      ],
+      "unit": 6,
+      "lesson": 2,
+      "lessonTitleEn": "Adding and Subtracting Like Fractions",
+      "lessonTitleAr": "جَمْعُ الكُسورِ المُتَشابِهَةِ وَطَرْحُها",
+      "lessonStartPage": 13
+    },
+    {
+      "file": "p018.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 18,
+      "rect": [
+        77.0,
+        308.7,
+        205.4,
+        430.4
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": "Mixed Numbers and Improper Fractions",
+      "lessonTitleAr": "الأَعْدادُ الكَسْرِيَّةُ وَالكُسورُ غَيْرُ الفِعْلِيَّةِ",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p018b.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 18,
+      "rect": [
+        62.1,
+        461.8,
+        238.5,
+        522.4
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": "Mixed Numbers and Improper Fractions",
+      "lessonTitleAr": "الأَعْدادُ الكَسْرِيَّةُ وَالكُسورُ غَيْرُ الفِعْلِيَّةِ",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p019.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 19,
+      "rect": [
+        309.6,
+        154.4,
+        523.9,
+        248.5
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": "Mixed Numbers and Improper Fractions",
+      "lessonTitleAr": "الأَعْدادُ الكَسْرِيَّةُ وَالكُسورُ غَيْرُ الفِعْلِيَّةِ",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p020.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 20,
+      "rect": [
+        173.9,
+        365.0,
+        412.0,
+        465.2
+      ],
+      "unit": 6,
+      "lesson": 3,
+      "lessonTitleEn": "Mixed Numbers and Improper Fractions",
+      "lessonTitleAr": "الأَعْدادُ الكَسْرِيَّةُ وَالكُسورُ غَيْرُ الفِعْلِيَّةِ",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p022.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 22,
+      "rect": [
+        112.3,
+        150.5,
+        529.4,
+        265.7
+      ],
+      "unit": 6,
+      "lesson": 4,
+      "lessonTitleEn": "Comparing and Ordering Fractions and Mixed Numbers",
+      "lessonTitleAr": "مُقارَنَةُ الكُسورِ وَالأَعْدادِ الكَسْرِيَّةِ وَتَرْتيبُها",
+      "lessonStartPage": 22
+    },
+    {
+      "file": "p026.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 26,
+      "rect": [
+        135.6,
+        447.6,
+        360.6,
+        543.5
+      ],
+      "unit": 6,
+      "lesson": 4,
+      "lessonTitleEn": "Comparing and Ordering Fractions and Mixed Numbers",
+      "lessonTitleAr": "مُقارَنَةُ الكُسورِ وَالأَعْدادِ الكَسْرِيَّةِ وَتَرْتيبُها",
+      "lessonStartPage": 22
+    },
+    {
+      "file": "p032.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 32,
+      "rect": [
+        93.5,
+        503.9,
+        509.0,
+        608.4
+      ],
+      "unit": 7,
+      "lesson": 1,
+      "lessonTitleEn": "Tenths",
+      "lessonTitleAr": "أَجْزاءُ العَشَرَةِ",
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p033.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 33,
+      "rect": [
+        74.0,
+        522.0,
+        175.6,
+        607.1
+      ],
+      "unit": 7,
+      "lesson": 1,
+      "lessonTitleEn": "Tenths",
+      "lessonTitleAr": "أَجْزاءُ العَشَرَةِ",
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p034.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 34,
+      "rect": [
+        90.1,
+        611.0,
+        494.1,
+        697.0
+      ],
+      "unit": 7,
+      "lesson": 1,
+      "lessonTitleEn": "Tenths",
+      "lessonTitleAr": "أَجْزاءُ العَشَرَةِ",
+      "lessonStartPage": 32
+    },
+    {
+      "file": "p037.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 37,
+      "rect": [
+        53.6,
+        102.8,
+        160.7,
+        229.6
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "Hundredths",
+      "lessonTitleAr": "أَجْزاءُ المِئَةِ",
+      "lessonStartPage": 37
+    },
+    {
+      "file": "p037b.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 37,
+      "rect": [
+        89.3,
+        543.5,
+        486.0,
+        650.5
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "Hundredths",
+      "lessonTitleAr": "أَجْزاءُ المِئَةِ",
+      "lessonStartPage": 37
+    },
+    {
+      "file": "p038.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 38,
+      "rect": [
+        192.2,
+        392.6,
+        395.9,
+        487.6
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "Hundredths",
+      "lessonTitleAr": "أَجْزاءُ المِئَةِ",
+      "lessonStartPage": 37
+    },
+    {
+      "file": "p040.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 40,
+      "rect": [
+        118.6,
+        150.5,
+        443.5,
+        248.1
+      ],
+      "unit": 7,
+      "lesson": 2,
+      "lessonTitleEn": "Hundredths",
+      "lessonTitleAr": "أَجْزاءُ المِئَةِ",
+      "lessonStartPage": 37
+    },
+    {
+      "file": "p042.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 42,
+      "rect": [
+        93.1,
+        368.9,
+        347.8,
+        453.2
+      ],
+      "unit": 7,
+      "lesson": 3,
+      "lessonTitleEn": "Decimal Numbers",
+      "lessonTitleAr": "الأَعْدادُ العَشْرِيَّةُ",
+      "lessonStartPage": 42
+    },
+    {
+      "file": "p049.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 49,
+      "rect": [
+        75.7,
+        392.6,
+        462.6,
+        454.0
+      ],
+      "unit": 7,
+      "lesson": 5,
+      "lessonTitleEn": "Decimals and Money",
+      "lessonTitleAr": "الأَعْدادُ العَشْرِيَّةُ وَالنُّقودُ",
+      "lessonStartPage": 48
+    },
+    {
+      "file": "p050.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 50,
+      "rect": [
+        101.2,
+        138.9,
+        396.7,
+        279.5
+      ],
+      "unit": 7,
+      "lesson": 5,
+      "lessonTitleEn": "Decimals and Money",
+      "lessonTitleAr": "الأَعْدادُ العَشْرِيَّةُ وَالنُّقودُ",
+      "lessonStartPage": 48
+    },
+    {
+      "file": "p051.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 51,
+      "rect": [
+        86.3,
+        126.8,
+        514.9,
+        262.3
+      ],
+      "unit": 7,
+      "lesson": 6,
+      "lessonTitleEn": "Comparing and Ordering Decimals",
+      "lessonTitleAr": "مُقارَنَةُ الأَعْدادِ العَشْرِيَّةِ وَتَرْتيبُها",
+      "lessonStartPage": 51
+    },
+    {
+      "file": "p052.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 52,
+      "rect": [
+        105.9,
+        551.2,
+        520.0,
+        590.8
+      ],
+      "unit": 7,
+      "lesson": 6,
+      "lessonTitleEn": "Comparing and Ordering Decimals",
+      "lessonTitleAr": "مُقارَنَةُ الأَعْدادِ العَشْرِيَّةِ وَتَرْتيبُها",
+      "lessonStartPage": 51
+    },
+    {
+      "file": "p055.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 55,
+      "rect": [
+        55.7,
+        313.4,
+        529.4,
+        484.1
+      ],
+      "unit": 7,
+      "lesson": 7,
+      "lessonTitleEn": "Rounding Decimals",
+      "lessonTitleAr": "تَقْريبُ الأَعْدادِ العَشْرِيَّةِ",
+      "lessonStartPage": 55
+    },
+    {
+      "file": "p056.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 56,
+      "rect": [
+        151.4,
+        129.8,
+        443.5,
+        198.2
+      ],
+      "unit": 7,
+      "lesson": 7,
+      "lessonTitleEn": "Rounding Decimals",
+      "lessonTitleAr": "تَقْريبُ الأَعْدادِ العَشْرِيَّةِ",
+      "lessonStartPage": 55
+    },
+    {
+      "file": "p062.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 62,
+      "rect": [
+        186.7,
+        400.7,
+        423.9,
+        485.9
+      ],
+      "unit": 8,
+      "lesson": 1,
+      "lessonTitleEn": "Patterns",
+      "lessonTitleAr": "الأَنْماطُ",
+      "lessonStartPage": 62
+    },
+    {
+      "file": "p066.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 66,
+      "rect": [
+        71.4,
+        309.1,
+        204.5,
+        422.2
+      ],
+      "unit": 8,
+      "lesson": 2,
+      "lessonTitleEn": "Input/Output Tables",
+      "lessonTitleAr": "جَداوِلُ المُدْخَلاتِ وَالمُخْرَجاتِ",
+      "lessonStartPage": 66
+    },
+    {
+      "file": "p070.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 70,
+      "rect": [
+        65.5,
+        395.6,
+        208.8,
+        468.2
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": "Geometric Patterns",
+      "lessonTitleAr": "الأَنْماطُ الهَنْدَسِيَّةُ",
+      "lessonStartPage": 70
+    },
+    {
+      "file": "p071.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 71,
+      "rect": [
+        82.9,
+        131.6,
+        276.8,
+        202.1
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": "Geometric Patterns",
+      "lessonTitleAr": "الأَنْماطُ الهَنْدَسِيَّةُ",
+      "lessonStartPage": 70
+    },
+    {
+      "file": "p072.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 72,
+      "rect": [
+        91.0,
+        149.2,
+        375.0,
+        214.1
+      ],
+      "unit": 8,
+      "lesson": 3,
+      "lessonTitleEn": "Geometric Patterns",
+      "lessonTitleAr": "الأَنْماطُ الهَنْدَسِيَّةُ",
+      "lessonStartPage": 70
+    },
+    {
+      "file": "p084.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 84,
+      "rect": [
+        77.4,
+        392.1,
+        517.5,
+        526.7
+      ],
+      "unit": 9,
+      "lesson": 1,
+      "lessonTitleEn": "Units of Length",
+      "lessonTitleAr": "وَحَداتُ قِياسِ الطّولِ",
+      "lessonStartPage": 84
+    },
+    {
+      "file": "p084b.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 84,
+      "rect": [
+        162.0,
+        568.0,
+        433.7,
+        658.7
+      ],
+      "unit": 9,
+      "lesson": 1,
+      "lessonTitleEn": "Units of Length",
+      "lessonTitleAr": "وَحَداتُ قِياسِ الطّولِ",
+      "lessonStartPage": 84
+    },
+    {
+      "file": "p088.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 88,
+      "rect": [
+        205.0,
+        366.8,
+        404.0,
+        454.5
+      ],
+      "unit": 9,
+      "lesson": 2,
+      "lessonTitleEn": "Units of Mass",
+      "lessonTitleAr": "وَحَداتُ قِياسِ الكُتْلَةِ",
+      "lessonStartPage": 88
+    },
+    {
+      "file": "p091.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 91,
+      "rect": [
+        227.9,
+        351.7,
+        354.2,
+        439.4
+      ],
+      "unit": 9,
+      "lesson": 3,
+      "lessonTitleEn": "Units of Capacity",
+      "lessonTitleAr": "وَحَداتُ قِياسِ السَّعَةِ",
+      "lessonStartPage": 91
+    },
+    {
+      "file": "p093.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 93,
+      "rect": [
+        74.4,
+        329.3,
+        274.7,
+        403.7
+      ],
+      "unit": 9,
+      "lesson": 4,
+      "lessonTitleEn": "Time",
+      "lessonTitleAr": "الزَّمَنُ",
+      "lessonStartPage": 93
+    },
+    {
+      "file": "p094.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 94,
+      "rect": [
+        59.5,
+        170.3,
+        555.8,
+        430.4
+      ],
+      "unit": 9,
+      "lesson": 4,
+      "lessonTitleEn": "Time",
+      "lessonTitleAr": "الزَّمَنُ",
+      "lessonStartPage": 93
+    },
+    {
+      "file": "p108.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 108,
+      "rect": [
+        83.8,
+        387.0,
+        523.9,
+        504.8
+      ],
+      "unit": 10,
+      "lesson": 1,
+      "lessonTitleEn": "Dot Plots",
+      "lessonTitleAr": "تَمْثيلُ البَياناتِ بِالنِّقاطِ",
+      "lessonStartPage": 108
+    },
+    {
+      "file": "p109.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 109,
+      "rect": [
+        63.4,
+        95.0,
+        224.5,
+        189.2
+      ],
+      "unit": 10,
+      "lesson": 1,
+      "lessonTitleEn": "Dot Plots",
+      "lessonTitleAr": "تَمْثيلُ البَياناتِ بِالنِّقاطِ",
+      "lessonStartPage": 108
+    },
+    {
+      "file": "p112.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 112,
+      "rect": [
+        142.9,
+        376.6,
+        339.3,
+        520.2
+      ],
+      "unit": 10,
+      "lesson": 2,
+      "lessonTitleEn": "Bar Graphs",
+      "lessonTitleAr": "تَمْثيلُ البَياناتِ بِالأَعْمِدَةِ",
+      "lessonStartPage": 112
+    },
+    {
+      "file": "p112b.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 112,
+      "rect": [
+        142.9,
+        559.8,
+        335.9,
+        709.0
+      ],
+      "unit": 10,
+      "lesson": 2,
+      "lessonTitleEn": "Bar Graphs",
+      "lessonTitleAr": "تَمْثيلُ البَياناتِ بِالأَعْمِدَةِ",
+      "lessonStartPage": 112
+    },
+    {
+      "file": "p115.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 115,
+      "rect": [
+        54.9,
+        158.7,
+        202.4,
+        419.6
+      ],
+      "unit": 10,
+      "lesson": 2,
+      "lessonTitleEn": "Bar Graphs",
+      "lessonTitleAr": "تَمْثيلُ البَياناتِ بِالأَعْمِدَةِ",
+      "lessonStartPage": 112
+    },
+    {
+      "file": "p117.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 117,
+      "rect": [
+        127.1,
+        380.9,
+        339.3,
+        509.1
+      ],
+      "unit": 10,
+      "lesson": 3,
+      "lessonTitleEn": "Venn Diagrams",
+      "lessonTitleAr": "تَمْثيلُ البَياناتِ بِأَشْكالِ ڤِن",
+      "lessonStartPage": 117
+    },
+    {
+      "file": "p118.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 118,
+      "rect": [
+        86.3,
+        261.8,
+        232.2,
+        361.6
+      ],
+      "unit": 10,
+      "lesson": 3,
+      "lessonTitleEn": "Venn Diagrams",
+      "lessonTitleAr": "تَمْثيلُ البَياناتِ بِأَشْكالِ ڤِن",
+      "lessonStartPage": 117
+    },
+    {
+      "file": "p118b.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 118,
+      "rect": [
+        95.7,
+        626.9,
+        224.9,
+        715.9
+      ],
+      "unit": 10,
+      "lesson": 3,
+      "lessonTitleEn": "Venn Diagrams",
+      "lessonTitleAr": "تَمْثيلُ البَياناتِ بِأَشْكالِ ڤِن",
+      "lessonStartPage": 117
+    },
+    {
+      "file": "p119.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 119,
+      "rect": [
+        53.6,
+        329.3,
+        267.9,
+        419.6
+      ],
+      "unit": 10,
+      "lesson": 3,
+      "lessonTitleEn": "Venn Diagrams",
+      "lessonTitleAr": "تَمْثيلُ البَياناتِ بِأَشْكالِ ڤِن",
+      "lessonStartPage": 117
+    },
+    {
+      "file": "p120.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 120,
+      "rect": [
+        64.2,
+        114.4,
+        204.1,
+        230.9
+      ],
+      "unit": 10,
+      "lesson": 3,
+      "lessonTitleEn": "Venn Diagrams",
+      "lessonTitleAr": "تَمْثيلُ البَياناتِ بِأَشْكالِ ڤِن",
+      "lessonStartPage": 117
+    },
+    {
+      "file": "p122.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 122,
+      "rect": [
+        74.4,
+        134.6,
+        165.4,
+        293.7
+      ],
+      "unit": 10,
+      "lesson": 4,
+      "lessonTitleEn": "Random Experiments and Event Types",
+      "lessonTitleAr": "التَّجْرِبَةُ العَشْوائِيَّةُ وَأَنْواعُ الحَوادِثِ",
+      "lessonStartPage": 121
+    },
+    {
+      "file": "p122b.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 122,
+      "rect": [
+        81.6,
+        333.2,
+        159.0,
+        517.2
+      ],
+      "unit": 10,
+      "lesson": 4,
+      "lessonTitleEn": "Random Experiments and Event Types",
+      "lessonTitleAr": "التَّجْرِبَةُ العَشْوائِيَّةُ وَأَنْواعُ الحَوادِثِ",
+      "lessonStartPage": 121
+    },
+    {
+      "file": "p123.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 123,
+      "rect": [
+        49.3,
+        547.3,
+        129.7,
+        624.7
+      ],
+      "unit": 10,
+      "lesson": 4,
+      "lessonTitleEn": "Random Experiments and Event Types",
+      "lessonTitleAr": "التَّجْرِبَةُ العَشْوائِيَّةُ وَأَنْواعُ الحَوادِثِ",
+      "lessonStartPage": 121
+    },
+    {
+      "file": "p125.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 125,
+      "rect": [
+        52.7,
+        309.1,
+        147.1,
+        402.0
+      ],
+      "unit": 10,
+      "lesson": 4,
+      "lessonTitleEn": "Random Experiments and Event Types",
+      "lessonTitleAr": "التَّجْرِبَةُ العَشْوائِيَّةُ وَأَنْواعُ الحَوادِثِ",
+      "lessonStartPage": 121
+    },
+    {
+      "file": "p126.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 126,
+      "rect": [
+        107.2,
+        489.7,
+        235.1,
+        646.7
+      ],
+      "unit": 10,
+      "lesson": 5,
+      "lessonTitleEn": "Problem-Solving: Using a Venn Diagram",
+      "lessonTitleAr": "خُطَّةُ حَلِّ المَسْأَلَةِ: اسْتِعْمالُ شَكْلِ ڤِن",
+      "lessonStartPage": 126
+    },
+    {
+      "file": "p127.png",
+      "sourceId": "g4-math-s2-student-book",
+      "pdfPage": 127,
+      "rect": [
+        82.9,
+        126.8,
+        244.5,
+        254.5
+      ],
+      "unit": 10,
+      "lesson": 5,
+      "lessonTitleEn": "Problem-Solving: Using a Venn Diagram",
+      "lessonTitleAr": "خُطَّةُ حَلِّ المَسْأَلَةِ: اسْتِعْمالُ شَكْلِ ڤِن",
+      "lessonStartPage": 126
+    }
+  ]
+}

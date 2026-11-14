@@ -850,6 +850,10 @@ import {
   buildG10PeSem1BrowserCatalog,
 } from './catalogs/g10PeSem1.ts';
 import {
+  G10_VOC_S1_CURRICULUM_BOOK_ID,
+  buildG10VocSem1BrowserCatalog,
+} from './catalogs/g10VocationalSem1.ts';
+import {
   G4_PE_S1_CURRICULUM_BOOK_ID,
   buildG4PhysicalEducationSem1BrowserCatalog,
 } from './catalogs/g4PhysicalEducationSem1.ts';
@@ -1080,7 +1084,7 @@ export const SUBJECTS: Subject[] = [
   // 1 book was supplied directly by the user; see g9VocationalSem1.ts.
   // APPENDED, matching this array's own pattern of adding grades as their
   // books land rather than reordering to stay numeric.
-  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-5', 'grade-9'] },
+  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-5', 'grade-9', 'grade-10'] },
 ];
 
 /**
@@ -1708,6 +1712,12 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // split out of semester 1 on 2026-11-13 (see g4DigitalSem2.ts). Appended,
   // not placed beside S1, because this list's order is the picker's.
   G4_DIGITAL_S2_CURRICULUM_BOOK_ID,
+  // Grade 10 Vocational Education, Semester 1 only (2016 MoE edition; the
+  // Part 2 file is a Grade 9 book, so no Semester 2). 'vocational-education'
+  // extended to grade-10 in SUBJECTS.grades above. Appended, not placed
+  // beside the other vocational books, because this list's order is the
+  // picker's. See g10VocationalSem1.ts.
+  G10_VOC_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -4610,6 +4620,26 @@ export const BOOKS: Book[] = [
     // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
     pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/8/2/%D9%85%D9%87%D9%86%D9%8A%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%812%202025%20.pdf',
   },
+  // ── Vocational Education Grade 10 – Semester 1 ────────────────────────────
+  // Ministry of Education 2016 edition (reprinted 2017-2019), not an NCCD
+  // book: four units, nine «chapters» (lessons). Objectives are each
+  // chapter's own «يتوقع منك» list; no main idea or glossary is printed. The
+  // Part 2 file on disk is a Grade 9 book, so Semester 2 waits — see
+  // g10VocationalSem1.ts and the JSON's known_gaps. No pdfUrl: the book is
+  // not hosted by NCCD.
+  {
+    id: G10_VOC_S1_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 10, Semester 1',
+    titleAr: 'التربية المهنية – الصف العاشر – الفصل الأول',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-10',
+    academicYear: '2016-2017',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
   // ── Vocational Education Grade 9 – Semester 1 ─────────────────────────────
   // Eight units across six vocational tracks (life skills, home economics
   // ×3, entrepreneurship, agriculture, security/health/safety, tourism).
@@ -6409,6 +6439,7 @@ const _engSem2Browser = buildEngSem2BrowserCatalog();
 const _g5PhysicalEducationSem1Browser = buildG5PhysicalEducationSem1BrowserCatalog();
 const _g5PhysicalEducationSem2Browser = buildG5PhysicalEducationSem2BrowserCatalog();
 const _g10PeSem1Browser = buildG10PeSem1BrowserCatalog();
+const _g10VocSem1Browser = buildG10VocSem1BrowserCatalog();
 const _g4PhysicalEducationSem1Browser = buildG4PhysicalEducationSem1BrowserCatalog();
 const _g8PeSem1Browser = buildG8PeSem1BrowserCatalog();
 
@@ -6716,6 +6747,7 @@ export const UNITS: Unit[] = [
   ..._g5PhysicalEducationSem1Browser.units,
   ..._g5PhysicalEducationSem2Browser.units,
   ..._g10PeSem1Browser.units,
+  ..._g10VocSem1Browser.units,
   ..._g4PhysicalEducationSem1Browser.units,
   ..._g8PeSem1Browser.units,
 ];
@@ -6920,6 +6952,7 @@ export const LESSONS: Lesson[] = [
   ..._g5PhysicalEducationSem1Browser.lessons,
   ..._g5PhysicalEducationSem2Browser.lessons,
   ..._g10PeSem1Browser.lessons,
+  ..._g10VocSem1Browser.lessons,
   ..._g4PhysicalEducationSem1Browser.lessons,
   ..._g8PeSem1Browser.lessons,
 ];

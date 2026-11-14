@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   LIBRARY_EXTENSION_BY_MIME,
   MAX_LIBRARY_FILE_BYTES,
+  parseLessonIdPatch,
   parseLibraryLink,
   parseLibraryMeta,
 } from "../libraryResource.ts";
@@ -57,5 +58,26 @@ describe("library uploads", () => {
 
   it("stays under Cloud Run's 32 MiB request ceiling", () => {
     assert.ok(MAX_LIBRARY_FILE_BYTES < 32 * 1024 * 1024);
+  });
+});
+
+describe("editing an item's lesson", () => {
+  it("leaves the lesson alone when the edit does not mention it", () => {
+    assert.equal(parseLessonIdPatch(undefined), undefined);
+  });
+
+  it("files the item under no lesson for null or an empty string", () => {
+    assert.deepEqual(parseLessonIdPatch(null), { lessonId: null });
+    assert.deepEqual(parseLessonIdPatch("  "), { lessonId: null });
+  });
+
+  it("accepts a kbl-* id, trimmed", () => {
+    assert.deepEqual(parseLessonIdPatch(" kbl-math-s1-nccd-u1_l1 "), { lessonId: "kbl-math-s1-nccd-u1_l1" });
+  });
+
+  it("refuses a title, a non-string and an over-long id", () => {
+    assert.ok("error" in (parseLessonIdPatch("قانون الجيوب") ?? {}));
+    assert.ok("error" in (parseLessonIdPatch(42) ?? {}));
+    assert.ok("error" in (parseLessonIdPatch(`kbl-${"x".repeat(200)}`) ?? {}));
   });
 });

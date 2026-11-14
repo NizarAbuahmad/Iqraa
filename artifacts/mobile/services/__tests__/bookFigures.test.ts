@@ -124,9 +124,16 @@ describe('figuresForLesson', () => {
       'g3-science': 'g3-science',
       'g3-social': 'g3-social',
       'g4-arts': 'g4-arts',
+      // Grade 4 maths, cropped 2026-11-13 from the book-page renders.
+      'g4-math': 'g4-math',
+      // Grade 4 Arabic and Islamic, cropped 2026-11-13 from the book-page renders.
+      'g4-arabic': 'g4-arabic',
+      'g4-islamic': 'g4-islamic',
       'g4-science': 'g4-science',
       'g4-social': 'g4-social',
       'g4-voc': 'g4-voc',
+      // Grade 4 PE, cropped 2026-11-13 from the book-page renders.
+      'g4-pe': 'g4-pe',
       'g5-science': 'g5-science',
       // Grades 6 and 7, added 2026-09-16. Slug and source-id prefix agree
       // for all of these.
@@ -166,8 +173,11 @@ describe('figuresForLesson', () => {
     // its layout, so these four figures existed but nothing could ask for
     // them. Joined on the Arabic title, which matches the curriculum's word
     // for word — the book states no English lesson title on its openers.
+    // Its own pages are 20-23. This once pinned p024 as «the wave-model figure»,
+    // but p24 is the unit's enrichment page and that crop is its solar cell
+    // (Grade 10 audit, 2026-11-13), so it was dropped.
     const wave = figuresForLesson('kbl-chem-s1-nccd-u1_l2');
-    assert.ok(wave.some(f => f.pdfPage === 24), 'the wave-model figure');
+    assert.ok(wave.length > 0 && wave.every(f => f.pdfPage >= 20 && f.pdfPage <= 23), 'the lesson keeps its own figures');
     assert.ok(wave.every(f => f.sourceId === 'chem-s1-student-book'));
     // Counts are asserted as "some", not as a number. They were 2 and 1 when
     // the extractor only found figures seeded on a pair of axes; teaching the
@@ -219,10 +229,10 @@ describe('the three sciences carry figures', () => {
   // figure-lesson-map entry, an index.json that stopped being imported.
   const FLOOR: Record<string, number> = {
     'kbl-phys-s1-nccd-u1_l1': 5,
-    'kbl-phys-s2-nccd-u5_l2': 15,
+    'kbl-phys-s2-nccd-u5_l2': 13, // 15 until the Grade 10 audit dropped its enrichment and unit-review crops
     'kbl-biology-s1-nccd-u3_l3': 3,
     'kbl-biology-s2-nccd-u3_l6': 12,
-    'kbl-earth-science-s1-nccd-u1_l1': 4,
+    'kbl-earth-science-s1-nccd-u1_l1': 3, // 4 until the Grade 10 audit dropped the rock cycle missing its left third
     'kbl-earth-science-s2-nccd-u3_l2': 8,
   };
 
@@ -396,6 +406,108 @@ describe('grade 8: a figure sits with the lesson its page teaches', () => {
     const files = new Set(allFigures().map(f => `${f.sourceId}/${f.file}`));
     for (const bad of ['g8-voc-s1-student-book/p006b.png', 'g8-english-s2-student-book/p062.png']) {
       assert.ok(!files.has(bad), `${bad} is still shown`);
+    }
+  });
+});
+
+describe('grades 8, 9 and 10 English: pages between units belong to no lesson', () => {
+  // Found by the 2026-11-13 grade 9 pass, which also caught what the grade 8
+  // fix missed. The Jordan High Note books print two LIFE SKILLS pages after
+  // units 2 and 4 (S1) or 1 and 3 (S2), and the photo extractor filed their
+  // photos under the writing lesson before them; the same lesson's book pages
+  // ran on into them, and in three ranges into the next unit's opening page.
+  // Pages read from each book's extracted text.
+  const BETWEEN_UNITS: Record<string, number[]> = {
+    // Grade 10 (same series, same layout), added in the grade 7/10 pass.
+    'eng-s1-student-book': [26, 27, 48, 49],
+    'eng-s2-student-book': [16, 17, 38, 39],
+    'g8-english-s1-student-book': [26, 27, 48, 49],
+    'g8-english-s2-student-book': [16, 17, 38, 39],
+    'g9-english-s1-student-book': [26, 27, 48, 49],
+    'g9-english-s2-student-book': [16, 17, 38, 39],
+  };
+  const allFigures = () => lessonsWithFigures().flatMap(id => figuresForLesson(id));
+
+  it('files no Life Skills, Culture Spot, reader or project photo under a lesson', () => {
+    for (const f of allFigures()) {
+      const between = BETWEEN_UNITS[f.sourceId];
+      if (!between) continue;
+      // From page 60 on: Life Skills, project, Culture Spot, the reader, the word list.
+      assert.ok(!between.includes(f.pdfPage) && f.pdfPage < 60, `${f.sourceId} ${f.file} (page ${f.pdfPage})`);
+    }
+  });
+
+  it('shows each writing lesson only its own pages', () => {
+    const WRITING: Record<string, [number, number]> = {
+      'kbl-g8-eng-s1-nccd-u1_l7': [14, 15], 'kbl-g8-eng-s1-nccd-u2_l7': [24, 25],
+      'kbl-g8-eng-s1-nccd-u4_l7': [46, 47], 'kbl-g8-eng-s2-nccd-u6_l7': [14, 15],
+      'kbl-g8-eng-s2-nccd-u7_l7': [26, 27], 'kbl-g8-eng-s2-nccd-u8_l7': [36, 37],
+      'kbl-g9-eng-s1-nccd-u2_l7': [24, 25], 'kbl-g9-eng-s1-nccd-u4_l7': [46, 47],
+      'kbl-g9-eng-s1-nccd-u5_l7': [58, 59], 'kbl-g9-eng-s2-nccd-u6_l7': [15, 15],
+      'kbl-g9-eng-s2-nccd-u7_l7': [27, 27], 'kbl-g9-eng-s2-nccd-u8_l7': [36, 37],
+      'kbl-g9-eng-s2-nccd-u10_l7': [58, 59],
+      'kbl-eng-s1-nccd-u2_l7': [24, 25], 'kbl-eng-s1-nccd-u4_l7': [46, 47],
+      'kbl-eng-s1-nccd-u5_l7': [58, 59], 'kbl-eng-s2-nccd-u6_l7': [14, 15],
+      'kbl-eng-s2-nccd-u8_l7': [36, 37], 'kbl-eng-s2-nccd-u10_l7': [58, 59],
+    };
+    for (const [id, [start, end]] of Object.entries(WRITING)) {
+      const pages = bookPagesForLesson(id);
+      assert.ok(pages, `${id} has pages`);
+      assert.equal(pages!.page, start, id);
+      assert.equal(pages!.urls.length, end - start + 1, `${id} shows ${pages!.urls.length} pages, not ${end - start + 1}`);
+    }
+  });
+
+  it("files a unit's opening photo with that unit's first lesson", () => {
+    const OPENERS: [string, number, string, string][] = [
+      // sourceId, page, the lesson it was on, the lesson it opens
+      ['g8-english-s1-student-book', 16, 'kbl-g8-eng-s1-nccd-u1_l7', 'kbl-g8-eng-s1-nccd-u2_l1'],
+      ['g8-english-s2-student-book', 28, 'kbl-g8-eng-s2-nccd-u7_l7', 'kbl-g8-eng-s2-nccd-u8_l1'],
+      ['g9-english-s2-student-book', 28, 'kbl-g9-eng-s2-nccd-u7_l7', 'kbl-g9-eng-s2-nccd-u8_l1'],
+    ];
+    for (const [src, page, was, opens] of OPENERS) {
+      const on = (id: string) => figuresForLesson(id).some(f => f.sourceId === src && f.pdfPage === page);
+      assert.ok(!on(was), `${src} p${page} is still on ${was}`);
+      assert.ok(on(opens), `${src} p${page} is not on ${opens}`);
+    }
+  });
+});
+
+describe('grade 9: a unit-opening page belongs to the unit it opens', () => {
+  // The figure extractor gives a unit's opening pages to the last lesson of
+  // the unit before (the grade 8 fault). Each was checked by opening it and,
+  // where the book has text, by reading the page.
+  const CASES: [string, number, string, string, string][] = [
+    // sourceId, page, was on, now on, what it is
+    ['g9-chemistry-s1-student-book', 35, 'kbl-g9-chem-s1-nccd-u1_l2', 'kbl-g9-chem-s1-nccd-u2_l1', 'the pH scale, from the acids-and-bases opening experiment'],
+    ['g9-physics-s1-student-book', 65, 'kbl-g9-phys-s1-nccd-u2_l2', 'kbl-g9-phys-s1-nccd-u3_l1', 'climbing stairs against a clock, from the work-and-power opening experiment'],
+    ['g9-geography-s1-student-book', 30, 'kbl-g9-geo-s1-nccd-u1_l3', 'kbl-g9-geo-s1-nccd-u2_l1', 'the ocean globe opening the hydrosphere unit'],
+  ];
+  for (const [src, page, was, now, what] of CASES) {
+    it(`files ${what} with the unit it opens`, () => {
+      const on = (id: string) => figuresForLesson(id).some(f => f.sourceId === src && f.pdfPage === page);
+      assert.ok(!on(was), `p${page} is still on ${was}`);
+      assert.ok(on(now), `p${page} is not on ${now}`);
+    });
+  }
+});
+
+describe('grade 10: no unit-review figure is filed under a lesson', () => {
+  // The grade 10 audit (2026-11-13) dropped every figure from a unit test,
+  // project, review or enrichment page filed under a unit's last lesson. A
+  // re-check the same day found six it missed, each on a page the book heads
+  // «مراجعة الوحدة» or that carries only the unit's numbered review questions
+  // (read from the extracted text and by opening the image). They are kept on
+  // disk and filed under no lesson.
+  const REVIEW: [string, number][] = [
+    ['bio-s1-student-book', 18], ['bio-s2-student-book', 54], ['earth-s1-student-book', 58],
+    ['earth-s2-student-book', 24], ['earth-s2-student-book', 55],
+  ];
+  it('files none of them under any lesson', () => {
+    const shown = lessonsWithFigures().flatMap(id => figuresForLesson(id).map(f => ({ id, f })));
+    for (const [src, page] of REVIEW) {
+      const hit = shown.find(({ f }) => f.sourceId === src && f.pdfPage === page);
+      assert.ok(!hit, `${src} p${page} is still shown on ${hit?.id}`);
     }
   });
 });

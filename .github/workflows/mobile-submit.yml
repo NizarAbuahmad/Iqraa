@@ -1,0 +1,169 @@
+# What this is for
+#
+# mobile-build.yml makes the Play app-bundle; this hands a finished one to
+# Google Play's production track, so a release no longer means downloading
+# the .aab and uploading it by hand in Play Console.
+#
+# Manual only, and it takes an EAS build id, never "the latest build": the
+# latest Android build is often a `preview` APK, which the production track
+# refuses. The id is in the summary of the mobile-build.yml run that made the
+# bundle. A guard step checks the id is a finished `production` Android build
+# before anything is sent.
+#
+# Two ways to run it (`send_for_review`):
+#   false (default) — the bundle lands on the production track as a DRAFT
+#     release. Nothing goes to Google yet. Open Play Console → Publishing
+#     overview and send it for review there, together with any store-listing
+#     edits drafted in the Console (a listing draft lives in the Console, not
+#     in this repo, and only goes out with a review sent from there).
+#   true — the release is committed as `completed` and Play sends it for review
+#     at once (unless managed publishing is on, in which case it waits in
+#     Publishing overview). Use it only when there is no listing change waiting.
+#
+# Needs two repository secrets:
+#   EXPO_TOKEN — already set; mobile-build.yml and mobile-update.yml use it.
+#   PLAY_SERVICE_ACCOUNT_JSON — the JSON key of a Google Cloud service account
+#     that Play Console has invited with release rights. How to make one:
+#     docs/deploying.md, «Submitting to Google Play». Without it the run fails
+#     at its first step and sends nothing.
+#
+# The key is written to a file only for the length of the job (eas.json's
+# submit profiles point at it), never printed, and deleted in an `always()`
+# step. The file name is gitignored. This repository is public: the key must
+# never be committed or pasted anywhere else.
+name: Mobile Android submit to Play
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: EAS build id of a finished production build (from the mobile-build run summary)
+        required: true
+        type: string
+      send_for_review:
+        description: Send for review now (true), or leave a draft release to send from Play Console (false)
+        required: true
+        default: false
+        type: boolean
+
+# Two submissions at once would race to open Play edits for the same app, and
+# Play rejects the second commit.
+concurrency:
+  group: mobile-submit
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    name: eas submit (${{ inputs.send_for_review && 'send for review' || 'draft release' }})
+    runs-on: ubuntu-latest
+    # The upload itself takes a few minutes; the rest is the EAS submission queue.
+    timeout-minutes: 60
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+      # Inputs reach the shell through env, never pasted into a script.
+      BUILD_ID: ${{ inputs.build_id }}
+      SUBMIT_PROFILE: ${{ inputs.send_for_review && 'production-review' || 'production' }}
+    steps:
+      - name: Check the secrets and the build id
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN is not set (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON is not set. Nothing was sent. See docs/deploying.md, «Submitting to Google Play»."
+            exit 1
+          fi
+          if ! printf '%s' "$BUILD_ID" | grep -Eq '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'; then
+            echo "::error::build_id must be an EAS build id (a UUID), as printed in the mobile-build run summary."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # Same Node and pnpm as mobile-build.yml: eas-cli evaluates app.json
+      # through the project's node_modules before it does anything else.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.18.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Refuse anything but a finished production Android bundle, before the
+      # key is even written. A preview APK, an unfinished build or a typo'd
+      # id stops here.
+      - name: Check the build is a finished production bundle
+        working-directory: artifacts/mobile
+        run: |
+          npx eas-cli@latest build:view "$BUILD_ID" --json > raw.json
+          # One object, or a one-element list, depending on the eas-cli version.
+          jq 'if type == "array" then .[0] else . end' raw.json > build-view.json
+          platform=$(jq -r '.platform' build-view.json)
+          status=$(jq -r '.status' build-view.json)
+          profile=$(jq -r '.buildProfile' build-view.json)
+          url=$(jq -r '.artifacts.buildUrl // empty' build-view.json)
+          version=$(jq -r '.appVersion' build-view.json)
+          code=$(jq -r '.appBuildVersion' build-view.json)
+          echo "platform=$platform status=$status profile=$profile version=$version code=$code"
+          if [ "$platform" != "ANDROID" ] || [ "$status" != "FINISHED" ] || [ "$profile" != "production" ] || [[ "$url" != *.aab ]]; then
+            echo "::error::Build $BUILD_ID is not a finished production Android app-bundle (platform=$platform status=$status profile=$profile). Nothing was sent."
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$code" >> "$GITHUB_ENV"
+
+      - name: Write the Play key for this job
+        working-directory: artifacts/mobile
+        run: |
+          umask 077
+          printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > .play-service-account.json
+          if ! jq -e '.type == "service_account" and (.client_email | length > 0)' .play-service-account.json > /dev/null; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON is not a service-account JSON key."
+            exit 1
+          fi
+
+      - name: Submit
+        working-directory: artifacts/mobile
+        run: |
+          npx eas-cli@latest submit \
+            --platform android \
+            --profile "$SUBMIT_PROFILE" \
+            --id "$BUILD_ID" \
+            --non-interactive \
+            --wait
+
+      - name: Delete the Play key
+        if: ${{ always() }}
+        working-directory: artifacts/mobile
+        run: rm -f .play-service-account.json
+
+      - name: Report
+        if: ${{ success() }}
+        run: |
+          if [ "$SUBMIT_PROFILE" = "production-review" ]; then
+            next="Committed as \`completed\`: Play has it for review (or it waits in Publishing overview if managed publishing is on)."
+          else
+            next="Saved as a **draft** release on the production track. Open Play Console → Publishing overview → **Send changes for review** (that also sends any listing edits drafted there)."
+          fi
+          {
+            echo "## Submitted to Google Play (production track)"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| build id | \`$BUILD_ID\` |"
+            echo "| version / versionCode | \`$VERSION\` / \`$VERSION_CODE\` |"
+            echo
+            echo "$next"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -409,8 +409,28 @@ describe('geometry generators: answers recomputed from the stem', () => {
     for (const [id, k] of Object.entries(want)) assert.equal(kinds[id]?.size, k, `${id} kinds drawn: ${[...(kinds[id] ?? [])]}`);
   });
 
+  it('Grade 6 «الأشكال الرباعية» asks the 360° angle sum, not only names (Grade 6 audit, 2026-11-14)', () => {
+    // The lesson's outcome is «مجموع قياسات زوايا الشكل الرباعي»; its paper was
+    // names only, and ran out at five questions.
+    const kinds = new Set<string>();
+    for (const item of draws('quad_name_g6')) {
+      const p = item.promptAr!, n = nums(p);
+      if (!item.answer.endsWith('°')) { kinds.add('name'); continue; }
+      const a = dg(item.answer);
+      if (has(p, 'مجموع قياسات')) { kinds.add('sum'); assert.equal(a, 360, p); continue; }
+      if (has(p, 'متوازي الأضلاع')) { kinds.add('parallelogram'); assert.equal(a + n[0]!, 180, p); continue; }
+      if (has(p, 'متساوية')) { kinds.add('equal'); assert.equal(3 * a + n[0]!, 360, p); continue; }
+      kinds.add('fourth');
+      assert.equal(n.length, 3, p);
+      assert.equal(a + n[0]! + n[1]! + n[2]!, 360, p);
+      assert.ok(a > 0 && a < 180, p);
+    }
+    assert.equal(kinds.size, 5, [...kinds].join(', '));
+  });
+
   it('quadrilaterals, parallel lines, isosceles, congruence, similarity', () => {
     for (const id of ['quad_name_g5', 'quad_name_g6']) for (const item of draws(id)) {
+      if (item.answer.endsWith('°')) continue; // Grade 6's angle items: their own test below
       const props: Record<string, string> = { 'مربع': 'أربعة أضلاع متساوية الطول وأربع زوايا قائمة', 'معين': 'أربعة أضلاع متساوية الطول وزواياه غير قائمة', 'شبه منحرف': 'زوج واحد فقط' };
       if (props[item.answer]) assert.ok(item.promptAr!.includes(props[item.answer]!), item.promptAr);
       assert.equal(new Set(['مربع', 'مستطيل', 'معين', 'متوازي أضلاع', 'شبه منحرف']).has(item.answer), true);
@@ -499,7 +519,42 @@ describe('geometry generators: answers recomputed from the stem', () => {
       else assert.equal(dg(item.answer), 180 - 2 * v!);
     }
     const CRITERIA: Record<string, string> = { SSS: 'ثلاثة أضلاع', SAS: 'ضلعان والزاوية المحصورة', HL: 'الوتر وضلع', ASA: 'زاويتان والضلع المحصور', AAS: 'زاويتان وضلع غير محصور' };
-    for (const item of draws('congruence_a')) assert.ok(item.promptAr!.includes(CRITERIA[item.answer]!), `${item.promptAr} → ${item.answer}`);
+    // congruence_a (SSS, SAS, HL) asks 6 kinds since 2026-11-13; before that it only named the criterion (3 distinct questions)
+    const corrA = (v: string) => v.split('').map(c => 'DEF'['ABC'.indexOf(c)]).join('');
+    const sideOf = (a: string, b: string) => [a, b].sort().join('');
+    for (const item of draws('congruence_a')) {
+      const p = item.promptAr!;
+      if (has(p, 'التطابق الإضافي')) {
+        saw('congruence_a', 'missing part');
+        // two sides through one vertex v are given: SSS needs the third side, SAS the angle at v
+        const given = [...p.matchAll(/([A-C]{2}) ≅ ([D-F]{2})/g)].map(m => m[1]!);
+        assert.equal(given.length, 2, p);
+        const v = [...given[0]!].find(c => given[1]!.includes(c))!;
+        const third = sideOf(...('ABC'.replace(v, '').split('') as [string, string]));
+        assert.equal(item.answer, has(p, 'بحالة SSS') ? `${third} ≅ ${corrA(third)}` : `∠${v} ≅ ∠${corrA(v)}`, p);
+      } else if (has(p, 'بأي حالة يتطابق المثلثان')) {
+        saw('congruence_a', 'marked parts');
+        const sides = [...p.matchAll(/([A-C]{2}) ≅ ([D-F]{2})/g)].map(m => m[1]!);
+        const angles = [...p.matchAll(/∠([A-C]) ≅ ∠([D-F])/g)].map(m => m[1]!);
+        const right = p.match(/∠([A-C]) = ∠([D-F]) = 90°/);
+        const want = right ? 'HL' : sides.length === 3 ? 'SSS' : 'SAS';
+        if (want === 'SAS') {
+          // the angle sits between the two sides: it is their shared vertex
+          assert.equal(sides.length, 2, p);
+          assert.deepEqual(angles, [[...sides[0]!].find(c => sides[1]!.includes(c))!], p);
+        }
+        if (want === 'HL') {
+          // one side is the hypotenuse (opposite the right angle), the other a leg through it
+          const v = right![1]!;
+          assert.equal(right![2], corrA(v), p);
+          assert.ok(sides.some(s => !s.includes(v)) && sides.some(s => s.includes(v)), p);
+        }
+        assert.equal(item.answer, want, p);
+      } else if (has(p, 'فما طول الضلع')) { saw('congruence_a', 'side'); }
+      else if (has(p, 'فما قيمة x')) { saw('congruence_a', 'x'); }
+      else if (has(p, 'الزاوية F')) { saw('congruence_a', 'angle'); }
+      else { saw('congruence_a', 'describe'); assert.ok(p.includes(CRITERIA[item.answer]!), `${p} → ${item.answer}`); }
+    }
     for (const item of draws('congruence_b')) {
       const p = item.promptAr!;
       if (has(p, 'التطابق الإضافي')) {
@@ -543,7 +598,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
       else if (has(p, 'محيط')) { saw('similar_triangles', 'perimeter'); assert.equal(Number(item.answer), n[0]! * n[1]!, p); }
       else { saw('similar_triangles', 'side'); assert.equal(Number(item.answer) / n[2]!, n[1]! / n[0]!, p); }
     }
-    const want = { parallelogram_test: 4, congruence_b: 6, similar_triangles: 5, parallelogram_special: 6, parallel_proof: 6 };
+    const want = { parallelogram_test: 4, congruence_a: 6, congruence_b: 6, similar_triangles: 5, parallelogram_special: 6, parallel_proof: 6 };
     for (const [id, k] of Object.entries(want)) assert.equal(kinds[id]?.size, k, `${id} kinds drawn: ${[...(kinds[id] ?? [])]}`);
     for (const item of draws('pythagoras')) {
       const p = item.promptAr!;
@@ -1027,7 +1082,9 @@ describe('geometry routing', () => {
     ['المسافة في المستوى الإحداثي', 9, 'distance_plane'], ['النسب المثلثية', 9, 'trig_ratios'], ['الاتجاه من الشمال (Bearing)', 10, 'bearing'],
     ['المتر والسنتيمتر', 3, 'units_m'], ['الزمن', 4, 'time_g45'], ['الفترات الزمنية (1)', 3, 'time_g3'], ['قراءة الوقت باستعمال (و، إلا)', 3, 'time_words'],
     // lessons that stay refused: no generator is about them
-    ['الأرقام الهندية', 3, null], ['رسم الأشكال ثلاثية الأبعاد', 8, null], ['التطابق', 7, null],
+    // («رسم الأشكال ثلاثية الأبعاد» is Grade 8 only since 2026-11-13: g8Lessons.test.ts;
+    // «التطابق» is Grade 7 only since 2026-11-13: g7Lessons.test.ts)
+    ['الأرقام الهندية', 3, null], ['رسم الأشكال ثلاثية الأبعاد', 7, null], ['التطابق', 7, 'g7_congruence'], ['التطابق', 8, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {

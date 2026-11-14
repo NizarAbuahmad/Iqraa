@@ -531,9 +531,29 @@ const QUADS: Array<[string, string, string]> = [
   ['شبه منحرف', 'زوج واحد فقط من الأضلاع المتقابلة متوازٍ', 'exactly one pair of parallel sides'],
 ];
 const quadName = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng }) => {
+  // Grade 6 «الأشكال الرباعية» is about the angle sum (Grade 6 audit, 2026-11-14): half its items use it.
+  if (grade >= 6 && rng() < 0.6) return quadAngles(rng);
   const [n, ar, en] = pick(rng, QUADS);
   return { eq: n, answer: n, wrongs: names(rng, n, QUADS.map(q => q[0])), ar: `أي شكل رباعي له الخصائص الآتية: ${ar}؟`, en: `Which quadrilateral has these properties: ${en}?` };
 });
+/** The 360° angle sum: the fourth angle, three equal angles, a parallelogram's neighbouring angle, the sum itself. */
+function quadAngles(rng: Rng) {
+  const k = pick(rng, [0, 0, 1, 2, 3]);
+  if (k === 0) {
+    let a = 0, b = 0, c = 0, d = 0;
+    do { a = int(rng, 50, 140); b = int(rng, 50, 140); c = int(rng, 50, 140); d = 360 - a - b - c; } while (d < 40 || d > 160);
+    return { eq: `quad ${a}, ${b}, ${c}`, answer: `${d}°`, wrongs: deg(d, [360 - a - b, 180 - d, d + 10, d - 10]), ar: `قياسات ثلاث زوايا في شكل رباعي ${a}° و ${b}° و ${c}°. ما قياس الزاوية الرابعة؟`, en: `Three angles of a quadrilateral measure ${a}°, ${b}° and ${c}°. What does the fourth angle measure?` };
+  }
+  if (k === 1) {
+    const x = pick(rng, [70, 75, 80, 85, 95, 100, 105, 110]), d = 360 - 3 * x;
+    return { eq: `quad 3x + ${d}`, answer: `${x}°`, wrongs: deg(x, [(180 - d) / 3, 360 - d, d, x + 10]), ar: `في شكل رباعي ثلاث زوايا متساوية في القياس، وقياس الزاوية الرابعة ${d}°. ما قياس كل من الزوايا الثلاث المتساوية؟`, en: `A quadrilateral has three equal angles and a fourth angle of ${d}°. What does each of the equal angles measure?` };
+  }
+  if (k === 2) {
+    const a = int(rng, 40, 140); const ans = 180 - a;
+    return { eq: `para ${a}`, answer: `${ans}°`, wrongs: deg(ans, [a, 360 - a, ans + 10, ans - 10]), ar: `في متوازي الأضلاع ABCD قياس الزاوية A يساوي ${a}°. ما قياس الزاوية B؟`, en: `In parallelogram ABCD, angle A measures ${a}°. What does angle B measure?` };
+  }
+  return { eq: 'quad sum', answer: '360°', wrongs: ['180°', '90°', '540°'], ar: 'ما مجموع قياسات الزوايا الداخلية لأي شكل رباعي؟', en: 'What is the sum of the interior angles of any quadrilateral?' };
+}
 
 const SHAPE_BASES: Array<[number, string, string]> = [[3, 'مثلثية', 'triangular'], [4, 'رباعية', 'square'], [5, 'خماسية', 'pentagonal'], [6, 'سداسية', 'hexagonal']];
 /** The solid's name by its base, and a net's base faces: [one, two of them]. */
@@ -785,6 +805,67 @@ const congruence = (id: string, match: RegExp, answers: string[]) => T(id, match
   return { eq: ans, answer: ans, wrongs: names(rng, ans, all), ar: `إذا كان ${DESC[ans]![0]}، فبأي حالة تتطابق المثلثان؟`, en: `If ${DESC[ans]![1]}, by which criterion are the triangles congruent?` };
 });
 
+/** The vertex of DEF that corresponds to each of ABC's, for a side «AB» or an angle «A». */
+const corrOf = (v: string) => v.split('').map(c => 'DEF'['ABC'.indexOf(c)]).join('');
+
+/** From △ABC ≅ △DEF: the angle F (3), a side (4), x from two corresponding sides (5). Shared by both congruence lessons. */
+function congruenceCalc(k: 3 | 4 | 5, rng: Rng, diff: D): Draft {
+  if (k === 4) {
+    let s = [0, 0, 0];
+    do s = [int(rng, 3, 15), int(rng, 3, 15), int(rng, 3, 15)]; while (s[0]! + s[1]! <= s[2]! || s[0]! + s[2]! <= s[1]! || s[1]! + s[2]! <= s[0]! || new Set(s).size < 3);
+    const [ab, bc, ac] = s as [number, number, number], i = int(rng, 0, 2), ask = ['DE', 'EF', 'DF'][i]!, ans = s[i]!;
+    return { eq: `sides ${ab}, ${bc}, ${ac} ${ask}`, answer: String(ans), wrongs: pos(ans, s.filter(v => v !== ans).concat(ab + bc + ac, ans + 1)), ar: `إذا كان △ABC ≅ △DEF، وكانت أطوال أضلاع المثلث ABC هي AB = ${ab} سم و BC = ${bc} سم و AC = ${ac} سم، فما طول الضلع ${ask}؟`, en: `If △ABC ≅ △DEF with AB = ${ab} cm, BC = ${bc} cm and AC = ${ac} cm, how long is ${ask}?` };
+  }
+  if (k === 5) {
+    const x = int(rng, 2, span(diff, 8, 12, 15)), p = int(rng, 2, 5), q = int(rng, 1, p - 1), c1 = int(rng, 1, 12), c2 = c1 + (p - q) * x;
+    const side = pick(rng, ['AB', 'BC', 'AC']);
+    return { eq: `x ${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, c2 - c1, p * x + c1, (c1 + c2) / (p + q) | 0]), ar: `المثلثان ABC و DEF متطابقان (△ABC ≅ △DEF). إذا كان ${side} = (${lin(p, c1)}) سم و ${corrOf(side)} = (${lin(q, c2)}) سم، فما قيمة x؟`, en: `Triangles ABC and DEF are congruent (△ABC ≅ △DEF). If ${side} = (${lin(p, c1)}) cm and ${corrOf(side)} = (${lin(q, c2)}) cm, what is x?` };
+  }
+  const a = int(rng, 30, 90), b = int(rng, 25, 150 - a), c = 180 - a - b;
+  return { eq: `angle ${a}, ${b}`, answer: `${c}°`, wrongs: deg(c, [a, b, a + b, 180 - a]), ar: `إذا كان △ABC ≅ △DEF، وكان قياس الزاوية A يساوي ${a}° وقياس الزاوية B يساوي ${b}°، فما قياس الزاوية F؟`, en: `If △ABC ≅ △DEF, angle A = ${a}° and angle B = ${b}°, what does angle F measure?` };
+}
+
+/**
+ * SSS, SAS and HL (u4_l1) used to be one kind — name the criterion from its
+ * description — so a quiz of ten had three distinct questions. Now also: name it
+ * from marked parts (1), pick the extra part a criterion needs (2), and the
+ * three computations the ASA lesson already asks (3 angle, 4 side, 5 x).
+ */
+const congruenceSss = (id: string, match: RegExp) => {
+  const base = congruence(id, match, ['SSS', 'SAS', 'HL']);
+  const all = ['SSS', 'SAS', 'HL', 'ASA', 'AAS'];
+  const side = (p: string, q: string) => [p, q].sort().join('');
+  const pair = (s: string) => `${s} ≅ ${corrOf(s)}`;
+  const ang = (v: string) => `∠${v} ≅ ∠${corrOf(v)}`;
+  return T(id, match, [8, 8], ({ rng, diff, grade }) => {
+    const k = pick(rng, [0, 1, 1, 2, 3, 4, 5]);
+    if (k >= 3) return congruenceCalc(k as 3 | 4 | 5, rng, diff);
+    if (k === 1) {
+      const crit = pick(rng, ['SSS', 'SAS', 'HL']);
+      const v = pick(rng, ['A', 'B', 'C']), rest = 'ABC'.replace(v, '').split('') as [string, string];
+      let facts: string[], enFacts: string[];
+      if (crit === 'SSS') { facts = ['AB', 'BC', 'AC'].map(pair); enFacts = facts; }
+      else if (crit === 'SAS') { facts = [pair(side(v, rest[0])), pair(side(v, rest[1])), ang(v)]; enFacts = facts; }
+      else {
+        // a right angle at v: the hypotenuse is the side opposite v, and one leg runs through v
+        facts = [`∠${v} = ∠${corrOf(v)} = 90°`, pair(side(rest[0], rest[1])), pair(side(v, pick(rng, rest)))];
+        enFacts = facts;
+      }
+      return { eq: `parts ${crit} ${v}`, answer: crit, wrongs: names(rng, crit, all), ar: `في المثلثين ABC و DEF: ${facts.join(' و ')}. بأي حالة يتطابق المثلثان؟`, en: `In triangles ABC and DEF: ${enFacts.join(', ')}. By which criterion are the triangles congruent?` };
+    }
+    if (k === 2) {
+      // AB ≅ DE and the other side through v are given; SSS needs the third side, SAS the angle between the two
+      const v = pick(rng, ['A', 'B', 'C']), rest = 'ABC'.replace(v, '').split('') as [string, string];
+      const s1 = side(v, rest[0]), s2 = side(v, rest[1]), third = side(rest[0], rest[1]);
+      const sss = rng() < 0.5;
+      const right = sss ? pair(third) : ang(v);
+      const wrongs = sss ? ['A', 'B', 'C'].map(ang) : [pair(third), ...rest.map(ang)];
+      return { eq: `need ${v} ${sss ? 'SSS' : 'SAS'}`, answer: right, wrongs, ar: `في المثلثين ABC و DEF: ${pair(s1)} و ${pair(s2)}. ما التطابق الإضافي الذي يلزم لإثبات تطابق المثلثين بحالة ${sss ? 'SSS' : 'SAS'}؟`, en: `In triangles ABC and DEF: ${pair(s1)} and ${pair(s2)}. Which extra congruence proves the triangles congruent by ${sss ? 'SSS' : 'SAS'}?` };
+    }
+    return base.make({ rng, diff, grade });
+  });
+};
+
 /**
  * ASA and AAS: besides naming the criterion from its description (0), name it
  * from marked parts (1), pick the extra part a criterion needs (2), and use the
@@ -811,21 +892,7 @@ const congruenceAsa = (id: string, match: RegExp) => {
       const sides = ['AB', 'BC', 'AC'].filter(s => s !== side).map(s => `${s} ≅ ${corr(s)}`);
       return { eq: `need ${angle} ${side} ${asa ? 'ASA' : 'AAS'}`, answer: ans, wrongs: [`∠${asa ? off : other} ≅ ∠${corr(asa ? off : other)}`, ...sides], ar: `في المثلثين ABC و DEF: ∠${angle} ≅ ∠${corr(angle)} و ${side} ≅ ${corr(side)}. ما التطابق الإضافي الذي يلزم لإثبات تطابق المثلثين بحالة ${asa ? 'ASA' : 'AAS'}؟`, en: `In triangles ABC and DEF, ∠${angle} ≅ ∠${corr(angle)} and ${side} ≅ ${corr(side)}. Which extra congruence proves the triangles congruent by ${asa ? 'ASA' : 'AAS'}?` };
     }
-    if (k === 4) {
-      let s = [0, 0, 0];
-      do s = [int(rng, 3, 15), int(rng, 3, 15), int(rng, 3, 15)]; while (s[0]! + s[1]! <= s[2]! || s[0]! + s[2]! <= s[1]! || s[1]! + s[2]! <= s[0]! || new Set(s).size < 3);
-      const [ab, bc, ac] = s as [number, number, number], i = int(rng, 0, 2), ask = ['DE', 'EF', 'DF'][i]!, ans = s[i]!;
-      return { eq: `sides ${ab}, ${bc}, ${ac} ${ask}`, answer: String(ans), wrongs: pos(ans, s.filter(v => v !== ans).concat(ab + bc + ac, ans + 1)), ar: `إذا كان △ABC ≅ △DEF، وكانت أطوال أضلاع المثلث ABC هي AB = ${ab} سم و BC = ${bc} سم و AC = ${ac} سم، فما طول الضلع ${ask}؟`, en: `If △ABC ≅ △DEF with AB = ${ab} cm, BC = ${bc} cm and AC = ${ac} cm, how long is ${ask}?` };
-    }
-    if (k === 5) {
-      const x = int(rng, 2, span(diff, 8, 12, 15)), p = int(rng, 2, 5), q = int(rng, 1, p - 1), c1 = int(rng, 1, 12), c2 = c1 + (p - q) * x;
-      const side = pick(rng, ['AB', 'BC', 'AC']);
-      return { eq: `x ${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, c2 - c1, p * x + c1, (c1 + c2) / (p + q) | 0]), ar: `المثلثان ABC و DEF متطابقان (△ABC ≅ △DEF). إذا كان ${side} = (${lin(p, c1)}) سم و ${corr(side)} = (${lin(q, c2)}) سم، فما قيمة x؟`, en: `Triangles ABC and DEF are congruent (△ABC ≅ △DEF). If ${side} = (${lin(p, c1)}) cm and ${corr(side)} = (${lin(q, c2)}) cm, what is x?` };
-    }
-    if (k === 3) {
-      const a = int(rng, 30, 90), b = int(rng, 25, 150 - a), c = 180 - a - b;
-      return { eq: `angle ${a}, ${b}`, answer: `${c}°`, wrongs: deg(c, [a, b, a + b, 180 - a]), ar: `إذا كان △ABC ≅ △DEF، وكان قياس الزاوية A يساوي ${a}° وقياس الزاوية B يساوي ${b}°، فما قياس الزاوية F؟`, en: `If △ABC ≅ △DEF, angle A = ${a}° and angle B = ${b}°, what does angle F measure?` };
-    }
+    if (k >= 3) return congruenceCalc(k as 3 | 4 | 5, rng, diff);
     return base.make({ rng, diff, grade });
   });
 };
@@ -1460,7 +1527,7 @@ export const GEOMETRY_TOPICS: readonly Topic[] = [
   quadName('quad_name_g5', /^تصنيف الاشكال الرباعيه$/, 5), quadName('quad_name_g6', /^الاشكال الرباعيه$/, 6),
   prismPyramid, symmetry, complement, transversal, triangleAngles, polygonAngles,
   parallelogram, parallelogramTest, specialParallelograms, parallelProof, isosceles,
-  congruence('congruence_a', /^تطابق المثلثات \(SSS SAS HL\)$/, ['SSS', 'SAS', 'HL']), congruenceAsa('congruence_b', /^تطابق المثلثات \(ASA AAS\)$/),
+  congruenceSss('congruence_a', /^تطابق المثلثات \(SSS SAS HL\)$/), congruenceAsa('congruence_b', /^تطابق المثلثات \(ASA AAS\)$/),
   similarity, pyth,
   reflectLine, translate('translate_g5', /^الانسحاب$/, 5), translate('translate_g6', /^الانسحاب في المستوي الاحداثي$/, 6), reflectAxes, coordPlane5, coordPlane6, rotate,
   dilate('dilate_g7', /^التكبير$/, 7), dilate('dilate_g8', /^التمدد$/, 8),

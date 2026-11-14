@@ -90,8 +90,8 @@ describe('what a Grade 1 activity is made of', () => {
 
   it('a maths game reads one of the lesson’s own questions aloud', () => {
     const a = buildOfflineActivity(reqFor('kbl-g1-math-s2-nccd-u6_l1', 'game'));
-    // The item is drawn at random (a sum, a missing number or a story); all of them hold a ten.
-    assert.match(a.steps[1]!.description, /مثل: «[^»]*\d0[^»]*»/);
+    // The item is drawn at random (a sum, a missing number, a story, or tens counted as «4 عشرات»); all of them hold tens.
+    assert.match(a.steps[1]!.description, /مثل: «[^»]*(?:\d0|عشرات)[^»]*»/);
   });
 
   it('a group activity gives each child one job, a discussion is the whole class', () => {

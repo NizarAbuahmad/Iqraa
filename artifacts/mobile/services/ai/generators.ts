@@ -1618,20 +1618,36 @@ export class MockAIService extends AIService {
       if (isMathContext(tp, kbRow, req.subject)) return takeSolvedMath(tp, kbRow, tier, lang, session);
       return null;
     };
+    // A wide scope tries the slot's own lesson first, then walks on through the
+    // scope's other lessons as `ScopeDrawer.draw` does: a lesson can have a
+    // question bank but no worked steps (Grade 10 S2's polynomial and rational
+    // functions, given computed generators on 2026-11-13), and when such a
+    // lesson held slot 0 the whole paper lost its worked example and
+    // half-solved item. Whichever lesson supplies the item is the one named.
+    const solvedCandidates = (): (OfflineSlotLesson | null)[] => {
+      if (!wide) return [null];
+      const all = wide.lessons;
+      const start = Math.max(0, all.findIndex(l => l.id === wide.drawer.lessonAt(slot).id));
+      return all.map((_, k) => all[(start + k) % all.length]!);
+    };
     const takeSolved = (tier: DiffTier): SolvedItem | null => {
-      // The slot's lesson is read once: the masked passes below try the SAME slot.
-      const at = wide ? wide.drawer.lessonAt(slot) : null;
-      let item: SolvedItem | null = null;
-      for (const avoid of avoidInTurn) {
-        item = takeSolvedIn(tier, at, new Set([...currentSession(), ...avoid]));
+      for (const at of solvedCandidates()) {
+        // Each lesson is read once: the masked passes below try the SAME lesson.
+        let item: SolvedItem | null = null;
+        for (const avoid of avoidInTurn) {
+          item = takeSolvedIn(tier, at, new Set([...currentSession(), ...avoid]));
+          if (item) {
+            currentSession().add(item.id);
+            break;
+          }
+        }
+        item ??= takeSolvedIn(tier, at);
         if (item) {
-          currentSession().add(item.id);
-          break;
+          if (at) { solvedLesson.set(item, at.id); slot += 1; }
+          return item;
         }
       }
-      item ??= takeSolvedIn(tier, at);
-      if (item && at) { solvedLesson.set(item, at.id); slot += 1; }
-      return item;
+      return null;
     };
     const exampleItem = takeSolved(band[0]);
     const completionItem = exampleItem ? takeSolved(band[1]) : null;

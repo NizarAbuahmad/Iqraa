@@ -24,11 +24,20 @@ const shuffle = <X,>(rng: Rng, xs: X[]) => {
 };
 /** Name options: three other names from the same list, in a stable order. */
 const others = (rng: Rng, ans: string, all: readonly string[]) => shuffle(rng, all.filter(x => x !== ans)).slice(0, 3);
-/** «دينار واحد / ديناران / 5 دنانير / 12 دينارًا» */
-const counted = (n: number, one: string, two: string, few: string, many: string) => (n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${few}` : `${n} ${many}`);
-const dinars = (n: number) => counted(n, 'دينار واحد', 'ديناران', 'دنانير', 'دينارًا');
+/** «دينار واحد / ديناران / 5 دنانير / 12 دينارًا / 100 دينار» */
+const counted = (n: number, one: string, two: string, few: string, many: string, hundreds: string) =>
+  (n === 1 ? one : n === 2 ? two : `${n} ${tamyiz(n, few, many, hundreds)}`);
+const dinars = (n: number) => counted(n, 'دينار واحد', 'ديناران', 'دنانير', 'دينارًا', 'دينار');
+/** «يوم واحد / يومين / 9 أيام / 18 يومًا» — after «بعد» / «في», so the dual is genitive. */
+const days = (n: number) => counted(n, 'يوم واحد', 'يومين', 'أيام', 'يومًا', 'يوم');
+/** «أسبوعين / 5 أسابيع» */
+const weeks = (n: number) => counted(n, 'أسبوع واحد', 'أسبوعين', 'أسابيع', 'أسبوعًا', 'أسبوع');
+/** «قطعتان / 5 قطع / 12 قطعةً» — the subject of its clause, so the dual is nominative. */
+const pieces = (n: number) => counted(n, 'قطعة واحدة', 'قطعتان', 'قطع', 'قطعةً', 'قطعة');
+/** «قلمان / 5 أقلام» — nominative. */
+const pens = (n: number) => counted(n, 'قلم واحد', 'قلمان', 'أقلام', 'قلمًا', 'قلم');
 /** After «في / من / بـ» a dual is genitive: «في دينارين», never «في ديناران». */
-const dinarsAfterPreposition = (n: number) => counted(n, 'دينار واحد', 'دينارين', 'دنانير', 'دينارًا');
+const dinarsAfterPreposition = (n: number) => counted(n, 'دينار واحد', 'دينارين', 'دنانير', 'دينارًا', 'دينار');
 /** «كرة واحدة / كرتان / 5 كرات / 12 كرةً» */
 const balls = (n: number) => (n === 1 ? 'كرة واحدة' : n === 2 ? 'كرتان' : `${n} ${tamyiz(n, 'كرات', 'كرةً', 'كرة')}`);
 /** «45 قرشًا / 7 قروش / 300 قرش» — for 3 or more. */
@@ -403,18 +412,26 @@ const mentalG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1
 // «جمع العشرات» quiz asked «3 + ؟ = 4» and nothing about tens (swept
 // 2026-11-13). Each is about its own lesson's skill, within its own numbers.
 
-/** «10 أقلام / 20 قلمًا» — for 3 or more. */
-const pens = (n: number) => `${n} ${tamyiz(n, 'أقلام', 'قلمًا', 'قلم')}`;
 /** «برتقالة واحدة / برتقالتان / 5 برتقالات / 12 برتقالةً» */
 const oranges = (n: number) => (n === 1 ? 'برتقالة واحدة' : n === 2 ? 'برتقالتان' : `${n} ${tamyiz(n, 'برتقالات', 'برتقالةً', 'برتقالة')}`);
 
 /** Wrong options a Grade 1 child could meet: none past 99. */
 const g1 = (ans: number, cands: number[]) => ints(ans, cands.filter(v => v <= 99));
 
-/** Whole tens: «30 + 40», never past 90. */
+/**
+ * Whole tens: «30 + 40», never past 90. Also counted as tens, «3 عشرات + 4 عشرات»
+ * (from main's version of this generator, merged 2026-11-14), counts of 3 or more:
+ * «1 عشرات / 2 عشرات» is not Arabic.
+ */
 const tensG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1], ({ rng, word }) => {
   const a = add ? int(rng, 1, 8) : int(rng, 2, 9), b = add ? int(rng, 1, 9 - a) : int(rng, 1, a - 1);
-  const A = a * 10, B = b * 10, r = add ? A + B : A - B, op = add ? '+' : '−', k = word ? 2 : pick(rng, [0, 1, 2, 3]);
+  const A = a * 10, B = b * 10, r = add ? A + B : A - B, op = add ? '+' : '−', k = word ? 2 : pick(rng, [0, 1, 2, 3, 4]);
+  if (k === 4) {
+    let c = 0, d = 0;
+    do { c = int(rng, 3, 9); d = int(rng, 3, 9); } while (add ? c + d > 9 : c <= d);
+    const e = add ? c + d : c - d;
+    return { eq: `${c}t ${op} ${d}t`, answer: String(e), wrongs: g1(e, [add ? c - d : c + d, e + 1, e - 1, e * 10]), ar: `${c} عشرات ${op} ${d} عشرات = ___ عشرات`, en: `${c} tens ${op} ${d} tens = ___ tens` };
+  }
   const near = [add ? A - B : A + B, r + 10, r - 10, add ? a + b : a - b, r - 20];
   if (k === 1) return { eq: `${A} ${op} ${B}`, answer: String(r), wrongs: g1(r, near), ar: `إذا كان ${a} ${op} ${b} = ${add ? a + b : a - b}، فما ناتج ${A} ${op} ${B}؟`, en: `If ${a} ${op} ${b} = ${add ? a + b : a - b}, what is ${A} ${op} ${B}?` };
   if (k === 2) return { eq: `${A} ${op} ${B}`, answer: String(r), wrongs: g1(r, near), word: true, ar: add ? `في علبة ${pens(A)}، فأضاف إليها المعلم ${pens(B)}. كم قلمًا أصبح في العلبة؟` : `في علبة ${pens(A)}، فأخذ الطلبة منها ${pens(B)}. كم قلمًا بقي في العلبة؟`, en: add ? `A box has ${A} pencils and the teacher puts in ${B} more. How many pencils are in the box now?` : `A box has ${A} pencils and the students take ${B} of them. How many pencils are left?` };
@@ -427,7 +444,9 @@ const twoDigitG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1,
   let t1: number, o1: number, t2: number, o2: number;
   if (add) { t1 = int(rng, 1, 8); t2 = int(rng, 1, 9 - t1); o1 = int(rng, 0, 8); o2 = int(rng, o1 === 0 ? 1 : 0, 9 - o1); }
   else { t1 = int(rng, 2, 9); t2 = int(rng, 1, t1 - 1); o1 = int(rng, 1, 9); o2 = int(rng, 0, o1); }
-  const x = t1 * 10 + o1, y = t2 * 10 + o2, r = add ? x + y : x - y, op = add ? '+' : '−', k = word ? 2 : pick(rng, [0, 1, 2, 3]);
+  const x = t1 * 10 + o1, y = t2 * 10 + o2, r = add ? x + y : x - y, op = add ? '+' : '−', k = word ? 2 : pick(rng, [0, 1, 2, 3, 4]);
+  // From main's version of this generator (merged 2026-11-14): the tens of the result, column by column.
+  if (k === 4) { const t = Math.floor(r / 10); return { eq: `tens ${x} ${op} ${y}`, answer: String(t), wrongs: g1(t, [r % 10, t1, t + 1, t - 1, t + 2]), ar: `${add ? 'اجمع' : 'اطرح'} الآحاد ثم العشرات: ${x} ${op} ${y}. كم عشرة في الناتج؟`, en: `${add ? 'Add' : 'Subtract'} the ones, then the tens: ${x} ${op} ${y}. How many tens are in the answer?` }; }
   const near = [add ? x - y : x + y, r + 10, r - 10, r + 1, r - 1, r - 2];
   if (k === 1) { const o = add ? o1 + o2 : o1 - o2; return { eq: `${x} ${op} ${y}`, answer: String(o), wrongs: g1(o, [o1, o2, add ? t1 + t2 : t1 - t2, o + 1, o + 2]), ar: `ما رقم الآحاد في ناتج ${x} ${op} ${y}؟`, en: `What is the ones digit of ${x} ${op} ${y}?` }; }
   if (k === 2) return { eq: `${x} ${op} ${y}`, answer: String(r), wrongs: g1(r, near), word: true, ar: add ? `مع سلمى ${qirsh(x)}، وأعطتها جدّتها ${qirsh(y)}. كم قرشًا أصبح معها؟` : `مع رامي ${qirsh(x)}، دفع منها ${qirsh(y)} ثمنَ دفتر. كم قرشًا بقي معه؟`, en: add ? `Salma has ${x} qirsh and her grandmother gives her ${y} qirsh. How many qirsh does she have now?` : `Rami has ${x} qirsh and buys a notebook for ${y} qirsh. How many qirsh are left?` };
@@ -741,14 +760,10 @@ const mentalMultiples = (id: string, match: RegExp, add: boolean, grade: number)
   return { eq: `${x}, ${y}`, answer: String(r), wrongs: ints(r, [r * 10, r / 10, add ? x - y : x + y, r + place]), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
 });
 
-// Counts start at 3 so «${n} أقلام / ${g} مجموعات» are right as written («2
-// أقلام» is not Arabic: two is a dual, «قلمان»); a total of 11 or more takes the
-// singular — «وُزّعت 25 قطعةً», never «25 قطع».
-const pieces = (n: number) => `${n} ${tamyiz(n, 'قطع', 'قطعةً', 'قطعة')}`;
 const equalGroups = (id: string, match: RegExp) => T(id, match, [2, 2], ({ rng }) => {
-  const g = int(rng, 3, 5), n = int(rng, 3, 6), t = g * n, k = pick(rng, [0, 1, 2]);
-  if (k === 0) return { eq: `${g}, ${n}`, answer: String(t), wrongs: ints(t, [g + n, t + g, t - n, g * g]), ar: `${g} مجموعات متساوية، في كل منها ${n} أقلام. كم قلمًا في المجموع؟`, en: `There are ${g} equal groups with ${n} pencils in each. How many pencils are there in all?` };
-  if (k === 1) return { eq: `${t}, ${g}`, answer: String(n), wrongs: ints(n, [t, g, n + 1, t - g]), ar: `وُزّعت ${pieces(t)} بالتساوي على ${g} مجموعات. كم قطعة في كل مجموعة؟`, en: `${t} pieces are shared equally among ${g} groups. How many pieces are in each group?` };
+  const g = int(rng, 2, 5), n = int(rng, 2, 6), t = g * n, k = pick(rng, [0, 1, 2]);
+  if (k === 0) return { eq: `${g}, ${n}`, answer: String(t), wrongs: ints(t, [g + n, t + g, t - n, g * g]), ar: `${g === 2 ? 'مجموعتان متساويتان' : `${g} مجموعات متساوية`}، في كل منها ${pens(n)}. كم قلمًا في المجموع؟`, en: `There are ${g} equal groups with ${n} pencils in each. How many pencils are there in all?` };
+  if (k === 1) return { eq: `${t}, ${g}`, answer: String(n), wrongs: ints(n, [t, g, n + 1, t - g]), ar: `وُزّعت ${pieces(t)} بالتساوي على ${g === 2 ? 'مجموعتين' : `${g} مجموعات`}. كم قطعة في كل مجموعة؟`, en: `${t} pieces are shared equally among ${g} groups. How many pieces are in each group?` };
   return { eq: `${t}, ${n}`, answer: String(g), wrongs: ints(g, [t, n, g + 1, t - n]), ar: `${pieces(t)}، وُضع في كل مجموعة ${pieces(n)}. كم مجموعة تكوّنت؟`, en: `${t} pieces are put into groups of ${n}. How many groups are made?` };
 });
 
@@ -1197,22 +1212,22 @@ const monthsOfYear = T('months', /^اشهر السنه$/, [2, 2], ({ rng }) => {
 
 const amPm = T('am_pm', /^قبل الظهر بعد الظهر$/, [3, 3], ({ rng }) => {
   const a = int(rng, 5, 11), b = int(rng, 1, 9), k = pick(rng, [0, 1, 2, 3]);
-  if (k === 2) return { eq: `${b + 12}`, answer: String(b), wrongs: ints(b, [b + 12, b + 2, b + 1, b - 1]), ar: `الساعة ${b + 12}:00 بنظام 24 ساعة. كم تكون الساعة بعد الظهر؟ (اكتب العدد قبل «:00»)`, en: `It is ${b + 12}:00 in 24-hour time. What time is it in the afternoon? (write the number before ':00')` };
+  if (k === 2) return { eq: `${b + 12}`, answer: String(b), wrongs: ints(b, [b + 12, b + 2, b + 1, b - 1]), ar: `الساعة ${b + 12}:00 بنظام 24 ساعةً. كم تكون الساعة بعد الظهر؟ (اكتب العدد قبل «:00»)`, en: `It is ${b + 12}:00 in 24-hour time. What time is it in the afternoon? (write the number before ':00')` };
   if (k === 3) {
     // a morning start that runs past noon
     const s = int(rng, 7, 11), len = int(rng, Math.max(3, 13 - s), 10), end = s + len - 12;
     return { eq: `${s}, ${len}`, answer: String(end), wrongs: ints(end, [s + len, end + 1, end - 1, len]), ar: `بدأت رحلة الساعة ${s}:00 قبل الظهر واستمرت ${len} ساعات. في أي ساعة بعد الظهر انتهت؟ (اكتب العدد قبل «:00»)`, en: `A trip starts at ${s}:00 a.m. and lasts ${len} hours. At what hour p.m. does it end? (write the number before ':00')` };
   }
   if (k === 0) return { eq: `${a}, ${b}`, answer: String(12 - a + b), wrongs: ints(12 - a + b, [b - a > 0 ? b - a : 2, 12 - a, a + b, 12 - a + b + 1]), ar: `بدأ نشاط الساعة ${a}:00 قبل الظهر وانتهى الساعة ${b}:00 بعد الظهر. كم ساعة استغرق؟`, en: `An activity starts at ${a}:00 a.m. and ends at ${b}:00 p.m. How many hours does it last?` };
-  return { eq: `${b}`, answer: String(b + 12), wrongs: ints(b + 12, [b, b + 10, 12 - b > 0 ? 12 - b : 11, b + 11]), ar: `الساعة ${b}:00 بعد الظهر. كم تبلغ الساعة بنظام 24 ساعة؟ (اكتب العدد قبل «:00»)`, en: `It is ${b}:00 p.m. What is the hour in 24-hour time? (write the number before ':00')` };
+  return { eq: `${b}`, answer: String(b + 12), wrongs: ints(b + 12, [b, b + 10, 12 - b > 0 ? 12 - b : 11, b + 11]), ar: `الساعة ${b}:00 بعد الظهر. كم تبلغ الساعة بنظام 24 ساعةً؟ (اكتب العدد قبل «:00»)`, en: `It is ${b}:00 p.m. What is the hour in 24-hour time? (write the number before ':00')` };
 });
 
 const calendar = T('calendar', /^التقويم$/, [3, 3], ({ rng }) => {
   const k = pick(rng, [0, 1, 2]);
-  if (k === 0) { const w = int(rng, 2, 8); return { eq: `${w}`, answer: String(w * 7), wrongs: ints(w * 7, [w * 5, w * 6, w * 7 + 1, w + 7]), ar: `كم يومًا في ${w} أسابيع؟`, en: `How many days are in ${w} weeks?` }; }
-  if (k === 1) { const d = 7 * int(rng, 2, 8); return { eq: `${d}`, answer: String(d / 7), wrongs: ints(d / 7, [d / 7 + 1, d / 7 - 1, d, d / 7 + 2]), ar: `كم أسبوعًا في ${d} يومًا؟`, en: `How many weeks are in ${d} days?` }; }
+  if (k === 0) { const w = int(rng, 2, 8); return { eq: `${w}`, answer: String(w * 7), wrongs: ints(w * 7, [w * 5, w * 6, w * 7 + 1, w + 7]), ar: `كم يومًا في ${weeks(w)}؟`, en: `How many days are in ${w} weeks?` }; }
+  if (k === 1) { const d = 7 * int(rng, 2, 8); return { eq: `${d}`, answer: String(d / 7), wrongs: ints(d / 7, [d / 7 + 1, d / 7 - 1, d, d / 7 + 2]), ar: `كم أسبوعًا في ${days(d)}؟`, en: `How many weeks are in ${d} days?` }; }
   const i = int(rng, 0, 6), j = int(rng, 1, 20), ans = DAYS[(i + j) % 7]!;
-  return { eq: `${DAYS[i]}, ${j}`, answer: ans, wrongs: others(rng, ans, DAYS), ar: `اليوم ${DAYS[i]}. ما اليوم بعد ${j} يومًا؟`, en: `Today is ${DAYS[i]}. Which day will it be after ${j} days? (Arabic day names)` };
+  return { eq: `${DAYS[i]}, ${j}`, answer: ans, wrongs: others(rng, ans, DAYS), ar: `اليوم ${DAYS[i]}. ما اليوم بعد ${days(j)}؟`, en: `Today is ${DAYS[i]}. Which day will it be after ${j} days? (Arabic day names)` };
 });
 
 /**
@@ -1545,8 +1560,8 @@ export const EARLY_TOPICS: readonly Topic[] = [
   makeTen, addProps('add_props_g1', /^خصائص عمليه الجمع$/, 1), addProps('add_props_g2', /^خصائص الجمع$/, 2),
   relatedFacts('related_g1', 1), relatedFacts('related_g3', 3), missingNumber,
   mentalG1('mental_add', /^الجمع الذهني$/, true), mentalG1('mental_sub', /^الطرح الذهني$/, false),
-  tensG1('add_tens_g1', /^جمع العشرات$/, true), tensG1('sub_tens_g1', /^طرح العشرات$/, false),
-  twoDigitG1('add_2digit_g1', /^جمع عددين من منزلتين$/, true), twoDigitG1('sub_2digit_g1', /^طرح عددين من منزلتين$/, false),
+  tensG1('tens_add_g1', /^جمع العشرات$/, true), tensG1('tens_sub_g1', /^طرح العشرات$/, false),
+  twoDigitG1('two_digit_add_g1', /^جمع عددين من منزلتين$/, true), twoDigitG1('two_digit_sub_g1', /^طرح عددين من منزلتين$/, false),
   subDoubles, subMakeTen, addMakeTen, addThree,
   solids, planeShapes('plane_shapes', /^الاشكال المستويه$/, [1, 2]), planeShapes('plane_sides_g1', /^اضلاع الاشكال المستويه ورؤوسها$/, [1, 1]), planeShapes('plane_sides_g2', /^الاضلاع والرؤوس$/, [2, 2]),
   solidParts, geoPattern,

@@ -160,7 +160,7 @@ describe('probability and counting: answers recomputed', () => {
       }
       let want: number;
       if (has(p, 'مكعب')) { const key = Object.keys(DICE).find(k => p.endsWith(`ظهور ${k}؟`))!; want = [1, 2, 3, 4, 5, 6].filter(DICE[key]!).length / 6; assert.ok(Math.abs(frac(item.answer) - want) < 1e-9, p); continue; }
-      if (has(p, 'يُتوقَّع')) { const N = Number(p.match(/تكررت العملية (\d+) مرة/)![1]); assert.equal(Number(item.answer), (N * counts[0]!) / t, p); continue; }
+      if (has(p, 'يُتوقَّع')) { const N = Number(p.match(/تكررت العملية (\d+) (?:مرة|مرةً|مرات)/)![1]); assert.equal(Number(item.answer), (N * counts[0]!) / t, p); continue; }
       if (has(p, 'ألّا تكون')) want = (t - counts[0]!) / t;
       else { const m = p.match(/تكون (?:الكرة )?(حمراء|زرقاء|خضراء|صفراء)/)!; want = counts[COLORS.indexOf(m[1]!)]! / t; }
       assert.ok(Math.abs(frac(item.answer) - want) < 1e-9, `${p} → ${item.answer}`);
@@ -613,7 +613,8 @@ describe('statistics: answers recomputed', () => {
 describe('proportion and percent: answers recomputed', () => {
   it('unit rate and proportion', () => {
     for (const item of draws('unit_rate', 300)) {
-      const p = item.promptAr!, n = nums(p);
+      // «في ساعتين» is two hours, read back as the digit in place.
+      const p = item.promptAr!, n = nums(p.replace('ساعتين', '2'));
       if (has(p, 'العرض الأول')) { const [q1, c1, q2, c2] = n; const first = c1! / q1! < c2! / q2!; assert.equal(item.answer, first ? 'العرض الأول' : 'العرض الثاني'); assert.notEqual(c1! / q1!, c2! / q2!); }
       else assert.equal(Number(item.answer), has(p, 'ثمن') ? n[1]! / n[0]! : n[0]! / n[1]!, p);
     }
@@ -782,7 +783,8 @@ describe('data and proportion routing', () => {
     ['معدل الوحدة', 7, 'unit_rate'], ['التناسب', 7, 'proportion'], ['العلاقات التناسبية', 7, 'proportional_relation'], ['التغير الطردي', 7, 'direct_variation'],
     ['التغير العكسي', 7, 'inverse_variation'], ['التقسيم التناسبي', 7, 'proportional_division'], ['تطبيقات مالية', 7, 'financial_math'], ['مقياس الرسم', 7, 'map_scale'],
     ['التشابه', 7, 'similar_figures'], ['النسبة المئوية', 8, 'percent_g8'],
-    ['اختيار التمثيل الأنسب', 8, null], ['تفسير التمثيلات البيانية', 9, 'interpret_graphs'], ['الربيعيات', 8, null],
+    // these two Grade 8 lessons got generators on 2026-11-13 (g8Lessons.test.ts); the same words in Grade 9 stay refused
+    ['اختيار التمثيل الأنسب', 8, 'g8_best_chart'], ['اختيار التمثيل الأنسب', 9, null], ['تفسير التمثيلات البيانية', 9, 'interpret_graphs'], ['الربيعيات', 8, 'g8_quartiles'], ['الربيعيات', 9, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {

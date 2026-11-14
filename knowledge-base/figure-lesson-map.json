@@ -1,5 +1,5 @@
 {
-  "note": "Book lesson -> curriculum lesson. Proposed by title overlap, then hand-checked. A null kbLessonId means no lesson corresponds; those figures stay unused. Do not auto-fill from `candidates`: the book and the curriculum disagree about lesson boundaries — the book splits composition/inverse/radical into separate lessons where the curriculum merges them, so high word overlap is not proof.",
+  "note": "Book lesson -> curriculum lesson. Proposed by title overlap, then hand-checked. A null kbLessonId means no lesson corresponds; those figures stay unused. Do not auto-fill from `candidates`: the book and the curriculum can disagree about lesson boundaries (Grade 10 maths S1 unit 1: the curriculum keeps two teacher-guide exponent lessons the 2026 book does not have), so high word overlap is not proof.",
   "generatedFrom": "lessonTitleEn vs KB_LESSONS titleEn, constrained to the unit number the book prints",
   "entries": [
     {
@@ -80,7 +80,7 @@
         }
       ],
       "matchedBy": null,
-      "why": "The book opens unit 1 with a lesson the curriculum does not carry, which is why every later unit-1 lesson sits one place lower in the curriculum than the number the book prints. Left unmatched rather than forced onto a neighbour."
+      "why": "The book opens unit 1 with «حل معادلات خاصة». Since 2026-11-13 the curriculum carries it as kbl-math-s1-nccd-u1_l5, but these figures were never uploaded to R2 (the uploader only sends mapped keys), so mapping them without running upload-figures-r2 would show broken images. Map to u1_l5 and upload in the same step."
     },
     {
       "sourceId": "math-s1-student-book",
@@ -264,7 +264,7 @@
       "bookTitleEn": "Inverse Function",
       "kbLessonId": "kbl-math-s2-nccd-u5_l4",
       "score": 0.67,
-      "why": "الاقتران العكسي = the inverse function. NOT u5_l3, which the English matcher preferred at 0.67 — that lesson merges composition, inverse and radical",
+      "why": "الاقتران العكسي = the inverse function; the book's lesson also covers «الاقتران الجذري» (p32), as u5_l4 does. NOT u5_l3, which the English matcher preferred at 0.67 — that lesson is composition only.",
       "matchedBy": "hand-checked against the curriculum Arabic title"
     },
     {
@@ -2903,6 +2903,15 @@
       "kbLessonId": "kbl-g9-eng-s2-nccd-u7_l7",
       "score": 1,
       "matchedBy": "book-opener-title"
+    },
+    {
+      "sourceId": "g9-english-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "المفردات والقواعد",
+      "kbLessonId": "kbl-g9-eng-s2-nccd-u8_l1",
+      "score": null,
+      "matchedBy": "hand-checked: the photo is on the unit's opening page, just before its first lesson; it was filed under the previous unit's writing lesson"
     },
     {
       "sourceId": "g9-english-s2-student-book",
@@ -6073,6 +6082,1207 @@
       "kbLessonId": "kbl-g5-science-s2-nccd-u10_l2",
       "score": 1,
       "matchedBy": "contents-table"
+    },
+    {
+      "sourceId": "g8-english-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "kbLessonId": "kbl-g8-eng-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "audit",
+      "why": "Added by the Grade 8 audit (2026-11-13): the unit opener is the first page of lesson 1A (its exercise 1 sends pupils to it), but the extractor filed its figures under the previous unit lesson 7A, the last band it had seen."
+    },
+    {
+      "sourceId": "g8-english-s2-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "kbLessonId": "kbl-g8-eng-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "audit",
+      "why": "Added by the Grade 8 audit (2026-11-13): the unit opener is the first page of lesson 1A (its exercise 1 sends pupils to it), but the extractor filed its figures under the previous unit lesson 7A, the last band it had seen."
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "القِيمَةُ المَنْزِلِيَّةُ ضِمْنَ مِئاتِ الأُلوفِ",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page",
+      "why": "hand-checked: cropped 2026-11-13 from the R2 book-page renders (book-pages/<kbLessonId>/<n>.jpg, 1400 px) because no PDF was reachable; each crop's lesson is the lesson whose start page (the reviewed table in the status log, «Grade 4 maths figures») comes last before it, and the book's unit and lesson numbers are the catalog's (checked lesson by lesson in the Grade 4 review). rect is in PDF points scaled from the render."
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "تَقْريبُ الأَعْدادِ",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "تَقْديرُ المَجْموعِ وَالفَرْقِ",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "جَمْعُ الأَعْدادِ",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u1_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 1,
+      "lesson": 6,
+      "bookTitleAr": "طَرْحُ الأَعْدادِ",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u1_l6",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الضَّرْبُ في مُضاعَفاتِ 10, 100, 1000",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "ضَرْبُ الأَعْدادِ",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "قِسْمَةُ الأَعْدادِ",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "العَوامِلُ",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "الأَعْدادُ الأَوَّلِيَّةُ، وَالأَعْدادُ غَيْرُ الأَوَّلِيَّةِ",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "الخُطوطُ، وَالأَشِعَّةُ، وَالزَّوايا",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "قِياسُ الزَّوايا وَرَسْمُها",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "المُسْتَقيماتُ المُتَوازِيَةُ وَالمُتَقاطِعَةُ",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleAr": "التَّماثُلُ",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u5_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s1-student-book",
+      "unit": 5,
+      "lesson": 5,
+      "bookTitleAr": "الانْعِكاسُ",
+      "kbLessonId": "kbl-g4-math-s1-nccd-u5_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "الكُسورُ المُتَكافِئَةُ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "bookTitleAr": "جَمْعُ الكُسورِ المُتَشابِهَةِ وَطَرْحُها",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 6,
+      "lesson": 3,
+      "bookTitleAr": "الأَعْدادُ الكَسْرِيَّةُ وَالكُسورُ غَيْرُ الفِعْلِيَّةِ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 6,
+      "lesson": 4,
+      "bookTitleAr": "مُقارَنَةُ الكُسورِ وَالأَعْدادِ الكَسْرِيَّةِ وَتَرْتيبُها",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u6_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 7,
+      "lesson": 1,
+      "bookTitleAr": "أَجْزاءُ العَشَرَةِ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 7,
+      "lesson": 2,
+      "bookTitleAr": "أَجْزاءُ المِئَةِ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 7,
+      "lesson": 3,
+      "bookTitleAr": "الأَعْدادُ العَشْرِيَّةُ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u7_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 7,
+      "lesson": 5,
+      "bookTitleAr": "الأَعْدادُ العَشْرِيَّةُ وَالنُّقودُ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u7_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 7,
+      "lesson": 6,
+      "bookTitleAr": "مُقارَنَةُ الأَعْدادِ العَشْرِيَّةِ وَتَرْتيبُها",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u7_l6",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 7,
+      "lesson": 7,
+      "bookTitleAr": "تَقْريبُ الأَعْدادِ العَشْرِيَّةِ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u7_l7",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 8,
+      "lesson": 1,
+      "bookTitleAr": "الأَنْماطُ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 8,
+      "lesson": 2,
+      "bookTitleAr": "جَداوِلُ المُدْخَلاتِ وَالمُخْرَجاتِ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 8,
+      "lesson": 3,
+      "bookTitleAr": "الأَنْماطُ الهَنْدَسِيَّةُ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u8_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 9,
+      "lesson": 1,
+      "bookTitleAr": "وَحَداتُ قِياسِ الطّولِ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u9_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 9,
+      "lesson": 2,
+      "bookTitleAr": "وَحَداتُ قِياسِ الكُتْلَةِ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 9,
+      "lesson": 3,
+      "bookTitleAr": "وَحَداتُ قِياسِ السَّعَةِ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u9_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 9,
+      "lesson": 4,
+      "bookTitleAr": "الزَّمَنُ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u9_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 10,
+      "lesson": 1,
+      "bookTitleAr": "تَمْثيلُ البَياناتِ بِالنِّقاطِ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u10_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 10,
+      "lesson": 2,
+      "bookTitleAr": "تَمْثيلُ البَياناتِ بِالأَعْمِدَةِ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u10_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 10,
+      "lesson": 3,
+      "bookTitleAr": "تَمْثيلُ البَياناتِ بِأَشْكالِ ڤِن",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u10_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 10,
+      "lesson": 4,
+      "bookTitleAr": "التَّجْرِبَةُ العَشْوائِيَّةُ وَأَنْواعُ الحَوادِثِ",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u10_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-math-s2-student-book",
+      "unit": 10,
+      "lesson": 5,
+      "bookTitleAr": "خُطَّةُ حَلِّ المَسْأَلَةِ: اسْتِعْمالُ شَكْلِ ڤِن",
+      "kbLessonId": "kbl-g4-math-s2-nccd-u10_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by start page"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range",
+      "why": "hand-checked: candidates detected by colour and texture on the R2 book-page renders (no PDF reachable), every one kept or dropped by eye (text panels, word games, recurring mascots and icons dropped); the lesson is the book-page-links range the page sits in, except a unit's opener art, which sits in the previous unit's last range and goes to the next unit's first lesson. Numbers are the catalog's."
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (أَسْرُدُ قِصَّةً بِالاسْتِعانَةِ بِالأَسْئِلَةِ وَإِجاباتِها)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (نَمْلَةُ سُلَيْمانَ عَلَيْهِ السَّلامُ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "أَكْتُبُ (الْهَمَزاتُ في بِداياتِ الْكَلِماتِ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u1_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (أَتَحَدَّثُ عَنْ هِوايَتي)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (لَوْحَةُ طارِقٍ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "أَكْتُبُ (التّاءُ وَالْهاءُ في نِهاياتِ الْكَلِماتِ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 2,
+      "lesson": 5,
+      "bookTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u2_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (السَّلامُ الْمَلَكِيُّ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 3,
+      "lesson": 4,
+      "bookTitleAr": "أَكْتُبُ مُحْتَوًى (الْهَمْزَةُ الْمُتَوَسِّطَةُ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u3_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 3,
+      "lesson": 5,
+      "bookTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u3_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (صِحَّتُنا في غِذائِنا)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "أَكْتُبُ (عَلاماتُ التَّرْقيمِ (،) وَ(:) وَ(؟))",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u4_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 4,
+      "lesson": 5,
+      "bookTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u4_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (أَتَحَدَّثُ عَنْ دَوْرَةِ الْماءِ في الطَّبيعَةِ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 5,
+      "lesson": 3,
+      "bookTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (النَّحْلُ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u5_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 5,
+      "lesson": 5,
+      "bookTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u5_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 6,
+      "lesson": 2,
+      "bookTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u6_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 6,
+      "lesson": 3,
+      "bookTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (شَهْبَنْدَرُ التُّجّارِ وَالصَّديقُ الْمِثالِيُّ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 6,
+      "lesson": 5,
+      "bookTitleAr": "أَبْني لُغَتي (الْجُمْلَةُ الاسْمِيَّةُ الْبَسيطَةُ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u6_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 7,
+      "lesson": 1,
+      "bookTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (أَرْوَعُ صَديقَيْنِ في الْعالَمِ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 7,
+      "lesson": 2,
+      "bookTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 7,
+      "lesson": 3,
+      "bookTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (هَكَذا تَحَرَّكَتْ سَناءُ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u7_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 7,
+      "lesson": 5,
+      "bookTitleAr": "أَبْني لُغَتي (الأَسْماءُ الْمَوْصولَةُ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u7_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 8,
+      "lesson": 1,
+      "bookTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (مِنْ حِكاياتِ أَشْعَبَ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 8,
+      "lesson": 2,
+      "bookTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 8,
+      "lesson": 3,
+      "bookTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (جُحا الْعادِلُ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u8_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 8,
+      "lesson": 4,
+      "bookTitleAr": "أَكْتُبُ (كَلِماتٌ يَخْتَلِفُ رَسْمُها عَنْ نُطْقِها | الأَحْرُفُ: الْجيمُ، وَالْحاءُ، وَالْخاءُ | كِتابَةُ الْقِصَّةِ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u8_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 9,
+      "lesson": 1,
+      "bookTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (الْبَطَّتانِ وَالسُّلَحْفاةُ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u9_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 9,
+      "lesson": 2,
+      "bookTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u9_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 9,
+      "lesson": 5,
+      "bookTitleAr": "أَبْني لُغَتي (مُحاكاةُ نَمَطِ الْجُمْلَةِ الْفِعْلِيَّةِ الْمَنْفِيَّةِ بِـ «ما» وَ«لا»)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u9_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 10,
+      "lesson": 1,
+      "bookTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (كيسُ الْقُماشِ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u10_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 10,
+      "lesson": 2,
+      "bookTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (سَرْدُ قِصَّةٍ بِالاعْتِمادِ عَلى صُوَرٍ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u10_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 10,
+      "lesson": 3,
+      "bookTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (تَعَلُّمُ لُغَةٍ جَديدَةٍ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u10_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 10,
+      "lesson": 4,
+      "bookTitleAr": "أَكْتُبُ (الْواوُ الأَصْلِيَّةُ وَواوُ الْجَماعَةِ | حَرْفا الْفاءِ وَالْقافِ | كِتابَةُ الْقِصَّةِ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u10_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "القُرْآنُ الكَريمُ",
+      "kbLessonId": "kbl-g4-islamic-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "سورَةُ الطّارِقِ: الآياتُ الكَريمَةُ (1-10)",
+      "kbLessonId": "kbl-g4-islamic-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "مِنْ أَسْماءِ اللهِ الحُسْنى: البَصيرُ",
+      "kbLessonId": "kbl-g4-islamic-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "سورَةُ الطّارِقِ: الآياتُ الكَريمَةُ (11-17)",
+      "kbLessonId": "kbl-g4-islamic-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "الحَديثُ الشَّريفُ: الكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ",
+      "kbLessonId": "kbl-g4-islamic-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s1-student-book",
+      "unit": 2,
+      "lesson": 6,
+      "bookTitleAr": "سورَةُ القَلَمِ: الآياتُ الكَريمَةُ (44-52)",
+      "kbLessonId": "kbl-g4-islamic-s1-nccd-u2_l6",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s1-student-book",
+      "unit": 3,
+      "lesson": 1,
+      "bookTitleAr": "مَكانَةُ الصَّلاةِ وَفَضْلُها في الإسْلامِ",
+      "kbLessonId": "kbl-g4-islamic-s1-nccd-u3_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s1-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "الحَديثُ الشَّريفُ: الفَوْزُ بِالجَنَّةِ",
+      "kbLessonId": "kbl-g4-islamic-s1-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "قِصَّةُ أُمِّ سَيِّدِنا موسى",
+      "kbLessonId": "kbl-g4-islamic-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s1-student-book",
+      "unit": 4,
+      "lesson": 4,
+      "bookTitleAr": "آدابُ النَّوْمِ وَالاسْتيقاظِ",
+      "kbLessonId": "kbl-g4-islamic-s1-nccd-u4_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s1-student-book",
+      "unit": 4,
+      "lesson": 5,
+      "bookTitleAr": "نَظافَةُ بَلَدي",
+      "kbLessonId": "kbl-g4-islamic-s1-nccd-u4_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 5,
+      "lesson": 1,
+      "bookTitleAr": "سورَةُ البَلَدِ: الآياتُ الكَريمَةُ (1-10)",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u5_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 5,
+      "lesson": 2,
+      "bookTitleAr": "مِنْ أَسْماءِ اللهِ الحُسْنى: العَظيمُ",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u5_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleAr": "الإيمانُ بِالكُتُبِ الإلهِيَّةِ",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u5_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "سورَةُ البَلَدِ: الآياتُ الكَريمَةُ (11-20)",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 6,
+      "lesson": 3,
+      "bookTitleAr": "سورَةُ المَعارِجِ: الآياتُ الكَريمَةُ (19-28)",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u6_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 6,
+      "lesson": 4,
+      "bookTitleAr": "الحَديثُ الشَّريفُ: تَهادَوْا تَحابّوا",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u6_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 6,
+      "lesson": 5,
+      "bookTitleAr": "سورَةُ المَعارِجِ: الآياتُ الكَريمَةُ (29-35)",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u6_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 7,
+      "lesson": 1,
+      "bookTitleAr": "مَكانَةُ المَسْجِدِ",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u7_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 7,
+      "lesson": 2,
+      "bookTitleAr": "آدابُ المَسْجِدِ",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u7_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 7,
+      "lesson": 3,
+      "bookTitleAr": "سورَةُ المَعارِجِ: الآياتُ الكَريمَةُ (36-44)",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u7_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 7,
+      "lesson": 4,
+      "bookTitleAr": "صَلاةُ الجَماعَةِ",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u7_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 7,
+      "lesson": 5,
+      "bookTitleAr": "صَلاةُ الجُمُعَةِ",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u7_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 7,
+      "lesson": 6,
+      "bookTitleAr": "سورَةُ المُزَّمِّلِ: الآياتُ الكَريمَةُ (1-14)",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u7_l6",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 8,
+      "lesson": 1,
+      "bookTitleAr": "سورَةُ الضُّحى",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 8,
+      "lesson": 4,
+      "bookTitleAr": "الحَديثُ الشَّريفُ: حُسْنُ المُعامَلَةِ",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u8_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-islamic-s2-student-book",
+      "unit": 8,
+      "lesson": 5,
+      "bookTitleAr": "الاحْتِرامُ",
+      "kbLessonId": "kbl-g4-islamic-s2-nccd-u8_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "اسْتِخْدامٌ آمِنٌ لِمَوادِّ العِنايَةِ بِمَظْهَرِ الشَّخْصِ وَأَدَواتِها",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table",
+      "why": "hand-checked: crops from the R2 book-page renders made before the Grade 4 review, which were linked to the wrong lessons and unlinked; each image is still the page its render index says. Page-to-lesson from the review's reading of the book (U3 L3 39-45, U4 L1 48-53, L2 54-58, L3 59-65, U8 L1 102-106, L2 107-111). Renders exist only for pp. 10-21, 43-62 and 104-107, so the other ten lessons have none."
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 4,
+      "lesson": 1,
+      "bookTitleAr": "العِنايَةُ بِالشَّعْرِ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u4_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "العِنايَةُ بِالمَلابِسِ الشَّخْصِيَّةِ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 4,
+      "lesson": 3,
+      "bookTitleAr": "اخْتِيارُ الخَضْراواتِ وَالفَواكِهِ المَوْسِمِيَّةِ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u4_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 8,
+      "lesson": 1,
+      "bookTitleAr": "المَوادُّ وَالعُدَدُ اليَدَوِيَّةُ المُسْتَخْدَمَةُ في أَعْمالِ الكَهْرَباءِ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u8_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 8,
+      "lesson": 2,
+      "bookTitleAr": "الاسْتِخْدامُ الآمِنُ لِلْمَوادِّ وَالعُدَدِ الكَهْرَبائِيَّةِ البَسيطَةِ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u8_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "الْإِحْساسُ بِالْكُرَةِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table",
+      "why": "hand-checked: crops from the R2 book-page renders made before the Grade 4 review (some were then linked to the wrong lesson, but each image is the book page its render index says); page-to-lesson from the review's reading of those images (football L1 7-9, L2 10-12, L3 13-15, L4 16-18, L5 19-21; badminton L1 24-26, L2 27-29, L3 30-32, L4 33-35; unit 3 L2 46-49, L3 50-53). Unit-end and opener art go to the adjacent lesson. Badminton L5 and unit 3 L1 have no render."
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "تَمْريرُ الْكُرَةِ بِالْوَجْهِ الدّاخِلِيِّ لِلْقَدَمِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 1,
+      "lesson": 3,
+      "bookTitleAr": "الْجَرْيُ بِالْكُرَةِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u1_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 1,
+      "lesson": 4,
+      "bookTitleAr": "السَّيْطَرَةُ عَلى الْكُرَةِ بِأَسْفَلِ الْقَدَمِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u1_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 1,
+      "lesson": 5,
+      "bookTitleAr": "رَبْطُ الْمَهاراتِ بِالتَّدْريباتِ في كُرَةِ الْقَدَمِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u1_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "الْقَبْضَةُ الْأَمامِيَّةُ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 2,
+      "lesson": 2,
+      "bookTitleAr": "الْقَبْضَةُ الْخَلْفِيَّةُ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u2_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 2,
+      "lesson": 3,
+      "bookTitleAr": "الْإِحْساسُ بِالْمِضْرَبِ وَالرِّيشَةِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u2_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 2,
+      "lesson": 4,
+      "bookTitleAr": "وِقْفَةُ الِاسْتِعْدادِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u2_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "الْوِقايَةُ مِنَ الْإِصاباتِ الرِّياضِيَّةِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-pe-s1-student-book",
+      "unit": 3,
+      "lesson": 3,
+      "bookTitleAr": "التَّعامُلُ مَعَ الْحَوادِثِ الطّارِئَةِ في الْمَدْرَسَةِ",
+      "kbLessonId": "kbl-g4-pe-s1-nccd-u3_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 1,
+      "lesson": 1,
+      "bookTitleAr": "التَّعْبيرُ اللَّفْظِيُّ وَغَيْرُ اللَّفْظِيِّ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u1_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 1,
+      "lesson": 2,
+      "bookTitleAr": "التَّفْكيرُ الإِبْداعِيُّ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u1_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-voc-s2-student-book",
+      "unit": 2,
+      "lesson": 1,
+      "bookTitleAr": "أَهَمِّيَّةُ رِيادَةِ الأَعْمالِ",
+      "kbLessonId": "kbl-g4-voc-s2-nccd-u2_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by the review page table"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 3,
+      "lesson": 2,
+      "bookTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (أَتَحَدَّثُ عَنْ مُحافَظَةٍ مِنْ مُحافَظاتِ الأُرْدُنِّ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u3_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 4,
+      "lesson": 2,
+      "bookTitleAr": "أَتَحَدَّثُ بِطَلاقَةٍ (أَتَحَدَّثُ عَنِ الْمَجْموعاتِ الْغِذائِيَّةِ في الْهَرَمِ الْغِذائِيِّ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u4_l2",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s1-student-book",
+      "unit": 5,
+      "lesson": 4,
+      "bookTitleAr": "أَكْتُبُ (كَلِماتٌ فيها حُروفٌ تُنْطَقُ وَلا تُكْتَبُ)",
+      "kbLessonId": "kbl-g4-arabic-s1-nccd-u5_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 6,
+      "lesson": 1,
+      "bookTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ (صَديقٌ صالِحٌ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u6_l1",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 8,
+      "lesson": 5,
+      "bookTitleAr": "أَبْني لُغَتي (مُحاكاةُ نَمَطِ إِسْنادِ الْفِعْلِ الْمُضارِعِ إِلى الضَّمائِرِ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u8_l5",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 9,
+      "lesson": 3,
+      "bookTitleAr": "أَقْرَأُ بِطَلاقَةٍ وَفَهْمٍ (الْحِصانُ وَالذِّئْبُ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u9_l3",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
+    },
+    {
+      "sourceId": "g4-arabic-s2-student-book",
+      "unit": 9,
+      "lesson": 4,
+      "bookTitleAr": "أَكْتُبُ (الْهَمْزَةُ الْمُتَطَرِّفَةُ | حَرْفا الْعَيْنِ وَالْغَيْنِ | كِتابَةُ الْقِصَّةِ)",
+      "kbLessonId": "kbl-g4-arabic-s2-nccd-u9_l4",
+      "score": 1,
+      "matchedBy": "hand-checked: crops from the page renders, lesson by page range"
     }
   ],
   "unitNumbering": "The curriculum's `u{n}_l{m}` matches the number the book PRINTS in every unit except unit 1, where the book has an extra opening lesson («حل معادلات خاصة») and the rest shift by one. Units 1-4 are semester 1 and units 5-8 are semester 2, so the printed unit number also identifies which student book a figure came from — `check_semester` in scripts/extract_book_figures.py enforces that. Note the maths PDFs in attached_assets are named backwards: the file called `1st_semester` is the second-semester book. Source ids follow the books' contents, not their filenames."

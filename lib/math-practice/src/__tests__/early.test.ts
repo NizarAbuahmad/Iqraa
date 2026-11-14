@@ -30,6 +30,8 @@ function draws(id: string, n = 240, grade?: number): ConcreteItem[] {
     makeTopicItem(t, grade ?? t.grades[0] + (i % (t.grades[1] - t.grades[0] + 1)), TIERS[i % 3]!, new Set(), seeded(i * 6700417 + 3)));
 }
 const nums = (s: string) => (s.match(/\d+(?:\.\d+)?/g) ?? []).map(Number);
+/** A count of two is written as a dual («قطعتان», «مجموعتين»); read it back as the digit, in place. */
+const twoAsDigit = (s: string) => s.replace(/مجموعتان متساويتان|قطعتان نقديتان|مجموعتين|قطعتان|قلمان/g, '2');
 const has = (s: string, w: string) => s.includes(w);
 const frac = (s: string) => { const [a, b] = s.split('/').map(Number); return b === undefined ? a! : a! / b; };
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
@@ -421,7 +423,7 @@ describe('early arithmetic: answers recomputed', () => {
 
   it('equal groups, division relation, multiplication and division facts', () => {
     for (const id of ['equal_groups_a', 'equal_groups_b']) for (const item of draws(id)) {
-      const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      const p = item.promptAr!, n = nums(twoAsDigit(p)), a = Number(item.answer);
       if (has(p, 'كم قلمًا')) assert.equal(a, n[0]! * n[1]!); else if (has(p, 'كم قطعة')) assert.equal(a * n[1]!, n[0]); else assert.equal(a * n[1]!, n[0]);
       // Number agreement: «2 أقلام» and «25 قطع» are not Arabic (found 2026-11-13).
       assert.doesNotMatch(p, /(^|[^\d])[12] (أقلام|قطع|مجموعات)/, p);
@@ -903,6 +905,9 @@ describe('money, time and measurement: answers recomputed', () => {
       if (has(p, 'تساوي قطعة واحدة')) assert.equal(a * n[0]!, n[1], p);
       else if (has(p, 'كم قرشًا بقي')) { assert.equal(a, n[0]! - n[1]!, p); assert.ok(a > 0, p); }
       else if (has(p, 'كم قطعة')) assert.equal(a * n[0]!, n[1]); else if (has(p, 'و ') && n.length === 4) assert.equal(a, n[0]! * n[1]! + n[2]! * n[3]!); else assert.equal(a, n[0]! * n[1]!);
+      // «2 قطع» is a dual («قطعتان») and «10 قرشًا» is «10 قروش» (Grade 1 audit, 2026-11-13).
+      assert.doesNotMatch(p, /(^|[^\d])[12] قطع/, p);
+      assert.doesNotMatch(p, /(^|[^\d])([3-9]|10) قرشًا/, p);
     }
     const din = new Set<string>();
     for (const item of draws('dinar', 300)) {
@@ -1024,14 +1029,19 @@ describe('money, time and measurement: answers recomputed', () => {
     for (const item of draws('am_pm')) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
       if (has(p, 'كم ساعة')) { ampm.add('duration'); assert.equal(a, 12 - n[0]! + n[2]!); }
-      else if (has(p, 'بنظام 24 ساعة. كم تكون')) { ampm.add('from 24'); assert.equal(a + 12, n[0]); assert.ok(a >= 1 && a <= 11); }
+      else if (has(p, 'بنظام 24 ساعةً. كم تكون')) { ampm.add('from 24'); assert.equal(a + 12, n[0]); assert.ok(a >= 1 && a <= 11); }
       else if (has(p, 'في أي ساعة بعد الظهر')) { ampm.add('ends'); assert.equal(a, n[0]! + n[2]! - 12, p); assert.ok(a >= 1 && a <= 11 && n[2]! >= 3, p); }
       else { ampm.add('to 24'); assert.equal(a, n[0]! + 12); }
     }
     assert.equal(ampm.size, 4);
     for (const item of draws('calendar')) {
-      const p = item.promptAr!, n = nums(p), a = item.answer;
+      // One and two are written as words («بعد يوم واحد», «في أسبوعين»), never «1 يومًا».
+      const p = item.promptAr!, a = item.answer;
+      const n = nums(p).length ? nums(p) : [/يومين|أسبوعين/.test(p) ? 2 : /واحد/.test(p) ? 1 : NaN];
       if (has(p, 'كم يومًا')) assert.equal(Number(a), n[0]! * 7); else if (has(p, 'كم أسبوعًا')) assert.equal(Number(a) * 7, n[0]); else { const i = DAYS.findIndex(d => p.includes(`اليوم ${d}`)); assert.equal(a, DAYS[(i + n[0]!) % 7]); }
+      // «بعد 5 يومًا» is «بعد 5 أيام», and «2 أسابيع» is «أسبوعين» (Grade 3 audit, 2026-11-13).
+      assert.doesNotMatch(p, /(^|[^\d])([1-9]|10) يومًا/, p);
+      assert.doesNotMatch(p, /(^|[^\d])[12] أسابيع/, p);
     }
   });
 
@@ -1090,6 +1100,57 @@ describe('money, time and measurement: answers recomputed', () => {
   });
 });
 
+describe('Grade 1: adding and subtracting tens, and two-digit numbers', () => {
+  // «جمع العشرات» drew «9 + 1» and «جمع عددين من منزلتين» drew «5 + 4»: the
+  // grade's generic sums within 20, not what either lesson teaches.
+  it('tens: every operand is a multiple of ten, answers recomputed', () => {
+    for (const add of [true, false]) {
+      const kinds = new Set<string>();
+      for (const item of draws(add ? 'tens_add_g1' : 'tens_sub_g1')) {
+        const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+        if (has(p, 'عشرات')) {
+          kinds.add('tens'); assert.equal(a, add ? n[0]! + n[1]! : n[0]! - n[1]!, p);
+          assert.ok(n[0]! >= 3 && n[1]! >= 3, `«1/2 عشرات»: ${p}`);
+          continue;
+        }
+        // «إذا كان 3 + 4 = 7، فما ناتج 30 + 40؟» — the one-digit fact first, then its tens
+        // (this branch's kind, merged 2026-11-14).
+        if (has(p, 'إذا كان')) {
+          kinds.add('hint'); const [x, y, , X, Y] = n;
+          assert.equal(X, x! * 10, p); assert.equal(Y, y! * 10, p); assert.equal(a, add ? X! + Y! : X! - Y!, p);
+          continue;
+        }
+        for (const x of n) assert.equal(x % 10, 0, p);
+        if (has(p, '___ =')) { kinds.add('missing'); assert.equal(add ? n[0]! + a : n[0]! - a, n[1], p); }
+        else { kinds.add(has(p, 'قلم') ? 'story' : 'sum'); assert.equal(a, add ? n[0]! + n[1]! : n[0]! - n[1]!, p); }
+        assert.ok(a > 0 && a <= 90, p);
+      }
+      assert.equal(kinds.size, 5, [...kinds].join(', '));
+    }
+  });
+
+  it('two-digit: both numbers have two digits and nothing is regrouped, answers recomputed', () => {
+    for (const add of [true, false]) {
+      const kinds = new Set<string>();
+      for (const item of draws(add ? 'two_digit_add_g1' : 'two_digit_sub_g1')) {
+        const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+        // The two numbers the pupil works with, and the result.
+        let x: number, y: number, r: number;
+        if (has(p, '= ___') || has(p, 'كم عشرة') || has(p, 'قرش') || has(p, 'رقم الآحاد')) { [x, y] = [n[0]!, n[1]!]; r = add ? x + y : x - y; }
+        else { kinds.add('missing'); x = n[0]!; r = n[1]!; y = add ? r - x : x - r; assert.equal(a, y, p); } // «x + ___ = r»
+        assert.ok(x >= 10 && x <= 99 && y >= 10 && y <= 99, p);
+        if (add) assert.ok((x % 10) + (y % 10) <= 9 && r <= 99, `regrouping: ${p}`);
+        else assert.ok(x % 10 >= y % 10 && r > 0, `regrouping: ${p}`);
+        if (has(p, 'كم عشرة')) { kinds.add('tens'); assert.equal(a, Math.floor(r / 10), p); }
+        else if (has(p, 'رقم الآحاد')) { kinds.add('ones'); assert.equal(a, r % 10, p); }
+        else if (has(p, 'قرش')) { kinds.add('word'); assert.equal(a, r, p); }
+        else if (has(p, '= ___')) { kinds.add('sum'); assert.equal(a, r, p); }
+      }
+      assert.equal(kinds.size, 5, [...kinds].join(', '));
+    }
+  });
+});
+
 describe('early routing', () => {
   const cases: Array<[string, number, string | null]> = [
     ['الأعداد: 1 ,2 ,3', 1, 'count_123'], ['العددان: 9 ,10', 1, 'count_910'], ['العدد صفر', 1, 'count_zero'], ['العد الترتيبي', 1, 'ordinal'],
@@ -1107,6 +1168,9 @@ describe('early routing', () => {
     ['قياس الزوايا ورسمها', 4, 'angle_measure'], ['الأنماط', 4, 'number_patterns_g4'], ['جداول المدخلات والمخرجات', 4, 'input_output'], ['الأعداد العشرية والنقود', 4, 'decimal_money'],
     ['الدينار', 2, 'dinar'], ['فئات النقود الورقية', 2, 'banknotes'], ['أيام الأسبوع', 1, 'week_days'], ['الوقت لأقرب ربع ساعة', 2, 'time_15'], ['أشهر السنة', 2, 'months'], ['التقويم', 3, 'calendar'],
     ['مقارنة الأطوال وترتيبها', 1, 'compare_len'], ['السنتيمتر', 2, 'cm_lengths'], ['اللتر والمليلتر', 2, 'units_l_g2'],
+    // Grade 1 S2: these drew the grade's generic single-digit sums (2026-11-13)
+    ['جمع العشرات', 1, 'tens_add_g1'], ['طرح العشرات', 1, 'tens_sub_g1'],
+    ['جمع عددين من منزلتين', 1, 'two_digit_add_g1'], ['طرح عددين من منزلتين', 1, 'two_digit_sub_g1'],
     // lessons that stay refused: they need pictures, objects, or a digit form the app converts itself
     ['الأرقام الهندية', 3, null],
     // Grade 1 lessons that used to be refused or to share a bank (review, 2026-11-13)

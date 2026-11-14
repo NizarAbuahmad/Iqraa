@@ -18,22 +18,6 @@
    "lessonStartPage": 8
   },
   {
-   "file": "p018.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 18,
-   "rect": [
-    0.0,
-    208.9,
-    345.8,
-    573.7
-   ],
-   "unit": 5,
-   "lesson": 1,
-   "lessonTitleEn": "Proportional Parts in Triangles",
-   "lessonTitleAr": null,
-   "lessonStartPage": 8
-  },
-  {
    "file": "p022.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 22,
@@ -268,7 +252,7 @@
     271.0
    ],
    "unit": 5,
-   "lesson": 3,
+   "lesson": 4,
    "lessonTitleEn": "Medians and Altitudes in Triangle",
    "lessonTitleAr": null,
    "lessonStartPage": 31
@@ -298,22 +282,6 @@
     495.0,
     239.5,
     620.0
-   ],
-   "unit": 5,
-   "lesson": 5,
-   "lessonTitleEn": "Applications of Trigonometric Ratios",
-   "lessonTitleAr": null,
-   "lessonStartPage": 49
-  },
-  {
-   "file": "p059.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 59,
-   "rect": [
-    298.1,
-    300.1,
-    424.2,
-    394.0
    ],
    "unit": 5,
    "lesson": 5,
@@ -352,38 +320,6 @@
    "lessonTitleEn": "Operations with Radical Expressions",
    "lessonTitleAr": null,
    "lessonStartPage": 69
-  },
-  {
-   "file": "p080-v2.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 80,
-   "rect": [
-    59.0,
-    410.8,
-    439.0,
-    614.9
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Solving Radical Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 79
-  },
-  {
-   "file": "p081-v2.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 81,
-   "rect": [
-    45.0,
-    242.0,
-    322.0,
-    437.8
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Solving Radical Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 79
   },
   {
    "file": "p082-v2.png",
@@ -458,22 +394,6 @@
     321.0,
     419.0,
     396.8
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Solving Radical Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 79
-  },
-  {
-   "file": "p088-v2.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 88,
-   "rect": [
-    63.0,
-    506.8,
-    211.8,
-    583.0
    ],
    "unit": 6,
    "lesson": 3,
@@ -578,22 +498,6 @@
    "lessonStartPage": 108
   },
   {
-   "file": "p112.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 112,
-   "rect": [
-    105.3,
-    152.2,
-    566.1,
-    418.6
-   ],
-   "unit": 7,
-   "lesson": 3,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": 108
-  },
-  {
    "file": "p112b.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 112,
@@ -656,54 +560,6 @@
    "lessonTitleEn": null,
    "lessonTitleAr": null,
    "lessonStartPage": 108
-  },
-  {
-   "file": "p117-v2.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 117,
-   "rect": [
-    304.0,
-    325.0,
-    374.0,
-    430.0
-   ],
-   "unit": 7,
-   "lesson": 3,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": 108
-  },
-  {
-   "file": "p119.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 119,
-   "rect": [
-    35.3,
-    207.8,
-    215.4,
-    347.1
-   ],
-   "unit": 7,
-   "lesson": 3,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": 108
-  },
-  {
-   "file": "p122.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 122,
-   "rect": [
-    437.9,
-    489.4,
-    571.2,
-    593.2
-   ],
-   "unit": 8,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": 120
   },
   {
    "file": "p123-v2.png",
@@ -1498,86 +1354,6 @@
     482.1,
     374.4,
     656.4
-   ],
-   "unit": 8,
-   "lesson": 5,
-   "lessonTitleEn": "Geometric Probability",
-   "lessonTitleAr": null,
-   "lessonStartPage": 165
-  },
-  {
-   "file": "p172.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 172,
-   "rect": [
-    57.3,
-    75.9,
-    168.6,
-    187.1
-   ],
-   "unit": 8,
-   "lesson": 5,
-   "lessonTitleEn": "Geometric Probability",
-   "lessonTitleAr": null,
-   "lessonStartPage": 165
-  },
-  {
-   "file": "p172b-v2.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 172,
-   "rect": [
-    351.0,
-    503.3,
-    533.9,
-    600.0
-   ],
-   "unit": 8,
-   "lesson": 5,
-   "lessonTitleEn": "Geometric Probability",
-   "lessonTitleAr": null,
-   "lessonStartPage": 165
-  },
-  {
-   "file": "p173-v2.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 173,
-   "rect": [
-    48.8,
-    610.4,
-    188.0,
-    729.0
-   ],
-   "unit": 8,
-   "lesson": 5,
-   "lessonTitleEn": "Geometric Probability",
-   "lessonTitleAr": null,
-   "lessonStartPage": 165
-  },
-  {
-   "file": "p174.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 174,
-   "rect": [
-    355.9,
-    121.0,
-    520.4,
-    279.7
-   ],
-   "unit": 8,
-   "lesson": 5,
-   "lessonTitleEn": "Geometric Probability",
-   "lessonTitleAr": null,
-   "lessonStartPage": 165
-  },
-  {
-   "file": "p174b-v2.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 174,
-   "rect": [
-    364.5,
-    522.9,
-    567.2,
-    651.0
    ],
    "unit": 8,
    "lesson": 5,

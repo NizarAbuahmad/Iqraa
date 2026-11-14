@@ -64,6 +64,9 @@ export type NccdLesson = {
   title_ar: string;
   /** English title, when written; absent lessons fall back to `title_ar`. */
   title_en?: string;
+  /** The line the book prints under a lab's fixed heading («معمل برمجية جيوجبرا»), e.g. «رسم المستقيم الأفضل مطابقة». Not part of `title_ar`. */
+  subtitle?: string;
+  subtitle_en?: string;
   periods: number | null;
   objectives: string[];
   vocabulary: string[];

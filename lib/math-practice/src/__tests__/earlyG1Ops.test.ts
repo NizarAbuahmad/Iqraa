@@ -34,8 +34,8 @@ const nums = (s: string) => (s.match(/\d+/g) ?? []).map(Number);
 const has = (s: string, w: string) => s.includes(w);
 
 const ROUTES: Array<[string, string]> = [
-  ['جَمْعُ الْعَشَراتِ', 'add_tens_g1'], ['طَرْحُ الْعَشَراتِ', 'sub_tens_g1'],
-  ['جَمْعُ عَدَدَيْنِ مِنْ مَنْزِلَتَيْنِ', 'add_2digit_g1'], ['طَرْحُ عَدَدَيْنِ مِنْ مَنْزِلَتَيْنِ', 'sub_2digit_g1'],
+  ['جَمْعُ الْعَشَراتِ', 'tens_add_g1'], ['طَرْحُ الْعَشَراتِ', 'tens_sub_g1'],
+  ['جَمْعُ عَدَدَيْنِ مِنْ مَنْزِلَتَيْنِ', 'two_digit_add_g1'], ['طَرْحُ عَدَدَيْنِ مِنْ مَنْزِلَتَيْنِ', 'two_digit_sub_g1'],
   ['الطَّرْحُ بِاسْتِعْمالِ الضِّعْفِ', 'sub_doubles_g1'], ['الطَّرْحُ بِإيجادِ عَشَرَةٍ', 'sub_make_ten_g1'],
   ['الْجَمْعُ بِالْإِكْمالِ إِلى الْعَشَرَةِ', 'add_make_ten_g1'], ['جَمْعُ ثَلاثَةِ أَعْدادٍ', 'add_three_g1'],
 ];
@@ -66,10 +66,15 @@ describe('Grade 1 operation generators: shape and answers', () => {
   }
 
   it('whole tens: every number is a ten, the answer is right', () => {
-    for (const id of ['add_tens_g1', 'sub_tens_g1']) {
-      const add = id.startsWith('add'), kinds = new Set<string>();
+    for (const id of ['tens_add_g1', 'tens_sub_g1']) {
+      const add = id.includes('_add_'), kinds = new Set<string>();
       for (const item of draws(id)) {
         const p = item.promptAr!, a = Number(item.answer);
+        if (has(p, 'عشرات')) {
+          // «3 عشرات + 4 عشرات = ___ عشرات» (main's kind, merged 2026-11-14): counts of 3 or more
+          kinds.add('counted'); const [c, d] = nums(p); assert.equal(a, add ? c! + d! : c! - d!, p); assert.ok(c! >= 3 && d! >= 3, p);
+          continue;
+        }
         if (has(p, 'إذا كان')) {
           kinds.add('hint'); const [x, y, , X, Y] = nums(p);
           assert.equal(X, x! * 10); assert.equal(Y, y! * 10); assert.equal(a, add ? X! + Y! : X! - Y!, p);
@@ -83,17 +88,18 @@ describe('Grade 1 operation generators: shape and answers', () => {
         for (const n of nums(p).filter(n => n >= 10)) assert.equal(n % 10, 0, `not a ten: ${p}`);
         assert.ok(a > 0 && a <= 90, p);
       }
-      assert.equal(kinds.size, 4, `${id}: ${[...kinds]}`);
+      assert.equal(kinds.size, 5, `${id}: ${[...kinds]}`);
     }
   });
 
   it('two-digit numbers: no regrouping, the answer is right', () => {
-    for (const id of ['add_2digit_g1', 'sub_2digit_g1']) {
-      const add = id.startsWith('add'), kinds = new Set<string>();
+    for (const id of ['two_digit_add_g1', 'two_digit_sub_g1']) {
+      const add = id.includes('_add_'), kinds = new Set<string>();
       for (const item of draws(id)) {
         const p = item.promptAr!, a = Number(item.answer), [x, y] = nums(p);
         assert.ok(x! >= 10 && x! <= 99, p);
-        if (has(p, 'رقم الآحاد')) { kinds.add('ones'); assert.equal(a, (add ? x! + y! : x! - y!) % 10, p); }
+        if (has(p, 'كم عشرة')) { kinds.add('tens'); assert.equal(a, Math.floor((add ? x! + y! : x! - y!) / 10), p); }
+        else if (has(p, 'رقم الآحاد')) { kinds.add('ones'); assert.equal(a, (add ? x! + y! : x! - y!) % 10, p); }
         else if (has(p, '___ =')) { kinds.add('missing'); const r = nums(p)[1]!; assert.equal(add ? x! + a : x! - a, r, p); assert.ok(a >= 10, p); }
         else { kinds.add(has(p, 'قرش') ? 'story' : 'plain'); assert.equal(a, add ? x! + y! : x! - y!, p); assert.ok(y! >= 10, p); }
         const other = has(p, '___ =') ? a : y!;
@@ -101,7 +107,7 @@ describe('Grade 1 operation generators: shape and answers', () => {
         assert.ok(ones >= 0 && ones <= 9, `regrouping: ${p}`);
         if (add) assert.ok(x! + other <= 99, p); else assert.ok(x! - other >= 10, p);
       }
-      assert.equal(kinds.size, 4, `${id}: ${[...kinds]}`);
+      assert.equal(kinds.size, 5, `${id}: ${[...kinds]}`);
     }
   });
 
