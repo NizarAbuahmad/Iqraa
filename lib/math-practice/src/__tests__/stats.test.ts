@@ -466,49 +466,6 @@ describe('statistics: answers recomputed', () => {
     assert.deepEqual([...kinds[4]!].sort(), ['halfStep', 'squares', 'table'], 'Grade 4 kinds');
   });
 
-  it('Grade 4 «تمثيل البيانات بالنقاط»: every key recomputed from the printed plot (2026-11-14)', () => {
-    assert.equal(topicFor('تَمْثيلُ البَياناتِ بِالنِّقاطِ', 4)?.id, 'dot_plot_g4');
-    assert.equal(topicFor('تمثيل البيانات بالأعمدة', 4)?.id, 'read_data_g34');
-    const kinds = new Set<string>();
-    for (const item of draws('dot_plot_g4', 300)) {
-      const p = item.promptAr!, a = Number(item.answer);
-      // «سُجّلت البيانات الآتية …: 3، 2، 3 …» is the raw list a plot is drawn from
-      if (has(p, 'كم نقطة تُرسم فوق العدد')) {
-        kinds.add('represent');
-        const raw = p.split(': ')[1]!.split('.')[0]!.split('، ').map(Number);
-        const v = Number(p.match(/فوق العدد (\d+)/)![1]);
-        assert.equal(a, raw.filter(x => x === v).length, p);
-        continue;
-      }
-      const rows = [...p.matchAll(/(\d+): (●*|\(لا نقاط\))/g)].map(m => [Number(m[1]), m[2]!.startsWith('●') ? m[2]!.length : 0] as const);
-      assert.equal(rows.length, 5, p);
-      const count = (v: number) => rows.find(([x]) => x === v)![1];
-      const all = rows.reduce((t, [, c]) => t + c, 0);
-      if (has(p, 'أو أكثر')) {
-        kinds.add('or more');
-        const m = p.match(/(?:إجابته|فيه) (?:ساعةً واحدة|ساعتين|(\d+) \S+) أو أكثر/)!;
-        const v = m[1] ? Number(m[1]) : has(p, 'ساعتين أو') ? 2 : 1;
-        assert.equal(a, rows.filter(([x]) => x >= v).reduce((t, [, c]) => t + c, 0), p);
-      } else if (has(p, 'الأكثر تكرارًا')) {
-        kinds.add('mode');
-        const top = Math.max(...rows.map(([, c]) => c));
-        assert.equal(rows.filter(([, c]) => c === top).length, 1, `one tallest column: ${p}`);
-        assert.equal(a, rows.find(([, c]) => c === top)![0], p);
-      } else if (has(p, 'الممثَّل')) { kinds.add('total'); assert.equal(a, all, p); }
-      else if (has(p, 'بكم يزيد')) {
-        kinds.add('difference');
-        const [hi, lo] = [...p.matchAll(/فوق العدد (\d+)/g)].map(m => Number(m[1]));
-        assert.equal(a, count(hi!) - count(lo!), p);
-      } else {
-        kinds.add('at a value');
-        const v = has(p, 'ساعتين') ? 2 : has(p, 'ساعةً واحدة') ? 1 : Number(p.match(/(?:إجابته|فيه) (\d+)/)![1]);
-        assert.equal(a, count(v), p);
-      }
-      assert.ok(!/ [12] (ساعةً|ساعات|دينارًا)/.test(p), `one or two said with a numeral: ${p}`);
-    }
-    assert.deepEqual([...kinds].sort(), ['at a value', 'difference', 'mode', 'or more', 'represent', 'total']);
-  });
-
   it('frequency tables and grouped data', () => {
     const freqKinds = new Set<string>();
     for (const item of draws('freq_table', 300)) {

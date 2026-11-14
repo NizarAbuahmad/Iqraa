@@ -10,35 +10,66 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Grade 4 review: reflection in the book's own terms, and the dot-plot lesson's own questions — 2026-11-14
+## Grade 4 review: reflection on the book's square grid, and no dot plot left in the bar-chart lessons — 2026-11-14
 
-The Grade 4 review, audit and second pass (2026-11-13, below) covered coverage, retrieval, pages, figures, contents and every
-maths quiz. A sweep of all 313 lessons through the offline plan, quiz, worksheet and activity found nothing new: every
-lesson grounds by id, plans and activities generate for all, and all 50 maths lessons give a full paper. This change fixes
-the two items the second pass listed as weak.
+Follows «Offline maths, Grade 4: dot plots…» (below), which landed first with the same two items from the Grade 4 second
+pass. Its `dot_plot_g4` and its tests (`grade4Lessons.test.ts`) stand; this review's own dot-plot generator was dropped in
+the merge. Before that, a sweep of all 313 Grade 4 lessons through the offline plan, quiz, worksheet and activity found
+nothing new: every lesson grounds by id, plans and activities generate for all, and all 50 maths lessons give a full paper.
 
-- **«الانعكاس»** (S1 u5_l6, «أرسم صورة شكل بالانعكاس حول محور، وأصفه»): the second pass noted «x = 7» in an Arabic stem.
-  The cause was wider: the generator asked for coordinates of an image and the equation of a mirror line, which is Grade 6
-  work. The Grade 4 book (S1 pp. 114-119, read in the teacher guide's reproduced pages) has no coordinates and no
-  equations: it reflects a shape on a square grid in a drawn vertical or horizontal line, a vertex and its image the same
-  number of squares from it, and no measure changes. `reflect_line` now asks exactly that: on which side and how far the
-  image of a vertex lies, how many squares between a vertex and its image, which numbered grid line the image is on, a
-  rectangle's length after the reflection, and what a reflection keeps.
-- **«تمثيل البيانات بالنقاط»** (S2 u10_l1, «تمثيل البيانات باستعمال النقاط» and «تفسير بيانات ممثلة بالنقاط»): it shared
-  `read_data_g34`, so a paper was mostly bar charts and tables with one dot-plot kind. It now has `dot_plot_g4` (`stats.ts`),
-  with the book's contexts (S2 p. 108 hours of sleep; exercise book p. 54 a sweet seller's daily income, hours of study):
-  the count at a value, at or above a value, the most frequent value, how many are shown, how many dots a raw list puts
-  above a value (the «represent» outcome), and how many more at one value than another. One and two are said with the
-  noun alone («ساعتين», «ساعةً واحدة»). `read_data_g34` keeps the two bar-chart lessons and drops its dot-plot item, which
-  belonged to this lesson.
+- **«الانعكاس»** (S1 u5_l6, «أرسم صورة شكل بالانعكاس حول محور، وأصفه»). The entry below renamed «x = 7» as «المستقيم الرأسي
+  المار بالنقطة (7 ، 0)», but the questions still asked for an image's coordinates — Grade 6 work. The Grade 4 book
+  (S1 pp. 114-119, read in the teacher guide's reproduced pages) has no coordinates at all: it reflects a shape on a square
+  grid in a drawn vertical or horizontal line, a vertex and its image the same number of squares from it, and no measure
+  changes. `reflect_line` now asks exactly that: on which side and how far the image of a vertex lies, how many squares
+  between a vertex and its image, which numbered grid line the image is on, a rectangle's length after the reflection, and
+  what a reflection keeps.
+- **«تمثيل البيانات بالأعمدة»** no longer draws a dot-plot question (the entry below lists it as not fixed): `read_data_g34`'s
+  Grade 4 pool drops the dot-plot kind, which is `dot_plot_g4`'s lesson.
 
 **Verified.** `geometry.test.ts` recomputes each reflection key from the printed counts (the image on the other side at the
 same distance, twice the distance between, the grid line as far past the mirror as the vertex is before it) and fails on a
-coordinate or an equation in a stem; `stats.test.ts` rebuilds each dot plot from its printed dots and recomputes every key.
-Planted bugs — «or more» counting «more than», the reflection distance halved, the image on the same side — each failed a
-test. Samples read by hand, keys correct. math-practice passes; the PR body has the rest of the CI set.
+coordinate or an equation in a stem; `stats.test.ts` checks the bar-chart lessons draw no dot plot. Planted bugs — the
+reflection distance halved, the image on the same side — each failed a test. Samples read by hand, keys correct.
+math-practice passes; the PR body has the rest of the CI set.
 
 **Not done.** Everything the earlier Grade 4 entries left for the PDFs (pages to render, social/vocational re-OCR, PE text).
+
+## Offline maths, Grade 4: dot plots for «تمثيل البيانات بالنقاط», and no «x = 7» in «الانعكاس» — 2026-11-14
+
+The Grade 4 second pass listed two «weak, not fixed» items in the offline maths bank (`lib/math-practice`); this
+fixes both. A same-day review of Grades 4–6 re-checked their figures and found nothing to move.
+
+This branch first fixed Grade 6's and Grade 5's weak items too. «Grade 6 review: the four «weak, not fixed» maths
+lessons…» and «Grade 5 review: the last three maths lessons, the second pass's weak items…» (below) landed first
+with the same fixes, so their code stands and only Grade 4 is carried here.
+
+- **«تمثيل البيانات بالنقاط»** drew mostly bar-chart and table questions; one kind in seven was a dot plot.
+  - It now has its own `dot_plot_g4` (`stats.ts`): every question is a dot plot, described in text with one dot per
+    pupil.
+  - The seven kinds: at or above a value, exactly a value, below a value, the difference between two values, the
+    value with the most dots, the total, and how many dots to draw over a value of a raw list.
+  - The bar-graph lessons keep `read_data_g34`.
+- **«الانعكاس»** wrote «x = 7» inside an Arabic stem, and Grade 4 has no equations.
+  - The mirror line is now «المستقيم الرأسي المار بالنقطة (7 ، 0)».
+  - The "equation of the mirror line" question becomes «في أي نقطة يقطع محور الانعكاس المحور الأفقي؟».
+- **Also:** `tamyiz.test.ts` gains «a noun after a decimal is never the plural», which scans every topic generator. It
+  passes against the Grade 6 review's fix and guards it.
+
+**Verified.**
+- The new `grade4Lessons.test.ts` cases were first seen failing.
+- `geometry.test.ts`'s reflection checks parse the new wording and still recompute every answer from the
+  coordinates.
+- `lib/math-practice` 1229/1229, the mobile suite 9270 pass / 0 fail, api-server build + tests 2923/0, root
+  typecheck.
+- Generated questions for both lessons were read in Arabic, and every key was checked by hand: «أقل من كتابين» → 1
+  from the plot, and the line between (7 ، 2) and (9 ، 2) crosses at (8 ، 0).
+
+**Not fixed.**
+- «تمثيل البيانات بالأعمدة» still asks a dot-plot question now and then.
+- Live AI was not run.
+
+No «ما الجديد» entry: these change which questions an offline paper draws; they add no feature.
 
 ## Grade 2 maths: offline questions for the four problem-solving lessons — 2026-11-14
 
@@ -67,6 +98,7 @@ one-step slip is offered, and that no number or option passes 999; math-practice
 pass, 0 fail); typecheck; 36 sampled items read by hand, keys right and the counted nouns agree («11 صفحةً», «9 صفحات», «30 تفاحةً», «15 قلمًا»).
 
 No «ما الجديد» entry: offline questions for lessons that had none, not a new feature.
+
 ## Grade 5 review: the last three maths lessons, the second pass's weak items, and social S2 u7_l4 — 2026-11-14
 
 «Grade 5 audit…» and «Grade 5 maths…» (both 2026-11-13, below) covered pages, figures, contents and every maths quiz. A

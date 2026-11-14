@@ -479,63 +479,6 @@ const CATS: Array<[string, string]> = [['التفاح', 'apples'], ['الموز'
  * draw (Grade 2); and for Grades 3–4, reading a bar that ends between two lines
  * of its scale, how many squares a bar takes, and (Grade 4) counting a dot plot.
  */
-/**
- * Grade 4 «تمثيل البيانات بالنقاط» (S2 u10_l1; outcomes «تمثيل البيانات باستعمال النقاط» and «تفسير بيانات ممثلة
- * بالنقاط»). It shared `read_data_g34`, so a paper was mostly bar charts and tables with one dot-plot question. The
- * contexts are the book's (S2 p. 108: hours of sleep; the exercise book p. 54: a sweet seller's daily income, hours of
- * study). A plot is written value by value, «9: ●●●», as the bar charts are; the numbers are always the values.
- */
-const DOT_CONTEXTS: Array<{ ar: string; en: string; who: string; whoAcc: string; values: number[]; noun: [string, string, string]; one: string; two: string; unitEn: string }> = [
-  { ar: 'عدد ساعات النوم في الليلة الواحدة لبعض طلبة الصف الرابع', en: "hours of sleep a night for some Grade 4 pupils", who: 'طالبًا', whoAcc: 'الطلبة', values: [7, 8, 9, 10, 11], noun: ['ساعات', 'ساعةً', 'ساعة'], one: 'ساعةً واحدة', two: 'ساعتين', unitEn: 'hours' },
-  { ar: 'عدد ساعات الدراسة اليومية لبعض طلبة الصف الرابع', en: "daily hours of study for some Grade 4 pupils", who: 'طالبًا', whoAcc: 'الطلبة', values: [1, 2, 3, 4, 5], noun: ['ساعات', 'ساعةً', 'ساعة'], one: 'ساعةً واحدة', two: 'ساعتين', unitEn: 'hours' },
-  { ar: 'الدخل اليومي بالدينار لبائع حلوى متنقل خلال أيام', en: "a sweet seller's daily income in dinars over some days", who: 'يومًا', whoAcc: 'الأيام', values: [5, 10, 15, 20, 25], noun: ['دنانير', 'دينارًا', 'دينار'], one: 'دينارًا واحدًا', two: 'دينارين', unitEn: 'JD' },
-];
-const dotPlot = T('dot_plot_g4', /^تمثيل البيانات بالنقاط$/, [4, 4], ({ rng, diff }) => {
-  const c = pick(rng, DOT_CONTEXTS);
-  for (;;) {
-    const cs = c.values.map(() => int(rng, 0, span(diff, 4, 5, 7)));
-    const all = sum(cs);
-    const top = Math.max(...cs);
-    // at least six dots, at least two values with dots, and one tallest column (so «the most frequent» has one answer)
-    if (all < 6 || cs.filter(x => x > 0).length < 3 || cs.filter(x => x === top).length !== 1) continue;
-    const dots = (x: number) => (x ? '●'.repeat(x) : '(لا نقاط)');
-    const plot = c.values.map((v, i) => `${v}: ${dots(cs[i]!)}`).join('، ');
-    const plotEn = c.values.map((v, i) => `${v}: ${cs[i] ? '●'.repeat(cs[i]!) : '(no dots)'}`).join(', ');
-    const head = `يبين التمثيل بالنقاط الآتي ${c.ar}، وكل نقطة تمثل ${c.who === 'يومًا' ? 'يومًا واحدًا' : 'طالبًا واحدًا'}: ${plot}.`;
-    const headEn = `The dot plot shows ${c.en}, one dot per ${c.who === 'يومًا' ? 'day' : 'pupil'}: ${plotEn}.`;
-    // one and two are said with the noun alone («ساعتين»), never «2 ساعةً»
-    const valAr = (v: number) => (v === 1 ? c.one : v === 2 ? c.two : `${v} ${tamyiz(v, ...c.noun)}`);
-    const k = pick(rng, [0, 1, 2, 3, 4, 5]);
-    if (k === 0) {
-      const i = pick(rng, c.values.map((_, j) => j).filter(j => cs[j]! > 0)), v = c.values[i]!;
-      return { eq: `dot at ${v} ${plot}`, answer: String(cs[i]), wrongs: countOpts(cs[i]!, [all, cs[i]! + 1, v, all - cs[i]!]), ar: `${head} كم ${c.who} ${c.who === 'يومًا' ? 'كان الدخل فيه' : 'كانت إجابته'} ${valAr(v)}؟`, en: `${headEn} How many ${c.who === 'يومًا' ? 'days' : 'pupils'} answered ${v} ${c.unitEn}?` };
-    }
-    if (k === 1) {
-      const i = int(rng, 1, c.values.length - 2), v = c.values[i]!;
-      const at = sum(cs.slice(i)), above = sum(cs.slice(i + 1));
-      if (at === above) continue; // a dot at the value itself, so «or more» differs from «more than»
-      return { eq: `at or above ${v} ${plot}`, answer: String(at), wrongs: countOpts(at, [above, all - at, all, at + 1]), ar: `${head} كم ${c.who} ${c.who === 'يومًا' ? 'كان الدخل فيه' : 'كانت إجابته'} ${valAr(v)} أو أكثر؟`, en: `${headEn} How many ${c.who === 'يومًا' ? 'days' : 'pupils'} answered ${v} ${c.unitEn} or more?` };
-    }
-    if (k === 2) {
-      const ans = c.values[cs.indexOf(top)]!;
-      return { eq: `mode ${plot}`, answer: String(ans), wrongs: countOpts(ans, [top, ...c.values.filter(v => v !== ans)]), ar: `${head} ما القيمة الأكثر تكرارًا؟`, en: `${headEn} Which value occurs most often?` };
-    }
-    if (k === 3) {
-      return { eq: `total ${plot}`, answer: String(all), wrongs: countOpts(all, [c.values.length, top, all - 1, all + 1]), ar: `${head} ما عدد ${c.whoAcc} ${c.who === 'يومًا' ? 'الممثَّلة' : 'الممثَّلين'} في التمثيل؟`, en: `${headEn} How many ${c.who === 'يومًا' ? 'days' : 'pupils'} does the plot show?` };
-    }
-    if (k === 4) {
-      // represent: a raw list, and how many dots go above one value
-      const raw = shuffle(rng, c.values.flatMap((v, i) => Array<number>(cs[i]!).fill(v)));
-      const i = pick(rng, c.values.map((_, j) => j).filter(j => cs[j]! > 0)), v = c.values[i]!;
-      return { eq: `represent ${list(raw)} at ${v}`, answer: String(cs[i]), wrongs: countOpts(cs[i]!, [raw.length, cs[i]! + 1, cs[i]! - 1, v]), ar: `سُجّلت البيانات الآتية عن ${c.ar}: ${list(raw)}. عند تمثيلها بالنقاط، كم نقطة تُرسم فوق العدد ${v}؟`, en: `These data were recorded for ${c.en}: ${listEn(raw)}. In a dot plot of them, how many dots go above ${v}?` };
-    }
-    const [i, j] = shuffle(rng, c.values.map((_, x) => x)).slice(0, 2) as [number, number];
-    const d = Math.abs(cs[i]! - cs[j]!);
-    if (d === 0) continue;
-    const [hi, lo] = cs[i]! > cs[j]! ? [i, j] : [j, i];
-    return { eq: `more ${c.values[hi]} ${c.values[lo]} ${plot}`, answer: String(d), wrongs: countOpts(d, [cs[hi]!, cs[hi]! + cs[lo]!, d + 1, cs[lo]!]), ar: `${head} بكم يزيد عدد النقاط فوق العدد ${c.values[hi]} على عدد النقاط فوق العدد ${c.values[lo]}؟`, en: `${headEn} How many more dots are there above ${c.values[hi]} than above ${c.values[lo]}?` };
-  }
-});
 
 const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, diff, grade }) => {
   const m = grade <= 1 ? 6 : grade === 2 ? 9 : span(diff, 12, 20, 30);
@@ -590,6 +533,56 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
   if (q === 2) { const d = vals[hi]! - vals[lo]!; return { eq: tab, answer: String(d), wrongs: countOpts(d, [vals[hi]!, d + 1, d - 1, vals[hi]! + vals[lo]!]), ar: `${head} بكم يزيد عدد الأكثر على عدد الأقل؟`, en: `${headEn} By how many does the largest exceed the smallest?` }; }
   const t = sum(vals);
   return { eq: tab, answer: String(t), wrongs: countOpts(t, [t - 1, t + 1, Math.max(...vals), t + key]), ar: `${head} ما المجموع الكلي؟`, en: `${headEn} What is the total?` };
+});
+
+/** What a Grade 4 dot plot counts — one dot per pupil — and how a value is said with its noun. */
+const DOT_DATA: Array<{ ar: string; en: string; say: (v: number) => string; unitEn: string }> = [
+  { ar: 'عدد الساعات التي قضاها كل طالب في القراءة خلال أسبوع', en: 'how many hours each pupil spent reading in a week', say: v => (v === 1 ? 'ساعة واحدة' : v === 2 ? 'ساعتين' : `${v} ساعات`), unitEn: 'hour' },
+  { ar: 'عدد الكتب التي قرأها كل طالب خلال شهر', en: 'how many books each pupil read in a month', say: v => (v === 1 ? 'كتابًا واحدًا' : v === 2 ? 'كتابين' : `${v} كتب`), unitEn: 'book' },
+];
+/**
+ * Grade 4 «تمثيل البيانات بالنقاط» («أمثّل البيانات باستعمال النقاط، وأفسّرها»).
+ * The plot is written out: «1: ●●●، 2: ●●، 3: (لا نقاط)…», values 1 to 6.
+ * Reading it — how many at a value, at or above it, below it, the difference
+ * between two values, the value with the most dots, how many in all — and
+ * drawing it: how many dots go over a value of a raw list. It used to share the
+ * bar-graph generator, which drew a dot plot one question in seven.
+ */
+const dotPlot = T('dot_plot_g4', /^تمثيل البيانات بالنقاط$/, [4, 4], ({ rng, diff }) => {
+  const d = pick(rng, DOT_DATA);
+  const en = (v: number) => `${v} ${d.unitEn}${v === 1 ? '' : 's'}`;
+  const k = pick(rng, [0, 1, 2, 3, 4, 5, 6]);
+  if (k === 6) { // draw: a raw list, and the dots over one value
+    const xs = Array.from({ length: span(diff, 10, 12, 15) }, () => int(rng, 1, 6)), v = pick(rng, xs), c = xs.filter(x => x === v).length;
+    return { eq: list(xs), answer: String(c), wrongs: countOpts(c, [c + 1, c - 1, v, xs.length - c]), ar: `سجّلت معلمة ${d.ar}، فكانت: ${list(xs)}. عند تمثيل هذه البيانات بالنقاط، كم نقطة تُرسم فوق العدد ${v}؟`, en: `A teacher recorded ${d.en}: ${listEn(xs)}. When these data are shown in a dot plot, how many dots go above ${v}?` };
+  }
+  let cs: number[];
+  do cs = Array.from({ length: 6 }, () => int(rng, 0, span(diff, 4, 5, 6)));
+  while (cs.filter(c => c > 0).length < 3 || cs.filter(c => c === Math.max(...cs)).length > 1);
+  // at or above v, exactly v, or fewer than v: a dot at v and one below it, so each differs from its neighbour reading
+  const v = int(rng, 2, 5);
+  if (k <= 2) {
+    cs[v - 1] = Math.max(1, cs[v - 1]!);
+    const below = int(rng, 0, v - 2);
+    cs[below] = Math.max(1, cs[below]!);
+  }
+  const plot = cs.map((c, i) => `${i + 1}: ${c ? '●'.repeat(c) : '(لا نقاط)'}`).join('، ');
+  const plotEn = cs.map((c, i) => `${i + 1}: ${c ? '●'.repeat(c) : '(no dots)'}`).join(', ');
+  const all = sum(cs), top = cs.indexOf(Math.max(...cs)) + 1;
+  if (k === 4) return { eq: plot, answer: String(top), wrongs: countOpts(top, [Math.max(...cs), cs.indexOf(Math.min(...cs)) + 1, top === 6 ? 5 : top + 1, top === 1 ? 2 : top - 1]), ar: `فوق أيّ عدد يقع أكبر عدد من النقاط في التمثيل بالنقاط الآتي، الذي يبين ${d.ar}؟ ${plot}`, en: `Above which number are the most dots in this dot plot of ${d.en}? ${plotEn}` };
+  if (k === 5) return { eq: plot, answer: String(all), wrongs: countOpts(all, [6, all - 1, all + 1, Math.max(...cs)]), ar: `كم طالبًا يمثّلهم التمثيل بالنقاط الآتي، الذي يبين ${d.ar}، إذا كانت كل نقطة تمثل طالبًا واحدًا؟ ${plot}`, en: `How many pupils does this dot plot of ${d.en} show, one dot per pupil? ${plotEn}` };
+  const head = `يبين التمثيل بالنقاط الآتي ${d.ar}، وكل نقطة تمثل طالبًا واحدًا: ${plot}.`;
+  const headEn = `The dot plot shows ${d.en}, one dot per pupil: ${plotEn}.`;
+  if (k === 3) { // the difference between two values
+    const vs = shuffle(rng, [1, 2, 3, 4, 5, 6]).filter(x => cs[x - 1]! > 0);
+    const a = vs[0]!, b = vs.slice(1).find(x => cs[x - 1]! < cs[a - 1]!) ?? vs.find(x => cs[x - 1]! > cs[a - 1]!)!;
+    const [hi, lo] = cs[a - 1]! > cs[b - 1]! ? [a, b] : [b, a], diffN = cs[hi - 1]! - cs[lo - 1]!;
+    return { eq: `${plot}; ${hi} − ${lo}`, answer: String(diffN), wrongs: countOpts(diffN, [cs[hi - 1]! + cs[lo - 1]!, cs[hi - 1]!, Math.abs(hi - lo), diffN + 1]), ar: `${head} بكم يزيد عدد الطلاب الذين قرؤوا ${d.say(hi)} على عدد الذين قرؤوا ${d.say(lo)}؟`, en: `${headEn} How many more pupils read ${en(hi)} than ${en(lo)}?` };
+  }
+  const atV = cs[v - 1]!, from = sum(cs.slice(v - 1)), under = sum(cs.slice(0, v - 1));
+  if (k === 0) return { eq: `${plot}; ≥ ${v}`, answer: String(from), wrongs: countOpts(from, [from - atV, all - from, all, from + 1]), ar: `${head} كم طالبًا قرأ ${d.say(v)} أو أكثر؟`, en: `${headEn} How many pupils read ${en(v)} or more?` };
+  if (k === 1) return { eq: `${plot}; = ${v}`, answer: String(atV), wrongs: countOpts(atV, [from, v, atV + 1, all - atV]), ar: `${head} كم طالبًا قرأ ${d.say(v)} بالضبط؟`, en: `${headEn} How many pupils read exactly ${en(v)}?` };
+  return { eq: `${plot}; < ${v}`, answer: String(under), wrongs: countOpts(under, [under + atV, all - under, v - 1, under + 1]), ar: `${head} كم طالبًا قرأ أقل من ${d.say(v)}؟`, en: `${headEn} How many pupils read fewer than ${en(v)}?` };
 });
 
 /**
