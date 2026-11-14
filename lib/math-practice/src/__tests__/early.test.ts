@@ -30,6 +30,8 @@ function draws(id: string, n = 240, grade?: number): ConcreteItem[] {
     makeTopicItem(t, grade ?? t.grades[0] + (i % (t.grades[1] - t.grades[0] + 1)), TIERS[i % 3]!, new Set(), seeded(i * 6700417 + 3)));
 }
 const nums = (s: string) => (s.match(/\d+(?:\.\d+)?/g) ?? []).map(Number);
+/** A count of two is written as a dual («قطعتان», «مجموعتين»); read it back as the digit, in place. */
+const twoAsDigit = (s: string) => s.replace(/مجموعتان متساويتان|قطعتان نقديتان|مجموعتين|قطعتان|قلمان/g, '2');
 const has = (s: string, w: string) => s.includes(w);
 const frac = (s: string) => { const [a, b] = s.split('/').map(Number); return b === undefined ? a! : a! / b; };
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
@@ -405,7 +407,7 @@ describe('early arithmetic: answers recomputed', () => {
 
   it('equal groups, division relation, multiplication and division facts', () => {
     for (const id of ['equal_groups_a', 'equal_groups_b']) for (const item of draws(id)) {
-      const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      const p = item.promptAr!, n = nums(twoAsDigit(p)), a = Number(item.answer);
       if (has(p, 'كم قلمًا')) assert.equal(a, n[0]! * n[1]!); else if (has(p, 'كم قطعة')) assert.equal(a * n[1]!, n[0]); else assert.equal(a * n[1]!, n[0]);
       // Number agreement: «2 أقلام» and «25 قطع» are not Arabic (found 2026-11-13).
       assert.doesNotMatch(p, /(^|[^\d])[12] (أقلام|قطع|مجموعات)/, p);
@@ -871,7 +873,7 @@ describe('money, time and measurement: answers recomputed', () => {
       else assert.equal(a, Math.max(d[0]!, d[1]!), p);
     }
     for (const id of ['coins_a', 'coins_b', 'coins_c']) for (const item of draws(id)) {
-      const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      const p = item.promptAr!, n = nums(twoAsDigit(p)), a = Number(item.answer);
       if (has(p, 'كم قطعة')) assert.equal(a * n[0]!, n[1]); else if (has(p, 'و ') && n.length === 4) assert.equal(a, n[0]! * n[1]! + n[2]! * n[3]!); else assert.equal(a, n[0]! * n[1]!);
       // «2 قطع» is a dual («قطعتان») and «10 قرشًا» is «10 قروش» (Grade 1 audit, 2026-11-13).
       assert.doesNotMatch(p, /(^|[^\d])[12] قطع/, p);
@@ -996,13 +998,15 @@ describe('money, time and measurement: answers recomputed', () => {
     for (const item of draws('am_pm')) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
       if (has(p, 'كم ساعة')) { ampm.add('duration'); assert.equal(a, 12 - n[0]! + n[2]!); }
-      else if (has(p, 'بنظام 24 ساعة. كم تكون')) { ampm.add('from 24'); assert.equal(a + 12, n[0]); assert.ok(a >= 1 && a <= 11); }
+      else if (has(p, 'بنظام 24 ساعةً. كم تكون')) { ampm.add('from 24'); assert.equal(a + 12, n[0]); assert.ok(a >= 1 && a <= 11); }
       else if (has(p, 'في أي ساعة بعد الظهر')) { ampm.add('ends'); assert.equal(a, n[0]! + n[2]! - 12, p); assert.ok(a >= 1 && a <= 11 && n[2]! >= 3, p); }
       else { ampm.add('to 24'); assert.equal(a, n[0]! + 12); }
     }
     assert.equal(ampm.size, 4);
     for (const item of draws('calendar')) {
-      const p = item.promptAr!, n = nums(p), a = item.answer;
+      // One and two are written as words («بعد يوم واحد», «في أسبوعين»), never «1 يومًا».
+      const p = item.promptAr!, a = item.answer;
+      const n = nums(p).length ? nums(p) : [/يومين|أسبوعين/.test(p) ? 2 : /واحد/.test(p) ? 1 : NaN];
       if (has(p, 'كم يومًا')) assert.equal(Number(a), n[0]! * 7); else if (has(p, 'كم أسبوعًا')) assert.equal(Number(a) * 7, n[0]); else { const i = DAYS.findIndex(d => p.includes(`اليوم ${d}`)); assert.equal(a, DAYS[(i + n[0]!) % 7]); }
       // «بعد 5 يومًا» is «بعد 5 أيام», and «2 أسابيع» is «أسبوعين» (Grade 3 audit, 2026-11-13).
       assert.doesNotMatch(p, /(^|[^\d])([1-9]|10) يومًا/, p);
@@ -1125,8 +1129,10 @@ describe('early routing', () => {
     // Grade 1 S2: these drew the grade's generic single-digit sums (2026-11-13)
     ['جمع العشرات', 1, 'tens_add_g1'], ['طرح العشرات', 1, 'tens_sub_g1'],
     ['جمع عددين من منزلتين', 1, 'two_digit_add_g1'], ['طرح عددين من منزلتين', 1, 'two_digit_sub_g1'],
-    // lessons that stay refused: they need pictures, objects, or a digit form the app converts itself
-    ['الأرقام الهندية', 3, null], ['التصنيف وفق خاصية واحدة', 1, null], ['الموقع والاتجاه', 1, null], ['ترتيب الأعمال اليومية', 1, null],
+    // «الأرقام الهندية» asks only questions read in Hindi digits, never written (marking folds ٧ and 7): grade3Lessons.test.ts
+    ['الأرقام الهندية', 3, 'hindi_numerals'],
+    // lessons that stay refused: they need pictures or objects
+    ['التصنيف وفق خاصية واحدة', 1, null], ['الموقع والاتجاه', 1, null], ['ترتيب الأعمال اليومية', 1, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {

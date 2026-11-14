@@ -3052,7 +3052,7 @@
   "kbl-g2-pe-s1-nccd-u1_l4": {
    "sourceId": "pe-2-s1-student-book",
    "startPage": 14,
-   "endPage": 18,
+   "endPage": 15,
    "aspect": 0.7586
   },
   "kbl-g2-pe-s1-nccd-u2_l1": {
@@ -3082,7 +3082,7 @@
   "kbl-g2-pe-s1-nccd-u2_l5": {
    "sourceId": "pe-2-s1-student-book",
    "startPage": 28,
-   "endPage": 32,
+   "endPage": 29,
    "aspect": 0.7586
   },
   "kbl-g2-pe-s1-nccd-u3_l1": {
@@ -3112,7 +3112,7 @@
   "kbl-g2-pe-s1-nccd-u3_l5": {
    "sourceId": "pe-2-s1-student-book",
    "startPage": 42,
-   "endPage": 45,
+   "endPage": 43,
    "aspect": 0.7586
   },
   "kbl-g3-arabic-s1-nccd-u1_l1": {
@@ -3142,7 +3142,7 @@
   "kbl-g3-arabic-s1-nccd-u1_l5": {
    "sourceId": "g3-arabic-s1-student-book",
    "startPage": 26,
-   "endPage": 29,
+   "endPage": 28,
    "aspect": 0.7586
   },
   "kbl-g3-arabic-s1-nccd-u2_l1": {
@@ -3172,7 +3172,7 @@
   "kbl-g3-arabic-s1-nccd-u2_l5": {
    "sourceId": "g3-arabic-s1-student-book",
    "startPage": 51,
-   "endPage": 55,
+   "endPage": 54,
    "aspect": 0.7586
   },
   "kbl-g3-arabic-s1-nccd-u3_l1": {
@@ -3202,7 +3202,7 @@
   "kbl-g3-arabic-s1-nccd-u3_l5": {
    "sourceId": "g3-arabic-s1-student-book",
    "startPage": 77,
-   "endPage": 79,
+   "endPage": 78,
    "aspect": 0.7586
   },
   "kbl-g3-arabic-s1-nccd-u4_l1": {
@@ -3232,7 +3232,7 @@
   "kbl-g3-arabic-s1-nccd-u4_l5": {
    "sourceId": "g3-arabic-s1-student-book",
    "startPage": 101,
-   "endPage": 103,
+   "endPage": 102,
    "aspect": 0.7586
   },
   "kbl-g3-arabic-s1-nccd-u5_l1": {
@@ -3267,7 +3267,7 @@
   "kbl-g3-arabic-s1-nccd-u5_l5": {
    "sourceId": "g3-arabic-s1-student-book",
    "startPage": 127,
-   "endPage": 129,
+   "endPage": 128,
    "aspect": 0.7586
   },
   "kbl-g3-arabic-s2-nccd-u10_l1": {
@@ -3317,7 +3317,7 @@
   "kbl-g3-arabic-s2-nccd-u10_l5": {
    "sourceId": "g3-arabic-s2-student-book",
    "startPage": 120,
-   "endPage": 122,
+   "endPage": 121,
    "aspect": 0.75,
    "rendered": {
     "dir": "kbl-g3-arabic-s2-nccd-u10_l5",
@@ -3372,7 +3372,7 @@
   "kbl-g3-arabic-s2-nccd-u6_l5": {
    "sourceId": "g3-arabic-s2-student-book",
    "startPage": 27,
-   "endPage": 29,
+   "endPage": 28,
    "aspect": 0.75,
    "rendered": {
     "dir": "kbl-g3-arabic-s2-nccd-u7_l1",
@@ -3427,7 +3427,7 @@
   "kbl-g3-arabic-s2-nccd-u7_l5": {
    "sourceId": "g3-arabic-s2-student-book",
    "startPage": 51,
-   "endPage": 53,
+   "endPage": 52,
    "aspect": 0.75,
    "rendered": {
     "dir": "kbl-g3-arabic-s2-nccd-u8_l1",
@@ -3482,7 +3482,7 @@
   "kbl-g3-arabic-s2-nccd-u8_l5": {
    "sourceId": "g3-arabic-s2-student-book",
    "startPage": 73,
-   "endPage": 75,
+   "endPage": 74,
    "aspect": 0.75,
    "rendered": {
     "dir": "kbl-g3-arabic-s2-nccd-u9_l1",
@@ -3537,7 +3537,7 @@
   "kbl-g3-arabic-s2-nccd-u9_l5": {
    "sourceId": "g3-arabic-s2-student-book",
    "startPage": 97,
-   "endPage": 99,
+   "endPage": 98,
    "aspect": 0.75,
    "rendered": {
     "dir": "kbl-g3-arabic-s2-nccd-u10_l1",
@@ -3668,7 +3668,7 @@
   "kbl-g3-arts-s1-nccd-u3_l10": {
    "sourceId": "g3-arts-student-book",
    "startPage": 80,
-   "endPage": 82,
+   "endPage": 81,
    "aspect": 0.7586
   },
   "kbl-g3-arts-s1-nccd-u3_l2": {
@@ -4082,7 +4082,7 @@
   "kbl-g3-pe-s1-nccd-u1_l4": {
    "sourceId": "g3-pe-s1-student-book",
    "startPage": 13,
-   "endPage": 16,
+   "endPage": 14,
    "aspect": 0.75
   },
   "kbl-g3-pe-s1-nccd-u2_l1": {
@@ -4112,7 +4112,7 @@
   "kbl-g3-pe-s1-nccd-u2_l5": {
    "sourceId": "g3-pe-s1-student-book",
    "startPage": 26,
-   "endPage": 29,
+   "endPage": 27,
    "aspect": 0.75
   },
   "kbl-g3-pe-s1-nccd-u3_l1": {
@@ -4142,7 +4142,7 @@
   "kbl-g3-pe-s1-nccd-u3_l5": {
    "sourceId": "g3-pe-s1-student-book",
    "startPage": 39,
-   "endPage": 42,
+   "endPage": 40,
    "aspect": 0.75
   },
   "kbl-g3-pe-s2-nccd-u4_l1": {
@@ -4184,7 +4184,7 @@
   "kbl-g3-pe-s2-nccd-u4_l7": {
    "sourceId": "pe-3-s2-student-book",
    "startPage": 19,
-   "endPage": 22,
+   "endPage": 20,
    "aspect": 0.75
   },
   "kbl-g3-pe-s2-nccd-u5_l1": {
@@ -4226,7 +4226,7 @@
   "kbl-g3-pe-s2-nccd-u5_l7": {
    "sourceId": "pe-3-s2-student-book",
    "startPage": 37,
-   "endPage": 41,
+   "endPage": 39,
    "aspect": 0.75
   },
   "kbl-g3-science-s2-nccd-u4_l2": {
@@ -4600,6 +4600,17 @@
    "endPage": 111,
    "aspect": 0.75
   },
+  "kbl-g4-arts-s1-nccd-u3_l3": {
+   "sourceId": "g4-arts-s1-student-book",
+   "startPage": 80,
+   "endPage": 82,
+   "aspect": 0.7586,
+   "rendered": {
+    "dir": "kbl-g4-arts-s1-nccd-u3_l4",
+    "startPage": 80,
+    "endPage": 82
+   }
+  },
   "kbl-g4-islamic-s1-nccd-u1_l1": {
    "sourceId": "g4-islamic-s1-student-book",
    "startPage": 6,
@@ -4903,7 +4914,7 @@
   "kbl-g4-math-s1-nccd-u1_l6": {
    "sourceId": "g4-math-s1-student-book",
    "startPage": 26,
-   "endPage": 33,
+   "endPage": 29,
    "aspect": 0.75
   },
   "kbl-g4-math-s1-nccd-u2_l1": {
@@ -4927,7 +4938,7 @@
   "kbl-g4-math-s1-nccd-u2_l4": {
    "sourceId": "g4-math-s1-student-book",
    "startPage": 44,
-   "endPage": 49,
+   "endPage": 45,
    "aspect": 0.75
   },
   "kbl-g4-math-s1-nccd-u3_l1": {
@@ -4957,7 +4968,7 @@
   "kbl-g4-math-s1-nccd-u3_l5": {
    "sourceId": "g4-math-s1-student-book",
    "startPage": 63,
-   "endPage": 69,
+   "endPage": 65,
    "aspect": 0.75
   },
   "kbl-g4-math-s1-nccd-u4_l1": {
@@ -4975,7 +4986,7 @@
   "kbl-g4-math-s1-nccd-u4_l3": {
    "sourceId": "g4-math-s1-student-book",
    "startPage": 78,
-   "endPage": 85,
+   "endPage": 81,
    "aspect": 0.75
   },
   "kbl-g4-math-s1-nccd-u5_l1": {
@@ -5005,7 +5016,7 @@
   "kbl-g4-math-s1-nccd-u5_l5": {
    "sourceId": "g4-math-s1-student-book",
    "startPage": 101,
-   "endPage": 105,
+   "endPage": 103,
    "aspect": 0.75
   },
   "kbl-g4-math-s2-nccd-u10_l1": {
@@ -5035,7 +5046,7 @@
   "kbl-g4-math-s2-nccd-u10_l5": {
    "sourceId": "g4-math-s2-student-book",
    "startPage": 126,
-   "endPage": 129,
+   "endPage": 127,
    "aspect": 0.7586
   },
   "kbl-g4-math-s2-nccd-u6_l1": {
@@ -5059,7 +5070,7 @@
   "kbl-g4-math-s2-nccd-u6_l4": {
    "sourceId": "g4-math-s2-student-book",
    "startPage": 23,
-   "endPage": 31,
+   "endPage": 27,
    "aspect": 0.7586
   },
   "kbl-g4-math-s2-nccd-u7_l1": {
@@ -5101,7 +5112,7 @@
   "kbl-g4-math-s2-nccd-u7_l7": {
    "sourceId": "g4-math-s2-student-book",
    "startPage": 55,
-   "endPage": 61,
+   "endPage": 57,
    "aspect": 0.7586
   },
   "kbl-g4-math-s2-nccd-u8_l1": {
@@ -5131,7 +5142,7 @@
   "kbl-g4-math-s2-nccd-u8_l5": {
    "sourceId": "g4-math-s2-student-book",
    "startPage": 77,
-   "endPage": 83,
+   "endPage": 79,
    "aspect": 0.7586
   },
   "kbl-g4-math-s2-nccd-u9_l1": {
@@ -5175,11 +5186,66 @@
    "endPage": 12,
    "aspect": 0.7586
   },
+  "kbl-g4-pe-s1-nccd-u2_l3": {
+   "sourceId": "pe-4-s1-student-book",
+   "startPage": 30,
+   "endPage": 32,
+   "aspect": 0.7586,
+   "rendered": {
+    "dir": "kbl-g4-pe-s1-nccd-u1_l3",
+    "startPage": 30,
+    "endPage": 35
+   }
+  },
+  "kbl-g4-pe-s1-nccd-u2_l4": {
+   "sourceId": "pe-4-s1-student-book",
+   "startPage": 33,
+   "endPage": 35,
+   "aspect": 0.7586,
+   "rendered": {
+    "dir": "kbl-g4-pe-s1-nccd-u1_l3",
+    "startPage": 30,
+    "endPage": 35
+   }
+  },
+  "kbl-g4-pe-s1-nccd-u3_l2": {
+   "sourceId": "pe-4-s1-student-book",
+   "startPage": 46,
+   "endPage": 49,
+   "aspect": 0.7586,
+   "rendered": {
+    "dir": "kbl-g4-pe-s1-nccd-u2_l1",
+    "startPage": 46,
+    "endPage": 49
+   }
+  },
   "kbl-g4-pe-s1-nccd-u3_l3": {
    "sourceId": "pe-4-s1-student-book",
    "startPage": 50,
    "endPage": 53,
    "aspect": 0.7586
+  },
+  "kbl-g4-social-s1-nccd-u4_l4": {
+   "sourceId": "g4-social-s1-student-book",
+   "startPage": 71,
+   "endPage": 74,
+   "aspect": 0.75,
+   "rendered": {
+    "dir": "kbl-g4-social-s1-nccd-u4_l5",
+    "startPage": 71,
+    "endPage": 80
+   }
+  },
+  "kbl-g4-social-s1-nccd-u4_l5": {
+   "sourceId": "g4-social-s1-student-book",
+   "startPage": 75,
+   "endPage": 78,
+   "aspect": 0.75,
+   "rendered": {
+    "dir": "kbl-g4-social-s1-nccd-u4_l5",
+    "startPage": 71,
+    "endPage": 80
+   }
   },
   "kbl-g4-social-s2-nccd-u5_l1": {
    "sourceId": "g4-social-s2-student-book",
@@ -5198,6 +5264,28 @@
    "startPage": 13,
    "endPage": 19,
    "aspect": 0.75
+  },
+  "kbl-g4-voc-s2-nccd-u4_l1": {
+   "sourceId": "g4-voc-s2-student-book",
+   "startPage": 48,
+   "endPage": 53,
+   "aspect": 0.75,
+   "rendered": {
+    "dir": "kbl-g4-voc-s2-nccd-u3_l2",
+    "startPage": 43,
+    "endPage": 62
+   }
+  },
+  "kbl-g4-voc-s2-nccd-u4_l2": {
+   "sourceId": "g4-voc-s2-student-book",
+   "startPage": 54,
+   "endPage": 58,
+   "aspect": 0.75,
+   "rendered": {
+    "dir": "kbl-g4-voc-s2-nccd-u3_l2",
+    "startPage": 43,
+    "endPage": 62
+   }
   },
   "kbl-g5-arabic-s1-nccd-u1_l1": {
    "sourceId": "g5-arabic-s1-student-book",

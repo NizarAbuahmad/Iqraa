@@ -24,11 +24,20 @@ const shuffle = <X,>(rng: Rng, xs: X[]) => {
 };
 /** Name options: three other names from the same list, in a stable order. */
 const others = (rng: Rng, ans: string, all: readonly string[]) => shuffle(rng, all.filter(x => x !== ans)).slice(0, 3);
-/** «دينار واحد / ديناران / 5 دنانير / 12 دينارًا» */
-const counted = (n: number, one: string, two: string, few: string, many: string) => (n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${few}` : `${n} ${many}`);
-const dinars = (n: number) => counted(n, 'دينار واحد', 'ديناران', 'دنانير', 'دينارًا');
+/** «دينار واحد / ديناران / 5 دنانير / 12 دينارًا / 100 دينار» */
+const counted = (n: number, one: string, two: string, few: string, many: string, hundreds: string) =>
+  (n === 1 ? one : n === 2 ? two : `${n} ${tamyiz(n, few, many, hundreds)}`);
+const dinars = (n: number) => counted(n, 'دينار واحد', 'ديناران', 'دنانير', 'دينارًا', 'دينار');
+/** «يوم واحد / يومين / 9 أيام / 18 يومًا» — after «بعد» / «في», so the dual is genitive. */
+const days = (n: number) => counted(n, 'يوم واحد', 'يومين', 'أيام', 'يومًا', 'يوم');
+/** «أسبوعين / 5 أسابيع» */
+const weeks = (n: number) => counted(n, 'أسبوع واحد', 'أسبوعين', 'أسابيع', 'أسبوعًا', 'أسبوع');
+/** «قطعتان / 5 قطع / 12 قطعةً» — the subject of its clause, so the dual is nominative. */
+const pieces = (n: number) => counted(n, 'قطعة واحدة', 'قطعتان', 'قطع', 'قطعةً', 'قطعة');
+/** «قلمان / 5 أقلام» — nominative. */
+const pens = (n: number) => counted(n, 'قلم واحد', 'قلمان', 'أقلام', 'قلمًا', 'قلم');
 /** After «في / من / بـ» a dual is genitive: «في دينارين», never «في ديناران». */
-const dinarsAfterPreposition = (n: number) => counted(n, 'دينار واحد', 'دينارين', 'دنانير', 'دينارًا');
+const dinarsAfterPreposition = (n: number) => counted(n, 'دينار واحد', 'دينارين', 'دنانير', 'دينارًا', 'دينار');
 /** «كرة واحدة / كرتان / 5 كرات / 12 كرةً» */
 const balls = (n: number) => (n === 1 ? 'كرة واحدة' : n === 2 ? 'كرتان' : `${n} ${tamyiz(n, 'كرات', 'كرةً', 'كرة')}`);
 /** «45 قرشًا / 7 قروش / 300 قرش» — for 3 or more. */
@@ -647,14 +656,10 @@ const mentalMultiples = (id: string, match: RegExp, add: boolean, grade: number)
   return { eq: `${x}, ${y}`, answer: String(r), wrongs: ints(r, [r * 10, r / 10, add ? x - y : x + y, r + place]), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
 });
 
-// Counts start at 3 so «${n} أقلام / ${g} مجموعات» are right as written («2
-// أقلام» is not Arabic: two is a dual, «قلمان»); a total of 11 or more takes the
-// singular — «وُزّعت 25 قطعةً», never «25 قطع».
-const pieces = (n: number) => `${n} ${tamyiz(n, 'قطع', 'قطعةً', 'قطعة')}`;
 const equalGroups = (id: string, match: RegExp) => T(id, match, [2, 2], ({ rng }) => {
-  const g = int(rng, 3, 5), n = int(rng, 3, 6), t = g * n, k = pick(rng, [0, 1, 2]);
-  if (k === 0) return { eq: `${g}, ${n}`, answer: String(t), wrongs: ints(t, [g + n, t + g, t - n, g * g]), ar: `${g} مجموعات متساوية، في كل منها ${n} أقلام. كم قلمًا في المجموع؟`, en: `There are ${g} equal groups with ${n} pencils in each. How many pencils are there in all?` };
-  if (k === 1) return { eq: `${t}, ${g}`, answer: String(n), wrongs: ints(n, [t, g, n + 1, t - g]), ar: `وُزّعت ${pieces(t)} بالتساوي على ${g} مجموعات. كم قطعة في كل مجموعة؟`, en: `${t} pieces are shared equally among ${g} groups. How many pieces are in each group?` };
+  const g = int(rng, 2, 5), n = int(rng, 2, 6), t = g * n, k = pick(rng, [0, 1, 2]);
+  if (k === 0) return { eq: `${g}, ${n}`, answer: String(t), wrongs: ints(t, [g + n, t + g, t - n, g * g]), ar: `${g === 2 ? 'مجموعتان متساويتان' : `${g} مجموعات متساوية`}، في كل منها ${pens(n)}. كم قلمًا في المجموع؟`, en: `There are ${g} equal groups with ${n} pencils in each. How many pencils are there in all?` };
+  if (k === 1) return { eq: `${t}, ${g}`, answer: String(n), wrongs: ints(n, [t, g, n + 1, t - g]), ar: `وُزّعت ${pieces(t)} بالتساوي على ${g === 2 ? 'مجموعتين' : `${g} مجموعات`}. كم قطعة في كل مجموعة؟`, en: `${t} pieces are shared equally among ${g} groups. How many pieces are in each group?` };
   return { eq: `${t}, ${n}`, answer: String(g), wrongs: ints(g, [t, n, g + 1, t - n]), ar: `${pieces(t)}، وُضع في كل مجموعة ${pieces(n)}. كم مجموعة تكوّنت؟`, en: `${t} pieces are put into groups of ${n}. How many groups are made?` };
 });
 
@@ -780,6 +785,138 @@ const mulNoRegroup = (id: string, match: RegExp, regroup: boolean) => T(id, matc
   }
   return { eq: '12 × 3', answer: '36', wrongs: ['26', '46', '15'], ar: 'ما ناتج 12 × 3؟', en: 'What is 12 × 3?' };
 });
+
+// ─── column addition and subtraction with regrouping ─────────────────────────
+//
+// Each of these lessons is about one column regrouping — the catalog objective
+// names it («مع إعادة تجميع الآحاد», «… العشرات», «… المئات», «أحدهما يحوي
+// أصفارًا») — so every pair is drawn until that column regroups. The generic
+// «جمع/طرح» drill they used to get regrouped about half the time by chance, and
+// put a zero to work in under one sum in ten (Grade 2 audit, 2026-11-14).
+
+/** Digits, ones first. */
+const colDigits = (n: number) => [...String(n)].reverse().map(Number);
+/** Column by column (ones = 0), whether a + b carries out of it. */
+function carryCols(a: number, b: number): boolean[] {
+  const x = colDigits(a), y = colDigits(b), out: boolean[] = [];
+  let c = 0;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) { c = (x[i] ?? 0) + (y[i] ?? 0) + c >= 10 ? 1 : 0; out.push(c === 1); }
+  return out;
+}
+/** Column by column, whether a − b borrows into it from the next column. */
+function borrowCols(a: number, b: number): boolean[] {
+  const x = colDigits(a), y = colDigits(b), out: boolean[] = [];
+  let br = 0;
+  for (let i = 0; i < x.length; i++) { br = x[i]! - br - (y[i] ?? 0) < 0 ? 1 : 0; out.push(br === 1); }
+  return out;
+}
+const byCols = (a: number, b: number, f: (x: number, y: number) => number) =>
+  Number(colDigits(a).map((d, i) => f(d, colDigits(b)[i] ?? 0)).reverse().join(''));
+/** Each column's sum written down and the carry dropped: 47 + 38 → 75. */
+const dropCarry = (a: number, b: number) => byCols(a, b, (x, y) => (x + y) % 10);
+/** The smaller digit taken from the larger in every column: 52 − 38 → 26. */
+const smallFromLarge = (a: number, b: number) => byCols(a, b, (x, y) => Math.abs(x - y));
+/** Borrowed ten ones, but the column lent from is never reduced: 52 − 38 → 24. */
+const noDecrement = (a: number, b: number) => byCols(a, b, (x, y) => (x < y ? x + 10 - y : x - y));
+const digitAt = (n: number, p: number) => Math.floor(n / 10 ** p) % 10;
+const PLACE_COL = ['الآحاد', 'العشرات', 'المئات', 'الألوف'];
+const PLACE_COL_EN = ['ones', 'tens', 'hundreds', 'thousands'];
+const books = (n: number) => counted(n, 'كتاب واحد', 'كتابان', 'كتب', 'كتابًا', 'كتاب');
+const visitors = (n: number) => counted(n, 'زائر واحد', 'زائران', 'زوار', 'زائرًا', 'زائر');
+const litres = (n: number) => counted(n, 'لتر واحد', 'لتران', 'لترات', 'لترًا', 'لتر');
+
+/**
+ * `draw` gives a candidate pair (the first number is never the shorter); `ok`
+ * is the lesson's rule. Three kinds: the sum or difference, a story with the
+ * two numbers in order, and the digit in the column a regrouping changes —
+ * where the slip (the carry dropped, the lending column not reduced) shows.
+ */
+const columnOp = (id: string, match: RegExp, grade: number, add: boolean,
+  draw: (rng: Rng, diff: D) => [number, number], ok: (a: number, b: number, diff: D) => boolean) =>
+  T(id, match, [grade, grade], ({ rng, diff }) => {
+    const op = add ? '+' : '−';
+    for (let i = 0; i < 5000; i++) {
+      const [a, b] = draw(rng, diff);
+      if (b < 10 || (!add && a <= b) || !ok(a, b, diff)) continue;
+      const r = add ? a + b : a - b, slip = add ? dropCarry(a, b) : smallFromLarge(a, b);
+      if (slip === r) continue;
+      const k = pick(rng, [0, 1, 2]);
+      if (k === 2) {
+        // a column that receives a carry, or lends to the column below, and still has a digit in the answer
+        const reg = add ? carryCols(a, b) : borrowCols(a, b);
+        const cols = reg.map((x, j) => (x ? j + 1 : -1)).filter(p => p > 0 && p < String(r).length && p < PLACE_COL.length);
+        if (cols.length > 0) {
+          const p = pick(rng, cols), d = digitAt(r, p), s = digitAt(add ? dropCarry(a, b) : noDecrement(a, b), p);
+          return {
+            eq: `${a} ${op} ${b} @${p}`, answer: String(d), wrongs: ints(d, [s, (d + 1) % 10, (d + 9) % 10, (d + 2) % 10]),
+            ar: `ما رقم ${PLACE_COL[p]} في ناتج ${a} ${op} ${b}؟`, en: `What is the ${PLACE_COL_EN[p]} digit of ${a} ${op} ${b}?`,
+          };
+        }
+      }
+      const wrongs = ints(r, [slip, add ? r - 10 : noDecrement(a, b), r + 10, r - 100, r + 1]);
+      if (k === 1) {
+        const story = pick(rng, [0, 1]);
+        if (add) return story === 0
+          ? { eq: `word:${a} + ${b}`, answer: String(r), wrongs, ar: `في مكتبة المدرسة ${books(a)}، وأُهدي إليها ${books(b)}. كم كتابًا أصبح في المكتبة؟`, en: `The school library has ${a} books and is given ${b} more. How many books does it have now?` }
+          : { eq: `word:${a} + ${b}`, answer: String(r), wrongs, ar: `زار المتحفَ يوم الجمعة ${visitors(a)}، وزاره يوم السبت ${visitors(b)}. كم زائرًا زار المتحف في اليومين؟`, en: `${a} people visited the museum on Friday and ${b} on Saturday. How many visited on the two days?` };
+        return story === 0
+          ? { eq: `word:${a} − ${b}`, answer: String(r), wrongs, ar: `في مستودع مكتبة ${books(a)}، بِيع منها ${books(b)}. كم كتابًا بقي في المستودع؟`, en: `A bookshop's store has ${a} books and ${b} are sold. How many books are left?` }
+          : { eq: `word:${a} − ${b}`, answer: String(r), wrongs, ar: `في خزان ${litres(a)} من الماء، استُعمل منها ${litres(b)}. كم لترًا بقي في الخزان؟`, en: `A tank holds ${a} litres of water and ${b} litres are used. How many litres are left?` };
+      }
+      return { eq: `${a} ${op} ${b}`, answer: String(r), wrongs, ar: `أوجد ناتج: ${a} ${op} ${b}`, en: `Find: ${a} ${op} ${b}` };
+    }
+    return add
+      ? { eq: '47 + 38', answer: '85', wrongs: ['75', '95', '86'], ar: 'أوجد ناتج: 47 + 38', en: 'Find: 47 + 38' }
+      : { eq: '52 − 38', answer: '14', wrongs: ['26', '24', '15'], ar: 'أوجد ناتج: 52 − 38', en: 'Find: 52 − 38' };
+  });
+
+/** A number of exactly `n` digits. */
+const ofLen = (rng: Rng, n: number) => int(rng, 10 ** (n - 1), 10 ** n - 1);
+const pair = (rng: Rng, la: number, lb: number): [number, number] => [ofLen(rng, la), ofLen(rng, lb)];
+const count = (xs: boolean[]) => xs.filter(Boolean).length;
+
+const columnTopics: Topic[] = [
+  // Grade 2 «جمع عددين مع إعادة تجميع الآحاد»: only the ones carry
+  columnOp('add_regroup_ones', /^الجمع مع اعاده التجميع \(1\)$/, 2, true,
+    (rng, diff) => pair(rng, span(diff, 2, 3, 3), span(diff, 2, 2, 3)),
+    (a, b) => { const c = carryCols(a, b); return a + b <= 999 && c[0]! && !c[1]; }),
+  // «… مع إعادة تجميع العشرات»: the tens carry; the ones as well only on hard
+  columnOp('add_regroup_tens', /^الجمع مع اعاده التجميع \(2\)$/, 2, true,
+    (rng, diff) => pair(rng, span(diff, 2, 3, 3), span(diff, 2, 2, 3)),
+    (a, b, diff) => { const c = carryCols(a, b); return a + b <= 999 && c[1]! && (diff === 'hard' || !c[0]); }),
+  // «الطرح مع إعادة تجميع العشرات»: a ten becomes ten ones; the tens themselves do not borrow
+  columnOp('sub_regroup_tens', /^الطرح مع اعاده التجميع \(1\)$/, 2, false,
+    (rng, diff) => pair(rng, span(diff, 2, 3, 3), span(diff, 2, 2, 3)),
+    (a, b) => { const r = borrowCols(a, b); return r[0]! && !r[1]; }),
+  // «الطرح مع إعادة تجميع المئات»: a hundred becomes ten tens; the ones as well only on hard
+  columnOp('sub_regroup_hundreds', /^الطرح مع اعاده التجميع \(2\)$/, 2, false,
+    (rng, diff) => pair(rng, 3, span(diff, 2, 3, 3)),
+    (a, b, diff) => { const r = borrowCols(a, b); return r[1]! && (diff === 'hard' || !r[0]); }),
+  // «طرح عددين كل منهما من ثلاث منازل أحدهما يحوي أصفارًا»: 400 − 156, 503 − 278
+  columnOp('sub_zeros_g2', /^الطرح مع وجود اصفار$/, 2, false,
+    (rng, diff) => [int(rng, 2, 9) * 100 + (diff === 'easy' ? 0 : int(rng, 0, 9)), ofLen(rng, 3)],
+    (a, b) => borrowCols(a, b)[0]!),
+  // Grade 3 «جمع عددين من ثلاث منازل مع إعادة تجميع المئات»: the hundreds carry into a thousand
+  columnOp('add_regroup_g3_hundreds', /^الجمع مع اعاده التجميع 1$/, 3, true,
+    rng => pair(rng, 3, 3),
+    (a, b, diff) => { const c = carryCols(a, b); return c[2]! && count(c) <= span(diff, 1, 2, 3); }),
+  // «جمع عددين كل منهما مكون من أربع منازل مع إعادة التجميع»
+  columnOp('add_regroup_g3_four', /^الجمع مع اعاده التجميع 2$/, 3, true,
+    rng => pair(rng, 4, 4),
+    (a, b, diff) => { const n = count(carryCols(a, b)); return a + b <= 9999 && n >= span(diff, 1, 1, 2) && n <= span(diff, 1, 2, 3); }),
+  // «طرح عددين كل منهما مكون من 4 منازل مع إعادة التجميع»
+  columnOp('sub_regroup_g3', /^الطرح مع اعاده التجميع$/, 3, false,
+    rng => pair(rng, 4, 4),
+    (a, b, diff) => { const n = count(borrowCols(a, b)); return n >= span(diff, 1, 1, 2) && n <= span(diff, 1, 2, 3); }),
+  // «طرح عددين كل منهما مكون من 4 منازل أحدهما يحوي أصفارًا»: 5003 − 1256, 7040 − 2685
+  columnOp('sub_zeros_g3', /^الطرح مع وجود اصفار$/, 3, false,
+    (rng, diff) => {
+      const [h, t] = pick(rng, diff === 'easy' ? [[0, 0]] : [[0, 0], [0, -1], [-1, 0]]);
+      const o = diff === 'easy' && rng() < 0.5 ? 0 : int(rng, 0, 9);
+      return [int(rng, 2, 9) * 1000 + (h === 0 ? 0 : int(rng, 1, 9)) * 100 + (t === 0 ? 0 : int(rng, 1, 9)) * 10 + o, ofLen(rng, 4)];
+    },
+    (a, b) => { const x = colDigits(a), r = borrowCols(a, b); return [1, 2].some(i => x[i] === 0 && r[i - 1]); }),
+];
 
 const twoWay = T('two_way_table', /^الجدول ذو الاتجاهين$/, [3, 3], ({ rng }) => {
   // 3–9 in each cell, so «أولاد» / «بنات» is always the right plural
@@ -935,13 +1072,11 @@ const decimalMoney = T('decimal_money', /^الاعداد العشريه والن
 });
 
 const coins = (id: string, match: RegExp) => T(id, match, [1, 1], ({ rng }) => {
-  // 3 or more coins: «${n} قطع» is right as written (two is «قطعتان»), and a
-  // total is then 15 or more, so «قرشًا» after it is right too (10 is «قروش»).
-  const v = pick(rng, [5, 10]), n = int(rng, 3, 6), w = v === 5 ? 10 : 5, m = int(rng, 3, 4), k = pick(rng, [0, 1, 2]);
-  if (k === 0) return { eq: `${v}, ${n}`, answer: String(v * n), wrongs: ints(v * n, [v + n, v * n + v, n, v * n - 1]), ar: `مع ليلى ${n} قطع نقدية، قيمة كل منها ${v} قروش. كم قرشًا معها؟`, en: `Layla has ${n} coins worth ${v} qirsh each. How many qirsh does she have?` };
-  if (k === 1) return { eq: `${v}, ${n}, ${w}, ${m}`, answer: String(v * n + w * m), wrongs: ints(v * n + w * m, [v + n + w + m, v * n, w * m, v * n + w * m + v]), ar: `مع ليلى ${n} قطع من فئة ${v} قروش و ${m} قطع من فئة ${w} قروش. كم قرشًا معها؟`, en: `Layla has ${n} coins of ${v} qirsh and ${m} coins of ${w} qirsh. How many qirsh does she have?` };
+  const v = pick(rng, [5, 10]), n = int(rng, 2, 6), w = v === 5 ? 10 : 5, m = int(rng, 2, 4), k = pick(rng, [0, 1, 2]);
+  if (k === 0) return { eq: `${v}, ${n}`, answer: String(v * n), wrongs: ints(v * n, [v + n, v * n + v, n, v * n - 1]), ar: `مع ليلى ${n === 2 ? 'قطعتان نقديتان' : `${n} قطع نقدية`}، قيمة كل منها ${v} قروش. كم قرشًا معها؟`, en: `Layla has ${n} coins worth ${v} qirsh each. How many qirsh does she have?` };
+  if (k === 1) return { eq: `${v}, ${n}, ${w}, ${m}`, answer: String(v * n + w * m), wrongs: ints(v * n + w * m, [v + n + w + m, v * n, w * m, v * n + w * m + v]), ar: `مع ليلى ${pieces(n)} من فئة ${v} قروش و ${pieces(m)} من فئة ${w} قروش. كم قرشًا معها؟`, en: `Layla has ${n} coins of ${v} qirsh and ${m} coins of ${w} qirsh. How many qirsh does she have?` };
   const total = v * n;
-  return { eq: `${total}, ${v}`, answer: String(n), wrongs: ints(n, [total, v, n + 1, n - 1]), ar: `كم قطعة من فئة ${v} قروش تلزم لتكوين ${total} قرشًا؟`, en: `How many coins of ${v} qirsh make ${total} qirsh?` };
+  return { eq: `${total}, ${v}`, answer: String(n), wrongs: ints(n, [total, v, n + 1, n - 1]), ar: `كم قطعة من فئة ${v} قروش تلزم لتكوين ${qirsh(total)}؟`, en: `How many coins of ${v} qirsh make ${total} qirsh?` };
 });
 
 const dinar = T('dinar', /^الدينار$/, [2, 2], ({ rng }) => {
@@ -1070,24 +1205,22 @@ const monthsOfYear = T('months', /^اشهر السنه$/, [2, 2], ({ rng }) => {
 
 const amPm = T('am_pm', /^قبل الظهر بعد الظهر$/, [3, 3], ({ rng }) => {
   const a = int(rng, 5, 11), b = int(rng, 1, 9), k = pick(rng, [0, 1, 2, 3]);
-  if (k === 2) return { eq: `${b + 12}`, answer: String(b), wrongs: ints(b, [b + 12, b + 2, b + 1, b - 1]), ar: `الساعة ${b + 12}:00 بنظام 24 ساعة. كم تكون الساعة بعد الظهر؟ (اكتب العدد قبل «:00»)`, en: `It is ${b + 12}:00 in 24-hour time. What time is it in the afternoon? (write the number before ':00')` };
+  if (k === 2) return { eq: `${b + 12}`, answer: String(b), wrongs: ints(b, [b + 12, b + 2, b + 1, b - 1]), ar: `الساعة ${b + 12}:00 بنظام 24 ساعةً. كم تكون الساعة بعد الظهر؟ (اكتب العدد قبل «:00»)`, en: `It is ${b + 12}:00 in 24-hour time. What time is it in the afternoon? (write the number before ':00')` };
   if (k === 3) {
     // a morning start that runs past noon
     const s = int(rng, 7, 11), len = int(rng, Math.max(3, 13 - s), 10), end = s + len - 12;
     return { eq: `${s}, ${len}`, answer: String(end), wrongs: ints(end, [s + len, end + 1, end - 1, len]), ar: `بدأت رحلة الساعة ${s}:00 قبل الظهر واستمرت ${len} ساعات. في أي ساعة بعد الظهر انتهت؟ (اكتب العدد قبل «:00»)`, en: `A trip starts at ${s}:00 a.m. and lasts ${len} hours. At what hour p.m. does it end? (write the number before ':00')` };
   }
   if (k === 0) return { eq: `${a}, ${b}`, answer: String(12 - a + b), wrongs: ints(12 - a + b, [b - a > 0 ? b - a : 2, 12 - a, a + b, 12 - a + b + 1]), ar: `بدأ نشاط الساعة ${a}:00 قبل الظهر وانتهى الساعة ${b}:00 بعد الظهر. كم ساعة استغرق؟`, en: `An activity starts at ${a}:00 a.m. and ends at ${b}:00 p.m. How many hours does it last?` };
-  return { eq: `${b}`, answer: String(b + 12), wrongs: ints(b + 12, [b, b + 10, 12 - b > 0 ? 12 - b : 11, b + 11]), ar: `الساعة ${b}:00 بعد الظهر. كم تبلغ الساعة بنظام 24 ساعة؟ (اكتب العدد قبل «:00»)`, en: `It is ${b}:00 p.m. What is the hour in 24-hour time? (write the number before ':00')` };
+  return { eq: `${b}`, answer: String(b + 12), wrongs: ints(b + 12, [b, b + 10, 12 - b > 0 ? 12 - b : 11, b + 11]), ar: `الساعة ${b}:00 بعد الظهر. كم تبلغ الساعة بنظام 24 ساعةً؟ (اكتب العدد قبل «:00»)`, en: `It is ${b}:00 p.m. What is the hour in 24-hour time? (write the number before ':00')` };
 });
 
-// Counts start at 3 so «${w} أسابيع» and «${j} أيام» are right as written (one
-// and two are «يوم واحد / يومين»); 11 and up take «يومًا» (`tamyiz`).
 const calendar = T('calendar', /^التقويم$/, [3, 3], ({ rng }) => {
   const k = pick(rng, [0, 1, 2]);
-  if (k === 0) { const w = int(rng, 3, 8); return { eq: `${w}`, answer: String(w * 7), wrongs: ints(w * 7, [w * 5, w * 6, w * 7 + 1, w + 7]), ar: `كم يومًا في ${w} أسابيع؟`, en: `How many days are in ${w} weeks?` }; }
-  if (k === 1) { const d = 7 * int(rng, 2, 8); return { eq: `${d}`, answer: String(d / 7), wrongs: ints(d / 7, [d / 7 + 1, d / 7 - 1, d, d / 7 + 2]), ar: `كم أسبوعًا في ${d} يومًا؟`, en: `How many weeks are in ${d} days?` }; }
-  const i = int(rng, 0, 6), j = int(rng, 3, 20), ans = DAYS[(i + j) % 7]!;
-  return { eq: `${DAYS[i]}, ${j}`, answer: ans, wrongs: others(rng, ans, DAYS), ar: `اليوم ${DAYS[i]}. ما اليوم بعد ${j} ${tamyiz(j, 'أيام', 'يومًا', 'يوم')}؟`, en: `Today is ${DAYS[i]}. Which day will it be after ${j} days? (Arabic day names)` };
+  if (k === 0) { const w = int(rng, 2, 8); return { eq: `${w}`, answer: String(w * 7), wrongs: ints(w * 7, [w * 5, w * 6, w * 7 + 1, w + 7]), ar: `كم يومًا في ${weeks(w)}؟`, en: `How many days are in ${w} weeks?` }; }
+  if (k === 1) { const d = 7 * int(rng, 2, 8); return { eq: `${d}`, answer: String(d / 7), wrongs: ints(d / 7, [d / 7 + 1, d / 7 - 1, d, d / 7 + 2]), ar: `كم أسبوعًا في ${days(d)}؟`, en: `How many weeks are in ${d} days?` }; }
+  const i = int(rng, 0, 6), j = int(rng, 1, 20), ans = DAYS[(i + j) % 7]!;
+  return { eq: `${DAYS[i]}, ${j}`, answer: ans, wrongs: others(rng, ans, DAYS), ar: `اليوم ${DAYS[i]}. ما اليوم بعد ${days(j)}؟`, en: `Today is ${DAYS[i]}. Which day will it be after ${j} days? (Arabic day names)` };
 });
 
 /**
@@ -1118,7 +1251,8 @@ const compareMeasure = (id: string, match: RegExp, what: string, bigWord: string
 });
 
 /** «لـ» before a word: «للمثلث», «للشعاع» — the article's alif drops after it. */
-const li = (w: string) => (w.startsWith('ال') ? `لل${w.slice(2)}` : `لـ${w}`);
+/** «للمكعب», «لمتوازي المستطيلات»: the preposition joins its word with no tatweel. */
+const li = (w: string) => (w.startsWith('ال') ? `لل${w.slice(2)}` : `ل${w}`);
 
 /** Things to measure, for choosing the unit: [quantity, things for the small unit, things for the big unit, other units as slips]. */
 const UNIT_FIT: Record<string, [string, Array<[string, string]>, Array<[string, string]>, string[]]> = {
@@ -1183,6 +1317,7 @@ export const EARLY_TOPICS: readonly Topic[] = [
   mulProps, divProps, remainder,
   divisionQ('div_no_rem', /^القسمه من دون باق \(الناتج من رقمين\)$/, true, false), divisionQ('div_rem_2', /^القسمه مع باق \(الناتج من رقمين\)$/, true, true), divisionQ('div_rem_1', /^القسمه مع باق \(الناتج من رقم واحد\)$/, false, true),
   tensMulG3, tensDivG3, distributive, mulNoRegroup('mul_no_regroup', /^الضرب من دون اعاده التجميع$/, false), mulNoRegroup('mul_regroup', /^الضرب مع اعاده التجميع$/, true),
+  ...columnTopics,
   twoWay, pointLineRay, angleG3, lineRelations('lines_g3', /^مستقيمات خاصه$/, 3), lineRelations('lines_g4', /^المستقيمات المتوازيه والمتقاطعه$/, 4), angleArithmetic,
   numberPatterns, inputOutput, decimalMoney,
   coins('coins_a', /^القطع النقديه$/), coins('coins_b', /^القطع النقديه المتساويه$/), coins('coins_c', /^استعمال القطع النقديه$/), dinar, banknotes,
