@@ -164,7 +164,7 @@
         {
           "id": "u2_l6",
           "order": 6,
-          "title_ar": "تَنْوِينُ الضَّمَّةِ",
+          "title_ar": "تَنْوِينُ الضَّمِّ",
           "title_en": "Tanwin al-Damma (Nunation with Damma)",
           "main_idea_ar": "",
           "periods": null,
@@ -318,8 +318,8 @@
         {
           "id": "u4_l3",
           "order": 3,
-          "title_ar": "حَرْفُ التَّاءِ (ت)",
-          "title_en": "The Letter Taa (ت)",
+          "title_ar": "حَرْفُ التَّاءِ الْمَفْتُوحَةِ (ت)",
+          "title_en": "The Letter Open Taa (ت)",
           "main_idea_ar": "",
           "periods": null,
           "objectives": [],

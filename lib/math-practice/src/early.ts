@@ -1378,6 +1378,7 @@ const TRIPLES: Record<string, Array<[string, string, string, string]>> = {
   capacity: [['الملعقة', 'الكوب', 'الدلو', 'A cup holds more than a spoon and a bucket holds more than the cup. Which holds the most?'], ['الفنجان', 'الإبريق', 'الحوض', 'A jug holds more than a small cup and a tub holds more than the jug. Which holds the most?']],
 };
 const MOST: Record<string, [string, string]> = { length: ['أطول', 'الأطول'], mass: ['أثقل', 'الأثقل'], capacity: ['أكبر سعة', 'الأكبر سعة'] };
+/** `what` carries its verb: «قيس طولا» (two lengths are a dual, masculine), «قيست كتلتا», «قيست سعتا». */
 const compareMeasure = (id: string, match: RegExp, what: string, bigWord: string, en: string, big: string, what3: string) => T(id, match, [1, 1], ({ rng }) => {
   const a = int(rng, 2, 14); let b = int(rng, 2, 14); while (b === a) b = int(rng, 2, 14);
   // comparing and ordering only; measuring with a non-standard unit is the next lesson (`unitsNonStd`)
@@ -1393,9 +1394,9 @@ const compareMeasure = (id: string, match: RegExp, what: string, bigWord: string
     const up = rng() < 0.5, xs = [a, b, c], r = up ? Math.min(...xs) : Math.max(...xs);
     return { eq: `${a}, ${b}, ${c}`, answer: String(r), wrongs: ints(r, [...xs.filter(x => x !== r), up ? r + 1 : r - 1, a + b + c]), ar: `قيست ${what3} ثلاثة أشياء بالوحدة نفسها: ${a}، ${b}، ${c}. إذا رُتّبت ${up ? 'تصاعديًا' : 'تنازليًا'}، فما القياس الأول؟`, en: `The ${en} of three things is measured with the same unit: ${a}, ${b}, ${c}. Ordered ${up ? 'from smallest to largest' : 'from largest to smallest'}, which measure comes first?` };
   }
-  if (k === 0) { const r = Math.max(a, b); return { eq: `${a}, ${b}`, answer: String(r), wrongs: ints(r, [Math.min(a, b), a + b, r + 1, Math.abs(a - b)]), ar: `قيست ${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. ما قياس ${bigWord}؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. What is the measure of the ${big}?` }; }
+  if (k === 0) { const r = Math.max(a, b); return { eq: `${a}, ${b}`, answer: String(r), wrongs: ints(r, [Math.min(a, b), a + b, r + 1, Math.abs(a - b)]), ar: `${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. ما قياس ${bigWord}؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. What is the measure of the ${big}?` }; }
   const d = Math.abs(a - b);
-  return { eq: `${a}, ${b}`, answer: String(d), wrongs: ints(d, [a + b, Math.max(a, b), d + 1, Math.min(a, b)]), ar: `قيست ${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. بكم يزيد الأكبر قياسًا على الأصغر؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. By how much does the larger measure exceed the smaller?` };
+  return { eq: `${a}, ${b}`, answer: String(d), wrongs: ints(d, [a + b, Math.max(a, b), d + 1, Math.min(a, b)]), ar: `${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. بكم يزيد الأكبر قياسًا على الأصغر؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. By how much does the larger measure exceed the smaller?` };
 });
 
 /** «لـ» before a word: «للمثلث», «للشعاع» — the article's alif drops after it. */
@@ -1713,9 +1714,9 @@ export const EARLY_TOPICS: readonly Topic[] = [
   coins('coins_a', /^القطع النقديه$/), coins('coins_b', /^القطع النقديه المتساويه$/), coins('coins_c', /^استعمال القطع النقديه$/), dinar, banknotes,
   weekDays, hourTime('hour_full', /^الوقت بالساعات الكامله$/, false), hourTime('hour_half', /^الوقت بنصف الساعه$/, true),
   nearestMinutes('time_5', /^الوقت لاقرب 5 دقائق$/, 5), nearestMinutes('time_15', /^الوقت لاقرب ربع ساعه$/, 15), monthsOfYear, amPm, calendar,
-  compareMeasure('compare_len', /^مقارنه الاطوال وترتيبها$/, 'أطوال', 'الأطول', 'length', 'longest', 'أطوال'),
-  compareMeasure('compare_mass', /^مقارنه الكتل وترتيبها$/, 'كتلتا', 'الأثقل', 'mass', 'heaviest', 'كتل'),
-  compareMeasure('compare_cap', /^مقارنه السعات وترتيبها$/, 'سعتا', 'الأكبر سعة', 'capacity', 'largest', 'سعات'),
+  compareMeasure('compare_len', /^مقارنه الاطوال وترتيبها$/, 'قيس طولا', 'الأطول', 'length', 'longest', 'أطوال'),
+  compareMeasure('compare_mass', /^مقارنه الكتل وترتيبها$/, 'قيست كتلتا', 'الأثقل', 'mass', 'heaviest', 'كتل'),
+  compareMeasure('compare_cap', /^مقارنه السعات وترتيبها$/, 'قيست سعتا', 'الأكبر سعة', 'capacity', 'largest', 'سعات'),
   unitsNonStd('units_len_g1', /^وحدات الطول غير القياسيه$/, 'length'), unitsNonStd('units_mass_g1', /^وحدات الكتله غير القياسيه$/, 'mass'), unitsNonStd('units_cap_g1', /^وحدات السعه غير القياسيه$/, 'capacity'),
   position, classifyOne, classifyTwo, guessCheck, chooseOp, dailyOrder, dataTable, pictoMake, pictoRead,
   centimetre, unitsG2('units_m_g2', /^المتر$/, 'متر', 'سنتيمتر', 100, 'metre', 'centimetres'),
