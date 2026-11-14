@@ -680,7 +680,7 @@ describe('algebra generators: kinds added 2026-10-16', () => {
     kinds = new Set();
     for (const item of draws('intervals', 300)) {
       const p = stem(item);
-      const k = kindOf(p, { toInterval: /على صورة فترة/, toInequality: /^اكتب الفترة/, roster: /بطريقة سرد/, type: /^ما نوع الفترة/, builder: /الصفة المميزة/ });
+      const k = kindOf(p, { toInterval: /على صورة فترة/, toInequality: /^اكتب الفترة/, roster: /بطريقة سرد/, type: /^حدّد نوع المجموعة/, builder: /الصفة المميزة/ });
       kinds.add(k);
       if (k === 'toInequality') {
         const iv = p.match(/الفترة (.+) على صورة/)![1]!;
@@ -1102,14 +1102,32 @@ describe('algebra generators: kinds added for thin lessons', () => {
     assert.equal(kinds.size, 2, [...kinds].join());
   });
 
-  it('Grade 9 sets and intervals: the type of an interval, a solution set in set-builder form', () => {
+  // The book's «أنواع المجموعات» are empty, singleton, finite and infinite (student book S1 p.10; its
+  // exercise: «أحدد ما إذا كانت خالية، أم مفردة، أم منتهية، أم غير منتهية»). The kind used to ask
+  // «ما نوع الفترة» — closed, open, half-open — terms the book never uses for an interval (found
+  // 2026-11-14, Grade 9 review).
+  it('Grade 9 sets and intervals: the type of a set, a solution set in set-builder form', () => {
     const kinds = new Set<string>();
+    const setTypes = new Set<string>();
+    const num = (s: string) => Number(s.replace('−', '-'));
     for (const item of draws('intervals', 300)) {
       const p = stem(item);
-      if (has(p, 'ما نوع الفترة')) {
+      assert.ok(!has(p, 'ما نوع الفترة'), p);
+      if (has(p, 'حدّد نوع المجموعة')) {
         kinds.add('type');
-        const [, l, r] = p.match(/([[(])−?\d+ ، −?\d+([\])])؟$/)!;
-        assert.equal(item.answer, l === '[' && r === ']' ? 'فترة مغلقة' : l === '(' && r === ')' ? 'فترة مفتوحة' : 'فترة نصف مفتوحة', p);
+        const body = p.match(/\{x \| x ∈ Z، ([^}]+)\}/)![1]!;
+        const two = body.match(/^(−?\d+) (<|≤) x (<|≤) (−?\d+)$/);
+        let want: string;
+        if (two) {
+          const lo = num(two[1]!) + (two[2] === '<' ? 1 : 0), hi = num(two[4]!) - (two[3] === '<' ? 1 : 0);
+          const n = Math.max(0, hi - lo + 1);
+          want = n === 0 ? 'خالية' : n === 1 ? 'مفردة' : 'منتهية';
+        } else {
+          assert.match(body, /^x (<|≤|>|≥) −?\d+$/, p);
+          want = 'غير منتهية';
+        }
+        assert.equal(item.answer, want, p);
+        setTypes.add(want);
       } else if (has(p, 'الصفة المميزة')) {
         // the set {x | x o b} must hold exactly where the printed inequality holds
         kinds.add('builder');
@@ -1120,6 +1138,7 @@ describe('algebra generators: kinds added for thin lessons', () => {
       }
     }
     assert.equal(kinds.size, 2, [...kinds].join());
+    assert.equal(setTypes.size, 4, [...setTypes].join());
   });
 });
 

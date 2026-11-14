@@ -10,6 +10,72 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 9 review: Grade 9 chemistry in the Grade 9 book's terms, the dispersion and sets lessons' own content — 2026-11-14
+
+The generators were run over all 423 Grade 9 lessons, and every question of every maths and chemistry quiz was read
+against the lesson's outcomes and the book's extracted text. Grounding by lesson id is exact for all 423. All 32 maths
+and 8 chemistry lessons serve a paper.
+
+**Maths.** Every key read was right: sets and intervals, compound inequalities, two-variable inequalities, functions,
+graphs, parabolas and transformations, all four methods for quadratics, distance and point-to-line distance,
+proportional parts, bisectors, centroid and orthocentre, trig ratios and their uses, exponents, radicals and radical
+equations, rational expressions and equations, dispersion, grouped data, Venn diagrams and geometric probability.
+Two lessons were asking things other than what their book teaches:
+- **«مقاييس التشتت»** drew range in half its questions and IQR in a quarter. The book only recalls both from Grade 8
+  («تعلمت سابقا»). It teaches variance and standard deviation dividing by n, for a list and for a frequency table, and
+  y = ax + b → μy = aμx + b, σy = |a|σx (S2 pp.120–131). None of the table, the variance or the transformation was ever
+  asked. `dispersion` now asks those five, keyed and pinned in `stats.test.ts`, with no range or IQR. Its table kind
+  rejects equal frequencies, which always gave variance 2.
+- **«المجموعات والفترات»** asked «ما نوع الفترة» (closed / open / half-open). The book never names an interval that way;
+  its words are «محدودة / غير محدودة». It sorts sets as empty, singleton, finite and infinite (S1 p.10), and its exercise
+  asks exactly that (p.15). The kind now asks «حدّد نوع المجموعة {x | x ∈ Z، …}: خالية، أم مفردة، أم منتهية، أم غير منتهية؟»
+  (`algebra.test.ts` recomputes the type from the bounds).
+
+**Chemistry.**
+- **The Grade 9 lesson «التوزيع الإلكتروني والجدول الدوري» was served the Grade 10 bank:** «1s² 2s² 2p⁶ 3s² 3p⁶ 4s²»,
+  4s before 3d, how Fe²⁺ forms and unpaired electrons. The Grade 9 book writes arrangements as energy levels
+  («2, 8, 8, 2») for the representative elements up to calcium (S1 p.20) and never uses a subshell.
+  - A new family, `electron_shells`, is detected by the lesson's own name ahead of `electron_config`. It holds 15 items
+    on arrangements of atoms and ions, period and group, size and reactivity down a group and across a period, and noble
+    gases, each with worked steps.
+  - `grade9Chemistry.test.ts` recomputes every keyed arrangement from Z and the ion's charge.
+- **Atomic models:** «أتتبع تطور النماذج الذرية» had no item. Four are added: cathode rays, Thomson's model, and
+  Rutherford's two conclusions (S1 pp.13–15).
+- **acids_bases (Grade 9 only):**
+  - Two items asked «100 / 1000 مرة (المقياس لوغاريتمي)». The book's pH lesson (p.44) compares pH values of solutions
+    at equal concentration and never mentions a logarithm, so they now ask which acid / base is stronger, and why.
+  - A moles item (0.1 mol H₂SO₄ → 0.2 mol NaOH) was replaced: Grade 9 has no mole. The new item asks what a precipitate
+    shows (Pb(NO₃)₂ + KI, p.55). «مؤشرات حدوث التفاعل الكيميائي» is an outcome no item asked.
+- **The book's words:** zinc is «الخارصين» throughout the Grade 9 books (never «الزنك»), and the indicator is «تبّاع
+  الشمس» (never «عباد الشمس»). The Grade 9 families and their steps now say so; no Grade 10 item used either word.
+- Metal activity, corrosion and protection, redox, galvanic and electrolytic cells all match the S2 book.
+
+**Book pages and figures.**
+- Every Grade 9 range in a book with extracted text was checked against it: no lesson runs into a unit test, unit
+  review, summary, glossary or enrichment page. English, civics, financial literacy, geography, history and PE have no
+  extracted text and were not checked this way. Every gap between lessons is unit-end or unit-opener material, except two.
+- **Maths S2 p.30** (the medians exploration) and **p.39** (the trig-ratio investigation) open u5_l3 and u5_l4 but were
+  never cut. The other explorations and extensions are their own lab lessons. `rendered` cannot reach them: no folder
+  holds those pages. `knowledge-base/g9-book-pages-to-render.json` lists the two widened ranges for
+  `scripts/render_lesson_pages.py`, the same route as `g6-book-pages-to-render.json`. Not rendered here: the PDF is not
+  in the checkout and the bucket needs credentials.
+- Of the 440 mapped Grade 9 figures, 434 sit on a page of the lesson they are filed under. The other six are on the
+  page just before it: chemistry, physics and maths ones are the unit's opening experiment or the lesson's exploration,
+  filed under the lesson they open. The geography and English ones are in books with no text to check.
+- 65 lessons have no pages: vocational 30, arts 25, history 6, Arabic 3, PE 1.
+
+**Also fixed:** `g7_work_backward` could print «فبقي معه 2 دينارًا» (halves twice at the smallest start). Its multiple
+now starts at 3. The seeded `tamyiz.test.ts` found it once this PR's draws shifted the sequence.
+
+**Verified:**
+- `lib/math-practice`: 1167 tests pass.
+- Full mobile suite: 9,270 pass. api-server: 2,923 pass. Curriculum: 930 pass; the one failure is `r2.test.ts`,
+  which asserts R2 is unconfigured and this environment has it configured (nothing in `lib/curriculum` changed).
+- Typecheck is clean.
+
+**Not run:** live AI, and anything needing the PDFs. Whether each chemistry item is the best question for its lesson
+is a chemistry teacher's call.
+
 ## Grade 8, second pass: Arabic agreement in counting and congruence, and a clearer perpendicular item — 2026-11-14
 
 The Grade 8 audit (below, «Grade 8 audit: book pages, figures, contents and honorifics…») covered pages, figures,

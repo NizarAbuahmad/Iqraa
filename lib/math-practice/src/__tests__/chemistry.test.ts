@@ -61,7 +61,7 @@ describe('chemistry bank', () => {
     const expected: ChemFamily[] = [
       'atom_basics', 'atomic_structure', 'electron_config', 'periodic_trends',
       'bonding', 'formulas', 'equations', 'mole', 'stoichiometry',
-      'thermochem', 'acids_bases', 'metal_activity', 'redox', 'general_chem',
+      'thermochem', 'acids_bases', 'metal_activity', 'redox', 'general_chem', 'electron_shells',
     ];
     const empty = expected.filter(f => !families.has(f));
     assert.deepEqual(empty, [], `detected but unstocked, so these silently serve general_chem: ${empty.join(', ')}`);
@@ -124,8 +124,9 @@ describe('detectChemFamily', () => {
     // The unit's own name (curriculum browser, a typed topic). It used to fall to general_chem,
     // so a periodic-table quiz was asked about elements and compounds in general.
     ['الجدول الدوري وخواص العناصر', 'periodic_trends'],
-    // The Grade 9 lesson names the periodic table too, but it is the electron-configuration lesson.
-    ['التوزيعُ الإلكترونيُّ والجدولُ الدوريُّ', 'electron_config'],
+    // The Grade 9 lesson names the periodic table too, but it is the electron-configuration lesson —
+    // and the Grade 9 one: energy levels («2, 8, 1») up to calcium, not the Grade 10 subshells.
+    ['التوزيعُ الإلكترونيُّ والجدولُ الدوريُّ', 'electron_shells'],
     ['الروابط الكيميائية وأنواعها', 'bonding'],
     ['الصيغ الكيميائية وخصائص المركبات', 'formulas'],
     ['التفاعلات الكيميائية', 'equations'],
