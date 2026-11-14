@@ -10,6 +10,47 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Science Lab: grade chips and the licensed media it was missing — 2026-11-13
+
+PR 1 of `docs/superpowers/specs/2026-11-13-lab-expansion-design.md`.
+
+**What changed.**
+- The Lab opens on the viewer's own grade (`user.gradeIds`) when that grade has items, else on all grades;
+  grade chips appear when more than one grade has items; subject chips follow the grade and fall back to
+  «كل المواد» when the picked subject has nothing there; with all grades shown, each row names its grade.
+- A grade tap resets a subject the new grade does not offer (spec §1), so a hidden pick cannot resurface
+  under «كل الصفوف».
+- 25 new `external` rows: the 8 Grade 10 earth-science images and videos and the 16 Grade 5 science images
+  that were licensed in `external_resources.json` but not listed (one Grade 5 image spans two units).
+- Five of the new rows (four CC-BY-SA resources: `commons-g5-fly-agaric`, `commons-g5-dead-sea-salt` twice,
+  `commons-g5-digestive-ar`, `commons-g5-earth-layers`) are listed in the Lab but never become deck slides:
+  `POLICY_BY_LICENSE` treats share-alike as reference-only. `labSlides.test.ts`'s credit guard now covers
+  only deckable items, and a new guard asserts a reference-only item never makes a slide.
+- None of the 16 Grade 5 images has a hosted copy (not only the share-alike ones), so their Lab cards show
+  the title, a source button and the credit, not the picture. The Grade 10 earth-science images are hosted
+  and shown; the NASA videos embed.
+- `labIntro` and the help answer `howLabAbout` no longer say the Lab is Grade 10 chemistry and physics.
+- `lab.test.ts` reads a table of catalog files with their grades instead of six Grade 10 files, checks each
+  item's grade against its lesson's, and fails when a science image or video has no lab row or a
+  simulation has one. `labLessons.test.ts` (mobile) checks the app resolves every item's lesson.
+
+**Verified.** Curriculum `test` and `verify`, mobile `pnpm test`, root typecheck; the screen in a browser
+against a throwaway Postgres with Playwright, as a Grade 5 teacher and a Grade 7-only teacher (phone/light
+and desktop/dark screenshots taken). The curriculum suite has one known environmental failure in this
+container (`r2.test.ts`: R2 is configured locally; green in CI). The math-verifier tests were not run
+locally (sympy missing; this PR does not touch the verifier). The item screens were opened
+as a Grade 5 teacher: the Grade 5 food web (`lab-ext-commons-g5-food-web`) shows its title, the source
+button, the credit and the student-book pictures, and no picture of the resource itself; the Grade 10
+basalt image (`lab-ext-commons-basalt-columbia-river`) shows the same plus an image frame fed by the signed
+URL, but in this container (no R2 reachable) the frame stays blank, so a hosted picture rendering was not
+observed here.
+
+**Not done.** Law cards, the six physics tools and the virtual-lab review screen (PRs 2–5 of the spec).
+Biology still has only four images; Grades 6–9 science have no lab rows.
+Grade 5 images are links until someone ingests them (`fetch-external.ts`, writes to R2); then
+`LabExternalCard` shows them with no code change.
+Type chips ignore the grade: Grade 5 offers «نموذج تفاعلي» and «قانون», which show the empty state.
+
 ## Grade 10 review: own offline questions for the thirteen lessons the bank served thinly — 2026-11-14
 
 The generators were run over all 445 Grade 10 lessons, and every question of every maths and chemistry quiz was read
@@ -638,6 +679,7 @@ and slide tests (213); the full mobile suite (9,270 pass, 0 fail); typecheck. **
 the PDFs; the pages on a phone.
 
 No «ما الجديد» entry: corrections, not a feature.
+
 ## Grade 8, second pass: Arabic agreement in counting and congruence, and a clearer perpendicular item — 2026-11-14
 
 The Grade 8 audit (below, «Grade 8 audit: book pages, figures, contents and honorifics…») covered pages, figures,
