@@ -430,7 +430,12 @@ describe('algebra generators: kinds added 2026-10-16', () => {
           assert.ok([3, 7.5, 13].every(v => same(inX(item.answer)(v), want(v))), `${p} → ${item.answer}`);
           for (const w of item.wrongs) assert.ok(![3, 7.5, 13].every(v => same(inX(w)(v), want(v))), `${w} also says ${p}`);
         } else if (k === 'numeric') assert.equal(Number(item.answer), fn(p.split('العددي ')[1]!.replace(/\.$/, ''))(0), p);
-        else if (k === 'shopper') { const [a, b, n] = nums(p); assert.equal(Number(item.answer), a! * n! + b!, p); }
+        else if (k === 'shopper') {
+          // two books are «كتابين», never «2 من الكتب» (2026-11-14)
+          assert.ok(!/ \d+ من الكتب/.test(p), `the count does not agree: ${p}`);
+          const [a, b, n = has(p, 'كتابين') ? 2 : NaN] = nums(p);
+          assert.equal(Number(item.answer), a! * n! + b!, p);
+        }
       }
       assert.equal(kinds.size, id === 'expr_g4' ? 5 : 3, `${id}: ${[...kinds]}`);
     }

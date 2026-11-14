@@ -428,9 +428,32 @@ describe('geometry generators: answers recomputed from the stem', () => {
     assert.equal(kinds.size, 5, [...kinds].join(', '));
   });
 
+  it('Grade 5 «تصنيف الأشكال الرباعية» classifies by sides and angles, not only names (2026-11-14)', () => {
+    const kinds = new Set<string>();
+    const TRUE = new Set(['كل مربع مستطيل', 'كل مربع معين', 'كل مستطيل متوازي أضلاع', 'كل معين متوازي أضلاع', 'كل مربع متوازي أضلاع']);
+    for (const item of draws('quad_name_g5')) {
+      const p = item.promptAr!;
+      if (p.startsWith('أي شكل رباعي له الخصائص')) { kinds.add('name'); continue; }
+      if (has(p, 'أيّ العبارات')) {
+        const wantTrue = has(p, 'صحيحة');
+        kinds.add(wantTrue ? 'true' : 'false');
+        assert.equal(TRUE.has(item.answer), wantTrue, p);
+        assert.ok(item.wrongs.every(w => TRUE.has(w) !== wantTrue), p);
+        continue;
+      }
+      if (has(p, 'كم زوجًا')) { kinds.add('pairs'); assert.equal(Number(item.answer), has(p, 'شبه المنحرف') ? 1 : 2, p); continue; }
+      kinds.add('classify');
+      const [a, b, , , angle] = nums(p);
+      const want = a === b ? (angle === 90 ? 'مربع' : 'معين') : (angle === 90 ? 'مستطيل' : 'متوازي أضلاع');
+      assert.equal(item.answer, want, p);
+    }
+    assert.deepEqual([...kinds].sort(), ['classify', 'false', 'name', 'pairs', 'true']);
+  });
+
   it('quadrilaterals, parallel lines, isosceles, congruence, similarity', () => {
     for (const id of ['quad_name_g5', 'quad_name_g6']) for (const item of draws(id)) {
       if (item.answer.endsWith('°')) continue; // Grade 6's angle items: their own test below
+      if (!item.promptAr!.startsWith('أي شكل رباعي له الخصائص')) continue; // Grade 5's classifying items: their own test
       const props: Record<string, string> = { 'مربع': 'أربعة أضلاع متساوية الطول وأربع زوايا قائمة', 'معين': 'أربعة أضلاع متساوية الطول وزواياه غير قائمة', 'شبه منحرف': 'زوج واحد فقط' };
       if (props[item.answer]) assert.ok(item.promptAr!.includes(props[item.answer]!), item.promptAr);
       assert.equal(new Set(['مربع', 'مستطيل', 'معين', 'متوازي أضلاع', 'شبه منحرف']).has(item.answer), true);
