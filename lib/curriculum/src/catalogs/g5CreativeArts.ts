@@ -18,8 +18,12 @@
  * التَّعَلُّمِ» (learning outcomes) box — with a ممتاز/متوسط/ضعيف self-assessment
  * rubric — at the end of every lesson, so objectives are transcribed for all
  * 30 lessons too, same treatment as g4CreativeArts (transcribed from the
- * start, not deferred). vocabulary is left empty — no bilingual terms box in
- * this book; see the JSON's known_gaps.
+ * start, not deferred). The book prints no terms box (bilingual or not) and no
+ * English beside any term, so vocabulary holds only the terms a lesson's own
+ * «أتعلّم» box sets out as "term: definition" — 14 lessons, 23 terms, in the
+ * box's order, without harakat (the extracted marks are detached from their
+ * letters) and with `en: ""`; the other 16 lessons define none and stay
+ * empty. See the JSON's known_gaps for the pages.
  *
  * This subject reaches grade-5 only when `SUBJECTS.grades` is extended for
  * it — it had been declared for grade-1/2/3/4/6/7/8 alone, which would have

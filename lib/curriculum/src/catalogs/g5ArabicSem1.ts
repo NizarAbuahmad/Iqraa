@@ -9,10 +9,23 @@
  * of the same fixed pattern (أستمع، أتحدث، أقرأ، أكتب، أبني لغتي), and every
  * lesson is a page of interactive exercises (multiple choice, matching,
  * fill-in-the-blank) around a literary or grammar topic, not an expository
- * passage. The "unit competencies" printed on each unit's opener page are a
- * near-identical skills checklist repeated unit to unit (aural recall,
- * comprehension, appreciation, etc.) — not lesson-specific content, so they
- * would not make useful `objectives`. Lesson titles here carry both the
+ * passage. So main_idea_ar and vocabulary stay empty — and the book prints no
+ * word box to take vocabulary from (searched 2026-11-13: no glossary or
+ * "word: meaning" margin note; its coloured-word meaning tasks are exercises,
+ * not a list; see known_gaps). `objectives` is filled
+ * (2026-11-13) from the "unit competencies" page after each unit opener
+ * (pp. 7, 31, 61, 89, 117), which is grouped by the five lesson types, so
+ * group (1)…(5) maps onto lessons 1-5: three items for lessons 1-4, two for
+ * lesson 5, 70 in all, each one string "heading: body" in the book's order
+ * and vowelling. The PDF was not available, so they were rebuilt from the
+ * saved pdf-parse extraction, which swaps segments, reverses some lines and
+ * swaps lam-alef; each page's statements use exactly that page's letters,
+ * with only the lesson-type labels and the sidebar left over. Method and the
+ * book's own typos kept as printed: the JSON's provenance_note. Units still
+ * say data_tier "title-only", but the «عنوان الدرس فقط» badge follows the
+ * content since 2026-11-13 (the predicates below): a lesson with objectives
+ * does not wear it. Main ideas stay empty: the book prints no main-idea box
+ * (searched 2026-11-13, see known_gaps). Lesson titles here carry both the
  * fixed lesson-type name and its literary/grammar topic (in parentheses),
  * exactly as the book's own contents page prints them.
  *
@@ -50,14 +63,28 @@ export const g5ArabicSem1LessonKbId = catalog.lessonKbId;
 export const findG5ArabicSem1LessonByKbId: (kbLessonId: string) => NccdLesson | null =
   catalog.findLessonByKbId;
 
-/** True for every unit in this book — see the header for why it is unconditional. */
+/** A lesson the catalog holds nothing for beyond its title. */
+const isEmptyLesson = (l: NccdLesson) =>
+  !l.main_idea_ar && !(l.objectives ?? []).length && !(l.vocabulary ?? []).length;
+
+/**
+ * A unit whose lessons are all titles only — decided by the content, not the
+ * id. Until 2026-11-13 every id in this book was flagged; the lessons now carry
+ * their unit competency page's objectives, so the «عنوان الدرس فقط» badge only
+ * marks a lesson that still has nothing (main ideas stay empty on purpose: the
+ * book prints no main-idea box).
+ */
 export function isG5ArabicSem1TitleOnlyUnit(unitKbId: string): boolean {
-  return unitKbId.startsWith(unitKbPrefix(SCOPE));
+  if (!unitKbId.startsWith(unitKbPrefix(SCOPE))) return false;
+  const unit = catalog.curriculum.units.find(u => catalog.unitKbId(u.id) === unitKbId);
+  return !!unit && unit.lessons.every(isEmptyLesson);
 }
 
-/** True for every lesson in this book — see the header for why it is unconditional. */
+/** A lesson with nothing beyond its title — see `isG5ArabicSem1TitleOnlyUnit`. */
 export function isG5ArabicSem1TitleOnlyLesson(kbLessonId: string): boolean {
-  return kbLessonId.startsWith(lessonKbPrefix(SCOPE));
+  if (!kbLessonId.startsWith(lessonKbPrefix(SCOPE))) return false;
+  const lesson = catalog.findLessonByKbId(kbLessonId);
+  return !!lesson && isEmptyLesson(lesson);
 }
 
 export const buildG5ArabicSem1Catalog = catalog.buildCatalog;

@@ -9,6 +9,11 @@
  * «الوَحْدَةُ الأولى», so the continuous numbering is this project's
  * convention for linking the two semesters, not printed text.
  *
+ * `objectives`, `periods` and `total_periods` come from the teacher guide
+ * (g5-islamic-s2-teacher-guide), as in g5IslamicSem1. Two lessons (u5_l1,
+ * u6_l1 — the An-Naba recitations) keep `periods: null` because the guide's
+ * count digit did not survive extraction, so u5/u6 have no total either.
+ *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
 

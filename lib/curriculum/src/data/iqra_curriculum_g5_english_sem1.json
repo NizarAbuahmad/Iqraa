@@ -8,14 +8,17 @@
     "semester_covered": 1,
     "schema_version": "1.0",
     "source_books": [
-      "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الأول (g5-english-s1-pupils-book, Jordan Team Together series, Pearson/York Press)"
+      "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الأول (g5-eng-s1-student-book, Jordan Team Together series, Pearson/York Press)",
+      "دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الأول (g5-eng-s1-teacher-guide) — read 2026-11-13 for the lesson structure only"
     ],
-    "provenance_note": "Read directly from the PDF via PyMuPDF on 2026-09-16 — extraction is clean (this book is in English, so none of the Arabic-extraction issues that hit other Grade 5 books apply). Unit titles, page numbers, vocabulary, grammar structures (with the book's own example sentences), and skill descriptors were taken from the book's own two-page 'Scope and sequence' table (pp. 4-5), which is unambiguous and easy to verify against the Contents page. Individual page-by-page lesson numbering inside each unit ('Lesson 1', 'Lesson 2'...) follows an inconsistent odd/even pattern across units in the raw extraction and was not reliably reconstructable without much deeper page-by-page reading, so each unit here is split into exactly two lessons — Vocabulary & Grammar, and Listening & Speaking — reflecting the two content halves the scope-and-sequence table itself separates, not the book's own internal lesson count.",
+    "provenance_note": "Read directly from the PDF via PyMuPDF on 2026-09-16 — extraction is clean (this book is in English, so none of the Arabic-extraction issues that hit other Grade 5 books apply). Unit titles, page numbers, vocabulary, grammar structures (with the book's own example sentences), and skill descriptors were taken from the book's own two-page 'Scope and sequence' table (pp. 4-5), which is unambiguous and easy to verify against the Contents page. Lesson structure, titles and aims: the teacher's guide, read lesson by lesson on 2026-11-13 (see known_gaps).",
     "known_gaps": [
-      "This is real content (vocabulary lists, grammar points with the book's own example sentences, skill descriptors), not title-only — but it is unit-level, not lesson-level: each unit's actual internal lesson count and exact per-lesson titles (as printed inside the unit, e.g. 'Lesson 1: Vocabulary') were not verified page by page.",
+      "Since 2026-11-13 every unit carries the book's own lessons, read lesson by lesson from the teacher's guide (Objectives block and heading of each lesson): Welcome back = 3 lessons, each main unit = 12 (1 PB Vocabulary, 2 AB Vocabulary, 3 PB Story, 4 AB Story, 5 PB Grammar, 6 AB Grammar, 7 PB Vocabulary and Grammar with the song, 8 AB Vocabulary and Grammar, 9 Culture + project, 10 English in action + Pronunciation, 11 Reading, 12 Listening, Speaking and Writing). `order` is the book lesson number. The ids are NOT: u*_l1 and u*_l2 were the old two lessons and their ids are persisted, so u*_l1 = book Lesson 1 (Vocabulary) and u*_l2 = book Lesson 12 (Welcome back: Lesson 3), and the new u*_l3…u*_l12 are book Lessons 2–11 (Welcome back: u*_l3 = Lesson 2). Objective ids are positional and stored with exam questions, so u*_l1/u*_l2 keep their original objectives first and the lesson's own aims follow. u*_l1 keeps the whole unit's word list (it is the English corner lesson and the grammar unit is keyed on it); each later lesson names the words it introduces in its objectives (\"New words: …\") rather than in `vocabulary`, so the corner still has one lesson per unit.",
       "Following the g7EngSem1.ts precedent for English-subject books, `main_idea_ar` and `objectives` hold literal English text (this book's own language), not Arabic; `title_ar` carries a plain Arabic gloss of the English title for search/display.",
       "'Welcome back' (the review unit opening the book) is included as Unit 1 here because it carries its own new vocabulary and grammar point in the scope-and-sequence table, not just a recap of Grade 4 — same treatment as every other unit.",
-      "Excluded as supplementary, non-core material (no dedicated row in the scope-and-sequence table): the two 'Bo's Learning Club: Language booster' spreads, the 'Festivals' pages (Harvest Festival, World Water Day), 'Solve it', and the 'Grammar reference' appendix."
+      "Excluded as supplementary, non-core material (no dedicated row in the scope-and-sequence table): the two 'Bo's Learning Club: Language booster' spreads, the 'Festivals' pages (Harvest Festival, World Water Day), 'Solve it', and the 'Grammar reference' appendix.",
+      "Vocabulary corrected 2026-11-13: 'money' + 'box' were the scope table's line-wrapped 'money box' (the unit page, the PB p. 47 labels and the TG's target language all print 'money box'); duplicated pronunciation words already listed as vocabulary (untidy; planet, spacesuit, rocket, satellite, telescope) were removed.",
+      "Story titles: only Unit 1's story prints a title in the extracted text («Watch out for the cat!»); the other stories are titled from the teacher's guide's own plot summary. Songs without a printed title are identified by their first or chorus line."
     ]
   },
   "units": [
@@ -32,12 +35,19 @@
         {
           "id": "u1_l1",
           "order": 1,
-          "title_ar": "المفردات والقواعد",
-          "title_en": "Vocabulary & Grammar",
-          "main_idea_ar": "Present simple with before/after/when. Example: When Jameela gets home, she plays with her cat.",
+          "title_ar": "المفردات: أنشطة وقت الفراغ",
+          "title_en": "Vocabulary: Free-time activities",
+          "main_idea_ar": "Lesson aims: to revise free-time activities vocabulary, to reintroduce the characters with the story.",
           "periods": null,
           "objectives": [
-            "Present simple with before/after/when — e.g. When Jameela gets home, she plays with her cat."
+            "Present simple with before/after/when — e.g. When Jameela gets home, she plays with her cat.",
+            "Lesson aims: to revise free-time activities vocabulary, to reintroduce the characters with the story.",
+            "Revise free-time activities vocabulary and meet the Discovery Team again",
+            "Follow the sequence of events in a short cartoon story and find specific information in it",
+            "Act out parts of a picture story",
+            "Answer simple questions about daily activities and routines (weekly planner)",
+            "Text: Back in the shed (PB pp.4–5; AB pp.2–3; TG pp.24–25)",
+            "New words: play football, play basketball, go swimming, Science Club, visit Granny, tennis lesson."
           ],
           "vocabulary": [
             {
@@ -99,16 +109,39 @@
           ]
         },
         {
-          "id": "u1_l2",
+          "id": "u1_l3",
           "order": 2,
-          "title_ar": "الاستماع والتحدث",
-          "title_en": "Listening & Speaking",
-          "main_idea_ar": "Following the sequence of events in a simple story or narrative; identifying people in their immediate surroundings or in pictures from a short, simple description of their physical appearance and clothes.",
+          "title_ar": "القواعد: المضارع البسيط مع before وafter وwhen",
+          "title_en": "Grammar: Present simple with before, after and when",
+          "main_idea_ar": "Lesson aims: to use the Present simple with when/before/after.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to use the Present simple with when/before/after.",
+            "Use the Present simple with when, before and after",
+            "Understand the correct sequence of events in a simple story or dialogue",
+            "Describe daily routines in a simple way",
+            "Grammar: Present simple with before/after/when: When Jameela gets home, she plays with her cat. Before I go to school, I brush my hair."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u1_l2",
+          "order": 3,
+          "title_ar": "المفردات: وصف المظهر",
+          "title_en": "Vocabulary: Appearance",
+          "main_idea_ar": "Lesson aims: to revise adjectives for appearance.",
           "periods": null,
           "objectives": [
             "Following the sequence of events in a simple story or narrative.",
             "Identifying people in their immediate surroundings or in pictures from a short, simple description of their physical appearance and clothes.",
-            "Describing someone's physical appearance in a basic way."
+            "Describing someone's physical appearance in a basic way.",
+            "Lesson aims: to revise adjectives for appearance.",
+            "Revise adjectives for describing people’s appearance",
+            "Understand basic sentences describing someone’s physical appearance",
+            "Describe someone’s appearance in a basic way, given prompts",
+            "Write a short poem describing family members’ appearance",
+            "Text: Poem: “My family’s unusual” (first line; no separate title printed) (PB p.7; AB p.5; TG pp.28–29)",
+            "New words: curly hair, long hair, straight hair, short hair, dark hair, a beard, fair hair, a moustache."
           ],
           "vocabulary": []
         }
@@ -127,13 +160,19 @@
         {
           "id": "u2_l1",
           "order": 1,
-          "title_ar": "المفردات والقواعد",
-          "title_en": "Vocabulary & Grammar",
-          "main_idea_ar": "Comparative and superlative adjectives; be good at. Examples: My mum is shorter than me. She's the shortest person in our family! I'm good at baking a cake.",
+          "title_ar": "المفردات: صفات الشخصية",
+          "title_en": "Vocabulary: Personality adjectives",
+          "main_idea_ar": "Lesson aims: to learn and use personality adjectives.",
           "periods": null,
           "objectives": [
             "Comparative and superlative adjectives — e.g. My mum is shorter than me. She's the shortest person in our family!",
-            "be good at — e.g. I'm good at baking a cake."
+            "be good at — e.g. I'm good at baking a cake.",
+            "Lesson aims: to learn and use personality adjectives.",
+            "Learn and use personality adjectives",
+            "Understand short, simple descriptions of people, if supported by pictures",
+            "Recognise familiar key words in short, basic descriptions",
+            "Describe what a job needs a person to be like",
+            "New words: shy, confident, lazy, hard-working, friendly, cheerful, kind, quiet, polite, rude, tidy, untidy."
           ],
           "vocabulary": [
             {
@@ -217,10 +256,6 @@
               "en": "make a pizza"
             },
             {
-              "ar": "غير مرتّب",
-              "en": "untidy"
-            },
-            {
               "ar": "غير ودود",
               "en": "unfriendly"
             },
@@ -243,16 +278,192 @@
           ]
         },
         {
-          "id": "u2_l2",
+          "id": "u2_l3",
           "order": 2,
-          "title_ar": "الاستماع والتحدث",
-          "title_en": "Listening & Speaking",
-          "main_idea_ar": "Following the sequence of events in a simple story or narrative; recognising familiar key words and phrases in short, basic descriptions. Function: Describing people — e.g. She's very friendly.",
+          "title_ar": "تدريب على المفردات: صفات الشخصية",
+          "title_en": "Vocabulary practice: Personality adjectives",
+          "main_idea_ar": "Lesson aims: to learn and use personality adjectives.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use personality adjectives.",
+            "Practise personality adjectives and their opposites (tidy – untidy)",
+            "Understand short, simple descriptions of people",
+            "Write short descriptions of people using basic connectors"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l4",
+          "order": 3,
+          "title_ar": "القصة: «Watch out for the cat!»",
+          "title_en": "Story: Watch out for the cat!",
+          "main_idea_ar": "Lesson aims: to listen to a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to listen to a story.",
+            "Follow the sequence of events in a short cartoon story",
+            "Act out parts of a picture story",
+            "Describe common everyday objects (design a house number)",
+            "Values: I help my friends develop their talents.",
+            "Text: Watch out for the cat! (PB pp.10–11; TG pp.34–36)",
+            "New words: juggling.",
+            "Story (PB pp. 10–11): 'Watch out for the cat!' — Millie and Bo at the school talent show; value: I help my friends develop their talents; designing your own house number."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l5",
+          "order": 4,
+          "title_ar": "تدريب على القصة: «Watch out for the cat!»",
+          "title_en": "Story practice: Watch out for the cat!",
+          "main_idea_ar": "Lesson aims: to review a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to review a story.",
+            "Review the story and the personality adjectives in it",
+            "Understand the order in which events happen in a story",
+            "Write simple sentences about familiar things",
+            "Text: Watch out for the cat! (AB p.7; TG pp.36–37)"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l6",
+          "order": 5,
+          "title_ar": "القواعد: صيغتا المقارنة والتفضيل للصفات",
+          "title_en": "Grammar: Comparative and superlative adjectives",
+          "main_idea_ar": "Lesson aims: to learn and use comparative and superlative adjectives.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use comparative and superlative adjectives.",
+            "Learn and use comparative and superlative adjectives, including good/better/the best and bad/worse/the worst",
+            "Make simple, direct comparisons between two people or things",
+            "Write simple comparisons between people, places or things",
+            "Grammar: Comparative and superlative adjectives: My mum is shorter than me. She’s the shortest person in our family! I’m more hard-working than my best friend."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l7",
+          "order": 6,
+          "title_ar": "تدريب على القواعد: صيغتا المقارنة والتفضيل للصفات",
+          "title_en": "Grammar practice: Comparative and superlative adjectives",
+          "main_idea_ar": "Lesson aims: to learn and use comparative and superlative adjectives.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use comparative and superlative adjectives.",
+            "Practise comparative and superlative adjectives",
+            "Understand short, simple descriptions of people, if supported by pictures",
+            "Complete sentences with the correct adjective form",
+            "Grammar: Comparative and superlative adjectives: Alia is the most hard-working of us all."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l8",
+          "order": 7,
+          "title_ar": "المفردات والقواعد: الهوايات وbe good at",
+          "title_en": "Vocabulary and Grammar: Hobbies; be good at",
+          "main_idea_ar": "Lesson aims: to learn and use vocabulary for hobbies; to learn and use be good at; to learn and sing a song.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use vocabulary for hobbies; to learn and use be good at; to learn and sing a song.",
+            "Learn and use vocabulary for hobbies",
+            "Use be good at to say what you can and cannot do well",
+            "Recognise familiar words in a song and sing it from memory",
+            "Grammar: be good at: I’m good at baking cakes. I’m not very good at making a pizza.",
+            "Text: Song: “Everyone’s good at something!” (chorus line; no separate title printed) (PB p.13; TG pp.40–41)",
+            "New words: count, spell, do experiments, bake a cake, throw a ball, fix toys, juggle, make a pizza.",
+            "Song: 'Everyone's good at something!' (PB p. 13)."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l9",
+          "order": 8,
+          "title_ar": "تدريب على المفردات والقواعد: الهوايات وbe good at",
+          "title_en": "Vocabulary and Grammar practice: Hobbies; be good at",
+          "main_idea_ar": "Lesson aims: to learn and use vocabulary for hobbies; to learn and use be good at.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use vocabulary for hobbies; to learn and use be good at.",
+            "Practise hobby phrases (count fingers, spell a word, juggle hats…)",
+            "Identify basic information in a short dialogue about what someone is good at",
+            "Express ability or lack of ability: I’m not very good at juggling.",
+            "Grammar: be good at: I’m good at making a pizza. I’m not very good at juggling."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l10",
+          "order": 9,
+          "title_ar": "الثقافة: آداب السلوك حول العالم",
+          "title_en": "Culture: Good manners around the world",
+          "main_idea_ar": "Lesson aims: to learn about good manners.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn about good manners.",
+            "Get the gist of a short text about good manners in different countries",
+            "Describe differences between the customs of two cultures in simple language",
+            "Project: make a book about good manners",
+            "Text: Good manners around the world (PB p.14; AB p.10; TG pp.42–43)",
+            "New words: handshake.",
+            "Culture (PB p. 14): good manners around the world; project: making a book about good manners."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l11",
+          "order": 10,
+          "title_ar": "الإنجليزية في الاستخدام: وصف الأشخاص؛ النطق: البادئة un-",
+          "title_en": "English in action: Describing people; Pronunciation: the prefix un-",
+          "main_idea_ar": "Lesson aims: to learn to describe people; to learn and practise the prefix un- for adjectives.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn to describe people; to learn and practise the prefix un- for adjectives.",
+            "Describe someone’s personality: What’s she like? She’s really friendly.",
+            "Identify information about people’s personalities in a short dialogue",
+            "Use the prefix un- to make negative adjectives and say a tongue twister",
+            "New words: untidy, unfriendly, unhappy, unlucky, unwell, unsafe.",
+            "Pronunciation: the prefix un- for adjectives (untidy, unfriendly, unhappy, unlucky, unwell, unsafe) — the tongue twister 'My sister is untidy' (PB p. 15).",
+            "English in action (PB p. 15): describing people — Who's that girl over there? What's she like? She seems very confident."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l12",
+          "order": 11,
+          "title_ar": "القراءة: «Class 5B activity day» (تقرير)",
+          "title_en": "Reading: Class 5B activity day",
+          "main_idea_ar": "Lesson aims: to read and understand a reading text.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to read and understand a reading text.",
+            "Identify the text type (a report) and its structure",
+            "Get the gist of a short text and scan it for specific information",
+            "Write simple sentences about familiar things (plan an Activity Day)",
+            "Text: Class 5B activity day (report by Mrs Hala) (PB p.16; AB p.12; TG pp.46–47)",
+            "Reading (PB p. 16): a report, 'Class 5B activity day'."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u2_l2",
+          "order": 12,
+          "title_ar": "الاستماع والتحدث والكتابة: وصف شخص تعرفه",
+          "title_en": "Listening, Speaking and Writing: Describing someone you know",
+          "main_idea_ar": "Lesson aims: to understand a listening task; to describe someone; to write a description of someone.",
           "periods": null,
           "objectives": [
             "Following the sequence of events in a simple story or narrative.",
             "Recognising familiar key words and phrases in short, basic descriptions.",
-            "Describing people — e.g. She's very friendly."
+            "Describing people — e.g. She's very friendly.",
+            "Lesson aims: to understand a listening task; to describe someone; to write a description of someone.",
+            "Identify specific information in a short dialogue describing people",
+            "Describe someone’s personality in a basic way",
+            "Write a short description of a person they know well, using and, or, but, so, because",
+            "Text: My Granny (by Laith from Jordan) (PB p.17; AB p.13; TG pp.48–49)",
+            "Writing (PB p. 17): a short description of a person you know well (model: 'My Granny'), linking ideas with and, or, but, so, because."
           ],
           "vocabulary": []
         }
@@ -271,13 +482,18 @@
         {
           "id": "u3_l1",
           "order": 1,
-          "title_ar": "المفردات والقواعد",
-          "title_en": "Vocabulary & Grammar",
-          "main_idea_ar": "Past simple; could/couldn't. Examples: Did you have a phone ten years ago? That computer was really big! When I was one, I could walk but I couldn't talk.",
+          "title_ar": "المفردات: التكنولوجيا",
+          "title_en": "Vocabulary: Technology",
+          "main_idea_ar": "Lesson aims: to learn and use technology vocabulary.",
           "periods": null,
           "objectives": [
             "Past simple — e.g. Did you have a phone ten years ago? That computer was really big!",
-            "could/couldn't — e.g. When I was one, I could walk but I couldn't talk."
+            "could/couldn't — e.g. When I was one, I could walk but I couldn't talk.",
+            "Lesson aims: to learn and use technology vocabulary.",
+            "Learn and use technology vocabulary",
+            "Recognise key words in short, basic descriptions of objects",
+            "Describe common everyday objects in simple language",
+            "New words: computer, email, smartwatch, keyboard, letter, carry, mouse, telephone, call, tablet, mobile phone, study."
           ],
           "vocabulary": [
             {
@@ -379,11 +595,179 @@
           ]
         },
         {
-          "id": "u3_l2",
+          "id": "u3_l3",
           "order": 2,
-          "title_ar": "الاستماع والتحدث",
-          "title_en": "Listening & Speaking",
-          "main_idea_ar": "Following the sequence of events in a simple story or narrative; extracting factual information from short, simple dialogues or stories about past events; identifying the context of short, simple dialogues related to familiar everyday situations.",
+          "title_ar": "تدريب على المفردات: التكنولوجيا",
+          "title_en": "Vocabulary practice: Technology",
+          "main_idea_ar": "Lesson aims: to learn and use technology vocabulary.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use technology vocabulary.",
+            "Practise technology vocabulary",
+            "Label simple pictures by copying single words",
+            "Complete a table with information from a short, simple text"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l4",
+          "order": 3,
+          "title_ar": "القصة: أنبوب التحدّث",
+          "title_en": "Story: The speaking tube",
+          "main_idea_ar": "Lesson aims: to listen to a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to listen to a story.",
+            "Follow the sequence of events in a short cartoon story",
+            "Extract specific information from the story",
+            "Act out parts of a picture story",
+            "Values: I am creative.",
+            "New words: can, hose, string.",
+            "Story (PB pp. 20–21): Hamed's 'then and now' project, a speaking tube and a secret Discovery Team code; value: I am creative."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l5",
+          "order": 4,
+          "title_ar": "تدريب على القصة: أنبوب التحدّث",
+          "title_en": "Story practice: The speaking tube",
+          "main_idea_ar": "Lesson aims: to review a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to review a story.",
+            "Review the story and the technology vocabulary in it",
+            "Extract specific information from a short text",
+            "Write some familiar words"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l6",
+          "order": 5,
+          "title_ar": "القواعد: الماضي البسيط",
+          "title_en": "Grammar: Past simple",
+          "main_idea_ar": "Lesson aims: to learn and use the Past simple.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use the Past simple.",
+            "Learn and use the Past simple, regular and irregular verbs",
+            "Talk about past events or experiences in simple language",
+            "Retell a story and write about past activities, given a model",
+            "Grammar: Past simple: Did you have a phone ten years ago? That computer was really big!"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l7",
+          "order": 6,
+          "title_ar": "تدريب على القواعد: الماضي البسيط",
+          "title_en": "Grammar practice: Past simple",
+          "main_idea_ar": "Lesson aims: to learn and use the Past simple.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use the Past simple.",
+            "Practise the Past simple",
+            "Follow the sequence of events in a simple story told slowly",
+            "Extract factual information from short dialogues about past events",
+            "Grammar: Past simple: Did you have a phone ten years ago? That computer was really big!"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l8",
+          "order": 7,
+          "title_ar": "المفردات والقواعد: أفعال، وcould/couldn’t",
+          "title_en": "Vocabulary and Grammar: Verbs; could/couldn’t",
+          "main_idea_ar": "Lesson aims: to learn and use verbs; to learn and use could/couldn’t, to learn and sing a song.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use verbs; to learn and use could/couldn’t, to learn and sing a song.",
+            "Learn and use verb phrases (post a letter, tie a shoelace…)",
+            "Use could/couldn’t to talk about past ability",
+            "Sing a basic song from memory",
+            "Grammar: could/couldn’t: When I was one, I could walk but I couldn’t talk. Could you talk when you were two? Yes, I could. / No, I couldn’t.",
+            "Text: Song: “What could you do when you were two?” (first line; no separate title printed) (PB p.23; TG pp.60–61)",
+            "New words: post a letter, hold a pen, send an email, win a race, make a face, make a sandwich, tell a story, tie a shoelace.",
+            "Song: 'What could you do when you were two?' (PB p. 23)."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l9",
+          "order": 8,
+          "title_ar": "تدريب على المفردات والقواعد: أفعال، وcould/couldn’t",
+          "title_en": "Vocabulary and Grammar practice: Verbs; could/couldn’t",
+          "main_idea_ar": "Lesson aims: to learn and use verbs; to learn and use could/couldn’t.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use verbs; to learn and use could/couldn’t.",
+            "Practise the verb phrases",
+            "Extract factual information from short dialogues about past events",
+            "Write about what you could and couldn’t do",
+            "Grammar: could/couldn’t: When I was one, I could walk, but I couldn’t talk."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l10",
+          "order": 9,
+          "title_ar": "الثقافة: متاحف العالم",
+          "title_en": "Culture: World museums",
+          "main_idea_ar": "Lesson aims: to learn about museums around the world; to write a guide for a museum.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn about museums around the world; to write a guide for a museum.",
+            "Get the gist of short texts about museums and scan them for specific information",
+            "Express likes and give simple reasons for preferences",
+            "Project: write a guide to a museum in your country",
+            "Text: World museums (PB p.24; AB p.18; TG pp.62–63)",
+            "Culture (PB p. 24): world museums (the Jordan Museum, the Shanghai Museum of Science and Technology, the Natural History Museum in London); project: writing a guide to a museum."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l11",
+          "order": 10,
+          "title_ar": "الإنجليزية في الاستخدام: طلب المعلومات؛ النطق: اللاحقة ‎-tion",
+          "title_en": "English in action: Asking for information; Pronunciation: the suffix -tion",
+          "main_idea_ar": "Lesson aims: to learn to ask for information; to learn and practise changing verbs to nouns using the suffix -tion.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn to ask for information; to learn and practise changing verbs to nouns using the suffix -tion.",
+            "Ask for information: I’d like some information about the Science Museum, please.",
+            "Identify the context and specific information in short dialogues",
+            "Act out a short dialogue or role play",
+            "Change verbs to nouns with the suffix -tion",
+            "New words: inform, information, describe, description.",
+            "Pronunciation: changing verbs to nouns with the suffix -tion (inform – information, describe – description) (PB p. 25)."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l12",
+          "order": 11,
+          "title_ar": "القراءة: «How cardboard is like a bridge» (مدوّنة علمية)",
+          "title_en": "Reading: How cardboard is like a bridge",
+          "main_idea_ar": "Lesson aims: to read and understand a reading text.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to read and understand a reading text.",
+            "Identify key information from headings and illustrations",
+            "Identify the main idea of each paragraph",
+            "Write simple sentences about familiar things",
+            "Text: Mustafa’s science blog: How cardboard is like a bridge (PB p.26; AB p.20; TG pp.66–67)",
+            "New words: cardboard, company, bridge, engineer, triangle.",
+            "Reading (PB p. 26): 'Mustafa's science blog — How cardboard is like a bridge'; matching headings to paragraphs."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u3_l2",
+          "order": 12,
+          "title_ar": "الاستماع والتحدث والكتابة: زيارة إلى متحف",
+          "title_en": "Listening, Speaking and Writing: A visit to a museum",
+          "main_idea_ar": "Lesson aims: to understand a listening task; to talk about a visit to a museum; to write a report about a visit.",
           "periods": null,
           "objectives": [
             "Following the sequence of events in a simple story or narrative.",
@@ -391,7 +775,13 @@
             "Identifying the context of short, simple dialogues related to familiar everyday situations.",
             "Talking about past events or experiences, using simple language.",
             "Expressing ability or lack of ability in relation to basic everyday actions.",
-            "Function: Asking for information — e.g. I'd like some information about the Science Museum, please."
+            "Function: Asking for information — e.g. I'd like some information about the Science Museum, please.",
+            "Lesson aims: to understand a listening task; to talk about a visit to a museum; to write a report about a visit.",
+            "Extract factual information from short dialogues about past events",
+            "Talk about past events or experiences in simple language",
+            "Write a report about a visit to an interesting place, starting with the date and using paragraphs",
+            "Text: Report: My visit to the Jordanian National Museum of Fine Arts (PB p.27; AB p.21; TG pp.68–69)",
+            "Writing (PB p. 27): a report about a visit to a museum or another interesting place, starting with the date and using paragraphs."
           ],
           "vocabulary": []
         }
@@ -410,13 +800,18 @@
         {
           "id": "u4_l1",
           "order": 1,
-          "title_ar": "المفردات والقواعد",
-          "title_en": "Vocabulary & Grammar",
-          "main_idea_ar": "will/won't; How...? Examples: I'll get him a present. I won't get him a book. How deep is the Grand Canyon?",
+          "title_ar": "المفردات: الفضاء",
+          "title_en": "Vocabulary: Space",
+          "main_idea_ar": "Lesson aims: to learn and use space vocabulary.",
           "periods": null,
           "objectives": [
             "will/won't — e.g. I'll get him a present. I won't get him a book.",
-            "How...? — e.g. How deep is the Grand Canyon?"
+            "How...? — e.g. How deep is the Grand Canyon?",
+            "Lesson aims: to learn and use space vocabulary.",
+            "Learn and use space vocabulary",
+            "Recognise key words in short, basic descriptions",
+            "Describe common objects in simple language (guessing game)",
+            "New words: Sun, star, rocket, Moon, solar system, space station, Earth, telescope, spacesuit, planet, comet, satellite."
           ],
           "vocabulary": [
             {
@@ -500,28 +895,8 @@
               "en": "a million"
             },
             {
-              "ar": "كوكب",
-              "en": "planet"
-            },
-            {
-              "ar": "بدلة فضاء",
-              "en": "spacesuit"
-            },
-            {
-              "ar": "صاروخ",
-              "en": "rocket"
-            },
-            {
-              "ar": "قمر صناعي",
-              "en": "satellite"
-            },
-            {
               "ar": "رائد فضاء",
               "en": "astronaut"
-            },
-            {
-              "ar": "تلسكوب",
-              "en": "telescope"
             },
             {
               "ar": "عالِم",
@@ -534,17 +909,193 @@
           ]
         },
         {
-          "id": "u4_l2",
+          "id": "u4_l3",
           "order": 2,
-          "title_ar": "الاستماع والتحدث",
-          "title_en": "Listening & Speaking",
-          "main_idea_ar": "Following the sequence of events in a simple story or narrative; identifying specific information in short, simple dialogues in which speakers make arrangements to do something; identifying key information about future plans in short, simple dialogues.",
+          "title_ar": "تدريب على المفردات: الفضاء",
+          "title_en": "Vocabulary practice: Space",
+          "main_idea_ar": "Lesson aims: to learn and use space vocabulary.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use space vocabulary.",
+            "Practise space vocabulary",
+            "Write some familiar words"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l4",
+          "order": 3,
+          "title_ar": "القصة: تحديات معرض العلوم",
+          "title_en": "Story: The Science Fair challenges",
+          "main_idea_ar": "Lesson aims: to listen to a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to listen to a story.",
+            "Follow the sequence of events in a short cartoon story",
+            "Extract specific information from the story",
+            "Act out parts of a picture story; design a bed for an astronaut",
+            "Values: I am a good citizen at school.",
+            "New words: weightless.",
+            "Story (PB pp. 34–35): the Science Fair challenges — a model of the solar system and how astronauts brush their teeth when everything is weightless; value: I am a good citizen at school."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l5",
+          "order": 4,
+          "title_ar": "تدريب على القصة: تحديات معرض العلوم",
+          "title_en": "Story practice: The Science Fair challenges",
+          "main_idea_ar": "Lesson aims: to review a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to review a story.",
+            "Review the story and the space vocabulary in it",
+            "Follow the sequence of events in a cartoon story",
+            "Write some familiar words"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l6",
+          "order": 5,
+          "title_ar": "القواعد: will/won’t للحديث عن الخطط المستقبلية",
+          "title_en": "Grammar: will/won’t for future plans",
+          "main_idea_ar": "Lesson aims: to learn and use will/won’t.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use will/won’t.",
+            "Learn and use will/won’t with time words (soon, later, tomorrow…)",
+            "Talk about plans for the near future in a simple way",
+            "Identify key information about future plans in short dialogues",
+            "Grammar: will/won’t: I’ll get him a present. I won’t get him a book."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l7",
+          "order": 6,
+          "title_ar": "تدريب على القواعد: will/won’t",
+          "title_en": "Grammar practice: will/won’t",
+          "main_idea_ar": "Lesson aims: to learn and use will/won’t.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use will/won’t.",
+            "Practise will/won’t",
+            "Identify specific information in short dialogues in which speakers make arrangements",
+            "Write some familiar words",
+            "Grammar: will/won’t: I’ll get him a present. I won’t get him a book."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l8",
+          "order": 7,
+          "title_ar": "المفردات والقواعد: الأعداد الكبيرة، وأسئلة How…?",
+          "title_en": "Vocabulary and Grammar: Big numbers; How…?",
+          "main_idea_ar": "Lesson aims: to learn and use big numbers; to learn and use How; to learn and sing a song.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use big numbers; to learn and use How; to learn and sing a song.",
+            "Learn and use big numbers up to a million",
+            "Ask and answer questions with How tall/high/deep/long/far…?",
+            "Identify numbers about height, length, etc. in simple descriptions",
+            "Sing a basic song from memory",
+            "Grammar: How…?: How deep is the Grand Canyon? It’s 1,800 metres deep.",
+            "Text: Song: “Do you love big numbers?” (first line; no separate title printed) (PB p.37; TG pp.88–89)",
+            "New words: a hundred, five hundred, a thousand, five thousand, ten thousand, fifty thousand, a hundred thousand, a million.",
+            "Song: 'Do you love big numbers?' — How tall / high / deep / long / far …? (PB p. 37)."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l9",
+          "order": 8,
+          "title_ar": "تدريب على المفردات والقواعد: الأعداد الكبيرة، وأسئلة How…?",
+          "title_en": "Vocabulary and Grammar practice: Big numbers; How…?",
+          "main_idea_ar": "Lesson aims: to learn and use big numbers; to learn and use How.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use big numbers; to learn and use How.",
+            "Practise big numbers and How…? questions",
+            "Identify numbers relating to height, length, etc. in simple descriptions",
+            "Complete a table with specific information from a short text",
+            "Grammar: How…?: How deep is the Grand Canyon?"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l10",
+          "order": 9,
+          "title_ar": "الثقافة: لغز ستونهنج (الدوائر الحجرية)",
+          "title_en": "Culture: The mystery of Stonehenge (stone circles)",
+          "main_idea_ar": "Lesson aims: to learn about the history of stone circles in the UK.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn about the history of stone circles in the UK.",
+            "Get the gist of a short text about stone circles and extract specific information",
+            "Talk about ancient places in their own country",
+            "Project: make a class book about ancient places in your country",
+            "Text: The mystery of Stonehenge (PB p.38; AB p.28; TG pp.90–91)",
+            "New words: stone circle.",
+            "Culture (PB p. 38): stone circles in the UK (Castlerigg, Stonehenge); project: making a class book about ancient places in your country."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l11",
+          "order": 10,
+          "title_ar": "الإنجليزية في الاستخدام: تقديم المعلومات الشخصية؛ النطق: النبر في المقاطع",
+          "title_en": "English in action: Giving personal information; Pronunciation: syllable stress",
+          "main_idea_ar": "Lesson aims: to learn to give personal information; to learn and practise syllable stress with two and three syllable words.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn to give personal information; to learn and practise syllable stress with two and three syllable words.",
+            "Give personal information to join a club: I’m interested in joining the Space Explorers Club.",
+            "Extract facts and numbers from simple posters",
+            "Spell a name and say a date of birth and phone number",
+            "Practise syllable stress in two- and three-syllable words",
+            "New words: planet, spacesuit, rocket, satellite, astronaut, telescope, scientist, explorer.",
+            "Pronunciation: syllable stress in two- and three-syllable words (planet, spacesuit, rocket, satellite, astronaut, telescope, scientist, explorer) (PB p. 39).",
+            "English in action (PB p. 39): giving personal information — I'm interested in joining the Space Explorers Club."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l12",
+          "order": 11,
+          "title_ar": "القراءة: الحياة على محطة الفضاء الدولية",
+          "title_en": "Reading: Life on the International Space Station",
+          "main_idea_ar": "Lesson aims: to read and understand a reading text.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to read and understand a reading text.",
+            "Get the gist of a short text and scan it for specific information",
+            "Express opinions on familiar topics in simple language",
+            "Talk about plans for the near future",
+            "Text: Life on the International Space Station (PB p.40; AB p.30; TG pp.94–95)",
+            "New words: muscles, spacewalk, orbits, tools.",
+            "Reading (PB p. 40): 'Life on the International Space Station'."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u4_l2",
+          "order": 12,
+          "title_ar": "الاستماع والتحدث والكتابة: رائد فضاء على محطة الفضاء الدولية",
+          "title_en": "Listening, Speaking and Writing: An astronaut on the ISS",
+          "main_idea_ar": "Lesson aims: to understand a listening task; to talk about plans for a trip to the ISS; to write a blog post by an astronaut.",
           "periods": null,
           "objectives": [
             "Following the sequence of events in a simple story or narrative.",
             "Identifying specific information in short, simple dialogues in which speakers make arrangements to do something.",
             "Identifying key information about future plans in short, simple dialogues.",
-            "Talking about plans for the near future in a simple way; giving an opinion in a structured discussion; telling a simple story."
+            "Talking about plans for the near future in a simple way; giving an opinion in a structured discussion; telling a simple story.",
+            "Lesson aims: to understand a listening task; to talk about plans for a trip to the ISS; to write a blog post by an astronaut.",
+            "Identify specific information in an interview with an astronaut",
+            "Give an opinion in a structured discussion about plans on the ISS",
+            "Write a short blog post, using a question to make it interesting",
+            "Text: Blog post: “Hi, this is Astronaut Ali!” (no separate title printed) (PB p.41; AB p.31; TG pp.96–97)",
+            "Writing (PB p. 41): a blog post as an astronaut on the International Space Station, using a question to make the writing more interesting."
           ],
           "vocabulary": []
         }
@@ -563,13 +1114,18 @@
         {
           "id": "u5_l1",
           "order": 1,
-          "title_ar": "المفردات والقواعد",
-          "title_en": "Vocabulary & Grammar",
-          "main_idea_ar": "Relative clauses; have to/don't have to. Examples: It's the man who we saw earlier. We're in the shop where my brother works. I have to save some money.",
+          "title_ar": "المفردات: المحلات التجارية",
+          "title_en": "Vocabulary: Shops",
+          "main_idea_ar": "Lesson aims: to learn and use shops vocabulary.",
           "periods": null,
           "objectives": [
             "Relative clauses — e.g. It's the man who we saw earlier. We're in the shop where my brother works.",
-            "have to/don't have to — e.g. I have to save some money."
+            "have to/don't have to — e.g. I have to save some money.",
+            "Lesson aims: to learn and use shops vocabulary.",
+            "Learn and use shops vocabulary",
+            "Recognise key words in short, basic descriptions",
+            "Describe everyday activities in town, e.g. deciding which shop to go to",
+            "New words: butcher’s, newsagent’s, phone shop, greengrocer’s, jeweller’s, corner shop, fishmonger’s, sports shop, shoe shop, pharmacy, gift shop, toy shop."
           ],
           "vocabulary": [
             {
@@ -621,12 +1177,8 @@
               "en": "toy shop"
             },
             {
-              "ar": "مال",
-              "en": "money"
-            },
-            {
-              "ar": "صندوق",
-              "en": "box"
+              "ar": "حصّالة",
+              "en": "money box"
             },
             {
               "ar": "يوفّر",
@@ -675,16 +1227,190 @@
           ]
         },
         {
-          "id": "u5_l2",
+          "id": "u5_l3",
           "order": 2,
-          "title_ar": "الاستماع والتحدث",
-          "title_en": "Listening & Speaking",
-          "main_idea_ar": "Following the sequence of events in a simple story or narrative; identifying key information such as prices, times and dates in a short description.",
+          "title_ar": "تدريب على المفردات: المحلات التجارية",
+          "title_en": "Vocabulary practice: Shops",
+          "main_idea_ar": "Lesson aims: to learn and use shops vocabulary.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use shops vocabulary.",
+            "Practise shops vocabulary",
+            "Label simple pictures by copying single words"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l4",
+          "order": 3,
+          "title_ar": "القصة: اللص في محل الهواتف",
+          "title_en": "Story: The thief in the phone shop",
+          "main_idea_ar": "Lesson aims: to listen to a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to listen to a story.",
+            "Follow the sequence of events in a short cartoon story",
+            "Act out parts of a picture story",
+            "Design a phone case and describe it to a partner",
+            "Values: I can show good citizenship.",
+            "New words: downstairs, upstairs, escalator, phone case.",
+            "Story (PB pp. 44–45): shopping for a phone case — an escalator and a phone thief; value: I can show good citizenship; designing your own phone case."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l5",
+          "order": 4,
+          "title_ar": "تدريب على القصة: اللص في محل الهواتف",
+          "title_en": "Story practice: The thief in the phone shop",
+          "main_idea_ar": "Lesson aims: to review a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to review a story.",
+            "Review the story and the shops vocabulary in it",
+            "Follow the sequence of events in a cartoon story"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l6",
+          "order": 5,
+          "title_ar": "القواعد: جمل الصلة بـ who وwhich وwhere",
+          "title_en": "Grammar: Relative clauses with who, which and where",
+          "main_idea_ar": "Lesson aims: to learn and use relative clauses.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use relative clauses.",
+            "Learn and use relative clauses with who (person), which (thing) and where (place)",
+            "Describe a person, place or thing for a partner to guess",
+            "Describe common everyday objects in simple language",
+            "Grammar: Relative clauses: It’s the man who we saw earlier. That’s the phone case which my mum wants. We’re in the shop where my brother works."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l7",
+          "order": 6,
+          "title_ar": "تدريب على القواعد: جمل الصلة",
+          "title_en": "Grammar practice: Relative clauses",
+          "main_idea_ar": "Lesson aims: to learn and use relative clauses.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use relative clauses.",
+            "Practise relative clauses with who, which and where",
+            "Identify people in pictures from a short description of where they are and what they are doing",
+            "Describe common everyday objects in simple language",
+            "Grammar: Relative clauses: It’s the man who we saw earlier. We’re in the shop where my brother works."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l8",
+          "order": 7,
+          "title_ar": "المفردات والقواعد: المال والأسعار، وhave to/don’t have to",
+          "title_en": "Vocabulary and Grammar: Money and prices; have to/don’t have to",
+          "main_idea_ar": "Lesson aims: to learn and use vocabulary connected to money and prices; to learn and use have to/don’t have to; to learn and sing a song.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use vocabulary connected to money and prices; to learn and use have to/don’t have to; to learn and sing a song.",
+            "Learn and use vocabulary connected to money and prices",
+            "Use have to/don’t have to to talk about what you need to do",
+            "Sing a basic song from memory",
+            "Grammar: have to/don’t have to: I have to spend my birthday money. I don’t have to buy it now. Do you have to buy that boat? Yes, I do. / No, I don’t.",
+            "Text: Song: “I stood outside the toy shop” (first line; no separate title printed) (PB p.47; TG pp.108–109)",
+            "New words: money box, save, purse, spend, wallet, buy, birthday money, sell.",
+            "Song: 'I stood outside the toy shop' — I have to spend my birthday money (PB p. 47)."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l9",
+          "order": 8,
+          "title_ar": "تدريب على المفردات والقواعد: المال والأسعار، وhave to/don’t have to",
+          "title_en": "Vocabulary and Grammar practice: Money and prices; have to/don’t have to",
+          "main_idea_ar": "Lesson aims: to learn and use vocabulary connected to money and prices; to learn and use have to/don’t have to.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use vocabulary connected to money and prices; to learn and use have to/don’t have to.",
+            "Practise money vocabulary and have to/don’t have to",
+            "Scan a simple text to find specific information",
+            "Label simple pictures by copying single words",
+            "Grammar: have to/don’t have to: I have to save some money."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l10",
+          "order": 9,
+          "title_ar": "الثقافة: متاجر الحيّ حول العالم",
+          "title_en": "Culture: Corner shops around the world",
+          "main_idea_ar": "Lesson aims: to learn about corner shops in different countries.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn about corner shops in different countries.",
+            "Get the gist of a short text about corner shops in different countries and extract specific information",
+            "Express opinions and likes about familiar topics",
+            "Project: make a TV advert for a corner shop",
+            "Text: The world of the … (last word of the title not in the extracted text; the text is about corner shops) (PB p.48; AB p.36; TG pp.110–111)",
+            "New words: newspaper, magazine, stamps, cleaning products, stationery.",
+            "Culture (PB p. 48): the world of the corner shop (milk bars, dairies, bodegas, convenience stores); project: making a TV advert for a corner shop."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l11",
+          "order": 10,
+          "title_ar": "الإنجليزية في الاستخدام: السؤال عن السعر؛ النطق: اللاحقة ‎-ment",
+          "title_en": "English in action: Asking for a price; Pronunciation: the suffix -ment",
+          "main_idea_ar": "Lesson aims: to learn to ask for a price; to learn and practise changing verbs to nouns using the suffix -ment.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn to ask for a price; to learn and practise changing verbs to nouns using the suffix -ment.",
+            "Ask for a price: How much is it? It’s fifteen dinars and fifty piastres.",
+            "Identify how much something costs in a short dialogue in a shop",
+            "Act out a short shopping role play",
+            "Change verbs to nouns with the suffix -ment",
+            "New words: pay, payment, encourage, encouragement.",
+            "Pronunciation: changing verbs to nouns with the suffix -ment (pay – payment, encourage – encouragement) (PB p. 49).",
+            "English in action (PB p. 49): asking for a price — How much is it? It's fifteen dinars and fifty piastres. I'll have that one, please."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l12",
+          "order": 11,
+          "title_ar": "القراءة: رسالة طارق عن لصوص المتجر",
+          "title_en": "Reading: Tareq’s email about the shop thieves",
+          "main_idea_ar": "Lesson aims: to read and understand a reading text.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to read and understand a reading text.",
+            "Identify the text type and key information from the layout",
+            "Follow a simple story and identify its overall theme",
+            "Choose the best summary of a text",
+            "Text: Email: “Hi Ibrahim!” (from Tareq; no separate title printed) (PB p.50; AB p.38; TG pp.114–115)",
+            "New words: storeroom, detective, notice.",
+            "Reading (PB p. 50): Tareq's email about a store detective; choosing the best summary."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u5_l2",
+          "order": 12,
+          "title_ar": "الاستماع والتحدث والكتابة: المحلات في مدينتك",
+          "title_en": "Listening, Speaking and Writing: Shops where you live",
+          "main_idea_ar": "Lesson aims: to understand a listening task; to talk about where you like to go shopping; to write an email to a friend about shops.",
           "periods": null,
           "objectives": [
             "Following the sequence of events in a simple story or narrative.",
             "Identifying key information such as prices, times and dates in a short description.",
-            "Describing basic differences between two pictures."
+            "Describing basic differences between two pictures.",
+            "Lesson aims: to understand a listening task; to talk about where you like to go shopping; to write an email to a friend about shops.",
+            "Identify key information such as prices, times and places in a short description",
+            "Express likes and dislikes about where you go shopping",
+            "Write a short email about shops in your town, using apostrophes in shop names correctly",
+            "Text: Email: “Hi Nour” (from Mariam); listening: Shopping in Westport (PB p.51; AB p.39; TG pp.116–117)",
+            "Writing (PB p. 51): an email to a friend suggesting shops to visit where you live."
           ],
           "vocabulary": []
         }

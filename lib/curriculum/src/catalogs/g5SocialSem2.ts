@@ -2,13 +2,25 @@
  * Grade 5 Social Studies (الدراسات الاجتماعية) — Semester 2.
  * Source of truth: data/iqra_curriculum_g5_social_sem2.json
  *
- * Title-only for the same reason as g5SocialSem1: a corrupted ToUnicode CMap
- * in this book's PDF, not an extraction-order bug — see that file's header
- * for the full explanation. Unit and lesson titles here were recovered by
- * OCR of the contents pages and unit opener pages. Units are numbered 5-8,
- * continuing Semester 1's 1-4, matching the book's own cover and contents
- * page. Unit 8 ("الثَّقافَةُ وَالتُّراثُ") carries the lowest confidence in
- * this file — see the JSON's `known_gaps`.
+ * Titles plus one objective per lesson, same history as g5SocialSem1 (see
+ * that file's header): the text layer was taken for a corrupted ToUnicode
+ * CMap on 2026-09-16, so unit and lesson titles were recovered by OCR of the
+ * contents pages and unit opener pages; on 2026-11-13 it turned out to be
+ * visual-order text that reads cleanly once each line is reversed. Units are
+ * numbered 5-8, continuing Semester 1's 1-4, matching the book's own cover
+ * and contents page. Re-checked 2026-11-13 against the contents pages in
+ * data/extracted/g5-social-s2-student-book.json: Unit 7 has four lessons —
+ * «دول المغرب العربي» was appended as u7_l4 — and Unit 8 Lesson 1 is
+ * «الثقافة». The same day `objectives` were filled from each unit opener's
+ * «ماذا سأتعلم؟» box (pp. 7, 27, 49, 81; one item per lesson, in lesson
+ * order — four for Unit 7). The same day `main_idea_ar` was filled from each
+ * lesson opener's «الفكرة الرئيسة» box and `vocabulary` from its
+ * «المصطلحات» box (pp. 8, 12, 18, 28, 32, 38, 50, 59, 63, 71, 82, 87), as
+ * printed, without harakat; each term's `en` is the English the book prints
+ * beside it (29 terms; «دول المغرب العربي», p. 71, has none, so `en` is "").
+ * Each transcription was checked letter-for-letter against its box's lines.
+ * The title-only predicates below now follow the content, so no lesson wears
+ * the «عنوان الدرس فقط» badge. See the JSON's `known_gaps`.
  *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
@@ -44,14 +56,27 @@ export const g5SocialSem2LessonKbId = catalog.lessonKbId;
 export const findG5SocialSem2LessonByKbId: (kbLessonId: string) => NccdLesson | null =
   catalog.findLessonByKbId;
 
-/** True for every unit in this book — see the header for why it is unconditional. */
+/** A lesson the catalog holds nothing for beyond its title. */
+const isEmptyLesson = (l: NccdLesson) =>
+  !l.main_idea_ar && !(l.objectives ?? []).length && !(l.vocabulary ?? []).length;
+
+/**
+ * A unit whose lessons are all titles only — decided by the content, not the
+ * id. Until 2026-11-13 every id in this book was flagged, because its text was
+ * thought unreadable; it reads once each line is reversed, and the lessons now
+ * carry the book's main idea, objectives and terms.
+ */
 export function isG5SocialSem2TitleOnlyUnit(unitKbId: string): boolean {
-  return unitKbId.startsWith(unitKbPrefix(SCOPE));
+  if (!unitKbId.startsWith(unitKbPrefix(SCOPE))) return false;
+  const unit = catalog.curriculum.units.find(u => catalog.unitKbId(u.id) === unitKbId);
+  return !!unit && unit.lessons.every(isEmptyLesson);
 }
 
-/** True for every lesson in this book — see the header for why it is unconditional. */
+/** A lesson with nothing beyond its title — see `isG5SocialSem2TitleOnlyUnit`. */
 export function isG5SocialSem2TitleOnlyLesson(kbLessonId: string): boolean {
-  return kbLessonId.startsWith(lessonKbPrefix(SCOPE));
+  if (!kbLessonId.startsWith(lessonKbPrefix(SCOPE))) return false;
+  const lesson = catalog.findLessonByKbId(kbLessonId);
+  return !!lesson && isEmptyLesson(lesson);
 }
 
 export const buildG5SocialSem2Catalog = catalog.buildCatalog;

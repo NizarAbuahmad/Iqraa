@@ -10,6 +10,179 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 5 reviewed against its books: catalogs, English lessons, objectives, vocabulary, main ideas — 2026-11-13
+
+All 18 Grade 5 catalogs (10 subjects) were compared with their books' contents
+pages and lesson openers. **The PDFs were not reachable** (nccd.gov.jo resets
+the connection from the cloud container), so the evidence is the committed
+extracted text in `lib/curriculum/src/data/extracted/`. Nothing was re-extracted.
+
+**Catalogs.** Maths, science, Arabic, Islamic, vocational, PE and art: every
+unit and numbered lesson the book prints is present, in order, with its title.
+Fixed:
+- Social S1: three titles were wrong (u1_l1 «أتواصل مع مجتمعي», u4_l1 «أشكال
+  سطح الأرض والمسطحات المائية في وطني», u4_l3 «التوزع السكاني في وطني»).
+  Social S2: u8_l1 is «الثقافة»; **u7_l4 «دول المغرب العربي» was missing** and is
+  appended (no id moved). The social text layer is not unreadable as the old
+  notes said: it is visual order, readable once each line is reversed.
+- Islamic S1/S2: objectives (159) and periods filled from the teacher guides'
+  «نتاجات التعلم» blocks, each headed with its lesson. u5_l1/u6_l1 periods stay
+  null (digit lost in extraction).
+- Maths: four vocabulary glosses. English: «money box» (was split), duplicates,
+  u10 pronunciation; each unit's story, song, culture, function, reading and
+  writing appended to objectives (positions unchanged).
+- **The «Grade 5» digital teacher's guide is Grade 4's** (cover, ISBN, deposit
+  number). Its row is now `duplicate` of `g4-digital-s1-teacher-guide` and its
+  extracted text deleted, so Grade 5 lessons are not grounded on it.
+
+**Maths questions and science figures: superseded by `main`, nothing of this
+branch's kept.** This branch also re-sized Grade 5 offline maths and added
+generators for «الضرب الذهني» and «المضلعات», and moved seven science figures and
+dropped two. While it was open, «Grade 5 maths: offline questions for five more
+lessons…» and «Grade 5 audit: book pages, figures…» (both below) merged the same
+work with better evidence: the maths limited to Grade 5 (this branch's `grade >=
+5` also changed Grades 6+), with `g5.ts` serving three more lessons; the figures
+judged on the page images, which this branch never saw, and all nine of its
+figures dropped there as review, enrichment or next-unit pages. At the merge
+(2026-11-14) `lib/math-practice` and the Grade 5 science figure indexes were
+taken from `main` whole; `mental_mul`, `polygons_g5` and `grade5Book.test.ts` were
+removed so no lesson has two generators.
+
+**Added the same day, at the owner's request:**
+- **English units carry the book's own lessons** (20 → 102): Welcome back 3,
+  each main unit 12, read lesson by lesson from the teacher's guides (title,
+  aims, new words). `order` is the book lesson number; ids are not, because
+  `u*_l1`/`u*_l2` were persisted: `u*_l1` = Lesson 1 and keeps the unit's whole
+  word list (English corner lesson; the Grade 5 grammar unit is keyed on it, so
+  the corner still has one lesson per unit), `u*_l2` = Lesson 12 (Welcome back:
+  Lesson 3), new `u*_l3…l12` = Lessons 2–11. Objective ids are positional and
+  stored with exam questions, so `u*_l1`/`l2` keep main's objectives first.
+  Only Unit 1's story prints a title («Watch out for the cat!»); the others are
+  named from the guide's plot summary. «ما الجديد» entry `g5-english-twelve-lessons`.
+- **Objectives filled:** PE 29/29 (110, from each lesson's «نتاجات التعلم» box;
+  the badminton law numbers the text layer reversed are written 9.1.1–9.1.3);
+  science 21/22 (66, from the guides' per-lesson outcome tables, the unit's own
+  strand only; «مصادر الطاقة» has no outcome page); social 25/25 (one topic item
+  per lesson from each unit's «ماذا سأتعلم؟» box — topic phrases, so the
+  «عنوان الدرس فقط» badge stays); Arabic 49/50 (135, from each unit's competency
+  page, grouped by lesson type; S2 without harakat, its text too scrambled; u8_l5
+  and three statements left out, listed in `known_gaps`). Vocational already had
+  them (27 lessons, from «ماذا سأتعلم؟»).
+- **Digital skills objectives** 11/26 (14 statements): the activity book prints
+  no outcome box per task; items come from each block's «نتاجات التعلم» list
+  (pp. 7, 27, 43, 87, 99, 109) only where one item describes one task, and from
+  block 4's own task aims («تهدف هذه المهمة…»). The four projects print none.
+- **Creative arts vocabulary** 14/30 (23 terms): the book prints no terms box;
+  the terms the «أتعلّم» box defines ("term: definition") in 4 art, 2 music and
+  8 drama lessons, without harakat (the extracted marks are detached), `en` ""
+  (no English printed). Vocational vocabulary was already there (27 lessons,
+  56 bilingual terms from «المفاهيم والمصطلحات»).
+- **Arabic vocabulary** 1/50: no Arabic book prints a word box; the only one is
+  the margin note glossing Shawqi's «القبرة وابنها» (S2 p. 76, the u8_l4
+  writing lesson): 6 words, Arabic only, without harakat. No other grade's
+  Arabic catalog fills vocabulary (Grade 7 left its «أضيف إلى معجمي» out).
+- **Social studies main ideas and vocabulary** 25/25: each lesson opener's
+  «الفكرة الرئيسة» box (without harakat) and «المصطلحات» box (60 terms, with the
+  English the book prints; «دول المغرب العربي» has none), read by reversing the
+  visual-order lines and checked letter for letter. The «عنوان الدرس فقط» badge
+  for these books now follows the content (`isG5SocialSem{1,2}TitleOnly*`, pinned
+  by `g5SocialTitleOnly.test.ts`), so no Grade 5 social lesson wears it.
+- **Arabic main ideas: none, on purpose.** The books print no main-idea box;
+  every «الفكرة الرئيسة» is an exercise, a blank table or a definition, and
+  «أعرف عن النص» (reading lessons only) is mostly facts about the source. The
+  owner chose to leave `main_idea_ar` empty and record the search in
+  `known_gaps`. The Arabic «عنوان الدرس فقط» badge now follows the content like
+  social's (`g5ArabicTitleOnly.test.ts`); only u8_l5, with no objectives, wears it.
+- **Digital skills main ideas** 7/26: the activity book prints no «الفكرة
+  الرئيسة» box. Each project's «الفكرة / القضية / المشكلة التي يدور حولها
+  المشروع» box (pp. 59, 74, 123, 137) fills its project, and block 4's own task
+  descriptions (pp. 88, 90) fill u6_l1, u6_l2 and u6_l4. The «عنوان الدرس فقط»
+  badge follows the content here too (`g5DigitalTitleOnly.test.ts`): 15 of 26
+  lessons have objectives or a main idea and no longer wear it.
+- **Digital skills vocabulary** 1/26: the book's only terms box is «مصطلحات يجب
+  أن أعرفها» (pp. 33-34, u2_l4): التخزين السحابي، جوجل درايف، المزامنة التلقائية،
+  مشاركة الملفات (no English printed). Its fifth entry, «جوجل سلايدز», is too
+  garbled in the extraction to spell with certainty and waits for the PDF.
+- **Islamic objectives for other grades.** Grade 4: 45/45 lessons, 187 outcomes,
+  periods for all 45, from the teacher guides (unit totals left null: the
+  extraction lost the plan's «عدد الحصص» digits). Grade 6: S2 21/21 (86) from the
+  student book's own «نتاجات التعلم» tables; S1 prints none and has no guide on
+  file. Grade 7 (47/48) and 8 (46/47) were already filled; their one empty lesson
+  each is a «مصادر التشريع» lesson the guide's plan does not carry. Grade 3 has no
+  extracted book at all.
+- **Guide-sourced objectives no longer steer page search.** Filling Grade 4/5
+  Islamic objectives from the teacher guides sent `passagesForUnit` to the guide:
+  it reprints the outcome wording on the outcome page, the teaching notes and
+  every unit plan, so lessons reaching one of their own student-book pages fell
+  Grade 4 28 → 5 and Grade 5 27 → 3, and two `passages.test.ts` pins failed. Three
+  ranking changes were measured and rejected (outcomes at unit weight: worse;
+  skip listing pages: some grades worse, more empty results; half the slots per
+  book: helps or hurts by data). Fix: a catalog marks `meta.objectives_source:
+  "teacher-guide"` (`objectivesFromTeacherGuide`), and search reads such a unit as
+  it did before it had objectives; the objectives stay for everything else.
+  Measured on the 2048 lessons with known pages: 432 (baseline 425; Grade 4 and 5
+  Islamic back to 28 and 27, no grade worse). Pinned by
+  `guideObjectivesSearch.test.ts`.
+- **Grade 10 Islamic: objectives were already filled (50/50, 221), from the guides.**
+  The provenance note says the «نتاجات التعلم» block on each lesson page of the
+  teacher guides; 192 of 221 match the guide's text verbatim, and the misses
+  checked are the guide's OCR noise («بياذ» for «بيان», «المرائيق» for
+  «المواثيق»), not different outcomes. So it had the same fault: 1 of 50 lessons
+  reached its own pages. Both JSONs are now marked. Its builders are the
+  hand-written kind, not `makeNccdCatalog`, so they register through the new
+  `markGuideObjectiveUnits` (which `makeNccdCatalog` now calls too). **1 → 33 of 50.**
+  Marking left two lessons with no passages at all: «حق التملّك» and «حقّ المواطنة»
+  are one search term each («حق» is too short), and a page needs two. The same
+  was true of Grade 5 «برّ الوالدين» and Grade 4 «الاحترام» under the earlier fix. A
+  lesson whose title and vocabulary give fewer than two terms now keeps its guide
+  outcomes, since the guide's page for that lesson beats nothing. All lessons with
+  known pages: 456 → 489 of 2076; Grade 4 lessons without passages 5 → 4, Grade 5
+  3 → 2 (and one more reaches its own pages); no grade worse. Pinned in
+  `guideObjectivesSearch.test.ts`, each new test checked to fail with its fix
+  reverted. Curriculum 945 + the `r2` environment failure, verify 0 errors,
+  api-server 2923/2923, typecheck clean.
+- **Islamic vocabulary NOT filled:** the «المفردات والتراكيب» boxes (12 lessons,
+  listed by page in `known_gaps`) print their headwords in the Mushaf font, which
+  pdf-parse dropped, and **the cloud environment's R2 keys answer AccessDenied on
+  every `iqraa-media` object**, so the page images could not be read. Needs keys
+  that read that bucket, then a new session. Islamic main ideas: 34/37 were
+  already there; the three recitation-practice lessons print no box, and
+  «السيدة فاطمة الأزدية» prints the box heading with nothing under it. At the
+  owner's request three of those four now take their main idea from the lesson's
+  «إضاءة» box (u1_l3 «سورة الواقعة» S1 p17, u5_l3 «سورة عبس» S2 p20, u8_l4 the
+  box's first sentence, S2 p119); u8_l3 prints neither box and stays empty.
+
+**Not done — needs the PDFs or a decision:**
+- **The digital activity book is whole-year**; u6-u10 are semester 2 content
+  filed under semester 1. No Grade 5 digital S2 book or real guide is on file.
+- **«money box» has no audio clip** until `generate-english-audio` runs (web
+  falls back to speech; a phone stays silent on that word).
+- **Figures exist only for Grade 5 science**; none for S1 unit 3, «الضوء»,
+  «السرعة». Other subjects need extraction from the PDFs.
+- **Weak text layers** feed grounding: maths S1 student book (~15 of 66 prose
+  pages reversed), art (~a third), vocational S2, social. Re-extract with
+  `--force --ocr` when the PDFs are at hand.
+- `book-page-links.json` ranges for Grade 5 social look wrong (u2_l1 listed at
+  pp40-59, starts p30); regenerate with `verify_book_pages.py`.
+- The maths S1 teacher guide is the 2020 pilot edition (unit 2 has 7 lessons),
+  not the student book's; do not fill from it.
+- Grade 5 Arabic and social units' `data_tier` still say "title-only", and so do
+  their `catalog.ts` comments; the badge they drive is kept on purpose (no main
+  ideas or vocabulary yet).
+
+**Verified (final state, 2026-11-13):** curriculum `verify` 0 errors (3406
+lessons); curriculum tests 914/915 — the one failure, `r2.test.ts`, asserts R2
+is unconfigured and passes with the `R2_*` variables unset, so it is this
+container's R2 setting; mobile suite 9213 pass, 0 fail (10 skipped); api-server
+build + tests 2899/2899; repo `pnpm run typecheck` clean. (The maths figures
+from that day describe code since replaced by `main`'s; see above.)
+At the 2026-11-14 merge `main` had also added social S2 `u7_l4`, with the same
+id and title and no content; the merged file keeps one lesson, with this
+branch's main idea, objective and vocabulary, and adds a `known_gaps` line for
+the audit's page reading (pp. 71-76). The entry below keeps social S1's three
+titles and S2 u8_l1 as they were, for exact-title grounding; this branch
+renamed them to the book's printed wording, and the merge keeps the renames.
+
 ## Grade 2 maths: offline questions for the four problem-solving lessons — 2026-11-14
 
 The Grade 2 audit (below) found four maths lessons with no offline questions. Each now has a generator in

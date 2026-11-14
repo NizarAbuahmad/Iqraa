@@ -9,6 +9,13 @@
  * «الوَحْدَةُ الأولى», so the continuous numbering is this project's
  * convention for linking the two semesters, not printed text.
  *
+ * `objectives` and `periods` come from the teacher guide
+ * (g4-islamic-s2-teacher-guide), as in g4IslamicSem1: units 5-6 head each
+ * outcomes block «الدرس n: <title>», units 7-8 «عنوان الدرس: <title>»
+ * (unnumbered, but titles and order match the student book). Cross-checked
+ * against «مخطط الوحدة»; `total_periods` stays null because the plan's
+ * «المجموع» figures are lost in the extraction. Added 2026-11-13.
+ *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
 
