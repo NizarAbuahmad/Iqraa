@@ -460,7 +460,8 @@ router.post("/evaluations/from-worksheet", async (req: AuthenticatedRequest, res
       return;
     }
 
-    const converted = convertWorksheet(worksheet, language);
+    // A Grade 1 paper holds only the types a six-year-old can answer (`fromWorksheet.ts`).
+    const converted = convertWorksheet(worksheet, language, { firstGrade: book.gradeId === "grade-1" });
     if (!converted.ok) {
       res.status(400).json({ error: "Some questions have no answer in the key", missingKey: converted.missingKey });
       return;
@@ -507,7 +508,8 @@ router.post("/evaluations/from-worksheet", async (req: AuthenticatedRequest, res
           objectiveIds: [objectiveId],
           difficulty: "standard",
           targetQuestionCount: converted.questions.length,
-          assessmentTypes: [...new Set(converted.questions.map(q => q.type))],
+          // The converter already keeps a Grade 1 paper to its types; this is the backstop.
+          assessmentTypes: evaluationTypesForGrade(book.gradeId, [...new Set(converted.questions.map(q => q.type))]),
           language: book.subjectId === "english" ? "en" : language,
           levelScaleId: defaultScale.id,
           classGroupId,

@@ -195,8 +195,17 @@ maths questions were checked by hand by a sub-agent and re-checked by script: **
     - Tests: `grade1EvaluationTypesMigration.db.test.ts` runs the SQL on real rows (mixed, written-only and allowed
       drafts; published, closed; Grade 2). `firstGradeEvaluationTypes.test.ts` fails if the migration's lists drift
       from `lib/exam-paper`.
-    - A worksheet sent to a class as an evaluation (`fromWorksheet`) still stores the types of its own questions; a
-      Grade 1 one is narrowed when generated, like any other.
+14. **A Grade 1 worksheet sent to a class as an evaluation holds only Grade 1 types** (2026-11-14,
+    `fromWorksheet.ts`). Six Grade 1 books take evaluations (maths, Islamic education and English, both semesters).
+    `POST /evaluations/from-worksheet` turned every question it cannot mark automatically into a short answer, a type
+    Grade 1 does not take.
+    - For a Grade 1 book (`convertWorksheet(…, { firstGrade })`), those become practical tasks instead: the same
+      question, figure and key (`successCriteria`), the same answer box on `take/[code]`, marked by the teacher.
+      The converter's rule still holds: an Arabic or worded answer is never marked automatically.
+    - Numeric keys stay fill-blank, and choice and true/false are unchanged.
+    - The stored `assessmentTypes` pass `evaluationTypesForGrade` as a backstop.
+    - Other grades convert as before (`fromWorksheet.test.ts`). The route is checked by reading its source; no
+      database test posts a worksheet through it.
     - **Live:** a Grade 1 quiz, worksheet or evaluation gets Grade 1 level meanings (`FIRST_GRADE_DIFFICULTY_*` in
       `firstGrade.ts`): one step within the lesson's range, with hard being the largest numbers, a missing number,
       a short story or a comparison. The all-grades meanings had asked for "two or three steps" and "analysis".
