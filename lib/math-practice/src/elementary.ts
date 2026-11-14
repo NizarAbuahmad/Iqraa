@@ -74,6 +74,9 @@ export function elementaryOpsForTitle(title: string): ElementaryOp[] {
   // `tensG1`, `twoDigitG1`); as plain add/sub they drew sums within 20. Not
   // anchored at the end: from a lesson the blob is «title titleEn».
   if (/^(?:جمع|طرح) (?:العشرات|عددين من منزلتين)(?=\s|$)/.test(t.trim())) return [];
+  // Grade 1's strategy lessons too (early.ts `makeTenAdd`, `threeAddends`, `subDoubles`,
+  // `subMakeTen`): the drill used their strategy in 2–20% of its items.
+  if (/^(?:ال)?(?:جمع بالاكمال ال[ىي] العشره|جمع ثلاثه اعداد|طرح باستعمال الضعف|طرح بايجاد عشره)(?=\s|$)/.test(t.trim())) return [];
   if (/منزلي|place\s*value/i.test(t)) return ['place'];
 
   const kind = /كسور|كسر|fraction/i.test(t) ? 'frac' : /عشري|decimal/i.test(t) ? 'dec' : 'whole';

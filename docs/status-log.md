@@ -10,6 +10,62 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 1 audit: every book page inside the ranges, four strategy lessons, two titles — 2026-11-14
+
+The Grade 2–10 audit, repeated for Grade 1 (279 lessons), on top of «Grade 1 review: book pages on the wrong unit…»,
+which opened the first and last page of every range. This pass opened every image of the 104 ranges (387 images:
+Arabic S1/S2, Islamic S1/S2, PE S1/S2); printed page = PDF page in every book.
+
+**Book pages — 22 ranges now end on the lesson's own last page** (each trim seen on the images; the same folders serve
+them, so nothing is uploaded). What they ran onto belongs to no lesson, the Grade 2–10 rule:
+- **PE (6):** every unit-final lesson ran onto «مراجعة الوحدة» — S1 u1_l4 13–16 → 13–14, u2_l5 26–30 → 26–27, u3_l5
+  40–43 → 40–41; S2 u4_l4 13–16 → 13–14, u5_l5 26–29 → 26–27, u6_l5 39–42 → 39–40.
+- **Arabic S1 (10):** the unit's «بطاقة خروج» (p29, 63, 97, 131, 157), the unit-wide «هيّا نلعب» game (p28, 130), the
+  «أُنْشِدُ» songs (p11, 18, 50, 84, 152 — `known_gaps` already says they are not lessons) and p19 «الحركات والسكون»:
+  u1_l2 10–11 → 10, u1_l5 16–19 → 16–17, u1_l7 24–29 → 24–27, u2_l5 45–50 → 45–49, u2_l8 58–63 → 58–62, u3_l5 79–84 →
+  79–83, u3_l8 92–97 → 92–96, u4_l8 125–131 → 125–129, u5_l5 147–152 → 147–151, u5_l7 155–157 → 155–156.
+- **Arabic S2 (5)**, read through `rendered`: «بطاقة خروج» (p91, 111), «هيّا نلعب» (p90, 110, 130), songs (p85, 125):
+  u8_l3 79–85 → 79–84, u8_l5 88–91 → 88–89, u9_l5 108–111 → 108–109, u10_l3 119–125 → 119–124, u10_l5 128–130 →
+  128–129.
+- **Islamic S1 (1):** u4_l3 61–68 → 61–67 (p68 is the book's closing «تمّ بحمد الله تعالى»).
+- **Left:** Islamic S1 u2_l1 starts on its second page (p22): its opener, p21, is only in u1_l3's folder (pp15–21), and a
+  range reads one folder — it needs a re-render. No range shows another lesson's pages.
+- **Still unmapped, placed but not cut:** Arabic S1 u2_l3 «حرف اللام» (probably pp35–39) and u4_l6 «تنوين الفتح»
+  (pp117–119); Arabic S2 u7_l3 «الشدة» opens on p57 (image 3 of u6_l2's folder; its end not seen); Islamic S2 u4_l1
+  «سورة الناس» (pp72–77, by position). Arabic S2's per-unit contents pages print page numbers 4 too low.
+
+**Contents and titles.** No contents page is inside a served range; the lesson openers and unit lesson lists agree with
+the catalogs' order. **Fixed:** Arabic S1 u2_l6 is printed «تنوين الضَّمِّ» (catalog «تنوين الضمة»), and u4_l3 «حرف التاء
+المفتوحة» (catalog «حرف التاء (ت)»; the book numbers ت and ة as «الدرس الثالث 1 / 2»). **Not changed:** Arabic S1's page
+headers name units 2–4 «وطني الأجمل», «نظافتي عنوان صحتي», «الرسوم المتحركة منبع لخيالي» where the catalog has «أنا أحب
+وطني», «أحب النظافة», «رسومي المتحركة» — the unit covers were not seen. Islamic S1 u2_l1 is printed «القرآن الكريم»: the
+edition mismatch already in `known_gaps`.
+
+**Honorifics.** The catalogs' «ﷺ» all follow the Prophet; on the pages, «صلى الله عليه وسلم» follows the Prophet,
+«عليه السلام» prophets, «رضي الله عنه/عنها/عنهما» companions (أبو هريرة، حليمة السعدية، خديجة، الحسن والحسين). Nothing
+to change.
+
+**Offline maths (66 lessons).**
+- **The four strategy lessons got the plain drill.** «الجمع بالإكمال إلى العشرة», «جمع ثلاثة أعداد», «الطرح باستعمال
+  الضعف» and «الطرح بإيجاد عشرة» name their strategy in the objective, and the «جمع/طرح» drill used it in 9, 72, 20 and 8
+  items of 360. Each now has a generator in `early.ts` — `makeTenAdd` (8 + 5, and «8 + ___ = 10», «8 + 5 = 10 + ___»),
+  `threeAddends` (two of the three make 10, and only those two; «أي عددين مجموعهما 10…»), `subDoubles` (2n − n),
+  `subMakeTen` (a teen minus a one-digit number across ten, and its two steps) — and `elementaryOpsForTitle` hands them
+  on, as it does the tens lessons. The earlier review listed two of these as not fixed.
+- «قيست أطوال شيئين» → «قيس طولا شيئين»: two lengths are a dual, as «كتلتا» and «سعتا» already were.
+- **Not fixed:** «التخمين والتحقق» (S2 u6_l4) and «اختيار العملية» (S2 u7_l4) get no offline questions (the Grade 2
+  generators are sized for Grade 2); four lessons stay refused on purpose — they need pictures (`early.test.ts`). The
+  other 60 lessons' probe items were read by hand: every key right.
+
+**Verified:** `grade1Strategies.test.ts` (10, written first: all red without the change) recomputes every key from its
+stem, checks the strategy holds on every draw (the sum crosses ten; exactly one pair makes 10; a double; a teen across
+ten), that every kind is drawn, the routing through `takeElementaryMath`, and the dual; through the app's path the
+make-ten and find-ten lessons use their strategy in 360 of 360 items; math-practice 1237 pass; curriculum test (931)
+and verify (0 errors); `bookPage`/`lessonSlides`/`noQuestionBank` (174); the mobile suite (9,270 pass, 0 fail); typecheck. **Not verified:** anything needing
+the PDFs; the pages on a phone.
+
+No «ما الجديد» entry: corrections, not a feature.
+
 ## Grade 6 review: the four «weak, not fixed» maths lessons from the second pass — 2026-11-14
 
 The Grade 6 audit and «Grade 6, second pass» (both below) covered pages, figures, contents and every maths quiz against

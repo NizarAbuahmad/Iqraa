@@ -419,6 +419,55 @@ const twoDigitG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1,
   return { eq: `${x} ${op} ${y}`, answer: String(r), wrongs: ints(r, [add ? x - y : x + y, r + 10, r - 10, r + 1]), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
 });
 
+// Grade 1's four strategy lessons. Each objective names its strategy — making
+// ten, three numbers with two that make 10, a double, finding ten — and the
+// generic drill used it in 2–20% of its items (Grade 1 audit, 2026-11-14), so
+// each lesson draws only sums the strategy is for, and asks its steps as well.
+
+/** «جمع عددين بالإكمال إلى العدد 10»: 8 + 5 → 8 + 2 = 10, 10 + 3 = 13. */
+const makeTenAdd = T('make_ten_add', /^الجمع بالاكمال ال[ىي] العشره$/, [1, 1], ({ rng }) => {
+  const a = int(rng, 6, 9), b = int(rng, 11 - a, 9), r = a + b, k = pick(rng, [0, 1, 2]);
+  if (k === 1) return { eq: `${a} + ${b} → ${a} + ? = 10`, answer: String(10 - a), wrongs: ints(10 - a, [b, a, 11 - a, r - 10]), ar: `لإيجاد ${a} + ${b} بالإكمال إلى العشرة: ${a} + ___ = 10`, en: `To find ${a} + ${b} by making ten: ${a} + ___ = 10` };
+  if (k === 2) return { eq: `${a} + ${b} = 10 + ?`, answer: String(r - 10), wrongs: ints(r - 10, [b, 10 - a, r - 9, r]), ar: `أكمل: ${a} + ${b} = 10 + ___`, en: `Complete: ${a} + ${b} = 10 + ___` };
+  return { eq: `${a} + ${b}`, answer: String(r), wrongs: ints(r, [r - 1, r + 1, r - 10, 10]), ar: `اجمع بالإكمال إلى العشرة: ${a} + ${b} = ___`, en: `Add by making ten: ${a} + ${b} = ___` };
+});
+
+/** «جمع ثلاثة أعداد بإيجاد مكونات العدد 10 أولًا»: two of the three make 10, and only those two. */
+const threeAddends = T('three_addends', /^جمع ثلاثه اعداد$/, [1, 1], ({ rng }) => {
+  const k = pick(rng, [0, 1, 2]);
+  // a story names every count in digits, so its numbers are 3 or more
+  const x = int(rng, k === 2 ? 3 : 1, k === 2 ? 7 : 9), y = 10 - x;
+  let z = int(rng, k === 2 ? 3 : 1, 9);
+  while (z === x || z === y) z = int(rng, k === 2 ? 3 : 1, 9);
+  const xs = shuffle(rng, [x, y, z]), s = 10 + z;
+  if (k === 1) {
+    const ans = [x, y].sort((p, q) => p - q).join(' و ');
+    // the other two pairs, and a pair that makes 10 but is not in the sum (the third number with its partner)
+    const others = [[xs[0]!, xs[1]!], [xs[0]!, xs[2]!], [xs[1]!, xs[2]!], [z, 10 - z]].map(p => p.sort((u, v) => u - v).join(' و ')).filter(p => p !== ans);
+    return { eq: `${xs.join(' + ')} → 10`, answer: ans, wrongs: wrongsFrom(ans, others, j => `${z} و ${10 + Math.abs(j)}`), ar: `أي عددين مجموعهما 10 في: ${xs.join(' + ')}؟ (اكتب الأصغر أولًا)`, en: `Which two numbers make 10 in ${xs.join(' + ')}? (smaller first)` };
+  }
+  const wrongs = ints(s, [s - 1, s + 1, 10, z]);
+  if (k === 2) return { eq: `word ${xs.join(' + ')}`, answer: String(s), wrongs, ar: `مع سلمى ${balls(xs[0]!)}، وأعطاها أخوها ${balls(xs[1]!)}، وأعطتها أمها ${balls(xs[2]!)}. كم كرةً معها الآن؟`, en: `Salma has ${xs[0]} balls, her brother gives her ${xs[1]} and her mother ${xs[2]}. How many balls does she have now?` };
+  return { eq: xs.join(' + '), answer: String(s), wrongs, ar: `${xs.join(' + ')} = ___ (ابحث أولًا عن عددين يكوّنان عشرة)`, en: `${xs.join(' + ')} = ___ (first find two numbers that make 10)` };
+});
+
+/** «طرح عددين مستعملًا الضعف»: 14 − 7, because 7 + 7 = 14. */
+const subDoubles = T('sub_doubles', /^الطرح باستعمال الضعف$/, [1, 1], ({ rng }) => {
+  const n = int(rng, 2, 9), d = 2 * n, k = pick(rng, [0, 1, 2]);
+  const wrongs = ints(n, [n + 1, n - 1, d, n + 2]);
+  if (k === 1) return { eq: `${n} + ${n} = ${d} → ${d} − ${n}`, answer: String(n), wrongs, ar: `إذا كان ${n} + ${n} = ${d}، فما ناتج ${d} − ${n}؟`, en: `If ${n} + ${n} = ${d}, what is ${d} − ${n}?` };
+  if (k === 2) return { eq: `${d} − ? = ${n}`, answer: String(n), wrongs, ar: `استعمل الضعف: ${d} − ___ = ${n}`, en: `Use a double: ${d} − ___ = ${n}` };
+  return { eq: `${d} − ${n}`, answer: String(n), wrongs, ar: `${d} − ${n} = ___ (فكّر: ما ضعف ${n}؟)`, en: `${d} − ${n} = ___ (think: what is double ${n}?)` };
+});
+
+/** «طرح عددين ضمن العدد 20 بإيجاد عشرة»: 14 − 6 → 14 − 4 = 10, 10 − 2 = 8. */
+const subMakeTen = T('sub_make_ten', /^الطرح بايجاد عشره$/, [1, 1], ({ rng }) => {
+  const a = int(rng, 11, 18), b = int(rng, a - 9, 9), r = a - b, o = a - 10, k = pick(rng, [0, 1, 2]);
+  if (k === 1) return { eq: `${a} − ${b} → ${a} − ? = 10`, answer: String(o), wrongs: ints(o, [b, b - o, a - b, o + 1]), ar: `لإيجاد ${a} − ${b} بإيجاد عشرة: ${a} − ___ = 10`, en: `To find ${a} − ${b} by finding ten: ${a} − ___ = 10` };
+  if (k === 2) return { eq: `${a} − ${b} = 10 − ?`, answer: String(b - o), wrongs: ints(b - o, [o, b, r, b - o + 1]), ar: `أكمل: ${a} − ${b} = 10 − ___`, en: `Complete: ${a} − ${b} = 10 − ___` };
+  return { eq: `${a} − ${b}`, answer: String(r), wrongs: ints(r, [r + 1, r - 1, r + 10, b - o]), ar: `اطرح بإيجاد عشرة: ${a} − ${b} = ___`, en: `Subtract by finding ten: ${a} − ${b} = ___` };
+});
+
 // ─── shapes ─────────────────────────────────────────────────────────────────
 
 const SOLIDS: Array<[string, string]> = [['كرة القدم', 'كرة'], ['حجر النرد', 'مكعب'], ['علبة المعلبات', 'أسطوانة'], ['قبعة الحفلات المدببة', 'مخروط'], ['علبة الأحذية', 'متوازي مستطيلات']];
@@ -1245,9 +1294,9 @@ const compareMeasure = (id: string, match: RegExp, what: string, bigWord: string
     const up = rng() < 0.5, xs = [a, b, c], r = up ? Math.min(...xs) : Math.max(...xs);
     return { eq: `${a}, ${b}, ${c}`, answer: String(r), wrongs: ints(r, [...xs.filter(x => x !== r), up ? r + 1 : r - 1, a + b + c]), ar: `قيست ${what3} ثلاثة أشياء بالوحدة نفسها: ${a}، ${b}، ${c}. إذا رُتّبت ${up ? 'تصاعديًا' : 'تنازليًا'}، فما القياس الأول؟`, en: `The ${en} of three things is measured with the same unit: ${a}, ${b}, ${c}. Ordered ${up ? 'from smallest to largest' : 'from largest to smallest'}, which measure comes first?` };
   }
-  if (k === 0) { const r = Math.max(a, b); return { eq: `${a}, ${b}`, answer: String(r), wrongs: ints(r, [Math.min(a, b), a + b, r + 1, Math.abs(a - b)]), ar: `قيست ${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. ما قياس ${bigWord}؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. What is the measure of the ${big}?` }; }
+  if (k === 0) { const r = Math.max(a, b); return { eq: `${a}, ${b}`, answer: String(r), wrongs: ints(r, [Math.min(a, b), a + b, r + 1, Math.abs(a - b)]), ar: `${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. ما قياس ${bigWord}؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. What is the measure of the ${big}?` }; }
   const d = Math.abs(a - b);
-  return { eq: `${a}, ${b}`, answer: String(d), wrongs: ints(d, [a + b, Math.max(a, b), d + 1, Math.min(a, b)]), ar: `قيست ${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. بكم يزيد الأكبر قياسًا على الأصغر؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. By how much does the larger measure exceed the smaller?` };
+  return { eq: `${a}, ${b}`, answer: String(d), wrongs: ints(d, [a + b, Math.max(a, b), d + 1, Math.min(a, b)]), ar: `${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. بكم يزيد الأكبر قياسًا على الأصغر؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. By how much does the larger measure exceed the smaller?` };
 });
 
 /** «لـ» before a word: «للمثلث», «للشعاع» — the article's alif drops after it. */
@@ -1306,6 +1355,7 @@ export const EARLY_TOPICS: readonly Topic[] = [
   mentalG1('mental_add', /^الجمع الذهني$/, true), mentalG1('mental_sub', /^الطرح الذهني$/, false),
   tensG1('tens_add_g1', /^جمع العشرات$/, true), tensG1('tens_sub_g1', /^طرح العشرات$/, false),
   twoDigitG1('two_digit_add_g1', /^جمع عددين من منزلتين$/, true), twoDigitG1('two_digit_sub_g1', /^طرح عددين من منزلتين$/, false),
+  makeTenAdd, threeAddends, subDoubles, subMakeTen,
   solids, planeShapes('plane_shapes', /^الاشكال المستويه$/, [1, 2]), planeShapes('plane_sides_g1', /^اضلاع الاشكال المستويه ورؤوسها$/, [1, 1]), planeShapes('plane_sides_g2', /^الاضلاع والرؤوس$/, [2, 2]),
   solidParts, geoPattern,
   halfQuarter('half', /^النصف$/, 'نصف'), halfQuarter('quarter', /^الربع$/, 'ربع'), equalParts, fractionOfSetG1, fractionOfSetG3,
@@ -1323,9 +1373,9 @@ export const EARLY_TOPICS: readonly Topic[] = [
   coins('coins_a', /^القطع النقديه$/), coins('coins_b', /^القطع النقديه المتساويه$/), coins('coins_c', /^استعمال القطع النقديه$/), dinar, banknotes,
   weekDays, hourTime('hour_full', /^الوقت بالساعات الكامله$/, false), hourTime('hour_half', /^الوقت بنصف الساعه$/, true),
   nearestMinutes('time_5', /^الوقت لاقرب 5 دقائق$/, 5), nearestMinutes('time_15', /^الوقت لاقرب ربع ساعه$/, 15), monthsOfYear, amPm, calendar,
-  compareMeasure('compare_len', /^مقارنه الاطوال وترتيبها$|^وحدات الطول غير القياسيه$/, 'أطوال', 'الأطول', 'length', 'longest', 'أطوال'),
-  compareMeasure('compare_mass', /^مقارنه الكتل وترتيبها$|^وحدات الكتله غير القياسيه$/, 'كتلتا', 'الأثقل', 'mass', 'heaviest', 'كتل'),
-  compareMeasure('compare_cap', /^مقارنه السعات وترتيبها$|^وحدات السعه غير القياسيه$/, 'سعتا', 'الأكبر سعة', 'capacity', 'largest', 'سعات'),
+  compareMeasure('compare_len', /^مقارنه الاطوال وترتيبها$|^وحدات الطول غير القياسيه$/, 'قيس طولا', 'الأطول', 'length', 'longest', 'أطوال'),
+  compareMeasure('compare_mass', /^مقارنه الكتل وترتيبها$|^وحدات الكتله غير القياسيه$/, 'قيست كتلتا', 'الأثقل', 'mass', 'heaviest', 'كتل'),
+  compareMeasure('compare_cap', /^مقارنه السعات وترتيبها$|^وحدات السعه غير القياسيه$/, 'قيست سعتا', 'الأكبر سعة', 'capacity', 'largest', 'سعات'),
   centimetre, unitsG2('units_m_g2', /^المتر$/, 'متر', 'سنتيمتر', 100, 'metre', 'centimetres'),
   unitsG2('units_kg_g2', /^الغرام والكيلوغرام$/, 'كيلوغرام', 'غرام', 1000, 'kilogram', 'grams'), unitsG2('units_l_g2', /^اللتر والمليلتر$/, 'لتر', 'مليلتر', 1000, 'litre', 'millilitres'),
 ];
