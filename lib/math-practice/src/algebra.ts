@@ -220,7 +220,8 @@ const exprEval = topic('expr_eval', /قيمه المقدار الجبري/, [5, 
     const n = int(rng, 2, span(diff) + 3), v = a * n + b;
     return {
       eq: `${a}n + ${b}`, answer: String(v), wrongs: num(v, [a + n + b, a * (n + b), a * n, v + a], String),
-      ar: `يمثّل المقدار ${a}n + ${b} ما يدفعه أحمد بالدينار ثمنًا لِـ n من الكتب مع أجرة التوصيل. كم دينارًا يدفع إذا اشترى ${n} من الكتب؟`,
+      // «إذا اشترى 2 من الكتب» read wrong; the count agrees with its noun now: «كتابين», «3 كتب», «11 كتابًا»
+      ar: `يمثّل المقدار ${a}n + ${b} ما يدفعه أحمد بالدينار ثمنًا لِـ n من الكتب مع أجرة التوصيل. كم دينارًا يدفع إذا اشترى ${n === 2 ? 'كتابين' : `${n} ${tamyiz(n, 'كتب', 'كتابًا', 'كتاب')}`}؟`,
       en: `The expression ${a}n + ${b} is what Ahmad pays, in dinars, for n books including delivery. How many dinars does he pay for ${n} books?`,
     };
   }
@@ -921,12 +922,17 @@ const intervals = topic('intervals', /^المجموعات والفترات$/, [9
   const a = int(rng, -6, 5), b = a + int(rng, 2, 8);
   const form = pick(rng, [0, 1, 2, 3, 4]);
   if (form === 3) {
-    // the type of a bounded interval, from its brackets
-    const [l, r] = pick(rng, [['(', ')'], ['[', ']'], ['[', ')'], ['(', ']']] as const);
-    const TYPES = ['فترة مغلقة', 'فترة مفتوحة', 'فترة نصف مفتوحة', 'فترة غير محدودة'];
-    const t = l === '[' && r === ']' ? 0 : l === '(' && r === ')' ? 1 : 2;
-    const iv = `${l}${signed(a)} ، ${signed(b)}${r}`;
-    return { eq: iv, answer: TYPES[t]!, wrongs: TYPES.filter((_, i) => i !== t), ar: `ما نوع الفترة ${iv}؟`, en: `What type of interval is ${iv}?` };
+    // The type of a set, as the book sorts them by how many elements they have (S1 p.10): empty,
+    // singleton, finite, infinite. This asked «ما نوع الفترة» — closed / open / half-open — until
+    // 2026-11-14; the book never calls an interval any of those.
+    const TYPES = ['خالية', 'مفردة', 'منتهية', 'غير منتهية'] as const;
+    const t = int(rng, 0, 3);
+    const body = t === 0 ? `${signed(a)} < x < ${signed(a + 1)}`
+      : t === 1 ? `${signed(a)} < x < ${signed(a + 2)}`
+      : t === 2 ? `${signed(a)} ≤ x ≤ ${signed(b)}`
+      : `x ${pick(rng, SYM)} ${signed(a)}`;
+    const set = `{x | x ∈ Z، ${body}}`, setEn = `{x | x ∈ Z, ${body}}`;
+    return { eq: set, answer: TYPES[t]!, wrongs: TYPES.filter((_, i) => i !== t), ar: `حدّد نوع المجموعة ${set}: خالية، أم مفردة، أم منتهية، أم غير منتهية؟`, en: `Is the set ${setEn} empty, a singleton, finite or infinite?` };
   }
   if (form === 4) {
     // solve, then write the solution set with set-builder notation

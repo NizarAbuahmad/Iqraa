@@ -22,6 +22,13 @@
  *
  * Questions are numbered straight through the sections and matched to the
  * answer key by that number, as every other worksheet consumer does.
+ *
+ * **Grade 1** (`firstGrade`): a paper takes only the types a six-year-old can
+ * answer (`FIRST_GRADE_EVALUATION_TYPES`, `lib/exam-paper`), and a short answer is
+ * not one of them. What would have been one becomes a practical task: the same
+ * question, the same answer box on the student's screen, marked by the teacher
+ * against the key — never an automatic mark on an Arabic answer, the rule above
+ * still holds (Grade 1 sweep, 2026-11-14).
  */
 import { normalizeArabic } from "./normalize.ts";
 import { studentFigure } from "./questionFigure.ts";
@@ -53,7 +60,7 @@ export interface WorksheetInput {
 }
 
 export interface ConvertedQuestion {
-  type: "multiple_choice" | "true_false" | "fill_blank" | "short_answer" | "matching";
+  type: "multiple_choice" | "true_false" | "fill_blank" | "short_answer" | "matching" | "practical_task";
   body: Record<string, unknown>;
   expectedAnswer: Record<string, unknown>;
   marks: number;
@@ -216,15 +223,31 @@ const TRUE_WORDS = new Set(["صح", "صحيح", "true"].map(comparable));
 const FALSE_WORDS = new Set(["خطأ", "خطا", "false"].map(comparable));
 const isTruthWord = (s: string) => TRUE_WORDS.has(comparable(s)) || FALSE_WORDS.has(comparable(s));
 
-export function convertWorksheet(ws: WorksheetInput, lang: "ar" | "en" = "ar"): ConvertResult {
+/** A teacher-marked short answer as a Grade 1 practical task: the question and its key, unchanged. */
+function asPracticalTask(q: ConvertedQuestion): ConvertedQuestion {
+  if (q.type !== "short_answer") return q;
+  const { prompt, ...rest } = q.body;
+  const criteria = String(q.expectedAnswer["modelAnswer"] ?? "").split("\n").map(l => l.trim()).filter(Boolean);
+  return {
+    type: "practical_task",
+    body: { ...rest, prompt, submission: "text" },
+    expectedAnswer: { successCriteria: criteria },
+    marks: q.marks,
+  };
+}
+
+/** Marked by the teacher rather than by a grader. */
+const TEACHER_MARKED = new Set<ConvertedQuestion["type"]>(["short_answer", "practical_task"]);
+
+export function convertWorksheet(ws: WorksheetInput, lang: "ar" | "en" = "ar", opts: { firstGrade?: boolean } = {}): ConvertResult {
   const flat = ws.sections.flatMap(s => s.questions);
   const keyFor = (n: number) => ws.answerKey.find(k => k.num === n);
 
   const missingKey = flat.map((_, i) => i + 1).filter(n => !keyFor(n)?.answer?.trim());
   if (missingKey.length > 0) return { ok: false, missingKey };
 
-  const questions = flat.map((paper, i): ConvertedQuestion => {
-    const q = { ...paper, text: paper.text.replace(WRITING_SPACE, "").trim() };
+  const questions = flat.map((sheet, i): ConvertedQuestion => {
+    const q = { ...sheet, text: sheet.text.replace(WRITING_SPACE, "").trim() };
     const entry = keyFor(i + 1)!;
     const answer = entry.answer.trim();
     const options = q.options ?? [];
@@ -232,7 +255,7 @@ export function convertWorksheet(ws: WorksheetInput, lang: "ar" | "en" = "ar"): 
     const figure = studentFigure(q as unknown as Record<string, unknown>);
     const withFigure = (body: Record<string, unknown>) => (figure ? { ...body, figure } : body);
 
-    const built = fromFormat(paper.format, answer, entry, lang);
+    const built = fromFormat(sheet.format, answer, entry, lang);
     if (built) return { ...built, body: withFigure(built.body), marks };
 
     if (options.length === 2 && options.every(isTruthWord) && isTruthWord(answer)) {
@@ -275,6 +298,7 @@ export function convertWorksheet(ws: WorksheetInput, lang: "ar" | "en" = "ar"): 
     };
   });
 
-  const autoMarked = questions.filter(q => q.type !== "short_answer").length;
-  return { ok: true, questions, autoMarked, teacherMarked: questions.length - autoMarked };
+  const paper = opts.firstGrade ? questions.map(asPracticalTask) : questions;
+  const autoMarked = paper.filter(q => !TEACHER_MARKED.has(q.type)).length;
+  return { ok: true, questions: paper, autoMarked, teacherMarked: paper.length - autoMarked };
 }

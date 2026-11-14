@@ -261,5 +261,107 @@ const doubleBar = T('double_bar_g5', /^التمثيل بالاعمده المز�
   };
 });
 
-export const G5_TOPICS: readonly Topic[] = [mentalMul, polygons, statQuestion, lineGraph, doubleBar];
+// ─── the two problem-solving-plan lessons (Grade 5 review, 2026-11-14) ─────────
+//
+// Both follow the student book's worked example and «أتدرب» problems: S1 pp. 24-25 («أنشئ جدولًا»: a ratio table of
+// green and red balls up to 24, bunches of flowers, shirts and caps, ways to pay 50 piastres) and S2 pp. 56-57
+// («أرسم نموذجًا»: a bar model becomes «x + 11 = 27»; a bill that fell by 3 dinars; 336 km in 3 hours; five whales).
+
+const counted = (n: number, plural: string, acc: string, gen: string) => `${n} ${tamyiz(n, plural, acc, gen)}`;
+
+/** «خطة حل المسألة: أنشئ جدولًا»: a ratio table, a growing daily pattern, outfits, and ways to pay with two coins. */
+const makeTable = T('make_table_g5', /^خطه حل المساله انشئ جدولا$/, ({ rng, diff }) => {
+  const k = pick(rng, [0, 1, 2, 3]);
+  if (k === 0) {
+    // for every a green there are b red; T in all = n(a + b); red = nb
+    const a = int(rng, 1, 3), b = int(rng, Math.max(3, a + 1), 5), n = int(rng, 3, span(diff, 5, 8, 12)); // b ≥ 3: «2 كرةً» is wrong
+    const total = n * (a + b), red = n * b;
+    return {
+      eq: `table ${a}:${b} of ${total}`, answer: String(red), wrongs: ints(red, [n * a, total - n * a + a, red + b, total / b]),
+      ar: `في صندوق كرات خضراء وحمراء، ومقابل كل ${a === 1 ? 'كرة خضراء واحدة' : a === 2 ? 'كرتين خضراوين' : counted(a, 'كرات خضراء', 'كرةً خضراء', 'كرة خضراء')} توجد ${counted(b, 'كرات حمراء', 'كرةً حمراء', 'كرة حمراء')}. إذا كان في الصندوق ${counted(total, 'كرات', 'كرةً', 'كرة')}، فكم كرةً حمراء فيه؟`,
+      en: `A box holds green and red balls: for every ${a} green there are ${b} red. If the box holds ${total} balls, how many are red?`,
+    };
+  }
+  if (k === 1) {
+    // a daily amount that grows by the same step: day n is s + (n − 1)d
+    const s = int(rng, 3, 10), d = int(rng, 3, 6), n = int(rng, 5, span(diff, 7, 10, 14));
+    const ans = s + (n - 1) * d;
+    return {
+      eq: `grow ${s} +${d} day ${n}`, answer: String(ans), wrongs: ints(ans, [s + n * d, s * n, (n - 1) * d, ans + d]),
+      ar: `ادّخرت هند في اليوم الأول ${counted(s, 'قروش', 'قرشًا', 'قرش')}، وتدّخر كل يوم ${counted(d, 'قروش', 'قرشًا', 'قرش')} أكثر مما ادّخرته في اليوم الذي قبله. كم قرشًا تدّخر في اليوم ${n}؟`,
+      en: `Hind saves ${s} piastres on the first day and ${d} piastres more each day than the day before. How many piastres does she save on day ${n}?`,
+    };
+  }
+  if (k === 2) {
+    const a = int(rng, 3, span(diff, 4, 6, 8)), b = int(rng, 3, span(diff, 4, 5, 7));
+    const ans = a * b;
+    return {
+      eq: `outfits ${a} × ${b}`, answer: String(ans), wrongs: ints(ans, [a + b, ans - 1, ans + a, 2 * (a + b)]),
+      ar: `لدى أحمد ${counted(a, 'قمصان', 'قميصًا', 'قميص')} و${counted(b, 'قبعات', 'قبعةً', 'قبعة')}. بكم طريقة مختلفة يمكنه أن يلبس قميصًا وقبعة؟`,
+      en: `Ahmad has ${a} shirts and ${b} caps. In how many different ways can he wear one shirt and one cap?`,
+    };
+  }
+  // ways to pay N piastres with 5- and 10-piastre coins: y tens for y = 0 … N/10, the rest in fives
+  const N = 10 * int(rng, 2, span(diff, 4, 6, 9));
+  const ans = N / 10 + 1;
+  return {
+    eq: `coins ${N}`, answer: String(ans), wrongs: ints(ans, [N / 10, N / 5, N / 5 + 1, ans + 1]),
+    ar: `بكم طريقة يمكن دفع ${counted(N, 'قروش', 'قرشًا', 'قرش')} باستعمال قطع نقدية من فئة 5 قروش وفئة 10 قروش فقط؟`,
+    en: `In how many ways can ${N} piastres be paid using only 5-piastre and 10-piastre coins?`,
+  };
+});
+
+/** «خطة حل المسألة (أرسم نموذجًا)»: a bar model turned into an equation, as on S2 p. 56. */
+const drawModel = T('draw_model_g5', /^خطه حل المساله \(ارسم نموذجا\)$/, ({ rng, diff }) => {
+  const k = pick(rng, [0, 1, 2, 3, 4]);
+  if (k === 0) {
+    // x + a = b
+    const b = int(rng, 20, span(diff, 50, 90, 150)), a = int(rng, 5, b - 5);
+    const ans = b - a;
+    return {
+      eq: `model x + ${a} = ${b}`, answer: String(ans), wrongs: ints(ans, [a + b, a, ans + 10, ans - 1]),
+      ar: `جمع سعيد ${counted(b, 'قطع', 'قطعةً', 'قطعة')} من الملابس لجمعية خيرية، وجمع خالد عددًا أقل منه بمقدار ${counted(a, 'قطع', 'قطعةً', 'قطعة')}. كم قطعةً جمع خالد؟`,
+      en: `Saeed collected ${b} pieces of clothing for a charity, and Khaled collected ${a} fewer. How many pieces did Khaled collect?`,
+    };
+  }
+  if (k === 1) {
+    // x − a = b: a bill that fell by a to b
+    const a = int(rng, 3, 9), b = int(rng, 11, span(diff, 25, 40, 60));
+    const ans = a + b;
+    return {
+      eq: `model x - ${a} = ${b}`, answer: String(ans), wrongs: ints(ans, [b - a, b, ans + a, ans - 1]),
+      ar: `انخفضت قيمة فاتورة الكهرباء لعائلة جميل بمقدار ${counted(a, 'دنانير', 'دينارًا', 'دينار')} عن الشهر السابق، فأصبحت ${counted(b, 'دنانير', 'دينارًا', 'دينار')}. كم دينارًا كانت قيمة فاتورة الشهر السابق؟`,
+      en: `The Jameel family's electricity bill fell by ${a} JD from last month to ${b} JD. How many JD was last month's bill?`,
+    };
+  }
+  if (k === 2) {
+    // h · x = d
+    const h = int(rng, 3, 6), x = int(rng, 40, span(diff, 70, 95, 120)), d = h * x;
+    return {
+      eq: `model ${h}x = ${d}`, answer: String(x), wrongs: ints(x, [d - h, d * h, x + h, x - 1]),
+      ar: `قطع فهد ${d} كيلومترًا في ${counted(h, 'ساعات', 'ساعةً', 'ساعة')} بالسرعة نفسها. كم كيلومترًا يقطع في الساعة الواحدة؟`,
+      en: `A cheetah covered ${d} km in ${h} hours at the same speed. How many kilometres does it cover in one hour?`,
+    };
+  }
+  if (k === 3) {
+    // x = n · m
+    const n = int(rng, 3, 9), m = int(rng, 40, span(diff, 60, 90, 120));
+    const ans = n * m;
+    return {
+      eq: `model ${n} × ${m}`, answer: String(ans), wrongs: ints(ans, [n + m, ans + m, ans - m, m * (n + 1) - 1]),
+      ar: `كتلة الحوت الزعنفي نحو ${counted(m, 'أطنان', 'طنًا', 'طن')}. كم طنًا يبلغ مجموع كتل ${counted(n, 'حيتان', 'حوتًا', 'حوت')} زعنفية تقريبًا؟`,
+      en: `A fin whale has a mass of about ${m} tonnes. About how many tonnes do ${n} fin whales have together?`,
+    };
+  }
+  // the equation a bar model shows
+  const a = int(rng, 5, 30), b = a + int(rng, 5, 40);
+  const ans = `x + ${a} = ${b}`;
+  return {
+    eq: `which equation ${a} ${b}`, answer: ans, wrongs: [`x − ${a} = ${b}`, `${a} × x = ${b}`, `x + ${b} = ${a}`],
+    ar: `رسمت سلمى نموذجًا: شريط طوله ${b} مقسوم إلى جزأين، أحدهما ${a} والآخر مجهول x. أيّ المعادلات الآتية يمثّلها النموذج؟`,
+    en: `Salma drew a bar of length ${b} split into two parts, ${a} and an unknown x. Which equation does the model show?`,
+  };
+});
+
+export const G5_TOPICS: readonly Topic[] = [mentalMul, polygons, statQuestion, lineGraph, doubleBar, makeTable, drawModel];
 

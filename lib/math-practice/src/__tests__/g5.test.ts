@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 
 import { TOPICS, makeTopicItem, topicFor } from '../topics.ts';
 import { G5_TOPICS } from '../g5.ts';
-import { mathBankCovers, type ConcreteItem, type DiffTier } from '../index.ts';
+import { mathBankCovers, takeElementaryMath, beginMathPracticeSession, type ConcreteItem, type DiffTier } from '../index.ts';
 
 const TIERS: DiffTier[] = ['easy', 'medium', 'hard'];
 function seeded(seed: number) {
@@ -183,12 +183,79 @@ describe('Grade 5 generators: answers recomputed from the stem', () => {
   });
 });
 
+describe('Grade 5 problem-solving plans: answers recomputed from the stem (2026-11-14)', () => {
+  it('make a table: the table is built row by row', () => {
+    const kinds = new Set<string>();
+    for (const item of draws('make_table_g5')) {
+      const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      if (has(p, 'كرات خضراء وحمراء')) {
+        kinds.add('ratio');
+        const green = has(p, 'كرة خضراء واحدة') ? 1 : has(p, 'كرتين') ? 2 : n[0]!;
+        const red = n[has(p, 'كرة خضراء واحدة') || has(p, 'كرتين') ? 0 : 1]!, total = n[n.length - 1]!;
+        let g = 0, r = 0;
+        while (g + r < total) { g += green; r += red; }
+        assert.equal(g + r, total, `the total is not a whole number of rows: ${p}`);
+        assert.equal(a, r, p);
+      } else if (has(p, 'ادّخرت هند')) {
+        kinds.add('pattern');
+        const [s, d, day] = n as [number, number, number];
+        let v = s;
+        for (let i = 1; i < day; i++) v += d;
+        assert.equal(a, v, p);
+      } else if (has(p, 'قمصان') || has(p, 'قميصًا')) {
+        kinds.add('outfits');
+        let c = 0;
+        for (let i = 0; i < n[0]!; i++) for (let j = 0; j < n[1]!; j++) c++;
+        assert.equal(a, c, p);
+      } else {
+        kinds.add('coins');
+        const N = n[0]!;
+        let ways = 0;
+        for (let tens = 0; tens * 10 <= N; tens++) if ((N - tens * 10) % 5 === 0) ways++;
+        assert.equal(a, ways, p);
+      }
+    }
+    assert.deepEqual([...kinds].sort(), ['coins', 'outfits', 'pattern', 'ratio']);
+  });
+
+  it('draw a model: the equation the model gives is solved', () => {
+    const kinds = new Set<string>();
+    for (const item of draws('draw_model_g5')) {
+      const p = item.promptAr!, n = nums(p);
+      if (has(p, 'أيّ المعادلات')) {
+        kinds.add('equation');
+        const [b, a] = n as [number, number];
+        assert.equal(item.answer, `x + ${a} = ${b}`, p);
+        continue;
+      }
+      const x = Number(item.answer);
+      if (has(p, 'أقل منه بمقدار')) { kinds.add('fewer'); assert.equal(x + n[1]!, n[0], p); }
+      else if (has(p, 'انخفضت')) { kinds.add('drop'); assert.equal(x - n[0]!, n[1], p); }
+      else if (has(p, 'الساعة الواحدة')) { kinds.add('equal parts'); assert.equal(n[1]! * x, n[0], p); }
+      else { kinds.add('groups'); assert.equal(x, n[0]! * n[1]!, p); }
+    }
+    assert.deepEqual([...kinds].sort(), ['drop', 'equal parts', 'equation', 'fewer', 'groups']);
+  });
+});
+
+describe('Grade 5 «قسمة الكسور» never prints a fraction equal to 1 (2026-11-14)', () => {
+  it('no «2/2» or «3/3» in 400 questions', () => {
+    for (let i = 0; i < 400; i++) {
+      if (i % 20 === 0) beginMathPracticeSession();
+      const q = takeElementaryMath('multiple_choice', 'قِسْمَةُ الكُسورِ', null, 5, TIERS[i % 3]!, 'ar', 1);
+      assert.ok(q, 'an item comes back');
+      for (const m of q.text.matchAll(/(?<![\d.])(\d+)\/(\d+)(?![\d.])/g)) assert.notEqual(m[1], m[2], q.text);
+    }
+  });
+});
+
 describe('Grade 5 routing', () => {
   const cases: Array<[string, string | null]> = [
     ['الضَّرْبُ الذِّهْنِيُّ', 'mental_mul_g5'], ['الْمُضَلَّعاتُ', 'polygons_g5'], ['السُّؤالُ الإِحْصائِيُّ', 'stat_question_g5'],
     ['التَّمْثيلُ بِالخُطوطِ', 'line_graph_g5'], ['التَّمْثيلُ بِالأَعْمِدَةِ المُزْدَوَجَةِ', 'double_bar_g5'],
-    // a problem-solving plan is a method, not a skill a question bank can drill; it stays refused as in Grades 3–4
-    ['خُطَّةُ حَلِّ المَسْأَلَةِ: أُنْشِئُ جَدْوَلًا', null], ['خُطَّةُ حَلِّ الْمَسْأَلَةِ (أَرْسُمُ نَموذَجًا)', null],
+    // the two problem-solving plans were refused until 2026-11-14, when Grades 3, 4, 6 and 7 already served theirs;
+    // they now get the problems their book pages solve with the plan (S1 pp. 24-25, S2 pp. 56-57)
+    ['خُطَّةُ حَلِّ المَسْأَلَةِ: أُنْشِئُ جَدْوَلًا', 'make_table_g5'], ['خُطَّةُ حَلِّ الْمَسْأَلَةِ (أَرْسُمُ نَموذَجًا)', 'draw_model_g5'],
   ];
   for (const [title, id] of cases) {
     it(`${title} → ${id ?? 'refused'}`, () => {

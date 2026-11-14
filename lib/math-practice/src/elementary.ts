@@ -13,6 +13,7 @@
  */
 import type { ConcreteItem, DiffTier } from './index.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
+import { EARLY_CHOICE, EARLY_DRAWS, choosesByDifficulty, pickByDifficulty } from './earlyDifficulty.ts';
 
 export type ElementaryOp =
   | 'add' | 'sub' | 'mul' | 'div' | 'compare' | 'place'
@@ -66,7 +67,9 @@ export function elementaryOpsForTitle(title: string): ElementaryOp[] {
     if (/عشري|decimal/i.test(t)) return ['dec_compare'];
     return /الاعداد|numbers/i.test(t) ? ['compare'] : [];
   }
-  if (/مئوي|percent/i.test(t)) return /والكسور/.test(t) ? [] : ['percent'];
+  // «النسبة المئوية والكسور…» converts (pct_conv); Grade 6 «النسبة المئوية من عدد» has its own generator (pct_of_g6),
+  // since the shared op is a third conversions and grids
+  if (/مئوي|percent/i.test(t)) return /والكسور|من عدد/.test(t) ? [] : ['percent'];
   if (UNSERVED.test(t)) return [];
   // Grade 1's tens and two-digit lessons have their own generators (early.ts
   // `tensG1`, `twoDigitG1`); as plain add/sub they drew sums within 20. Not
@@ -84,6 +87,10 @@ export function elementaryOpsForTitle(title: string): ElementaryOp[] {
   // Regrouping in a product is a two-digit factor, which the times-table items
   // are not.
   if (named.mul && /اعاده/.test(t)) return [];
+  // A sum or difference «مع إعادة التجميع» / «مع وجود أصفار» is about one column
+  // regrouping, which the drill hits only by chance (half the time; a zero in
+  // under one in ten): early.ts `columnTopics` draws until it does.
+  if (/^(?:ال)?(?:جمع|طرح) مع (?:اعاده التجميع|وجود اصفار)/.test(t.trim())) return [];
 
   // «الكسور والقسمة» names a fraction and a division but is not dividing
   // fractions: an operation only counts when it is applied to the fractions.
@@ -297,6 +304,9 @@ const STUDENT = noun('طالب', 'طالبان', 'طلاب', 'طالبًا');
 /** Genitive dual: «على طالبَين». */
 const STUDENT_GEN = noun('طالب', 'طالبَين', 'طلاب', 'طالبًا');
 const SCHOOL_GEN = noun('مدرسة', 'مدرستَين', 'مدارس', 'مدرسة');
+const SEAT = noun('مقعد', 'مقعدان', 'مقاعد', 'مقعدًا');
+/** Genitive dual, after «على»: «على مجموعتَين». */
+const GROUP_GEN = noun('مجموعة', 'مجموعتَين', 'مجموعات', 'مجموعةً');
 
 /** «n noun» as Arabic counts it. `n` is at least 2 — no word problem here counts one thing. */
 function counted(n: number, w: Noun): string {
@@ -843,7 +853,7 @@ function fracDivKinds(base: Base, rng: Rng): ConcreteItem {
     }
     default: {
       // A fraction divided by a whole number.
-      const [a, b, n] = [int(rng, 1, 5), int(rng, 2, 9), int(rng, 2, 6)];
+      const b = int(rng, 2, 9), n = int(rng, 2, 6), a = int(rng, 1, Math.min(5, b - 1)); // never «3/3 ÷ n»
       return withText(fractionItem(base, `bywhole:${a}/${b} ÷ ${n}`, a, b * n, [frac(a * n, b), frac(a, b + n), frac(n, a * b)]),
         `أوجد ناتج قسمة الكسر ${a}/${b} على العدد ${n}.`, `Divide the fraction ${a}/${b} by ${n}.`);
     }
@@ -1048,7 +1058,8 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       return {
         ...base, eq: `${a} × ${b}`, answer: String(p),
         wrongs: numericWrongs(p, rng, [a, -a, b, -b, 10]),
-        wordAr: `في الصف ${a} صفوف من المقاعد، وفي كل صف ${b} مقاعد. كم مقعدًا في الصف؟`,
+        // not shown today (no `kind: 'word'`), but agreeing in case it is: «في الصف 25 صفوف» was the old text
+        wordAr: `في الصف ${counted(a, ROW)} من المقاعد، وفي كل صف ${counted(b, SEAT)}. كم مقعدًا في الصف؟`,
         wordEn: `A classroom has ${a} rows with ${b} seats each. How many seats are there?`,
       };
     }
@@ -1066,7 +1077,7 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       return {
         ...base, eq: `${a} ÷ ${b}`, answer: String(q),
         wrongs: numericWrongs(q, rng, [1, -1, 2, b, -2]),
-        wordAr: `وُزِّع ${a} قلمًا بالتساوي على ${b} مجموعات. كم قلمًا لكل مجموعة؟`,
+        wordAr: `وُزِّع ${counted(a, PEN)} بالتساوي على ${counted(b, GROUP_GEN)}. كم قلمًا لكل مجموعة؟`,
         wordEn: `${a} pencils are shared equally among ${b} groups. How many does each group get?`,
       };
     }
@@ -1174,7 +1185,9 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       // fractions — «2/6 ÷ 3/2» is Grade 5 work.
       if (grade <= 3) return unitFractionOf(base, rng);
       if (int(rng, 0, 3) > 0) return fracDivKinds(base, rng);
-      const [a, b, c, d] = [int(rng, 1, 5), int(rng, 2, 9), int(rng, 1, 5), int(rng, 2, 9)];
+      // proper fractions: «2/2 ÷ 3/3» was possible (Grade 5 maths, 2026-11-13)
+      const b = int(rng, 2, 9), d = int(rng, 2, 9);
+      const a = int(rng, 1, Math.min(5, b - 1)), c = int(rng, 1, Math.min(5, d - 1));
       return fractionItem(base, `${a}/${b} ÷ ${c}/${d}`, a * d, b * c, [
         frac(a * c, b * d), frac(b * c, a * d), `${a * d}/${b + c}`, frac(a * d + 1, b * c),
       ]);
@@ -1300,7 +1313,12 @@ export function makeElementaryItem(
   let best: ConcreteItem | null = null;
   let bestScore = Infinity;
   let fresh = 0;
-  for (let attempt = 0; attempt < 25 && fresh < FRESH_DRAWS; attempt++) {
+  // Grades 1–4 choose by difficulty among the least-served kinds (`earlyDifficulty.ts`).
+  const byDifficulty = choosesByDifficulty(g);
+  let least: ConcreteItem[] = [];
+  const draws = byDifficulty ? EARLY_DRAWS : FRESH_DRAWS;
+  const enough = () => fresh >= draws && (!byDifficulty || least.length >= EARLY_CHOICE);
+  for (let attempt = 0; attempt < 6 * draws && !enough(); attempt++) {
     const op = pool[int(rng, 0, pool.length - 1)]!;
     // The id's last digit decides a true/false item's claim (see
     // `formatItem`); a fixed suffix made every one of them «صح».
@@ -1311,10 +1329,15 @@ export function makeElementaryItem(
     if (score < bestScore) {
       best = item;
       bestScore = score;
+      least = [item];
+    } else if (score === bestScore && !least.some(x => x.eq === item!.eq)) {
+      least.push(item);
     }
-    if (score === 0) break;
+    if (score === 0 && !byDifficulty) break;
   }
-  item = best ?? item;
+  item = byDifficulty && least.length > 0
+    ? pickByDifficulty(least, diff, rng, x => ({ ar: x.promptAr ?? x.eq, answer: x.answer }))
+    : best ?? item;
   used.add(`stem:${item!.eq}`);
   used.add(`ask:${item!.promptAr ?? item!.eq}`);
   return item!;

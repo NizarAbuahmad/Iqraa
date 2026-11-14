@@ -414,18 +414,7 @@ describe('statistics: answers recomputed', () => {
         assert.ok(Number.isInteger(v / per), p);
         continue;
       }
-      if (has(p, 'التمثيل بالنقاط')) {
-        // count the dots over every value from the asked one up
-        upper('dots');
-        assert.equal(g, '4', `dot plots are a Grade 4 lesson: ${p}`);
-        const rows = [...p.matchAll(/(\d+): (●*)/g)].map(m => [Number(m[1]), m[2]!.length] as const);
-        assert.equal(rows.length, 6, p);
-        const v = Number(p.match(/قرأ (\d+) ساعات أو أكثر/)![1]);
-        const want = rows.filter(([h]) => h >= v).reduce((t, [, c]) => t + c, 0);
-        assert.equal(Number(item.answer), want, p);
-        assert.ok(rows.some(([h, c]) => h === v && c > 0), `«or more» and «more than» differ: ${p}`);
-        continue;
-      }
+      assert.ok(!has(p, 'التمثيل بالنقاط'), `a dot plot belongs to «تمثيل البيانات بالنقاط»: ${p}`);
       if (id === 'read_data_g34') kinds[Number(g)]!.add('table');
       if (has(p, 'عدد الأقلام')) {
         // organising raw data: how many times the value occurs
@@ -471,22 +460,19 @@ describe('statistics: answers recomputed', () => {
       else assert.equal(Number(item.answer), sum(vals));
       assert.equal(new Set(vals).size, vals.length, 'counts are distinct so the answer is unique');
     }
-    assert.deepEqual([...kinds[1]!].sort(), ['compare', 'raw', 'table'], 'Grade 1 kinds');
+    // Grade 1's data lessons have their own generators in early.ts (data_table_g1, picto_make_g1, picto_read_g1)
+    assert.deepEqual([...kinds[1]!], [], 'Grade 1 is no longer drawn from read_data_g12');
     assert.deepEqual([...kinds[2]!].sort(), ['compare', 'draw', 'pictures', 'raw', 'table', 'tally'], 'Grade 2 kinds');
     assert.deepEqual([...kinds[3]!].sort(), ['halfStep', 'squares', 'table'], 'Grade 3 kinds');
-    assert.deepEqual([...kinds[4]!].sort(), ['dots', 'halfStep', 'squares', 'table'], 'Grade 4 kinds');
+    assert.deepEqual([...kinds[4]!].sort(), ['halfStep', 'squares', 'table'], 'Grade 4 kinds');
   });
 
   it('frequency tables and grouped data', () => {
     const freqKinds = new Set<string>();
     for (const item of draws('freq_table', 300)) {
       const p = item.promptAr!, xs = dataList(p);
-      if (has(p, 'حجم')) {
-        freqKinds.add('sample');
-        const [P, s] = nums(p);
-        assert.ok(s! < P!, p);
-        assert.equal(Number(item.answer), has(p, 'حجم العينة') ? s : P, p);
-      } else if (has(p, 'عدد الكتب: عدد الطلاب')) {
+      assert.ok(!has(p, 'حجم'), `a sample question belongs to «جمع البيانات»: ${p}`);
+      if (has(p, 'عدد الكتب: عدد الطلاب')) {
         const rows = [...p.matchAll(/(\d+): (\d+)/g)].map(m => [Number(m[1]), Number(m[2])] as const);
         const all = rows.flatMap(([v, f]) => Array<number>(f).fill(v));
         if (has(p, 'الوسط الحسابي')) { freqKinds.add('tableMean'); assert.equal(Number(item.answer), sum(all) / all.length, p); }
@@ -494,7 +480,38 @@ describe('statistics: answers recomputed', () => {
       } else if (has(p, 'ما تكرار القيمة')) { freqKinds.add('frequency'); const v = Number(p.match(/القيمة (\d+)/)![1]); assert.equal(Number(item.answer), xs.filter(x => x === v).length, p); }
       else { freqKinds.add('mode'); const c = new Map<number, number>(); xs.forEach(x => c.set(x, (c.get(x) ?? 0) + 1)); const top = [...c.entries()].sort((a, b) => b[1] - a[1]); assert.ok(top[0]![1] > (top[1]?.[1] ?? 0)); assert.equal(Number(item.answer), top[0]![0]); }
     }
-    assert.equal(freqKinds.size, 5, `freq_table kinds drawn: ${[...freqKinds]}`);
+    assert.equal(freqKinds.size, 4, `freq_table kinds drawn: ${[...freqKinds]}`);
+    // «جمع البيانات» (S2 u8_l1): numerical / categorical, discrete / continuous, population and sample (2026-11-14)
+    assert.equal(topicFor('جَمْعُ البَياناتِ', 6)?.id, 'collect_data_g6');
+    assert.equal(topicFor('الجداول التكرارية', 6)?.id, 'freq_table');
+    const CAT = ['اللون المفضل', 'نوع الرياضة', 'وسيلة المواصلات', 'فصيلة دم', 'المادة الدراسية', 'نوع الفاكهة'];
+    const CONT = ['أطوال', 'كتل', 'درجات الحرارة', 'الزمن'];
+    const isCat = (s: string) => CAT.some(c => s.startsWith(c));
+    const isCont = (s: string) => CONT.some(c => s.startsWith(c));
+    const dataKinds = new Set<string>();
+    for (const item of draws('collect_data_g6', 300)) {
+      const p = item.promptAr!;
+      if (has(p, 'تمثّل طلبة المدرسة')) { dataKinds.add('fair sample'); assert.ok(has(item.answer, 'عشوائيًا من صفوف المدرسة جميعها') && item.wrongs.every(w => !has(w, 'عشوائيًا')), p); continue; }
+      if (has(p, 'استبانة لصفه')) {
+        dataKinds.add('survey question');
+        const NUMQ = ['كم عدد إخوتك؟', 'كم ساعة تنام في الليلة؟', 'كم كتابًا قرأت هذا الشهر؟', 'كم عمرك بالسنوات؟'];
+        const wantNum = has(p, 'بيانات عددية');
+        assert.equal(NUMQ.includes(item.answer), wantNum, p);
+        assert.ok(item.wrongs.every(w => NUMQ.includes(w) !== wantNum), p);
+        continue;
+      }
+      if (has(p, 'بيانات نوعية')) { dataKinds.add('categorical'); assert.ok(isCat(item.answer) && item.wrongs.every(w => !isCat(w)), p); }
+      else if (has(p, 'بيانات عددية؟')) { dataKinds.add('numerical'); assert.ok(!isCat(item.answer) && item.wrongs.every(isCat), p); }
+      else if (has(p, 'بيانات متصلة')) { dataKinds.add('continuous'); assert.ok(isCont(item.answer) && item.wrongs.every(w => !isCont(w) && !isCat(w)), p); }
+      else if (has(p, 'بيانات منفصلة')) { dataKinds.add('discrete'); assert.ok(!isCont(item.answer) && !isCat(item.answer) && item.wrongs.every(isCont), p); }
+      else {
+        const [P, s] = nums(p);
+        assert.ok(s! < P!, p);
+        if (has(p, 'حجم')) { dataKinds.add('size'); assert.equal(Number(item.answer), has(p, 'حجم العينة') ? s : P, p); }
+        else { dataKinds.add('which'); assert.ok(item.answer.includes(`(${has(p, 'ما المجتمع') ? P : s})`), p); }
+      }
+    }
+    assert.deepEqual([...dataKinds].sort(), ['categorical', 'continuous', 'discrete', 'fair sample', 'numerical', 'size', 'survey question', 'which']);
     const groupedKinds: Record<string, Set<string>> = { grouped_g6: new Set(), grouped_g9: new Set() };
     for (const id of ['grouped_g6', 'grouped_g9']) for (const item of draws(id, 300)) {
       const p = item.promptAr!, kinds = groupedKinds[id]!;
@@ -543,13 +560,43 @@ describe('statistics: answers recomputed', () => {
     assert.equal(groupedKinds.grouped_g9!.size, 7, `grouped_g9 kinds: ${[...groupedKinds.grouped_g9!]}`);
   });
 
-  it('dispersion', () => {
-    for (const item of draws('dispersion', 400)) {
-      const p = item.promptAr!, xs = dataList(p.split('؟')[0]! + '؟');
-      if (has(p, 'المدى الربيعي')) { const s = sorted(xs), h = s.length / 2; assert.equal(Number(item.answer), median(s.slice(h)) - median(s.slice(0, h)), p); }
-      else if (has(p, 'الانحراف المعياري')) { const m = sum(xs) / xs.length; assert.equal(Number(item.answer), Math.sqrt(sum(xs.map(x => (x - m) ** 2)) / xs.length), p); }
-      else assert.equal(Number(item.answer), Math.max(...xs) - Math.min(...xs), p);
+  // Grade 9 «مقاييس التشتت» teaches variance and standard deviation (÷ n), for a list and for a
+  // frequency table, and what y = ax + b does to the mean and the standard deviation (student book
+  // S2 pp.120–131). Range and IQR are only recalled there, from Grade 8 — they used to be three in
+  // every four draws, and variance, the table and the transformation were never asked (found
+  // 2026-11-14, Grade 9 review).
+  it('dispersion asks what the Grade 9 lesson teaches, and keys it right', () => {
+    const num = (s: string) => Number(s.replace('−', '-'));
+    const kinds = new Set<string>();
+    for (const item of draws('dispersion', 600)) {
+      const p = item.promptAr!;
+      assert.ok(!has(p, 'المدى'), `range or IQR is Grade 8 recall: ${p}`);
+      assert.ok(!item.wrongs.includes(item.answer), p);
+      if (has(p, 'بعد التحويل')) {
+        const m = p.match(/وسطها الحسابي (\d+) وانحرافها المعياري (\d+)\. .*y = (−?\d*)x ([+−]) (\d+)/)!;
+        assert.ok(m, p);
+        const mx = Number(m[1]), sx = Number(m[2]);
+        const a = m[3] === '' ? 1 : m[3] === '−' ? -1 : num(m[3]!), b = (m[4] === '−' ? -1 : 1) * Number(m[5]);
+        if (has(p, 'ما الوسط الحسابي')) { kinds.add('transformMean'); assert.equal(num(item.answer), a * mx + b, p); }
+        else { kinds.add('transformSd'); assert.ok(has(p, 'ما الانحراف المعياري'), p); assert.equal(num(item.answer), Math.abs(a) * sx, p); }
+        continue;
+      }
+      if (has(p, 'الجدول التكراري')) {
+        kinds.add('tableVariance');
+        const rows = [...p.matchAll(/(\d+): (\d+)/g)].map(r => [Number(r[1]), Number(r[2])] as const);
+        const N = sum(rows.map(r => r[1])), mu = sum(rows.map(([x, f]) => x * f)) / N;
+        assert.equal(Number(item.answer), sum(rows.map(([x, f]) => f * (x - mu) ** 2)) / N, p);
+        continue;
+      }
+      const xs = dataList(p.split('؟')[0]! + '؟'), m = sum(xs) / xs.length;
+      const v = sum(xs.map(x => (x - m) ** 2)) / xs.length;
+      if (has(p, 'ما تباين')) { kinds.add('variance'); assert.equal(Number(item.answer), v, p); }
+      else { kinds.add('sd'); assert.ok(has(p, 'الانحراف المعياري'), p); assert.equal(Number(item.answer), Math.sqrt(v), p); }
     }
+    assert.deepEqual([...kinds].sort(), ['sd', 'tableVariance', 'transformMean', 'transformSd', 'variance']);
+    // A table of equal frequencies over consecutive values always has variance 2.
+    const tableKeys = new Set(draws('dispersion', 600).filter(i => has(i.promptAr!, 'الجدول التكراري')).map(i => i.answer));
+    assert.ok(tableKeys.size >= 4, `table variances drawn: ${[...tableKeys]}`);
   });
 
   it('Grade 10: scatter, cumulative frequency, grouped data', () => {

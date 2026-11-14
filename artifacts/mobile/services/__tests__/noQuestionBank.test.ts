@@ -65,9 +65,18 @@ const mathReq = (l: (typeof KB_LESSONS)[number]) => ({
 }) as AIRequest;
 
 describe('maths lessons: covered or refused, never off-topic filler', () => {
-  it('finds both kinds in the catalog', () => {
+  it('finds covered lessons in the catalog, and refuses a lesson no generator is about', () => {
     assert.ok(mathLessons.some(l => hasMathBank(l.titleAr, l)));
-    assert.ok(mathLessons.some(l => !hasMathBank(l.titleAr, l)));
+    // Since 2026-11-14 every maths lesson in the catalog has a generator: the last refused Grade 1
+    // lessons got theirs in the Grade 1 review, the last Grade 2 ones in the Grade 2 maths change.
+    // So the refused kind is checked as for Grades 7–9 below: a real early-grade lesson under a
+    // title no generator is about must be refused, not served the grade's default arithmetic.
+    for (const g of [1, 4]) {
+      const l = mathLessons.find(x => gradeOf(x) === g)!;
+      assert.ok(l, `no Grade ${g} maths lesson`);
+      const unknown = { ...l, titleAr: 'درسٌ لا يتناوله أيُّ مولِّد', titleEn: 'A lesson no generator is about' };
+      assert.equal(hasMathBank(unknown.titleAr, unknown), false, `Grade ${g}`);
+    }
   });
 
   it('Grades 7–9 maths are served by a lesson-specific generator or not at all — never the Grade 10 bank', () => {
@@ -117,7 +126,9 @@ describe('maths lessons: covered or refused, never off-topic filler', () => {
 describe('a paper shorter than asked for carries the reason', () => {
   // A lesson whose bank family is small (`vectors`: 5 items). «قانون الجيوب» was
   // the example until 2026-11-13; it has its own generator now and never runs short.
-  const thinLesson = mathLessons.find(l => gradeOf(l) === 10 && l.titleAr.includes('المتجهات في المستوى الإحداثي'))!;
+  // A lesson whose bank family holds fewer items than the paper asks for: the systems lab draws
+// `system_graph` (8 items). It was the vectors lesson until that got a generator (2026-11-14).
+const thinLesson = mathLessons.find(l => gradeOf(l) === 10 && l.titleAr.includes('حل أنظمة المعادلات بيانيا'))!;
   const addition = mathLessons.find(l => gradeOf(l) === 2 && l.titleAr.replace(/[ً-ْ]/g, '') === 'الجمع')!;
 
   it('finds the lessons it needs', () => {
