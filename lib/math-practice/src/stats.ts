@@ -193,7 +193,7 @@ const probability = (id: string, match: RegExp, grade: number) => T(id, match, [
   }
   const counts = [int(rng, 2, 8), int(rng, 2, 8)], t = sum(counts), N = t * int(rng, 2, 6);
   const exp = (N * counts[0]!) / t;
-  return { eq: counts.join(', '), answer: String(exp), wrongs: countOpts(exp, [N / 2, N - exp, counts[0]!, exp + counts[1]!]), ar: `في كيس ${bagAr(counts)}. سُحبت كرة عشوائيًا وأُعيدت إلى الكيس، وتكررت العملية ${N} مرة. كم مرة يُتوقَّع أن تكون الكرة المسحوبة ${COLORS[0]![0]}؟`, en: `A bag holds ${bagEn(counts)}. A ball is drawn at random and replaced, ${N} times. How many times is it expected to be ${COLORS[0]![1]}?` };
+  return { eq: counts.join(', '), answer: String(exp), wrongs: countOpts(exp, [N / 2, N - exp, counts[0]!, exp + counts[1]!]), ar: `في كيس ${bagAr(counts)}. سُحبت كرة عشوائيًا وأُعيدت إلى الكيس، وتكررت العملية ${N} ${tamyiz(N, 'مرات', 'مرةً', 'مرة')}. كم مرة يُتوقَّع أن تكون الكرة المسحوبة ${COLORS[0]![0]}؟`, en: `A bag holds ${bagEn(counts)}. A ball is drawn at random and replaced, ${N} times. How many times is it expected to be ${COLORS[0]![1]}?` };
 });
 
 const experimental = T('experimental', /^الاحتمال التجريبي$/, [7, 7], ({ rng, diff }) => {
