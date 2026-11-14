@@ -943,6 +943,7 @@ export default function ClassDetailScreen() {
               {errorBanner}
               {studentAccounts && students.length > 0 && (
                 <JoinStatusSection
+                  classId={id}
                   total={students.length}
                   unjoined={unjoinedStudents}
                   onShareCode={() => setShowJoinCode(true)}
@@ -1968,8 +1969,9 @@ function MasterySection({
  * re-sharing one straggler's code is one tap instead of a scroll-and-search.
  */
 function JoinStatusSection({
-  total, unjoined, onShareCode, colors, isRTL, align, t,
+  classId, total, unjoined, onShareCode, colors, isRTL, align, t,
 }: {
+  classId: string;
   total: number;
   unjoined: RosterStudent[];
   onShareCode: () => void;
@@ -1990,6 +1992,20 @@ function JoinStatusSection({
           <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{t('joinStatusOpenCode')}</Text>
         </Pressable>
       </View>
+
+      {/* Every child's own code in one place (create the missing ones, send one family's, print slips): the
+          per-student chips below each open one screen at a time. */}
+      {classId ? (
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => router.push({ pathname: '/classes/[id]/parent-codes', params: { id: classId } } as never)}
+          style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, minHeight: 44 }}
+        >
+          <Ionicons name="key-outline" size={16} color={ACCENT} />
+          <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>{t('parentCodesOpen')}</Text>
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.mutedForeground} />
+        </Pressable>
+      ) : null}
 
       {unjoined.length === 0 ? (
         <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 21, textAlign: align }}>

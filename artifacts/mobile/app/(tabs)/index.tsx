@@ -34,7 +34,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useViewportWidth } from '@/hooks/useViewportWidth';
 import { useTodayLesson } from '@/hooks/useTodayLesson';
 import { DESKTOP_BREAKPOINT } from '@/constants/layout';
-import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
+import { homeHrefFor, tourRoleOf } from '@/services/tour';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { JordanFlag } from '@/components/ui/JordanFlag';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
@@ -77,11 +78,13 @@ export default function Index() {
   if (isTeacherRole(user.role)) {
     return isDesktop ? <LessonWorkspace /> : <PhoneToday />;
   }
-  // Ordered teacher → student → everyone else, so an unknown or absent role
-  // still lands on Messages. Same fail-closed reasoning as the `isLoading`
-  // guard above: guessing "student" for a null role would send a cold-booting
-  // parent to a curriculum browser.
-  return <Redirect href={isStudentRole(user.role) ? '/(tabs)/curriculum' : '/notifications'} />;
+  // A student lands on the library, a parent on «المدرسة» (homework, exams and
+  // the timetable), through the same href the tour's replay uses. Any other role
+  // still lands on Messages: same fail-closed reasoning as the `isLoading` guard
+  // above, guessing a role for a null one would send a cold-booting account to
+  // another role's screens.
+  const role = tourRoleOf(user.role);
+  return <Redirect href={(role ? homeHrefFor(role) : '/notifications') as never} />;
 }
 
 function LessonWorkspace() {

@@ -10,6 +10,92 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Parents: «المدرسة» first, a quick look at each child, a read-only view of a handed-in project, and every parent code of a class in one place — 2026-11-13
+
+Four changes from a review of the parent side.
+
+**What changed.**
+- **«رموز أولياء الأمور» for a whole class (teacher).** A parent cannot join from the class code
+  (`claimParentNeedsOwnCode`), so each family needs its child's own code, and a teacher with thirty students opened
+  `/messaging/claim/<student>` thirty times. The class page's join-status card now opens
+  `app/classes/[id]/parent-codes.tsx`: create the missing codes in one press, send one family its code (the same
+  `composeClaimCodeMessage` as the per-student screen) or copy it, and print one slip per child (`slipsHtml` in
+  `services/parentCodes.ts`, through `exportAsPDF`). It lists the children with no parent linked by default; «كل
+  الطلبة» shows the rest. Two new API routes in `routes/roster.ts`: `GET /classes/:id/claim-codes` (every live
+  student of the class, live codes only, by `isCodeLive`) and `POST /classes/:id/claim-codes`, which mints a code only
+  where none is live and **never replaces a live one** (unlike the per-student POST, which overwrites): a slip already
+  handed out keeps working, and a second press only fills in students added since. Its UPDATE re-checks ownership and
+  that no live code appeared meanwhile, and retries a unique-code collision once. **What it deliberately cannot do**: put
+  every code in one message. Redeeming a code links that child at once, with no approval, so a list posted in a class
+  group would let any parent claim any child; `parentCodes.test.ts` fails if the screen builds a message from anything
+  but one row. Re-minting one code and unlinking a wrong parent stay on the per-student screen, which each row's name
+  opens. A teachers-only «ما الجديد» entry, `teacher-class-parent-codes`.
+  Verified: `classClaimCodes.db.test.ts` against a local Postgres (lists live students only, a live code as it is and
+  an expired one as none; mints exactly the two missing; never replaces the live one; leaves archived students and
+  other classes alone; a repeat mints nothing; a minted code really signs a parent up for that child as `guardian`;
+  another teacher gets 404 on both with nothing written; with `STUDENT_ACCOUNTS` off both answer 403). Mutation:
+  dropping the archived filter fails two of its cases. `mountOrder.test.ts` now also checks both class routes answer
+  401 without a token. `parentCodes.test.ts` (13 cases: normalizing, rows, filter, escaping in the slips, the one-family
+  rule). In the stubbed browser build as a teacher (Arabic phone light and dark, English desktop): the button shows
+  the one missing code, one press creates it and the button goes, the filter hides and shows the child whose parent is
+  linked. The slips page was rendered as printed (A4): right to left, the code in its own left-to-right box, an English
+  name in place. The full mobile suite caught the screen offering codes without checking `studentAccounts`
+  (`claimCodeGating.test.ts`); it now shows the «accounts are off» card and loads nothing, seen in the browser with the
+  flag off. Not checked: the print dialog itself (web `iframe` print and native `expo-print`), the share sheet on a
+  phone, and a real class.
+- **«نظرة سريعة» at the top of a parent's «المدرسة».** One card for the child the picker shows: homework due in the
+  next seven days (Amman days, today included), how much is late, the next dated exam and its day, and the latest
+  released result (a link to «نتائج أبنائي»). Built from the three lists the screen already loads; no new API.
+  `services/childGlance.ts` decides what is true, under the same rules as the rows below it: «متأخّر» counts only
+  tracked, not-done, overdue items (an untracked item is never called late); «مطلوب» counts untracked items (a due day
+  is a calendar fact) but not a tracked item already done; a list that failed or has not loaded leaves its lines out
+  instead of showing zero; with neither list loaded the card is not drawn. The lines are labels («مطلوب خلال سبعة أيام:
+  واجبان»), not sentences, so no verb has to agree with the child's gender (`arHomeworkPhrase` in `arCount.ts`). No
+  amber: it means «now», and the rows below already carry it. Students do not get the card. Names and exam titles sit
+  in first-strong isolates and never first in a line: react-native-web's `dir="auto"` takes a line's direction from
+  its first strong letter, and the first draft's English title read «at a glance سارة» in the browser.
+  Verified: `childGlance.test.ts` (10 cases, including every line opening in the UI's own script; dropping
+  `canTrack` from the late count fails its case), mobile suite 9,294 tests 0 failures before the final copy
+  change, then the copy/guard tests (130) and the mobile typecheck after it. In the stubbed browser build: the card
+  shows due, late, next exam and latest result for the picked child in Arabic light and dark (phone) and English
+  (desktop), and the result line opens `/my-exams`. Not checked: a picker with two children switching the card, and
+  a phone.
+- **A parent sees their child's handed-in project.** The API route existed (`GET /parent/homework/:id/submissions`,
+  `readForParent`), and nothing in the app called it. A project row on «المدرسة» now shows «اعرض المشروع» to a
+  parent once the child has handed in (`showsChildProjectLink`: the student link's rule plus `submission !== 'none'`;
+  the parent's read never carries a draft, so before a hand-in the link would open onto nothing). It opens
+  `app/homework-project/child/[id].tsx`: the state and when it was handed in, the photos (tap to enlarge), the note.
+  Read-only, built from the teacher's detail screen without the delete. The client is `services/parentProjectApi.ts`
+  (+ `.default.ts`). The route sits under `/homework-project` on purpose: that prefix is already open to parents
+  (`routeGating.ts`) and already kept out of analytics (`screenTracking.ts`), since it shows a minor's photos. The
+  link carries the child's key, so siblings in one class open on the child «المدرسة» was showing
+  (`childrenToShow`; a key that matches nobody shows every child in the answer, never an empty screen).
+- **A parent lands on «المدرسة», not Messages.** Messages was chosen on 2026-09-13 («The student has a place to go»),
+  when «المدرسة» was only a timetable. It now holds homework and exams, and the homework and exam-date pushes already
+  open it. `app/(tabs)/index.tsx` now redirects a student or parent with `homeHrefFor` from `services/tour.ts`, the
+  href the tour's replay uses, so the two cannot drift; an unknown role still fails closed to Messages. The tour
+  (`homeRouteFor`) starts on `/school` for a parent, and the What's New dialog shows there. The bounce for a parent
+  who opens a teacher URL still goes to Messages (`app/_layout.tsx`); unchanged.
+- «ما الجديد» entry `parent-school-first-projects` (parents only, route `/school`).
+
+**Verified.** New tests: `parentProjectApi.test.ts` (the call, normalizing, a 404, a non-JSON 2xx never reading as
+«nobody handed in», which child is shown), `parentProjectScreen.test.ts` (the path is open to parents and not
+tracked, the screen only reads, the design rules, the School link uses the tested rule and href, the landing uses
+`homeHrefFor` and still fails closed), and two in `homework.test.ts` (the link rule; the href round-trips Arabic and
+`&` with no `+`). `tour.test.ts` moved to the new home. Mutation check: dropping `submission !== 'none'` from
+`showsChildProjectLink` fails its test. Mobile suite: 9,285 tests, 9,275 pass, 0 fail, 10 skipped. `pnpm run
+typecheck` (whole monorepo) clean. In a built web bundle with the API stubbed by Playwright, as a parent: lands on
+`/school` (Arabic phone light and dark, English desktop); «اعرض المشروع» shows on the handed-in project and not on the
+one not yet handed in; it opens the project with both photos loaded and the note; Back returns to `/school`; a new
+parent's tour starts on `/school`; an existing parent sees this What's New entry there. Screenshots read for layout,
+RTL and dark mode.
+
+**Not verified.** Nothing was seen on a phone or in a native build. The browser check stubbed the API: the real
+`/parent/homework/:id/submissions` was not called from the app against a real database, and photos were local SVGs,
+not signed R2 links (the route itself is covered by the API's own tests). Whether replay masking hides the photos is
+unverified, as for the student's and the teacher's project screens (STATUS.md, «Screen recording»).
+
+
 ## Grade 10 review: own offline questions for the thirteen lessons the bank served thinly — 2026-11-14
 
 The generators were run over all 445 Grade 10 lessons, and every question of every maths and chemistry quiz was read

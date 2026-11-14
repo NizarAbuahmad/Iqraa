@@ -148,7 +148,8 @@ Checked 2026-10-22:
   row»), which the owner can revert:** a draft whose student removed every photo and cleared the note
   holds nothing and no longer locks; revert by dropping `holdsWork` in `homeworkIdsWithWork`. The lock
   check is not atomic with the write.
-  (2) **Parents have no view** of their child's project (the API route exists; no screen). (3) **No
+  (2) Parents see a handed-in project read-only («اعرض المشروع» on «المدرسة», since 2026-11-13; checked
+  in a browser against a stubbed API only, never against real R2 or on a phone). (3) **No
   push to the teacher** when a project is handed in. (4) The privacy-policy text on projects
   (`constants/legal.ts` §1 and §6) was written by a model and **not reviewed by a lawyer**. Entries:
   «Homework project submission — teacher screens», «Teacher can clear one student's project» and

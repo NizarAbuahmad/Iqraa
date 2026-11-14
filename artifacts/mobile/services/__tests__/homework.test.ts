@@ -25,6 +25,8 @@ import {
   normalizeTeacherGameResults,
   resultForGame,
   showsSubmissionLink,
+  showsChildProjectLink,
+  childProjectHref,
   homeworkSections,
   normalizeTeacherHomework,
   normalizeTeacherList,
@@ -699,6 +701,26 @@ test('showsSubmissionLink is true only when a submission is required and the ite
   assert.equal(showsSubmissionLink({ requiresSubmission: true, canTrack: false }), false);
   assert.equal(showsSubmissionLink({ requiresSubmission: false, canTrack: true }), false);
   assert.equal(showsSubmissionLink({ requiresSubmission: false, canTrack: false }), false);
+});
+
+test('a parent sees «اعرض المشروع» only for a tracked project the child has handed in', () => {
+  const on = { requiresSubmission: true, canTrack: true };
+  assert.equal(showsChildProjectLink({ ...on, submission: 'submitted' }), true);
+  assert.equal(showsChildProjectLink({ ...on, submission: 'late' }), true);
+  // Before a hand-in the parent's read has nothing (it never carries a draft): no door to an empty screen.
+  assert.equal(showsChildProjectLink({ ...on, submission: 'none' }), false);
+  assert.equal(showsChildProjectLink({ requiresSubmission: true, canTrack: false, submission: 'submitted' }), false);
+  assert.equal(showsChildProjectLink({ requiresSubmission: false, canTrack: true, submission: 'submitted' }), false);
+});
+
+test('the parent project link stays under /homework-project and round-trips its params', () => {
+  const href = childProjectHref('h 1', 'k/2', 'مشروع الخلية & الأنسجة');
+  assert.ok(href.startsWith('/homework-project/child/h%201?'), href);
+  // No `+` for a space: a route's params do not read it back as one.
+  assert.doesNotMatch(href, /\+/);
+  const q = new URL(href, 'https://x.test').searchParams;
+  assert.equal(q.get('child'), 'k/2');
+  assert.equal(q.get('title'), 'مشروع الخلية & الأنسجة');
 });
 
 test('an untracked submission item is never ranked as overdue', () => {

@@ -378,6 +378,12 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
 
     const post = await fetch(`${base}/students/${id}/claim-code`, { method: "POST" });
     assert.equal(post.status, 401, "minting a link code must require a token");
+
+    // The class-wide pair (GET reads every code of a class, POST mints the missing ones).
+    const classGet = await fetch(`${base}/classes/${id}/claim-codes`);
+    assert.equal(classGet.status, 401, "reading a class's link codes must require a token");
+    const classPost = await fetch(`${base}/classes/${id}/claim-codes`, { method: "POST" });
+    assert.equal(classPost.status, 401, "minting a class's link codes must require a token");
   });
 
   it("mounts the class-resource routes inside the roster's guarded prefix", async () => {
