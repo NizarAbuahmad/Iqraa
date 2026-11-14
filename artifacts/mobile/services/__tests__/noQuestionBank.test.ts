@@ -72,7 +72,11 @@ describe('maths lessons: covered or refused, never off-topic filler', () => {
 
   it('Grades 7–9 maths are served by a lesson-specific generator or not at all — never the Grade 10 bank', () => {
     const g79 = mathLessons.filter(l => gradeOf(l) >= 7 && gradeOf(l) <= 9);
-    assert.ok(g79.some(l => hasMathBank(l.titleAr, l)) && g79.some(l => !hasMathBank(l.titleAr, l)));
+    // Since 2026-11-14 every Grade 7–9 maths lesson has its own generator (the last three, Grade 7
+    // «التطابق» and two plan lessons, in g7.ts), so no lesson here is refused any more; the
+    // refused path is still exercised by Grades 1–6 in the other two tests. What matters is the
+    // loop: a lesson is served exactly when a lesson-specific generator exists for it.
+    assert.ok(g79.length > 100 && g79.some(l => hasMathBank(l.titleAr, l)), `${g79.length} lessons`);
     for (const l of g79) {
       assert.equal(hasMathBank(l.titleAr, l), topicFor(l.titleAr, gradeOf(l)) !== null, l.titleAr);
     }
