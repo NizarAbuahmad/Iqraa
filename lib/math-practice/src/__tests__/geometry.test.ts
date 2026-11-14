@@ -409,8 +409,28 @@ describe('geometry generators: answers recomputed from the stem', () => {
     for (const [id, k] of Object.entries(want)) assert.equal(kinds[id]?.size, k, `${id} kinds drawn: ${[...(kinds[id] ?? [])]}`);
   });
 
+  it('Grade 6 «الأشكال الرباعية» asks the 360° angle sum, not only names (Grade 6 audit, 2026-11-14)', () => {
+    // The lesson's outcome is «مجموع قياسات زوايا الشكل الرباعي»; its paper was
+    // names only, and ran out at five questions.
+    const kinds = new Set<string>();
+    for (const item of draws('quad_name_g6')) {
+      const p = item.promptAr!, n = nums(p);
+      if (!item.answer.endsWith('°')) { kinds.add('name'); continue; }
+      const a = dg(item.answer);
+      if (has(p, 'مجموع قياسات')) { kinds.add('sum'); assert.equal(a, 360, p); continue; }
+      if (has(p, 'متوازي الأضلاع')) { kinds.add('parallelogram'); assert.equal(a + n[0]!, 180, p); continue; }
+      if (has(p, 'متساوية')) { kinds.add('equal'); assert.equal(3 * a + n[0]!, 360, p); continue; }
+      kinds.add('fourth');
+      assert.equal(n.length, 3, p);
+      assert.equal(a + n[0]! + n[1]! + n[2]!, 360, p);
+      assert.ok(a > 0 && a < 180, p);
+    }
+    assert.equal(kinds.size, 5, [...kinds].join(', '));
+  });
+
   it('quadrilaterals, parallel lines, isosceles, congruence, similarity', () => {
     for (const id of ['quad_name_g5', 'quad_name_g6']) for (const item of draws(id)) {
+      if (item.answer.endsWith('°')) continue; // Grade 6's angle items: their own test below
       const props: Record<string, string> = { 'مربع': 'أربعة أضلاع متساوية الطول وأربع زوايا قائمة', 'معين': 'أربعة أضلاع متساوية الطول وزواياه غير قائمة', 'شبه منحرف': 'زوج واحد فقط' };
       if (props[item.answer]) assert.ok(item.promptAr!.includes(props[item.answer]!), item.promptAr);
       assert.equal(new Set(['مربع', 'مستطيل', 'معين', 'متوازي أضلاع', 'شبه منحرف']).has(item.answer), true);
