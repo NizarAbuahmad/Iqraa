@@ -255,9 +255,14 @@ export interface WorksheetOutput {
   repeated?: { count: number; of: number };
   lab?: WorksheetLab;
   /** Formats the teacher asked for that this lesson's bank cannot supply, so the
-   *  screen can say so instead of silently handing back a plainer paper. */
-  missingFormats?: FormatKind[];
+   *  screen can say so instead of silently handing back a plainer paper.
+   *  `word_problem`: the lesson has no real-life story left, so the ticked word
+   *  problem's place holds a problem to work through under a plainer heading. */
+  missingFormats?: MissingKind[];
 }
+
+/** What `WorksheetOutput.missingFormats` can name. */
+export type MissingKind = FormatKind | 'word_problem';
 
 export interface WorksheetSection {
   /**

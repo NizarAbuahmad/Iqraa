@@ -24,7 +24,9 @@ const service = new MockAIService();
 
 const base = { grade: 'الصف العاشر', duration: 30, numQuestions: 6 };
 const CASES: Array<{ label: string; req: Partial<AIRequest> }> = [
-  { label: 'maths, law of sines (a small bank)', req: { topic: 'قانون الجيوب', subject: 'الرياضيات', language: 'arabic' } },
+  { label: 'maths, law of sines', req: { topic: 'قانون الجيوب', subject: 'الرياضيات', language: 'arabic' } },
+  // The small bank: `circle` holds five items («قانون الجيوب» was this case until its family grew, 2026-11-13).
+  { label: 'maths, equation of a circle (a small bank)', req: { topic: 'معادلة الدائرة', subject: 'الرياضيات', language: 'arabic' } },
   { label: 'maths, english', req: { topic: 'Law of Sines', subject: 'Mathematics', language: 'english' } },
   { label: 'chemistry', req: { topic: 'الروابط الأيونية', subject: 'الكيمياء', language: 'arabic' } },
 ];
