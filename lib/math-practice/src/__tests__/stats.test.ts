@@ -481,12 +481,8 @@ describe('statistics: answers recomputed', () => {
     const freqKinds = new Set<string>();
     for (const item of draws('freq_table', 300)) {
       const p = item.promptAr!, xs = dataList(p);
-      if (has(p, 'حجم')) {
-        freqKinds.add('sample');
-        const [P, s] = nums(p);
-        assert.ok(s! < P!, p);
-        assert.equal(Number(item.answer), has(p, 'حجم العينة') ? s : P, p);
-      } else if (has(p, 'عدد الكتب: عدد الطلاب')) {
+      assert.ok(!has(p, 'حجم'), `a sample question belongs to «جمع البيانات»: ${p}`);
+      if (has(p, 'عدد الكتب: عدد الطلاب')) {
         const rows = [...p.matchAll(/(\d+): (\d+)/g)].map(m => [Number(m[1]), Number(m[2])] as const);
         const all = rows.flatMap(([v, f]) => Array<number>(f).fill(v));
         if (has(p, 'الوسط الحسابي')) { freqKinds.add('tableMean'); assert.equal(Number(item.answer), sum(all) / all.length, p); }
@@ -494,7 +490,38 @@ describe('statistics: answers recomputed', () => {
       } else if (has(p, 'ما تكرار القيمة')) { freqKinds.add('frequency'); const v = Number(p.match(/القيمة (\d+)/)![1]); assert.equal(Number(item.answer), xs.filter(x => x === v).length, p); }
       else { freqKinds.add('mode'); const c = new Map<number, number>(); xs.forEach(x => c.set(x, (c.get(x) ?? 0) + 1)); const top = [...c.entries()].sort((a, b) => b[1] - a[1]); assert.ok(top[0]![1] > (top[1]?.[1] ?? 0)); assert.equal(Number(item.answer), top[0]![0]); }
     }
-    assert.equal(freqKinds.size, 5, `freq_table kinds drawn: ${[...freqKinds]}`);
+    assert.equal(freqKinds.size, 4, `freq_table kinds drawn: ${[...freqKinds]}`);
+    // «جمع البيانات» (S2 u8_l1): numerical / categorical, discrete / continuous, population and sample (2026-11-14)
+    assert.equal(topicFor('جَمْعُ البَياناتِ', 6)?.id, 'collect_data_g6');
+    assert.equal(topicFor('الجداول التكرارية', 6)?.id, 'freq_table');
+    const CAT = ['اللون المفضل', 'نوع الرياضة', 'وسيلة المواصلات', 'فصيلة دم', 'المادة الدراسية', 'نوع الفاكهة'];
+    const CONT = ['أطوال', 'كتل', 'درجات الحرارة', 'الزمن'];
+    const isCat = (s: string) => CAT.some(c => s.startsWith(c));
+    const isCont = (s: string) => CONT.some(c => s.startsWith(c));
+    const dataKinds = new Set<string>();
+    for (const item of draws('collect_data_g6', 300)) {
+      const p = item.promptAr!;
+      if (has(p, 'تمثّل طلبة المدرسة')) { dataKinds.add('fair sample'); assert.ok(has(item.answer, 'عشوائيًا من صفوف المدرسة جميعها') && item.wrongs.every(w => !has(w, 'عشوائيًا')), p); continue; }
+      if (has(p, 'استبانة لصفه')) {
+        dataKinds.add('survey question');
+        const NUMQ = ['كم عدد إخوتك؟', 'كم ساعة تنام في الليلة؟', 'كم كتابًا قرأت هذا الشهر؟', 'كم عمرك بالسنوات؟'];
+        const wantNum = has(p, 'بيانات عددية');
+        assert.equal(NUMQ.includes(item.answer), wantNum, p);
+        assert.ok(item.wrongs.every(w => NUMQ.includes(w) !== wantNum), p);
+        continue;
+      }
+      if (has(p, 'بيانات نوعية')) { dataKinds.add('categorical'); assert.ok(isCat(item.answer) && item.wrongs.every(w => !isCat(w)), p); }
+      else if (has(p, 'بيانات عددية؟')) { dataKinds.add('numerical'); assert.ok(!isCat(item.answer) && item.wrongs.every(isCat), p); }
+      else if (has(p, 'بيانات متصلة')) { dataKinds.add('continuous'); assert.ok(isCont(item.answer) && item.wrongs.every(w => !isCont(w) && !isCat(w)), p); }
+      else if (has(p, 'بيانات منفصلة')) { dataKinds.add('discrete'); assert.ok(!isCont(item.answer) && !isCat(item.answer) && item.wrongs.every(isCont), p); }
+      else {
+        const [P, s] = nums(p);
+        assert.ok(s! < P!, p);
+        if (has(p, 'حجم')) { dataKinds.add('size'); assert.equal(Number(item.answer), has(p, 'حجم العينة') ? s : P, p); }
+        else { dataKinds.add('which'); assert.ok(item.answer.includes(`(${has(p, 'ما المجتمع') ? P : s})`), p); }
+      }
+    }
+    assert.deepEqual([...dataKinds].sort(), ['categorical', 'continuous', 'discrete', 'fair sample', 'numerical', 'size', 'survey question', 'which']);
     const groupedKinds: Record<string, Set<string>> = { grouped_g6: new Set(), grouped_g9: new Set() };
     for (const id of ['grouped_g6', 'grouped_g9']) for (const item of draws(id, 300)) {
       const p = item.promptAr!, kinds = groupedKinds[id]!;
