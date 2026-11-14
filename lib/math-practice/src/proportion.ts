@@ -168,7 +168,7 @@ const proportionalDivision = T('proportional_division', /^التقسيم الت�
   const big = Math.max(...rs) * unit, small = Math.min(...rs) * unit;
   const ratio = rs.join(' : ');
   const largest = rng() < 0.5;
-  return { eq: `${total}, ${ratio}`, answer: String(largest ? big : small), wrongs: ints(largest ? big : small, [total / parts, largest ? small : big, unit, total - (largest ? big : small)]), ar: `قُسّم مبلغ ${dinars(total)} بين أشخاص بنسبة ${ratio}. كم دينارًا يأخذ صاحب ${largest ? 'النصيب الأكبر' : 'النصيب الأصغر'}؟`, en: `${total} dinars is shared in the ratio ${ratio}. How many dinars does the person with the ${largest ? 'largest' : 'smallest'} share get?` };
+  return { eq: `${total}, ${ratio}`, answer: String(largest ? big : small), wrongs: ints(largest ? big : small, [total / parts, largest ? small : big, unit, total - (largest ? big : small)]), ar: `قُسّم مبلغ ${dinars(total)} بين ${parts === 2 ? 'شخصين' : 'ثلاثة أشخاص'} بنسبة ${ratio}. كم دينارًا يأخذ صاحب ${largest ? 'النصيب الأكبر' : 'النصيب الأصغر'}؟`, en: `${total} dinars is shared in the ratio ${ratio}. How many dinars does the person with the ${largest ? 'largest' : 'smallest'} share get?` };
 });
 
 const financial = T('financial_math', /^تطبيقات ماليه$/, [7, 7], ({ rng, diff }) => {
