@@ -204,8 +204,16 @@ maths questions were checked by hand by a sub-agent and re-checked by script: **
       The converter's rule still holds: an Arabic or worded answer is never marked automatically.
     - Numeric keys stay fill-blank, and choice and true/false are unchanged.
     - The stored `assessmentTypes` pass `evaluationTypesForGrade` as a backstop.
-    - Other grades convert as before (`fromWorksheet.test.ts`). The route is checked by reading its source; no
-      database test posts a worksheet through it.
+    - Other grades convert as before (`fromWorksheet.test.ts`).
+    - `evaluationFromWorksheetGrade1.db.test.ts` posts a worksheet through the real route, for a Grade 1 and a Grade 2
+      maths book, and reads the stored rows:
+      - every stored type is a Grade 1 one, and a teacher-marked question is a `practical_task` with
+        `grading_mode = manual` and its key as `successCriteria`;
+      - once published, a child claiming a seat gets that question with an answer box and none of the key;
+      - the Grade 2 paper is unchanged.
+
+      With the route's Grade 1 flag removed, the two Grade 1 tests fail and the Grade 2 one passes.
+      `seedLevelScale` (`test-support/seedExams.ts`) is now exported for it.
     - **Live:** a Grade 1 quiz, worksheet or evaluation gets Grade 1 level meanings (`FIRST_GRADE_DIFFICULTY_*` in
       `firstGrade.ts`): one step within the lesson's range, with hard being the largest numbers, a missing number,
       a short story or a comparison. The all-grades meanings had asked for "two or three steps" and "analysis".
