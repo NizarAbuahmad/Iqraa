@@ -687,7 +687,11 @@ describe('shapes, fractions, patterns: answers recomputed', () => {
         item.wrongs.filter(w => /^\d+\/\d+$/.test(w)).forEach(w => assert.notEqual(frac(w), top / (red + blue), w));
         continue;
       }
-      if (/^ما \d+\/\d+ من/.test(p)) { set3.add('of'); assert.equal(Number(item.answer), (n[0]! * n[2]!) / n[1]!); assert.ok(Number.isInteger(Number(item.answer))); continue; }
+      if (/^في مجموعة \d+ (كرات|كرةً)، \d+\/\d+ منها حمراء/.test(p)) {
+        // n balls, a/d of them red: a·n/d, a whole number
+        set3.add('of'); assert.equal(Number(item.answer), (n[0]! * n[1]!) / n[2]!, p); assert.ok(Number.isInteger(Number(item.answer)), p);
+        assert.ok(n[0]! >= 4, p); continue;
+      }
       const c = n[0]!, k = n[1] ?? (has(p, 'طالب واحد منهم') ? 1 : has(p, 'طالبان منهم') ? 2 : NaN), top = has(p, 'لا يلبسون') ? c - k : k;
       set3.add(has(p, 'لا يلبسون') ? 'without' : 'with');
       assert.ok(c >= 3 && c <= 10, `«طلاب» needs 3–10: ${p}`);
@@ -715,7 +719,9 @@ describe('shapes, fractions, patterns: answers recomputed', () => {
       const p = item.promptAr!, n = nums(p);
       if (has(p, 'ما مقام')) { whole.add('denominator'); assert.equal(Number(item.answer), n[1]); continue; }
       if (has(p, 'كم جزءًا لُوّن')) { whole.add('numerator'); assert.equal(Number(item.answer), n[0]); continue; }
-      const [d, k] = [n[0]!, n[1]!], top = has(p, 'غير الملوّن') ? d - k : k;
+      // one and two coloured parts are words («جزء واحد», «جزآن»), never «لُوّن 1 منها»
+      assert.doesNotMatch(p, /لُوّن [12] منها/, p);
+      const [d, k] = [n[0]!, n[1] ?? (has(p, 'لُوّن جزء واحد') ? 1 : has(p, 'لُوّن جزآن') ? 2 : NaN)], top = has(p, 'غير الملوّن') ? d - k : k;
       whole.add(has(p, 'غير الملوّن') ? 'uncoloured' : 'coloured');
       assert.equal(item.answer, `${top}/${d}`); assert.equal(gcd(top, d), 1);
     }
@@ -997,12 +1003,22 @@ describe('money, time and measurement: answers recomputed', () => {
     const ampm = new Set<string>();
     for (const item of draws('am_pm')) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+      if (has(p, 'أيّ هذه المواعيد')) {
+        // the school day's events, sorted by hand: the answer from the half the stem names, every other option from the other half
+        ampm.add('event');
+        const MORNING = ['الاستيقاظ', 'الإفطار', 'الحصة الأولى', 'الاستراحة'], AFTERNOON = ['الغداء', 'حلّ الواجبات', 'العشاء', 'النوم'];
+        const ev = (s: string) => s.replace(/ الساعة \d+:00$/, '');
+        const [want, other] = has(p, 'يكون بعد الظهر') ? [AFTERNOON, MORNING] : [MORNING, AFTERNOON];
+        assert.ok(want.includes(ev(item.answer)), p);
+        for (const w of item.wrongs) assert.ok(other.includes(ev(w)), `${w}: ${p}`);
+        continue;
+      }
       if (has(p, 'كم ساعة')) { ampm.add('duration'); assert.equal(a, 12 - n[0]! + n[2]!); }
       else if (has(p, 'بنظام 24 ساعةً. كم تكون')) { ampm.add('from 24'); assert.equal(a + 12, n[0]); assert.ok(a >= 1 && a <= 11); }
       else if (has(p, 'في أي ساعة بعد الظهر')) { ampm.add('ends'); assert.equal(a, n[0]! + n[2]! - 12, p); assert.ok(a >= 1 && a <= 11 && n[2]! >= 3, p); }
       else { ampm.add('to 24'); assert.equal(a, n[0]! + 12); }
     }
-    assert.equal(ampm.size, 4);
+    assert.equal(ampm.size, 5, [...ampm].join(', '));
     for (const item of draws('calendar')) {
       // One and two are written as words («بعد يوم واحد», «في أسبوعين»), never «1 يومًا».
       const p = item.promptAr!, a = item.answer;

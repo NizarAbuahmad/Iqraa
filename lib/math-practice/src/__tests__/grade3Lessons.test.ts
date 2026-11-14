@@ -83,9 +83,11 @@ describe('Grade 3 maths lessons that had no offline questions', () => {
       m = p.match(/ما قيمة الرقم ([٠-٩]) في العدد ([٠-٩]+)\؟/);
       if (m) {
         kinds.add('value');
+        // the value is read in the digits the lesson teaches, like every other answer here
+        assert.match(item.answer, /^[٠-٩]+$/, p);
         const d = fromHindi(m[1]!), n = fromHindi(m[2]!);
         assert.equal([...String(n)].filter(c => Number(c) === d).length, 1, `the digit appears once, so the question has one answer: ${p}`);
-        const place = [1, 10, 100, 1000].find(q => Math.floor(n / q) % 10 === d && Number(item.answer) === d * q);
+        const place = [1, 10, 100, 1000].find(q => Math.floor(n / q) % 10 === d && fromHindi(item.answer) === d * q);
         assert.ok(place !== undefined, `${item.answer} is not the value of ${d} in ${n}: ${p}`);
         continue;
       }

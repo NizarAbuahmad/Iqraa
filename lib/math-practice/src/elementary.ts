@@ -1097,7 +1097,9 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       // their tiers start higher, or a Grade 4 paper never passed 4 digits.
       // Grades 1–3 keep 2/3/4 capped by the grade.
       const top = PLACE_DIGITS[grade] ?? 4;
-      const digits = Math.min(top, (diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4) + Math.max(0, top - 4));
+      // Grade 3's lesson is «ضمن الألوف»: an easy paper asked about «الرقم 8 في العدد 18».
+      const digits = grade === 3 ? (diff === 'easy' ? 3 : 4)
+        : Math.min(top, (diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4) + Math.max(0, top - 4));
       if (int(rng, 0, 3) > 0) return placeKinds(base, digits, rng);
       // The digit asked about must occur once: «الرقم 4 في العدد 344» has two
       // place values and no single answer.
@@ -1107,7 +1109,8 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       for (let t = 0; t < 50 && once.length === 0; t++) {
         n = int(rng, 10 ** (digits - 1), 10 ** digits - 1);
         s = String(n);
-        once = [...s].flatMap((c, i) => (s.indexOf(c) === s.lastIndexOf(c) ? [i] : []));
+        // and is not a zero: «القيمة المنزلية للرقم 0» has nothing to find
+        once = [...s].flatMap((c, i) => (c !== '0' && s.indexOf(c) === s.lastIndexOf(c) ? [i] : []));
       }
       if (once.length === 0) { n = Number('1234'.slice(0, digits)); s = String(n); once = [0]; }
       const pos = choose(rng, once);
