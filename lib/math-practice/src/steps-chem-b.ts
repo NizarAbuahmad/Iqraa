@@ -282,7 +282,7 @@ export const CHEM_B_STEPS: Record<string, SolutionSteps> = {
   },
   'ch-ac-e2': {
     ar: [
-      'ورق عباد الشمس كاشف يتغير لونه بحسب نوع المحلول',
+      'ورق تبّاع الشمس كاشف يتغير لونه بحسب نوع المحلول',
       'الحمض يحوّل الورق الأزرق إلى الأحمر، والقاعدة تحوّل الورق الأحمر إلى الأزرق',
       'المحلول هنا حمضي، فالورق الأزرق يتحول إلى الأحمر',
     ],
@@ -322,18 +322,16 @@ export const CHEM_B_STEPS: Record<string, SolutionSteps> = {
   },
   'ch-ac-h1': {
     ar: [
-      'مقياس pH لوغاريتمي: كل وحدة واحدة تعني تغيّر تركيز H⁺ بمقدار 10 مرات',
-      'عند pH = 5: [H⁺] = 10⁻⁵ mol/L، وعند pH = 3: [H⁺] = 10⁻³ mol/L',
-      'النسبة = 10⁻³ ÷ 10⁻⁵ = 10²',
-      '10² = 100، أي إن تركيز H⁺ زاد 100 مرة',
-      'تزداد الحموضة 100 مرة',
+      'المحلولان لهما التركيز نفسه، فالمقارنة بقيم pH تقارن قوة الحمضين',
+      'كلما قلّت قيمة pH لمحلول الحمض كان تركيز أيونات H⁺ فيه أكبر',
+      '2 أقل من 5، فتركيز H⁺ في المحلول الأول أكبر',
+      'إذن الأقوى: الحمض الذي pH محلوله 2، لأن تركيز أيونات H⁺ فيه أكبر',
     ],
     en: [
-      'The pH scale is logarithmic: each single unit means the H⁺ concentration changes by a factor of 10',
-      'At pH = 5: [H⁺] = 10⁻⁵ mol/L, and at pH = 3: [H⁺] = 10⁻³ mol/L',
-      'Ratio = 10⁻³ ÷ 10⁻⁵ = 10²',
-      '10² = 100, so the H⁺ concentration increased 100 times',
-      'The acidity increases 100 times',
+      'The two solutions have the same concentration, so comparing pH compares the strength of the acids',
+      'The lower the pH of an acid solution, the higher its concentration of H⁺ ions',
+      '2 is less than 5, so the first solution has more H⁺',
+      'So the stronger acid is the one whose solution has pH 2, because it has more H⁺ ions',
     ],
   },
 
@@ -341,7 +339,7 @@ export const CHEM_B_STEPS: Record<string, SolutionSteps> = {
   'ch-ma-e1': {
     ar: [
       'الفلز الأنشط يحل محل الفلز الأقل نشاطًا في محلول ملحه',
-      'الزنك أنشط من النحاس، فيحل محله في CuSO₄',
+      'الخارصين أنشط من النحاس، فيحل محله في CuSO₄',
       'يرتبط Zn بأيون SO₄ فيتكوّن ZnSO₄، ويتحرر Cu فلزًا',
       'Zn + CuSO₄ → ZnSO₄ + Cu',
     ],
@@ -355,9 +353,9 @@ export const CHEM_B_STEPS: Record<string, SolutionSteps> = {
   'ch-ma-m1': {
     ar: [
       'الفلز لا يحل محل فلز آخر في محلول ملحه إلا إذا كان أنشط منه',
-      'في سلسلة النشاط الزنك أنشط من النحاس',
-      'النحاس أقل نشاطًا من الزنك، فلا يستطيع أن يحل محله في ZnSO₄',
-      'لا يحدث تفاعل، لأن النحاس أقل نشاطًا من الزنك',
+      'في سلسلة النشاط الخارصين أنشط من النحاس',
+      'النحاس أقل نشاطًا من الخارصين، فلا يستطيع أن يحل محله في ZnSO₄',
+      'لا يحدث تفاعل، لأن النحاس أقل نشاطًا من الخارصين',
     ],
     en: [
       'A metal displaces another metal from its salt solution only if it is more active',
@@ -382,10 +380,10 @@ export const CHEM_B_STEPS: Record<string, SolutionSteps> = {
   },
   'ch-ma-h1': {
     ar: [
-      'في سلسلة النشاط الزنك أعلى من الحديد، فهو أنشط منه',
+      'في سلسلة النشاط الخارصين أعلى من الحديد، فهو أنشط منه',
       'الفلز الأنشط يفقد إلكتروناته (يتأكسد) أسهل من الأقل نشاطًا',
-      'إذا خُدش الطلاء وتعرّض الحديد للهواء والماء، يتأكسد الزنك أولًا ويبقى الحديد سليمًا',
-      'الزنك أنشط من الحديد فيتأكسد بدلًا منه',
+      'إذا خُدش الطلاء وتعرّض الحديد للهواء والماء، يتأكسد الخارصين أولًا ويبقى الحديد سليمًا',
+      'الخارصين أنشط من الحديد فيتأكسد بدلًا منه',
     ],
     en: [
       'In the activity series zinc is above iron, so it is more active',
@@ -401,7 +399,7 @@ export const CHEM_B_STEPS: Record<string, SolutionSteps> = {
       'التأكسد فقد إلكترونات، والاختزال اكتساب إلكترونات',
       'في Zn → Zn²⁺ + 2e⁻ تظهر الإلكترونات في الطرف الناتج، أي إن الذرة فقدتها',
       'وتزداد الشحنة من 0 إلى +2',
-      'تأكسد، لأن الزنك يفقد إلكترونين',
+      'تأكسد، لأن الخارصين يفقد إلكترونين',
     ],
     en: [
       'Oxidation is loss of electrons, and reduction is gain of electrons',
@@ -455,10 +453,10 @@ export const CHEM_B_STEPS: Record<string, SolutionSteps> = {
   'ch-rx-h1': {
     ar: [
       'نفصل التفاعل إلى نصفين: Zn → Zn²⁺ + 2e⁻ وCu²⁺ + 2e⁻ → Cu',
-      'الزنك يفقد إلكترونين فيتأكسد، وCu²⁺ يكتسب إلكترونين فيُختزل',
+      'الخارصين يفقد إلكترونين فيتأكسد، وCu²⁺ يكتسب إلكترونين فيُختزل',
       'العامل المختزل هو المادة التي تتأكسد لأنها تعطي الإلكترونات، فهو Zn',
       'العامل المؤكسد هو المادة التي تُختزل لأنها تأخذ الإلكترونات، فهو Cu²⁺',
-      'الزنك عامل مختزل والنحاس Cu²⁺ عامل مؤكسد',
+      'الخارصين عامل مختزل والنحاس Cu²⁺ عامل مؤكسد',
     ],
     en: [
       'Split the reaction into two halves: Zn → Zn²⁺ + 2e⁻ and Cu²⁺ + 2e⁻ → Cu',
@@ -909,7 +907,7 @@ export const CHEM_B_STEPS: Record<string, SolutionSteps> = {
   },
   'ch-ac-e5': {
     ar: [
-      'ورق عباد الشمس الأحمر لا يتغير لونه في الحمض',
+      'ورق تبّاع الشمس الأحمر لا يتغير لونه في الحمض',
       'في المحلول القاعدي يتحول إلى الأزرق',
       'إذن لونه يتحول إلى الأزرق',
     ],
@@ -985,30 +983,30 @@ export const CHEM_B_STEPS: Record<string, SolutionSteps> = {
   },
   'ch-ac-h3': {
     ar: [
-      'كلما ارتفع pH وحدة واحدة في المحلول القاعدي زاد تركيز OH⁻ عشرة أضعاف (المقياس لوغاريتمي)',
-      'الفرق بين 12 و9 هو 3 وحدات',
-      'التغير = 10 × 10 × 10 = 1000 مرة',
-      'إذن pH = 12 أقوى قاعدية؛ تركيز OH⁻ فيه أكبر 1000 مرة',
+      'المحلولان لهما التركيز نفسه، فالمقارنة بقيم pH تقارن قوة القاعدتين',
+      'كلما زادت قيمة pH لمحلول القاعدة كان تركيز أيونات OH⁻ فيه أكبر',
+      '12 أكبر من 9، فتركيز OH⁻ في المحلول الأول أكبر',
+      'إذن الأقوى: القاعدة التي pH محلولها 12، لأن تركيز أيونات OH⁻ فيها أكبر',
     ],
     en: [
-      'Each pH unit up in a basic solution raises the OH⁻ concentration tenfold (the scale is logarithmic)',
-      'The difference between 12 and 9 is 3 units',
-      'Change = 10 × 10 × 10 = 1000 times',
-      'So pH 12 is more basic, with 1000 times more OH⁻',
+      'The two solutions have the same concentration, so comparing pH compares the strength of the bases',
+      'The higher the pH of a base solution, the higher its concentration of OH⁻ ions',
+      '12 is greater than 9, so the first solution has more OH⁻',
+      'So the stronger base is the one whose solution has pH 12, because it has more OH⁻ ions',
     ],
   },
   'ch-ac-h4': {
     ar: [
-      'H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O',
-      'النسبة المولية H₂SO₄ : NaOH = 1 : 2',
-      'عدد مولات NaOH = 0.1 × 2 = 0.2',
-      'إذن يلزم 0.2 mol',
+      'Pb(NO₃)₂ + 2KI → PbI₂ + 2KNO₃',
+      'يوديد الرصاص PbI₂ مادة صفراء لا تذوب في الماء، فتترسب',
+      'تكوّن راسب من مؤشرات حدوث التفاعل الكيميائي، مثل تصاعد غاز وتغيّر درجة الحرارة',
+      'إذن يُشاهَد تكوّن راسب أصفر، وهو يدل على حدوث تفاعل كيميائي',
     ],
     en: [
-      'H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O',
-      'Mole ratio H₂SO₄ : NaOH = 1 : 2',
-      'Moles of NaOH = 0.1 × 2 = 0.2',
-      'So 0.2 mol is needed',
+      'Pb(NO₃)₂ + 2KI → PbI₂ + 2KNO₃',
+      'Lead iodide, PbI₂, is a yellow solid that does not dissolve in water, so it precipitates',
+      'A precipitate forming is one of the signs that a chemical reaction happened, like a gas given off or a change in temperature',
+      'So a yellow precipitate forms, and it shows that a chemical reaction happened',
     ],
   },
   'ch-ma-e2': {
@@ -1267,7 +1265,7 @@ export const CHEM_B_STEPS: Record<string, SolutionSteps> = {
     ar: [
       'Zn أنشط من Cu فيتأكسد: Zn → Zn²⁺ + 2e⁻ عند المصعد',
       'تنتقل الإلكترونات عبر السلك الخارجي إلى قطب النحاس (المهبط) حيث يحدث الاختزال',
-      'إذن تسري الإلكترونات من قطب الزنك (المصعد) إلى قطب النحاس (المهبط)',
+      'إذن تسري الإلكترونات من قطب الخارصين (المصعد) إلى قطب النحاس (المهبط)',
     ],
     en: [
       'Zn is more reactive than Cu, so it is oxidized: Zn → Zn²⁺ + 2e⁻ at the anode',
