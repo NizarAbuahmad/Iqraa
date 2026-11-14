@@ -1,127 +1,316 @@
 /**
- * Grade 7 lessons that had no offline questions (Grade 7 audit, 2026-11-14):
- * «التطابق» and the two problem-solving plans, «الحل العكسي» and «الرسم».
+ * Three Grade 7 maths lessons that had no offline questions (found
+ * 2026-11-13, every quiz / worksheet / homework on them threw
+ * `NoQuestionBankError`):
  *
- * Same contract as the other topic modules: the lesson title picks the
- * generator, and every answer is computed from the numbers in the stem. A plan
- * lesson is served with problems the plan solves, as Grade 6 «حل مسألة أبسط»
- * and Grade 4's two plans are: the stem is a problem, the key its answer.
+ *   - «خطة حل المسألة: الحل العكسي»   (S1 u1_l6)  g7_work_backward
+ *   - «التطابق»                        (S2 u6_l1)  g7_congruence
+ *   - «خطة حل المسألة: الرسم»          (S2 u6_l5)  g7_draw_diagram
+ *
+ * There is no extracted Grade 7 maths book, so each generator asks what the
+ * lesson's NCCD objectives list (`iqra_curriculum_g7_math_sem1/2.json`):
+ * life problems undone step by step from the result; naming corresponding
+ * sides and angles of congruent polygons and using them; problems a sketch
+ * solves (posts along a fence, cuts, handshakes, a climbing snail, places on a
+ * road, tables in a row).
+ *
+ * Same contract as `g8.ts`: the lesson TITLE picks the generator (`[7, 7]`
+ * only — each of the three folded titles is unique in the catalog today, and
+ * the grade bound keeps a later same-titled lesson elsewhere out), every
+ * answer is computed from the numbers printed in its own stem, and an item is
+ * never `verified` and carries no `check`. Maths stays in latin digits and
+ * letters; display converts.
  */
-import { int, numWrongs, pick, tamyiz, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
+import { dinars, int, numWrongs, pick, signed, tamyiz, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
 
 type D = 'easy' | 'medium' | 'hard';
 type Gen = (c: { rng: Rng; diff: D; grade: number }) => Draft;
 const T = (id: string, match: RegExp, make: Gen): Topic => ({ id, match, grades: [7, 7], make });
-const span = (diff: D, a: number, b: number, c: number) => (diff === 'easy' ? a : diff === 'medium' ? b : c);
-const ints = (ans: number, cands: number[]) => numWrongs(ans, cands.filter(c => Number.isInteger(c) && c > 0));
-const shuffle = <X,>(rng: Rng, xs: readonly X[]) => {
-  const a = xs.slice();
-  for (let i = a.length - 1; i > 0; i--) { const j = int(rng, 0, i); [a[i], a[j]] = [a[j]!, a[i]!]; }
-  return a;
-};
-const counted = (n: number, plural: string, acc: string, gen: string) => `${n} ${tamyiz(n, plural, acc, gen)}`;
-const dinars = (n: number) => counted(n, 'دنانير', 'دينارًا', 'دينار');
-const minutes = (n: number) => counted(n, 'دقائق', 'دقيقةً', 'دقيقة');
-const deg = (ans: number, cands: number[]) => wrongsFrom(`${ans}°`, cands.filter(c => Number.isInteger(c) && c > 0 && c < 180).map(c => `${c}°`), k => `${ans + Math.abs(k) * 5}°`);
 
-// ─── congruence ────────────────────────────────────────────────────────────
+/** Positive whole-number options: a count, an amount of money, a length. */
+const cnt = (ans: number, cands: number[]) => numWrongs(ans, cands.filter(c => Number.isInteger(c) && c > 0));
+const minutes = (n: number) => `${n} ${tamyiz(n, 'دقائق', 'دقيقةً', 'دقيقة')}`;
+const degrees = (n: number) => `${n} ${tamyiz(n, 'درجات', 'درجةً', 'درجة')}`;
+/** «6:05» from minutes after midnight (a morning time). */
+const clock = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 
-const LETTERS: Array<[string, string]> = [['ABC', 'DEF'], ['PQR', 'XYZ'], ['LMN', 'STU'], ['ABC', 'KLM']];
-/** A congruence «ABC ≅ (a permutation of DEF)» and its vertex map. */
-function triangles(rng: Rng) {
-  const [one, other] = pick(rng, LETTERS);
-  const two = shuffle(rng, [...other]).join('');
-  const map: Record<string, string> = { [one[0]!]: two[0]!, [one[1]!]: two[1]!, [one[2]!]: two[2]! };
-  const side = (s: string) => map[s[0]!]! + map[s[1]!]!;
-  return { one, two, map, side };
-}
+// ─── S1 u1_l6: working backward ─────────────────────────────────────────────
 
-/** «التطابق»: corresponding sides and angles, a congruent shape's perimeter, an unknown from equal sides, congruent or not. */
-const congruence = T('congruence_g7', /^التطابق$/, ({ rng, diff }) => {
-  const k = int(rng, 0, 5);
-  if (k === 0) { // the corresponding side
-    const { one, two, side } = triangles(rng);
-    const s = pick(rng, [one[0]! + one[1]!, one[1]! + one[2]!, one[0]! + one[2]!]), ans = side(s);
-    const all = [two[0]! + two[1]!, two[1]! + two[2]!, two[0]! + two[2]!, two[1]! + two[0]!].filter(x => x !== ans && [...x].reverse().join('') !== ans);
-    return { eq: `side ${one} ${two} ${s}`, answer: ans, wrongs: [...new Set(all)].slice(0, 2).concat(s), ar: `المثلث ${one} يطابق المثلث ${two}. ما الضلع المناظر للضلع ${s}؟`, en: `Triangle ${one} is congruent to triangle ${two}. Which side corresponds to side ${s}?` };
-  }
-  if (k === 1) { // a side's length from its corresponding side
-    const { one, two, side } = triangles(rng);
-    const ls = shuffle(rng, [int(rng, 4, 9), int(rng, 10, 14), int(rng, 15, 20)]);
-    const names = [one[0]! + one[1]!, one[1]! + one[2]!, one[0]! + one[2]!];
-    const i = int(rng, 0, 2), asked = side(names[i]!);
-    return { eq: `length ${one} ${two} ${names[i]}`, answer: String(ls[i]), wrongs: ints(ls[i]!, [...ls.filter((_, j) => j !== i), ls[i]! * 2, ls[i]! + 1]), ar: `المثلث ${one} يطابق المثلث ${two}، حيث ${names.map((n, j) => `${n} = ${ls[j]} سم`).join(' و ')}. ما طول الضلع ${asked} بالسنتيمتر؟`, en: `Triangle ${one} is congruent to triangle ${two}, with ${names.map((n, j) => `${n} = ${ls[j]} cm`).join(', ')}. How long is side ${asked} in centimetres?` };
-  }
-  if (k === 2) { // an angle: given directly, or the third through the angle sum
-    const { one, two, map } = triangles(rng);
-    const a = int(rng, 35, 75), b = int(rng, 30, 70), c = 180 - a - b;
-    const vals: Record<string, number> = { [one[0]!]: a, [one[1]!]: b, [one[2]!]: c };
-    const third = rng() < 0.6, src = third ? one[2]! : pick(rng, [one[0]!, one[1]!]), ans = vals[src]!;
-    return { eq: `angle ${one} ${two} ${src}`, answer: `${ans}°`, wrongs: deg(ans, [a, b, c, 180 - ans, 90 - ans].filter(x => x !== ans)), ar: `المثلث ${one} يطابق المثلث ${two}. إذا كان قياس الزاوية ${one[0]} يساوي ${a}° وقياس الزاوية ${one[1]} يساوي ${b}°، فما قياس الزاوية ${map[src]}؟`, en: `Triangle ${one} is congruent to triangle ${two}. If angle ${one[0]} measures ${a}° and angle ${one[1]} measures ${b}°, what does angle ${map[src]} measure?` };
-  }
-  if (k === 3) { // a congruent shape's perimeter
-    const s = Array.from({ length: 4 }, () => int(rng, 3, span(diff, 9, 14, 20))), P = s.reduce((x, y) => x + y, 0);
-    return { eq: `perimeter ${s.join(',')}`, answer: String(P), wrongs: ints(P, [P - s[0]!, 2 * P, P + s[3]!, s[0]! * 4]), ar: `الشكل الرباعي ABCD يطابق الشكل الرباعي PQRS، وأطوال أضلاعه ${s.map(x => `${x} سم`).join(' و ')}. ما محيط الشكل PQRS بالسنتيمتر؟`, en: `Quadrilateral ABCD is congruent to quadrilateral PQRS, and its sides are ${s.map(x => `${x} cm`).join(', ')}. What is the perimeter of PQRS in centimetres?` };
-  }
-  if (k === 4) { // an unknown from two corresponding sides
-    const { one, two, side } = triangles(rng);
-    const m = int(rng, 2, 5), x = int(rng, 2, span(diff, 6, 9, 12)), c = int(rng, 1, 9), L = m * x + c, s = one[0]! + one[1]!;
-    return { eq: `solve ${m}x + ${c} = ${L}`, answer: String(x), wrongs: ints(x, [L - c, L / m, x + 1, (L + c) / m]), ar: `المثلث ${one} يطابق المثلث ${two}. إذا كان طول الضلع ${s} يساوي (${m}x + ${c}) سم، وطول الضلع المناظر له ${L} سم، فما قيمة x؟`, en: `Triangle ${one} is congruent to triangle ${two}. Side ${s} is (${m}x + ${c}) cm and its corresponding side ${side(s)} is ${L} cm. What is x?` };
-  }
-  // congruent, or only similar (or neither)
-  const a = int(rng, 3, 9), b = a + int(rng, 1, 6), yes = rng() < 0.5;
-  const [c, d] = yes ? (rng() < 0.5 ? [b, a] : [a, b]) : pick(rng, [[2 * a, 2 * b], [a, b + 1], [a + 1, b + 1]] as Array<[number, number]>);
-  return { eq: `congruent ${a}x${b} ${c}x${d}`, answer: yes ? 'نعم' : 'لا', wrongs: [yes ? 'لا' : 'نعم'], ar: `مستطيل بُعداه ${a} سم و ${b} سم، ومستطيل آخر بُعداه ${c} سم و ${d} سم. هل الشكلان متطابقان؟ (نعم / لا)`, en: `One rectangle is ${a} cm by ${b} cm and another is ${c} cm by ${d} cm. Are they congruent? (yes / no)` };
-});
+const PARTS: Record<number, [string, string]> = { 2: ['نصف', 'half'], 3: ['ثلث', 'a third'], 4: ['ربع', 'a quarter'], 5: ['خمس', 'a fifth'] };
 
-// ─── problem-solving plan: work backwards ──────────────────────────────────
+const workBackward = T('g7_work_backward', /^خطه حل المساله الحل العكسي$/, ({ rng, diff }) => {
+  // 0 a number machine, 1 money spent then half of the rest, 2 two fractions of what is left,
+  // 3 a temperature that fell and rose, 4 the latest time to wake up.
+  const k = pick(rng, diff === 'easy' ? [0, 1, 4] : diff === 'medium' ? [0, 1, 2, 3, 4] : [0, 2, 3, 3, 4]);
 
-/** «خطة حل المسألة: الحل العكسي»: the start, from the end and the steps taken. */
-const workBackwards = T('work_backwards_g7', /^خطه حل المساله الحل العكسي$/, ({ rng, diff }) => {
-  const k = int(rng, 0, 2);
-  if (k === 0) { // a number puzzle undone step by step
-    for (let t = 0; t < 200; t++) {
-      const x = int(rng, 2, span(diff, 15, 30, 50)), m = int(rng, 2, 5), c = int(rng, 1, 12), d = pick(rng, [2, 3, 4]), plus = rng() < 0.5;
-      const v = x * m + (plus ? c : -c);
-      if (v <= 0 || v % d !== 0) continue;
-      const r = v / d, boy = pick(rng, ['سامي', 'خالد', 'عمر', 'يزن']);
-      return { eq: `back ${x}`, answer: String(x), wrongs: ints(x, [r * d, (r * d + (plus ? c : -c)) / m, x + 1, r]), ar: `فكّر ${boy} في عدد، ثم ضربه في ${m}، ثم ${plus ? 'أضاف' : 'طرح'} ${c}، ثم قسم الناتج على ${d}، فكان الناتج النهائي ${r}. ما العدد الذي فكّر فيه؟`, en: `A boy thought of a number, multiplied it by ${m}, ${plus ? 'added' : 'subtracted'} ${c}, then divided by ${d} and got ${r}. What was the number?` };
+  if (k === 1) {
+    const left = int(rng, 3, 20), spent = int(rng, 3, 15);
+    const start = 2 * left + spent;
+    return {
+      eq: `back money ${spent} half ${left}`, answer: String(start),
+      wrongs: cnt(start, [2 * left - spent, left + spent, 2 * (left + spent), 2 * left]),
+      ar: `مع سلمى مبلغٌ من المال. أنفقت منه ${dinars(spent)} على كتاب، ثم أنفقت نصف ما تبقّى على هدية، فبقي معها ${dinars(left)}. كم دينارًا كان معها في البداية؟`,
+      en: `Salma had some money. She spent ${spent} JD on a book, then half of what was left on a gift, and had ${left} JD left. How many JD did she have at the start?`,
+    };
+  }
+
+  if (k === 2) {
+    // spend 1/p of the money, then 1/q of what is left; the rest is (p−1)(q−1)/(pq) of the start
+    const p = pick(rng, [2, 3, 4, 5]), q = pick(rng, [2, 3, 4, 5]);
+    const start = p * q * int(rng, 2, diff === 'hard' ? 12 : 6);
+    const left = (start * (p - 1) * (q - 1)) / (p * q);
+    const afterFirst = (start * (p - 1)) / p;
+    return {
+      eq: `back frac ${p} ${q} ${left}`, answer: String(start),
+      wrongs: cnt(start, [afterFirst, left * p, left * q, left + start / p, (left * q) / (q - 1) + left]),
+      ar: `أنفق تاجرٌ ${PARTS[p]![0]} ما معه من نقود، ثم أنفق ${PARTS[q]![0]} ما تبقّى معه، فبقي معه ${dinars(left)}. كم دينارًا كان معه في البداية؟`,
+      en: `A merchant spent ${PARTS[p]![1]} of his money, then ${PARTS[q]![1]} of what was left, and had ${left} JD left. How many JD did he have at the start?`,
+    };
+  }
+
+  if (k === 3) {
+    // a temperature that fell, then rose, and ended at `end` (may be below zero)
+    const fall = int(rng, 3, 9), rise = int(rng, 3, 9);
+    const start = int(rng, -8, 8);
+    const end = start - fall + rise;
+    return {
+      eq: `back temp ${fall} ${rise} ${signed(end)}`, answer: `${signed(start)}°`,
+      wrongs: wrongsFrom(`${signed(start)}°`, [end - fall + rise, end - fall - rise, end + fall + rise, -start].map(v => `${signed(v)}°`), j => `${signed(start + j)}°`),
+      ar: `انخفضت درجة الحرارة في الصباح ${degrees(fall)}، ثم ارتفعت ظهرًا ${degrees(rise)}، فأصبحت ${signed(end)}°. كم كانت درجة الحرارة قبل الانخفاض؟`,
+      en: `In the morning the temperature fell by ${fall} degrees, then at noon it rose by ${rise} degrees, ending at ${signed(end)}°. What was the temperature before it fell?`,
+    };
+  }
+
+  if (k === 4) {
+    const arrive = pick(rng, [7 * 60 + 15, 7 * 60 + 30, 7 * 60 + 45, 8 * 60]);
+    const steps = [int(rng, 2, 6) * 5, int(rng, 2, 4) * 5, int(rng, 1, 3) * 5]; // walk, breakfast, dressing
+    const total = steps[0]! + steps[1]! + steps[2]!;
+    const wake = arrive - total;
+    const forgot = steps.map(s => clock(wake + s));
+    return {
+      eq: `back clock ${arrive} ${steps.join(' ')}`, answer: clock(wake),
+      wrongs: wrongsFrom(clock(wake), [...forgot, clock(arrive + total)], j => clock(wake + 5 * j)),
+      ar: `يجب أن يصل خالد إلى المدرسة الساعة ${clock(arrive)} صباحًا. يحتاج إلى ${minutes(steps[0]!)} للوصول إلى المدرسة، و${minutes(steps[1]!)} لتناول الفطور، و${minutes(steps[2]!)} لارتداء ملابسه. ما آخر وقت يمكنه أن يستيقظ فيه؟`,
+      en: `Khaled must reach school at ${clock(arrive)} a.m. It takes ${steps[0]} minutes to get to school, ${steps[1]} minutes for breakfast and ${steps[2]} minutes to get dressed. What is the latest time to wake up?`,
+    };
+  }
+
+  // a number machine: multiply, add or subtract, and (hard) divide
+  const x = diff === 'easy' ? int(rng, 2, 12) : int(rng, -9, 12) || 5;
+  const m = int(rng, 2, diff === 'easy' ? 5 : 7);
+  if (diff === 'hard') {
+    for (let tries = 0; tries < 40; tries++) {
+      const d = int(rng, 2, 5), r = int(rng, -6, 9);
+      const b = m * x - r * d;
+      if (b < 1 || b > 40) continue;
+      return {
+        eq: `back machine ${m} −${b} /${d} = ${signed(r)}`, answer: signed(x),
+        wrongs: numWrongs(x, [(r * d - b) / m, (r * d + b) * m, r * d + b, (r + b) * d / m].filter(Number.isInteger), signed),
+        ar: `فكّرتُ في عدد، ثم ضربته في ${m}، ثم طرحتُ من الناتج ${b}، ثم قسمتُ الناتج على ${d}، فكانت النتيجة ${signed(r)}. ما العدد الذي فكّرتُ فيه؟`,
+        en: `I thought of a number, multiplied it by ${m}, subtracted ${b}, then divided the result by ${d}, and got ${signed(r)}. What was my number?`,
+      };
     }
   }
-  if (k === 1) { // money: half on one thing, a fixed amount on another
-    const left = int(rng, 3, span(diff, 10, 20, 30)), spent = int(rng, 3, span(diff, 10, 15, 25)), start = 2 * (left + spent);
-    const girl = pick(rng, ['ليلى', 'سلمى', 'هند', 'جود']);
-    return { eq: `money ${start}`, answer: String(start), wrongs: ints(start, [left + spent, 2 * left + spent, start + spent, 2 * left]), ar: `أنفقت ${girl} نصف ما معها على كتاب، ثم ${dinars(spent)} على قلم، فبقي معها ${dinars(left)}. كم دينارًا كان معها في البداية؟`, en: `A girl spent half her money on a book, then ${spent} dinars on a pen, and had ${left} dinars left. How many dinars did she have at the start?` };
-  }
-  // time: the latest moment to start, from the arrival time and the durations
-  const arriveH = int(rng, 7, 8), arriveM = pick(rng, [0, 15, 30, 45]), road = pick(rng, [15, 20, 25, 35]), ready = pick(rng, [30, 40, 45, 50]);
-  const t = arriveH * 60 + arriveM - road - ready, hm = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
-  const ans = hm(t);
-  const girl = pick(rng, ['هند', 'ليلى', 'تالا']);
-  return { eq: `time ${ans}`, answer: ans, wrongs: wrongsFrom(ans, [hm(t + road), hm(t + ready), hm(t - 10)], k2 => hm(t + 5 * k2)), ar: `يجب أن تصل ${girl} إلى المدرسة الساعة ${hm(arriveH * 60 + arriveM)}. تحتاج ${minutes(road)} للطريق، و${minutes(ready)} لتستعد. متى يجب أن تستيقظ على الأكثر؟`, en: `A girl must reach school at ${hm(arriveH * 60 + arriveM)}. The way takes ${road} minutes and getting ready ${ready} minutes. What is the latest she can wake up?` };
+  const b = int(rng, 1, 20), add = diff === 'easy' || rng() < 0.5;
+  const c = add ? m * x + b : m * x - b;
+  return {
+    eq: `back machine ${m} ${add ? '+' : '−'}${b} = ${signed(c)}`, answer: signed(x),
+    wrongs: numWrongs(x, [add ? (c + b) / m : (c - b) / m, add ? c / m - b : c / m + b, add ? c - b : c + b, c * m + b].filter(Number.isInteger), signed),
+    ar: `فكّرتُ في عدد، ثم ضربته في ${m}، ثم ${add ? 'أضفتُ إلى الناتج' : 'طرحتُ من الناتج'} ${b}، فكانت النتيجة ${signed(c)}. ما العدد الذي فكّرتُ فيه؟`,
+    en: `I thought of a number, multiplied it by ${m}, then ${add ? 'added' : 'subtracted'} ${b}, and got ${signed(c)}. What was my number?`,
+  };
 });
 
-// ─── problem-solving plan: draw a diagram ──────────────────────────────────
+// ─── S2 u6_l1: congruence ───────────────────────────────────────────────────
 
-/** «خطة حل المسألة: الرسم»: problems a sketch makes plain (posts and gaps, cuts and pieces, handshakes, a climbing snail). */
-const drawDiagram = T('draw_diagram_g7', /^خطه حل المساله الرسم$/, ({ rng, diff }) => {
-  const k = int(rng, 0, 3);
+/**
+ * Two congruent polygons named so that the order of the letters is the
+ * correspondence: ABCD ≅ (a rotation or reflection of PQRS), so A ↔ the first
+ * letter of the second name, and so on. The second name is still a polygon's
+ * name (its letters run round the shape), only not starting at P.
+ */
+function namedPair(rng: Rng, n: 3 | 4): { first: string[]; second: string[] } {
+  const first = n === 3 ? ['A', 'B', 'C'] : ['A', 'B', 'C', 'D'];
+  const base = n === 3 ? ['D', 'E', 'F'] : ['P', 'Q', 'R', 'S'];
+  let second = base.slice();
+  const shift = int(rng, 0, n - 1);
+  second = [...second.slice(shift), ...second.slice(0, shift)];
+  if (rng() < 0.5) second = [second[0]!, ...second.slice(1).reverse()];
+  return { first, second };
+}
+const shape = (n: number) => (n === 3 ? '△' : '');
+const polyAr = (n: number) => (n === 3 ? 'المثلث' : 'الشكل الرباعي');
+const polyEn = (n: number) => (n === 3 ? 'triangle' : 'quadrilateral');
+
+const congruence = T('g7_congruence', /^التطابق$/, ({ rng, diff }) => {
+  // 0 the corresponding side, 1 the corresponding vertex/angle, 2 an angle's measure from its partner,
+  // 3 a missing angle by the angle sum, 4 the perimeter, 5 x from two corresponding sides.
+  const k = pick(rng, diff === 'easy' ? [0, 1, 2, 4] : diff === 'medium' ? [0, 1, 2, 3, 4, 5] : [0, 2, 3, 3, 4, 5]);
+  const n: 3 | 4 = k === 4 || k === 5 ? 3 : diff === 'easy' && k !== 2 ? 3 : pick(rng, [3, 4] as const);
+  const { first, second } = namedPair(rng, diff === 'easy' ? 3 : n);
+  const m = first.length;
+  const statement = `${shape(m)}${first.join('')} ≅ ${shape(m)}${second.join('')}`;
+
   if (k === 0) {
-    const gap = pick(rng, [2, 3, 4, 5, 6]), n = int(rng, 4, span(diff, 8, 12, 16)), L = gap * n, ans = n + 1;
-    return { eq: `posts ${L} / ${gap}`, answer: String(ans), wrongs: ints(ans, [n, n - 1, n + 2, L]), ar: `سياج مستقيم طوله ${L} م، تُثبَّت فيه أعمدة كل ${gap} م بدءًا من أحد طرفيه وانتهاءً بالطرف الآخر. كم عمودًا يلزم؟`, en: `A straight fence is ${L} m long, with a post every ${gap} m from one end to the other. How many posts are needed?` };
+    const i = int(rng, 0, m - 1), j = (i + 1) % m;
+    const sideOf = (xs: string[], a: number, b: number) => `${xs[a]}${xs[b]}`;
+    const ans = sideOf(second, i, j);
+    // every other side of the second polygon, written in its own letter order
+    const others = Array.from({ length: m }, (_, t) => sideOf(second, t, (t + 1) % m)).filter(s => s !== ans);
+    const wrongs = m === 3 ? [...others, sideOf(first, i, j)] : others;
+    return {
+      eq: `cong side ${first.join('')} ${second.join('')} ${i}`, answer: ans, wrongs: wrongs.slice(0, 3),
+      ar: `إذا كان ${statement}، فما الضلع المناظر للضلع ${sideOf(first, i, j)}؟`,
+      en: `If ${statement}, which side corresponds to side ${sideOf(first, i, j)}?`,
+    };
   }
+
   if (k === 1) {
-    const pieces = int(rng, 3, span(diff, 6, 9, 12)), per = int(rng, 2, 6), ans = (pieces - 1) * per;
-    return { eq: `cuts ${pieces} × ${per}`, answer: String(ans), wrongs: ints(ans, [pieces * per, (pieces + 1) * per, ans - 1, pieces + per]), ar: `يريد نجار قطع لوح خشبي إلى ${counted(pieces, 'قطع', 'قطعةً', 'قطعة')}، ويستغرق كل قطع ${minutes(per)}. كم دقيقة يحتاج؟`, en: `A carpenter cuts a plank into ${pieces} pieces, and each cut takes ${per} minutes. How many minutes does he need?` };
+    const i = int(rng, 0, m - 1);
+    const ans = `∠${second[i]}`;
+    const wrongs = second.filter((_, t) => t !== i).map(v => `∠${v}`);
+    if (m === 3) wrongs.push(`∠${first[(i + 1) % m]}`);
+    return {
+      eq: `cong angle ${first.join('')} ${second.join('')} ${i}`, answer: ans, wrongs: wrongs.slice(0, 3),
+      ar: `إذا كان ${statement}، فما الزاوية المناظرة للزاوية ${first[i]}؟`,
+      en: `If ${statement}, which angle corresponds to angle ${first[i]}?`,
+    };
   }
-  if (k === 2) {
-    const n = int(rng, 4, span(diff, 6, 8, 10)), ans = (n * (n - 1)) / 2;
-    return { eq: `handshakes ${n}`, answer: String(ans), wrongs: ints(ans, [n * (n - 1), n * n, n, ans + n]), ar: `حضر ${counted(n, 'أشخاص', 'شخصًا', 'شخص')} اجتماعًا، وصافح كل منهم كل واحد من الآخرين مرة واحدة. كم مصافحة حدثت؟`, en: `${n} people meet and each shakes hands once with every other one. How many handshakes are there?` };
+
+  // angle measures of the first polygon: distinct multiples of 5 that sum to 180 or 360
+  const angles = (): number[] => {
+    for (;;) {
+      const xs = Array.from({ length: m - 1 }, () => int(rng, m === 3 ? 6 : 13, m === 3 ? 16 : 24) * 5);
+      const last = (m === 3 ? 180 : 360) - xs.reduce((a, b) => a + b, 0);
+      const all = [...xs, last];
+      if (last >= 30 && last <= (m === 3 ? 150 : 170) && new Set(all).size === m) return all;
+    }
+  };
+
+  if (k === 2 || k === 3) {
+    const ang = angles();
+    const i = int(rng, 0, m - 1);
+    const known = k === 2 ? first.map((_, t) => t) : first.map((_, t) => t).filter(t => t !== i);
+    const facts = known.map(t => `m∠${first[t]} = ${ang[t]}°`);
+    const sum = known.reduce((a, t) => a + ang[t]!, 0);
+    const cands = k === 2 ? ang.filter((_, t) => t !== i) : known.map(t => ang[t]!);
+    return {
+      eq: `cong measure ${k} ${first.join('')} ${second.join('')} ${ang.join(' ')} ${i}`, answer: `${ang[i]}°`,
+      wrongs: wrongsFrom(`${ang[i]}°`, cands.filter(c => c > 0 && c < 360).map(c => `${c}°`), j => `${ang[i]! + 5 * j}°`),
+      ar: `إذا كان ${statement}، وكان ${facts.join('، ')}، فما قياس الزاوية ${second[i]}؟`,
+      en: `If ${statement} and ${facts.join(', ')}, what is the measure of angle ${second[i]}?`,
+    };
   }
-  const up = int(rng, 3, 5), down = int(rng, 1, up - 1), depth = up + (up - down) * int(rng, 2, span(diff, 5, 8, 10));
-  let h = 0, day = 0;
-  for (;;) { day++; h += up; if (h >= depth) break; h -= down; }
-  return { eq: `snail ${depth} ${up} ${down}`, answer: String(day), wrongs: ints(day, [depth / (up - down), day + 1, day - 1, depth - up]), ar: `حلزون في قاع بئر عمقها ${depth} م، يصعد ${up} م في النهار وينزلق ${down} م في الليل. بعد كم يومًا يصل إلى أعلى البئر؟`, en: `A snail at the bottom of a ${depth} m well climbs ${up} m by day and slips ${down} m at night. After how many days does it reach the top?` };
+
+  // k 4, 5: triangles ABC ≅ (D, E, F in some order)
+  const sideOf = (xs: string[], a: number, b: number) => `${xs[a]}${xs[b]}`;
+  if (k === 4) {
+    // two sides of the first triangle and the third side of the second; the perimeter is the same
+    const s = [int(rng, 3, 12), int(rng, 3, 12), 0];
+    s[2] = int(rng, Math.abs(s[0]! - s[1]!) + 1, s[0]! + s[1]! - 1);
+    const per = s[0]! + s[1]! + s[2]!;
+    return {
+      eq: `cong perimeter ${second.join('')} ${s.join(' ')}`, answer: String(per),
+      wrongs: cnt(per, [s[0]! + s[1]!, per + s[2]!, 2 * (s[0]! + s[1]!), per - 1]),
+      ar: `إذا كان ${statement}، وكان ${sideOf(first, 0, 1)} = ${s[0]} سم، ${sideOf(first, 1, 2)} = ${s[1]} سم، ${sideOf(second, 2, 0)} = ${s[2]} سم، فما محيط ${polyAr(3)} ${second.join('')} بالسنتيمترات؟`,
+      en: `If ${statement}, ${sideOf(first, 0, 1)} = ${s[0]} cm, ${sideOf(first, 1, 2)} = ${s[1]} cm and ${sideOf(second, 2, 0)} = ${s[2]} cm, what is the perimeter of ${polyEn(3)} ${second.join('')} in cm?`,
+    };
+  }
+  // x from two corresponding sides: a·x + b = L
+  const a = int(rng, 2, 5), x = int(rng, 2, 9), b = int(rng, 1, 9);
+  const L = a * x + b;
+  const i = int(rng, 0, 2), j = (i + 1) % 3;
+  return {
+    eq: `cong x ${a} ${b} ${L}`, answer: String(x),
+    wrongs: cnt(x, [(L + b) / a, L - b, L / a, x + b].filter(Number.isInteger)),
+    ar: `إذا كان ${statement}، وكان ${sideOf(first, i, j)} = (${a}x + ${b}) سم، ${sideOf(second, i, j)} = ${L} سم، فما قيمة x؟`,
+    en: `If ${statement}, ${sideOf(first, i, j)} = (${a}x + ${b}) cm and ${sideOf(second, i, j)} = ${L} cm, what is x?`,
+  };
 });
 
-export const G7_TOPICS: readonly Topic[] = [congruence, workBackwards, drawDiagram];
+// ─── S2 u6_l5: solve by drawing a diagram ───────────────────────────────────
+
+const drawDiagram = T('g7_draw_diagram', /^خطه حل المساله الرسم$/, ({ rng, diff }) => {
+  // 0 posts along a straight fence, 1 posts round a rectangle, 2 cuts in a log, 3 handshakes,
+  // 4 a snail in a well, 5 two houses on a road, 6 square tables in a row.
+  const k = pick(rng, diff === 'easy' ? [0, 2, 5, 6] : diff === 'medium' ? [0, 1, 2, 3, 5, 6] : [1, 3, 4, 4, 5, 6]);
+
+  if (k === 0) {
+    const gap = pick(rng, [2, 3, 4, 5]), parts = int(rng, 4, diff === 'easy' ? 8 : 15);
+    const len = gap * parts, posts = parts + 1;
+    return {
+      eq: `draw fence ${len} ${gap}`, answer: String(posts), wrongs: cnt(posts, [parts, parts - 1, parts + 2]),
+      ar: `سياج مستقيم طوله ${len} م، يُثبَّت عمود عند كل ${gap} م منه، بما في ذلك طرفاه. كم عمودًا يلزم للسياج؟`,
+      en: `A straight fence is ${len} m long with a post every ${gap} m, including both ends. How many posts are needed?`,
+    };
+  }
+
+  if (k === 1) {
+    const gap = pick(rng, [2, 3, 5]);
+    const w = gap * int(rng, 3, 6), h = gap * int(rng, 2, w / gap - 1);
+    const posts = (2 * (w + h)) / gap;
+    return {
+      eq: `draw ring ${w} ${h} ${gap}`, answer: String(posts), wrongs: cnt(posts, [posts + 4, posts + 1, (w + h) / gap + 1, posts - 4]),
+      ar: `حديقة مستطيلة الشكل طولها ${w} م وعرضها ${h} م، يُراد إحاطتها بسياج يُثبَّت فيه عمود عند كل ${gap} م، وعند كل زاوية عمود. كم عمودًا يلزم؟`,
+      en: `A rectangular garden is ${w} m by ${h} m. A fence round it has a post every ${gap} m, with a post at each corner. How many posts are needed?`,
+    };
+  }
+
+  if (k === 2) {
+    const pieces = int(rng, 3, 9), t = pick(rng, [3, 4, 5]);
+    const total = (pieces - 1) * t;
+    return {
+      eq: `draw cuts ${pieces} ${t}`, answer: String(total), wrongs: cnt(total, [pieces * t, (pieces + 1) * t, pieces - 1]),
+      ar: `يحتاج نجّار إلى ${minutes(t)} لإجراء قَطع واحد في لوح خشبي. كم دقيقةً يحتاج لتقسيم اللوح إلى ${pieces} ${tamyiz(pieces, 'قطع', 'قطعةً', 'قطعة')} متساوية؟`,
+      en: `A carpenter needs ${t} minutes for each cut through a plank. How many minutes does it take to cut the plank into ${pieces} equal pieces?`,
+    };
+  }
+
+  if (k === 3) {
+    const n = int(rng, 4, diff === 'hard' ? 12 : 8);
+    const ans = (n * (n - 1)) / 2;
+    return {
+      eq: `draw handshakes ${n}`, answer: String(ans), wrongs: cnt(ans, [n * (n - 1), n * n, n - 1, ans + n]),
+      ar: `في اجتماع حضره ${n} ${tamyiz(n, 'أشخاص', 'شخصًا', 'شخص')}، صافح كلٌّ منهم كلَّ شخص آخر مرة واحدة فقط. كم مصافحةً حدثت؟`,
+      en: `At a meeting of ${n} people, each shook hands once with every other person. How many handshakes were there?`,
+    };
+  }
+
+  if (k === 4) {
+    // climbs `up` by day and slips `down` by night; out on the day its climb reaches the top
+    for (;;) {
+      const up = int(rng, 3, 6), down = int(rng, 1, up - 1), depth = int(rng, up + 3, 20);
+      const days = Math.ceil((depth - up) / (up - down)) + 1;
+      const naive = Math.ceil(depth / (up - down));
+      if (naive === days) continue; // the drawing must matter
+      return {
+        eq: `draw snail ${depth} ${up} ${down}`, answer: String(days), wrongs: cnt(days, [naive, naive + 1, days + 1, days - 1]),
+        ar: `حلزون في قاع بئر عمقها ${depth} م. يصعد في النهار ${up} م، وينزلق في الليل ${down} م. في أي يوم يصل إلى أعلى البئر؟`,
+        en: `A snail is at the bottom of a ${depth} m well. Each day it climbs ${up} m and each night it slips back ${down} m. On which day does it reach the top?`,
+      };
+    }
+  }
+
+  if (k === 5) {
+    const a = int(rng, 2, 9), b = int(rng, 1, 9);
+    const opposite = rng() < 0.5 || a === b;
+    const ans = opposite ? a + b : Math.abs(a - b);
+    const other = opposite ? Math.abs(a - b) : a + b;
+    return {
+      eq: `draw road ${a} ${b} ${opposite ? 'opp' : 'same'}`, answer: String(ans), wrongs: cnt(ans, [other, a * b, Math.max(a, b)]),
+      ar: `يقع منزل رامي على بُعد ${a} كم شرق المدرسة، ويقع منزل باسل على بُعد ${b} كم ${opposite ? 'غرب' : 'شرق'} المدرسة على الطريق المستقيم نفسه. كم كيلومترًا بين المنزلين؟`,
+      en: `Rami's house is ${a} km east of the school and Basel's house is ${b} km ${opposite ? 'west' : 'east'} of the school on the same straight road. How many km apart are the houses?`,
+    };
+  }
+
+  // square tables pushed together in a row, one chair on each free side
+  const t = int(rng, 3, diff === 'easy' ? 6 : 12);
+  const seats = 2 * t + 2;
+  return {
+    eq: `draw tables ${t}`, answer: String(seats), wrongs: cnt(seats, [4 * t, 2 * t, 2 * t + 4, 3 * t]),
+    ar: `صُفَّت ${t} ${tamyiz(t, 'طاولات', 'طاولةً', 'طاولة')} مربعة متلاصقة في صف واحد، ويجلس شخص واحد على كل ضلع غير ملاصق لطاولة أخرى. كم شخصًا يمكنهم الجلوس؟`,
+    en: `${t} square tables are pushed together in one row, and one person sits at each side that does not touch another table. How many people can sit?`,
+  };
+});
+
+export const G7_TOPICS: readonly Topic[] = [workBackward, congruence, drawDiagram];

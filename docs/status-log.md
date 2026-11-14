@@ -10,37 +10,63 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Grade 7, second pass: offline maths for the last three lessons, and three agreement slips — 2026-11-14
+## Grade 7, second pass: two Arabic agreement slips in the offline maths — 2026-11-14
 
-The Grade 7 audit (below, «Grade 7 audit: book pages, figures, contents and honorifics…») covered pages, figures,
-contents and honorifics, and sampled three maths keys a lesson. This pass runs the generators over all 397 lessons and
-reads every question of every maths quiz against the lesson's outcomes. Grade 7 has no extracted book text, so a
-text-based page check is impossible; the audit viewed every page as an image.
-
-**Generators (offline).**
-- Grounding by lesson id is exact for all 397 lessons.
-- Every key of the 40 served maths lessons is right, and each lesson asks what its outcomes name.
-- **New, `lib/math-practice/src/g7.ts`:** the three lessons that threw `NoQuestionBankError`, each with answers
-  recomputed from the stem in `g7.test.ts`:
-  - «التطابق»: the corresponding side, a side's length, an angle given directly or through the 180° sum, a congruent
-    quadrilateral's perimeter, x from (mx + c) = L, and «هل الشكلان متطابقان؟» (congruent vs only similar).
-  - «خطة حل المسألة: الحل العكسي»: a number puzzle undone step by step, money (half, then a fixed amount, then
-    what is left), and the latest wake-up time.
-  - «خطة حل المسألة: الرسم»: posts along a fence (n + 1), cuts into pieces ((n − 1) cuts), handshakes, and a
-    climbing snail.
-  - A plan lesson is served with problems its plan solves, as Grade 6 «حل مسألة أبسط» and Grade 4's two plans are.
-  - The Grade 8 triangle-congruence generators are untouched; the routing tables now expect the three Grade 7
-    titles to be served.
-- **Fixed, Arabic number agreement:**
-  - «قطعت سيارة 66 كم في 2 ساعات» now reads «ساعتين» (`unit_rate`).
-  - «وتكررت العملية 8 مرة» now reads «8 مرات» (`prob_g7`, through `tamyiz`).
-  - «قُسّم مبلغ 28 دينارًا بين أشخاص بنسبة 1 : 3» now names «شخصين» or «ثلاثة أشخاص» by the ratio's parts
-    (`proportional_division`).
-  - Pinned in `topics.test.ts`; the stem readers in `stats.test.ts` read the new wording.
+Follows «Grade 7 review: offline maths for the three lessons that had none…» (below). That review gave Grade 7's last
+three maths lessons generators (`g7.ts`). This pass had written the same three independently; when the two met on
+`main`, the review's `g7.ts` and tests were kept and this pass's copy dropped. What remains is what this pass found
+reading every question of every Grade 7 maths quiz (all keys right):
+- «وتكررت العملية 8 مرة» now reads «8 مرات» (`prob_g7`, through `tamyiz`); the stem reader in `stats.test.ts`
+  reads both.
+- «قُسّم مبلغ 28 دينارًا بين أشخاص بنسبة 1 : 3» now names «شخصين» or «ثلاثة أشخاص» by the ratio's parts
+  (`proportional_division`).
+- «في 2 ساعات» (`unit_rate`) was found too; `main` had already fixed it the same way.
+- Pinned in `topics.test.ts` «Grade 7 counted nouns agree with their numbers».
 - **Weak, not fixed:** «المتتاليات» (linear sequences) also draws geometric ones («3، 6، 12، 24»).
 
-**Verified:** `lib/math-practice` 1137 tests pass; `mathLessonKinds.test.ts` passes with the three lessons served.
-**Not run:** live AI, and anything needing the PDFs.
+**Verified:** `lib/math-practice` tests pass. **Not run:** live AI.
+
+## Grade 7 review: offline maths for the three lessons that had none, and a sweep of every lesson — 2026-11-13
+
+**What was already done.** «Grade 7 audit: book pages, figures, contents and honorifics…» (below, the same day)
+checked every Grade 7 lesson's book pages and figures as images, rebuilt each book's lesson list from its unit
+openers (every book matched the catalog), and fixed «ﷺ» after people other than the Prophet. That review is not
+repeated here; the public book-page bucket is not reachable from this session, so nothing was re-read from a page.
+
+**Sweep.** Every Grade 7 lesson (397) was run through the offline lesson plan, quiz, worksheet and activity:
+- Every lesson grounds on itself by id. Lesson plans and activities generate for all 397.
+- Maths: all 43 lessons give a full 10-question quiz and a worksheet (40 before this change).
+- Every other subject refuses the quiz and the worksheet offline with `NoQuestionBankError`. That is the design:
+  only maths and chemistry have real offline questions, and Grade 7 has no chemistry. Production runs live AI.
+- Exact-title lookup lands on another lesson for 33 titles (24 of them generic English S2 headings such as
+  «المفردات»). The generator screens ground by id, so this is the known title trap, not a new break.
+
+**What changed.** `lib/math-practice/src/g7.ts` adds one computed generator for each lesson that had none:
+- «خطة حل المسألة: الحل العكسي» (S1 u1_l6, `g7_work_backward`): a number machine, money spent then half the
+  rest, two fractions of what is left, a temperature that fell then rose, the latest time to wake up.
+- «التطابق» (S2 u6_l1, `g7_congruence`): the corresponding side and angle from a correspondence written in letter
+  order, an angle from its partner or from the angle sum, a perimeter, and x from two corresponding sides.
+- «خطة حل المسألة: الرسم» (S2 u6_l5, `g7_draw_diagram`): posts along a fence and round a rectangle, cuts in a
+  plank, handshakes, a snail in a well, two houses on a road, square tables in a row.
+
+Each is limited to Grade 7 and matched on the exact folded title, which is unique in the catalog. There is no
+extracted Grade 7 book, so the kinds follow the lessons' NCCD objectives. `geometry.test.ts` and
+`topics.test.ts` had pinned «التطابق» and «خطة حل المسألة: الرسم» (G7) as refused; they now name the new
+generators and keep a refused case at another grade.
+
+**Verified.**
+- `g7Lessons.test.ts` recomputes every key from the printed Arabic stem by its own route: the story replayed
+  forward from the key, the correspondence read off the letters, the sketch simulated (posts laid one by one, the
+  snail stepped day by day, handshakes counted pair by pair). Three planted wrong formulas each fail it.
+- About 50 sample items were read and checked by hand. Nothing is `verified` and no item carries a `check`.
+- math-practice tests pass, and the PR body has the rest of the CI set.
+
+**Not done.**
+- Needs the book pages: Arabic S1 u1_l1 has no topic and u5_l4 is cut short. Science S1's `known_gaps` still says
+  unit 3 prints no «الفكرة العامة» box; the audit found it on p50, but that was not re-checked here.
+- No worked steps for the three new generators, so they do not supply a worksheet's worked example.
+- Grade 7 still has no extracted text, so live prompts get no book pages (Tracks A and B of
+  `docs/adding-a-book.md`).
 
 ## Book-page renderers stop a unit's last lesson before the next unit's opener — 2026-11-13
 
