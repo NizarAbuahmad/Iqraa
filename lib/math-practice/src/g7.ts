@@ -57,7 +57,8 @@ const workBackward = T('g7_work_backward', /^خطه حل المساله الحل
   if (k === 2) {
     // spend 1/p of the money, then 1/q of what is left; the rest is (p−1)(q−1)/(pq) of the start
     const p = pick(rng, [2, 3, 4, 5]), q = pick(rng, [2, 3, 4, 5]);
-    const start = p * q * int(rng, 2, diff === 'hard' ? 12 : 6);
+    // half, then half again, from 4 × 2 leaves 2 dinars, which takes the dual («ديناران»): start from 3 there
+    const start = p * q * int(rng, (p - 1) * (q - 1) === 1 ? 3 : 2, diff === 'hard' ? 12 : 6);
     const left = (start * (p - 1) * (q - 1)) / (p * q);
     const afterFirst = (start * (p - 1)) / p;
     return {
