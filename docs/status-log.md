@@ -111,6 +111,37 @@ into a unit test, summary or glossary.
   pass, plus `r2.test.ts`, which fails only because this environment has R2 configured.
 
 **Not run:** live AI, anything needing the PDFs.
+## Grade 6 review: the four «weak, not fixed» maths lessons from the second pass — 2026-11-14
+
+The Grade 6 audit and «Grade 6, second pass» (both below) covered pages, figures, contents and every maths quiz against
+its outcomes. A sweep of all 358 lessons through the offline plan, quiz, worksheet and activity found nothing new: every
+lesson grounds by id, all 39 maths lessons give a full paper. This change fixes what the second pass listed as weak:
+- **«الجذر التربيعي والجذر التكعيبي»** («أجد الجذور التربيعية والتكعيبية للأعداد»): a cube was one draw in five, so a
+  paper could hold none. Grade 6 now draws a cube half the time (about 200 of 400 in the test), in four kinds — a cube
+  root, a cube, a cube's edge from its volume, which number is a perfect cube. Grade 5 has no cubes, as before.
+- **«النسبة المئوية من عدد»** («أجد النسبة المئوية من عدد، ومن كمية»): it reached the shared `percent` op, a third of
+  whose items convert or read a grid. It now has `pct_of_g6`: a percent of a number, of a measured quantity, of a group of
+  people, a discount, and (hard) the price after it; whole answers; a whole of at least 20 (no 4-dinar bicycle).
+  `elementaryOpsForTitle` sends only this title away from `percent`; Grade 5 «النسبة المئوية» keeps it.
+- **«جمع البيانات»** (numerical/categorical data, population and sample, the questionnaire; vocabulary adds discrete and
+  continuous): it shared `freq_table`, so nothing told the data types apart and most items were a table's mean or median.
+  It now has `collect_data_g6`: which data is categorical or numerical, which numerical data is discrete or continuous,
+  the population or the sample of a survey, a sample or population size, which sample represents a school fairly, and
+  which questionnaire question collects numerical or categorical data. (The first four alone are two kinds by `sameKind`
+  — `mathLessonKinds.test.ts` caught it — so the last two were added.) `freq_table` keeps «الجداول التكرارية» and
+  loses the sample question it had carried only for this lesson.
+- **«6.2 ساعات»**: `simpler_problem`'s two times are never whole, and a decimal count takes the singular — «3.7 ساعة».
+- **«11 دينار»**: the same generator's cheese price, when it came out whole, kept «دينار»; it now agrees («11 دينارًا»,
+  «5 دنانير»). `tamyiz.test.ts` (new on `main`) found it once this change's new generators shifted its seeded draws.
+
+**Verified.** New tests recompute every key from its stem (`topics.test.ts`: p% of the printed whole, the cube kinds, the
+Grade 6 cube share; `stats.test.ts`: each data item's class from fixed lists); `routing.test.ts` pins the routing and
+`grade6Lessons.test.ts` the singular. Each fix was broken on purpose once — cubes back to one in five, a wrong percent
+key, the old routing, categorical and numerical swapped, the plural — and each made a test fail. Samples read by hand,
+keys correct. math-practice passes; the sweep gives 39 of 39 full maths quizzes. The PR body has the rest of the CI set.
+
+**Not done.** «6.2 ساعات»-style plurals after a decimal elsewhere were searched for (`fmtDec(…) <plural>`); this was the
+only one. Everything the audit left for the PDFs.
 
 ## Grade 9 review: Grade 9 chemistry in the Grade 9 book's terms, the dispersion and sets lessons' own content — 2026-11-14
 
@@ -177,6 +208,16 @@ now starts at 3. The seeded `tamyiz.test.ts` found it once this PR's draws shift
 
 **Not run:** live AI, and anything needing the PDFs. Whether each chemistry item is the best question for its lesson
 is a chemistry teacher's call.
+## Grade 4 arts: the string-marionette picture for «الدُّمى الْمَسْرَحِيَّةُ» — 2026-11-14
+
+The arts books have page images for one lesson only: u3_l3 «الدُّمى الْمَسْرَحِيَّةُ», pp. 80–82, served from the
+`kbl-g4-arts-s1-nccd-u3_l4` render folder. With its four crops drawn on those pages, one picture was missing. The lesson
+names four puppet types, and the string marionette (p. 80, «دُمى الْخُيوطِ») was the only one with no crop. It is added
+as `p080d.png`, with its label, because `p080b` and `p080c` are taken in the bucket. Its lesson comes from the existing
+`figure-lesson-map.json` row, so no new row was needed. Arts S1 now has 55 crops. **Verified:** figure tests (39 pass),
+typecheck, the PNG returns 200 from `iqraa-public`. **Not done:** the rest of the arts book has no page images and no
+PDF reachable from here, so its other gaps (the qanun and the Picasso pages) are still open.
+
 
 ## Grade 2 audit: book pages, contents, honorifics and offline maths checked — 2026-11-14
 
