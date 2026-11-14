@@ -492,6 +492,25 @@ pass (199), and so does `pnpm run typecheck`. The generated figure list only los
 nothing to upload.
 **Not verified.** Not looked at in the running app.
 
+## Grade 4 Arabic: 35 pictures the colour detector missed — 2026-11-13
+
+All 266 Arabic renders were looked at with the existing crops outlined, after «Grade 4 Arabic and Islamic figures».
+The detector had missed pictures on pale or white ground and large full-page art: the Jordan map (S1 p. 65), the
+Raghadan palace (p. 69), the food pyramid and food groups (pp. 90, 91, 93), the water-cycle drawing (p. 117), the bee
+pictures (pp. 119–121), the unit 7 and unit 10 openers (S2 pp. 32, 112), Shahrayar and the merchant (pp. 13–14), Juha's
+market and story scenes (pp. 60, 67), the fable animals (pp. 88, 92, 95, 98, 110), the trap-and-doves story (p. 108) and
+others. 52 boxes were drawn and 17 dropped on review (mostly text or a fragment); 35 kept, 2 of them trimmed. Lesson by
+page range, unit-opener art to the next unit's first lesson, as before. All PNGs are in `iqraa-public/figures/` under
+names checked free first.
+
+**Re-cut on 2026-11-14.** «Grade 4 audit…» (#1469) dropped sliced Arabic crops, which prompted a second look at these 35
+on a contact sheet with each box drawn on its page. Nine were cut wrong and are re-cut whole under new names, because the
+bucket keeps a key's old bytes. Four were sliced: the fable grid (S2 p110b → p110c, its top row cut off), the bee photo
+(S1 p119 → p119b), the honeycomb (S1 p121 → p121b) and the horse (S2 p028 → p028b). Five had dragged in text: the food
+groups (S1 p091 → p091b), the cartoon bee (S1 p120 → p120b), the word tree (S1 p080 → p080b), Shahrayar (S2 p014 →
+p014b) and the firefighter (S2 p132 → p132b). With #1469's two drops, Arabic has 112 crops. **Not verified:** the
+other 26 were judged from the contact sheet's thumbnails only.
+
 ## Grade 8 maths: offline questions for the four S2 lessons that had none — 2026-11-13
 
 **Why.** Grade 8 had already been checked against its books by earlier changes. One gap was left: four
