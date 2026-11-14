@@ -13,6 +13,7 @@
  */
 import type { ConcreteItem, DiffTier } from './index.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
+import { EARLY_CHOICE, EARLY_DRAWS, choosesByDifficulty, pickByDifficulty } from './earlyDifficulty.ts';
 
 export type ElementaryOp =
   | 'add' | 'sub' | 'mul' | 'div' | 'compare' | 'place'
@@ -74,9 +75,6 @@ export function elementaryOpsForTitle(title: string): ElementaryOp[] {
   // `tensG1`, `twoDigitG1`); as plain add/sub they drew sums within 20. Not
   // anchored at the end: from a lesson the blob is «title titleEn».
   if (/^(?:جمع|طرح) (?:العشرات|عددين من منزلتين)(?=\s|$)/.test(t.trim())) return [];
-  // Grade 1's strategy lessons too (early.ts `makeTenAdd`, `threeAddends`, `subDoubles`,
-  // `subMakeTen`): the drill used their strategy in 2–20% of its items.
-  if (/^(?:ال)?(?:جمع بالاكمال ال[ىي] العشره|جمع ثلاثه اعداد|طرح باستعمال الضعف|طرح بايجاد عشره)(?=\s|$)/.test(t.trim())) return [];
   if (/منزلي|place\s*value/i.test(t)) return ['place'];
 
   const kind = /كسور|كسر|fraction/i.test(t) ? 'frac' : /عشري|decimal/i.test(t) ? 'dec' : 'whole';
@@ -1315,7 +1313,12 @@ export function makeElementaryItem(
   let best: ConcreteItem | null = null;
   let bestScore = Infinity;
   let fresh = 0;
-  for (let attempt = 0; attempt < 25 && fresh < FRESH_DRAWS; attempt++) {
+  // Grades 1–4 choose by difficulty among the least-served kinds (`earlyDifficulty.ts`).
+  const byDifficulty = choosesByDifficulty(g);
+  let least: ConcreteItem[] = [];
+  const draws = byDifficulty ? EARLY_DRAWS : FRESH_DRAWS;
+  const enough = () => fresh >= draws && (!byDifficulty || least.length >= EARLY_CHOICE);
+  for (let attempt = 0; attempt < 6 * draws && !enough(); attempt++) {
     const op = pool[int(rng, 0, pool.length - 1)]!;
     // The id's last digit decides a true/false item's claim (see
     // `formatItem`); a fixed suffix made every one of them «صح».
@@ -1326,10 +1329,15 @@ export function makeElementaryItem(
     if (score < bestScore) {
       best = item;
       bestScore = score;
+      least = [item];
+    } else if (score === bestScore && !least.some(x => x.eq === item!.eq)) {
+      least.push(item);
     }
-    if (score === 0) break;
+    if (score === 0 && !byDifficulty) break;
   }
-  item = best ?? item;
+  item = byDifficulty && least.length > 0
+    ? pickByDifficulty(least, diff, rng, x => ({ ar: x.promptAr ?? x.eq, answer: x.answer }))
+    : best ?? item;
   used.add(`stem:${item!.eq}`);
   used.add(`ask:${item!.promptAr ?? item!.eq}`);
   return item!;
