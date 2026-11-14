@@ -126,7 +126,9 @@ describe('maths lessons: covered or refused, never off-topic filler', () => {
 describe('a paper shorter than asked for carries the reason', () => {
   // A lesson whose bank family is small (`vectors`: 5 items). «قانون الجيوب» was
   // the example until 2026-11-13; it has its own generator now and never runs short.
-  const thinLesson = mathLessons.find(l => gradeOf(l) === 10 && l.titleAr.includes('المتجهات في المستوى الإحداثي'))!;
+  // A lesson whose bank family holds fewer items than the paper asks for: the systems lab draws
+// `system_graph` (8 items). It was the vectors lesson until that got a generator (2026-11-14).
+const thinLesson = mathLessons.find(l => gradeOf(l) === 10 && l.titleAr.includes('حل أنظمة المعادلات بيانيا'))!;
   const addition = mathLessons.find(l => gradeOf(l) === 2 && l.titleAr.replace(/[ً-ْ]/g, '') === 'الجمع')!;
 
   it('finds the lessons it needs', () => {

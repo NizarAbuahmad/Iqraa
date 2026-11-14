@@ -1316,8 +1316,10 @@ export const CHEM_BANK: ConcreteItem[] = [
   {
     id: 'ch-th-e4', family: 'thermochem', diff: 'easy', eq: 'أمثلة',
     answer: 'احتراق الغاز الطبيعي', wrongs: ['تحلل كربونات الكالسيوم بالتسخين', 'التمثيل الضوئي', 'تحلل الماء بالتحليل الكهربائي'],
-    promptAr: 'أيّ التفاعلات الآتية طارد للطاقة؟',
-    promptEn: 'Which of these reactions is exothermic?',
+    // The reactions are named in the stem: as a fill-in or short answer the options are not
+    // shown, and «الآتية» pointed at nothing (Grade 10 review, 2026-11-14).
+    promptAr: 'أيّ التفاعلات الآتية طارد للطاقة: تحلل كربونات الكالسيوم بالتسخين، احتراق الغاز الطبيعي، التمثيل الضوئي، تحلل الماء بالتحليل الكهربائي؟',
+    promptEn: 'Which of these reactions is exothermic: heating calcium carbonate until it decomposes, burning natural gas, photosynthesis, electrolysis of water?',
   },
   {
     id: 'ch-th-e5', family: 'thermochem', diff: 'easy', eq: 'وحدة الطاقة',
@@ -1566,8 +1568,8 @@ export const CHEM_BANK: ConcreteItem[] = [
   {
     id: 'ch-gn-e4', family: 'general_chem', diff: 'easy', eq: 'أمثلة',
     answer: 'ذوبان الجليد', wrongs: ['احتراق الورق', 'صدأ الحديد', 'تعفن الطعام'],
-    promptAr: 'أيّ التغيرات الآتية تغير فيزيائي؟',
-    promptEn: 'Which of these changes is a physical change?',
+    promptAr: 'أيّ التغيرات الآتية تغير فيزيائي: احتراق الورق، صدأ الحديد، ذوبان الجليد، تعفن الطعام؟',
+    promptEn: 'Which of these changes is a physical change: burning paper, iron rusting, ice melting, food rotting?',
   },
   {
     id: 'ch-gn-e5', family: 'general_chem', diff: 'easy', eq: 'الصوديوم',
@@ -1578,8 +1580,8 @@ export const CHEM_BANK: ConcreteItem[] = [
   {
     id: 'ch-gn-m3', family: 'general_chem', diff: 'medium', eq: 'المخلوطات',
     answer: 'محلول ملح الطعام في الماء', wrongs: ['زيت وماء', 'رمل وماء', 'سلطة خضار'],
-    promptAr: 'أيّ المخاليط الآتية مخلوط متجانس؟',
-    promptEn: 'Which of these mixtures is homogeneous?',
+    promptAr: 'أيّ المخاليط الآتية مخلوط متجانس: زيت وماء، رمل وماء، محلول ملح الطعام في الماء، سلطة خضار؟',
+    promptEn: 'Which of these mixtures is homogeneous: oil and water, sand and water, salt dissolved in water, a vegetable salad?',
   },
   {
     id: 'ch-gn-m4', family: 'general_chem', diff: 'medium', eq: 'فصل الملح عن الماء',
