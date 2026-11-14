@@ -24,7 +24,7 @@ const eqOpts = (ans: string, cands: string[], near: (k: number) => string) => wr
 
 const unitRate = T('unit_rate', /^معدل الوحده$/, [7, 7], ({ rng, diff }) => {
   const k = pick(rng, [0, 1, 2]);
-  if (k === 0) { const v = int(rng, 20, span(diff, 60, 90, 120)), h = int(rng, 2, 6); return { eq: `${v * h}, ${h}`, answer: String(v), wrongs: ints(v, [v * h, v + h, v * h - h, h]), ar: `قطعت سيارة ${v * h} كم في ${h} ساعات بسرعة ثابتة. ما سرعتها بالكيلومتر لكل ساعة؟`, en: `A car travels ${v * h} km in ${h} hours at a steady speed. What is its speed in km per hour?` }; }
+  if (k === 0) { const v = int(rng, 20, span(diff, 60, 90, 120)), h = int(rng, 2, 6); return { eq: `${v * h}, ${h}`, answer: String(v), wrongs: ints(v, [v * h, v + h, v * h - h, h]), ar: `قطعت سيارة ${v * h} كم في ${h === 2 ? 'ساعتين' : `${h} ساعات`} بسرعة ثابتة. ما سرعتها بالكيلومتر لكل ساعة؟`, en: `A car travels ${v * h} km in ${h} hours at a steady speed. What is its speed in km per hour?` }; }
   if (k === 1) { const p = int(rng, 2, span(diff, 9, 15, 30)), q = int(rng, 3, 9); return { eq: `${p * q}, ${q}`, answer: String(p), wrongs: ints(p, [p * q, p + q, p * q - q, q]), ar: `ثمن ${q} كيلوغرامات من التفاح ${dinars(p * q)}. كم ثمن الكيلوغرام الواحد بالدينار؟`, en: `${q} kg of apples cost ${p * q} dinars. What is the price of 1 kg in dinars?` }; }
   const q1 = int(rng, 2, 5), u1 = int(rng, 3, 9), q2 = q1 + int(rng, 1, 3), u2 = u1 + int(rng, 1, 2);
   // offer 1: q1 kg for q1*u1; offer 2: q2 kg for q2*u2 — compare the unit prices u1 and u2
