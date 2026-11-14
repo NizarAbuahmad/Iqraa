@@ -46,6 +46,34 @@ with the same fixes, so their code stands and only Grade 4 is carried here.
 
 No «ما الجديد» entry: these change which questions an offline paper draws; they add no feature.
 
+## Grade 2 maths: offline questions for the four problem-solving lessons — 2026-11-14
+
+The Grade 2 audit (below) found four maths lessons with no offline questions. Each now has a generator in
+`lib/math-practice/src/topics.ts` (`grades: [2, 2]`), sized to its unit — S1 is adding and subtracting within 999, S2
+the 2, 3, 4, 5 and 10 tables and dividing by them:
+
+- **`guess_check_g2`** — «خطة حل المسألة: التخمين والتحقق» (S1 u3_l7): two numbers from their sum and difference
+  (every wrong pair breaks one of the two conditions); which two of four numbers make a total, drawn so only one pair
+  does; the number that added to itself makes N.
+- **`multi_step_g2`** — «… الحل بأكثر من خطوة» (S1 u4_l7): money after a gift and a purchase, riders on a bus, pages
+  two children read («قرأ خالد 9 صفحات أكثر منه»). The number a child gets by stopping after the first step is always
+  an option.
+- **`find_pattern_g2`** — «… البحث عن نمط» (S2 u6_l8): the next or the missing number in a skip-counting pattern, and
+  boxes of pens continued to the n-th box («صندوق فيه 5 أقلام، وصندوقان فيهما 10 أقلام…»).
+- **`choose_op_g2`** — «مهارة حل المسألة: اختيار العملية» (S2 u7_l8): a one-step story for each operation; either
+  «أي عملية نستعمل…» (the four names are listed in the stem, so it works as short answer), or solve it, with what the
+  other operations give on the same two numbers as the wrong options.
+
+Grade 2 offline maths now covers all 61 lessons. Grade 1 has the same «التخمين والتحقق» and «اختيار العملية» titles
+and still no generator for them — not done here.
+
+**Verified:** `grade2Lessons.test.ts` (13, written first and seen failing) recomputes every key from its stem with code
+that shares nothing with the generators, checks every kind is drawn, that only one pair makes the total, that the
+one-step slip is offered, and that no number or option passes 999; math-practice 1225 pass; the mobile suite (9,270
+pass, 0 fail); typecheck; 36 sampled items read by hand, keys right and the counted nouns agree («11 صفحةً», «9 صفحات», «30 تفاحةً», «15 قلمًا»).
+
+No «ما الجديد» entry: offline questions for lessons that had none, not a new feature.
+
 ## Grade 5 review: the last three maths lessons, the second pass's weak items, and social S2 u7_l4 — 2026-11-14
 
 «Grade 5 audit…» and «Grade 5 maths…» (both 2026-11-13, below) covered pages, figures, contents and every maths quiz. A
@@ -227,9 +255,10 @@ full, «رضي الله عنه/عنها» follows أبو هريرة, خديجة,
   lesson's regrouping. Multiplication with regrouping already had this exception.
 - «كم وجهًا لـمتوازي المستطيلات؟» → «لمتوازي المستطيلات» (`li` in `early.ts` put a tatweel before a word with no
   article; «لـ 3» and «لـ x» stay, a preposition cannot join a digit).
-- **Not fixed:** four lessons get no offline questions — S1 u3_l7 «خطة حل المسألة: التخمين والتحقق», u4_l7 «… الحل
-  بأكثر من خطوة», S2 u6_l8 «… البحث عن نمط», u7_l8 «مهارة حل المسألة: اختيار العملية». The other 57 lessons' probe
-  items (171) were read by hand: every key right.
+- Four lessons got no offline questions — S1 u3_l7 «خطة حل المسألة: التخمين والتحقق», u4_l7 «… الحل بأكثر من
+  خطوة», S2 u6_l8 «… البحث عن نمط», u7_l8 «مهارة حل المسألة: اختيار العملية»; they have generators since «Grade 2
+  maths: offline questions for the four problem-solving lessons» (above). The other 57 lessons' probe items (171) were
+  read by hand: every key right.
 
 **Verified:** `columnRegroup.test.ts` (28, written first: all red without the change) recomputes every key column by
 column, checks each lesson's rule and that the slip is offered, and drives `takeElementaryMath`; `elementary.test.ts`'s
