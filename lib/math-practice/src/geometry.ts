@@ -531,9 +531,29 @@ const QUADS: Array<[string, string, string]> = [
   ['شبه منحرف', 'زوج واحد فقط من الأضلاع المتقابلة متوازٍ', 'exactly one pair of parallel sides'],
 ];
 const quadName = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng }) => {
+  // Grade 6 «الأشكال الرباعية» is about the angle sum (Grade 6 audit, 2026-11-14): half its items use it.
+  if (grade >= 6 && rng() < 0.6) return quadAngles(rng);
   const [n, ar, en] = pick(rng, QUADS);
   return { eq: n, answer: n, wrongs: names(rng, n, QUADS.map(q => q[0])), ar: `أي شكل رباعي له الخصائص الآتية: ${ar}؟`, en: `Which quadrilateral has these properties: ${en}?` };
 });
+/** The 360° angle sum: the fourth angle, three equal angles, a parallelogram's neighbouring angle, the sum itself. */
+function quadAngles(rng: Rng) {
+  const k = pick(rng, [0, 0, 1, 2, 3]);
+  if (k === 0) {
+    let a = 0, b = 0, c = 0, d = 0;
+    do { a = int(rng, 50, 140); b = int(rng, 50, 140); c = int(rng, 50, 140); d = 360 - a - b - c; } while (d < 40 || d > 160);
+    return { eq: `quad ${a}, ${b}, ${c}`, answer: `${d}°`, wrongs: deg(d, [360 - a - b, 180 - d, d + 10, d - 10]), ar: `قياسات ثلاث زوايا في شكل رباعي ${a}° و ${b}° و ${c}°. ما قياس الزاوية الرابعة؟`, en: `Three angles of a quadrilateral measure ${a}°, ${b}° and ${c}°. What does the fourth angle measure?` };
+  }
+  if (k === 1) {
+    const x = pick(rng, [70, 75, 80, 85, 95, 100, 105, 110]), d = 360 - 3 * x;
+    return { eq: `quad 3x + ${d}`, answer: `${x}°`, wrongs: deg(x, [(180 - d) / 3, 360 - d, d, x + 10]), ar: `في شكل رباعي ثلاث زوايا متساوية في القياس، وقياس الزاوية الرابعة ${d}°. ما قياس كل من الزوايا الثلاث المتساوية؟`, en: `A quadrilateral has three equal angles and a fourth angle of ${d}°. What does each of the equal angles measure?` };
+  }
+  if (k === 2) {
+    const a = int(rng, 40, 140); const ans = 180 - a;
+    return { eq: `para ${a}`, answer: `${ans}°`, wrongs: deg(ans, [a, 360 - a, ans + 10, ans - 10]), ar: `في متوازي الأضلاع ABCD قياس الزاوية A يساوي ${a}°. ما قياس الزاوية B؟`, en: `In parallelogram ABCD, angle A measures ${a}°. What does angle B measure?` };
+  }
+  return { eq: 'quad sum', answer: '360°', wrongs: ['180°', '90°', '540°'], ar: 'ما مجموع قياسات الزوايا الداخلية لأي شكل رباعي؟', en: 'What is the sum of the interior angles of any quadrilateral?' };
+}
 
 const SHAPE_BASES: Array<[number, string, string]> = [[3, 'مثلثية', 'triangular'], [4, 'رباعية', 'square'], [5, 'خماسية', 'pentagonal'], [6, 'سداسية', 'hexagonal']];
 /** The solid's name by its base, and a net's base faces: [one, two of them]. */
@@ -761,7 +781,7 @@ const parallelProof = T('parallel_proof', /^اثبات توازي المستقي
   if (kind === 1) { const c2 = 180 - (p + q) * x - c1; if (c2 <= 0) return parallelProof.make({ rng, diff, grade: 8 }); return { eq: `${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, (180 - c1 - c2) / (p + q) + 2 | 0, 180 - c1 - c2]), ar: `قياسا زاويتين متحالفتين (${p}x + ${c1})° و (${q === 1 ? '' : q}x + ${c2})°. ما قيمة x التي تجعل المستقيمين متوازيين؟`, en: `Two co-interior angles measure (${p}x + ${c1})° and (${q === 1 ? '' : q}x + ${c2})°. What value of x makes the lines parallel?` }; }
   const c2 = 90 - (p + q) * x - c1;
   if (c2 <= 0) return parallelProof.make({ rng, diff, grade: 8 });
-  return { eq: `${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, (90 - c1 - c2) / (p + q) + 2 | 0, 90 - c1 - c2]), ar: `زاويتان متجاورتان قياسهما (${p}x + ${c1})° و (${q === 1 ? '' : q}x + ${c2})°. ما قيمة x التي تجعل المستقيمين متعامدين؟`, en: `Two adjacent angles measure (${p}x + ${c1})° and (${q === 1 ? '' : q}x + ${c2})°. What value of x makes the lines perpendicular?` };
+  return { eq: `${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, (90 - c1 - c2) / (p + q) + 2 | 0, 90 - c1 - c2]), ar: `زاويتان متجاورتان تكوّنان معًا الزاوية بين مستقيمين، قياساهما (${p}x + ${c1})° و (${q === 1 ? '' : q}x + ${c2})°. ما قيمة x التي تجعل المستقيمين متعامدين؟`, en: `Two adjacent angles measure (${p}x + ${c1})° and (${q === 1 ? '' : q}x + ${c2})°. What value of x makes the lines perpendicular?` };
 });
 
 const isosceles = T('isosceles', /^المثلثات المتطابقه الضلعين والمثلثات المتطابقه الاضلاع$/, [8, 8], ({ rng, diff }) => {
@@ -782,7 +802,7 @@ const congruence = (id: string, match: RegExp, answers: string[]) => T(id, match
   };
   const ans = pick(rng, answers);
   const all = ['SSS', 'SAS', 'HL', 'ASA', 'AAS'];
-  return { eq: ans, answer: ans, wrongs: names(rng, ans, all), ar: `إذا كان ${DESC[ans]![0]}، فبأي حالة تتطابق المثلثان؟`, en: `If ${DESC[ans]![1]}, by which criterion are the triangles congruent?` };
+  return { eq: ans, answer: ans, wrongs: names(rng, ans, all), ar: `${['SSS', 'ASA', 'AAS'].includes(ans) ? 'إذا كانت' : 'إذا كان'} ${DESC[ans]![0]}، فبأي حالة يتطابق المثلثان؟`, en: `If ${DESC[ans]![1]}, by which criterion are the triangles congruent?` };
 });
 
 /** The vertex of DEF that corresponds to each of ABC's, for a side «AB» or an angle «A». */

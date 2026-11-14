@@ -11,6 +11,7 @@ import { ALGEBRA_TOPICS } from '../algebra.ts';
 import { GEOMETRY_TOPICS } from '../geometry.ts';
 import { STATS_TOPICS } from '../stats.ts';
 import { PROPORTION_TOPICS } from '../proportion.ts';
+import { G5_TOPICS } from '../g5.ts';
 import { mathBankCovers, takeElementaryMath, type DiffTier } from '../index.ts';
 import type { ConcreteItem } from '../index.ts';
 
@@ -42,7 +43,7 @@ function draws(id: string, n = 150): Array<{ item: ConcreteItem; grade: number; 
 
 const nums = (s: string) => (s.match(/\d+/g) ?? []).map(Number);
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
-const toJs = (eq: string) => eq.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/(\d+)²/g, '($1**2)');
+const toJs = (eq: string) => eq.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/(\d+)²/g, '($1**2)').replace(/√(\d+)/g, 'Math.sqrt($1)');
 const num = (s: string) => Number(s.replace('−', '-'));
 
 /** Value of «−3/4», «3 2/5», «35%», «0.75», «12»; null for anything else. */
@@ -59,8 +60,8 @@ function value(s: string): number | null {
 }
 
 describe('every generator, every grade, every tier', () => {
-  // algebra, geometry, stats and proportion have their own shape tests (some answers have fewer than three wrong options)
-  const OWN = new Set([...ALGEBRA_TOPICS, ...GEOMETRY_TOPICS, ...STATS_TOPICS, ...PROPORTION_TOPICS].map(t => t.id));
+  // algebra, geometry, stats, proportion and Grade 5 have their own shape tests (some answers have fewer than three wrong options)
+  const OWN = new Set([...ALGEBRA_TOPICS, ...GEOMETRY_TOPICS, ...STATS_TOPICS, ...PROPORTION_TOPICS, ...G5_TOPICS].map(t => t.id));
   for (const t of TOPICS.filter(t => !OWN.has(t.id))) {
     it(`${t.id}: well-formed items with three distinct wrong options`, () => {
       for (const { item, grade, diff } of draws(t.id, 240)) {
@@ -113,7 +114,7 @@ const toSup = (n: number) => [...String(n)].map(c => SUPS[Number(c)]).join('');
 const js = (expr: string) => Function(`return ${toJs(expr)}`)() as number;
 /** The slip: every operation strictly from left to right. */
 function leftToRight(expr: string): number {
-  const t = expr.replace(/[()]/g, '').split(' ').map(x => (x.endsWith('²') ? Number(x.slice(0, -1)) ** 2 : x));
+  const t = expr.replace(/[()]/g, '').split(' ').map(x => (x.endsWith('²') ? Number(x.slice(0, -1)) ** 2 : x.startsWith('√') ? Math.sqrt(Number(x.slice(1))) : x));
   let v = Number(t[0]);
   for (let i = 1; i < t.length; i += 2) {
     const r = Number(t[i + 1]);
@@ -518,6 +519,48 @@ describe('answers recomputed from the stem', () => {
     assert.equal(kinds.size, 3, [...kinds].join());
   });
 
+  it('Grade 6 order of operations names powers and roots on a medium paper (Grade 6 audit, 2026-11-14)', () => {
+    // The outcome is «مقادير عددية تحوي قوى وجذورًا»; powers came only on hard and roots never.
+    const t = topic('order_ops');
+    let pow = 0, root = 0;
+    for (let i = 0; i < 300; i++) {
+      const p = makeTopicItem(t, 6, 'medium', new Set(), seeded(i * 104729 + 7)).promptAr!;
+      if (p.includes('²')) pow++;
+      if (p.includes('√')) root++;
+    }
+    assert.ok(pow > 20 && root > 20, `powers ${pow}, roots ${root}`);
+    for (let i = 0; i < 300; i++) {
+      const p = makeTopicItem(t, 5, (['easy', 'medium', 'hard'] as const)[i % 3], new Set(), seeded(i * 104729 + 7)).promptAr!;
+      assert.ok(!/[²√]/.test(p), `Grade 5 drew a power or root: ${p}`);
+    }
+  });
+
+  it('Grade 7 counted nouns agree with their numbers (Grade 7 audit, 2026-11-14)', () => {
+    // «تكررت العملية 8 مرة» and «بين أشخاص بنسبة 1 : 3» were printed («في 2 ساعات» is fixed and pinned elsewhere).
+    for (const { item } of draws('unit_rate', 600)) assert.ok(!/(?:^|[^\d])2 ساعات/.test(item.promptAr!), item.promptAr);
+    for (const { item } of draws('prob_g7', 600)) assert.ok(!/(?:^|[^\d])(?:[3-9]|10) مرة/.test(item.promptAr!), item.promptAr);
+    for (const { item } of draws('proportional_division', 600)) {
+      const p = item.promptAr!, m = p.match(/بنسبة ((?:\d+ : )+\d+)/);
+      if (!m || !p.includes('قُسّم مبلغ') || p.includes('بين أخوين')) continue;
+      const parts = m[1]!.split(' : ').length;
+      assert.ok(p.includes(parts === 2 ? 'بين شخصين' : 'بين ثلاثة أشخاص'), `${parts} shares: ${p}`);
+    }
+  });
+
+  it('Grade 8 counted nouns and verbs agree (Grade 8 audit, 2026-11-14)', () => {
+    // «2 بناطيل», «2 أنواع من الحلوى», «لجنة من 2 طلاب», «فبأي حالة تتطابق المثلثان» and «إذا كان زاويتان» were printed.
+    for (const { item } of draws('counting', 600)) assert.ok(!/(?:^|[^\d])2 (?:قمصان|بناطيل|أنواع|طلاب)/.test(item.promptAr!), item.promptAr);
+    for (const id of ['congruence_a', 'congruence_b']) for (const { item } of draws(id, 300)) {
+      const p = item.promptAr!;
+      assert.ok(!p.includes('تتطابق المثلثان') && !/إذا كان (?:ثلاثة|زاويتان)/.test(p), p);
+    }
+  });
+
+  it('percent conversions never print a float artefact (Grade 6 audit, 2026-11-14)', () => {
+    // «اكتب 64% على صورة عدد عشري» offered «1.6400000000000001».
+    for (const { item } of draws('pct_conv', 600)) for (const s of [item.answer, ...item.wrongs]) assert.ok(!/\d\.\d{4,}/.test(s), `${item.promptAr}: ${s}`);
+  });
+
   it('integers: compute, real-life problems, the missing number, an expression', () => {
     const kindsOf: Record<string, Set<string>> = { int_add: new Set(), int_sub: new Set(), int_muldiv: new Set() };
     for (const id of ['int_add', 'int_sub', 'int_muldiv']) {
@@ -861,9 +904,12 @@ describe('routing', () => {
     ['النسبة المئوية والكسور العادية', 6, 'pct_conv'],
     ['قوانين الأسس الصحيحة', 7, 'exp_laws'],
     // a title no generator is about, and a grade outside a generator's range
-    ['خطة حل المسألة: الرسم', 7, null],
+    // (the two Grade 7 lessons once listed here have generators since 2026-11-13: g7Lessons.test.ts)
+    ['خطة حل المسألة: الرسم', 7, 'g7_draw_diagram'],
+    ['خطة حل المسألة: الرسم', 6, null],
     ['العوامل', 8, null],
-    ['التطابق', 7, null],
+    ['التطابق', 7, 'g7_congruence'],
+    ['التطابق', 9, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {

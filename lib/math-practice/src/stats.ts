@@ -193,7 +193,7 @@ const probability = (id: string, match: RegExp, grade: number) => T(id, match, [
   }
   const counts = [int(rng, 2, 8), int(rng, 2, 8)], t = sum(counts), N = t * int(rng, 2, 6);
   const exp = (N * counts[0]!) / t;
-  return { eq: counts.join(', '), answer: String(exp), wrongs: countOpts(exp, [N / 2, N - exp, counts[0]!, exp + counts[1]!]), ar: `في كيس ${bagAr(counts)}. سُحبت كرة عشوائيًا وأُعيدت إلى الكيس، وتكررت العملية ${N} مرة. كم مرة يُتوقَّع أن تكون الكرة المسحوبة ${COLORS[0]![0]}؟`, en: `A bag holds ${bagEn(counts)}. A ball is drawn at random and replaced, ${N} times. How many times is it expected to be ${COLORS[0]![1]}?` };
+  return { eq: counts.join(', '), answer: String(exp), wrongs: countOpts(exp, [N / 2, N - exp, counts[0]!, exp + counts[1]!]), ar: `في كيس ${bagAr(counts)}. سُحبت كرة عشوائيًا وأُعيدت إلى الكيس، وتكررت العملية ${N} ${tamyiz(N, 'مرات', 'مرةً', 'مرة')}. كم مرة يُتوقَّع أن تكون الكرة المسحوبة ${COLORS[0]![0]}؟`, en: `A bag holds ${bagEn(counts)}. A ball is drawn at random and replaced, ${N} times. How many times is it expected to be ${COLORS[0]![1]}?` };
 });
 
 const experimental = T('experimental', /^الاحتمال التجريبي$/, [7, 7], ({ rng, diff }) => {
@@ -227,15 +227,17 @@ const experimental = T('experimental', /^الاحتمال التجريبي$/, [7
 
 const nPr = (n: number, r: number) => { let p = 1; for (let i = 0; i < r; i++) p *= n - i; return p; };
 const fact = (n: number) => nPr(n, n);
+/** «نوعان» / «5 أنواع»: a count of 2 takes the dual, not «2 أنواع» (Grade 8 audit, 2026-11-14). */
+const kinds = (n: number) => (n === 2 ? 'نوعان' : `${n} أنواع`);
 const counting = T('counting', /^عد النواتج$/, [8, 8], ({ rng, diff }) => {
   const k = pick(rng, diff === 'easy' ? [0, 1] : [0, 1, 2, 3, 4]);
-  if (k === 0) { const a = int(rng, 2, 6), b = int(rng, 2, 6); return { eq: `${a}, ${b}`, answer: String(a * b), wrongs: countOpts(a * b, [a + b, a * b + a, a ** b, a * b - b]), ar: `لدى سامر ${a} قمصان و ${b} بناطيل. كم زيًّا مختلفًا (قميص وبنطال) يمكنه تكوينه؟`, en: `Sami has ${a} shirts and ${b} pairs of trousers. How many different outfits (a shirt and a pair of trousers) can he make?` }; }
-  if (k === 1) { const a = int(rng, 2, 5), b = int(rng, 2, 5), c = int(rng, 2, 4); return { eq: `${a}, ${b}, ${c}`, answer: String(a * b * c), wrongs: countOpts(a * b * c, [a + b + c, a * b + c, a * b * c + a, (a + b) * c]), ar: `في مطعم ${a} أنواع من الطبق الرئيسي و ${b} أنواع من العصير و ${c} أنواع من الحلوى. كم وجبة مختلفة (طبق وعصير وحلوى) يمكن اختيارها؟`, en: `A restaurant offers ${a} main dishes, ${b} drinks and ${c} desserts. How many different meals (one of each) can be chosen?` }; }
+  if (k === 0) { const a = int(rng, 2, 6), b = int(rng, 2, 6); return { eq: `${a}, ${b}`, answer: String(a * b), wrongs: countOpts(a * b, [a + b, a * b + a, a ** b, a * b - b]), ar: `لدى سامر ${a === 2 ? 'قميصان' : `${a} قمصان`} و${b === 2 ? 'بنطالان' : ` ${b} بناطيل`}. كم زيًّا مختلفًا (قميص وبنطال) يمكنه تكوينه؟`, en: `Sami has ${a} shirts and ${b} pairs of trousers. How many different outfits (a shirt and a pair of trousers) can he make?` }; }
+  if (k === 1) { const a = int(rng, 2, 5), b = int(rng, 2, 5), c = int(rng, 2, 4); return { eq: `${a}, ${b}, ${c}`, answer: String(a * b * c), wrongs: countOpts(a * b * c, [a + b + c, a * b + c, a * b * c + a, (a + b) * c]), ar: `في مطعم ${kinds(a)} من الطبق الرئيسي و${b === 2 ? 'نوعان' : ` ${b} أنواع`} من العصير و${c === 2 ? 'نوعان' : ` ${c} أنواع`} من الحلوى. كم وجبة مختلفة (طبق وعصير وحلوى) يمكن اختيارها؟`, en: `A restaurant offers ${a} main dishes, ${b} drinks and ${c} desserts. How many different meals (one of each) can be chosen?` }; }
   if (k === 2) { const n = int(rng, 3, span(diff, 5, 6, 7)); return { eq: `${n}`, answer: String(fact(n)), wrongs: countOpts(fact(n), [n * n, fact(n - 1), 2 * n, fact(n) + n]), ar: `بكم طريقة مختلفة يمكن ترتيب ${n} كتب مختلفة على رف في صف واحد؟`, en: `In how many different ways can ${n} different books be arranged in a row on a shelf?` }; }
   const n = int(rng, 4, span(diff, 6, 8, 9)), r = int(rng, 2, 3);
-  if (k === 3) return { eq: `${n}, ${r}`, answer: String(nPr(n, r)), wrongs: countOpts(nPr(n, r), [n ** r, nPr(n, r) / fact(r), n * r, nPr(n, r + 1)]), ar: `بكم طريقة يمكن اختيار ${r} طلاب من ${n} طلاب لشغل ${r === 2 ? 'منصبي الرئيس ونائبه' : 'مناصب الرئيس ونائبه وأمين السر'} (الترتيب مهم)؟`, en: `In how many ways can ${r} students from ${n} be chosen to fill ${r === 2 ? 'the posts of president and deputy' : 'the posts of president, deputy and secretary'} (order matters)?` };
+  if (k === 3) return { eq: `${n}, ${r}`, answer: String(nPr(n, r)), wrongs: countOpts(nPr(n, r), [n ** r, nPr(n, r) / fact(r), n * r, nPr(n, r + 1)]), ar: `بكم طريقة يمكن اختيار ${r === 2 ? 'طالبين' : `${r} طلاب`} من ${n} طلاب لشغل ${r === 2 ? 'منصبي الرئيس ونائبه' : 'مناصب الرئيس ونائبه وأمين السر'} (الترتيب مهم)؟`, en: `In how many ways can ${r} students from ${n} be chosen to fill ${r === 2 ? 'the posts of president and deputy' : 'the posts of president, deputy and secretary'} (order matters)?` };
   const c = nPr(n, r) / fact(r);
-  return { eq: `${n}, ${r}`, answer: String(c), wrongs: countOpts(c, [nPr(n, r), n * r, c + n, nPr(n, r) / 2]), ar: `بكم طريقة يمكن اختيار لجنة من ${r} طلاب من بين ${n} طلاب (الترتيب غير مهم)؟`, en: `In how many ways can a committee of ${r} students be chosen from ${n} students (order does not matter)?` };
+  return { eq: `${n}, ${r}`, answer: String(c), wrongs: countOpts(c, [nPr(n, r), n * r, c + n, nPr(n, r) / 2]), ar: `بكم طريقة يمكن اختيار لجنة من ${r === 2 ? 'طالبين' : `${r} طلاب`} من بين ${n} طلاب (الترتيب غير مهم)؟`, en: `In how many ways can a committee of ${r} students be chosen from ${n} students (order does not matter)?` };
 });
 
 const compound = T('compound_prob', /^احتمال الحوادث المركبه$/, [8, 8], ({ rng, diff }) => {
