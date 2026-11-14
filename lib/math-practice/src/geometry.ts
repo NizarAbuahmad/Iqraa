@@ -781,7 +781,7 @@ const parallelProof = T('parallel_proof', /^اثبات توازي المستقي
   if (kind === 1) { const c2 = 180 - (p + q) * x - c1; if (c2 <= 0) return parallelProof.make({ rng, diff, grade: 8 }); return { eq: `${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, (180 - c1 - c2) / (p + q) + 2 | 0, 180 - c1 - c2]), ar: `قياسا زاويتين متحالفتين (${p}x + ${c1})° و (${q === 1 ? '' : q}x + ${c2})°. ما قيمة x التي تجعل المستقيمين متوازيين؟`, en: `Two co-interior angles measure (${p}x + ${c1})° and (${q === 1 ? '' : q}x + ${c2})°. What value of x makes the lines parallel?` }; }
   const c2 = 90 - (p + q) * x - c1;
   if (c2 <= 0) return parallelProof.make({ rng, diff, grade: 8 });
-  return { eq: `${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, (90 - c1 - c2) / (p + q) + 2 | 0, 90 - c1 - c2]), ar: `زاويتان متجاورتان قياسهما (${p}x + ${c1})° و (${q === 1 ? '' : q}x + ${c2})°. ما قيمة x التي تجعل المستقيمين متعامدين؟`, en: `Two adjacent angles measure (${p}x + ${c1})° and (${q === 1 ? '' : q}x + ${c2})°. What value of x makes the lines perpendicular?` };
+  return { eq: `${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, (90 - c1 - c2) / (p + q) + 2 | 0, 90 - c1 - c2]), ar: `زاويتان متجاورتان تكوّنان معًا الزاوية بين مستقيمين، قياساهما (${p}x + ${c1})° و (${q === 1 ? '' : q}x + ${c2})°. ما قيمة x التي تجعل المستقيمين متعامدين؟`, en: `Two adjacent angles measure (${p}x + ${c1})° and (${q === 1 ? '' : q}x + ${c2})°. What value of x makes the lines perpendicular?` };
 });
 
 const isosceles = T('isosceles', /^المثلثات المتطابقه الضلعين والمثلثات المتطابقه الاضلاع$/, [8, 8], ({ rng, diff }) => {
@@ -802,7 +802,7 @@ const congruence = (id: string, match: RegExp, answers: string[]) => T(id, match
   };
   const ans = pick(rng, answers);
   const all = ['SSS', 'SAS', 'HL', 'ASA', 'AAS'];
-  return { eq: ans, answer: ans, wrongs: names(rng, ans, all), ar: `إذا كان ${DESC[ans]![0]}، فبأي حالة تتطابق المثلثان؟`, en: `If ${DESC[ans]![1]}, by which criterion are the triangles congruent?` };
+  return { eq: ans, answer: ans, wrongs: names(rng, ans, all), ar: `${['SSS', 'ASA', 'AAS'].includes(ans) ? 'إذا كانت' : 'إذا كان'} ${DESC[ans]![0]}، فبأي حالة يتطابق المثلثان؟`, en: `If ${DESC[ans]![1]}, by which criterion are the triangles congruent?` };
 });
 
 /** The vertex of DEF that corresponds to each of ABC's, for a side «AB» or an angle «A». */
