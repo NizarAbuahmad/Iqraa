@@ -30,6 +30,8 @@ lesson grounds by id, all 39 maths lessons give a full paper. This change fixes 
   — `mathLessonKinds.test.ts` caught it — so the last two were added.) `freq_table` keeps «الجداول التكرارية» and
   loses the sample question it had carried only for this lesson.
 - **«6.2 ساعات»**: `simpler_problem`'s two times are never whole, and a decimal count takes the singular — «3.7 ساعة».
+- **«11 دينار»**: the same generator's cheese price, when it came out whole, kept «دينار»; it now agrees («11 دينارًا»,
+  «5 دنانير»). `tamyiz.test.ts` (new on `main`) found it once this change's new generators shifted its seeded draws.
 
 **Verified.** New tests recompute every key from its stem (`topics.test.ts`: p% of the printed whole, the cube kinds, the
 Grade 6 cube share; `stats.test.ts`: each data item's class from fixed lists); `routing.test.ts` pins the routing and

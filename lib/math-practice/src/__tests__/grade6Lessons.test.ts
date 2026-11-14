@@ -89,7 +89,7 @@ describe('Grade 6 lessons that had no offline questions', () => {
       if (m) { kinds.add('distance'); close(got, (Number(m[1]) / Number(m[2])) * Number(m[3]), p); continue; }
       m = p.match(/([\d.]+)L من الوقود لقطع مسافة ([\d.]+)km.+مسافة ([\d.]+)km/);
       if (m) { kinds.add('fuel'); close(got, (Number(m[1]) / Number(m[2])) * Number(m[3]), p); continue; }
-      m = p.match(/سعر ([\d.]+)kg .+ ([\d.]+) دينار.+سعر (\d+)g/);
+      m = p.match(/سعر ([\d.]+)kg .+ ([\d.]+) (?:دينار|دنانير).+سعر (\d+)g/);
       assert.ok(m, `unrecognised stem: ${p}`);
       kinds.add('price');
       close(got, (Number(m[2]) / Number(m[1])) * (Number(m[3]) / 1000), p);

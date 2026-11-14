@@ -2037,7 +2037,9 @@ const simplerProblem: Topic = {
     return {
       eq: `${c1}JD / ${fmtDec(m10, 1)}kg × ${g2}g`, answer: ans,
       wrongs: wrongsFrom(ans, [fmtDec(P * g2, 2), fmtDec((P * g2) / 10, 3), fmtDec(P, 2)], j => fmtDec((P * g2) / 100 + 10 * Math.abs(j), 3)),
-      ar: `إذا كان سعر ${fmtDec(m10, 1)}kg من الجبن ${c1} دينار، فما سعر ${g2}g من الجبن نفسه بالدينار؟`,
+      // a whole price agrees with its number («11 دينارًا», «5 دنانير»); a decimal one keeps «دينار». P·m10 ≥ 1650,
+      // so the price is never 1 or 2 dinars, which would be written as the noun alone
+      ar: `إذا كان سعر ${fmtDec(m10, 1)}kg من الجبن ${(P * m10) % 1000 === 0 ? dinars((P * m10) / 1000) : `${c1} دينار`}، فما سعر ${g2}g من الجبن نفسه بالدينار؟`,
       en: `If ${fmtDec(m10, 1)}kg of cheese costs ${c1} JD, what does ${g2}g of the same cheese cost, in JD?`,
     };
   },
