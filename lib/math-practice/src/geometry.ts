@@ -977,23 +977,29 @@ const pyth = T('pythagoras', /^نظريه فيثاغورس$/, [8, 8], ({ rng, di
 
 // ─── transformations and the coordinate plane ───────────────────────────────
 
+/**
+ * Grade 4 has no equations, so a mirror line is named by where it crosses an
+ * axis, in the bank's point notation: «المستقيم الرأسي المار بالنقطة (7 ، 0)»,
+ * not «x = 7» inside an Arabic stem (status log, 2026-11-13).
+ */
 const reflectLine = T('reflect_line', /^الانعكاس$/, [4, 4], ({ rng, diff }) => {
   const a = int(rng, 3, 8), x = int(rng, 1, a - 1), y = int(rng, 1, 9);
   const dx = a - x;
+  const vertical = `المستقيم الرأسي المار بالنقطة ${pt(a, 0)}`, verticalEn = `the vertical line through ${pt(a, 0)}`;
   // 0 in a vertical line, 1 in a horizontal line, 2 find the mirror line from a point and its image, 3 how far a point is from its image.
   const k = pick(rng, [0, 1, 2, 3]);
   if (k === 1) {
     const b = int(rng, 3, 8), yy = int(rng, 1, b - 1), xx = int(rng, 1, 9);
     const img: [number, number] = [xx, 2 * b - yy];
-    return { eq: `h ${pt(xx, yy)}, ${b}`, answer: pt(...img), wrongs: ptOpts(img, [[xx, yy], [xx, b], [2 * b - yy, xx], [2 * b - xx, yy], [xx, b + yy]]), ar: `انعكاس النقطة ${pt(xx, yy)} حول المستقيم الأفقي y = ${b}. ما إحداثيات صورتها؟`, en: `Reflect the point ${pt(xx, yy)} in the horizontal line y = ${b}. What are the coordinates of the image?` };
+    return { eq: `h ${pt(xx, yy)}, ${b}`, answer: pt(...img), wrongs: ptOpts(img, [[xx, yy], [xx, b], [2 * b - yy, xx], [2 * b - xx, yy], [xx, b + yy]]), ar: `عُكِست النقطة ${pt(xx, yy)} حول المستقيم الأفقي المار بالنقطة ${pt(0, b)}. ما إحداثيات صورتها؟`, en: `What are the coordinates of the image of ${pt(xx, yy)} after a reflection in the horizontal line through ${pt(0, b)}?` };
   }
   if (k === 2) {
-    const x2 = a + dx;
-    return { eq: `mirror ${pt(x, y)}, ${pt(x2, y)}`, answer: `x = ${a}`, wrongs: wrongsFrom(`x = ${a}`, [`x = ${x2 - x}`, `y = ${y}`, `x = ${x + x2}`, `y = ${a}`], j => `x = ${a + Math.abs(j)}`), ar: `صورة النقطة ${pt(x, y)} بالانعكاس حول مستقيم رأسي هي النقطة ${pt(x2, y)}. ما معادلة محور الانعكاس؟`, en: `The image of ${pt(x, y)} after a reflection in a vertical line is ${pt(x2, y)}. What is the equation of the line of reflection?` };
+    const x2 = a + dx, ans: [number, number] = [a, 0];
+    return { eq: `mirror ${pt(x, y)}, ${pt(x2, y)}`, answer: pt(...ans), wrongs: ptOpts(ans, [[x2 - x, 0], [x + x2, 0], [a, y], [0, a]]), ar: `صورة النقطة ${pt(x, y)} بالانعكاس حول مستقيم رأسي هي النقطة ${pt(x2, y)}. في أي نقطة يقطع محور الانعكاس المحور الأفقي؟`, en: `The image of ${pt(x, y)} after a reflection in a vertical line is ${pt(x2, y)}. At which point does the line of reflection cross the horizontal axis?` };
   }
-  if (k === 3) return { eq: `dist ${pt(x, y)}, ${a}`, answer: String(2 * dx), wrongs: pos(2 * dx, [dx, a, 2 * a, x + a, 2 * dx + 1]), ar: `ما المسافة بالوحدات بين النقطة ${pt(x, y)} وصورتها بالانعكاس حول المستقيم الرأسي x = ${a}؟`, en: `What is the distance, in units, between ${pt(x, y)} and its image after a reflection in the vertical line x = ${a}?` };
+  if (k === 3) return { eq: `dist ${pt(x, y)}, ${a}`, answer: String(2 * dx), wrongs: pos(2 * dx, [dx, a, 2 * a, x + a, 2 * dx + 1]), ar: `ما المسافة بالوحدات بين النقطة ${pt(x, y)} وصورتها بالانعكاس حول ${vertical}؟`, en: `What is the distance, in units, between ${pt(x, y)} and its image after a reflection in ${verticalEn}?` };
   const ans: [number, number] = [a + dx, y];
-  return { eq: pt(x, y), answer: pt(...ans), wrongs: ptOpts(ans, [[x, y], [a, y], [x + dx, y], [y, a + dx], [a + dx, -y]]), ar: `انعكاس النقطة ${pt(x, y)} حول المستقيم الرأسي x = ${a}. ما إحداثيات صورتها؟`.replace(`x = ${a}`, `x = ${a}`), en: `Reflect the point ${pt(x, y)} in the vertical line x = ${a}. What are the coordinates of the image?` };
+  return { eq: pt(x, y), answer: pt(...ans), wrongs: ptOpts(ans, [[x, y], [a, y], [x + dx, y], [y, a + dx], [a + dx, -y]]), ar: `عُكِست النقطة ${pt(x, y)} حول ${vertical}. ما إحداثيات صورتها؟`, en: `What are the coordinates of the image of ${pt(x, y)} after a reflection in ${verticalEn}?` };
 });
 
 const translate = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng, diff }) => {
