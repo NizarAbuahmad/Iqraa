@@ -61,7 +61,8 @@ async function id(pool: Pool, sql: string, params: unknown[]): Promise<string> {
   return r.rows[0].id;
 }
 
-async function levelScale(pool: Pool): Promise<string> {
+/** The default level scale with four bands — what a sitting needs before it can start. */
+export async function seedLevelScale(pool: Pool): Promise<string> {
   const scaleId = await id(pool, `INSERT INTO level_scales (name, is_default) VALUES ('test scale', true) RETURNING id`, []);
   const bands: Array<[string, number, number, number]> = [
     ["beginner", 0, 49.99, 0],
@@ -179,7 +180,7 @@ async function result(pool: Pool, attemptId: string, earned: number, total: numb
 export async function seedExams(pool: Pool, w: FamilyWorld): Promise<ExamWorld> {
   const { t1 } = w.users;
   const { c1, c3 } = w.classes;
-  const scaleId = await levelScale(pool);
+  const scaleId = await seedLevelScale(pool);
   const dates = {
     exDated: ammanDay(5),
     exDraftDated: ammanDay(4),

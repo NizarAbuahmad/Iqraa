@@ -10,6 +10,250 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 1 review: coverage, generated results, book images — 2026-11-13
+
+A review of Grade 1 (all 8 subjects, 15 books, 279 lessons) against three asks: every subject covered, the right
+results, and the books' topics and images used.
+
+**Coverage (checked, no change).** All 8 Grade 1 subjects (maths, Arabic, English, Islamic, science, social, arts, PE)
+have catalogs, both semesters where the book has two, and are offered in the pickers; the `KNOWN_BOOKLESS` Grade 1
+pairs are subjects Grade 1 does not study. Every lesson grounds on its own id (279 of 279). The Arabic catalog teaches
+all 28 letters plus ة, ء, the three tanween and the shadda.
+
+**Not verified: topics against the PDFs.** The source books could not be opened from the session: `nccd.gov.jo`
+resets every connection from the cloud egress, the `iqraa-media` R2 bucket needs keys, and the Grade 1 maths books in
+the owner's Drive are 44–53 MB, too big for the connector. The catalogs' own provenance notes say they were read from
+the PDFs on 2026-09-18; that was not re-done. **No Grade 1 book has extracted text, figures or book pages**
+(nothing in `extracted/`, `knowledge-base/grade-1-*`, `figure-lesson-map.json` or `book-page-links.json`), so no Grade 1
+lesson shows a book image: slides fall back to stock photos and nothing is grounded on book passages. Fail-closed —
+no other grade's figure leaks in — but empty.
+
+**Results — what was swept.** The offline generators were run on every Grade 1 lesson. Maths: quiz and worksheet for
+60 of 66 lessons; six refuse by design (position, sorting ×2, two problem-solving lessons, daily routines). Every other
+subject refuses quizzes and worksheets offline (`NoQuestionBankError`, by design — production is live AI). All 947
+maths questions were checked by hand by a sub-agent and re-checked by script: **no wrong answer key**.
+
+**What changed.**
+1. **Eight Grade 1 maths lessons get questions about their own skill** (`lib/math-practice/src/early.ts`,
+   `earlyG1Ops.test.ts`): «جمع/طرح العشرات», «جمع/طرح عددين من منزلتين» (no regrouping), «الطرح باستعمال الضعف»,
+   «الطرح بإيجاد عشرة», «الجمع بالإكمال إلى العشرة», «جمع ثلاثة أعداد». They used to fall through to the generic
+   operation drill — a «جمع العشرات» quiz was all «3 + ؟ = 4». `takeElementaryMath` now prefers a lesson's own
+   generator over that drill; measured over grades 1–6, these eight are the only lessons that had both, so no other
+   lesson changes. Every answer is recomputed from the stem in the test; nothing past 99, options included.
+2. **The live prompts say when the class is Grade 1** (`artifacts/api-server/src/lib/firstGrade.ts`, wired into the
+   lesson-plan, worksheet/homework, quiz and activity prompts; `firstGradePrompts.test.ts`). The subject clauses are
+   grade-blind: an Arabic plan «starts from a text» and ends in «a paragraph of their own», every quiz must hold an
+   analysis item. For «حرف الباء» that is the wrong lesson. Grade 1 (from `kbl-g1-`/`kbu-g1-` ids, `grade-1`, or the
+   grade's name) adds a clause that overrides it: short concrete activities, no paragraph or exit-ticket writing,
+   one-word answers, Arabic as a primer (the letter's sound, forms and words), English as a few words, maths within
+   the lesson's numbers. For any other grade the clause is the empty string, so their prompts are unchanged (tested).
+3. **A fill-blank worksheet question printed two answer places** (its own «الإجابة: ____» and an answer box under
+   it), every grade (`generators.ts`, `worksheetFillBlankSpace.test.ts`).
+4. **The offline lesson plan has a Grade 1 version** (`artifacts/mobile/services/ai/lessonPlanFirstGrade.ts`,
+   `lessonPlanFirstGrade.test.ts`) — the fallback when live AI fails. Every field is its own for a Grade 1 lesson
+   (judged by the lesson's book; a typed topic by the grade named): short concrete phases, writing only as copying,
+   assessment by watching and asking aloud, homework done with the family. The kind still decides the content —
+   the Arabic primer split into letter lessons («حرف الباء (ب)»: the sound with the vowels, the forms at the start,
+   middle and end, copying), mark lessons (tanween, shadda) and the five skill lessons; a surah is recited; maths
+   works with objects and keeps the book's objectives — and the style still decides the shape (show → together →
+   alone; explore before naming; pairs with one job each, then each child alone). The doc-grounded branch (a
+   teacher's uploaded file) is unchanged. Tested on all 279 Grade 1 lessons × 3 styles: nothing from the
+   older-class list («فقرة», «3-2-1», exit ticket, controlled experiment…), and the teacher's own first-person voice
+   (`teacherVoiceCheck.ts`); red before the change, green after.
+5. **Offline activities and the deck's quick check have Grade 1 versions** (`activityFirstGrade.ts`,
+   `activityFirstGrade.test.ts`). The all-grades formats opened a Grade 1 «حرف الباء» activity with «اكتب من ذاكرتك
+   — الدفاتر مغلقة», defended a claim in writing, and had teams «عرّف» the letter and bet points; the slide deck's
+   quick check said «اشرح بكلماتك… اكتب إجابتك على لوحك». Each of the six formats now has a Grade 1 version built
+   from the lesson plan's per-kind content (`firstGradeContent`), still distinct on every field: alone with
+   objects; groups of three with a picture job card each; a talking circle that votes with thumbs; making with the
+   hands (shaping the letter in clay, building with cubes); a game with two rounds, stars and a winning team (a
+   maths round reads one of the lesson's own items aloud); a short song-and-picture warm-up. A Grade 1 lesson with
+   no question bank gets a spoken quick check answered all together (for a letter lesson: «قولوا كلمة تبدأ بصوت حرف
+   ب»…); Grade 1 maths keeps its question slides. The rest of a deck is built from the plan (fixed in 4) and the book.
+   A revision (unit/semester) activity keeps the all-grades formats.
+6. **Fixes from the code review of 1–3.**
+   - **The shared pool would have kept serving old Grade 1 artifacts.** A Grade 1 lesson-plan, worksheet, homework,
+     quiz or activity request now carries `firstGrade: "2026-11-13"` in its pool key (`generationKey.ts`,
+     `FIRST_GRADE_CLAUSE_VERSION`); other grades and other kinds leave the field out, so their keys are unchanged —
+     pinned by literal keys computed before the change. Bump the date when the clause changes.
+   - The Grade 1 activity clause asked every format for small groups, overriding an individual or a whole-class
+     discussion; the group line is now only for group, hands-on and game.
+   - A Grade 1 maths worksheet was asked for a 3–6 step worked example with a written self-explanation, next to a
+     clause forbidding both; Grade 1 now gets no worked example (`prompts.ts`).
+   - A word-problem slot in the eight new maths lessons served a bare «60 + ___ = 80» with «اكتب الحل موضّحًا
+     الخطوات»: a generator can now mark a story (`Draft.word`) and is asked for one (`Ctx.word`); «الجمع بالإكمال إلى
+     العشرة» gained a story.
+   - A fill-blank built from a stem that already has «___» no longer gets a second «الإجابة: ____» line
+     (`formatItem`), and the offline worksheet's answer box follows the same rule.
+   - Wording: «دفع منها … ثمنَ دفتر», «فأخذ», the homework line that said «ينسخ سطرًا» and «لا كتابة» at once; a grade
+     sent as the number 1 is recognised.
+7. **Grade 1 maths content fixed against the book's own objectives** (each lesson's «أتعلّم اليوم» in the catalog;
+   `early.ts`, `early.test.ts`, `earlyG1Ops.test.ts`):
+   - «العدد صفر» (read and write zero): no sums or differences, which units 3–4 teach; it asks the number before 1
+     and zero in digits instead.
+   - Semester 1 within 20: the three-number grouping (`add_props_g1`) and «العدد المفقود» (`missing_number`, its
+     story included) stop at 20 (they reached 27 and 30).
+   - The fractions unit (equal parts, half, quarter, part of a set): no third anywhere; no «ما العدد الذي نصفه/ربعه…؟»
+     nor «Sami took half and had 4 — how many were there?» (both multiplication), which became «how many are left?»;
+     the cube train stays at 12 or fewer.
+   - «لوحة الأعداد» never says left or right — whether 1 sits at a row's left depends on how the book draws the
+     chart. It asks «1 more / 1 less» (the objective's own wording) and «count forward / back».
+   - «الوقت بالساعات الكاملة» reads the clock (hands, a digital clock read aloud, a time shown digitally) instead of
+     «played from 2:00 to 4:00 — how long?» and «the time after 3 hours»; the half-hour lesson's «half an hour
+     earlier» likewise.
+   - Shapes: Grade 1 has the triangle, square, rectangle and circle — no «الخماسي/السداسي المنتظم». «الأشكال
+     المستوية» names shapes («أي شكل يشبه باب الصف؟», the circle); counting sides and vertices is the next lesson's.
+   - Lessons that shared one bank ask their own thing now: «العشرات» (whole tens, reading them), «الآحاد والعشرات»,
+     «تمثيل الأعداد ضمن منزلتين» (tens rods and ones cubes); «القطع النقدية» (identify and add), «… المتساوية» (one
+     coin in smaller coins), «استعمال القطع النقدية» (buying, what is left).
+   - Wording: «من الأمام» in the ordinal line-up; «رقم الآحاد» for «كم آحادًا»; counts of 3 or more before «عشرات /
+     آحاد / قطع»; «10 قروش» not «10 قرشًا»; no «(الأسبوع يبدأ بالأحد)» beside «قبل يوم الأحد»; nearest-ten options
+     only from the stem's own list; no «(اكتب اسمه)» on choice items; «أي جمع مما يأتي ناتجه 10» lists the sums.
+8. **Every Grade 1 maths lesson now has offline questions of its own** (`early.ts`; `g1MathCoverage.test.ts` checks
+   every lesson and every question type). Each new generator is text only (no picture needed), asks what its
+   objective names, and has three kinds or more (`mathLessonKinds.test.ts`):
+   - The six refused lessons: «الموقع والاتجاه» (opposites, a queue from front to back, a relation read back
+     «… فإن الصندوق ___ القطة», right and left hand); «التصنيف وفق خاصية واحدة» (odd one out, counting one colour,
+     which group, what the group is); «التصنيف وفق أكثر من خاصية» (count what has both properties, find the thing
+     that is both, which shape-and-colour box); «خطة حل المسألة: التخمين والتحقق» (two numbers from their sum and
+     difference, within 20; a number thought of; how many 10-qirsh coins); «مهارة حل المسألة: اختيار العملية» (adding
+     or taking away, the number sentence, the result); «ترتيب الأعمال اليومية» (first or last, what comes next, the
+     time of day).
+   - The data lessons no longer share `read_data_g12` (now Grade 2 only): «جداول البيانات» reads a table,
+     «تمثيل البيانات بالصور» makes a picture graph (how many ★ still to draw, how many in all, which row is longer),
+     «تفسير بيانات ممثلة بالصور» reads one (★ rows). Each kind has its own context (fruit, a trip vote, stories read,
+     a farm; animals, car colours, balls, rainy days) so they read as different tasks.
+   - Measurement: «مقارنة الأطوال / الكتل / السعات» compare and order (and «القلم أطول من الممحاة، والمسطرة أطول
+     من القلم. أيّها الأطول؟»); «وحدات … غير القياسية» are their own lessons — which unit is bigger from two
+     measures of one thing, the fitting unit, the two-small-units story.
+9. **The rest of the generators know Grade 1 too.**
+   - Live (`firstGrade.ts`, three more uses — `classroom`, `explain`, `visual`): the lesson explanation
+     (`lessonTeachingPrompt.ts`, what slides use when live AI is on: short sentences, «خمس كلمات أو أقل» on a
+     slide, a picture per idea), Prompt Slides (its lead is about the lesson, given only when there is one),
+     classroom activities and the quick check (`classroomPrompts.ts`: answered together, by pointing or aloud), the
+     infographic, and evaluations (`llmGenerator.ts`: a Grade 1 paper is short, pictured, read aloud by the
+     teacher, with no written explanation). The shared pool key gets the clause date for those kinds as well
+     (`FIRST_GRADE_KINDS`), so a Grade 1 lesson explanation or deck made before the clause is not served again;
+     every other key is unchanged (pinned by literal keys in `firstGradePrompts.test.ts`).
+   - Offline review (unit or semester): the plan has its own Grade 1 version (`firstGradeRevision` in
+     `lessonPlanRevision.ts`: pictures and a song, rounds answered aloud, «صح أم خطأ» standing and sitting, homework
+     shown to the family — no «ورقة مراجعة», no «بطاقة خروج», no «اكتب الفكرة الرئيسة في جملتين»), and still says
+     which lessons it leaves out. The review's activities and quick check are the Grade 1 ones; a review warm-up
+     looks back over the units (no «الدرس السابق» / «درس اليوم») and a review's wording is plural throughout
+     («مفردات الدروس»).
+   - A plan from the teacher's uploaded file, for Grade 1, is the Grade 1 plan with the file named in materials and
+     introduction and the file's concepts as the objectives («أن يتعرّف الطفل «الجذر» ويسمّيه»).
+10. **A Grade 1 evaluation holds only types a six-year-old can answer.** The new-evaluation picker offered all eight
+    types for every grade, with short answer ticked by default, and the API took them all. Now
+    `FIRST_GRADE_EVALUATION_TYPES` (`lib/exam-paper`, shared by app and API) is multiple choice, true/false,
+    matching, fill in the blank and a practical task. Short answer, open-ended and problem solving ask for written
+    sentences or working, so they are out:
+    - the picker lists only those five for a Grade 1 book, and turns the default ticks into choice alone
+      (`services/evaluationTypes.ts`);
+    - `POST /evaluations` drops the others, and refuses with `grade1_types` if nothing is left;
+    - generation applies the same rule, so an older Grade 1 evaluation is generated with what it kept, or choice and
+      true/false, with a note saying which types were left out;
+    - the evaluation prompt describes each of the paper's types for a six-year-old (`firstGradeTypeNotesEn`):
+      three options of a letter, word, number or ★ group; one letter, word or number in a blank; a task done with
+      objects while the teacher watches.
+11. **Maths difficulty works in grades 1–4 (offline), and for Grade 1 live.** The Grade 1 generators take their numbers from the lesson's range and nearly
+    all ignored `diff`: measured on first questions, 50 of the 64 lessons drew the same largest numbers at easy and
+    at hard, and the other 14 differed by chance.
+    - **Offline** (`lib/math-practice/src/earlyDifficulty.ts`): both item paths (`makeTopicItem`,
+      `makeElementaryItem`) now draw at least 15 questions for a grade 1–4 item. Among those of the kinds the paper
+      has served least (at least six), they keep one by `firstGradeLoad`, which weighs the largest number (a ★ row
+      by its length) and then the words to read: easy keeps one from the lightest third, hard from the heaviest,
+      medium from the middle.
+    - The spread over kinds is unchanged. The lesson's range is never left (hard is the top of it), and grade 5
+      and up draw as before.
+    - Measured over whole five-question papers: 53 of 64 lessons are at least 1.25× heavier at hard, with medium
+      between them; none is harder at easy (`g1MathDifficulty.test.ts`). The rest have no harder version: the
+      parts of 10, half past, a shape's sides, solids, the days, the lessons on 4–5 and 9–10.
+    - Grades 2–4 used the same generators and mostly ignored difficulty too. Over whole papers, before → after,
+      lessons clearly harder at hard: Grade 2 15 → 54 of 57, Grade 3 25 → 65 of 66, Grade 4 34 → 48 of 48. Lessons
+      harder at easy: 8 → 0. Pinned per grade in `earlyMathDifficulty.test.ts`.
+12. **Live grades 2–4 get their own level wording** (2026-11-14, `artifacts/api-server/src/lib/earlyGrade.ts`). A Grade
+    2–4 quiz, worksheet, homework or evaluation used the all-grades meanings written for the secondary classes:
+    medium "two or three steps", and hard "comparison, analysis, or an unfamiliar situation where the method must be
+    chosen first". Now every level stays within the lesson's range, in short sentences:
+    - easy is a direct one-step question with small numbers;
+    - medium is the lesson's skill in a familiar situation, in one or two steps;
+    - hard is the largest numbers, an unknown, or a short problem of at most two steps (Grade 2) or three
+      (Grades 3–4), or a comparison with its reason in one sentence, never an abstract analysis or a proof.
+
+    `earlyGradeOf` recognises the grade from the lesson id, unit id, grade id, number or name, the same fields
+    `isFirstGrade` reads. A grade 2–4 worksheet, homework or quiz carries `earlyDifficulty: "2026-11-14"` in its
+    pool key, so a paper pooled under the old wording is not served again. Every other key is unchanged, pinned by
+    literal keys (`earlyGradeDifficulty.test.ts`).
+13. **Older Grade 1 draft evaluations are rewritten to the allowed types** (2026-11-14, migration
+    `0025_grade1_evaluation_types.sql`, data only). A Grade 1 evaluation still in draft keeps only the types it held
+    from `FIRST_GRADE_EVALUATION_TYPES`, in order, and one with none of them gets multiple choice and true/false.
+    - Published and closed papers are not touched: their types describe questions they already hold, and they can no
+      longer be generated into.
+    - Running the migration a second time changes nothing. It **cannot be undone by reverting**: the old types are not
+      kept anywhere.
+    - Tests: `grade1EvaluationTypesMigration.db.test.ts` runs the SQL on real rows (mixed, written-only and allowed
+      drafts; published, closed; Grade 2). `firstGradeEvaluationTypes.test.ts` fails if the migration's lists drift
+      from `lib/exam-paper`.
+14. **A Grade 1 worksheet sent to a class as an evaluation holds only Grade 1 types** (2026-11-14,
+    `fromWorksheet.ts`). Six Grade 1 books take evaluations (maths, Islamic education and English, both semesters).
+    `POST /evaluations/from-worksheet` turned every question it cannot mark automatically into a short answer, a type
+    Grade 1 does not take.
+    - For a Grade 1 book (`convertWorksheet(…, { firstGrade })`), those become practical tasks instead: the same
+      question, figure and key (`successCriteria`), the same answer box on `take/[code]`, marked by the teacher.
+      The converter's rule still holds: an Arabic or worded answer is never marked automatically.
+    - Numeric keys stay fill-blank, and choice and true/false are unchanged.
+    - The stored `assessmentTypes` pass `evaluationTypesForGrade` as a backstop.
+    - Other grades convert as before (`fromWorksheet.test.ts`).
+    - `evaluationFromWorksheetGrade1.db.test.ts` posts a worksheet through the real route, for a Grade 1 and a Grade 2
+      maths book, and reads the stored rows:
+      - every stored type is a Grade 1 one, and a teacher-marked question is a `practical_task` with
+        `grading_mode = manual` and its key as `successCriteria`;
+      - once published, a child claiming a seat gets that question with an answer box and none of the key;
+      - the Grade 2 paper is unchanged.
+
+      With the route's Grade 1 flag removed, the two Grade 1 tests fail and the Grade 2 one passes.
+      `seedLevelScale` (`test-support/seedExams.ts`) is now exported for it.
+15. **Merged with main's Grade 1 work** (2026-11-14). Main had its own «Grade 1 review: book pages on the wrong unit,
+    tens and two-digit lessons…» (below), with its own `tensG1` / `twoDigitG1`. Each lesson keeps one generator:
+    - this branch's versions, which write word-problem stories and pick by difficulty;
+    - plus main's two kinds: «3 عشرات + 4 عشرات = ___ عشرات» (counts of 3 or more) and «اجمع الآحاد ثم العشرات… كم
+      عشرة في الناتج؟».
+
+    They are registered under main's ids (`tens_add_g1`, `two_digit_add_g1`…). Both sides' tests now accept every
+    kind and keep every check either side made: multiples of ten, no regrouping, answers recomputed.
+
+    Coins keep this branch's per-lesson kinds (three or more coins, so no dual), and main's two grammar checks («2
+    قطع», «10 قرشًا») now run on them too. This branch's `pens` gave way to main's general counted-noun helper.
+
+    After main's Grade 2 problem-solving generators merged in, all 487 maths lessons in the catalog have offline
+    questions; none is refused. `noQuestionBank.test.ts` had asserted the catalog still held a refused maths
+    lesson, and failed in CI. It now checks a real Grade 1 and Grade 4 lesson renamed to a title no generator is
+    about, as the Grade 7–9 test there already did.
+
+    Main's Grade 4 `reflect_line` sets its own difficulty: it asks «what does a reflection keep?» only at medium and
+    hard. That question has no numbers, so the choice by load never picked it at those levels, and main's
+    geometry test failed after the merge. A topic can now say `ownsDifficulty: true` (`topicKit.ts`), and the
+    grades 1–4 choice leaves it alone. `reflect_line` is the one topic that sets it.
+    - **Live:** a Grade 1 quiz, worksheet or evaluation gets Grade 1 level meanings (`FIRST_GRADE_DIFFICULTY_*` in
+      `firstGrade.ts`): one step within the lesson's range, with hard being the largest numbers, a missing number,
+      a short story or a comparison. The all-grades meanings had asked for "two or three steps" and "analysis".
+
+**Verified.** Each new test red before its fix, green after. `pnpm run typecheck`; math-practice suite; api-server
+`build` + `test`; mobile suite. On 2026-11-14 the api-server suite also ran against a local Postgres 16 with every
+migration applied (3,487 pass, none skipped), so the evaluation routes' database tests ran too. **Not verified:** a live model's Grade 1 output with the new clause (no live run from
+the session) — after merge, generate one Grade 1 Arabic letter plan, worksheet and quiz and read them; the new Arabic
+stems by a native reviewer.
+
+**Still open, found by the sweep:**
+- A live model's output for the item 9–12 prompts has not been read.
+- **Maths, still to check against the PDF:** the book's own number-chart direction (the generator no longer depends
+  on it) and whether «الأنماط الهندسية» uses «معين».
+- **Grade 1 books need ingesting** (text, figures, book pages) from a machine that can reach the PDFs —
+  `docs/adding-a-book.md`.
+- Every live prompt reads «للصف ${grade}» with a grade name that already says «الصف», so it says «للصف الصف الأول»
+  (every grade; harmless to a model, not fixed here).
+
 ## Grade 4 review: reflection on the book's square grid, and no dot plot left in the bar-chart lessons — 2026-11-14
 
 Follows «Offline maths, Grade 4: dot plots…» (below), which landed first with the same two items from the Grade 4 second

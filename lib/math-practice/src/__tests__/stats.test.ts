@@ -460,7 +460,8 @@ describe('statistics: answers recomputed', () => {
       else assert.equal(Number(item.answer), sum(vals));
       assert.equal(new Set(vals).size, vals.length, 'counts are distinct so the answer is unique');
     }
-    assert.deepEqual([...kinds[1]!].sort(), ['compare', 'raw', 'table'], 'Grade 1 kinds');
+    // Grade 1's data lessons have their own generators in early.ts (data_table_g1, picto_make_g1, picto_read_g1)
+    assert.deepEqual([...kinds[1]!], [], 'Grade 1 is no longer drawn from read_data_g12');
     assert.deepEqual([...kinds[2]!].sort(), ['compare', 'draw', 'pictures', 'raw', 'table', 'tally'], 'Grade 2 kinds');
     assert.deepEqual([...kinds[3]!].sort(), ['halfStep', 'squares', 'table'], 'Grade 3 kinds');
     assert.deepEqual([...kinds[4]!].sort(), ['halfStep', 'squares', 'table'], 'Grade 4 kinds');
