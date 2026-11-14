@@ -225,6 +225,11 @@ maths questions were checked by hand by a sub-agent and re-checked by script: **
 
     Coins keep this branch's per-lesson kinds (three or more coins, so no dual), and main's two grammar checks («2
     قطع», «10 قرشًا») now run on them too. This branch's `pens` gave way to main's general counted-noun helper.
+
+    After main's Grade 2 problem-solving generators merged in, all 487 maths lessons in the catalog have offline
+    questions; none is refused. `noQuestionBank.test.ts` had asserted the catalog still held a refused maths
+    lesson, and failed in CI. It now checks a real Grade 1 and Grade 4 lesson renamed to a title no generator is
+    about, as the Grade 7–9 test there already did.
     - **Live:** a Grade 1 quiz, worksheet or evaluation gets Grade 1 level meanings (`FIRST_GRADE_DIFFICULTY_*` in
       `firstGrade.ts`): one step within the lesson's range, with hard being the largest numbers, a missing number,
       a short story or a comparison. The all-grades meanings had asked for "two or three steps" and "analysis".
