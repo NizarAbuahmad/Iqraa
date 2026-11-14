@@ -155,6 +155,56 @@ and 2 and write them as words, and `main`'s `dinarsAfterPreposition` is kept on 
 
 No «ما الجديد» entry: wrong pages withdrawn and a grammar fix, not a feature.
 
+## Grade 5 maths: offline questions for five more lessons, and the sizes Grade 5 names — 2026-11-13
+
+Follows «Grade 5 audit: book pages, figures, contents…» (below), whose «Results» listed five maths lessons with
+no offline questions (it sampled three keys per lesson). This change reads every question of every Grade 5 maths quiz,
+fixes the sizes, and serves those five.
+
+**Generators (offline), all 317 lessons.**
+- Grounding by lesson id is exact for every lesson, and no screen lands on another subject.
+- Only maths has offline banks, as in every grade. Before this change, 45 of its 52 lessons served a paper. I read
+  every question of every maths quiz.
+- The keys are right. The checker's 21 «wrong» and 7 «unsolvable» flags are its own misreads: fractions compared as
+  decimals, four-digit «أكبر عدد» items read as three digits, and true/false items.
+- **Fixed: Grade 5 drew Grade 4 sizes.**
+  - «القيمة المنزلية ضمن الملايين» never passed 6 digits on a medium paper. Grade 5 now draws 6/7/8 digits, and
+    «عشرات الملايين» joins the place names. The book's unit opener uses 8924080.
+  - «ضرب الأعداد» names up to 3 digits × 2 digits but drew «4 × 16» and «12 × 6». Papers now draw 2-digit × 1-digit
+    on easy, 3-digit × 1-digit or 2-digit × 2-digit on medium, and 3-digit × 2-digit on hard. With a 3-digit
+    factor there is no «735 + 735 + … = ؟ × 735».
+  - «قسمة الأعداد» names a divisor of one or two digits, but no divisor was ever above 10. A dividend now has at most
+    3 digits, and the divisor is two digits on half the medium papers and on all hard ones.
+  - Grades 4 and 6 are unchanged (`elementary.test.ts` «Grade 5 multiplies and divides the sizes its lessons name»).
+- **New:** `lib/math-practice/src/g5.ts` serves the five lessons that threw `NoQuestionBankError`, each with answers
+  recomputed from the stem in `g5.test.ts`:
+  - «الضرب الذهني»: zeros, a missing factor, doubling, halving and doubling, the distributive property.
+  - «المضلعات»: name ↔ sides, vertices, perimeter ↔ side, «ليس مضلعًا».
+  - «السؤال الإحصائي»: which question is statistical, yes/no, the most frequent answer in a list of answers.
+  - «التمثيل بالخطوط» and «التمثيل بالأعمدة المزدوجة»: the graph's values are given in words. Each kind has its own
+    story (temperatures, a library's visitors, a plant's height; sports, subjects, the way to school, books
+    borrowed). The first draft put four questions under one paragraph, and `mathLessonKinds.test.ts` counted that
+    as one kind of question.
+  - Polygon names start at four sides: a triangle is «مثلث», with its own lessons.
+  - The two «خطة حل المسألة» lessons stay unserved, as in Grades 3 and 4.
+- **Weak, not fixed:**
+  - The direct × item's unused `wordAr` (no `kind: 'word'`, so it is never shown) reads «في الصف 25 صفوف … 23
+    مقاعد». The ÷ twin would read «على 25 مجموعات». Neither reaches a paper today; they would if either item became a
+    word problem.
+  - «تصنيف الأشكال الرباعية» runs out at 5 questions of 10.
+  - «قسمة الكسور» can print «2/2» and «3/3».
+  - «يمثّل المقدار 6n + 4 … إذا اشترى 2 من الكتب».
+  - Triangles are named ABC, the convention across the whole bank.
+
+**Book pages:** an independent check of the same ranges, from the books' per-page text
+(`lib/curriculum/src/data/extracted/`: lesson openers, «اختبار نهاية الوحدة», unit openers), agreed with the audit on
+135 of its 155 entries. The other 20 differ by one closing page («حصاد الوحدة», «نهاية الوحدة», the next lesson's
+«نشاط مفاهيمي»), where the audit's choice is kept: p. 80 of maths S1, for one, is u4_l2's lead-in. This change adds
+`bookPage.test.ts` «Grade 5 pages (audit 2026-11-13)», which pins the audit's social, science, maths and Arabic ranges
+(it fails on the pre-audit data).
+
+**Verified:** see the PR. **Not run:** live AI.
+
 ## Grade 5 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
 
 The Grade 6–10 review («Grade 9 audit…»), repeated for Grade 5 (317 lessons in 18 catalogue books). Every served
