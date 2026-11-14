@@ -1171,9 +1171,10 @@ describe('early routing', () => {
     // Grade 1 S2: these drew the grade's generic single-digit sums (2026-11-13)
     ['جمع العشرات', 1, 'tens_add_g1'], ['طرح العشرات', 1, 'tens_sub_g1'],
     ['جمع عددين من منزلتين', 1, 'two_digit_add_g1'], ['طرح عددين من منزلتين', 1, 'two_digit_sub_g1'],
-    // lessons that stay refused: they need pictures, objects, or a digit form the app converts itself
-    ['الأرقام الهندية', 3, null],
-    // Grade 1 lessons that used to be refused or to share a bank (review, 2026-11-13)
+    // «الأرقام الهندية» asks only questions read in Hindi digits, never written (marking folds ٧ and 7): grade3Lessons.test.ts
+    ['الأرقام الهندية', 3, 'hindi_numerals'],
+    // Grade 1 lessons that used to be refused or to share a bank (review, 2026-11-13); main listed the first
+    // three as refused, before this branch gave them generators (merged 2026-11-14)
     ['التصنيف وفق خاصية واحدة', 1, 'classify_one_g1'], ['التصنيف وفق أكثر من خاصية', 1, 'classify_two_g1'], ['الموقع والاتجاه', 1, 'position_g1'],
     ['ترتيب الأعمال اليومية', 1, 'daily_order_g1'], ['خطة حل المسألة: التخمين والتحقق', 1, 'guess_check_g1'], ['مهارة حل المسألة: اختيار العملية', 1, 'choose_op_g1'],
     ['جداول البيانات', 1, 'data_table_g1'], ['تمثيل البيانات بالصور', 1, 'picto_make_g1'], ['تفسير بيانات ممثلة بالصور', 1, 'picto_read_g1'],

@@ -85,6 +85,10 @@ export function elementaryOpsForTitle(title: string): ElementaryOp[] {
   // Regrouping in a product is a two-digit factor, which the times-table items
   // are not.
   if (named.mul && /اعاده/.test(t)) return [];
+  // A sum or difference «مع إعادة التجميع» / «مع وجود أصفار» is about one column
+  // regrouping, which the drill hits only by chance (half the time; a zero in
+  // under one in ten): early.ts `columnTopics` draws until it does.
+  if (/^(?:ال)?(?:جمع|طرح) مع (?:اعاده التجميع|وجود اصفار)/.test(t.trim())) return [];
 
   // «الكسور والقسمة» names a fraction and a division but is not dividing
   // fractions: an operation only counts when it is applied to the fractions.

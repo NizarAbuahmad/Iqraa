@@ -199,7 +199,8 @@ describe('probability and counting: answers recomputed', () => {
     const perms = (n: number, r: number) => { let p = 1; for (let i = 0; i < r; i++) p *= n - i; return p; };
     const fact = (n: number) => perms(n, n);
     for (const item of draws('counting', 300)) {
-      const p = item.promptAr!, n = nums(p);
+      // a count of two is written as a word («طالبين», «قميصان», «نوعان»): read it back as 2 in place
+      const p = item.promptAr!, n = nums(p.replace(/طالبين|قميصان|بنطالان|نوعان/g, '2'));
       let want: number;
       if (has(p, 'ترتيب ') && has(p, 'على رف')) want = fact(n[0]!);
       else if (has(p, 'الترتيب غير مهم')) want = perms(n[1]!, n[0]!) / fact(n[0]!);

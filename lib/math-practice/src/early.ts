@@ -890,6 +890,138 @@ const mulNoRegroup = (id: string, match: RegExp, regroup: boolean) => T(id, matc
   return { eq: '12 × 3', answer: '36', wrongs: ['26', '46', '15'], ar: 'ما ناتج 12 × 3؟', en: 'What is 12 × 3?' };
 });
 
+// ─── column addition and subtraction with regrouping ─────────────────────────
+//
+// Each of these lessons is about one column regrouping — the catalog objective
+// names it («مع إعادة تجميع الآحاد», «… العشرات», «… المئات», «أحدهما يحوي
+// أصفارًا») — so every pair is drawn until that column regroups. The generic
+// «جمع/طرح» drill they used to get regrouped about half the time by chance, and
+// put a zero to work in under one sum in ten (Grade 2 audit, 2026-11-14).
+
+/** Digits, ones first. */
+const colDigits = (n: number) => [...String(n)].reverse().map(Number);
+/** Column by column (ones = 0), whether a + b carries out of it. */
+function carryCols(a: number, b: number): boolean[] {
+  const x = colDigits(a), y = colDigits(b), out: boolean[] = [];
+  let c = 0;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) { c = (x[i] ?? 0) + (y[i] ?? 0) + c >= 10 ? 1 : 0; out.push(c === 1); }
+  return out;
+}
+/** Column by column, whether a − b borrows into it from the next column. */
+function borrowCols(a: number, b: number): boolean[] {
+  const x = colDigits(a), y = colDigits(b), out: boolean[] = [];
+  let br = 0;
+  for (let i = 0; i < x.length; i++) { br = x[i]! - br - (y[i] ?? 0) < 0 ? 1 : 0; out.push(br === 1); }
+  return out;
+}
+const byCols = (a: number, b: number, f: (x: number, y: number) => number) =>
+  Number(colDigits(a).map((d, i) => f(d, colDigits(b)[i] ?? 0)).reverse().join(''));
+/** Each column's sum written down and the carry dropped: 47 + 38 → 75. */
+const dropCarry = (a: number, b: number) => byCols(a, b, (x, y) => (x + y) % 10);
+/** The smaller digit taken from the larger in every column: 52 − 38 → 26. */
+const smallFromLarge = (a: number, b: number) => byCols(a, b, (x, y) => Math.abs(x - y));
+/** Borrowed ten ones, but the column lent from is never reduced: 52 − 38 → 24. */
+const noDecrement = (a: number, b: number) => byCols(a, b, (x, y) => (x < y ? x + 10 - y : x - y));
+const digitAt = (n: number, p: number) => Math.floor(n / 10 ** p) % 10;
+const PLACE_COL = ['الآحاد', 'العشرات', 'المئات', 'الألوف'];
+const PLACE_COL_EN = ['ones', 'tens', 'hundreds', 'thousands'];
+const books = (n: number) => counted(n, 'كتاب واحد', 'كتابان', 'كتب', 'كتابًا', 'كتاب');
+const visitors = (n: number) => counted(n, 'زائر واحد', 'زائران', 'زوار', 'زائرًا', 'زائر');
+const litres = (n: number) => counted(n, 'لتر واحد', 'لتران', 'لترات', 'لترًا', 'لتر');
+
+/**
+ * `draw` gives a candidate pair (the first number is never the shorter); `ok`
+ * is the lesson's rule. Three kinds: the sum or difference, a story with the
+ * two numbers in order, and the digit in the column a regrouping changes —
+ * where the slip (the carry dropped, the lending column not reduced) shows.
+ */
+const columnOp = (id: string, match: RegExp, grade: number, add: boolean,
+  draw: (rng: Rng, diff: D) => [number, number], ok: (a: number, b: number, diff: D) => boolean) =>
+  T(id, match, [grade, grade], ({ rng, diff }) => {
+    const op = add ? '+' : '−';
+    for (let i = 0; i < 5000; i++) {
+      const [a, b] = draw(rng, diff);
+      if (b < 10 || (!add && a <= b) || !ok(a, b, diff)) continue;
+      const r = add ? a + b : a - b, slip = add ? dropCarry(a, b) : smallFromLarge(a, b);
+      if (slip === r) continue;
+      const k = pick(rng, [0, 1, 2]);
+      if (k === 2) {
+        // a column that receives a carry, or lends to the column below, and still has a digit in the answer
+        const reg = add ? carryCols(a, b) : borrowCols(a, b);
+        const cols = reg.map((x, j) => (x ? j + 1 : -1)).filter(p => p > 0 && p < String(r).length && p < PLACE_COL.length);
+        if (cols.length > 0) {
+          const p = pick(rng, cols), d = digitAt(r, p), s = digitAt(add ? dropCarry(a, b) : noDecrement(a, b), p);
+          return {
+            eq: `${a} ${op} ${b} @${p}`, answer: String(d), wrongs: ints(d, [s, (d + 1) % 10, (d + 9) % 10, (d + 2) % 10]),
+            ar: `ما رقم ${PLACE_COL[p]} في ناتج ${a} ${op} ${b}؟`, en: `What is the ${PLACE_COL_EN[p]} digit of ${a} ${op} ${b}?`,
+          };
+        }
+      }
+      const wrongs = ints(r, [slip, add ? r - 10 : noDecrement(a, b), r + 10, r - 100, r + 1]);
+      if (k === 1) {
+        const story = pick(rng, [0, 1]);
+        if (add) return story === 0
+          ? { eq: `word:${a} + ${b}`, answer: String(r), wrongs, ar: `في مكتبة المدرسة ${books(a)}، وأُهدي إليها ${books(b)}. كم كتابًا أصبح في المكتبة؟`, en: `The school library has ${a} books and is given ${b} more. How many books does it have now?` }
+          : { eq: `word:${a} + ${b}`, answer: String(r), wrongs, ar: `زار المتحفَ يوم الجمعة ${visitors(a)}، وزاره يوم السبت ${visitors(b)}. كم زائرًا زار المتحف في اليومين؟`, en: `${a} people visited the museum on Friday and ${b} on Saturday. How many visited on the two days?` };
+        return story === 0
+          ? { eq: `word:${a} − ${b}`, answer: String(r), wrongs, ar: `في مستودع مكتبة ${books(a)}، بِيع منها ${books(b)}. كم كتابًا بقي في المستودع؟`, en: `A bookshop's store has ${a} books and ${b} are sold. How many books are left?` }
+          : { eq: `word:${a} − ${b}`, answer: String(r), wrongs, ar: `في خزان ${litres(a)} من الماء، استُعمل منها ${litres(b)}. كم لترًا بقي في الخزان؟`, en: `A tank holds ${a} litres of water and ${b} litres are used. How many litres are left?` };
+      }
+      return { eq: `${a} ${op} ${b}`, answer: String(r), wrongs, ar: `أوجد ناتج: ${a} ${op} ${b}`, en: `Find: ${a} ${op} ${b}` };
+    }
+    return add
+      ? { eq: '47 + 38', answer: '85', wrongs: ['75', '95', '86'], ar: 'أوجد ناتج: 47 + 38', en: 'Find: 47 + 38' }
+      : { eq: '52 − 38', answer: '14', wrongs: ['26', '24', '15'], ar: 'أوجد ناتج: 52 − 38', en: 'Find: 52 − 38' };
+  });
+
+/** A number of exactly `n` digits. */
+const ofLen = (rng: Rng, n: number) => int(rng, 10 ** (n - 1), 10 ** n - 1);
+const pair = (rng: Rng, la: number, lb: number): [number, number] => [ofLen(rng, la), ofLen(rng, lb)];
+const count = (xs: boolean[]) => xs.filter(Boolean).length;
+
+const columnTopics: Topic[] = [
+  // Grade 2 «جمع عددين مع إعادة تجميع الآحاد»: only the ones carry
+  columnOp('add_regroup_ones', /^الجمع مع اعاده التجميع \(1\)$/, 2, true,
+    (rng, diff) => pair(rng, span(diff, 2, 3, 3), span(diff, 2, 2, 3)),
+    (a, b) => { const c = carryCols(a, b); return a + b <= 999 && c[0]! && !c[1]; }),
+  // «… مع إعادة تجميع العشرات»: the tens carry; the ones as well only on hard
+  columnOp('add_regroup_tens', /^الجمع مع اعاده التجميع \(2\)$/, 2, true,
+    (rng, diff) => pair(rng, span(diff, 2, 3, 3), span(diff, 2, 2, 3)),
+    (a, b, diff) => { const c = carryCols(a, b); return a + b <= 999 && c[1]! && (diff === 'hard' || !c[0]); }),
+  // «الطرح مع إعادة تجميع العشرات»: a ten becomes ten ones; the tens themselves do not borrow
+  columnOp('sub_regroup_tens', /^الطرح مع اعاده التجميع \(1\)$/, 2, false,
+    (rng, diff) => pair(rng, span(diff, 2, 3, 3), span(diff, 2, 2, 3)),
+    (a, b) => { const r = borrowCols(a, b); return r[0]! && !r[1]; }),
+  // «الطرح مع إعادة تجميع المئات»: a hundred becomes ten tens; the ones as well only on hard
+  columnOp('sub_regroup_hundreds', /^الطرح مع اعاده التجميع \(2\)$/, 2, false,
+    (rng, diff) => pair(rng, 3, span(diff, 2, 3, 3)),
+    (a, b, diff) => { const r = borrowCols(a, b); return r[1]! && (diff === 'hard' || !r[0]); }),
+  // «طرح عددين كل منهما من ثلاث منازل أحدهما يحوي أصفارًا»: 400 − 156, 503 − 278
+  columnOp('sub_zeros_g2', /^الطرح مع وجود اصفار$/, 2, false,
+    (rng, diff) => [int(rng, 2, 9) * 100 + (diff === 'easy' ? 0 : int(rng, 0, 9)), ofLen(rng, 3)],
+    (a, b) => borrowCols(a, b)[0]!),
+  // Grade 3 «جمع عددين من ثلاث منازل مع إعادة تجميع المئات»: the hundreds carry into a thousand
+  columnOp('add_regroup_g3_hundreds', /^الجمع مع اعاده التجميع 1$/, 3, true,
+    rng => pair(rng, 3, 3),
+    (a, b, diff) => { const c = carryCols(a, b); return c[2]! && count(c) <= span(diff, 1, 2, 3); }),
+  // «جمع عددين كل منهما مكون من أربع منازل مع إعادة التجميع»
+  columnOp('add_regroup_g3_four', /^الجمع مع اعاده التجميع 2$/, 3, true,
+    rng => pair(rng, 4, 4),
+    (a, b, diff) => { const n = count(carryCols(a, b)); return a + b <= 9999 && n >= span(diff, 1, 1, 2) && n <= span(diff, 1, 2, 3); }),
+  // «طرح عددين كل منهما مكون من 4 منازل مع إعادة التجميع»
+  columnOp('sub_regroup_g3', /^الطرح مع اعاده التجميع$/, 3, false,
+    rng => pair(rng, 4, 4),
+    (a, b, diff) => { const n = count(borrowCols(a, b)); return n >= span(diff, 1, 1, 2) && n <= span(diff, 1, 2, 3); }),
+  // «طرح عددين كل منهما مكون من 4 منازل أحدهما يحوي أصفارًا»: 5003 − 1256, 7040 − 2685
+  columnOp('sub_zeros_g3', /^الطرح مع وجود اصفار$/, 3, false,
+    (rng, diff) => {
+      const [h, t] = pick(rng, diff === 'easy' ? [[0, 0]] : [[0, 0], [0, -1], [-1, 0]]);
+      const o = diff === 'easy' && rng() < 0.5 ? 0 : int(rng, 0, 9);
+      return [int(rng, 2, 9) * 1000 + (h === 0 ? 0 : int(rng, 1, 9)) * 100 + (t === 0 ? 0 : int(rng, 1, 9)) * 10 + o, ofLen(rng, 4)];
+    },
+    (a, b) => { const x = colDigits(a), r = borrowCols(a, b); return [1, 2].some(i => x[i] === 0 && r[i - 1]); }),
+];
+
 const twoWay = T('two_way_table', /^الجدول ذو الاتجاهين$/, [3, 3], ({ rng }) => {
   // 3–9 in each cell, so «أولاد» / «بنات» is always the right plural
   const bt = int(rng, 3, 9), bj = int(rng, 3, 9), gt = int(rng, 3, 9), gj = int(rng, 3, 9), kind = pick(rng, [0, 1, 2]);
@@ -1267,7 +1399,8 @@ const compareMeasure = (id: string, match: RegExp, what: string, bigWord: string
 });
 
 /** «لـ» before a word: «للمثلث», «للشعاع» — the article's alif drops after it. */
-const li = (w: string) => (w.startsWith('ال') ? `لل${w.slice(2)}` : `لـ${w}`);
+/** «للمكعب», «لمتوازي المستطيلات»: the preposition joins its word with no tatweel. */
+const li = (w: string) => (w.startsWith('ال') ? `لل${w.slice(2)}` : `ل${w}`);
 
 /** Things to measure, for choosing the unit: [quantity, things for the small unit, things for the big unit, other units as slips]. */
 const UNIT_FIT: Record<string, [string, Array<[string, string]>, Array<[string, string]>, string[]]> = {
@@ -1574,6 +1707,7 @@ export const EARLY_TOPICS: readonly Topic[] = [
   mulProps, divProps, remainder,
   divisionQ('div_no_rem', /^القسمه من دون باق \(الناتج من رقمين\)$/, true, false), divisionQ('div_rem_2', /^القسمه مع باق \(الناتج من رقمين\)$/, true, true), divisionQ('div_rem_1', /^القسمه مع باق \(الناتج من رقم واحد\)$/, false, true),
   tensMulG3, tensDivG3, distributive, mulNoRegroup('mul_no_regroup', /^الضرب من دون اعاده التجميع$/, false), mulNoRegroup('mul_regroup', /^الضرب مع اعاده التجميع$/, true),
+  ...columnTopics,
   twoWay, pointLineRay, angleG3, lineRelations('lines_g3', /^مستقيمات خاصه$/, 3), lineRelations('lines_g4', /^المستقيمات المتوازيه والمتقاطعه$/, 4), angleArithmetic,
   numberPatterns, inputOutput, decimalMoney,
   coins('coins_a', /^القطع النقديه$/), coins('coins_b', /^القطع النقديه المتساويه$/), coins('coins_c', /^استعمال القطع النقديه$/), dinar, banknotes,
