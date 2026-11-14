@@ -10,6 +10,49 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 3 review: six maths lessons asked about their own objective — 2026-11-14
+
+Follows «Grade 3 audit…» (book pages, figures, contents) and «Grade 3 maths: offline questions for the four lessons that
+had none» (below), which this does not repeat. A sweep of all 254 Grade 3 lessons through the offline plan, quiz,
+worksheet and activity found nothing broken: every lesson grounds by id, plans and activities generate for all, and all 70
+maths lessons give a full paper. Every maths lesson's sample questions were then read against its NCCD objective (there
+is no Grade 3 book text, so the objective is the reference). Lessons that drew the right kind of question at the wrong
+size, or another lesson's questions:
+
+- **«الوقت بالدقائق» (S2 u10_l1)** — reading the clock to the minute — drew elapsed-time questions. New
+  `clock_minutes_g3` (`geometry.ts`): the minute hand on the n-th small mark after a number, counting on by fives then
+  ones, a time read in words («التاسعة و 13 دقيقة»), and a few minutes later across the hour («4:63» is a wrong option).
+- **«الفترات الزمنية (1)» (u10_l4)** — elapsed time *within the same hour* — shared that pool, which crossed hours. New
+  `elapsed_hour_g3`: how long, when it ended, when it started, and which of two activities was longer, every time in one
+  hour. «الفترات الزمنية (2)» (across the day) keeps `time_g3`.
+- **«المساحة» (u11_l6)** — area as unit squares covered — drew «مساحة المستطيل»'s length × width. New `area_units_g3`:
+  rows of squares on a grid, a shape of two parts, two shapes compared, cm² on 1 cm squared paper, a missing row length,
+  floor tiles. The next lesson keeps `area_rect`.
+- **«تقدير ناتج القسمة» (u8_l2)** — a two-digit number by a one-digit one — divided «237 ÷ 8». Grade 3 now rounds a two-digit
+  dividend to a ten that divides evenly (65 ÷ 2 ≈ 70 ÷ 2), or takes the nearest multiple of the divisor (23 ÷ 6 ≈ 24 ÷ 6);
+  Grades 4–6 are unchanged.
+- **«الكسور المتكافئة» (u9_l5)** — with models and the number line — multiplied by up to 9 («36/45»). Grade 3 now stays on
+  strips no finer than twelfths: the missing numerator, which listed fraction is equivalent, two strips, two number lines.
+  Multiplying numerator and denominator stays Grade 4's.
+- **«القيمة المنزلية ضمن الألوف» (S1 u1_l2)** asked «القيمة المنزلية للرقم 8 في العدد 18»: Grade 3 numbers now have 3–4
+  digits. The digit asked about is never 0 (any grade: «القيمة المنزلية للرقم 0» has nothing to find).
+
+Smaller: «الأرقام الهندية» gave a digit's value in Latin digits (now ٧٠٠, like its other answers); «ولُوّن 1 منها» reads «ولُوّن
+جزء واحد منها»; «الكسر كجزء من مجموعة» asked a bare «ما 2/3 من العدد 3؟» (now a part of a group of balls, at least 4);
+«قبل الظهر، بعد الظهر» gains the objective itself — which event of a school day is before or after noon (the first lesson
+and dinner are both at 8:00).
+
+**Verified.** `grade3Objectives.test.ts` (14) routes each title to its generator and recomputes every key from its printed
+stem by code that shares nothing with the generators (minutes counted, clocks rolled over, squares multiplied, the nearest
+multiple found by walking the multiples), and checks the bounds: one hour, two-digit dividends, twelfths, no length ×
+width in «المساحة», no number below 100 in «ضمن الألوف». `early.test.ts`, `topics.test.ts`, `geometry.test.ts` and
+`grade3Lessons.test.ts` now read the new wordings. Six planted bugs (two-digit place values back, the old division path,
+a wrong roll-over, the minute mark off by one, an interval past the hour, strips past twelfths) each failed a test.
+Thirty-odd new questions read by hand, keys correct. The PR body has the CI set.
+
+**Not done.** «قبل الظهر، بعد الظهر» still converts to the 24-hour clock in two of its five kinds; without the book it is
+not known whether Grade 3 teaches it. Everything the audit left for the PDFs.
+
 ## Grade 10 review: own offline questions for the thirteen lessons the bank served thinly — 2026-11-14
 
 The generators were run over all 445 Grade 10 lessons, and every question of every maths and chemistry quiz was read

@@ -658,7 +658,11 @@ const fractionOfSetG3 = T('fraction_of_set_g3', /^الكسر كجزء من مج�
     const top = red ? r : b, all = r + b, ans = `${top}/${all}`;
     return { eq: `${r}, ${b}`, answer: ans, wrongs: wrongsFrom(ans, [`${top}/${all - top}`, `${all - top}/${all}`, `${all}/${top}`, `${top}/${all + 1}`], j => `${top}/${all + 1 + Math.abs(j)}`), ar: `في كيس ${redBalls(r)} و${b > 2 ? ' ' : ''}${blueBalls(b)}. ما الكسر الذي يمثل الكرات ${red ? 'الحمراء' : 'الزرقاء'} من كرات الكيس كلها؟`, en: `A bag holds ${r} red ball${r === 1 ? '' : 's'} and ${b} blue ball${b === 1 ? '' : 's'}. What fraction of all the balls in the bag are ${red ? 'red' : 'blue'}?` };
   }
-  if (kind === 1) return { eq: `${a}/${d}, ${n}`, answer: String(a * q), wrongs: ints(a * q, [q, n - a * q, a + n / d, n - q]), ar: `ما ${a}/${d} من العدد ${n}؟`, en: `What is ${a}/${d} of ${n}?` };
+  if (kind === 1) {
+    // a part of a group of balls (until 2026-11-14 the bare «ما 2/3 من العدد 3»); at least 4 balls, so the count is a numeral
+    const q2 = Math.max(q, 2), n2 = d * q2;
+    return { eq: `${a}/${d}, ${n2}`, answer: String(a * q2), wrongs: ints(a * q2, [q2, n2 - a * q2, a + q2, n2 - q2]), ar: `في مجموعة ${balls(n2)}، ${a}/${d} منها حمراء. كم كرة حمراء في المجموعة؟`, en: `A group has ${n2} balls and ${a}/${d} of them are red. How many red balls are there?` };
+  }
   // a class of 3–10 students («طلاب»), some of them in hats; ask for those with or without one
   const c = pick(rng, [3, 4, 5, 6, 8, 10]); let k = int(rng, 1, c - 1); while (gcd(k, c) !== 1) k = int(rng, 1, c - 1);
   const without = rng() < 0.5, top = without ? c - k : k;
@@ -696,10 +700,12 @@ const unitFractionOfSet = T('unit_fraction_set', /^كسر الوحده كجزء 
 const wholeFraction = T('fraction_of_whole', /^الكسر كجزء من كل$/, [3, 3], ({ rng }) => {
   const d = pick(rng, [3, 4, 5, 6, 8, 10]); let k = int(rng, 1, d - 1); while (gcd(k, d) !== 1) k = int(rng, 1, d - 1);
   const kind = pick(rng, [0, 1, 2, 3]);
-  if (kind === 1) { const u = d - k, ans = `${u}/${d}`; return { eq: `${k}, ${d}`, answer: ans, wrongs: wrongsFrom(ans, [`${k}/${d}`, `${u}/${k}`, `${d}/${u}`, `${u}/${d + 1}`], j => `${u + Math.abs(j) + 1}/${d + 1}`), ar: `قُسّم شكل إلى ${d} أجزاء متساوية ولُوّن ${k} منها. ما الكسر الذي يمثل الجزء غير الملوّن؟`, en: `A shape is split into ${d} equal parts and ${k} are coloured. What fraction is not coloured?` }; }
+  // «ولُوّن 1 منها» read as a numeral where the book says «جزء واحد»
+  const col = k === 1 ? 'جزء واحد' : k === 2 ? 'جزآن' : String(k);
+  if (kind === 1) { const u = d - k, ans = `${u}/${d}`; return { eq: `${k}, ${d}`, answer: ans, wrongs: wrongsFrom(ans, [`${k}/${d}`, `${u}/${k}`, `${d}/${u}`, `${u}/${d + 1}`], j => `${u + Math.abs(j) + 1}/${d + 1}`), ar: `قُسّم شكل إلى ${d} أجزاء متساوية ولُوّن ${col} منها. ما الكسر الذي يمثل الجزء غير الملوّن؟`, en: `A shape is split into ${d} equal parts and ${k} are coloured. What fraction is not coloured?` }; }
   if (kind === 2) return { eq: `${k}/${d}`, answer: String(d), wrongs: ints(d, [k, d - k, d + k, d + 1]), ar: `ما مقام الكسر ${k}/${d}؟`, en: `What is the denominator of ${k}/${d}?` };
   if (kind === 3) return { eq: `${k}/${d}`, answer: String(k), wrongs: ints(k, [d, d - k, k + 1, d + k]), ar: `يمثل الكسر ${k}/${d} الجزء الملوّن من شكل. كم جزءًا لُوّن؟`, en: `The fraction ${k}/${d} shows the coloured part of a shape. How many parts are coloured?` };
-  return { eq: `${k}, ${d}`, answer: `${k}/${d}`, wrongs: wrongsFrom(`${k}/${d}`, [`${d - k}/${d}`, `${k}/${d - k}`, `${d}/${k}`, `${k}/${d + 1}`], j => `${k + Math.abs(j) + 1}/${d + 1}`), ar: `قُسّم شكل إلى ${d} أجزاء متساوية ولُوّن ${k} منها. ما الكسر الذي يمثل الجزء الملوّن؟`, en: `A shape is split into ${d} equal parts and ${k} are coloured. What fraction is coloured?` };
+  return { eq: `${k}, ${d}`, answer: `${k}/${d}`, wrongs: wrongsFrom(`${k}/${d}`, [`${d - k}/${d}`, `${k}/${d - k}`, `${d}/${k}`, `${k}/${d + 1}`], j => `${k + Math.abs(j) + 1}/${d + 1}`), ar: `قُسّم شكل إلى ${d} أجزاء متساوية ولُوّن ${col} منها. ما الكسر الذي يمثل الجزء الملوّن؟`, en: `A shape is split into ${d} equal parts and ${k} are coloured. What fraction is coloured?` };
 });
 const fractionOne = T('fraction_equals_one', /^الكسور المساويه للواحد$/, [3, 3], ({ rng }) => {
   const n = int(rng, 3, 10), k = pick(rng, [0, 1, 2]);
@@ -1342,8 +1348,18 @@ const monthsOfYear = T('months', /^اشهر السنه$/, [2, 2], ({ rng }) => {
   return { eq: '', answer: '12', wrongs: ['10', '11', '13'], ar: 'كم شهرًا في السنة؟', en: 'How many months are in a year?' };
 });
 
+/** A school day's events and their usual hour: the clock reads 8:00 for the first lesson and for dinner. */
+const DAY_AM: Array<[string, number]> = [['الاستيقاظ', 6], ['الإفطار', 7], ['الحصة الأولى', 8], ['الاستراحة', 10]];
+const DAY_PM: Array<[string, number]> = [['الغداء', 2], ['حلّ الواجبات', 5], ['العشاء', 8], ['النوم', 9]];
 const amPm = T('am_pm', /^قبل الظهر بعد الظهر$/, [3, 3], ({ rng }) => {
-  const a = int(rng, 5, 11), b = int(rng, 1, 9), k = pick(rng, [0, 1, 2, 3]);
+  const a = int(rng, 5, 11), b = int(rng, 1, 9), k = pick(rng, [0, 1, 2, 3, 4]);
+  if (k === 4) {
+    // the objective itself: which event of the day falls before or after noon — one from one list, three from the other
+    const pm = rng() < 0.5, [hit, rest] = pm ? [DAY_PM, DAY_AM] : [DAY_AM, DAY_PM];
+    const say = ([e, h]: [string, number]) => `${e} الساعة ${h}:00`;
+    const ans = say(pick(rng, hit)), wrongs = shuffle(rng, rest).slice(0, 3).map(say);
+    return { eq: `${pm ? 'pm' : 'am'}: ${ans}`, answer: ans, wrongs, ar: `أيّ هذه المواعيد في يوم سامي الدراسي يكون ${pm ? 'بعد الظهر' : 'قبل الظهر'}: ${shuffle(rng, [ans, ...wrongs]).join('، ')}؟`, en: `Which of these events in Sami's school day is ${pm ? 'in the afternoon (p.m.)' : 'in the morning (a.m.)'}: ${[ans, ...wrongs].join(', ')}? (Arabic event names)` };
+  }
   if (k === 2) return { eq: `${b + 12}`, answer: String(b), wrongs: ints(b, [b + 12, b + 2, b + 1, b - 1]), ar: `الساعة ${b + 12}:00 بنظام 24 ساعةً. كم تكون الساعة بعد الظهر؟ (اكتب العدد قبل «:00»)`, en: `It is ${b + 12}:00 in 24-hour time. What time is it in the afternoon? (write the number before ':00')` };
   if (k === 3) {
     // a morning start that runs past noon
