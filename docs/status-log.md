@@ -155,6 +155,76 @@ and 2 and write them as words, and `main`'s `dinarsAfterPreposition` is kept on 
 
 No «ما الجديد» entry: wrong pages withdrawn and a grammar fix, not a feature.
 
+## Grade 4 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
+
+The Grade 5–10 review («Grade 5 audit…»), repeated for Grade 4 (313 lessons, 18 catalogue books), on top of today's
+Grade 4 work («Grade 4 review…», the three «Grade 4 … figures» entries): every served lesson's first page, every
+unit-final lesson's last pages and every figure (550) were looked at as images. Printed page = PDF page in every book
+except English (PDF = printed + 2).
+
+**Book pages.** Merged with «Grade 4, second pass…» (#1456), which landed first and trimmed the same unit-end spill:
+its 23 entries stand (Arabic ends on «حصاد الوحدة», Islamic before the next opener, maths S2 u6_l3/u7_l1/u7_l5 before
+the next «نشاط مفاهيمي», vocational S2 u1_l2, maths S2 «الزمن» 93–95). This audit agrees on every start (none wrong)
+and adds what that pass left:
+- **Maths unit-final lessons (8, + S2 u6_l4):** they still ran into «اختبار نهاية الوحدة», the *next* unit's opener and
+  the next unit's «مشروع الوحدة» (#1456 kept the project as "the unit's own"; in these books the project page follows
+  the unit opener, so it belongs to the unit that starts there). Cut back to the lesson: S1 u1_l6 26–29, u2_l4 44–45,
+  u3_l5 63–65, u4_l3 78–81, u5_l5 101–103; S2 u6_l4 23–27, u7_l7 55–57, u8_l5 77–79, u10_l5 126–127.
+- **Eight lessons get pages back** from folders the «Grade 4 review» unlinked (e2badafb) — the renders are still in
+  the bucket and the right pages are in them: PE u2_l3, u2_l4, u3_l2; social S1 u4_l4, u4_l5; vocational S2 u4_l1,
+  u4_l2; arts u3_l3. Each opener was viewed against its catalogue title.
+- 16 entries changed with `rendered`, none lost: 157 of 313 lessons have pages, up from 149. Every changed URL
+  answered 200.
+- **To render from the PDFs:** maths S2 «المحيط» and «المساحة» (96–103), the rest of PE, vocational S2 and social S2,
+  vocational S2 u1_l1's first two pages (it opens mid-lesson on p10; its opener is p8), and science, English, digital,
+  arts and vocational S1, which have no page images. Ranges for all of them, from the contents, are in the audit
+  (digital's OCR'd contents lost most numbers: estimates only).
+
+**Contents.** Every book matches its catalogue in units, lessons, titles and order. Two contents pages disagree with the
+lesson's own opener (vocational S1 u4_l2 opens on p51, not p49; social S2 u8_l4 on p84, not p85); the opener wins.
+
+**Honorifics (Islamic).** All 13 «ﷺ» follow the Prophet, as the book prints them.
+
+**Figures.** 550 checked; 12 dropped, 3 moved, none newly reachable.
+- **Moved:** Arabic S1 unit-opener art p058, p084, p110 sat on the previous unit's lesson 5 (the index gave them unit
+  N−1); they go to the next unit's first lesson, the rule the Arabic figures entry set for p032 and S2 p058/p086.
+- **Dropped:** the major crops (Arabic S1 p082 and S2 p110, sliced figures; Islamic S2 p011, the taste map with its
+  labels cut; maths S2 p114, a bar chart cut at 700 where a bar reads 850, and p071b, a growing pattern with only its
+  bottom row; science S1 p038-v2, a life cycle missing its adult stage), and figures from pages no lesson owns (science
+  unit reviews and enrichment p049b, p039, p057c-v2, p071c-v2; social S2 p066, a review exercise; PE p022, the unit-end
+  checklist). Science p082b-v2 and p072b-v2 also come from review pages but the «Grade 4 review» placed them on purpose,
+  so they stay.
+- Minor flaws (stray text, a caption or panel edge cut) stay.
+
+**Results.** Offline maths covered 48 of 50 lessons, every sampled key correct by hand; the other two now have
+generators («Grade 4 maths: offline questions for the two «خطة حل المسألة» lessons», above).
+
+**Verified:** `bookPage`, `bookFigures`, `bookFigureAssets`, `lessonSlides`, `teachingPlanGrounding` (194), curriculum
+test (931) and verify (0 errors), typecheck. **Not verified:** the pages on a phone; anything needing the PDFs.
+
+## Grade 4 maths: offline questions for the two «خطة حل المسألة» lessons — 2026-11-13
+
+The Grade 4 audit found two maths lessons with no offline questions at all: «خطة حل المسألة: الحل بأكثر من خطوة»
+(S1 u2_l4) and «خطة حل المسألة: استعمال شكل ڤن» (S2 u10_l5). Each now has a generator in
+`lib/math-practice/src/topics.ts`, built from the lesson's own pages in the student book (S1 pp. 44–45, S2 pp. 126–127):
+
+- **`multi_step`** — two operations, as the book's worked example and «أتدرب» problems: a daily amount over two named
+  months (Rami's 23 laps a day in آب and أيلول), pay per hour over a year's 52 weeks, books on two kinds of shelf, words a
+  minute over «ساعة وربعًا», photos in several albums. The wrong options always include stopping after the first step
+  (one month, one week, the shelf count, one hour, one album).
+- **`venn_plan`** — two groups and their overlap: the total (the book's 20 + 30 − 15), one group only (18 − 4), and the
+  reverse (the total and one group known, the other wanted). Adding the groups without taking off the overlap is always
+  a wrong option for the total.
+
+Both are Grade 4 only (`grades: [4, 4]`), whole numbers, positive wrong options; nothing sets `verified` or a `check`.
+The existing Venn generators (`venn_g3`, `venn_g4` for «تمثيل البيانات بأشكال ڤن», `venn_g9`) are other lessons and
+unchanged. Grade 4 offline maths now covers all 50 lessons.
+
+**Verified:** `grade4Lessons.test.ts` (8, written first and seen failing) recomputes every key from the numbers in its own
+stem with code that shares nothing with the generators, and checks every kind is drawn and the one-step wrong option is
+always offered; breaking the overlap rule fails 2 of them. math-practice suite 1096 pass. Twelve sampled items and the
+mobile probe's six read by hand, keys correct.
+
 ## Grade 5 maths: offline questions for five more lessons, and the sizes Grade 5 names — 2026-11-13
 
 Follows «Grade 5 audit: book pages, figures, contents…» (below), whose «Results» listed five maths lessons with
