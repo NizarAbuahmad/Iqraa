@@ -146,6 +146,16 @@ now starts at 3. The seeded `tamyiz.test.ts` found it once this PR's draws shift
 
 **Not run:** live AI, and anything needing the PDFs. Whether each chemistry item is the best question for its lesson
 is a chemistry teacher's call.
+## Grade 4 arts: the string-marionette picture for «الدُّمى الْمَسْرَحِيَّةُ» — 2026-11-14
+
+The arts books have page images for one lesson only: u3_l3 «الدُّمى الْمَسْرَحِيَّةُ», pp. 80–82, served from the
+`kbl-g4-arts-s1-nccd-u3_l4` render folder. With its four crops drawn on those pages, one picture was missing. The lesson
+names four puppet types, and the string marionette (p. 80, «دُمى الْخُيوطِ») was the only one with no crop. It is added
+as `p080d.png`, with its label, because `p080b` and `p080c` are taken in the bucket. Its lesson comes from the existing
+`figure-lesson-map.json` row, so no new row was needed. Arts S1 now has 55 crops. **Verified:** figure tests (39 pass),
+typecheck, the PNG returns 200 from `iqraa-public`. **Not done:** the rest of the arts book has no page images and no
+PDF reachable from here, so its other gaps (the qanun and the Picasso pages) are still open.
+
 
 ## Grade 2 audit: book pages, contents, honorifics and offline maths checked — 2026-11-14
 
