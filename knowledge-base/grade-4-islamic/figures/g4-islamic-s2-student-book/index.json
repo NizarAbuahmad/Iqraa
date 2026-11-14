@@ -2,22 +2,6 @@
   "sourceId": "g4-islamic-s2-student-book",
   "figures": [
     {
-      "file": "p011.png",
-      "sourceId": "g4-islamic-s2-student-book",
-      "pdfPage": 11,
-      "rect": [
-        86.7,
-        75.7,
-        193.9,
-        225.3
-      ],
-      "unit": 5,
-      "lesson": 1,
-      "lessonTitleEn": "Surat Al-Balad: Verses 1-10",
-      "lessonTitleAr": "سورَةُ البَلَدِ: الآياتُ الكَريمَةُ (1-10)",
-      "lessonStartPage": 6
-    },
-    {
       "file": "p013.png",
       "sourceId": "g4-islamic-s2-student-book",
       "pdfPage": 13,
