@@ -479,6 +479,64 @@ const CATS: Array<[string, string]> = [['التفاح', 'apples'], ['الموز'
  * draw (Grade 2); and for Grades 3–4, reading a bar that ends between two lines
  * of its scale, how many squares a bar takes, and (Grade 4) counting a dot plot.
  */
+/**
+ * Grade 4 «تمثيل البيانات بالنقاط» (S2 u10_l1; outcomes «تمثيل البيانات باستعمال النقاط» and «تفسير بيانات ممثلة
+ * بالنقاط»). It shared `read_data_g34`, so a paper was mostly bar charts and tables with one dot-plot question. The
+ * contexts are the book's (S2 p. 108: hours of sleep; the exercise book p. 54: a sweet seller's daily income, hours of
+ * study). A plot is written value by value, «9: ●●●», as the bar charts are; the numbers are always the values.
+ */
+const DOT_CONTEXTS: Array<{ ar: string; en: string; who: string; whoAcc: string; values: number[]; noun: [string, string, string]; one: string; two: string; unitEn: string }> = [
+  { ar: 'عدد ساعات النوم في الليلة الواحدة لبعض طلبة الصف الرابع', en: "hours of sleep a night for some Grade 4 pupils", who: 'طالبًا', whoAcc: 'الطلبة', values: [7, 8, 9, 10, 11], noun: ['ساعات', 'ساعةً', 'ساعة'], one: 'ساعةً واحدة', two: 'ساعتين', unitEn: 'hours' },
+  { ar: 'عدد ساعات الدراسة اليومية لبعض طلبة الصف الرابع', en: "daily hours of study for some Grade 4 pupils", who: 'طالبًا', whoAcc: 'الطلبة', values: [1, 2, 3, 4, 5], noun: ['ساعات', 'ساعةً', 'ساعة'], one: 'ساعةً واحدة', two: 'ساعتين', unitEn: 'hours' },
+  { ar: 'الدخل اليومي بالدينار لبائع حلوى متنقل خلال أيام', en: "a sweet seller's daily income in dinars over some days", who: 'يومًا', whoAcc: 'الأيام', values: [5, 10, 15, 20, 25], noun: ['دنانير', 'دينارًا', 'دينار'], one: 'دينارًا واحدًا', two: 'دينارين', unitEn: 'JD' },
+];
+const dotPlot = T('dot_plot_g4', /^تمثيل البيانات بالنقاط$/, [4, 4], ({ rng, diff }) => {
+  const c = pick(rng, DOT_CONTEXTS);
+  for (;;) {
+    const cs = c.values.map(() => int(rng, 0, span(diff, 4, 5, 7)));
+    const all = sum(cs);
+    const top = Math.max(...cs);
+    // at least six dots, at least two values with dots, and one tallest column (so «the most frequent» has one answer)
+    if (all < 6 || cs.filter(x => x > 0).length < 3 || cs.filter(x => x === top).length !== 1) continue;
+    const dots = (x: number) => (x ? '●'.repeat(x) : '(لا نقاط)');
+    const plot = c.values.map((v, i) => `${v}: ${dots(cs[i]!)}`).join('، ');
+    const plotEn = c.values.map((v, i) => `${v}: ${cs[i] ? '●'.repeat(cs[i]!) : '(no dots)'}`).join(', ');
+    const head = `يبين التمثيل بالنقاط الآتي ${c.ar}، وكل نقطة تمثل ${c.who === 'يومًا' ? 'يومًا واحدًا' : 'طالبًا واحدًا'}: ${plot}.`;
+    const headEn = `The dot plot shows ${c.en}, one dot per ${c.who === 'يومًا' ? 'day' : 'pupil'}: ${plotEn}.`;
+    // one and two are said with the noun alone («ساعتين»), never «2 ساعةً»
+    const valAr = (v: number) => (v === 1 ? c.one : v === 2 ? c.two : `${v} ${tamyiz(v, ...c.noun)}`);
+    const k = pick(rng, [0, 1, 2, 3, 4, 5]);
+    if (k === 0) {
+      const i = pick(rng, c.values.map((_, j) => j).filter(j => cs[j]! > 0)), v = c.values[i]!;
+      return { eq: `dot at ${v} ${plot}`, answer: String(cs[i]), wrongs: countOpts(cs[i]!, [all, cs[i]! + 1, v, all - cs[i]!]), ar: `${head} كم ${c.who} ${c.who === 'يومًا' ? 'كان الدخل فيه' : 'كانت إجابته'} ${valAr(v)}؟`, en: `${headEn} How many ${c.who === 'يومًا' ? 'days' : 'pupils'} answered ${v} ${c.unitEn}?` };
+    }
+    if (k === 1) {
+      const i = int(rng, 1, c.values.length - 2), v = c.values[i]!;
+      const at = sum(cs.slice(i)), above = sum(cs.slice(i + 1));
+      if (at === above) continue; // a dot at the value itself, so «or more» differs from «more than»
+      return { eq: `at or above ${v} ${plot}`, answer: String(at), wrongs: countOpts(at, [above, all - at, all, at + 1]), ar: `${head} كم ${c.who} ${c.who === 'يومًا' ? 'كان الدخل فيه' : 'كانت إجابته'} ${valAr(v)} أو أكثر؟`, en: `${headEn} How many ${c.who === 'يومًا' ? 'days' : 'pupils'} answered ${v} ${c.unitEn} or more?` };
+    }
+    if (k === 2) {
+      const ans = c.values[cs.indexOf(top)]!;
+      return { eq: `mode ${plot}`, answer: String(ans), wrongs: countOpts(ans, [top, ...c.values.filter(v => v !== ans)]), ar: `${head} ما القيمة الأكثر تكرارًا؟`, en: `${headEn} Which value occurs most often?` };
+    }
+    if (k === 3) {
+      return { eq: `total ${plot}`, answer: String(all), wrongs: countOpts(all, [c.values.length, top, all - 1, all + 1]), ar: `${head} ما عدد ${c.whoAcc} ${c.who === 'يومًا' ? 'الممثَّلة' : 'الممثَّلين'} في التمثيل؟`, en: `${headEn} How many ${c.who === 'يومًا' ? 'days' : 'pupils'} does the plot show?` };
+    }
+    if (k === 4) {
+      // represent: a raw list, and how many dots go above one value
+      const raw = shuffle(rng, c.values.flatMap((v, i) => Array<number>(cs[i]!).fill(v)));
+      const i = pick(rng, c.values.map((_, j) => j).filter(j => cs[j]! > 0)), v = c.values[i]!;
+      return { eq: `represent ${list(raw)} at ${v}`, answer: String(cs[i]), wrongs: countOpts(cs[i]!, [raw.length, cs[i]! + 1, cs[i]! - 1, v]), ar: `سُجّلت البيانات الآتية عن ${c.ar}: ${list(raw)}. عند تمثيلها بالنقاط، كم نقطة تُرسم فوق العدد ${v}؟`, en: `These data were recorded for ${c.en}: ${listEn(raw)}. In a dot plot of them, how many dots go above ${v}?` };
+    }
+    const [i, j] = shuffle(rng, c.values.map((_, x) => x)).slice(0, 2) as [number, number];
+    const d = Math.abs(cs[i]! - cs[j]!);
+    if (d === 0) continue;
+    const [hi, lo] = cs[i]! > cs[j]! ? [i, j] : [j, i];
+    return { eq: `more ${c.values[hi]} ${c.values[lo]} ${plot}`, answer: String(d), wrongs: countOpts(d, [cs[hi]!, cs[hi]! + cs[lo]!, d + 1, cs[lo]!]), ar: `${head} بكم يزيد عدد النقاط فوق العدد ${c.values[hi]} على عدد النقاط فوق العدد ${c.values[lo]}؟`, en: `${headEn} How many more dots are there above ${c.values[hi]} than above ${c.values[lo]}?` };
+  }
+});
+
 const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, diff, grade }) => {
   const m = grade <= 1 ? 6 : grade === 2 ? 9 : span(diff, 12, 20, 30);
   const k = grade <= 2 ? 3 : 4;
@@ -491,7 +549,7 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
   const whereEn = key === 2 ? `In a picture graph each picture stands for ${key} fruits; the numbers of pictures are: ` : 'The table shows how many students prefer each fruit: ';
   const tab = cats.map((c, i) => `${c[0]}: ${counts[i]}`).join('، ');
   const tabEn = cats.map((c, i) => `${c[1]}: ${counts[i]}`).join(', ');
-  const q = pick(rng, grade === 1 ? [0, 1, 3, 4, 5] : grade === 2 ? [0, 1, 3, 4, 5, 6, 7] : grade === 3 ? [0, 1, 2, 3, 8, 9] : [0, 1, 2, 3, 8, 9, 10]);
+  const q = pick(rng, grade === 1 ? [0, 1, 3, 4, 5] : grade === 2 ? [0, 1, 3, 4, 5, 6, 7] : [0, 1, 2, 3, 8, 9]); // the dot plot (once 10) is `dot_plot_g4`'s lesson since 2026-11-14
   if (q === 8) { // read a bar that ends halfway between two lines of the scale
     const step = pick(rng, [2, 10]), lo = step * int(rng, 1, span(diff, 4, 6, 8)), v = lo + step / 2, [f, fEn] = pick(rng, CATS);
     return { eq: `${step}, ${lo}, ${lo + step}`, answer: String(v), wrongs: countOpts(v, [lo, lo + step, lo + 1, v + step]), ar: `في تمثيل بالأعمدة لعدد الطلاب الذين يفضلون كل نوع من الفاكهة، يزيد تدريج المحور الرأسي ${step} عند كل خط. ينتهي عمود ${f} في منتصف المسافة بين الخطين ${lo} و ${lo + step}. كم طالبًا يفضّل ${f}؟`, en: `In a bar graph of the fruits pupils prefer, the vertical scale goes up by ${step} at each line. The bar for ${fEn} ends halfway between the lines ${lo} and ${lo + step}. How many pupils prefer ${fEn}?` };
@@ -499,16 +557,6 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
   if (q === 9) { // represent: how many squares a bar takes when each square stands for several pupils
     const per = pick(rng, [2, 5, 10]), sq = int(rng, 2, 9), v = per * sq, [f, fEn] = pick(rng, CATS);
     return { eq: `${v}, ${per}`, answer: String(sq), wrongs: countOpts(sq, [v, v - per, sq + 1, sq - 1, per]), ar: `تمثّل ريم بيانات صفها بالأعمدة على ورقة مربعات، ويمثل كل مربع في العمود ${per === 2 ? 'طالبين' : `${per} طلاب`}. إذا كان عدد الطلاب الذين يفضلون ${f} ${v}، فكم مربعًا يكون طول عموده؟`, en: `Reem draws her class's data as a bar graph on squared paper, and each square of a bar stands for ${per} pupils. If ${v} pupils prefer ${fEn}, how many squares tall is its bar?` };
-  }
-  if (q === 10) { // a dot plot: count the dots at or above a value
-    const top = 6, cs = Array.from({ length: top }, () => int(rng, 0, span(diff, 4, 5, 6))), v = int(rng, 3, 5);
-    cs[v - 1] = Math.max(1, cs[v - 1]!); // a dot at the value itself, so «or more» differs from «more than»
-    const below = int(rng, 0, v - 2);
-    cs[below] = Math.max(1, cs[below]!);
-    const dots = (c: number) => (c ? '●'.repeat(c) : '(لا نقاط)'), plot = cs.map((c, i) => `${i + 1}: ${dots(c)}`).join('، ');
-    const plotEn = cs.map((c, i) => `${i + 1}: ${c ? '●'.repeat(c) : '(no dots)'}`).join(', ');
-    const at = sum(cs.slice(v - 1)), above = sum(cs.slice(v)), all = sum(cs);
-    return { eq: plot, answer: String(at), wrongs: countOpts(at, [above, all - at, all, at + 1]), ar: `يبين التمثيل بالنقاط الآتي عدد الساعات التي قضاها كل طالب في القراءة خلال أسبوع، وكل نقطة تمثل طالبًا واحدًا: ${plot}. كم طالبًا قرأ ${v} ساعات أو أكثر؟`, en: `The dot plot shows how many hours each pupil spent reading in a week, one dot per pupil: ${plotEn}. How many pupils read for ${v} hours or more?` };
   }
   if (q === 4) { // organise raw data: how often one value occurs
     const L = grade <= 1 ? int(rng, 6, 8) : int(rng, 8, 10), top = grade <= 1 ? 6 : 9;
@@ -911,7 +959,8 @@ export const STATS_TOPICS: readonly Topic[] = [
   medianModeT('median_mode_range_g7', /^الوسيط والمنوال والمدي$/, [7, 7], ['median', 'mode', 'range', 'medianMissing', 'bestMeasure']),
   stemLeaf,
   readData('read_data_g12', /^(?:جداول البيانات|تمثيل البيانات بالصور|تفسير بيانات ممثله بالصور|تفسير البيانات الممثله بالصور|تفسير البيانات الممثله بجدول الاشارات|جمع البيانات وتنظيمها)$/, [1, 2]),
-  readData('read_data_g34', /^(?:تمثيل البيانات بالاعمده|تفسير البيانات الممثله بالاعمده|تمثيل البيانات بالنقاط)$/, [3, 4]),
+  // «تمثيل البيانات بالنقاط» has its own generator since 2026-11-14 (`dot_plot_g4`): here it was one kind among bar charts
+  readData('read_data_g34', /^(?:تمثيل البيانات بالاعمده|تفسير البيانات الممثله بالاعمده)$/, [3, 4]), dotPlot,
   freqTable, collectData,
   grouped('grouped_g6', /^الجداول والمخططات التكراريه ذات الفئات$/, [6, 6]), grouped('grouped_g9', /^(?:الجداول التكراريه ذات الفئات|المدرجات التكراريه)$/, [9, 9]),
   dispersion, scatter, cumulative, groupedMean,

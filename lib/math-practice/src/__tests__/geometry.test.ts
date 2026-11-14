@@ -640,22 +640,22 @@ describe('geometry generators: answers recomputed from the stem', () => {
   it('transformations and the coordinate plane', () => {
     const kinds: Record<string, Set<string>> = {};
     const saw = (id: string, k: string) => (kinds[id] ??= new Set()).add(k);
+    // Grade 4 reflects on a square grid in a drawn mirror line; its book prints no coordinates or equations (2026-11-14)
+    const OPPOSITE: Record<string, string> = { يمين: 'يسار', يسار: 'يمين', فوق: 'أسفل', أسفل: 'فوق' };
     for (const item of draws('reflect_line')) {
-      const p = item.promptAr!, P = pts(p);
-      if (has(p, 'الأفقي')) {
-        saw('reflect_line', 'horizontal');
-        const b = Number(p.match(/y = (\d+)/)![1]);
-        assert.deepEqual(pt(item.answer), [P[0]![0], 2 * b - P[0]![1]], p);
-      } else if (has(p, 'معادلة محور')) {
-        saw('reflect_line', 'mirror line');
-        assert.equal(P[0]![1], P[1]![1], p);
-        assert.equal(item.answer, `x = ${(P[0]![0] + P[1]![0]) / 2}`, p);
-      } else {
-        const a = Number(p.match(/x = (\d+)/)![1]);
-        if (has(p, 'المسافة')) { saw('reflect_line', 'distance'); assert.equal(Number(item.answer), 2 * Math.abs(a - P[0]![0]), p); }
-        else { saw('reflect_line', 'vertical'); assert.deepEqual(pt(item.answer), [2 * a - P[0]![0], P[0]![1]], p); }
-      }
-      assert.ok(pt(item.answer).every(v => v > 0), `Grade 4 stays in the first quadrant: ${p} → ${item.answer}`);
+      const p = item.promptAr!, n = nums(p);
+      assert.ok(!/[xy] =|\(\d+ ،/.test(p + item.answer), `coordinates or an equation in a Grade 4 stem: ${p}`);
+      if (has(p, 'أين تقع صورة')) {
+        saw('reflect_line', 'side');
+        const [, side] = p.match(/مربعًا|مربعات/) ? p.match(/(?:مربعات|مربعًا) (يمين|يسار|فوق|أسفل) محور/)! : [];
+        assert.ok(item.answer.includes(`${n[0]} `) && item.answer.endsWith(`${OPPOSITE[side!]} المحور`), p);
+      } else if (has(p, 'بين هذا الرأس وصورته')) { saw('reflect_line', 'between'); assert.equal(Number(item.answer), 2 * n[0]!, p); }
+      else if (has(p, 'على أي خط رأسي')) {
+        saw('reflect_line', 'grid line');
+        const [a, c] = n as [number, number];
+        assert.equal(Number(item.answer) - a, a - c, `the image is as far past the line as the vertex is before it: ${p}`);
+      } else if (has(p, 'طول صورة')) { saw('reflect_line', 'keeps length'); assert.equal(Number(item.answer), n[0], p); }
+      else { saw('reflect_line', 'keeps'); assert.equal(item.answer, 'أطوال الأضلاع وقياسات الزوايا', p); }
     }
     /** «3 وحدات إلى اليمين و وحدتين إلى الأسفل» → [3, −2]. */
     const UNITS = '(وحدة واحدة|وحدتين|\\d+ وحدات|\\d+ وحدة)';
@@ -765,7 +765,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
         assert.deepEqual(pt(item.answer), [x * k, y * k], p);
       }
     }
-    const want = { reflect_line: 4, reflect_axes: 3, coord_plane_g6: 3, dilate_g7: 4, dilate_g8: 5, translate_g5: 3, translate_g6: 3, coord_plane_g5: 4, rotate: 4 };
+    const want = { reflect_line: 5, reflect_axes: 3, coord_plane_g6: 3, dilate_g7: 4, dilate_g8: 5, translate_g5: 3, translate_g6: 3, coord_plane_g5: 4, rotate: 4 };
     for (const [id, k] of Object.entries(want)) assert.equal(kinds[id]?.size, k, `${id} kinds drawn: ${[...(kinds[id] ?? [])]}`);
   });
 

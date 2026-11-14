@@ -10,6 +10,36 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 4 review: reflection in the book's own terms, and the dot-plot lesson's own questions — 2026-11-14
+
+The Grade 4 review, audit and second pass (2026-11-13, below) covered coverage, retrieval, pages, figures, contents and every
+maths quiz. A sweep of all 313 lessons through the offline plan, quiz, worksheet and activity found nothing new: every
+lesson grounds by id, plans and activities generate for all, and all 50 maths lessons give a full paper. This change fixes
+the two items the second pass listed as weak.
+
+- **«الانعكاس»** (S1 u5_l6, «أرسم صورة شكل بالانعكاس حول محور، وأصفه»): the second pass noted «x = 7» in an Arabic stem.
+  The cause was wider: the generator asked for coordinates of an image and the equation of a mirror line, which is Grade 6
+  work. The Grade 4 book (S1 pp. 114-119, read in the teacher guide's reproduced pages) has no coordinates and no
+  equations: it reflects a shape on a square grid in a drawn vertical or horizontal line, a vertex and its image the same
+  number of squares from it, and no measure changes. `reflect_line` now asks exactly that: on which side and how far the
+  image of a vertex lies, how many squares between a vertex and its image, which numbered grid line the image is on, a
+  rectangle's length after the reflection, and what a reflection keeps.
+- **«تمثيل البيانات بالنقاط»** (S2 u10_l1, «تمثيل البيانات باستعمال النقاط» and «تفسير بيانات ممثلة بالنقاط»): it shared
+  `read_data_g34`, so a paper was mostly bar charts and tables with one dot-plot kind. It now has `dot_plot_g4` (`stats.ts`),
+  with the book's contexts (S2 p. 108 hours of sleep; exercise book p. 54 a sweet seller's daily income, hours of study):
+  the count at a value, at or above a value, the most frequent value, how many are shown, how many dots a raw list puts
+  above a value (the «represent» outcome), and how many more at one value than another. One and two are said with the
+  noun alone («ساعتين», «ساعةً واحدة»). `read_data_g34` keeps the two bar-chart lessons and drops its dot-plot item, which
+  belonged to this lesson.
+
+**Verified.** `geometry.test.ts` recomputes each reflection key from the printed counts (the image on the other side at the
+same distance, twice the distance between, the grid line as far past the mirror as the vertex is before it) and fails on a
+coordinate or an equation in a stem; `stats.test.ts` rebuilds each dot plot from its printed dots and recomputes every key.
+Planted bugs — «or more» counting «more than», the reflection distance halved, the image on the same side — each failed a
+test. Samples read by hand, keys correct. math-practice passes; the PR body has the rest of the CI set.
+
+**Not done.** Everything the earlier Grade 4 entries left for the PDFs (pages to render, social/vocational re-OCR, PE text).
+
 ## Grade 5 review: the last three maths lessons, the second pass's weak items, and social S2 u7_l4 — 2026-11-14
 
 «Grade 5 audit…» and «Grade 5 maths…» (both 2026-11-13, below) covered pages, figures, contents and every maths quiz. A
