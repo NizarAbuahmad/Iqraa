@@ -220,7 +220,8 @@ const exprEval = topic('expr_eval', /قيمه المقدار الجبري/, [5, 
     const n = int(rng, 2, span(diff) + 3), v = a * n + b;
     return {
       eq: `${a}n + ${b}`, answer: String(v), wrongs: num(v, [a + n + b, a * (n + b), a * n, v + a], String),
-      ar: `يمثّل المقدار ${a}n + ${b} ما يدفعه أحمد بالدينار ثمنًا لِـ n من الكتب مع أجرة التوصيل. كم دينارًا يدفع إذا اشترى ${n} من الكتب؟`,
+      // «إذا اشترى 2 من الكتب» read wrong; the count agrees with its noun now: «كتابين», «3 كتب», «11 كتابًا»
+      ar: `يمثّل المقدار ${a}n + ${b} ما يدفعه أحمد بالدينار ثمنًا لِـ n من الكتب مع أجرة التوصيل. كم دينارًا يدفع إذا اشترى ${n === 2 ? 'كتابين' : `${n} ${tamyiz(n, 'كتب', 'كتابًا', 'كتاب')}`}؟`,
       en: `The expression ${a}n + ${b} is what Ahmad pays, in dinars, for n books including delivery. How many dinars does he pay for ${n} books?`,
     };
   }
