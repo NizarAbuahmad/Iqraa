@@ -95,6 +95,40 @@ RTL and dark mode.
 not signed R2 links (the route itself is covered by the API's own tests). Whether replay masking hides the photos is
 unverified, as for the student's and the teacher's project screens (STATUS.md, «Screen recording»).
 
+## Grade 8, second pass: Arabic agreement in counting and congruence, and a clearer perpendicular item — 2026-11-14
+
+The Grade 8 audit (below, «Grade 8 audit: book pages, figures, contents and honorifics…») covered pages, figures,
+contents and honorifics. «Grade 8 maths: offline questions for the four S2 lessons…» gave the last four maths lessons
+generators. This pass runs the generators over all 358 lessons and reads every question of every maths quiz against
+the lesson's outcomes. Grade 8 has no extracted book text, so a text-based page check is impossible; the audit
+viewed every page as an image.
+
+**Generators (offline).**
+- Grounding by lesson id is exact for all 358 lessons. All 37 maths lessons serve a paper.
+- Every key read was right: inequalities, systems, factoring, slopes, quartiles, solids of revolution and congruence.
+- **Fixed, Arabic agreement:**
+  - «عد النواتج» printed «2 بناطيل», «2 أنواع من الحلوى», «لجنة من 2 طلاب» and «اختيار 2 طلاب». A count of two
+    now takes the dual: «بنطالان», «نوعان», «طالبين», «قميصان».
+  - The congruence-criterion stems read «إذا كان زاويتان… فبأي حالة تتطابق المثلثان». They now read «إذا كانت
+    زاويتان / ثلاثة أضلاع» and «يتطابق المثلثان».
+  - Pinned in `topics.test.ts` «Grade 8 counted nouns and verbs agree».
+  - `stats.test.ts` reads a dual back as 2.
+  - `geometry.test.ts` used the old typo to tell the two congruence kinds apart; it now uses their structure
+    («في المثلثين ABC و DEF:»).
+- **Clarified:** «زاويتان متجاورتان قياسهما (2x + 11)° و (x + 28)°… تجعل المستقيمين متعامدين» could be read as a
+  linear pair, which makes x the value at which the two are EQUAL. That x gives 45° each, not 90°. The key sums the two to
+  90°, so the stem now says «تكوّنان معًا الزاوية بين مستقيمين».
+- **Noted, not changed:** `dilate_g8` asks a negative scale factor («ومعامله −3»), while the lesson's outcome reads
+  «ومعامله k>0». The code marks this as deliberate for Grade 8; whether the book prints negative factors could not be
+  checked without the PDF.
+
+**Verified:**
+- `lib/math-practice`: 1145 tests pass.
+- Full mobile suite: 9,270 pass.
+- Typecheck is clean.
+
+**Not run:** live AI, and anything needing the PDFs.
+
 ## Grade 3 maths: offline questions for the four lessons that had none — 2026-11-14
 
 The Grade 3 audit found four maths lessons with no offline questions. Each now has a generator in
