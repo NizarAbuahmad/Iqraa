@@ -43,7 +43,7 @@ function draws(id: string, n = 150): Array<{ item: ConcreteItem; grade: number; 
 
 const nums = (s: string) => (s.match(/\d+/g) ?? []).map(Number);
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
-const toJs = (eq: string) => eq.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/(\d+)²/g, '($1**2)');
+const toJs = (eq: string) => eq.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/(\d+)²/g, '($1**2)').replace(/√(\d+)/g, 'Math.sqrt($1)');
 const num = (s: string) => Number(s.replace('−', '-'));
 
 /** Value of «−3/4», «3 2/5», «35%», «0.75», «12»; null for anything else. */
@@ -114,7 +114,7 @@ const toSup = (n: number) => [...String(n)].map(c => SUPS[Number(c)]).join('');
 const js = (expr: string) => Function(`return ${toJs(expr)}`)() as number;
 /** The slip: every operation strictly from left to right. */
 function leftToRight(expr: string): number {
-  const t = expr.replace(/[()]/g, '').split(' ').map(x => (x.endsWith('²') ? Number(x.slice(0, -1)) ** 2 : x));
+  const t = expr.replace(/[()]/g, '').split(' ').map(x => (x.endsWith('²') ? Number(x.slice(0, -1)) ** 2 : x.startsWith('√') ? Math.sqrt(Number(x.slice(1))) : x));
   let v = Number(t[0]);
   for (let i = 1; i < t.length; i += 2) {
     const r = Number(t[i + 1]);
@@ -517,6 +517,27 @@ describe('answers recomputed from the stem', () => {
       }
     }
     assert.equal(kinds.size, 3, [...kinds].join());
+  });
+
+  it('Grade 6 order of operations names powers and roots on a medium paper (Grade 6 audit, 2026-11-14)', () => {
+    // The outcome is «مقادير عددية تحوي قوى وجذورًا»; powers came only on hard and roots never.
+    const t = topic('order_ops');
+    let pow = 0, root = 0;
+    for (let i = 0; i < 300; i++) {
+      const p = makeTopicItem(t, 6, 'medium', new Set(), seeded(i * 104729 + 7)).promptAr!;
+      if (p.includes('²')) pow++;
+      if (p.includes('√')) root++;
+    }
+    assert.ok(pow > 20 && root > 20, `powers ${pow}, roots ${root}`);
+    for (let i = 0; i < 300; i++) {
+      const p = makeTopicItem(t, 5, (['easy', 'medium', 'hard'] as const)[i % 3], new Set(), seeded(i * 104729 + 7)).promptAr!;
+      assert.ok(!/[²√]/.test(p), `Grade 5 drew a power or root: ${p}`);
+    }
+  });
+
+  it('percent conversions never print a float artefact (Grade 6 audit, 2026-11-14)', () => {
+    // «اكتب 64% على صورة عدد عشري» offered «1.6400000000000001».
+    for (const { item } of draws('pct_conv', 600)) for (const s of [item.answer, ...item.wrongs]) assert.ok(!/\d\.\d{4,}/.test(s), `${item.promptAr}: ${s}`);
   });
 
   it('integers: compute, real-life problems, the missing number, an expression', () => {
