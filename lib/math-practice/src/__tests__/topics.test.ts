@@ -586,6 +586,15 @@ describe('answers recomputed from the stem', () => {
     }
   });
 
+  it('Grade 8 counted nouns and verbs agree (Grade 8 audit, 2026-11-14)', () => {
+    // «2 بناطيل», «2 أنواع من الحلوى», «لجنة من 2 طلاب», «فبأي حالة تتطابق المثلثان» and «إذا كان زاويتان» were printed.
+    for (const { item } of draws('counting', 600)) assert.ok(!/(?:^|[^\d])2 (?:قمصان|بناطيل|أنواع|طلاب)/.test(item.promptAr!), item.promptAr);
+    for (const id of ['congruence_a', 'congruence_b']) for (const { item } of draws(id, 300)) {
+      const p = item.promptAr!;
+      assert.ok(!p.includes('تتطابق المثلثان') && !/إذا كان (?:ثلاثة|زاويتان)/.test(p), p);
+    }
+  });
+
   it('percent conversions never print a float artefact (Grade 6 audit, 2026-11-14)', () => {
     // «اكتب 64% على صورة عدد عشري» offered «1.6400000000000001».
     for (const { item } of draws('pct_conv', 600)) for (const s of [item.answer, ...item.wrongs]) assert.ok(!/\d\.\d{4,}/.test(s), `${item.promptAr}: ${s}`);
