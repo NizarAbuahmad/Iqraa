@@ -612,7 +612,8 @@ describe('statistics: answers recomputed', () => {
 describe('proportion and percent: answers recomputed', () => {
   it('unit rate and proportion', () => {
     for (const item of draws('unit_rate', 300)) {
-      const p = item.promptAr!, n = nums(p);
+      // «في ساعتين» is two hours, read back as the digit in place.
+      const p = item.promptAr!, n = nums(p.replace('ساعتين', '2'));
       if (has(p, 'العرض الأول')) { const [q1, c1, q2, c2] = n; const first = c1! / q1! < c2! / q2!; assert.equal(item.answer, first ? 'العرض الأول' : 'العرض الثاني'); assert.notEqual(c1! / q1!, c2! / q2!); }
       else assert.equal(Number(item.answer), has(p, 'ثمن') ? n[1]! / n[0]! : n[0]! / (has(p, 'ساعتين') ? 2 : n[1]!), p);
     }
