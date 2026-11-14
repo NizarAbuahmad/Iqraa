@@ -10,6 +10,36 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 3 maths: offline questions for the four lessons that had none — 2026-11-14
+
+The Grade 3 audit found four maths lessons with no offline questions. Each now has a generator in
+`lib/math-practice/src/topics.ts` (`grades: [3, 3]`), from the lesson's objective and, where the book is reachable, its
+pages:
+
+- **`hindi_numerals`** — «الأرقام الهندية» (S1 u1_l7). Numbers up to the thousands written only in ٠-٩: the greatest
+  or smallest of four numbers made of the same digits, the value of a digit («قيمة الرقم ٦ في ٤٨٦٩» → 60), the digit in
+  a place. Every question needs the Hindi digits **read**; none asks for them **written**, because marking folds ٧ and 7
+  to one value (`answersMatch` in the API, `toLatinDigits` in the app), so «اكتب 4708 بالأرقام الهندية» would mark «4708»
+  right — the reason `early.test.ts` and `geometry.test.ts` pinned this lesson as refused, now updated. Writing them
+  stays the teacher's to check. A digit asked about appears once in its number, or the question has two answers.
+- **`guess_check`** — «خطة حل المسألة: التخمين والتحقق» (S2 u7_l6, problems on multiplication): two numbers from their
+  sum and product, chickens and sheep from heads and legs, pens and notebooks from the count and the total paid, the
+  number that times itself makes a square.
+- **`four_steps`** — «مهارة حل المسألة: استعمال الخطوات الأربع» (S2 u8_l6, pp. 36–37): what the remainder means — round
+  up (56 people at tables of 6 need 10), round down (stories at 4 JD with 30 JD), or the remainder itself. The other
+  reading of the quotient is always a wrong option.
+- **`frac_div`** — «الكسور والقسمة» (S2 u9_l8): a unit fraction of a two-digit number by division, no remainder: bare,
+  in a story, and «ما جملة القسمة…» (63 ÷ 7, against 63 × 7 and 7 ÷ 63).
+
+Whole numbers only, positive wrong options; nothing sets `verified` or a `check`. Grade 3 offline maths now covers all 70
+lessons.
+
+**Verified:** `grade3Lessons.test.ts` (13, written first and seen failing) recomputes every key from its stem with code
+that shares nothing with the generators, checks every kind is drawn, that a Hindi-numeral stem carries no Latin digit,
+and that no option is a decimal; making «round up» drop the remainder fails 2 of them. math-practice 1138 pass. Thirty
+sampled items read by hand, keys correct (the first read found «٤ في ١٠٤٤», a digit appearing twice, and a 24.5 option;
+both fixed and now tested).
+
 ## Grade 3 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-14
 
 The Grade 4–10 review («Grade 4 audit…»), repeated for Grade 3 (254 lessons), on top of «Grade 3 review: Arabic S2 pages
@@ -41,8 +71,8 @@ unit 6) sat on «الأحافير»; science S1's unit 3 review and «تقويم
 on «الآلات البسيطة», and two unit 1 end-matter crops (p030-v2, p032-v2) on u1_l3 — judged from the crops and the S2 layout,
 since science S1 has no page images. 17 minor crop flaws stay.
 
-**Results.** Offline maths: 66 of 70 lessons get questions, every sampled key correct by hand. None for «الأرقام الهندية»,
-«خطة حل المسألة: التخمين والتحقق», «مهارة حل المسألة: استعمال الخطوات الأربع» and «الكسور والقسمة».
+**Results.** Offline maths: 66 of 70 lessons got questions, every sampled key correct by hand; the other four now have
+generators («Grade 3 maths: offline questions for the four lessons that had none», above).
 
 **Verified:** `bookPage`, `bookFigures`, `bookFigureAssets`, `lessonSlides`, `teachingPlanGrounding` (199), curriculum test
 (931) and verify (0 errors), typecheck. **Not verified:** the pages on a phone; anything needing the PDFs.

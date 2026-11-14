@@ -1125,8 +1125,10 @@ describe('early routing', () => {
     // Grade 1 S2: these drew the grade's generic single-digit sums (2026-11-13)
     ['جمع العشرات', 1, 'tens_add_g1'], ['طرح العشرات', 1, 'tens_sub_g1'],
     ['جمع عددين من منزلتين', 1, 'two_digit_add_g1'], ['طرح عددين من منزلتين', 1, 'two_digit_sub_g1'],
-    // lessons that stay refused: they need pictures, objects, or a digit form the app converts itself
-    ['الأرقام الهندية', 3, null], ['التصنيف وفق خاصية واحدة', 1, null], ['الموقع والاتجاه', 1, null], ['ترتيب الأعمال اليومية', 1, null],
+    // «الأرقام الهندية» asks only questions read in Hindi digits, never written (marking folds ٧ and 7): grade3Lessons.test.ts
+    ['الأرقام الهندية', 3, 'hindi_numerals'],
+    // lessons that stay refused: they need pictures or objects
+    ['التصنيف وفق خاصية واحدة', 1, null], ['الموقع والاتجاه', 1, null], ['ترتيب الأعمال اليومية', 1, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {
