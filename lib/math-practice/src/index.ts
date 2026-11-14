@@ -44,6 +44,7 @@ export type { Misstep } from './missteps.ts';
 export { detectElementaryOp, elementaryOpsForTitle } from './elementary.ts';
 export { topicFor } from './topics.ts';
 export { sameKind, stemFrame } from './stemFrame.ts';
+export { difficultyLoad } from './earlyDifficulty.ts';
 
 export interface PracticeLesson {
   id: string;
@@ -639,6 +640,9 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
   }
 
   if (type === 'fill_blank') {
+    // A stem that already has its blank («8 + ___ = 10») is the fill-blank
+    // itself; a second «الإجابة: ____» line under it asks for two answers.
+    if (/_{3,}/.test(stem)) return { text: stem, answer: item.answer };
     return {
       text: isAr
         ? `${stem}\n\nالإجابة: __________`
@@ -846,15 +850,24 @@ export function takeElementaryMath(
   session?: Set<string>,
 ): PracticeWQ | null {
   const title = lessonTitleBlob(topic, kb);
+  // A lesson with a generator of its own gets it before the grade's generic
+  // operation drill: «جمع العشرات» names addition, and the drill served it
+  // «3 + ؟ = 4» with no ten in sight (Grade 1 sweep, 2026-11-13). Checked
+  // then: the eight Grade 1 lessons in `earlyG1Ops.test.ts` are the only ones
+  // in grades 1–6 that have both, so no other lesson changes.
+  const gen = topicForLesson(topic, kb, grade);
   // A lesson none of the generators is about gets no items, not the grade's
   // default mix of arithmetic.
-  if (grade <= 6 && elementaryOpsForTitle(title).length > 0) {
+  if (!gen && grade <= 6 && elementaryOpsForTitle(title).length > 0) {
     const item = makeElementaryItem(title, grade, diff, session ?? usedIds);
     return { ...formatItem(item, lang, type), points };
   }
-  const gen = topicForLesson(topic, kb, grade);
   if (!gen) return null;
-  return { ...formatItem(makeTopicItem(gen, grade, diff, session ?? usedIds), lang, type), points };
+  // A word-problem slot asks the generator for a story (`Ctx.word`); one that
+  // writes them returns one, rather than a bare «60 + ___ = 80» with «اكتب الحل
+  // موضّحًا الخطوات» under it. Generators without stories ignore the flag.
+  const item = makeTopicItem(gen, grade, diff, session ?? usedIds, Math.random, { word: type === 'word_problem' });
+  return { ...formatItem(item, lang, type), points };
 }
 
 /**

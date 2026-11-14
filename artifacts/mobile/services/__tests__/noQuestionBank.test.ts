@@ -65,9 +65,18 @@ const mathReq = (l: (typeof KB_LESSONS)[number]) => ({
 }) as AIRequest;
 
 describe('maths lessons: covered or refused, never off-topic filler', () => {
-  it('finds both kinds in the catalog', () => {
+  it('finds covered lessons in the catalog, and refuses a lesson no generator is about', () => {
     assert.ok(mathLessons.some(l => hasMathBank(l.titleAr, l)));
-    assert.ok(mathLessons.some(l => !hasMathBank(l.titleAr, l)));
+    // Since 2026-11-14 every maths lesson in the catalog has a generator: the last refused Grade 1
+    // lessons got theirs in the Grade 1 review, the last Grade 2 ones in the Grade 2 maths change.
+    // So the refused kind is checked as for Grades 7–9 below: a real early-grade lesson under a
+    // title no generator is about must be refused, not served the grade's default arithmetic.
+    for (const g of [1, 4]) {
+      const l = mathLessons.find(x => gradeOf(x) === g)!;
+      assert.ok(l, `no Grade ${g} maths lesson`);
+      const unknown = { ...l, titleAr: 'درسٌ لا يتناوله أيُّ مولِّد', titleEn: 'A lesson no generator is about' };
+      assert.equal(hasMathBank(unknown.titleAr, unknown), false, `Grade ${g}`);
+    }
   });
 
   it('Grades 7–9 maths are served by a lesson-specific generator or not at all — never the Grade 10 bank', () => {
