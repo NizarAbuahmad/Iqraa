@@ -137,6 +137,36 @@ describe('Grade 3 Arabic semester 2 and maths pages (audit 2026-11-13)', () => {
   });
 });
 
+describe('Grade 5 pages (audit 2026-11-13)', () => {
+  // Set by the Grade 5 audit (read as images) and confirmed independently from
+  // the books' own page text (lesson openers, «اختبار نهاية الوحدة», unit openers).
+  const G = 'kbl-g5-';
+  const at = (id: string, i: number) => bookPagesForLesson(`${G}${id}`)!.urls[i];
+  it('social studies lessons read their own pages, not the next unit\'s', () => {
+    // «الملك وصلاحياته الدستورية» opened on p. 40, the middle of «السلطة التنفيذية»
+    const king = bookPagesForLesson(`${G}social-s1-nccd-u2_l1`)!;
+    assert.equal(king.page, 30);
+    assert.equal(king.urls[0], `${BOOK_PAGES_BASE_URL}/${G}social-s1-nccd-u1_l3/9.jpg`);
+    assert.equal(at('social-s1-nccd-u3_l1', 0), `${BOOK_PAGES_BASE_URL}/${G}social-s1-nccd-u2_l1/11.jpg`);
+    assert.equal(bookPagesForLesson(`${G}social-s2-nccd-u6_l1`)!.page, 28);
+    assert.equal(bookPagesForLesson(`${G}social-s2-nccd-u8_l2`)!.page, 87);
+  });
+  it('«السرعة» shows no pages: its folder holds the body-systems lessons', () => {
+    assert.equal(bookPagesForLesson(`${G}science-s2-nccd-u9_l1`), null);
+    assert.equal(at('science-s2-nccd-u7_l2', 0), `${BOOK_PAGES_BASE_URL}/${G}science-s2-nccd-u9_l1/2.jpg`);
+    assert.equal(bookPagesForLesson(`${G}science-s2-nccd-u7_l3`)!.page, 36);
+  });
+  it('a maths lesson stops before the unit test, and lesson 2 of unit 4 has its pages', () => {
+    assert.equal(lessons[`${G}math-s1-nccd-u2_l5`]!.endPage, 49); // p. 50 is «اختبار نهاية الوحدة»
+    assert.equal(lessons[`${G}math-s1-nccd-u4_l1`]!.endPage, 79); // p. 80 is u4_l2's «نشاط مفاهيمي»
+    assert.equal(at('math-s1-nccd-u4_l2', 0), `${BOOK_PAGES_BASE_URL}/${G}math-s1-nccd-u4_l1/6.jpg`);
+  });
+  it('an Arabic unit\'s last lesson stops before «حصاد الوحدة» and the next unit\'s cover', () => {
+    assert.equal(lessons[`${G}arabic-s1-nccd-u1_l5`]!.endPage, 28);
+    assert.equal(lessons[`${G}arabic-s2-nccd-u10_l5`]!.endPage, 133);
+  });
+});
+
 describe('bookPagesForLesson', () => {
   it('lists one image per page of the lesson, numbered from 1', () => {
     const [id, entry] = Object.entries(lessons)[0]!;

@@ -331,11 +331,11 @@
         534.1,
         651.3
       ],
-      "unit": 2,
-      "lesson": 5,
-      "lessonTitleEn": "I Build My Language (Imitating Language Patterns)",
-      "lessonTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
-      "lessonStartPage": 54
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "lessonStartPage": 60
     },
     {
       "file": "p063.png",
@@ -498,22 +498,6 @@
       "lessonStartPage": 75
     },
     {
-      "file": "p082.png",
-      "sourceId": "g4-arabic-s1-student-book",
-      "pdfPage": 82,
-      "rect": [
-        306.2,
-        523.7,
-        437.1,
-        734.6
-      ],
-      "unit": 3,
-      "lesson": 5,
-      "lessonTitleEn": "I Build My Language (Imitating Language Patterns)",
-      "lessonTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
-      "lessonStartPage": 80
-    },
-    {
       "file": "p084.png",
       "sourceId": "g4-arabic-s1-student-book",
       "pdfPage": 84,
@@ -523,11 +507,11 @@
         542.6,
         600.3
       ],
-      "unit": 3,
-      "lesson": 5,
-      "lessonTitleEn": "I Build My Language (Imitating Language Patterns)",
-      "lessonTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
-      "lessonStartPage": 80
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "lessonStartPage": 86
     },
     {
       "file": "p086.png",
@@ -635,11 +619,11 @@
         493.2,
         561.2
       ],
-      "unit": 4,
-      "lesson": 5,
-      "lessonTitleEn": "I Build My Language (Imitating Language Patterns)",
-      "lessonTitleAr": "أَبْني لُغَتي (مُحاكاةُ أَنْماطٍ لُغَوِيَّةٍ)",
-      "lessonStartPage": 105
+      "unit": 5,
+      "lesson": 1,
+      "lessonTitleEn": "I Listen Attentively and with Focus",
+      "lessonTitleAr": "أَسْتَمِعُ بِانْتِباهٍ وَتَرْكيزٍ",
+      "lessonStartPage": 112
     },
     {
       "file": "p112.png",
