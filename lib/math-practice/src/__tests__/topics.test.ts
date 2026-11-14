@@ -11,6 +11,7 @@ import { ALGEBRA_TOPICS } from '../algebra.ts';
 import { GEOMETRY_TOPICS } from '../geometry.ts';
 import { STATS_TOPICS } from '../stats.ts';
 import { PROPORTION_TOPICS } from '../proportion.ts';
+import { G5_TOPICS } from '../g5.ts';
 import { mathBankCovers, takeElementaryMath, type DiffTier } from '../index.ts';
 import type { ConcreteItem } from '../index.ts';
 
@@ -59,8 +60,8 @@ function value(s: string): number | null {
 }
 
 describe('every generator, every grade, every tier', () => {
-  // algebra, geometry, stats and proportion have their own shape tests (some answers have fewer than three wrong options)
-  const OWN = new Set([...ALGEBRA_TOPICS, ...GEOMETRY_TOPICS, ...STATS_TOPICS, ...PROPORTION_TOPICS].map(t => t.id));
+  // algebra, geometry, stats, proportion and Grade 5 have their own shape tests (some answers have fewer than three wrong options)
+  const OWN = new Set([...ALGEBRA_TOPICS, ...GEOMETRY_TOPICS, ...STATS_TOPICS, ...PROPORTION_TOPICS, ...G5_TOPICS].map(t => t.id));
   for (const t of TOPICS.filter(t => !OWN.has(t.id))) {
     it(`${t.id}: well-formed items with three distinct wrong options`, () => {
       for (const { item, grade, diff } of draws(t.id, 240)) {

@@ -530,55 +530,6 @@ const QUADS: Array<[string, string, string]> = [
   ['متوازي أضلاع', 'كل ضلعين متقابلين متوازيان ومتساويان، وزواياه غير قائمة وأضلاعه الأربعة غير متساوية', 'opposite sides parallel and equal, no right angles, and the four sides are not all equal'],
   ['شبه منحرف', 'زوج واحد فقط من الأضلاع المتقابلة متوازٍ', 'exactly one pair of parallel sides'],
 ];
-/**
- * Grade 5 «المضلعات» (student book S2, p. 66-69): a polygon is named by its
- * number of sides, has as many vertices (angles) as sides, and is regular when
- * all its sides and all its angles are equal. The book's own drills are
- * pictures; these are the same four facts asked in words.
- */
-const POLY_NAMES: Array<[number, string]> = [[3, 'مثلث'], [4, 'رباعي'], [5, 'خماسي'], [6, 'سداسي'], [7, 'سباعي'], [8, 'ثماني']];
-const POLY_EN: Record<number, string> = { 3: 'triangle', 4: 'quadrilateral', 5: 'pentagon', 6: 'hexagon', 7: 'heptagon', 8: 'octagon' };
-const POLY_REGULAR = ['مربع', 'مثلث متساوي الأضلاع', 'خماسي منتظم', 'سداسي منتظم', 'ثماني منتظم'];
-const POLY_IRREGULAR = ['مستطيل', 'معين', 'مثلث متساوي الساقين', 'شبه منحرف', 'مثلث قائم الزاوية', 'متوازي أضلاع'];
-const SHAPE_EN: Record<string, string> = {
-  'مربع': 'square', 'مثلث متساوي الأضلاع': 'equilateral triangle', 'خماسي منتظم': 'regular pentagon', 'سداسي منتظم': 'regular hexagon',
-  'ثماني منتظم': 'regular octagon', 'مستطيل': 'rectangle', 'معين': 'rhombus', 'مثلث متساوي الساقين': 'isosceles triangle',
-  'شبه منحرف': 'trapezium', 'مثلث قائم الزاوية': 'right triangle', 'متوازي أضلاع': 'parallelogram',
-};
-const polygons5 = T('polygons_g5', /^المضلعات$/, [5, 5], ({ rng, diff }) => {
-  const k = pick(rng, [0, 1, 2, 3]);
-  if (k === 0) {
-    const [n, name] = pick(rng, POLY_NAMES);
-    const others = shuffle(rng, POLY_NAMES.filter(([m]) => m !== n)).slice(0, 3).map(([, s]) => s);
-    return { eq: `name ${n}`, answer: name, wrongs: others, ar: `مضلع له ${n} أضلاع. ما اسمه؟`, en: `A polygon has ${n} sides. What is it called?` };
-  }
-  if (k === 1) {
-    const [n, name] = pick(rng, POLY_NAMES.slice(1));
-    return { eq: `vertices ${n}`, answer: String(n), wrongs: pos(n, [n + 1, n - 1, 2 * n, n + 2]), ar: `كم رأسًا للمضلع ال${name}؟`, en: `How many vertices does a ${POLY_EN[n]} have?` };
-  }
-  if (k === 2) {
-    // Which ONE of four is (not) regular.
-    const wantRegular = rng() < 0.6;
-    const right = pick(rng, wantRegular ? POLY_REGULAR : POLY_IRREGULAR);
-    const wrongs = shuffle(rng, wantRegular ? POLY_IRREGULAR : POLY_REGULAR).slice(0, 3);
-    const listed = shuffle(rng, [right, ...wrongs]);
-    const ask = wantRegular ? 'منتظم' : 'غير منتظم';
-    return {
-      eq: `regular ${wantRegular} ${listed.join('|')}`, answer: right, wrongs,
-      ar: `أيّ المضلعات الآتية ${ask}: ${listed.join(' ، ')}؟`,
-      en: `Which of these polygons is ${wantRegular ? 'regular' : 'not regular'}: ${listed.map(s => SHAPE_EN[s]).join(', ')}?`,
-    };
-  }
-  // A regular polygon: perimeter from a side, or a side from the perimeter.
-  const [n, name] = pick(rng, POLY_NAMES.slice(2));
-  const s = int(rng, 2, diff === 'easy' ? 9 : diff === 'medium' ? 15 : 25);
-  const P = n * s;
-  if (rng() < 0.5) {
-    return { eq: `perim ${n} × ${s}`, answer: String(P), wrongs: pos(P, [P + s, P - s, s * 4, n + s]), ar: `${name} منتظم طول ضلعه ${s} سم. ما محيطه؟`, en: `A regular ${POLY_EN[n]} has sides of ${s} cm. What is its perimeter?` };
-  }
-  return { eq: `side ${P} ÷ ${n}`, answer: String(s), wrongs: pos(s, [P - n, s + 1, s - 1, P / 2]), ar: `${name} منتظم محيطه ${P} سم. ما طول ضلعه؟`, en: `A regular ${POLY_EN[n]} has a perimeter of ${P} cm. How long is each side?` };
-});
-
 const quadName = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng }) => {
   const [n, ar, en] = pick(rng, QUADS);
   return { eq: n, answer: n, wrongs: names(rng, n, QUADS.map(q => q[0])), ar: `أي شكل رباعي له الخصائص الآتية: ${ar}؟`, en: `Which quadrilateral has these properties: ${en}?` };
@@ -1552,7 +1503,7 @@ export const GEOMETRY_TOPICS: readonly Topic[] = [
   perimeter, area, composite, parallelogramArea, triangleArea, trapezoidArea, rectPrism,
   circleParts, sector, circumference, circleArea, constructions,
   prismCylinderVolume, pyramidConeVolume, prismCylinderSurface, pyramidConeSurface, sphere,
-  angleKind, lineAndPoint, triBySides, triByAngles, polygons5,
+  angleKind, lineAndPoint, triBySides, triByAngles,
   quadName('quad_name_g5', /^تصنيف الاشكال الرباعيه$/, 5), quadName('quad_name_g6', /^الاشكال الرباعيه$/, 6),
   prismPyramid, symmetry, complement, transversal, triangleAngles, polygonAngles,
   parallelogram, parallelogramTest, specialParallelograms, parallelProof, isosceles,

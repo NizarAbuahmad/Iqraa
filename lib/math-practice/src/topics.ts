@@ -22,6 +22,7 @@ import { EARLY_TOPICS } from './early.ts';
 import { G10_LESSON_TOPICS } from './grade10.ts';
 import { G10_TOPICS } from './g10.ts';
 import { G8_TOPICS } from './g8.ts';
+import { G5_TOPICS } from './g5.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
 import {
   gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tier, valueOf, wrongsFrom,
@@ -429,47 +430,6 @@ const tensMul: Topic = {
       };
     }
     return { eq: text, answer: String(ans), wrongs, ar: `أوجد ناتج ${text}.`, en: `Find ${text}.` };
-  },
-};
-
-/**
- * Grade 5 «الضرب الذهني» (student book S1, p. 30-33): doubling and halving.
- * The book asks for a number's double («أجد ضعف العدد 75»), its half
- * («أجد نصف العدد 480»), and a product found by doubling one factor and
- * halving the other («35 × 16 = 70 × 8 = 560»), so the even factor is the one
- * halved and the other ends in 5 or is small enough to double in the head.
- */
-const mentalMul: Topic = {
-  id: 'mental_mul', match: /^الضرب الذهني$/, grades: [5, 5],
-  make({ rng, diff }) {
-    const kind = pick(rng, [0, 1, 2, 2]);
-    if (kind === 0) {
-      const n = diff === 'easy' ? int(rng, 13, 99) : int(rng, 11, 99) * 10 + (diff === 'hard' ? int(rng, 1, 9) : 0);
-      const d = 2 * n;
-      return {
-        eq: `2 × ${n}`, answer: String(d), wrongs: numWrongs(d, [n + 2, d + 10, d - 10, n * 20]),
-        ar: `في مكتبة المدرسة ${counted(n, 'كتب', 'كتابًا', 'كتاب')}، وفي مكتبة البلدية ضعف هذا العدد. كم كتابًا في مكتبة البلدية؟ احسب ذهنيًّا.`,
-        en: `The school library has ${n} books and the town library has double that. How many books does the town library have? Work it out mentally.`,
-      };
-    }
-    if (kind === 1) {
-      const h = diff === 'easy' ? int(rng, 11, 49) : int(rng, 11, 99) * 10 + (diff === 'hard' ? int(rng, 1, 9) : 0);
-      const n = 2 * h;
-      return {
-        eq: `${n} ÷ 2`, answer: String(h), wrongs: numWrongs(h, [n * 2, h + 10, h - 10, n - 2]),
-        ar: `قطع عدّاء ${counted(n, 'أمتار', 'مترًا', 'متر')}، وقطع زميله نصف هذه المسافة. كم مترًا قطع زميله؟ احسب ذهنيًّا.`,
-        en: `A runner ran ${n} metres and a teammate ran half that distance. How many metres did the teammate run? Work it out mentally.`,
-      };
-    }
-    // a × b where halving b and doubling a lands on an easy product: 35 × 16 = 70 × 8.
-    const a = pick(rng, diff === 'easy' ? [5, 15, 25, 35, 45] : [5, 15, 25, 35, 45, 55, 65, 75, 12, 14]);
-    const b = 2 * (diff === 'hard' ? int(rng, 6, 24) : int(rng, 3, 12));
-    const p = a * b;
-    return {
-      eq: `${a} × ${b}`, answer: String(p), wrongs: numWrongs(p, [p + a, p - a, (a * b) / 2, p + 10]),
-      ar: `أوجد ناتج ${a} × ${b} باستعمال المضاعفة والتنصيف.`,
-      en: `Find ${a} × ${b} by doubling and halving.`,
-    };
   },
 };
 
@@ -2023,7 +1983,7 @@ const simplerProblem: Topic = {
 export const TOPICS: readonly Topic[] = [
   roundDec, roundWhole, estSumDec,
   estSum('est_sum', /تقدير.*(?:مجموع|فرق)/, 'both'), estSum('est_add', /تقدير.*جمع/, 'add'), estSum('est_sub', /تقدير.*طرح/, 'sub'),
-  estProd, estQuot, tensMul, tensDiv, mentalMul,
+  estProd, estQuot, tensMul, tensDiv,
   orderOps, factors, primes, divisibility, primeFact, gcf, lcmT, squares, powers,
   intIntro, intAbs, intCompare,
   intOp('int_add', /جمع الاعداد الصحيحه/, '+'), intOp('int_sub', /طرح الاعداد الصحيحه/, '−'), intOp('int_muldiv', /ضرب الاعداد الصحيحه/, '×÷'),
@@ -2041,6 +2001,7 @@ export const TOPICS: readonly Topic[] = [
   ...G10_LESSON_TOPICS,
   ...G10_TOPICS,
   ...G8_TOPICS,
+  ...G5_TOPICS,
 ];
 
 /** The generator for a lesson title and grade, or null when none is about it. */
