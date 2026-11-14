@@ -30,6 +30,10 @@ const NOUNS: Array<[string, string, string]> = [
   ['أكواب', 'كوبًا', 'كوب'],
   ['أمتار', 'مترًا', 'متر'], ['سنتيمترات', 'سنتيمترًا', 'سنتيمتر'], ['كيلوغرامات', 'كيلوغرامًا', 'كيلوغرام'],
   ['غرامات', 'غرامًا', 'غرام'], ['لترات', 'لترًا', 'لتر'], ['مليلترات', 'مليلترًا', 'مليلتر'],
+  // Grade 3's calendar printed «بعد 9 يومًا» and «في 2 أسابيع» (found 2026-11-13).
+  ['أيام', 'يومًا', 'يوم'], ['أسابيع', 'أسبوعًا', 'أسبوع'], ['ساعات', 'ساعةً', 'ساعة'],
+  // Grade 2's equal groups printed «2 مجموعات» and «30 قطع».
+  ['مجموعات', 'مجموعةً', 'مجموعة'], ['قطع', 'قطعةً', 'قطعة'], ['قروش', 'قرشًا', 'قرش'],
 ];
 
 describe('counted nouns', () => {
@@ -43,9 +47,17 @@ describe('counted nouns', () => {
           const ar = topic.make({ rng, diff: (['easy', 'medium', 'hard'] as const)[i % 3], grade }).ar;
           for (const forms of NOUNS) {
             // A whole number not inside a decimal («2.50 دينارًا» is read as an amount).
-            const re = new RegExp(`(?<![\\d.])(\\d+) (${forms.join('|')})(?![\\u0600-\\u06FF])`, 'g');
+            // The noun ends at anything but a letter or a mark: U+0600-U+0620 are
+            // punctuation, and counting «؟» as a letter hid every noun that ends a question.
+            // Not a fraction's denominator either («1/4 مجموعة»).
+            const re = new RegExp(`(?<![\\d./])(\\d+) (${forms.join('|')})(?![\\u0621-\\u065F\\u0670-\\u06FF])`, 'g');
             for (const m of ar.matchAll(re)) {
               const n = Number(m[1]);
+              // One and two are said with the noun alone: «قلم واحد», «قلمان» / «قلمين»,
+              // never «1 قلمًا» or «2 أقلام» (Grade 2 and Grade 7 printed the latter).
+              // A unit fact is an equation the books print with the digit: «1 متر = 100 سنتيمتر».
+              const isFact = /^\s*=/.test(ar.slice(m.index! + m[0].length));
+              if ((n === 1 || n === 2) && !isFact) { bad.add(`${topic.id}: «${m[0]}» — write ${n} as the noun itself — ${ar}`); continue; }
               if (n < 3) continue;
               seen++;
               const want = tamyiz(n, ...forms);
