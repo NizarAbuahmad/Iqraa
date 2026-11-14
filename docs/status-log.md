@@ -10,6 +10,42 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 6, second pass: what the offline maths asks against each lesson's outcomes, and a page-end check — 2026-11-14
+
+The Grade 6 audit (below, «Grade 6 audit: every lesson's book pages, figures and contents…») covered pages, figures
+and contents, and gave three maths lessons generators. This pass adds what the Grades 1–5 reviews ran: what the offline
+generators produce for all 358 lessons, measured against each lesson's NCCD outcomes.
+
+**Generators (offline).**
+- Grounding by lesson id is exact for all 358 lessons. All 39 maths lessons serve a paper.
+- I read every question of every maths quiz against the lesson's outcomes, and every key is right.
+- **Fixed, where a lesson did not ask what its outcome names:**
+  - «الأشكال الرباعية»: the outcome is «مجموع قياسات زوايا الشكل الرباعي». The paper only named shapes, and ran
+    out at 5 of 10 questions. Grade 6 now asks the angle sum about 60% of the time: the fourth angle, three equal
+    angles, a parallelogram's neighbouring angle, and the sum itself. Grade 5 is unchanged.
+  - «أولويات العمليات الحسابية»: the outcome names «مقادير عددية تحوي قوى وجذورًا». Powers came only on hard papers,
+    and roots never. A Grade 6+ medium paper now mixes plain expressions with ones carrying a power or a square root,
+    and a hard paper always has one. The evaluator reads «√49». Grades 4–5 are unchanged.
+  - `pct_conv` offered «1.6400000000000001» for «اكتب 64% على صورة عدد عشري». A default «answer ± 1» was added in
+    floating point; the step is now formatted.
+  - Pinned in `geometry.test.ts` and `topics.test.ts`. Each new test was first seen failing.
+- **Weak, not fixed:**
+  - «الجذر التربيعي والجذر التكعيبي»: cube roots are 1 draw in 5, so a 10-question paper can have none.
+  - «النسبة المئوية من عدد» routes to the shared `percent` op, so about 3 questions in 10 are conversions or a
+    shaded grid rather than a percent of a number.
+  - «جمع البيانات»: no question tells numerical from qualitative data, an outcome of the lesson.
+  - «6.2 ساعات»: a decimal count keeps the plural.
+
+**Book pages.** I checked the audit's 167 non-digital ranges (of 178) against the books' per-page text.
+- No range runs onto a unit test, a unit opener, «حصاد الوحدة», a review, «نهاية الوحدة», an enrichment page or a
+  blank page.
+- Every maths S1 range starts on its «الدرس» page.
+- Digital literacy (11 ranges) has no student-book text to check.
+- Nothing changed.
+
+**Verified:** `lib/math-practice` 1115 tests pass; `mathLessonKinds.test.ts` passes. **Not run:** live AI, and anything
+needing the PDFs (the audit's re-render list stands).
+
 ## Grade 4 audit: book pages, figures, contents and honorifics checked against the printed books — 2026-11-13
 
 The Grade 5–10 review («Grade 5 audit…»), repeated for Grade 4 (313 lessons, 18 catalogue books), on top of today's
