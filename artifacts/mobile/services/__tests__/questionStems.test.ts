@@ -34,7 +34,9 @@ describe('multiple choice uses the item\'s own wording', () => {
     const q = takeConcreteMath('multiple_choice', 'الاشتقاق', null, 'medium', 'ar', 0)!;
     assert.ok(q, 'the bank has a derivative item');
     assert.doesNotMatch(q.text, RETIRED_STEM);
-    assert.match(q.text, /أوجد|ما ميل|عند أي قيمة/);
+    // Since 2026-11-14 «الاشتقاق» has its own generator, which also asks the book's velocity,
+    // acceleration and tangent-line questions.
+    assert.match(q.text, /أوجد|ما ميل|عند أيّ? قيمة|ما سرعة|ما تسارع|ما معادلة مماس/);
     assert.ok(Array.isArray(q.options) && q.options.length >= 2);
   });
 
@@ -239,25 +241,27 @@ describe('a family stays on-topic when a lesson needs more items than it has', (
     for (let i = 0; i < 8; i++) {
       const q = takeConcreteMath('short_answer', 'تركيب الاقترانات', null, 'medium', 'ar', 0);
       assert.ok(q, `draw ${i + 1} returned nothing`);
-      assert.match(q!.text, /f\(x\)|g\(x\)|a_n/, `draw ${i + 1} left the functions family: ${q!.text}`);
+      // Its own generator since 2026-11-14; the book's cost example writes C(q(t)).
+      assert.match(q!.text, /f\(x\)|g\(x\)|a_n|C∘q/, `draw ${i + 1} left the lesson: ${q!.text}`);
     }
   });
 
   it('the worksheet path (allowRepeat=false) hands the slot back instead of repeating once the family is spent', () => {
-    // Same «تركيب الاقترانات» family (5 concrete items), but through the
-    // worksheet generator's mode: it passes `allowRepeat: false` so a used-up
-    // family returns null on the next draw — the slot goes to the caller's
-    // own topic-templated question — instead of reprinting one of the five
-    // verbatim under a different question type. This is what stopped a
-    // 10-question worksheet on this lesson from asking «find (f∘g)(2)» twice.
+    // Through the worksheet generator's mode, `allowRepeat: false`: a used-up family returns null on
+    // the next draw — the slot goes to the caller's own topic-templated question — instead of
+    // reprinting an item under a different question type. This is what stopped a 10-question
+    // worksheet asking «find (f∘g)(2)» twice. «تركيب الاقترانات» has its own generator since
+    // 2026-11-14 and never runs out, so this uses the systems lab, whose `system_graph` family
+    // still holds eight items.
+    const lab = 'معمل برمجية جيوجبرا: حل أنظمة المعادلات بيانياً';
     const seen = new Set<string>();
-    for (let i = 0; i < 5; i++) {
-      const q = takeConcreteMath('short_answer', 'تركيب الاقترانات', null, 'medium', 'ar', 0, undefined, false);
-      assert.ok(q, `draw ${i + 1} of 5 returned nothing`);
+    for (let i = 0; i < 8; i++) {
+      const q = takeConcreteMath('short_answer', lab, null, 'medium', 'ar', 0, undefined, false);
+      assert.ok(q, `draw ${i + 1} of 8 returned nothing`);
       assert.ok(!seen.has(q!.text), `draw ${i + 1} repeated: ${q!.text}`);
       seen.add(q!.text);
     }
-    const sixth = takeConcreteMath('short_answer', 'تركيب الاقترانات', null, 'medium', 'ar', 0, undefined, false);
-    assert.equal(sixth, null, 'the family is spent — this must come back null, not a repeat');
+    const ninth = takeConcreteMath('short_answer', lab, null, 'medium', 'ar', 0, undefined, false);
+    assert.equal(ninth, null, 'the family is spent — this must come back null, not a repeat');
   });
 });

@@ -28,10 +28,12 @@ import {
   type PracticeWQ,
 } from './mathPractice.ts';
 import { isChemContext, takeConcreteChem, takeConcreteChemBatch, takeSolvedChem, type SolvedItem } from './chemPractice.ts';
-import { buildActivityBlueprint } from './activityBlueprints.ts';
+import { buildActivityBlueprint, isActivityBlueprintId } from './activityBlueprints.ts';
+import { buildFirstGradeActivity, firstGradeCheckSlides } from './activityFirstGrade.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { revisionPlanFromRequest } from './lessonPlanRevision.ts';
 import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts';
+import { firstGradePlan, isFirstGradeLesson } from './lessonPlanFirstGrade.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
@@ -1118,12 +1120,21 @@ export function buildOfflineActivity(req: AIRequest, variant = 0, probe?: Revisi
         ? takeConcreteChemBatch(wantItems, topic, kb, lang, 'medium')
         : [];
 
-  const blueprint = buildActivityBlueprint(actType, {
-    topic, lang, math, practice, kb, duration, variant,
-    // The lesson's own subject id, else the caller's name — see `handsOnKind`.
-    // A revision's composite lesson sits in a real unit, so this is the scope's.
-    subject: (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject,
-  });
+  const subjectForKind = (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject;
+  // Grade 1 is six-year-olds learning to read: each format has its own Grade 1
+  // version (`activityFirstGrade.ts`), a unit or semester review included (its
+  // composite lesson sits in a real Grade 1 unit, so the book still decides).
+  const blueprint = isFirstGradeLesson(kb, req.grade)
+    ? buildFirstGradeActivity(isActivityBlueprintId(actType) ? actType : 'group', {
+      topic, lang, kb, practice, duration, variant, revision: !!rev,
+      kind: lessonKindFor((kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined),
+    })
+    : buildActivityBlueprint(actType, {
+      topic, lang, math, practice, kb, duration, variant,
+      // The lesson's own subject id, else the caller's name — see `handsOnKind`.
+      // A revision's composite lesson sits in a real unit, so this is the scope's.
+      subject: subjectForKind,
+    });
 
   const activity = plainActivity({
     title: `${topic} – ${blueprint.titleSuffix}`,
@@ -1375,6 +1386,32 @@ export class MockAIService extends AIService {
     });
 
     // Document-grounded lesson plan (Demo Mode) — prefer uploaded materials over KB soft pin
+    // A Grade 1 plan built from the teacher's own file: the Grade 1 plan, carrying
+    // the file — named in the materials and the opening, its example in the
+    // modelling step, its objectives when it states them.
+    if (docs.present && isFirstGradeLesson(null, req.grade)) {
+      const g1 = firstGradePlan({ topic, kb: null, lang, kind, style, duration: dur, variant, customObjectives: req.objectives });
+      const ar = lang === 'ar';
+      return {
+        title: ar ? `${topic} – خطة درس` : `${topic} – Lesson Plan`,
+        grade: req.grade, subject: req.subject, duration: dur,
+        // the file's concepts, at a six-year-old's level (its generic objectives ask for «تمارين بمستويات متدرجة»)
+        objectives: req.objectives?.trim() || !docs.concepts.length ? g1.objectives
+          : docs.concepts.slice(0, 3).map(c => (ar ? `أن يتعرّف الطفل «${c}» ويسمّيه` : `The child will recognise and name “${c}”`)),
+        materials: [ar ? fileLabel.replace(/^الملف /, 'الملف المرفوع: ') : `Uploaded: ${docs.fileNames[0] ?? 'teacher materials'}`, ...g1.materials.slice(0, 3)],
+        ...(priorReview ? { priorReview } : {}),
+        introduction: (ar ? `اعتمادًا على ${fileLabel}: ` : `Using ${fileLabel}: `) + g1.introduction,
+        mainActivity: g1.mainActivity
+          + (exampleLine ? (ar ? `\n\nمثال من الملف أعرضه بالأشياء أو بالصور:\n• ${exampleLine}` : `\n\nAn example from the file, shown with objects or pictures:\n• ${exampleLine}`) : ''),
+        guidedPractice: g1.guidedPractice,
+        independentPractice: g1.independentPractice,
+        closure: g1.closure,
+        assessment: g1.assessment,
+        differentiation: g1.differentiation,
+        homework: g1.homework,
+      };
+    }
+
     if (docs.present) {
       if (lang === 'ar') {
         return {
@@ -1425,6 +1462,28 @@ export class MockAIService extends AIService {
           + `.\n${styleBlueprint.assessment}`,
         differentiation: styleBlueprint.differentiation,
         homework: `Short homework from the same ${fileLabel} thread: two practice items + one summary sentence on “${topic}”.`,
+      };
+    }
+
+    // Grade 1 is six-year-olds learning to read: a plan of its own, every field
+    // of it, instead of the paragraph-and-exit-ticket plan below (see
+    // `lessonPlanFirstGrade.ts`).
+    if (isFirstGradeLesson(kb, req.grade)) {
+      const g1 = firstGradePlan({ topic, kb, lang, kind, style, duration: dur, variant, customObjectives: req.objectives });
+      return {
+        title: lang === 'ar' ? `${topic} – خطة درس` : `${topic} – Lesson Plan`,
+        grade: req.grade, subject: req.subject, duration: dur,
+        objectives: g1.objectives,
+        materials: g1.materials,
+        ...(priorReview ? { priorReview } : {}),
+        introduction: g1.introduction,
+        mainActivity: g1.mainActivity,
+        guidedPractice: g1.guidedPractice,
+        independentPractice: g1.independentPractice,
+        closure: g1.closure,
+        assessment: g1.assessment,
+        differentiation: g1.differentiation,
+        homework: g1.homework,
       };
     }
 
@@ -1666,7 +1725,9 @@ export class MockAIService extends AIService {
     const hasAnswerLine = (text: string) => /(?:الإجابة|Answer):\s*_{3,}\s*$/.test(text);
     const pushQuestion = (type: QType, q: WQ, withSpace: boolean) => {
       let out = q;
-      if (withSpace && type !== 'multiple_choice' && type !== 'true_false' && !hasAnswerLine(q.text)) {
+      // A stem that already has its blank («الإجابة: ____», «8 + ___ = 10») is
+      // answered there; a second answer box under it reads as two answers wanted.
+      if (withSpace && type !== 'multiple_choice' && type !== 'true_false' && !hasAnswerLine(q.text) && !/_{3,}/.test(q.text)) {
         out = { ...q, text: `${q.text}${answerSpace}` };
       }
       return out;
@@ -2184,6 +2245,42 @@ export class MockAIService extends AIService {
               durationSeconds: 0,
             },
           ],
+        };
+      }
+
+      // Grade 1, no bank: spoken prompts answered all together — never «explain
+      // in your own words» on a board (`activityFirstGrade.ts`).
+      if (isFirstGradeLesson(kb, req.grade)) {
+        const g1Kind = lessonKindFor((kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined);
+        const g1Slides = firstGradeCheckSlides(g1Kind, topic, kb?.titleAr ?? topic, isAr ? 'ar' : 'en');
+        return {
+          activityName: isAr ? `تحقق سريع – ${topic}` : `Quick Check – ${topic}`,
+          activityType: 'quick-check',
+          grade: req.grade,
+          subject: req.subject,
+          lesson: topic,
+          duration: dur,
+          difficulty: req.difficulty,
+          groupType: 'whole-class',
+          learningObjective: isAr
+            ? `أن أعرف من فهم ${topic} من إجابات الأطفال معًا بالإشارة وبالصوت`
+            : `See who has understood ${topic} from the children answering together, by pointing and aloud`,
+          materials: isAr ? ['شاشة عرض', 'صور من الدرس'] : ['Projector', 'Pictures from the lesson'],
+          teacherPreparation: isAr
+            ? 'أجهّز صورتين أو ثلاثًا من الدرس. يظهر السؤال، فيجيب الأطفال معًا بالإشارة أو بصوت واحد أو بالإبهام.'
+            : 'Have two or three pictures from the lesson ready. The question appears; the children answer together by pointing, aloud or with thumbs.',
+          teacherNotes: isAr
+            ? ['لا كتابة في هذا التحقق: الطفل في الصف الأول يجيب بالإشارة أو بالكلام']
+            : ['No writing in this check: a Grade 1 child answers by pointing or speaking'],
+          answerKey: g1Slides.filter(s => s.type === 'challenge').map((s, i) => (isAr ? `سؤال ${i + 1}: ${s.teacher?.expectedAnswer ?? ''}` : `Q${i + 1}: ${s.teacher?.expectedAnswer ?? ''}`)),
+          printables: [],
+          assessment: isAr
+            ? 'أنظر إلى الصف كله وهو يجيب، وأسجّل من يحتاج إلى إعادة.'
+            : 'Watch the whole class answer, and note who needs to go over it again.',
+          extensionChallenge: isAr
+            ? 'أطلب من طفل متمكّن أن يسأل الصف سؤالًا مثل أسئلتي'
+            : 'Ask a confident child to ask the class a question like mine',
+          slides: g1Slides,
         };
       }
 

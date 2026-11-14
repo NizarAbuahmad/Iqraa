@@ -110,17 +110,20 @@ describe('the worked example is the lesson\'s own', () => {
   it('practice takes the lesson\'s own items first, within the tier asked', () => {
     for (let k = 0; k < 20; k++) {
       // Medium holds v-m1 (adding vectors) and v-m2 (dot product): the lesson's own wins.
-      // («معادلة الدائرة» was the example until it got its own generator, `grade10.ts`.)
-      const q = takeConcreteMath('short_answer', 'الضرب القياسي', null, 'medium', 'ar', 4, new Set(), false)!;
+      // Typed topics, as the API's evaluation generator passes an objective's
+      // wording: the book's own titles now have generators (`grade10.ts`,
+      // `grade10b.ts`), which come before the bank for practice.
+      const q = takeConcreteMath('short_answer', 'إيجاد الضرب القياسي لمتجهين', null, 'medium', 'ar', 4, new Set(), false)!;
       assert.match(q.text, /الضرب القياسي/, q.text);
-      const arc = takeConcreteMath('short_answer', 'الأقواس والقطاعات', null, 'medium', 'ar', 4, new Set(), false)!;
+      const arc = takeConcreteMath('short_answer', 'حساب أطوال الأقواس', null, 'medium', 'ar', 4, new Set(), false)!;
       assert.match(arc.text, /قطاع|قوس/, arc.text);
     }
   });
 
   it('the tier still comes first, so a one-item lesson does not open every paper', () => {
-    // «الاقتران العكسي» has one item, and it is medium: an easy slot takes an easy one.
-    const q = takeConcreteMath('short_answer', 'الاقتران العكسي', null, 'easy', 'ar', 4, new Set(), false)!;
+    // The inverse function has one bank item, and it is medium: an easy slot takes
+    // an easy one. (A typed topic: the book's own title now has a generator.)
+    const q = takeConcreteMath('short_answer', 'إيجاد الاقتران العكسي لاقتران خطي', null, 'easy', 'ar', 4, new Set(), false)!;
     assert.doesNotMatch(q.text, /العكسي/);
   });
 });

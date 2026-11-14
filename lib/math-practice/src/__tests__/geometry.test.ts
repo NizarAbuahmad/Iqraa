@@ -428,9 +428,32 @@ describe('geometry generators: answers recomputed from the stem', () => {
     assert.equal(kinds.size, 5, [...kinds].join(', '));
   });
 
+  it('Grade 5 «تصنيف الأشكال الرباعية» classifies by sides and angles, not only names (2026-11-14)', () => {
+    const kinds = new Set<string>();
+    const TRUE = new Set(['كل مربع مستطيل', 'كل مربع معين', 'كل مستطيل متوازي أضلاع', 'كل معين متوازي أضلاع', 'كل مربع متوازي أضلاع']);
+    for (const item of draws('quad_name_g5')) {
+      const p = item.promptAr!;
+      if (p.startsWith('أي شكل رباعي له الخصائص')) { kinds.add('name'); continue; }
+      if (has(p, 'أيّ العبارات')) {
+        const wantTrue = has(p, 'صحيحة');
+        kinds.add(wantTrue ? 'true' : 'false');
+        assert.equal(TRUE.has(item.answer), wantTrue, p);
+        assert.ok(item.wrongs.every(w => TRUE.has(w) !== wantTrue), p);
+        continue;
+      }
+      if (has(p, 'كم زوجًا')) { kinds.add('pairs'); assert.equal(Number(item.answer), has(p, 'شبه المنحرف') ? 1 : 2, p); continue; }
+      kinds.add('classify');
+      const [a, b, , , angle] = nums(p);
+      const want = a === b ? (angle === 90 ? 'مربع' : 'معين') : (angle === 90 ? 'مستطيل' : 'متوازي أضلاع');
+      assert.equal(item.answer, want, p);
+    }
+    assert.deepEqual([...kinds].sort(), ['classify', 'false', 'name', 'pairs', 'true']);
+  });
+
   it('quadrilaterals, parallel lines, isosceles, congruence, similarity', () => {
     for (const id of ['quad_name_g5', 'quad_name_g6']) for (const item of draws(id)) {
       if (item.answer.endsWith('°')) continue; // Grade 6's angle items: their own test below
+      if (!item.promptAr!.startsWith('أي شكل رباعي له الخصائص')) continue; // Grade 5's classifying items: their own test
       const props: Record<string, string> = { 'مربع': 'أربعة أضلاع متساوية الطول وأربع زوايا قائمة', 'معين': 'أربعة أضلاع متساوية الطول وزواياه غير قائمة', 'شبه منحرف': 'زوج واحد فقط' };
       if (props[item.answer]) assert.ok(item.promptAr!.includes(props[item.answer]!), item.promptAr);
       assert.equal(new Set(['مربع', 'مستطيل', 'معين', 'متوازي أضلاع', 'شبه منحرف']).has(item.answer), true);
@@ -532,7 +555,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
         const v = [...given[0]!].find(c => given[1]!.includes(c))!;
         const third = sideOf(...('ABC'.replace(v, '').split('') as [string, string]));
         assert.equal(item.answer, has(p, 'بحالة SSS') ? `${third} ≅ ${corrA(third)}` : `∠${v} ≅ ∠${corrA(v)}`, p);
-      } else if (has(p, 'بأي حالة يتطابق المثلثان')) {
+      } else if (has(p, 'بأي حالة يتطابق المثلثان') && has(p, 'في المثلثين')) {
         saw('congruence_a', 'marked parts');
         const sides = [...p.matchAll(/([A-C]{2}) ≅ ([D-F]{2})/g)].map(m => m[1]!);
         const angles = [...p.matchAll(/∠([A-C]) ≅ ∠([D-F])/g)].map(m => m[1]!);
@@ -565,7 +588,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
         const corr = (v: string) => 'DEF'['ABC'.indexOf(v)];
         const need = has(p, 'بحالة ASA') ? other : off;
         assert.equal(item.answer, `∠${need} ≅ ∠${corr(need)}`, p);
-      } else if (has(p, 'بأي حالة يتطابق المثلثان')) {
+      } else if (has(p, 'بأي حالة يتطابق المثلثان') && has(p, 'في المثلثين')) {
         saw('congruence_b', 'marked parts');
         // the side is included between the two marked angles only when it joins them
         const angles = [...p.matchAll(/∠([A-C]) ≅ ∠([D-F])/g)].map(m => m[1]!);
@@ -617,22 +640,22 @@ describe('geometry generators: answers recomputed from the stem', () => {
   it('transformations and the coordinate plane', () => {
     const kinds: Record<string, Set<string>> = {};
     const saw = (id: string, k: string) => (kinds[id] ??= new Set()).add(k);
+    // Grade 4 reflects on a square grid in a drawn mirror line; its book prints no coordinates or equations (2026-11-14)
+    const OPPOSITE: Record<string, string> = { يمين: 'يسار', يسار: 'يمين', فوق: 'أسفل', أسفل: 'فوق' };
     for (const item of draws('reflect_line')) {
-      const p = item.promptAr!, P = pts(p);
-      if (has(p, 'الأفقي')) {
-        saw('reflect_line', 'horizontal');
-        const b = Number(p.match(/y = (\d+)/)![1]);
-        assert.deepEqual(pt(item.answer), [P[0]![0], 2 * b - P[0]![1]], p);
-      } else if (has(p, 'معادلة محور')) {
-        saw('reflect_line', 'mirror line');
-        assert.equal(P[0]![1], P[1]![1], p);
-        assert.equal(item.answer, `x = ${(P[0]![0] + P[1]![0]) / 2}`, p);
-      } else {
-        const a = Number(p.match(/x = (\d+)/)![1]);
-        if (has(p, 'المسافة')) { saw('reflect_line', 'distance'); assert.equal(Number(item.answer), 2 * Math.abs(a - P[0]![0]), p); }
-        else { saw('reflect_line', 'vertical'); assert.deepEqual(pt(item.answer), [2 * a - P[0]![0], P[0]![1]], p); }
-      }
-      assert.ok(pt(item.answer).every(v => v > 0), `Grade 4 stays in the first quadrant: ${p} → ${item.answer}`);
+      const p = item.promptAr!, n = nums(p);
+      assert.ok(!/[xy] =|\(\d+ ،/.test(p + item.answer), `coordinates or an equation in a Grade 4 stem: ${p}`);
+      if (has(p, 'أين تقع صورة')) {
+        saw('reflect_line', 'side');
+        const [, side] = p.match(/مربعًا|مربعات/) ? p.match(/(?:مربعات|مربعًا) (يمين|يسار|فوق|أسفل) محور/)! : [];
+        assert.ok(item.answer.includes(`${n[0]} `) && item.answer.endsWith(`${OPPOSITE[side!]} المحور`), p);
+      } else if (has(p, 'بين هذا الرأس وصورته')) { saw('reflect_line', 'between'); assert.equal(Number(item.answer), 2 * n[0]!, p); }
+      else if (has(p, 'على أي خط رأسي')) {
+        saw('reflect_line', 'grid line');
+        const [a, c] = n as [number, number];
+        assert.equal(Number(item.answer) - a, a - c, `the image is as far past the line as the vertex is before it: ${p}`);
+      } else if (has(p, 'طول صورة')) { saw('reflect_line', 'keeps length'); assert.equal(Number(item.answer), n[0], p); }
+      else { saw('reflect_line', 'keeps'); assert.equal(item.answer, 'أطوال الأضلاع وقياسات الزوايا', p); }
     }
     /** «3 وحدات إلى اليمين و وحدتين إلى الأسفل» → [3, −2]. */
     const UNITS = '(وحدة واحدة|وحدتين|\\d+ وحدات|\\d+ وحدة)';
@@ -742,7 +765,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
         assert.deepEqual(pt(item.answer), [x * k, y * k], p);
       }
     }
-    const want = { reflect_line: 4, reflect_axes: 3, coord_plane_g6: 3, dilate_g7: 4, dilate_g8: 5, translate_g5: 3, translate_g6: 3, coord_plane_g5: 4, rotate: 4 };
+    const want = { reflect_line: 5, reflect_axes: 3, coord_plane_g6: 3, dilate_g7: 4, dilate_g8: 5, translate_g5: 3, translate_g6: 3, coord_plane_g5: 4, rotate: 4 };
     for (const [id, k] of Object.entries(want)) assert.equal(kinds[id]?.size, k, `${id} kinds drawn: ${[...(kinds[id] ?? [])]}`);
   });
 
