@@ -249,6 +249,42 @@ stems by a native reviewer.
 - Every live prompt reads «للصف ${grade}» with a grade name that already says «الصف», so it says «للصف الصف الأول»
   (every grade; harmless to a model, not fixed here).
 
+## Offline maths, Grade 4: dot plots for «تمثيل البيانات بالنقاط», and no «x = 7» in «الانعكاس» — 2026-11-14
+
+The Grade 4 second pass listed two «weak, not fixed» items in the offline maths bank (`lib/math-practice`); this
+fixes both. A same-day review of Grades 4–6 re-checked their figures and found nothing to move.
+
+This branch first fixed Grade 6's and Grade 5's weak items too. «Grade 6 review: the four «weak, not fixed» maths
+lessons…» and «Grade 5 review: the last three maths lessons, the second pass's weak items…» (below) landed first
+with the same fixes, so their code stands and only Grade 4 is carried here.
+
+- **«تمثيل البيانات بالنقاط»** drew mostly bar-chart and table questions; one kind in seven was a dot plot.
+  - It now has its own `dot_plot_g4` (`stats.ts`): every question is a dot plot, described in text with one dot per
+    pupil.
+  - The seven kinds: at or above a value, exactly a value, below a value, the difference between two values, the
+    value with the most dots, the total, and how many dots to draw over a value of a raw list.
+  - The bar-graph lessons keep `read_data_g34`.
+- **«الانعكاس»** wrote «x = 7» inside an Arabic stem, and Grade 4 has no equations.
+  - The mirror line is now «المستقيم الرأسي المار بالنقطة (7 ، 0)».
+  - The "equation of the mirror line" question becomes «في أي نقطة يقطع محور الانعكاس المحور الأفقي؟».
+- **Also:** `tamyiz.test.ts` gains «a noun after a decimal is never the plural», which scans every topic generator. It
+  passes against the Grade 6 review's fix and guards it.
+
+**Verified.**
+- The new `grade4Lessons.test.ts` cases were first seen failing.
+- `geometry.test.ts`'s reflection checks parse the new wording and still recompute every answer from the
+  coordinates.
+- `lib/math-practice` 1229/1229, the mobile suite 9270 pass / 0 fail, api-server build + tests 2923/0, root
+  typecheck.
+- Generated questions for both lessons were read in Arabic, and every key was checked by hand: «أقل من كتابين» → 1
+  from the plot, and the line between (7 ، 2) and (9 ، 2) crosses at (8 ، 0).
+
+**Not fixed.**
+- «تمثيل البيانات بالأعمدة» still asks a dot-plot question now and then.
+- Live AI was not run.
+
+No «ما الجديد» entry: these change which questions an offline paper draws; they add no feature.
+
 ## Grade 2 maths: offline questions for the four problem-solving lessons — 2026-11-14
 
 The Grade 2 audit (below) found four maths lessons with no offline questions. Each now has a generator in
@@ -276,6 +312,7 @@ one-step slip is offered, and that no number or option passes 999; math-practice
 pass, 0 fail); typecheck; 36 sampled items read by hand, keys right and the counted nouns agree («11 صفحةً», «9 صفحات», «30 تفاحةً», «15 قلمًا»).
 
 No «ما الجديد» entry: offline questions for lessons that had none, not a new feature.
+
 ## Grade 5 review: the last three maths lessons, the second pass's weak items, and social S2 u7_l4 — 2026-11-14
 
 «Grade 5 audit…» and «Grade 5 maths…» (both 2026-11-13, below) covered pages, figures, contents and every maths quiz. A

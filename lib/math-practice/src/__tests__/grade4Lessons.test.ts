@@ -126,3 +126,85 @@ describe('Grade 4 problem-solving lessons that had no offline questions', () => 
     assert.ok(offered > 50, `a + b was offered only ${offered} times`);
   });
 });
+
+/**
+ * Weak spots the Grade 4 second pass (status log, 2026-11-13) left open:
+ * «تمثيل البيانات بالنقاط» was mostly bar charts and tables, and «الانعكاس»
+ * wrote its mirror line as «x = 7» inside an Arabic stem.
+ */
+describe('Grade 4 second pass', () => {
+  it('«تمثيل البيانات بالنقاط»: every question is a dot plot, each key recomputed from the dots', () => {
+    const gen = topicFor('تَمْثيلُ البَياناتِ بِالنِّقاطِ', 4)!;
+    assert.equal(gen.id, 'dot_plot_g4');
+    // the bars lesson keeps its own mix
+    assert.equal(topicFor('تَمْثيلُ البَياناتِ بِالأَعْمِدَةِ', 4)?.id, 'read_data_g34');
+    const LABEL = '(ساعة واحدة|ساعتين|\\d+ ساعات|كتابًا واحدًا|كتابين|\\d+ كتب)';
+    const valueOf = (s: string) => {
+      if (s === 'ساعة واحدة' || s === 'كتابًا واحدًا') return 1;
+      if (s === 'ساعتين' || s === 'كتابين') return 2;
+      const n = Number(s.match(/^(\d+) (?:ساعات|كتب)$/)![1]);
+      assert.ok(n >= 3 && n <= 10, `«${s}» agrees only from 3 to 10`);
+      return n;
+    };
+    const kinds = new Set<string>();
+    for (let s = 0; s < 150; s++) {
+      const used = new Set<string>(), rng = seeded(s * 40503 + 17);
+      const stems = new Set<string>();
+      for (let i = 0; i < 10; i++) {
+        const item = makeTopicItem(gen, 4, TIERS[s % 3]!, used, rng);
+        const p = item.promptAr!, got = Number(item.answer);
+        stems.add(p);
+        assert.ok(p.includes('بالنقاط'), `not a dot plot: ${p}`);
+        assert.ok(!item.wrongs.includes(item.answer) && item.wrongs.length === 3, `${p}: ${item.wrongs}`);
+        let m = p.match(/فكانت: ([\d، ]+)\. عند تمثيل هذه البيانات بالنقاط، كم نقطة تُرسم فوق العدد (\d+)؟$/);
+        if (m) {
+          kinds.add('draw');
+          const xs = m[1]!.split('، ').map(Number), v = Number(m[2]);
+          assert.ok(xs.includes(v), p);
+          assert.equal(got, xs.filter(x => x === v).length, p);
+          continue;
+        }
+        const rows = [...p.matchAll(/(\d+): (●+|\(لا نقاط\))/g)].map(r => [Number(r[1]), r[2]!.startsWith('●') ? r[2]!.length : 0] as const);
+        assert.equal(rows.length, 6, `six values on the plot: ${p}`);
+        const at = (v: number) => rows.find(([x]) => x === v)![1];
+        const total = rows.reduce((t, [, c]) => t + c, 0);
+        if ((m = p.match(new RegExp(`كم طالبًا قرأ ${LABEL} أو أكثر؟$`)))) {
+          kinds.add('atLeast');
+          const v = valueOf(m[1]!);
+          assert.equal(got, rows.filter(([x]) => x >= v).reduce((t, [, c]) => t + c, 0), p);
+          assert.ok(at(v) > 0, `«or more» and «more than» differ: ${p}`);
+        } else if ((m = p.match(new RegExp(`كم طالبًا قرأ ${LABEL} بالضبط؟$`)))) {
+          kinds.add('exactly');
+          assert.equal(got, at(valueOf(m[1]!)), p);
+        } else if ((m = p.match(new RegExp(`كم طالبًا قرأ أقل من ${LABEL}؟$`)))) {
+          kinds.add('fewer');
+          const v = valueOf(m[1]!);
+          assert.ok(v >= 2, p);
+          assert.equal(got, rows.filter(([x]) => x < v).reduce((t, [, c]) => t + c, 0), p);
+        } else if ((m = p.match(new RegExp(`بكم يزيد عدد الطلاب الذين قرؤوا ${LABEL} على عدد الذين قرؤوا ${LABEL}؟$`)))) {
+          kinds.add('difference');
+          assert.equal(got, at(valueOf(m[1]!)) - at(valueOf(m[2]!)), p);
+          assert.ok(got > 0, p);
+        } else if (p.startsWith('فوق أيّ عدد يقع أكبر عدد من النقاط')) {
+          kinds.add('most');
+          const top = Math.max(...rows.map(([, c]) => c));
+          assert.equal(rows.filter(([, c]) => c === top).length, 1, `one tallest column: ${p}`);
+          assert.equal(got, rows.find(([, c]) => c === top)![0], p);
+        } else if (p.startsWith('كم طالبًا يمثّلهم التمثيل بالنقاط')) {
+          kinds.add('total');
+          assert.equal(got, total, p);
+        } else assert.fail(`unknown stem: ${p}`);
+      }
+      assert.equal(stems.size, 10, `paper ${s} repeated a question`);
+    }
+    assert.deepEqual([...kinds].sort(), ['atLeast', 'difference', 'draw', 'exactly', 'fewer', 'most', 'total']);
+  });
+
+  it('«الانعكاس»: no Latin «x =» or «y =» in an Arabic stem or option', () => {
+    const gen = topicFor('الانْعِكاسُ', 4)!;
+    assert.equal(gen.id, 'reflect_line');
+    for (const item of draws('reflect_line')) {
+      for (const s of [item.promptAr!, item.answer, ...item.wrongs]) assert.doesNotMatch(s, /[A-Za-z]/, `${item.promptAr} → ${s}`);
+    }
+  });
+});

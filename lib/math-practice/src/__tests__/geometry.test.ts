@@ -642,20 +642,25 @@ describe('geometry generators: answers recomputed from the stem', () => {
     const saw = (id: string, k: string) => (kinds[id] ??= new Set()).add(k);
     for (const item of draws('reflect_line')) {
       const p = item.promptAr!, P = pts(p);
-      if (has(p, 'الأفقي')) {
+      // the mirror line is named by the point where it crosses an axis: (a ، 0) or (0 ، b)
+      if (has(p, 'المستقيم الأفقي المار بالنقطة')) {
         saw('reflect_line', 'horizontal');
-        const b = Number(p.match(/y = (\d+)/)![1]);
+        assert.equal(P[1]![0], 0, p);
+        const b = P[1]![1]!;
         assert.deepEqual(pt(item.answer), [P[0]![0], 2 * b - P[0]![1]], p);
-      } else if (has(p, 'معادلة محور')) {
+      } else if (has(p, 'يقطع محور الانعكاس المحور الأفقي')) {
         saw('reflect_line', 'mirror line');
         assert.equal(P[0]![1], P[1]![1], p);
-        assert.equal(item.answer, `x = ${(P[0]![0] + P[1]![0]) / 2}`, p);
+        assert.deepEqual(pt(item.answer), [(P[0]![0] + P[1]![0]) / 2, 0], p);
       } else {
-        const a = Number(p.match(/x = (\d+)/)![1]);
+        assert.ok(has(p, 'المستقيم الرأسي المار بالنقطة'), p);
+        assert.equal(P[1]![1], 0, p);
+        const a = P[1]![0]!;
         if (has(p, 'المسافة')) { saw('reflect_line', 'distance'); assert.equal(Number(item.answer), 2 * Math.abs(a - P[0]![0]), p); }
         else { saw('reflect_line', 'vertical'); assert.deepEqual(pt(item.answer), [2 * a - P[0]![0], P[0]![1]], p); }
       }
-      assert.ok(pt(item.answer).every(v => v > 0), `Grade 4 stays in the first quadrant: ${p} → ${item.answer}`);
+      // the mirror line's crossing is on the horizontal axis, so its y is 0
+      assert.ok(pt(item.answer).every(v => v >= 0) && pt(item.answer)[0]! > 0, `Grade 4 stays in the first quadrant: ${p} → ${item.answer}`);
     }
     /** «3 وحدات إلى اليمين و وحدتين إلى الأسفل» → [3, −2]. */
     const UNITS = '(وحدة واحدة|وحدتين|\\d+ وحدات|\\d+ وحدة)';

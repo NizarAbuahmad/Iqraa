@@ -544,6 +544,56 @@ const readData = (id: string, match: RegExp, grades: [number, number]) => T(id, 
   return { eq: tab, answer: String(t), wrongs: countOpts(t, [t - 1, t + 1, Math.max(...vals), t + key]), ar: `${head} ما المجموع الكلي؟`, en: `${headEn} What is the total?` };
 });
 
+/** What a Grade 4 dot plot counts — one dot per pupil — and how a value is said with its noun. */
+const DOT_DATA: Array<{ ar: string; en: string; say: (v: number) => string; unitEn: string }> = [
+  { ar: 'عدد الساعات التي قضاها كل طالب في القراءة خلال أسبوع', en: 'how many hours each pupil spent reading in a week', say: v => (v === 1 ? 'ساعة واحدة' : v === 2 ? 'ساعتين' : `${v} ساعات`), unitEn: 'hour' },
+  { ar: 'عدد الكتب التي قرأها كل طالب خلال شهر', en: 'how many books each pupil read in a month', say: v => (v === 1 ? 'كتابًا واحدًا' : v === 2 ? 'كتابين' : `${v} كتب`), unitEn: 'book' },
+];
+/**
+ * Grade 4 «تمثيل البيانات بالنقاط» («أمثّل البيانات باستعمال النقاط، وأفسّرها»).
+ * The plot is written out: «1: ●●●، 2: ●●، 3: (لا نقاط)…», values 1 to 6.
+ * Reading it — how many at a value, at or above it, below it, the difference
+ * between two values, the value with the most dots, how many in all — and
+ * drawing it: how many dots go over a value of a raw list. It used to share the
+ * bar-graph generator, which drew a dot plot one question in seven.
+ */
+const dotPlot = T('dot_plot_g4', /^تمثيل البيانات بالنقاط$/, [4, 4], ({ rng, diff }) => {
+  const d = pick(rng, DOT_DATA);
+  const en = (v: number) => `${v} ${d.unitEn}${v === 1 ? '' : 's'}`;
+  const k = pick(rng, [0, 1, 2, 3, 4, 5, 6]);
+  if (k === 6) { // draw: a raw list, and the dots over one value
+    const xs = Array.from({ length: span(diff, 10, 12, 15) }, () => int(rng, 1, 6)), v = pick(rng, xs), c = xs.filter(x => x === v).length;
+    return { eq: list(xs), answer: String(c), wrongs: countOpts(c, [c + 1, c - 1, v, xs.length - c]), ar: `سجّلت معلمة ${d.ar}، فكانت: ${list(xs)}. عند تمثيل هذه البيانات بالنقاط، كم نقطة تُرسم فوق العدد ${v}؟`, en: `A teacher recorded ${d.en}: ${listEn(xs)}. When these data are shown in a dot plot, how many dots go above ${v}?` };
+  }
+  let cs: number[];
+  do cs = Array.from({ length: 6 }, () => int(rng, 0, span(diff, 4, 5, 6)));
+  while (cs.filter(c => c > 0).length < 3 || cs.filter(c => c === Math.max(...cs)).length > 1);
+  // at or above v, exactly v, or fewer than v: a dot at v and one below it, so each differs from its neighbour reading
+  const v = int(rng, 2, 5);
+  if (k <= 2) {
+    cs[v - 1] = Math.max(1, cs[v - 1]!);
+    const below = int(rng, 0, v - 2);
+    cs[below] = Math.max(1, cs[below]!);
+  }
+  const plot = cs.map((c, i) => `${i + 1}: ${c ? '●'.repeat(c) : '(لا نقاط)'}`).join('، ');
+  const plotEn = cs.map((c, i) => `${i + 1}: ${c ? '●'.repeat(c) : '(no dots)'}`).join(', ');
+  const all = sum(cs), top = cs.indexOf(Math.max(...cs)) + 1;
+  if (k === 4) return { eq: plot, answer: String(top), wrongs: countOpts(top, [Math.max(...cs), cs.indexOf(Math.min(...cs)) + 1, top === 6 ? 5 : top + 1, top === 1 ? 2 : top - 1]), ar: `فوق أيّ عدد يقع أكبر عدد من النقاط في التمثيل بالنقاط الآتي، الذي يبين ${d.ar}؟ ${plot}`, en: `Above which number are the most dots in this dot plot of ${d.en}? ${plotEn}` };
+  if (k === 5) return { eq: plot, answer: String(all), wrongs: countOpts(all, [6, all - 1, all + 1, Math.max(...cs)]), ar: `كم طالبًا يمثّلهم التمثيل بالنقاط الآتي، الذي يبين ${d.ar}، إذا كانت كل نقطة تمثل طالبًا واحدًا؟ ${plot}`, en: `How many pupils does this dot plot of ${d.en} show, one dot per pupil? ${plotEn}` };
+  const head = `يبين التمثيل بالنقاط الآتي ${d.ar}، وكل نقطة تمثل طالبًا واحدًا: ${plot}.`;
+  const headEn = `The dot plot shows ${d.en}, one dot per pupil: ${plotEn}.`;
+  if (k === 3) { // the difference between two values
+    const vs = shuffle(rng, [1, 2, 3, 4, 5, 6]).filter(x => cs[x - 1]! > 0);
+    const a = vs[0]!, b = vs.slice(1).find(x => cs[x - 1]! < cs[a - 1]!) ?? vs.find(x => cs[x - 1]! > cs[a - 1]!)!;
+    const [hi, lo] = cs[a - 1]! > cs[b - 1]! ? [a, b] : [b, a], diffN = cs[hi - 1]! - cs[lo - 1]!;
+    return { eq: `${plot}; ${hi} − ${lo}`, answer: String(diffN), wrongs: countOpts(diffN, [cs[hi - 1]! + cs[lo - 1]!, cs[hi - 1]!, Math.abs(hi - lo), diffN + 1]), ar: `${head} بكم يزيد عدد الطلاب الذين قرؤوا ${d.say(hi)} على عدد الذين قرؤوا ${d.say(lo)}؟`, en: `${headEn} How many more pupils read ${en(hi)} than ${en(lo)}?` };
+  }
+  const atV = cs[v - 1]!, from = sum(cs.slice(v - 1)), under = sum(cs.slice(0, v - 1));
+  if (k === 0) return { eq: `${plot}; ≥ ${v}`, answer: String(from), wrongs: countOpts(from, [from - atV, all - from, all, from + 1]), ar: `${head} كم طالبًا قرأ ${d.say(v)} أو أكثر؟`, en: `${headEn} How many pupils read ${en(v)} or more?` };
+  if (k === 1) return { eq: `${plot}; = ${v}`, answer: String(atV), wrongs: countOpts(atV, [from, v, atV + 1, all - atV]), ar: `${head} كم طالبًا قرأ ${d.say(v)} بالضبط؟`, en: `${headEn} How many pupils read exactly ${en(v)}?` };
+  return { eq: `${plot}; < ${v}`, answer: String(under), wrongs: countOpts(under, [under + atV, all - under, v - 1, under + 1]), ar: `${head} كم طالبًا قرأ أقل من ${d.say(v)}؟`, en: `${headEn} How many pupils read fewer than ${en(v)}?` };
+});
+
 /**
  * Grade 6 «جمع البيانات» (S2 u8_l1). Its outcomes: «أتعرف البيانات العددية والنوعية», «أتعرف المجتمع والعينة»,
  * «أتعرف الاستبانة كأداة لجمع البيانات»; its vocabulary adds discrete and continuous data and the sample size.
@@ -912,7 +962,7 @@ export const STATS_TOPICS: readonly Topic[] = [
   stemLeaf,
   readData('read_data_g12', /^(?:جداول البيانات|تمثيل البيانات بالصور|تفسير بيانات ممثله بالصور|تفسير البيانات الممثله بالصور|تفسير البيانات الممثله بجدول الاشارات|جمع البيانات وتنظيمها)$/, [2, 2]),
   // Grade 1's three data lessons have one generator each in early.ts (they shared this one)
-  readData('read_data_g34', /^(?:تمثيل البيانات بالاعمده|تفسير البيانات الممثله بالاعمده|تمثيل البيانات بالنقاط)$/, [3, 4]),
+  readData('read_data_g34', /^(?:تمثيل البيانات بالاعمده|تفسير البيانات الممثله بالاعمده)$/, [3, 4]), dotPlot,
   freqTable, collectData,
   grouped('grouped_g6', /^الجداول والمخططات التكراريه ذات الفئات$/, [6, 6]), grouped('grouped_g9', /^(?:الجداول التكراريه ذات الفئات|المدرجات التكراريه)$/, [9, 9]),
   dispersion, scatter, cumulative, groupedMean,
