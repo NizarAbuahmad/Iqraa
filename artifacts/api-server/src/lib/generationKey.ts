@@ -18,6 +18,7 @@ import { createHash } from "node:crypto";
 
 import { parseCoverage } from "./coverage.ts";
 import { isFirstGrade } from "./firstGrade.ts";
+import { EARLY_DIFFICULTY_KINDS, EARLY_DIFFICULTY_VERSION, earlyGradeOf } from "./earlyGrade.ts";
 
 /**
  * The kinds whose prompt carries the Grade 1 clause (`firstGrade.ts`), and the
@@ -256,6 +257,8 @@ export function generationKeys(
     activityVariant: normalizeValue(body.activityVariant),
     // Only on a Grade 1 request of a kind whose prompt has the Grade 1 clause.
     firstGrade: FIRST_GRADE_KINDS.has(kind) && isFirstGrade(body) ? FIRST_GRADE_CLAUSE_VERSION : undefined,
+    // Only on a grade 2–4 worksheet, homework or quiz: its level wording is its own (`earlyGrade.ts`).
+    earlyDifficulty: EARLY_DIFFICULTY_KINDS.has(kind) && earlyGradeOf(body) ? EARLY_DIFFICULTY_VERSION : undefined,
   };
 
   const strict: Record<string, unknown> = { ...shared };

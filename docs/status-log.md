@@ -172,6 +172,19 @@ maths questions were checked by hand by a sub-agent and re-checked by script: **
     - Grades 2–4 used the same generators and mostly ignored difficulty too. Over whole papers, before → after,
       lessons clearly harder at hard: Grade 2 15 → 54 of 57, Grade 3 25 → 65 of 66, Grade 4 34 → 48 of 48. Lessons
       harder at easy: 8 → 0. Pinned per grade in `earlyMathDifficulty.test.ts`.
+12. **Live grades 2–4 get their own level wording** (2026-11-14, `artifacts/api-server/src/lib/earlyGrade.ts`). A Grade
+    2–4 quiz, worksheet, homework or evaluation used the all-grades meanings written for the secondary classes:
+    medium "two or three steps", and hard "comparison, analysis, or an unfamiliar situation where the method must be
+    chosen first". Now every level stays within the lesson's range, in short sentences:
+    - easy is a direct one-step question with small numbers;
+    - medium is the lesson's skill in a familiar situation, in one or two steps;
+    - hard is the largest numbers, an unknown, or a short problem of at most two steps (Grade 2) or three
+      (Grades 3–4), or a comparison with its reason in one sentence, never an abstract analysis or a proof.
+
+    `earlyGradeOf` recognises the grade from the lesson id, unit id, grade id, number or name, the same fields
+    `isFirstGrade` reads. A grade 2–4 worksheet, homework or quiz carries `earlyDifficulty: "2026-11-14"` in its
+    pool key, so a paper pooled under the old wording is not served again. Every other key is unchanged, pinned by
+    literal keys (`earlyGradeDifficulty.test.ts`).
     - **Live:** a Grade 1 quiz, worksheet or evaluation gets Grade 1 level meanings (`FIRST_GRADE_DIFFICULTY_*` in
       `firstGrade.ts`): one step within the lesson's range, with hard being the largest numbers, a missing number,
       a short story or a comparison. The all-grades meanings had asked for "two or three steps" and "analysis".
@@ -182,8 +195,7 @@ the session) — after merge, generate one Grade 1 Arabic letter plan, worksheet
 stems by a native reviewer.
 
 **Still open, found by the sweep:**
-- A live model's Grade 1 output for the item 9–11 prompts has not been read. Live grades 2–4 keep the all-grades
-  level meanings (medium: "two or three steps", hard: "analysis"). An older Grade 1 evaluation's stored types are narrowed when it is
+- A live model's output for the item 9–12 prompts has not been read. An older Grade 1 evaluation's stored types are narrowed when it is
   generated, not rewritten in the database.
 - **Maths, still to check against the PDF:** the book's own number-chart direction (the generator no longer depends
   on it) and whether «الأنماط الهندسية» uses «معين».

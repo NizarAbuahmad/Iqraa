@@ -19,6 +19,7 @@ import { QUIZ_TYPE_ORDER, type QuizType } from "./generationShape.ts";
 import { coverageClauseAr, coverageClauseEn } from "./coverage.ts";
 import { revisionClauseAr, revisionClauseEn } from "./revision.ts";
 import { FIRST_GRADE_DIFFICULTY_AR, FIRST_GRADE_DIFFICULTY_EN, firstGradeClauseAr, firstGradeClauseEn, isFirstGrade } from "./firstGrade.ts";
+import { earlyDifficultyAr, earlyDifficultyEn, earlyGradeOf } from "./earlyGrade.ts";
 
 /** «السؤال الأول» … — how a ministry paper numbers its question blocks. */
 const ORDINAL_AR = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس"];
@@ -751,9 +752,21 @@ const WORKSHEET_BAND: Record<string, [string, string, string]> = {
   hard: ["medium", "hard", "hard"],
 };
 
-/** The level meanings for this request: Grade 1 has its own (`FIRST_GRADE_DIFFICULTY_*`). */
-const meaningAr = (b: any) => (isFirstGrade(b) ? FIRST_GRADE_DIFFICULTY_AR : DIFFICULTY_MEANING_AR);
-const meaningEn = (b: any) => (isFirstGrade(b) ? FIRST_GRADE_DIFFICULTY_EN : DIFFICULTY_MEANING_EN);
+/**
+ * The level meanings for this request: Grade 1 has its own
+ * (`FIRST_GRADE_DIFFICULTY_*`), grades 2–4 theirs (`earlyGrade.ts`), and grade 5
+ * and up the ones above.
+ */
+const meaningAr = (b: any) => {
+  if (isFirstGrade(b)) return FIRST_GRADE_DIFFICULTY_AR;
+  const g = earlyGradeOf(b);
+  return g ? earlyDifficultyAr(g) : DIFFICULTY_MEANING_AR;
+};
+const meaningEn = (b: any) => {
+  if (isFirstGrade(b)) return FIRST_GRADE_DIFFICULTY_EN;
+  const g = earlyGradeOf(b);
+  return g ? earlyDifficultyEn(g) : DIFFICULTY_MEANING_EN;
+};
 
 function difficultyKey(b: any): string {
   const d = b.difficulty;

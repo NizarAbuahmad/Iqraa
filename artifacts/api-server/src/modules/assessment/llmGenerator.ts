@@ -37,6 +37,7 @@ import type { BookSupplied } from "./bookQuestions.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { variationBlock } from "../../lib/variation.ts";
 import { FIRST_GRADE_EVALUATION_DIFFICULTY_EN, firstGradeClauseEn, firstGradeTypeNotesEn } from "../../lib/firstGrade.ts";
+import { earlyEvaluationDifficultyEn, earlyGradeOf } from "../../lib/earlyGrade.ts";
 import { figureFormatEn } from "../../lib/figurePrompt.ts";
 import { figureConsistentWith, resolveFigure } from "@workspace/figure";
 
@@ -208,6 +209,13 @@ const DIFFICULTY_NOTE: Record<Difficulty, string> = {
   standard: "A balanced paper: some recall, most application, a little analysis.",
   advanced: "Weight towards application and analysis. Recall alone should not pass it.",
 };
+
+/** The level's meaning for this grade: Grade 1 and grades 2–4 have their own (`firstGrade.ts`, `earlyGrade.ts`). */
+function difficultyNoteFor(gradeId: string | undefined, difficulty: Difficulty): string {
+  if (gradeId === "grade-1") return FIRST_GRADE_EVALUATION_DIFFICULTY_EN[difficulty]!;
+  const g = earlyGradeOf({ gradeId });
+  return g ? earlyEvaluationDifficultyEn(g)[difficulty] : DIFFICULTY_NOTE[difficulty];
+}
 
 /**
  * Is this a mathematics paper?
@@ -384,7 +392,7 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     "Allowed types and the exact JSON each must use:",
     contracts,
     "",
-    `Difficulty: ${req.difficulty}. ${req.gradeId === "grade-1" ? FIRST_GRADE_EVALUATION_DIFFICULTY_EN[req.difficulty] : DIFFICULTY_NOTE[req.difficulty]}`,
+    `Difficulty: ${req.difficulty}. ${difficultyNoteFor(req.gradeId, req.difficulty)}`,
     "",
     "Each question object also needs:",
     '  "objectiveId": one of the ids above',
