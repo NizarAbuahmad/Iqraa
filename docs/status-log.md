@@ -53,6 +53,107 @@ Thirty-odd new questions read by hand, keys correct. The PR body has the CI set.
 **Not done.** «قبل الظهر، بعد الظهر» still converts to the 24-hour clock in two of its five kinds; without the book it is
 not known whether Grade 3 teaches it. Everything the audit left for the PDFs.
 
+## Grade 10 review: own offline questions for the thirteen lessons the bank served thinly — 2026-11-14
+
+The generators were run over all 445 Grade 10 lessons, and every question of every maths and chemistry quiz was read
+against the lesson's outcomes. Grounding by lesson id is exact for all 445. Every key that was served was right. The
+problem was what was served.
+
+**Maths: thirteen lessons were padded from a small shared bank** (measured with the real lesson through
+`takeConcreteMath`):
+- **Thin and off-topic:**
+  - «الأقواس والقطاعات الدائرية» got `circle`: 5 items, two of them circle equations.
+  - «تركيب الاقترانات» and «الاقتران العكسي» shared `functions`: 5 items, among them «f(3)» and an arithmetic
+    sequence.
+  - The three vector lessons shared `vectors`' 5, with the dot product asked in the first.
+  - The two probability lessons got `stats`: a median, a mean and a die.
+- **Not the book's content:** «المتتاليات» got 7 items of sums and a₁/r geometric terms, which the book does not
+  teach.
+- **One pool for a whole unit:** the four lessons of the derivatives unit shared `derivative`'s nine fixed items, so
+  estimating slope and max/min got power-rule items.
+- **Wrong topic:** the scatter-plot lab («معمل برمجية جيوجبرا», u8) got linear–quadratic systems.
+
+**What changed.**
+- `lib/math-practice/src/grade10b.ts` holds one generator per lesson, each asking what its student-book pages ask:
+  - **Arcs and sectors** (S1 pp.41–46): arc length, sector area and perimeter in π, the fraction of the circle, the
+    angle from an area, and the sprinkler to 0.1.
+  - **Composition** (S2 pp.25–31): (f∘g)(a), (f∘f)(a), the rule of f∘g, the domain of f∘g for two rational
+    functions, C(q(t)), and decomposing h = f∘g.
+  - **Inverse** (pp.32–41): f⁻¹ of a linear function, f⁻¹(k), the inverse of a set of pairs, the domain of √(ax − b),
+    f⁻¹ of ax² + b for x ≥ 0, and (f∘f⁻¹)(n).
+  - **Sequences** (pp.42–49): the next term of an additive or multiplicative sequence, the term at a rank,
+    classifying linear / quadratic / cubic, the first four terms, and the general term of a linear sequence and of
+    n² + c / n³ + c.
+  - **Estimating slope**, shared with its GeoGebra lab (pp.54–62): the slope of a tangent from two points on it, the
+    tangent's equation, average velocity from s(t) and from a table, and the slope's sign from the tangent's angle.
+  - **Differentiation** (pp.63–69): the power rule, a polynomial, (x + p)(x + q), the slope at a point, velocity,
+    acceleration, the tangent's equation, and where the slope equals k.
+  - **Max and min** (pp.70–75): the critical value of a quadratic and of x³ − 3k²x + c, local max/min values, a
+    projectile's highest point, and the largest fenced area x(L − 2x).
+  - **Vectors in the plane** (pp.80–87): components from two points, magnitude, direction, a velocity at 30°/60°/90°,
+    and an end point.
+  - **Adding vectors** (pp.88–95): a ± b, ka + mb, chains AB⃗ + BC⃗ + …, a journey's distance, and k for parallel
+    vectors.
+  - **Scalar product** (pp.96–101): the dot product, |a||b|cos θ, k for perpendicular vectors, the angle between two
+    vectors, and work.
+  - **The u8 lab** (pp.115–116) gets the scatter-plot questions. The correlation kind's third distractor is «لا
+    يمكن تحديد نوعه من النقاط».
+  - **Mutually exclusive events** (pp.131–138): the union of exclusive and non-exclusive events, the intersection from
+    the union, the complement, A only, neither, and numbered cards.
+  - **Independent and dependent events** (pp.139–147): P(A)P(B), two dice, two draws with and without replacement,
+    P(A|B) from probabilities and from a die.
+- `G10_LESSON_TOPICS` (`grade10.ts`) adds them, so `takeConcreteMath` and the API's evaluation mock reach them the
+  same way as the first batch («Grade 10 maths: lesson-specific offline questions for thin and empty lessons»).
+- Whole numbers, surds or simple fractions throughout; distractors are real slips. Nothing is `verified`.
+
+**Chemistry.**
+- Grade 10 chemistry against its book is #1429's (open; it moves the Bohr energies to joules), so it is not touched
+  here beyond one bug.
+- `ch-th-e4` «أيّ التفاعلات الآتية طارد للطاقة؟», `ch-gn-e4` and `ch-gn-m3` pointed at choices («الآتية») that a
+  fill-in or short-answer question never shows. The choices are now in the stem, in both languages, and
+  `chemistry.test.ts` fails any «الآتية / الآتي / التالية» stem with no list after a colon. Mutation-checked: it
+  failed on the old text.
+
+**Book pages and figures.** Every Grade 10 range in a book with extracted text was checked against it: no lesson runs
+into a unit test, summary or glossary.
+- **Two maths lessons have no pages at all:** «حل معادلات خاصة» (u1_l5, S1 pp.8–15) and the systems lab (u1_lab,
+  pp.16–17). `knowledge-base/g10-book-pages-to-render.json` lists them for `render_lesson_pages.py`. Its PDF path is
+  the one the extractor recorded; that file's name says "2nd semester", but its text is the S1 book. The two
+  teacher-guide exponent lessons (u1_l3, u1_l4) are in no student book.
+- **Figures:** 480 of 484 mapped figures sit inside their lesson's pages.
+- **Long lessons lose their last pages:**
+  - The four figures outside their ranges show it. Physics S1 u2_l1 (pp.36–55) misses its «مراجعة الدرس» on p.56.
+    Physics S2 u4_l2 (pp.18–37) misses pp.38–41, the rest of the friction lesson and its review.
+  - Both ranges are exactly 20 pages: `verify_book_pages.py` caps a lesson at `MAX_PAGES = 20`.
+  - The same cap cuts digital-literacy S1 u1_l2, u1_l3 and u1_l4 short of their exercise pages, and nine Grade 7/8
+    digital lessons are exactly 20 pages too.
+  - Not fixed: it needs a higher cap and a re-cut from the PDFs.
+- **Not a problem:**
+  - Arabic S2 u10_l4's «قائمة المراجع» pages are the lesson itself, which teaches writing a reference list.
+  - Islamic S2's «أختبر معلوماتي» pages are each unit's last lesson's own review.
+
+**Verified:**
+- `lib/math-practice`: 1267 tests pass.
+- `grade10LessonsB.test.ts`, written first, failed with every generator missing. It now passes 42 tests. Each lesson
+  reaches its own generator through `takeConcreteMath` with the real KB id, never a banked item, with ≥ 10 distinct
+  questions in one session.
+- Every key is recomputed from its stem by code sharing nothing with the generators, every kind is drawn, and each
+  item has three distinct options, clean text and an English stem.
+- Generator samples were read for wording; fixed on reading: «يصلح أن يكون الاقترانين» and «إذا كان العدد الظاهر عدد
+  زوجي» (both ungrammatical), and angle options of 540° or more for a sector.
+- **The derivative items reach the verifier:** the derivative is asked as «أوجد f′(x) إذا كان f(x) = …» with the
+  bare expression as the key, the shape the bank uses. The first draft's «f′(x) = …» answers would have been a syntax
+  error to SymPy, and `questionStems.test.ts` caught it on the first full mobile run.
+- **Tests that named a lesson as an example of a thin bank** now name the systems lab (`system_graph`, 8 items):
+  `noQuestionBank.test.ts`, `worksheetWorkedExample.test.ts` (it used vectors, 5 items) and
+  `questionStems.test.ts`'s «family is spent» case (it used composition). Two wording checks there accept the new
+  lessons' book phrasings («ما سرعة», «ما معادلة مماس», «C∘q»).
+- **Older tests updated:** `algebra.test.ts` routes «المتتاليات» at Grade 10 to `g10_sequences`, and
+  `grade10Lessons.test.ts` no longer lists sequences, differentiation and the scalar product as bank-served.
+- **Suites:** the full mobile suite passes (9,270), as do the API's 2,923 tests; typecheck is clean. Curriculum: 930
+  pass, plus `r2.test.ts`, which fails only because this environment has R2 configured.
+
+**Not run:** live AI, anything needing the PDFs.
 ## Grade 1 review: coverage, generated results, book images — 2026-11-13
 
 A review of Grade 1 (all 8 subjects, 15 books, 279 lessons) against three asks: every subject covered, the right

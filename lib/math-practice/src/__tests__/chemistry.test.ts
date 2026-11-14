@@ -56,6 +56,12 @@ describe('chemistry bank', () => {
     assert.deepEqual(bad, [], `bankMultipleChoice returns null for these, losing the question: ${bad.join(', ')}`);
   });
 
+  it('names the choices a stem points at («الآتية»), since a fill-in shows no options', () => {
+    // «أيّ التفاعلات الآتية طارد للطاقة؟» was served as a fill-in with nothing to choose from.
+    const bad = CHEM_BANK.filter(i => /الآتية|الآتي|التالية/.test(i.promptAr ?? '') && !/(الآتية|الآتي|التالية)[^؟]*:/.test(i.promptAr ?? '')).map(i => i.id);
+    assert.deepEqual(bad, []);
+  });
+
   it('covers every family it can detect', () => {
     const families = new Set(CHEM_BANK.map(i => i.family as ChemFamily));
     const expected: ChemFamily[] = [
