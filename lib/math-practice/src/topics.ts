@@ -22,6 +22,7 @@ import { EARLY_TOPICS } from './early.ts';
 import { G10_LESSON_TOPICS } from './grade10.ts';
 import { G10_TOPICS } from './g10.ts';
 import { G8_TOPICS } from './g8.ts';
+import { G7_TOPICS } from './g7.ts';
 import { G5_TOPICS } from './g5.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
 import {
@@ -2313,7 +2314,7 @@ const fracDiv: Topic = {
     if (k === 0) return { eq: `${N} ÷ ${d}`, answer: String(q), wrongs, ar: `ما 1/${d} العدد ${N}؟`, en: `What is 1/${d} of ${N}?` };
     return {
       eq: `${N} ÷ ${d}`, answer: String(q), wrongs,
-      ar: `لدى سلمى ${N} قلمًا، أعطت 1/${d} منها لأخيها. كم قلمًا أعطته؟`,
+      ar: `لدى سلمى ${counted(N, 'أقلام', 'قلمًا', 'قلم')}، أعطت 1/${d} منها لأخيها. كم قلمًا أعطته؟`,
       en: `Salma has ${N} pens and gave 1/${d} of them to her brother. How many pens did she give him?`,
     };
   },
@@ -2341,6 +2342,7 @@ export const TOPICS: readonly Topic[] = [
   ...G10_LESSON_TOPICS,
   ...G10_TOPICS,
   ...G8_TOPICS,
+  ...G7_TOPICS,
   ...G5_TOPICS,
 ];
 

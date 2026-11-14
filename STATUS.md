@@ -72,6 +72,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-11-13 — Grade 3: Arabic S2, maths S2 and science S2 book pages corrected (re-pointed on `main` at the images already in the bucket); no Grade 3 book text is extracted, so live generation has no book passages for Grade 3; Grade 5 social S1/S2 and Grade 8 Arabic S2 lessons whose right pages sit inside another lesson's images were withdrawn and could be re-pointed the same way («Grade 3 review…» in the log)
 - 2026-11-13 — Grade 10 checked against its books and corrected; history, civics and art text now grounds live prompts (it never did); vocational S1 added; what is left needs the PDFs or a book (PE S2, financial literacy S2, vocational S2, the «حل معادلات خاصة» figures to map and upload) and the same English word-list fix for Grade 9 («Grade 10 checked against its books, and corrected» in the log)
 - 2026-11-13 — Grade 9 checked against its books and corrected; what is left needs the PDFs (nccd.gov.jo does not answer from cloud sessions): figures for 16 books, book pages for art / vocational / history S2, two missing download links, and a page check of the 11 books with no extracted text («Grade 9 checked against its books, and corrected» in the log)
 - 2026-11-13 — Grade 10 audit: book pages and figures corrected against the page images; maths unit 1 follows an older edition than the book served (owner's call); still to render from the PDFs: history S2, geography S2 (7), biology S1 u1_l1, four opening labs, arts («Grade 10 audit…» in the log)
