@@ -135,6 +135,8 @@ const TABLE_MAX: Record<number, number> = { 1: 2, 2: 5, 3: 10, 4: 10, 5: 10, 6: 
 const PLACE_DIGITS: Record<number, number> = { 1: 2, 2: 3, 3: 4, 4: 6, 5: 8, 6: 7 };
 
 const TIER_SCALE: Record<DiffTier, number> = { easy: 0.1, medium: 0.5, hard: 1 };
+/** Grade 1 compares and orders two-digit numbers: 10 up to this, by tier. */
+const G1_COMPARE_MAX: Record<DiffTier, number> = { easy: 30, medium: 60, hard: 99 };
 
 export type Rng = () => number;
 export const int = (rng: Rng, lo: number, hi: number) => lo + Math.floor(rng() * (hi - lo + 1));
@@ -1084,8 +1086,10 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'compare': {
+      // Grade 1 compares and orders «ضمن منزلتين» (u2_l4, u2_l5): the add range
+      // (0–10 at easy and medium) never showed a two-digit number (review, 2026-11-15).
       // Grade 2 compares and orders numbers «ضمن 3 منازل»: an easy paper asked about «10، 6، 22، 20».
-      const [lo, hi] = grade === 2 ? [100, 999] : [0, max];
+      const [lo, hi] = grade === 1 ? [10, G1_COMPARE_MAX[diff]] : grade === 2 ? [100, 999] : [0, max];
       if (int(rng, 0, 3) > 0) return compareKinds(base, hi, rng, lo);
       const a = int(rng, lo, hi);
       const b = rng() < 0.15 ? a : int(rng, lo, hi);

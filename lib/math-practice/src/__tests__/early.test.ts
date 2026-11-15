@@ -75,14 +75,25 @@ describe('counting and place value: answers recomputed', () => {
       const kinds = new Set<string>();
       for (const item of draws(id)) {
         const p = item.promptAr!, n = nums(p), a = Number(item.answer);
+        // The bigger/smaller pair and «أكمل العد» may show a number taught earlier
+        // (1 up to the lesson's top); the answer is still one of this lesson's numbers.
+        let earlier = false;
         if (has(p, 'نجمة')) { kinds.add('stars'); assert.equal(a, p.split('★').length - 1, p); }
+        else if (has(p, 'نقطة')) { kinds.add('dots'); assert.equal(a, p.split('●').length - 1, p); }
+        else if (has(p, 'أيهما')) {
+          kinds.add('which'); earlier = true;
+          assert.equal(n.length, 2, p); assert.notEqual(n[0], n[1], p);
+          assert.equal(a, has(p, 'أكبر') ? Math.max(n[0]!, n[1]!) : Math.min(n[0]!, n[1]!), p);
+          assert.ok(n.some(v => v >= lo), `${p}: neither number is from this lesson`);
+        } else if (has(p, 'أكمل العد')) { kinds.add('go on'); earlier = true; assert.equal(n[1], n[0]! + 1, p); assert.equal(a, n[1]! + 1, p); }
         else if (has(p, 'بالأرقام')) { kinds.add('word'); assert.equal(a, WORD[p.match(/«(.+)»/)![1]!], p); }
         else if (has(p, 'بعد')) { kinds.add('after'); assert.equal(a, n[0]! + 1); }
         else if (has(p, 'قبل')) { kinds.add('before'); assert.equal(a, n[0]! - 1); }
         else { kinds.add('between'); assert.equal(n[1], n[0]! + 2); assert.equal(a, n[0]! + 1); }
-        assert.ok(a >= lo && a <= hi && n.every(v => v >= lo && v <= hi), `${p} leaves ${lo}–${hi}`);
+        if (earlier) assert.ok(n.every(v => v >= 1 && v <= hi) && a <= hi, `${p} leaves 1–${hi}`);
+        else assert.ok(a >= lo && a <= hi && n.every(v => v >= lo && v <= hi), `${p} leaves ${lo}–${hi}`);
       }
-      assert.equal(kinds.size, hi - lo >= 2 ? 5 : 4, `${id}: ${[...kinds]}`);
+      assert.equal(kinds.size, hi - lo >= 2 ? 8 : 7, `${id}: ${[...kinds]}`);
     }
     const zeroKinds = new Set<string>();
     for (const item of draws('count_zero')) {
@@ -584,8 +595,24 @@ describe('early arithmetic: answers recomputed', () => {
 
 describe('shapes, fractions, patterns: answers recomputed', () => {
   it('solids, plane shapes, patterns', () => {
-    const SOLID: Record<string, string> = { 'كرة القدم': 'كرة', 'حجر النرد': 'مكعب', 'علبة المعلبات': 'أسطوانة', 'قبعة الحفلات المدببة': 'مخروط', 'علبة الأحذية': 'متوازي مستطيلات' };
-    for (const item of draws('solid_names')) assert.equal(item.answer, SOLID[item.eq]);
+    const SOLID: Record<string, string> = {
+      'البرتقالة': 'كرة', 'حبة الكرز': 'كرة', 'حجر النرد': 'مكعب', 'صندوق الهدايا المربع': 'مكعب',
+      'علبة المعلبات': 'أسطوانة', 'الطبل': 'أسطوانة', 'علبة الحليب المعدنية': 'أسطوانة', 'قبعة الحفلات المدببة': 'مخروط', 'قمع المثلجات': 'مخروط',
+      'قمع المرور': 'مخروط', 'علبة الأحذية': 'متوازي مستطيلات', 'الكتاب': 'متوازي مستطيلات', 'علبة المناديل': 'متوازي مستطيلات',
+    };
+    const solidKinds = new Set<string>();
+    for (const item of draws('solid_names')) {
+      if (has(item.promptAr!, 'أي هذه الأشياء')) {
+        // the other way round: the answer is the one thing that looks like the named solid
+        solidKinds.add('thing');
+        assert.equal(SOLID[item.answer], item.eq, item.promptAr);
+        for (const w of item.wrongs) assert.notEqual(SOLID[w], item.eq, `${item.promptAr}: ${w}`);
+        assert.equal(new Set(item.wrongs.map(w => SOLID[w])).size, 3, item.promptAr);
+      } else { solidKinds.add('solid'); assert.equal(item.answer, SOLID[item.eq], item.promptAr); }
+      // the thing never names its own solid («مكعب الثلج» → مكعب)
+      for (const [thing, solid] of Object.entries(SOLID)) assert.ok(!thing.includes(solid), thing);
+    }
+    assert.equal(solidKinds.size, 2);
     const SIDES: Record<string, number> = { 'المثلث': 3, 'المربع': 4, 'المستطيل': 4, 'الخماسي المنتظم': 5, 'السداسي المنتظم': 6, 'الدائرة': 0 };
     for (const item of draws('plane_sides_g1')) assert.doesNotMatch(`${item.promptAr} ${item.answer} ${item.wrongs.join(' ')}`, /الخماسي|السداسي/, 'not a Grade 1 shape');
     const LOOKS: Record<string, string> = { 'باب الصف': 'المستطيل', 'ساعة الحائط': 'الدائرة', 'قطعة الجبنة المثلثة': 'المثلث', 'بلاطة الأرض المربعة': 'المربع', 'عجلة الدراجة': 'الدائرة', 'السبورة': 'المستطيل' };

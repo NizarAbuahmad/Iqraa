@@ -66,9 +66,29 @@ const stars = (n: number) => Array.from({ length: n }, () => '★').join(' ');
 
 // ─── counting and place value ───────────────────────────────────────────────
 
+/** A row of dots, the second thing a counting lesson counts: «● ● ●». */
+const dots = (n: number) => Array.from({ length: n }, () => '●').join(' ');
+/**
+ * Kinds: 0 after, 1 before, 2 between, 3 count stars, 4 digits from the word, 5 count dots,
+ * 6 the bigger or smaller of two, 7 go on counting. 5–7 were added in the second pass
+ * (2026-11-15): «العددان 4، 5» and «العددان 9، 10» held six different questions between
+ * them. Every number stays at or below the lesson's own top, and «أكمل العد» starts at 1.
+ */
 const countingRange = (id: string, match: RegExp, lo: number, hi: number) => T(id, match, [1, 1], ({ rng }) => {
-  const kinds = hi - lo >= 2 ? [0, 1, 2, 3, 4] : [0, 1, 3, 4];
+  const kinds = [0, 1, 3, 4, 5, 6, 7, ...(hi - lo >= 2 ? [2] : [])];
   const k = pick(rng, kinds);
+  if (k === 5) { const x = int(rng, lo, hi); return { eq: dots(x), answer: String(x), wrongs: ints(x, [x + 1, x - 1, x + 2, x - 2]), ar: `كم نقطة في الصف الآتي: ${dots(x)}؟`, en: `How many dots are in this row: ${dots(x)}?` }; }
+  if (k === 6) {
+    // two numbers the child knows by now, at least one from this lesson
+    const a = int(rng, lo, hi), b = pick(rng, Array.from({ length: hi }, (_, i) => i + 1).filter(v => v !== a));
+    const big = rng() < 0.5, ans = big ? Math.max(a, b) : Math.min(a, b);
+    const [x, y] = rng() < 0.5 ? [a, b] : [b, a];
+    return { eq: `${x}, ${y}`, answer: String(ans), wrongs: ints(ans, [ans === x ? y : x, ans + 1, ans - 1, hi]), ar: `أيهما ${big ? 'أكبر' : 'أصغر'}: ${x} أم ${y}؟`, en: `Which is ${big ? 'greater' : 'smaller'}: ${x} or ${y}?` };
+  }
+  if (k === 7) {
+    const x = int(rng, Math.max(3, lo), hi);
+    return { eq: `${x - 2}, ${x - 1}`, answer: String(x), wrongs: ints(x, [x - 1, x - 2, x + 1, x - 3]), ar: `أكمل العد: ${x - 2}، ${x - 1}، ___`, en: `Continue counting: ${x - 2}, ${x - 1}, ___` };
+  }
   if (k === 0) { const x = int(rng, lo, hi - 1); return { eq: `${x}`, answer: String(x + 1), wrongs: ints(x + 1, [x, x + 2, x - 1, x + 3]), ar: `ما العدد الذي يأتي بعد ${x}؟`, en: `Which number comes after ${x}?` }; }
   if (k === 1) { const x = int(rng, lo + 1, hi); return { eq: `${x}`, answer: String(x - 1), wrongs: ints(x - 1, [x, x - 2, x + 1, x - 3]), ar: `ما العدد الذي يأتي قبل ${x}؟`, en: `Which number comes before ${x}?` }; }
   if (k === 3) { const x = int(rng, lo, hi); return { eq: stars(x), answer: String(x), wrongs: ints(x, [x + 1, x - 1, x + 2, x - 2]), ar: `كم نجمة في الصف الآتي: ${stars(x)}؟`, en: `How many stars are in this row: ${stars(x)}?` }; }
@@ -82,21 +102,23 @@ const zero = T('count_zero', /^العدد صفر$/, [1, 1], ({ rng }) => {
   // nothing here is a sum or a difference (Grade 1 review, 2026-11-13).
   // 0 the number before 1, 1 a box emptied, 2 zero in digits, 3 the smallest or largest
   // of four numbers, 4 counting down to zero, 5 what zero means.
+  // The lesson follows «العددان 4، 5» and comes before 6–10, so nothing past 5 —
+  // options included (second pass, 2026-11-15).
   const k = pick(rng, [0, 1, 2, 3, 4, 5]);
-  const n = int(rng, 3, 9);
-  if (k === 0) return { eq: '1', answer: '0', wrongs: ints(0, [2, 1, 10, 9]), ar: 'ما العدد الذي يأتي قبل العدد 1؟', en: 'Which number comes just before 1?' };
+  const n = int(rng, 3, 5);
+  if (k === 0) return { eq: '1', answer: '0', wrongs: ints(0, [2, 1, 3, 5]), ar: 'ما العدد الذي يأتي قبل العدد 1؟', en: 'Which number comes just before 1?' };
   if (k === 1) return { eq: `${n}`, answer: '0', wrongs: ints(0, [n, 1, n - 1, 2]), ar: `في صندوق ${n} كرات، أُخرجت الكرات كلها. كم كرة بقيت في الصندوق؟`, en: `A box has ${n} balls and all of them are taken out. How many balls are left in the box?` };
-  if (k === 2) return { eq: 'صفر', answer: '0', wrongs: ['10', '1', '6'], ar: 'اكتب العدد «صفر» بالأرقام.', en: 'Write the number “zero” in digits.' };
+  if (k === 2) return { eq: 'صفر', answer: '0', wrongs: ['1', '2', '5'], ar: 'اكتب العدد «صفر» بالأرقام.', en: 'Write the number “zero” in digits.' };
   if (k === 3) {
-    const list = shuffle(rng, [0, ...shuffle(rng, [1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 3)]), big = rng() < 0.5;
+    const list = shuffle(rng, [0, ...shuffle(rng, [1, 2, 3, 4, 5]).slice(0, 3)]), big = rng() < 0.5;
     const ans = big ? Math.max(...list) : 0;
     return { eq: list.join(', '), answer: String(ans), wrongs: list.filter(v => v !== ans).map(String), ar: `ما ${big ? 'أكبر' : 'أصغر'} عدد من الأعداد الآتية: ${list.join('، ')}؟`, en: `Which is the ${big ? 'largest' : 'smallest'} of these numbers: ${list.join(', ')}?` };
   }
   if (k === 4) {
     const down = Array.from({ length: n }, (_, i) => n - i).join('، ');
-    return { eq: down, answer: '0', wrongs: ints(0, [1, 2, n + 1, 10]), ar: `عدّت سلمى تنازليًا: ${down}. ما العدد الذي يأتي بعد 1؟`, en: `Salma counts down: ${down.replace(/،/g, ',')}. Which number comes after 1?` };
+    return { eq: down, answer: '0', wrongs: ints(0, [1, 2, n, n - 1]), ar: `عدّت سلمى تنازليًا: ${down}. ما العدد الذي يأتي بعد 1؟`, en: `Salma counts down: ${down.replace(/،/g, ',')}. Which number comes after 1?` };
   }
-  return { eq: '', answer: '0', wrongs: ['1', '10', '2'], ar: 'ما العدد الذي يدل على عدم وجود أي شيء؟', en: 'Which number tells that there is nothing at all?' };
+  return { eq: '', answer: '0', wrongs: ['1', '2', '5'], ar: 'ما العدد الذي يدل على عدم وجود أي شيء؟', en: 'Which number tells that there is nothing at all?' };
 });
 
 const ordinal = T('ordinal', /^العد الترتيبي$/, [1, 1], ({ rng }) => {
@@ -499,9 +521,26 @@ const addThree = T('add_three_g1', /^جمع ثلاثه اعداد$/, [1, 1], ({ 
 
 // ─── shapes ─────────────────────────────────────────────────────────────────
 
-const SOLIDS: Array<[string, string]> = [['كرة القدم', 'كرة'], ['حجر النرد', 'مكعب'], ['علبة المعلبات', 'أسطوانة'], ['قبعة الحفلات المدببة', 'مخروط'], ['علبة الأحذية', 'متوازي مستطيلات']];
-const solidNames = SOLIDS.map(s => s[1]);
+/**
+ * Everyday things and the solid each looks like; two or more per solid (second pass, 2026-11-15).
+ * No thing may carry its solid's name («كرة القدم», «مكعب الثلج», «مخروط المرور» gave the answer away).
+ */
+const SOLIDS: Array<[string, string]> = [
+  ['البرتقالة', 'كرة'], ['حبة الكرز', 'كرة'],
+  ['حجر النرد', 'مكعب'], ['صندوق الهدايا المربع', 'مكعب'],
+  ['علبة المعلبات', 'أسطوانة'], ['الطبل', 'أسطوانة'], ['علبة الحليب المعدنية', 'أسطوانة'],
+  ['قبعة الحفلات المدببة', 'مخروط'], ['قمع المثلجات', 'مخروط'], ['قمع المرور', 'مخروط'],
+  ['علبة الأحذية', 'متوازي مستطيلات'], ['الكتاب', 'متوازي مستطيلات'], ['علبة المناديل', 'متوازي مستطيلات'],
+];
+const solidNames = [...new Set(SOLIDS.map(s => s[1]))];
 const solids = T('solid_names', /^المجسمات$/, [1, 2], ({ rng }) => {
+  if (rng() < 0.35) {
+    // the other way round: which of these things looks like the named solid
+    const name = pick(rng, solidNames);
+    const obj = pick(rng, SOLIDS.filter(s => s[1] === name))[0];
+    const wrongs = shuffle(rng, solidNames.filter(n => n !== name)).slice(0, 3).map(n => pick(rng, SOLIDS.filter(s => s[1] === n))[0]);
+    return { eq: name, answer: obj, wrongs, ar: `أي هذه الأشياء يشبه ${name === 'كرة' ? 'الكرة' : name === 'متوازي مستطيلات' ? 'متوازي المستطيلات' : `ال${name}`}؟`, en: `Which of these things looks like this solid: ${name} (Arabic)?` };
+  }
   const [obj, name] = pick(rng, SOLIDS);
   return { eq: obj, answer: name, wrongs: others(rng, name, solidNames), ar: `أي مجسم يشبه ${obj}؟`, en: `Which solid does this look like: ${obj} (Arabic)?` };
 });
@@ -1404,6 +1443,7 @@ const TRIPLES: Record<string, Array<[string, string, string, string]>> = {
   capacity: [['الملعقة', 'الكوب', 'الدلو', 'A cup holds more than a spoon and a bucket holds more than the cup. Which holds the most?'], ['الفنجان', 'الإبريق', 'الحوض', 'A jug holds more than a small cup and a tub holds more than the jug. Which holds the most?']],
 };
 const MOST: Record<string, [string, string]> = { length: ['أطول', 'الأطول'], mass: ['أثقل', 'الأثقل'], capacity: ['أكبر سعة', 'الأكبر سعة'] };
+/** `what` carries its verb: «قيس طولا» (two lengths are a dual, masculine), «قيست كتلتا», «قيست سعتا». */
 const compareMeasure = (id: string, match: RegExp, what: string, bigWord: string, en: string, big: string, what3: string) => T(id, match, [1, 1], ({ rng }) => {
   const a = int(rng, 2, 14); let b = int(rng, 2, 14); while (b === a) b = int(rng, 2, 14);
   // comparing and ordering only; measuring with a non-standard unit is the next lesson (`unitsNonStd`)
@@ -1419,9 +1459,9 @@ const compareMeasure = (id: string, match: RegExp, what: string, bigWord: string
     const up = rng() < 0.5, xs = [a, b, c], r = up ? Math.min(...xs) : Math.max(...xs);
     return { eq: `${a}, ${b}, ${c}`, answer: String(r), wrongs: ints(r, [...xs.filter(x => x !== r), up ? r + 1 : r - 1, a + b + c]), ar: `قيست ${what3} ثلاثة أشياء بالوحدة نفسها: ${a}، ${b}، ${c}. إذا رُتّبت ${up ? 'تصاعديًا' : 'تنازليًا'}، فما القياس الأول؟`, en: `The ${en} of three things is measured with the same unit: ${a}, ${b}, ${c}. Ordered ${up ? 'from smallest to largest' : 'from largest to smallest'}, which measure comes first?` };
   }
-  if (k === 0) { const r = Math.max(a, b); return { eq: `${a}, ${b}`, answer: String(r), wrongs: ints(r, [Math.min(a, b), a + b, r + 1, Math.abs(a - b)]), ar: `قيست ${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. ما قياس ${bigWord}؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. What is the measure of the ${big}?` }; }
+  if (k === 0) { const r = Math.max(a, b); return { eq: `${a}, ${b}`, answer: String(r), wrongs: ints(r, [Math.min(a, b), a + b, r + 1, Math.abs(a - b)]), ar: `${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. ما قياس ${bigWord}؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. What is the measure of the ${big}?` }; }
   const d = Math.abs(a - b);
-  return { eq: `${a}, ${b}`, answer: String(d), wrongs: ints(d, [a + b, Math.max(a, b), d + 1, Math.min(a, b)]), ar: `قيست ${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. بكم يزيد الأكبر قياسًا على الأصغر؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. By how much does the larger measure exceed the smaller?` };
+  return { eq: `${a}, ${b}`, answer: String(d), wrongs: ints(d, [a + b, Math.max(a, b), d + 1, Math.min(a, b)]), ar: `${what} شيئين بالوحدة نفسها: الأول: ${a}، الثاني: ${b}. بكم يزيد الأكبر قياسًا على الأصغر؟`, en: `The ${en} of two things is measured with the same unit: first: ${a}, second: ${b}. By how much does the larger measure exceed the smaller?` };
 });
 
 /** «لـ» before a word: «للمثلث», «للشعاع» — the article's alif drops after it. */
@@ -1760,9 +1800,9 @@ export const EARLY_TOPICS: readonly Topic[] = [
   coins('coins_a', /^القطع النقديه$/), coins('coins_b', /^القطع النقديه المتساويه$/), coins('coins_c', /^استعمال القطع النقديه$/), dinar, banknotes,
   weekDays, hourTime('hour_full', /^الوقت بالساعات الكامله$/, false), hourTime('hour_half', /^الوقت بنصف الساعه$/, true),
   nearestMinutes('time_5', /^الوقت لاقرب 5 دقائق$/, 5), nearestMinutes('time_15', /^الوقت لاقرب ربع ساعه$/, 15), monthsOfYear, amPm, calendar,
-  compareMeasure('compare_len', /^مقارنه الاطوال وترتيبها$/, 'أطوال', 'الأطول', 'length', 'longest', 'أطوال'),
-  compareMeasure('compare_mass', /^مقارنه الكتل وترتيبها$/, 'كتلتا', 'الأثقل', 'mass', 'heaviest', 'كتل'),
-  compareMeasure('compare_cap', /^مقارنه السعات وترتيبها$/, 'سعتا', 'الأكبر سعة', 'capacity', 'largest', 'سعات'),
+  compareMeasure('compare_len', /^مقارنه الاطوال وترتيبها$/, 'قيس طولا', 'الأطول', 'length', 'longest', 'أطوال'),
+  compareMeasure('compare_mass', /^مقارنه الكتل وترتيبها$/, 'قيست كتلتا', 'الأثقل', 'mass', 'heaviest', 'كتل'),
+  compareMeasure('compare_cap', /^مقارنه السعات وترتيبها$/, 'قيست سعتا', 'الأكبر سعة', 'capacity', 'largest', 'سعات'),
   unitsNonStd('units_len_g1', /^وحدات الطول غير القياسيه$/, 'length'), unitsNonStd('units_mass_g1', /^وحدات الكتله غير القياسيه$/, 'mass'), unitsNonStd('units_cap_g1', /^وحدات السعه غير القياسيه$/, 'capacity'),
   position, classifyOne, classifyTwo, guessCheck, chooseOp, dailyOrder, dataTable, pictoMake, pictoRead,
   centimetre, unitsG2('units_m_g2', /^المتر$/, 'متر', 'سنتيمتر', 100, 'metre', 'centimetres'),
