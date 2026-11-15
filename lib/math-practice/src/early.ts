@@ -1360,14 +1360,21 @@ const amPm = T('am_pm', /^قبل الظهر بعد الظهر$/, [3, 3], ({ rng 
     const ans = say(pick(rng, hit)), wrongs = shuffle(rng, rest).slice(0, 3).map(say);
     return { eq: `${pm ? 'pm' : 'am'}: ${ans}`, answer: ans, wrongs, ar: `أيّ هذه المواعيد في يوم سامي الدراسي يكون ${pm ? 'بعد الظهر' : 'قبل الظهر'}: ${shuffle(rng, [ans, ...wrongs]).join('، ')}؟`, en: `Which of these events in Sami's school day is ${pm ? 'in the afternoon (p.m.)' : 'in the morning (a.m.)'}: ${[ans, ...wrongs].join(', ')}? (Arabic event names)` };
   }
-  if (k === 2) return { eq: `${b + 12}`, answer: String(b), wrongs: ints(b, [b + 12, b + 2, b + 1, b - 1]), ar: `الساعة ${b + 12}:00 بنظام 24 ساعةً. كم تكون الساعة بعد الظهر؟ (اكتب العدد قبل «:00»)`, en: `It is ${b + 12}:00 in 24-hour time. What time is it in the afternoon? (write the number before ':00')` };
+  // No 24-hour clock: «توقيت 24 ساعةً» is new vocabulary in Grade 5's «الزمن» (S2 u9_l3), so Grade 3 stays in the two halves of the day.
+  if (k === 2) {
+    // across midnight: to bed after noon, up before it
+    const p = int(rng, 8, 11), w = int(rng, 5, 7), hrs = 12 - p + w;
+    return { eq: `${p} pm → ${w} am`, answer: String(hrs), wrongs: ints(hrs, [p - w, p + w, 12 - p, hrs + 1, hrs - 1]), ar: `نام سامي الساعة ${p}:00 بعد الظهر، واستيقظ الساعة ${w}:00 قبل الظهر من اليوم التالي. كم ساعة نام؟`, en: `Sami went to sleep at ${p}:00 p.m. and woke up at ${w}:00 a.m. the next day. How many hours did he sleep?` };
+  }
   if (k === 3) {
     // a morning start that runs past noon
     const s = int(rng, 7, 11), len = int(rng, Math.max(3, 13 - s), 10), end = s + len - 12;
     return { eq: `${s}, ${len}`, answer: String(end), wrongs: ints(end, [s + len, end + 1, end - 1, len]), ar: `بدأت رحلة الساعة ${s}:00 قبل الظهر واستمرت ${len} ساعات. في أي ساعة بعد الظهر انتهت؟ (اكتب العدد قبل «:00»)`, en: `A trip starts at ${s}:00 a.m. and lasts ${len} hours. At what hour p.m. does it end? (write the number before ':00')` };
   }
   if (k === 0) return { eq: `${a}, ${b}`, answer: String(12 - a + b), wrongs: ints(12 - a + b, [b - a > 0 ? b - a : 2, 12 - a, a + b, 12 - a + b + 1]), ar: `بدأ نشاط الساعة ${a}:00 قبل الظهر وانتهى الساعة ${b}:00 بعد الظهر. كم ساعة استغرق؟`, en: `An activity starts at ${a}:00 a.m. and ends at ${b}:00 p.m. How many hours does it last?` };
-  return { eq: `${b}`, answer: String(b + 12), wrongs: ints(b + 12, [b, b + 10, 12 - b > 0 ? 12 - b : 11, b + 11]), ar: `الساعة ${b}:00 بعد الظهر. كم تبلغ الساعة بنظام 24 ساعةً؟ (اكتب العدد قبل «:00»)`, en: `It is ${b}:00 p.m. What is the hour in 24-hour time? (write the number before ':00')` };
+  // how long until noon, where قبل الظهر ends
+  const h = int(rng, 6, 11);
+  return { eq: `12 − ${h}`, answer: String(12 - h), wrongs: ints(12 - h, [h, 12 + h, 13 - h, 11 - h, 24 - h]), ar: `الساعة الآن ${h}:00 قبل الظهر. كم ساعة بقيت حتى الساعة 12:00 ظهرًا؟`, en: `It is ${h}:00 a.m. How many hours are left until 12:00 noon?` };
 });
 
 const calendar = T('calendar', /^التقويم$/, [3, 3], ({ rng }) => {

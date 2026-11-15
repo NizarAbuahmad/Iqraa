@@ -1044,10 +1044,13 @@ describe('money, time and measurement: answers recomputed', () => {
         for (const w of item.wrongs) assert.ok(other.includes(ev(w)), `${w}: ${p}`);
         continue;
       }
-      if (has(p, 'كم ساعة')) { ampm.add('duration'); assert.equal(a, 12 - n[0]! + n[2]!); }
-      else if (has(p, 'بنظام 24 ساعةً. كم تكون')) { ampm.add('from 24'); assert.equal(a + 12, n[0]); assert.ok(a >= 1 && a <= 11); }
+      if (has(p, 'كم ساعة نام')) { ampm.add('overnight'); assert.equal(a, 12 - n[0]! + n[2]!, p); }
+      else if (has(p, 'حتى الساعة 12:00 ظهرًا')) { ampm.add('until noon'); assert.equal(a, 12 - n[0]!, p); }
+      else if (has(p, 'كم ساعة استغرق')) { ampm.add('duration'); assert.equal(a, 12 - n[0]! + n[2]!, p); }
       else if (has(p, 'في أي ساعة بعد الظهر')) { ampm.add('ends'); assert.equal(a, n[0]! + n[2]! - 12, p); assert.ok(a >= 1 && a <= 11 && n[2]! >= 3, p); }
-      else { ampm.add('to 24'); assert.equal(a, n[0]! + 12); }
+      else assert.fail(`unrecognised stem: ${p}`);
+      // «توقيت 24 ساعةً» is Grade 5's vocabulary (S2 u9_l3), not Grade 3's
+      assert.doesNotMatch(p, /24 ساعة|1[3-9]:00|2[0-3]:00/, p);
     }
     assert.equal(ampm.size, 5, [...ampm].join(', '));
     for (const item of draws('calendar')) {

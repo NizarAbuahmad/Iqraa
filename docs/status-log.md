@@ -40,18 +40,19 @@ size, or another lesson's questions:
 Smaller: «الأرقام الهندية» gave a digit's value in Latin digits (now ٧٠٠, like its other answers); «ولُوّن 1 منها» reads «ولُوّن
 جزء واحد منها»; «الكسر كجزء من مجموعة» asked a bare «ما 2/3 من العدد 3؟» (now a part of a group of balls, at least 4);
 «قبل الظهر، بعد الظهر» gains the objective itself — which event of a school day is before or after noon (the first lesson
-and dinner are both at 8:00).
+and dinner are both at 8:00) — and loses its two 24-hour-clock kinds: «توقيت 24 ساعةً» is new vocabulary in Grade 5's
+«الزمن» (S2 u9_l3), so they are replaced by the hours until 12:00 noon and the hours slept across midnight.
 
 **Verified.** `grade3Objectives.test.ts` (14) routes each title to its generator and recomputes every key from its printed
 stem by code that shares nothing with the generators (minutes counted, clocks rolled over, squares multiplied, the nearest
 multiple found by walking the multiples), and checks the bounds: one hour, two-digit dividends, twelfths, no length ×
 width in «المساحة», no number below 100 in «ضمن الألوف». `early.test.ts`, `topics.test.ts`, `geometry.test.ts` and
 `grade3Lessons.test.ts` now read the new wordings. Six planted bugs (two-digit place values back, the old division path,
-a wrong roll-over, the minute mark off by one, an interval past the hour, strips past twelfths) each failed a test.
+a wrong roll-over, the minute mark off by one, an interval past the hour, strips past twelfths) each failed a test, and so
+did an hour added to the night's sleep; `early.test.ts` fails a «24 ساعة» or a 13:00–23:00 in an «قبل الظهر، بعد الظهر» stem.
 Thirty-odd new questions read by hand, keys correct. The PR body has the CI set.
 
-**Not done.** «قبل الظهر، بعد الظهر» still converts to the 24-hour clock in two of its five kinds; without the book it is
-not known whether Grade 3 teaches it. Everything the audit left for the PDFs.
+**Not done.** Everything the audit left for the PDFs.
 
 ## Grade 10 review: own offline questions for the thirteen lessons the bank served thinly — 2026-11-14
 
