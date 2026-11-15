@@ -10,6 +10,40 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 1 second pass: two-digit compare and order, zero before six, deeper counting and solids banks — 2026-11-15
+
+A second read of Grade 1 maths, on top of «Grade 1 review: coverage, generated results, book images». The generators
+were run again over every Grade 1 lesson, and each maths quiz was read question by question against its lesson's
+objectives. Every key was right. Four things did not fit the book:
+
+- **«مقارنة الأعداد» and «ترتيب الأعداد» never showed a two-digit number.** Their objectives say «ضمن منزلتين», but
+  the `compare` op took the grade's add range, which is 0–10 at easy and medium. At Grade 1 it now draws 10 up to 30,
+  60 or 99 by tier (`G1_COMPARE_MAX`, `elementary.ts`); other grades are unchanged. `elementary.test.ts` had pinned
+  the old «compares within 20», so that test now allows 99 for these two titles only.
+- **«العدد صفر» used 6–9 before they are taught.** It now stays at or below 5 everywhere, options included.
+- **Three lessons could not fill a ten-question quiz.**
+  - «العددان: 4، 5» and «العددان: 9، 10» held six different questions each. `countingRange` has three new kinds for
+    all four counting lessons: count the dots, the bigger or smaller of two numbers, and «أكمل العد». The last two may
+    show an earlier number (1 up to the lesson's top), but the answer is always one of the lesson's own numbers.
+  - «المجسمات» held five, one object per solid. It now has two or three objects per solid and a reversed question
+    («أي هذه الأشياء يشبه الأسطوانة؟»).
+  - All three now fill ten.
+- **Three solids questions gave the answer away.** «كرة القدم» → كرة was in the original bank, and «مكعب الثلج» and
+  «مخروط المرور» came in with the first draft of this change. All three are gone, and a test fails any object that
+  contains its solid's name.
+
+**Verified:**
+- New tests in `earlyG1Ops.test.ts` failed first. The checkers in `early.test.ts` were rewritten to recompute the new
+  kinds independently.
+- The `lib/math-practice` suite (1,391 tests), the full mobile suite and `pnpm run typecheck` all pass.
+- The Grade 1 audit was rerun over all 279 lessons.
+
+**Not done:**
+- Grade 1 book pages exist as page images for 104 lessons (Arabic, PE, Islamic), but no text layer and no extracted
+  figures. A text-based check that each page range matches its lesson is therefore impossible, and none was made.
+- «الأشكال المستوية», «أضلاع الأشكال المستوية ورؤوسها» and «الربع» hold eight different questions each and were left
+  as they are.
+
 ## Grade 10 review: own offline questions for the thirteen lessons the bank served thinly — 2026-11-14
 
 The generators were run over all 445 Grade 10 lessons, and every question of every maths and chemistry quiz was read
