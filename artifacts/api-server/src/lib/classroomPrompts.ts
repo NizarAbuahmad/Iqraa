@@ -10,6 +10,7 @@
  */
 
 import { revisionClauseAr, revisionClauseEn } from './revision.ts';
+import { firstGradeClauseAr, firstGradeClauseEn } from './firstGrade.ts';
 
 /**
  * The 7 activity-type ids the classroom hub can send. Kept in sync with the
@@ -65,7 +66,8 @@ export function classroomSetupClause(b: any, isAr: boolean): string {
 export function classroomActivityPrompt(b: any, isAr: boolean): string {
   return (isAr ? classroomPromptAr(b) : classroomPromptEn(b))
     + (isAr ? revisionClauseAr(b, 'classroom') : revisionClauseEn(b, 'classroom'))
-    + classroomSetupClause(b, isAr);
+    + classroomSetupClause(b, isAr)
+    + (isAr ? firstGradeClauseAr(b, 'classroom') : firstGradeClauseEn(b, 'classroom'));
 }
 
 /**

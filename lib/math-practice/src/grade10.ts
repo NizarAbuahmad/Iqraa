@@ -20,6 +20,7 @@
  * the verifier.
  */
 import { int, nz, pick, sfrac, signed, sup, wrongsFrom, type Draft, type Rng, type Topic } from './topicKit.ts';
+import { G10B_TOPICS } from './grade10b.ts';
 
 type D = 'easy' | 'medium' | 'hard';
 type Gen = (c: { rng: Rng; diff: D; grade: number }) => Draft;
@@ -883,6 +884,8 @@ const rational = T('g10_rational', /^(?:قسمه كثيرات الحدود و)?�
 
 export const G10_LESSON_TOPICS: readonly Topic[] = [
   circleEquation, trigRatios, trigFullTurn, trigGraphs, trigEquations, sineLaw, cosineLaw, solids3d, polynomials, rational,
+  // the second batch, 2026-11-14: the lessons still on a thin shared family (`grade10b.ts`)
+  ...G10B_TOPICS,
 ];
 
 /**

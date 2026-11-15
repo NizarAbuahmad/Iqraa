@@ -14,6 +14,12 @@ import { BOOK_FIGURE_BASE_URL } from "@workspace/curriculum";
 import { convertWorksheet, type WorksheetInput } from "../fromWorksheet.ts";
 import { QUESTION_TYPES } from "../questionTypes.ts";
 import { sanitizeQuestionForStudent } from "../studentView.ts";
+import { FIRST_GRADE_EVALUATION_TYPES } from "@workspace/exam-paper";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
 
 type Q = WorksheetInput["sections"][number]["questions"][number];
 
@@ -315,5 +321,61 @@ describe("formats", () => {
     const fig = { uri: `${BOOK_FIGURE_BASE_URL}/a/p1.png`, caption: "ص ١" };
     const q = only(one({ text: "x", points: 2, figure: fig, format: { kind: "graph", stem: "ارسم", exprs: ["x"], window: { xMin: -1, xMax: 1, yMin: -1, yMax: 1 } } } as any, "k"));
     assert.deepEqual(q.body["figure"], fig);
+  });
+});
+
+describe("a Grade 1 worksheet sent as an evaluation", () => {
+  // Swept 2026-11-14: a Grade 1 worksheet's teacher-marked questions arrived as
+  // short answers, a type a Grade 1 evaluation does not take.
+  const grade1 = (ws: WorksheetInput) => convertWorksheet(ws, "ar", { firstGrade: true });
+  const sheet: WorksheetInput = {
+    sections: [{
+      questions: [
+        { text: "ما اليوم الذي يأتي بعد الثلاثاء؟", points: 1 },
+        { text: "كم نجمة: ★ ★ ★؟", points: 1 },
+        { text: "العدد 5 أكبر من 3", options: ["صح", "خطأ"], points: 1 },
+        { text: "ارسم مثلثًا", points: 2, figure: { uri: `${BOOK_FIGURE_BASE_URL}/g1-math-s2/p010.png`, caption: "مثلث" } },
+      ],
+    }],
+    answerKey: [{ num: 1, answer: "الأربعاء" }, { num: 2, answer: "3" }, { num: 3, answer: "صح" }, { num: 4, answer: "مثلث بثلاثة أضلاع", solution: ["ثلاثة رؤوس"] }],
+  };
+
+  it("holds only Grade 1 types: a teacher-marked question becomes a practical task, the rest as before", () => {
+    const r = grade1(sheet);
+    assert.ok(r.ok);
+    assert.deepEqual(r.questions.map(q => q.type), ["practical_task", "fill_blank", "true_false", "practical_task"]);
+    for (const q of r.questions) {
+      assert.deepEqual(QUESTION_TYPES[q.type].validate({ ...q, rubric: null }), [], `${q.type} does not validate`);
+      assert.ok((FIRST_GRADE_EVALUATION_TYPES as readonly string[]).includes(q.type), q.type);
+    }
+  });
+
+  it("keeps the question, its figure and its key, and the teacher still marks it", () => {
+    const r = grade1(sheet);
+    assert.ok(r.ok);
+    const [day, , , draw] = r.questions;
+    assert.equal(day!.body["prompt"], "ما اليوم الذي يأتي بعد الثلاثاء؟");
+    assert.deepEqual(day!.expectedAnswer, { successCriteria: ["الأربعاء"] });
+    assert.deepEqual(draw!.expectedAnswer, { successCriteria: ["مثلث بثلاثة أضلاع", "ثلاثة رؤوس"] });
+    assert.ok(draw!.body["figure"], "the book figure is kept");
+    assert.equal(QUESTION_TYPES.practical_task.defaultGradingMode, "manual");
+    assert.deepEqual([r.autoMarked, r.teacherMarked], [2, 2]);
+    // The student sees the question and a box to answer in, never the key.
+    const student = sanitizeQuestionForStudent({ id: "q1", orderIndex: 0, type: day!.type, marks: "1", body: day!.body }, "attempt-1");
+    assert.equal(student.body["prompt"], day!.body["prompt"]);
+    assert.equal(student.body["submission"], "text");
+    assert.doesNotMatch(JSON.stringify(student), /الأربعاء/);
+  });
+
+  it("another grade's worksheet is converted as before", () => {
+    const r = convertWorksheet(sheet);
+    assert.ok(r.ok);
+    assert.deepEqual(r.questions.map(q => q.type), ["short_answer", "fill_blank", "true_false", "short_answer"]);
+  });
+
+  it("the route converts a Grade 1 book's worksheet this way, and stores only Grade 1 types", () => {
+    const routes = readFileSync(path.resolve(here, "../../../routes/evaluations.ts"), "utf8");
+    assert.match(routes, /convertWorksheet\(worksheet, language, \{ firstGrade: book\.gradeId === "grade-1" \}\)/);
+    assert.match(routes, /assessmentTypes: evaluationTypesForGrade\(book\.gradeId, \[\.\.\.new Set\(converted\.questions\.map\(q => q\.type\)\)\]\)/);
   });
 });

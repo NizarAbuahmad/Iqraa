@@ -414,18 +414,7 @@ describe('statistics: answers recomputed', () => {
         assert.ok(Number.isInteger(v / per), p);
         continue;
       }
-      if (has(p, 'التمثيل بالنقاط')) {
-        // count the dots over every value from the asked one up
-        upper('dots');
-        assert.equal(g, '4', `dot plots are a Grade 4 lesson: ${p}`);
-        const rows = [...p.matchAll(/(\d+): (●*)/g)].map(m => [Number(m[1]), m[2]!.length] as const);
-        assert.equal(rows.length, 6, p);
-        const v = Number(p.match(/قرأ (\d+) ساعات أو أكثر/)![1]);
-        const want = rows.filter(([h]) => h >= v).reduce((t, [, c]) => t + c, 0);
-        assert.equal(Number(item.answer), want, p);
-        assert.ok(rows.some(([h, c]) => h === v && c > 0), `«or more» and «more than» differ: ${p}`);
-        continue;
-      }
+      assert.ok(!has(p, 'التمثيل بالنقاط'), `a dot plot belongs to «تمثيل البيانات بالنقاط»: ${p}`);
       if (id === 'read_data_g34') kinds[Number(g)]!.add('table');
       if (has(p, 'عدد الأقلام')) {
         // organising raw data: how many times the value occurs
@@ -471,10 +460,11 @@ describe('statistics: answers recomputed', () => {
       else assert.equal(Number(item.answer), sum(vals));
       assert.equal(new Set(vals).size, vals.length, 'counts are distinct so the answer is unique');
     }
-    assert.deepEqual([...kinds[1]!].sort(), ['compare', 'raw', 'table'], 'Grade 1 kinds');
+    // Grade 1's data lessons have their own generators in early.ts (data_table_g1, picto_make_g1, picto_read_g1)
+    assert.deepEqual([...kinds[1]!], [], 'Grade 1 is no longer drawn from read_data_g12');
     assert.deepEqual([...kinds[2]!].sort(), ['compare', 'draw', 'pictures', 'raw', 'table', 'tally'], 'Grade 2 kinds');
     assert.deepEqual([...kinds[3]!].sort(), ['halfStep', 'squares', 'table'], 'Grade 3 kinds');
-    assert.deepEqual([...kinds[4]!].sort(), ['dots', 'halfStep', 'squares', 'table'], 'Grade 4 kinds');
+    assert.deepEqual([...kinds[4]!].sort(), ['halfStep', 'squares', 'table'], 'Grade 4 kinds');
   });
 
   it('frequency tables and grouped data', () => {
