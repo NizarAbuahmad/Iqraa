@@ -10,6 +10,39 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## English Word List: the parser stops at the list's end — no more Grammar Reference rows as vocabulary — 2026-11-15
+
+Main's Grade 10 audit (#1479) had already fixed the bigger half: the Grade 10 S1 lessons now come from the «LESSON nA» heading, not the `WL` count. What it left in place: `extract-english-vocabulary.ts` kept parsing after the Word List into the Grammar Reference and irregular-verbs pages. Those pages carry no `WL` marker, so their cells were filed under the last list's lesson as if they were words to drill: «She/It», «They must», «burned / or burnt», «understood».
+
+**Rows removed (43):**
+
+| Lesson | Rows |
+|---|---|
+| Grade 10 S1 u5_l6 | 15 |
+| Grade 9 S1 u5_l4 | 16 |
+| Grade 9 S2 u10_l4 | 10 |
+| Grade 8 S1 | 1 |
+| Grade 8 S2 | 1 |
+
+No row was added or moved.
+
+**What changed:** one rule. The section ends at the first page with no `WL` marker after it started.
+
+**Knock-ons, each pinned by a test:**
+- **Grade 9 S2 u10_l4 «القواعد» joins `GRAMMAR_ONLY_LESSONS`.** It has 3 real words and had passed the hub's word floor only on irregular-verb forms. Without it, its grammar unit pointed at no hub lesson and every grammar suite crashed.
+- **14 Arabic glosses** for the dropped rows are removed from `english_vocabulary_ar.json`.
+- **`REVIEWED_BY_EAR` drops `been` and `burned` (24 → 22).** They are recordings someone listened to on 2026-10-31, and no lesson plays them now.
+- **The G5 and G10 grammar review forms are regenerated.** «understood» is now listed as outside the vocabulary lists, for the teacher to approve.
+- **Drill corpus pin:** 1,838 words and 499 sentences become 1,795 and 493.
+- **New case in `englishVocabularyLessons.test.ts`:** it fails on main's data.
+
+**Not done:** main's extractor comment says Grade 9 S1 has the same marker mis-filing as Grade 10 had, and that it was deferred because it moves four Grade 9 grammar lessons. That is still open.
+
+**Verified:**
+- curriculum: 937 pass;
+- mobile: 9,315 pass;
+- `pnpm run typecheck`.
+
 ## Grade 10 history, geography, civic and PE: teachers can make exams for them — 2026-11-13
 
 Found while checking whether the API's prompts use the new self-assessment field. They do, through the app's context: lesson explanations (`pregenerate.ts`) and every `/generate/*` route receive the grounding context as `additionalContext`.
