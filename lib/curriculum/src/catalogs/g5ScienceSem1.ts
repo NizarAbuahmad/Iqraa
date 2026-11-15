@@ -7,11 +7,19 @@
  * bilingual «المَفاهيمُ وَالمُصْطَلَحاتُ») and on every unit opener
  * («الفِكْرَةُ العامَّةُ»), same as g6ScienceSem1.
  *
- * Like g6ScienceSem1, `objectives` and `prior_knowledge` are empty
- * throughout: the student book prints no «نتاجاتُ التعلُّمِ» box and no
- * «تعلَّمْتُ سابقًا» box — unlike this same grade's math book, which does
- * print the latter. Read directly from the student book PDF with PyMuPDF,
- * not from any pdf-parse dump.
+ * `prior_knowledge` is empty throughout: the student book prints no
+ * «تعلَّمْتُ سابقًا» box — unlike this same grade's math book, which does.
+ * It prints no «نتاجاتُ التعلُّمِ» box either, so `objectives` (filled
+ * 2026-11-13) come from the TEACHER GUIDE's per-lesson outcome table (guide
+ * pp. 27, 28, 53-55, 81, 99, 119-120), read from its tesseract OCR text
+ * because the PDF is not in the repo. As in g6ScienceSem1, only the domain
+ * of the unit's own strand is carried (life / earth / physical sciences);
+ * the nature-of-science, science-technology-society and habits-of-mind
+ * domains repeat verbatim across every lesson and are left out. 31 outcomes
+ * over 10 lessons; u3_l2 is empty, and outcomes the OCR truncated or that
+ * the student book does not teach (u3_l1's mineral resources) are listed in
+ * the JSON's `known_gaps`. Everything else was read directly from the
+ * student book PDF with PyMuPDF, not from any pdf-parse dump.
  *
  * Only the eleven numbered lessons are carried, matching the printed table
  * of contents exactly: 5 units, 2+3+2+2+2 lessons. «الإثْراءُ وَالتَّوَسُّعُ»

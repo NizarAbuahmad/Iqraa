@@ -7,6 +7,15 @@
  * continuing Semester 1's 1-5 rather than restarting, exactly as the book
  * prints them — the same convention as Grade 6/7/8 science.
  *
+ * `objectives` (filled 2026-11-13) come from the teacher guide's per-lesson
+ * outcome table (guide pp. 6-7, 25-27, 49-50, 75, 96-97), read from its
+ * tesseract OCR text, on the same rule as g5ScienceSem1: only the domain of
+ * the unit's own strand, not the nature-of-science / scientific-research /
+ * science-technology-society / habits-of-mind domains that repeat across
+ * lessons. 35 outcomes, every lesson filled; the six outcomes the OCR cut off
+ * mid-sentence (u7 ×3, u9_l1 ×2, u10_l1) are listed in the JSON's
+ * `known_gaps`.
+ *
  * Note: does not import knowledgeBase (avoids circular dependency).
  */
 

@@ -5,14 +5,14 @@
  *
  * Built through `makeNccdCatalog` — see `nccdCatalog.ts`.
  *
- * NOT title-only, but unlike g7EngSem1 (12 lessons/unit per the teacher
- * guide's own lesson division), this book's internal per-page lesson
- * numbering could not be reliably reconstructed from the extracted text —
- * see the JSON's `provenance_note`. Instead each unit carries exactly two
- * lessons (Vocabulary & Grammar, Listening & Speaking), both populated with
- * real content — vocabulary lists, grammar points with the book's own
- * example sentences, and skill descriptors — taken from the student book's
- * own two-page "Scope and sequence" table (pp. 4-5), not invented.
+ * Every unit carries the book's own lessons, as the teacher's guide divides
+ * them (since 2026-11-13; until then each unit was two lessons, «Vocabulary &
+ * Grammar» and «Listening & Speaking»): Welcome back has 3, each main unit 12.
+ * `order` is the book's lesson number; the ids are not, because u*_l1 and
+ * u*_l2 were already persisted — u*_l1 is book Lesson 1 and keeps the unit's
+ * whole word list (the English corner lesson, which the Grade 5 grammar unit
+ * is keyed on), u*_l2 is Lesson 12 (Welcome back: Lesson 3), and u*_l3…l12
+ * are Lessons 2–11. See the JSON's `known_gaps`.
  *
  * `main_idea_ar`/`objectives` hold literal English text (the book's own
  * language), matching g7EngSem1's precedent for English-subject books;

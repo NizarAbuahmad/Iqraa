@@ -9,6 +9,12 @@
  * `isBrowserLessonTitleOnly`, so the UI says "title confirmed, no per-lesson
  * objectives yet" rather than rendering a lesson that merely looks empty.
  *
+ * There is no source for `objectives` on file (checked 2026-11-13): unlike
+ * Semester 2, whose lessons each end with a «نتاجات التعلم» table, this book's
+ * extracted text prints no such table (its lessons end with their numbered
+ * questions), and there is no Grade 6 Islamic teacher guide. See the JSON's
+ * `known_gaps`.
+ *
  * The lesson page does print an introductory paragraph that would serve as
  * `main_idea_ar`. It is deliberately not transcribed: pdf-parse drops the
  * assimilated lam in these books, so it cannot be quoted from the extracted

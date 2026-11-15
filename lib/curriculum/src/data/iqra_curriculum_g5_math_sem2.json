@@ -14,7 +14,7 @@
   "known_gaps": [
    "periods و total_periods فارِغَةٌ (null) لِكُلِّ الدُّروسِ وَالوَحَداتِ: عَدَدُ الحِصَصِ لا يُطْبَعُ في كِتابِ الطّالِبِ، وَدَليلا المُعَلِّمِ لِلْفَصْلِ الثّاني (g5-math-s2-teacher-guide وَ g5-math-s2-support-guide) اسْتُخْرِجا نَصًّا خامًا فَقَطْ وَلَمْ يُطابَقا مَعَ هذا الكَتالوج بَعْدُ، عَلى نَحْوِ ما جَرى لِلْفَصْلِ الأَوَّلِ.",
    "title_en لِكُلِّ وَحْدَةٍ وَدَرْسٍ تَرْجَمَةٌ، لا نَصٌّ مَطْبوعٌ.",
-   "vocabulary[].en يَحْمِلُ المُقابِلَ الإِنْجِليزِيَّ حَيْثُ يُطْبَعُهُ الكِتابُ صَراحَةً بَيْنَ قَوْسَيْنِ داخِلَ صُنْدوقِ «أَتَعَلَّمُ» (percentage، substitution، addition equation، subtraction equation، multiplication equation، division equation، angles on a straight line، polygon، equilateral triangle، isosceles triangle، scalene triangle، acute triangle، right triangle، obtuse triangle، quadrilateral، trapezoid، parallelogram، rectangle، rhombus، square، translation، three-dimensional shape، prism، pyramid، face، edge، vertex، mixed unit، compound shape، mean، median، range، event، equal chance، unequal chance)؛ وَحَيْثُ لا يُؤَكَّدُ طَبْعُهُ في المَقْطَعِ المَقْروءِ (الزَّوايا حَوْلَ نُقْطَةٍ، المُضَلَّعُ المُنْتَظِمُ، تَوْقيتُ 24 ساعَةً، المِنْوالُ، القاعِدَةُ) يَتَكَرَّرُ المُصْطَلَحُ العَرَبِيُّ، عَلى نَحْوِ ما فَعَلَ g5MathSem1.",
+   "vocabulary[].en يَحْمِلُ المُقابِلَ الإِنْجِليزِيَّ حَيْثُ يُطْبَعُهُ الكِتابُ صَراحَةً بَيْنَ قَوْسَيْنِ داخِلَ صُنْدوقِ «أَتَعَلَّمُ» (percentage، substitution، addition equation، subtraction equation، multiplication equation، division equation، angles on a straight line، polygon، equilateral triangle، isosceles triangle، scalene triangle، acute triangle، right triangle، obtuse triangle، quadrilateral، trapezoid، parallelogram، rectangle، rhombus، square، translation، three-dimensional shape، prism، pyramid، face، edge، vertex، mixed unit، compound shape، mean، median، mode، range، event، equal chance، unequal chance — وَ mode أُضيفَ في 2026-11-13 بَعْدَ رُؤْيَتِهِ مَطْبوعًا «(mode)» في ص 132)؛ وَحَيْثُ لا يُؤَكَّدُ طَبْعُهُ في المَقْطَعِ المَقْروءِ (الزَّوايا حَوْلَ نُقْطَةٍ، المُضَلَّعُ المُنْتَظِمُ، تَوْقيتُ 24 ساعَةً، القاعِدَةُ) يَتَكَرَّرُ المُصْطَلَحُ العَرَبِيُّ، عَلى نَحْوِ ما فَعَلَ g5MathSem1.",
    "main_idea_ar فارِغَةٌ لِكُلِّ الدُّروسِ: هذا الكِتابُ أَيْضًا لا يَطْبَعُ صُنْدوقَ «الفِكْرَةُ الرَّئيسَةُ» بَلْ «فِكْرَةُ الدَّرْسِ»، وَهُوَ قائِمَةُ النَّتاجاتِ نَفْسُها، فَوُضِعَتْ في objectives وَلَمْ تُكَرَّرْ هُنا، عَلى نَحْوِ ما فَعَلَ g5MathSem1.",
    "الدُّروسُ u6_l1 وَ u6_l2 وَ u6_l3 وَ u6_l4 وَ u6_l5 وَ u6_l6 وَ u6_l7 وَ u7_l4 وَ u9_l2 بِلا مُصْطَلَحاتٍ: لَمْ يُشاهَدْ صُنْدوقُ «المُصْطَلَحاتُ» عَلى صَفَحاتِ افْتِتاحِها أَوْ صَفَحاتِ الأَنْشِطَةِ المَفاهيمِيَّةِ السّابِقَةِ لَها في المَقْطَعِ المَقْروءِ؛ هذا لا يَنْفي وُجودَهُ، فَقَطْ لَمْ يُؤَكَّدْ."
   ]
@@ -451,7 +451,7 @@
      ],
      "vocabulary": [
       { "ar": "الْوَسيطُ", "en": "median" },
-      { "ar": "الْمِنْوالُ", "en": "الْمِنْوالُ" }
+      { "ar": "الْمِنْوالُ", "en": "mode" }
      ]
     },
     {

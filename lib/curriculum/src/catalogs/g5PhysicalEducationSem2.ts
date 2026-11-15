@@ -5,6 +5,15 @@
  * itself, not renumbered from 1): athletics, basketball, and a knowledge-only
  * health-concepts unit whose two lessons carry no technique boxes but do
  * carry the bilingual vocabulary box.
+ *
+ * objectives come from each lesson's printed «نَتاجاتُ التَّعَلُّمِ» box (one
+ * first-person statement per row, book wording and order; the box's
+ * عالية/متوسطة/منخفضة self-assessment columns are not carried), read from
+ * the extracted text `extracted/g5-pe-s2-student-book.json` and tied to each
+ * lesson by page (filled 2026-11-13; all 14 lessons, 56 statements). The
+ * athletics and basketball boxes end with a row pointing at the page's
+ * «قانونُ اللُّعْبَةِ» box; in unit 7 the «أَسْتَنْتِجُ…» lines after the box
+ * are activity titles and are not carried. See the JSON's known_gaps.
  */
 
 import raw from '../data/iqra_curriculum_g5_physical_education_sem2.json' with { type: 'json' };
