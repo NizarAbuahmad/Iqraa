@@ -135,6 +135,8 @@ const TABLE_MAX: Record<number, number> = { 1: 2, 2: 5, 3: 10, 4: 10, 5: 10, 6: 
 const PLACE_DIGITS: Record<number, number> = { 1: 2, 2: 3, 3: 4, 4: 6, 5: 8, 6: 7 };
 
 const TIER_SCALE: Record<DiffTier, number> = { easy: 0.1, medium: 0.5, hard: 1 };
+/** Grade 1 compares and orders two-digit numbers: 10 up to this, by tier. */
+const G1_COMPARE_MAX: Record<DiffTier, number> = { easy: 30, medium: 60, hard: 99 };
 
 export type Rng = () => number;
 export const int = (rng: Rng, lo: number, hi: number) => lo + Math.floor(rng() * (hi - lo + 1));
@@ -611,12 +613,12 @@ function divKinds(base: Base, b: number, q0: number, grade: number, diff: DiffTi
   }
 }
 
-function compareKinds(base: Base, max: number, rng: Rng): ConcreteItem {
+function compareKinds(base: Base, max: number, rng: Rng, lo = 0): ConcreteItem {
   const show = (v: number) => String(v);
   const what = { ar: 'الأعداد', one: 'العدد', en: 'numbers' };
   const k = int(rng, 1, 3);
-  if (k === 1) return orderItem(base, distinctInts(rng, 3, 0, max), show, rng() < 0.5, what);
-  if (k === 2 || max < 100) return extremeItem(base, distinctInts(rng, 4, 0, max), show, rng() < 0.5, what);
+  if (k === 1) return orderItem(base, distinctInts(rng, 3, lo, max), show, rng() < 0.5, what);
+  if (k === 2 || max < 100) return extremeItem(base, distinctInts(rng, 4, lo, max), show, rng() < 0.5, what);
   // The greatest / least number made from given digits — place value deciding order.
   const L = Math.min(4, String(max).length);
   const digits = distinctInts(rng, L, 1, 9);
@@ -1082,9 +1084,12 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'compare': {
-      if (int(rng, 0, 3) > 0) return compareKinds(base, max, rng);
-      const a = int(rng, 0, max);
-      const b = rng() < 0.15 ? a : int(rng, 0, max);
+      // Grade 1 compares and orders «ضمن منزلتين» (u2_l4, u2_l5): the add range
+      // (0–10 at easy and medium) never showed a two-digit number (review, 2026-11-15).
+      const [lo, hi] = grade === 1 ? [10, G1_COMPARE_MAX[diff]] : [0, max];
+      if (int(rng, 0, 3) > 0) return compareKinds(base, hi, rng, lo);
+      const a = int(rng, lo, hi);
+      const b = rng() < 0.15 ? a : int(rng, lo, hi);
       const sign = a > b ? '>' : a < b ? '<' : '=';
       return {
         ...base, eq: `${a} ___ ${b}`, answer: sign,
