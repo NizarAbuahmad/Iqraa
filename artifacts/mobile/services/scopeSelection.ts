@@ -13,9 +13,11 @@
  */
 import {
   getLessonsForUnit,
+  getMainUnitsForSubjectGrade,
   getUnitsForSubjectGrade,
   hasKBContent,
   KB_BOOKS,
+  trackOfUnit,
   type KBLesson,
   type KBUnit,
 } from './knowledgeBase.ts';
@@ -45,11 +47,15 @@ function semesterOf(unit: KBUnit): Semester {
 /** The units a selection covers, in book order (semester 1 first). */
 export function unitsInScope(sel: ScopeSelection): KBUnit[] {
   const units = getUnitsForSubjectGrade(sel.subjectId, sel.gradeId);
+  // A whole book or semester is the subject's own book: Grade 10 English's
+  // «الفصل الأول كاملًا» used to span its 5 units AND the four vocational
+  // tracks' 30 (`KBBook.track`). A track's unit or lesson is still pickable.
+  const main = getMainUnitsForSubjectGrade(sel.subjectId, sel.gradeId);
   switch (sel.kind) {
     case 'book':
-      return units;
+      return main;
     case 'semester':
-      return units.filter(u => semesterOf(u) === sel.semester);
+      return main.filter(u => semesterOf(u) === sel.semester);
     case 'unit':
       return units.filter(u => u.id === sel.unitId);
     case 'lesson':
@@ -66,7 +72,7 @@ export function lessonsInScope(sel: ScopeSelection): KBLesson[] {
 /** The semesters this grade+subject has a book for. */
 export function semestersAvailable(gradeId: string, subjectId: string): Semester[] {
   const seen = new Set<Semester>();
-  for (const u of getUnitsForSubjectGrade(subjectId, gradeId)) seen.add(semesterOf(u));
+  for (const u of getMainUnitsForSubjectGrade(subjectId, gradeId)) seen.add(semesterOf(u));
   return ([1, 2] as const).filter(s => seen.has(s));
 }
 
@@ -147,4 +153,33 @@ export function parseScope(raw: unknown): ScopeSelection | null {
     return null;
   }
   return lessonsInScope(sel).length > 0 ? sel : null;
+}
+
+/** One heading of the unit picker: a semester of the subject's own book, or one track's units. */
+export type UnitPickerGroup = {
+  semester: Semester;
+  /** Set for a track's group (`KBBook.track`); absent for the subject's own book. */
+  track?: { titleAr: string; titleEn: string };
+  units: KBUnit[];
+};
+
+/**
+ * The unit picker's groups: each semester of the subject's own book (S1 then
+ * S2), then each track book under its own heading. Grouping by semester alone
+ * put Grade 10 English's four vocational tracks' 30 units, unlabelled, under
+ * «الفصل الأول» next to the book's own 5.
+ */
+export function groupUnitsForPicker(units: KBUnit[]): UnitPickerGroup[] {
+  const groups: UnitPickerGroup[] = [];
+  for (const sem of [1, 2] as const) {
+    const own = units.filter(u => !trackOfUnit(u) && semesterOf(u) === sem);
+    if (own.length > 0) groups.push({ semester: sem, units: own });
+  }
+  const trackBooks: string[] = [];
+  for (const u of units) if (trackOfUnit(u) && !trackBooks.includes(u.bookId)) trackBooks.push(u.bookId);
+  for (const bookId of trackBooks) {
+    const list = units.filter(u => u.bookId === bookId);
+    groups.push({ semester: semesterOf(list[0]!), track: trackOfUnit(list[0]!), units: list });
+  }
+  return groups;
 }

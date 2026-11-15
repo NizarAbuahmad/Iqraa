@@ -10,6 +10,39 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 10 English: the vocational tracks get their own picker headings and stay out of whole-semester scopes — 2026-11-15
+
+Grade 10's four vocational-English coursebooks (commerce, agriculture, hospitality, industry) are their own KB books, but they share `subjectId: 'english'`, grade 10 and semester 1 with the English book. Read from the code and confirmed by running it:
+- **Picker.** `getUnitsForSubjectGrade('english', 'grade-10')` returns 40 units. The topic picker grouped them by semester only, so «الفصل الأول» listed the book's 5 units followed by the tracks' 30, with nothing saying which track a unit came from.
+- **Wide scopes.** `unitsInScope` built «الفصل الأول كاملًا» and «الكتاب كاملًا» from the same list, so a full-semester English paper spanned all four tracks' content.
+- **Teaching plans.** «توزيع الدروس تلقائيًا» would append the tracks' 30 lessons to an English class's term.
+
+**What changed**
+- **`KBBook.track`** (`services/knowledgeBase.ts`) marks the four books, with an Arabic and English track name.
+- **New helpers:** `trackOfUnit`, `getMainUnitsForSubjectGrade` (units without track books) and `unitTitleWithTrack`.
+- **Wide scopes** (`services/scopeSelection.ts`): `unitsInScope` for `book` and `semester`, and `semestersAvailable`, use only the subject's own book. A track's unit or lesson can still be picked on its own.
+- **Topic picker:** the new `groupUnitsForPicker` keeps each semester of the subject's own book, then gives each track its own heading, «الفصل الأول · القطاع التجاري». `TopicSelector` uses it, and a selected track unit shows its track in the picker button. The topic string sent for grounding is unchanged.
+- **Teaching plans:** auto-scheduling uses only the main book. The plan's lesson list still shows track units for dating by hand, each led by its track name.
+
+**Test:** `englishTrackScope.test.ts`, 5 cases:
+- only these four books carry a track;
+- the picker groups and their order;
+- whole-semester and whole-book scopes hold 5 and 10 units;
+- a track unit is still pickable on its own;
+- mathematics is unchanged.
+
+Its scope case fails without the change.
+
+**Verified:** mobile 9,320 pass; `pnpm run typecheck`.
+
+**Not verified:** the picker in a browser or on a phone.
+
+**«ما الجديد»:** none. It corrects how existing content is listed and scoped, and adds no feature.
+
+**Not done:**
+- No «track as a whole» scope: a teacher of the commerce track picks its units one at a time.
+- The chat's knowledge search still ranks track lessons alongside the English book's.
+
 ## English Word List: the parser stops at the list's end — no more Grammar Reference rows as vocabulary — 2026-11-15
 
 Main's Grade 10 audit (#1479) had already fixed the bigger half: the Grade 10 S1 lessons now come from the «LESSON nA» heading, not the `WL` count. What it left in place: `extract-english-vocabulary.ts` kept parsing after the Word List into the Grammar Reference and irregular-verbs pages. Those pages carry no `WL` marker, so their cells were filed under the last list's lesson as if they were words to drill: «She/It», «They must», «burned / or burnt», «understood».

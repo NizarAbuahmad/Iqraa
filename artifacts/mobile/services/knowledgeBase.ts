@@ -804,6 +804,15 @@ export interface KBBook {
   titleEn: string;
   semester: 1 | 2;
   source: string;
+  /**
+   * Set on a book that is an alternative track of its subject rather than the
+   * subject's own book — Grade 10's four vocational-English coursebooks, which
+   * share `subjectId: 'english'`, grade 10 and semester 1 with the main book.
+   * A track's units are offered under their own labelled heading and are never
+   * part of a «الفصل كاملًا» / «الكتاب كاملًا» scope or a term's auto-schedule
+   * (`getMainUnitsForSubjectGrade`), which mean the subject's own book.
+   */
+  track?: { titleAr: string; titleEn: string };
 }
 
 export interface KBUnit {
@@ -1013,6 +1022,7 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'English – Commerce Track – Grade 10 – Semester 1',
     semester: 1,
     source: "Techer's book commerce english 2.pdf (Vocational English, Level 2)",
+    track: { titleAr: 'القطاع التجاري', titleEn: 'Commerce track' },
   },
   {
     id: ENGLISH_AGRICULTURE_S1_KB_BOOK_ID,
@@ -1022,6 +1032,7 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'English – Agriculture Track – Grade 10 – Semester 1',
     semester: 1,
     source: "Techer's book agriculture english 2.pdf (Vocational English, Level 2)",
+    track: { titleAr: 'القطاع الزراعي', titleEn: 'Agriculture track' },
   },
   {
     id: ENGLISH_HOSPITALITY_S1_KB_BOOK_ID,
@@ -1031,6 +1042,7 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'English – Hospitality and Tourism Track – Grade 10 – Semester 1',
     semester: 1,
     source: "Techer's book hospitality english 2.pdf (Vocational English, Level 2)",
+    track: { titleAr: 'قطاع الضيافة والسياحة', titleEn: 'Hospitality and Tourism track' },
   },
   {
     id: ENGLISH_INDUSTRY_S1_KB_BOOK_ID,
@@ -1040,6 +1052,7 @@ export const KB_BOOKS: KBBook[] = [
     titleEn: 'English – Industrial/Technical Track – Grade 10 – Semester 1',
     semester: 1,
     source: "Techer's book technical english.pdf (Technical English, Level 1)",
+    track: { titleAr: 'القطاع الصناعي والتقني', titleEn: 'Industrial/Technical track' },
   },
   {
     id: 'kb-math-10-s1',
@@ -5043,6 +5056,27 @@ export function getUnitsForSubjectGrade(subjectId: string, gradeId: string): KBU
     );
   }
   return units;
+}
+
+/** The track a unit's book belongs to (`KBBook.track`), or undefined for a subject's own book. */
+export function trackOfUnit(unit: Pick<KBUnit, 'bookId'>): KBBook['track'] {
+  return KB_BOOKS.find(b => b.id === unit.bookId)?.track;
+}
+
+/**
+ * `getUnitsForSubjectGrade` without track books: the subject's own book(s).
+ * What a whole-semester / whole-book scope and a term's auto-schedule mean —
+ * Grade 10 English is its 10 units, not those plus four vocational tracks'.
+ */
+export function getMainUnitsForSubjectGrade(subjectId: string, gradeId: string): KBUnit[] {
+  return getUnitsForSubjectGrade(subjectId, gradeId).filter(u => !trackOfUnit(u));
+}
+
+/** A unit's title, led by its track when it belongs to one: «القطاع التجاري · Ways of working». */
+export function unitTitleWithTrack(unit: KBUnit, lang: 'ar' | 'en'): string {
+  const title = lang === 'ar' ? unit.titleAr : unit.titleEn;
+  const track = trackOfUnit(unit);
+  return track ? `${lang === 'ar' ? track.titleAr : track.titleEn} · ${title}` : title;
 }
 
 /** All KB lessons inside a single unit, ordered by their `order` field. */
