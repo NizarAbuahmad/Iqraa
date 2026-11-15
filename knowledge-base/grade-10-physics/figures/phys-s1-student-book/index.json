@@ -226,54 +226,6 @@
       "lessonStartPage": 17
     },
     {
-      "file": "p029-v2.png",
-      "sourceId": "phys-s1-student-book",
-      "pdfPage": 29,
-      "rect": [
-        57.3,
-        266.0,
-        303.0,
-        394.2
-      ],
-      "unit": 1,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 17
-    },
-    {
-      "file": "p031-v2.png",
-      "sourceId": "phys-s1-student-book",
-      "pdfPage": 31,
-      "rect": [
-        56.0,
-        70.2,
-        202.0,
-        194.0
-      ],
-      "unit": 1,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 17
-    },
-    {
-      "file": "p032b-v2.png",
-      "sourceId": "phys-s1-student-book",
-      "pdfPage": 32,
-      "rect": [
-        385.5,
-        524.8,
-        549.1,
-        709.0
-      ],
-      "unit": 1,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 17
-    },
-    {
       "file": "p045-v2.png",
       "sourceId": "phys-s1-student-book",
       "pdfPage": 45,
@@ -554,70 +506,6 @@
         323.0,
         204.3,
         569.5
-      ],
-      "unit": 2,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 67
-    },
-    {
-      "file": "p082-v2.png",
-      "sourceId": "phys-s1-student-book",
-      "pdfPage": 82,
-      "rect": [
-        381.0,
-        96.0,
-        560.2,
-        341.3
-      ],
-      "unit": 2,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 67
-    },
-    {
-      "file": "p083-v2.png",
-      "sourceId": "phys-s1-student-book",
-      "pdfPage": 83,
-      "rect": [
-        55.0,
-        414.0,
-        197.0,
-        506.7
-      ],
-      "unit": 2,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 67
-    },
-    {
-      "file": "p083b-v2.png",
-      "sourceId": "phys-s1-student-book",
-      "pdfPage": 83,
-      "rect": [
-        78.1,
-        543.8,
-        180.8,
-        667.7
-      ],
-      "unit": 2,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 67
-    },
-    {
-      "file": "p085-v2.png",
-      "sourceId": "phys-s1-student-book",
-      "pdfPage": 85,
-      "rect": [
-        51.0,
-        244.0,
-        206.0,
-        314.0
       ],
       "unit": 2,
       "lesson": 3,

@@ -482,22 +482,6 @@
    "lessonStartPage": 56
   },
   {
-   "file": "p057-v2.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 57,
-   "rect": [
-    41.3,
-    99.2,
-    425.0,
-    336.2
-   ],
-   "unit": 6,
-   "lesson": 1,
-   "lessonTitleEn": "Estimating Slope",
-   "lessonTitleAr": null,
-   "lessonStartPage": 56
-  },
-  {
    "file": "p057b.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 57,
@@ -514,14 +498,14 @@
    "lessonStartPage": 56
   },
   {
-   "file": "p058.png",
+   "file": "p058b.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 58,
    "rect": [
-    46.7,
-    60.9,
-    444.9,
-    518.8
+    435.0,
+    217.5,
+    557.1,
+    310.8
    ],
    "unit": 6,
    "lesson": 1,
@@ -658,6 +642,22 @@
    "lessonStartPage": 63
   },
   {
+   "file": "p065.png",
+   "sourceId": "math-s2-student-book",
+   "pdfPage": 65,
+   "rect": [
+    420.9,
+    359.6,
+    542.9,
+    461.1
+   ],
+   "unit": 6,
+   "lesson": 2,
+   "lessonTitleEn": "Differentiation",
+   "lessonTitleAr": null,
+   "lessonStartPage": 63
+  },
+  {
    "file": "p069.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 69,
@@ -754,54 +754,6 @@
    "lessonStartPage": 70
   },
   {
-   "file": "p076.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 76,
-   "rect": [
-    47.2,
-    476.7,
-    189.7,
-    612.8
-   ],
-   "unit": 6,
-   "lesson": 1,
-   "lessonTitleEn": "Estimating Slope",
-   "lessonTitleAr": null,
-   "lessonStartPage": 56
-  },
-  {
-   "file": "p077-v2.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 77,
-   "rect": [
-    343.1,
-    432.5,
-    544.6,
-    590.8
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Maximum and Minimum Values",
-   "lessonTitleAr": null,
-   "lessonStartPage": 70
-  },
-  {
-   "file": "p077b-v2.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 77,
-   "rect": [
-    76.0,
-    535.7,
-    240.3,
-    623.0
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Maximum and Minimum Values",
-   "lessonTitleAr": null,
-   "lessonStartPage": 70
-  },
-  {
    "file": "p081-v2.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 81,
@@ -834,14 +786,14 @@
    "lessonStartPage": 80
   },
   {
-   "file": "p084.png",
+   "file": "p082b.png",
    "sourceId": "math-s2-student-book",
-   "pdfPage": 84,
+   "pdfPage": 82,
    "rect": [
-    46.6,
-    59.0,
-    444.4,
-    497.7
+    435.0,
+    363.5,
+    557.1,
+    470.2
    ],
    "unit": 7,
    "lesson": 1,
@@ -962,20 +914,20 @@
    "lessonStartPage": 88
   },
   {
-   "file": "p091.png",
+   "file": "p096b.png",
    "sourceId": "math-s2-student-book",
-   "pdfPage": 91,
+   "pdfPage": 96,
    "rect": [
-    32.5,
-    56.7,
-    430.4,
-    514.5
+    435.0,
+    623.7,
+    557.1,
+    731.8
    ],
    "unit": 7,
-   "lesson": 2,
-   "lessonTitleEn": "Adding and Subtracting Vectors",
+   "lesson": 3,
+   "lessonTitleEn": "Scalar Product",
    "lessonTitleAr": null,
-   "lessonStartPage": 88
+   "lessonStartPage": 96
   },
   {
    "file": "p099.png",
@@ -1066,22 +1018,6 @@
     236.0,
     193.0,
     377.2
-   ],
-   "unit": 8,
-   "lesson": 2,
-   "lessonTitleEn": "Cumulative Frequency Graph",
-   "lessonTitleAr": null,
-   "lessonStartPage": 117
-  },
-  {
-   "file": "p119-v2.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 119,
-   "rect": [
-    138.7,
-    398.0,
-    384.0,
-    531.4
    ],
    "unit": 8,
    "lesson": 2,
@@ -1280,70 +1216,6 @@
    "lessonTitleEn": "Probability of Independent and Dependent Events",
    "lessonTitleAr": null,
    "lessonStartPage": 139
-  },
-  {
-   "file": "p148-v2.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 148,
-   "rect": [
-    306.2,
-    96.8,
-    553.7,
-    248.2
-   ],
-   "unit": 8,
-   "lesson": 1,
-   "lessonTitleEn": "Scatter Graphs",
-   "lessonTitleAr": null,
-   "lessonStartPage": 106
-  },
-  {
-   "file": "p149-v2.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 149,
-   "rect": [
-    70.0,
-    425.7,
-    286.6,
-    541.0
-   ],
-   "unit": 8,
-   "lesson": 4,
-   "lessonTitleEn": "Probability of Mutually Exclusive Events",
-   "lessonTitleAr": null,
-   "lessonStartPage": 131
-  },
-  {
-   "file": "p149b.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 149,
-   "rect": [
-    334.1,
-    449.0,
-    518.5,
-    617.7
-   ],
-   "unit": 8,
-   "lesson": 2,
-   "lessonTitleEn": "Cumulative Frequency Graph",
-   "lessonTitleAr": null,
-   "lessonStartPage": 117
-  },
-  {
-   "file": "p150-v2.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 150,
-   "rect": [
-    335.9,
-    406.0,
-    519.0,
-    521.0
-   ],
-   "unit": 8,
-   "lesson": 4,
-   "lessonTitleEn": "Probability of Mutually Exclusive Events",
-   "lessonTitleAr": null,
-   "lessonStartPage": 131
   }
  ]
 }

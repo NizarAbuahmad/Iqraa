@@ -1,0 +1,18 @@
+{
+ "math-s1-student-book": {
+  "pdf": "attached_assets/10th_grade,_math,_2nd_semester_1785147978008.pdf",
+  "kbBookId": "book-math-10",
+  "lessons": {
+   "kbl-math-s1-nccd-u1_l5": {
+    "start": 8,
+    "end": 15,
+    "score": 1.0
+   },
+   "kbl-math-s1-nccd-u1_lab": {
+    "start": 16,
+    "end": 17,
+    "score": 1.0
+   }
+  }
+ }
+}

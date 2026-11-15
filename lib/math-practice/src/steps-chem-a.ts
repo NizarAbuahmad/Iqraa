@@ -1413,4 +1413,262 @@ export const CHEM_A_STEPS: Record<string, SolutionSteps> = {
       'So it increases because of the greater effective nuclear charge and the smaller radius',
     ],
   },
+
+  // ── electron_shells (grade 9: energy levels, as the Grade 9 book writes them) ──
+  'ch-es-e1': {
+    ar: [
+      'عدد الإلكترونات في الذرة المتعادلة = العدد الذري = 11',
+      'المستوى الأول يتسع لإلكترونين، والمستوى الثاني لـ 8 إلكترونات',
+      'يبقى 11 − 2 − 8 = 1 إلكترون في المستوى الثالث',
+      'إذن التوزيع الإلكتروني: 2, 8, 1',
+    ],
+    en: [
+      'Electrons in the neutral atom = atomic number = 11',
+      'The first level holds 2 electrons and the second holds 8',
+      '11 − 2 − 8 = 1 electron is left for the third level',
+      'So the arrangement is 2, 8, 1',
+    ],
+  },
+  'ch-es-e2': {
+    ar: [
+      'لكل مستوى طاقة سعة محددة من الإلكترونات، وتزداد سعته بزيادة بعده عن النواة',
+      'المستوى الأول أقرب المستويات إلى النواة',
+      'إذن أقصى ما يتسع له المستوى الأول: إلكترونان',
+    ],
+    en: [
+      'Each energy level holds a set number of electrons, and the capacity grows with distance from the nucleus',
+      'The first level is the closest to the nucleus',
+      'So the first level holds at most two electrons',
+    ],
+  },
+  'ch-es-e3': {
+    ar: [
+      'أعداد التوزيع 2, 8, 3 ثلاثة أعداد، أي إن للذرة 3 مستويات طاقة مشغولة',
+      'رقم دورة العنصر يساوي عدد مستويات الطاقة المشغولة في ذرته',
+      'إذن يقع العنصر في الدورة الثالثة',
+    ],
+    en: [
+      'The arrangement 2, 8, 3 has three numbers, so the atom has 3 occupied energy levels',
+      "An element's period number equals the number of occupied energy levels in its atom",
+      'So the element is in period 3',
+    ],
+  },
+  'ch-es-e4': {
+    ar: [
+      'في المستوى الخارجي لذرات المجموعة الأولى إلكترون واحد تفقده بسهولة، فتكوّن أيونات موجبة أحادية',
+      'هذه الفلزات لامعة ولينة، وتتفاعل بشدة مع الماء مكوّنة هيدروكسيدات قلوية',
+      'إذن تُسمّى الفلزات القلوية',
+    ],
+    en: [
+      'The atoms of group 1 have one outer electron, which they lose easily to form ions of charge 1+',
+      'These metals are shiny and soft, and react strongly with water to form alkaline hydroxides',
+      'So they are called the alkali metals',
+    ],
+  },
+  'ch-es-e5': {
+    ar: [
+      'عناصر الدورة الواحدة لذراتها العدد نفسه من مستويات الطاقة',
+      'بالاتجاه إلى اليمين يزداد العدد الذري، فتزداد الشحنة الموجبة للنواة وجذبها للإلكترونات',
+      'مثلًا: ذرة الليثيوم Li أكبر ذرات الدورة الثانية حجمًا، وذرة النيون Ne أصغرها',
+      'إذن الحجم الذري يقل',
+    ],
+    en: [
+      'The atoms of one period have the same number of energy levels',
+      'Moving right, the atomic number rises, so the positive charge of the nucleus and its pull on the electrons grow',
+      'For example, lithium Li is the largest atom of period 2 and neon Ne the smallest',
+      'So atomic size decreases',
+    ],
+  },
+  'ch-es-m1': {
+    ar: [
+      'عدد الإلكترونات في الذرة المتعادلة = العدد الذري = 20',
+      'المستوى الأول 2، والثاني 8، والثالث 8، فيكون المجموع 18',
+      'يبقى 20 − 18 = 2 إلكترونان في المستوى الرابع',
+      'إذن التوزيع الإلكتروني: 2, 8, 8, 2',
+    ],
+    en: [
+      'Electrons in the neutral atom = atomic number = 20',
+      'First level 2, second 8, third 8: 18 in all',
+      '20 − 18 = 2 electrons are left for the fourth level',
+      'So the arrangement is 2, 8, 8, 2',
+    ],
+  },
+  'ch-es-m2': {
+    ar: [
+      'ذرة الكلور المتعادلة فيها 17 إلكترونًا، وتوزيعها 2, 8, 7',
+      'الشحنة 1− تعني أن الذرة اكتسبت إلكترونًا واحدًا: 17 + 1 = 18 إلكترونًا',
+      'يدخل الإلكترون المكتسب المستوى الخارجي فيصبح فيه 8 إلكترونات',
+      'إذن التوزيع الإلكتروني للأيون Cl⁻: 2, 8, 8',
+    ],
+    en: [
+      'A neutral chlorine atom has 17 electrons, arranged 2, 8, 7',
+      'The charge 1− means the atom gained one electron: 17 + 1 = 18 electrons',
+      'The gained electron goes into the outer level, which then holds 8',
+      'So the arrangement of the Cl⁻ ion is 2, 8, 8',
+    ],
+  },
+  'ch-es-m3': {
+    ar: [
+      'ذرة المغنيسيوم المتعادلة فيها 12 إلكترونًا، وتوزيعها 2, 8, 2',
+      'الشحنة 2+ تعني أن الذرة فقدت إلكترونين: 12 − 2 = 10 إلكترونات',
+      'تفقد الذرة إلكتروني مستواها الخارجي، فيبقى مستويان',
+      'إذن التوزيع الإلكتروني للأيون Mg²⁺: 2, 8',
+    ],
+    en: [
+      'A neutral magnesium atom has 12 electrons, arranged 2, 8, 2',
+      'The charge 2+ means the atom lost two electrons: 12 − 2 = 10 electrons',
+      'It loses the two electrons of its outer level, so two levels are left',
+      'So the arrangement of the Mg²⁺ ion is 2, 8',
+    ],
+  },
+  'ch-es-m4': {
+    ar: [
+      'عدد الإلكترونات في المستوى الخارجي = 6، ورقم مجموعة العنصر الممثَّل يساوي هذا العدد',
+      'عدد مستويات الطاقة المشغولة = 3، ورقم الدورة يساوي هذا العدد',
+      'إذن يقع العنصر في المجموعة السادسة (6A) والدورة الثالثة',
+    ],
+    en: [
+      'The outer level holds 6 electrons, and the group number of a representative element equals that number',
+      'There are 3 occupied energy levels, and the period number equals that number',
+      'So the element is in group 6 (6A), period 3',
+    ],
+  },
+  'ch-es-m5': {
+    ar: [
+      'الخصائص الكيميائية للعنصر تعتمد على إلكترونات المستوى الخارجي لذرته، فهي التي تُفقَد أو تُكتسَب في التفاعل',
+      'مثلًا: Li: 2, 1 و Na: 2, 8, 1 و K: 2, 8, 8, 1 في المستوى الخارجي لكل منها إلكترون واحد',
+      'إذن تتشابه لأن لذراتها العدد نفسه من الإلكترونات في المستوى الخارجي',
+    ],
+    en: [
+      "An element's chemical properties depend on the outer electrons of its atom, the ones lost or gained in a reaction",
+      'For example Li: 2, 1, Na: 2, 8, 1 and K: 2, 8, 8, 1 each have one outer electron',
+      'So they are alike because their atoms have the same number of electrons in the outer level',
+    ],
+  },
+  'ch-es-m6': {
+    ar: [
+      'الليثيوم والنيون في الدورة الثانية، فلذرتيهما مستويا طاقة',
+      'في الدورة الواحدة يقل الحجم الذري بالاتجاه من اليسار إلى اليمين',
+      'الليثيوم (العدد الذري 3) على يسار الدورة، والنيون (العدد الذري 10) على يمينها',
+      'إذن الأكبر حجمًا: ذرة الليثيوم Li',
+    ],
+    en: [
+      'Lithium and neon are in period 2, so both atoms have two energy levels',
+      'Across a period atomic size decreases from left to right',
+      'Lithium (atomic number 3) is on the left of the period and neon (atomic number 10) on the right',
+      'So the larger atom is lithium, Li',
+    ],
+  },
+  'ch-es-h1': {
+    ar: [
+      'Na: 2, 8, 1 و K: 2, 8, 8, 1، في المستوى الخارجي لكل منهما إلكترون واحد',
+      'البوتاسيوم أسفل الصوديوم في المجموعة الأولى، فلذرته مستوى طاقة إضافي وحجمها أكبر',
+      'نشاط الفلز يعتمد على فقده الإلكترونات، والإلكترون الأبعد عن النواة أسهل فقدًا',
+      'إذن الأنشط: K، لأن ذرته أكبر حجمًا فيسهل فقد إلكترون مستواها الخارجي',
+    ],
+    en: [
+      'Na: 2, 8, 1 and K: 2, 8, 8, 1 each have one outer electron',
+      'Potassium is below sodium in group 1, so its atom has one more energy level and is larger',
+      "A metal's reactivity depends on losing electrons, and an electron further from the nucleus is easier to lose",
+      'So K is more reactive, because its atom is larger and its outer electron is lost more easily',
+    ],
+  },
+  'ch-es-h2': {
+    ar: [
+      'F: 2, 7 و Cl: 2, 8, 7، في المستوى الخارجي لكل منهما 7 إلكترونات',
+      'الفلور أعلى الكلور في المجموعة السابعة، فذرته أصغر حجمًا',
+      'نشاط اللافلز يعتمد على اكتسابه الإلكترونات، والذرة الأصغر تجذب الإلكترونات بسهولة أكبر',
+      'إذن الأنشط: F، لأن ذرته أصغر حجمًا فيسهل عليها اكتساب الإلكترونات',
+    ],
+    en: [
+      'F: 2, 7 and Cl: 2, 8, 7 each have 7 outer electrons',
+      'Fluorine is above chlorine in group 7, so its atom is smaller',
+      "A non-metal's reactivity depends on gaining electrons, and a smaller atom attracts electrons more easily",
+      'So F is more reactive, because its atom is smaller and gains electrons more easily',
+    ],
+  },
+  'ch-es-h3': {
+    ar: [
+      'في المستوى الخارجي للأرجون 8 إلكترونات، وهو العدد الذي يمتلئ به هذا المستوى',
+      'الذرة التي امتلأ مستواها الخارجي لا تميل إلى فقد الإلكترونات أو اكتسابها',
+      'لذلك يُعد الأرجون من الغازات النبيلة في المجموعة الثامنة',
+      'إذن لا يتفاعل بسهولة لأن مستواه الخارجي ممتلئ بالإلكترونات',
+    ],
+    en: [
+      "Argon's outer level holds 8 electrons, the number that fills it",
+      'An atom whose outer level is full does not tend to lose or gain electrons',
+      'That is why argon is one of the noble gases of group 8',
+      'So it does not react easily, because its outer level is full of electrons',
+    ],
+  },
+  'ch-es-h4': {
+    ar: [
+      'عدد الإلكترونات = 19، والتوزيع: 2, 8, 8, 1',
+      'في المستوى الخارجي إلكترون واحد، فالعنصر في المجموعة الأولى (فلز قلوي)',
+      'يفقد هذا الإلكترون بسهولة في تفاعلاته، فتصبح شحنته 1+',
+      'إذن يقع في المجموعة الأولى، ويكوّن أيونًا موجبًا أحاديًا X⁺',
+    ],
+    en: [
+      'Number of electrons = 19, arranged 2, 8, 8, 1',
+      'The outer level has one electron, so the element is in group 1 (an alkali metal)',
+      'It loses that electron easily in its reactions, so its charge becomes 1+',
+      'So it is in group 1, and it forms a singly charged positive ion, X⁺',
+    ],
+  },
+
+  // ── atom_basics: the atomic models (grade 9) ──
+  'ch-ab-e6': {
+    ar: [
+      'في أنبوب التفريغ الكهربائي تنطلق أشعة من المهبط (القطب السالب)',
+      'تنحرف هذه الأشعة مبتعدة عن القطب السالب للمجال الكهربائي، فهي سالبة الشحنة',
+      'ولا تتغير خصائصها بتغيّر نوع المهبط أو الغاز، فهي موجودة في ذرات العناصر جميعها',
+      'إذن تتكون الأشعة المهبطية من الإلكترونات',
+    ],
+    en: [
+      'In a discharge tube, rays leave the cathode (the negative electrode)',
+      'They are deflected away from the negative plate of an electric field, so they are negatively charged',
+      'Their properties do not change with the cathode metal or the gas, so they are in the atoms of every element',
+      'So cathode rays are made of electrons',
+    ],
+  },
+  'ch-ab-m7': {
+    ar: [
+      'أثبت ثومسون وجود جسيمات سالبة الشحنة (الإلكترونات) في الذرات',
+      'الذرة متعادلة كهربائيًا، فلا بد من شحنات موجبة تعادل الشحنات السالبة',
+      'إذن يصف نموذج ثومسون الذرة بأنها كرة متجانسة من الشحنات الموجبة غُرست فيها إلكترونات سالبة',
+    ],
+    en: [
+      'Thomson showed that atoms contain negatively charged particles, electrons',
+      'An atom is electrically neutral, so positive charge must balance the negative',
+      "So Thomson's model describes the atom as a uniform sphere of positive charge with negative electrons set in it",
+    ],
+  },
+  'ch-ab-m8': {
+    ar: [
+      'أطلق رذرفورد جسيمات ألفا الموجبة نحو صفيحة رقيقة من الذهب',
+      'لو كانت الذرة مصمتة لاعترضت مسار الجسيمات',
+      'نفاذ معظمها دون انحراف يعني أنها لم تصطدم بشيء في معظم الذرة',
+      'إذن استنتج أن معظم حجم الذرة فراغ',
+    ],
+    en: [
+      'Rutherford fired positive alpha particles at a thin gold foil',
+      'A solid atom would have blocked their path',
+      'Most passing straight through means they met nothing in most of the atom',
+      'So he concluded that most of the volume of an atom is empty space',
+    ],
+  },
+  'ch-ab-h5': {
+    ar: [
+      'جسيمات ألفا موجبة الشحنة وكتلتها كبيرة نسبيًا، فلا يردّها إلا شيء موجب كثيف الكتلة',
+      'انحراف عدد قليل منها يدل على وجود نواة موجبة تنافرت معها',
+      'وارتداد عدد قليل جدًا يدل على أن هذه النواة صغيرة جدًا، فلا يصيبها إلا القليل',
+      'إذن استنتج أن للذرة نواة موجبة صغيرة جدًا تتركز فيها كتلتها',
+    ],
+    en: [
+      'Alpha particles are positive and relatively heavy, so only something positive and dense could turn them back',
+      'A few being deflected shows a positive nucleus that repelled them',
+      'Very few bouncing back shows that this nucleus is very small, so few particles hit it',
+      'So he concluded that the nucleus of the atom is positive, very small, and holds the mass of the atom',
+    ],
+  },
 };

@@ -48,3 +48,15 @@ export function previewCount(cols: 1 | 2 | 3, visual: boolean): number {
   if (cols === 1) return visual ? 3 : 4;
   return visual ? cols : cols * 2;
 }
+
+/**
+ * Grades in the order a chip row shows them: highest first, by level. The
+ * catalog's own order (`MVP_GRADE_IDS`) is append-only, because pickers persist
+ * bare positions into it, so Grade 1 was appended after Grade 3 and before
+ * Grade 2 — the library's chips read «…الثالث، الأول، الثاني». The library
+ * holds its grade by id, never by position, so it may sort for display.
+ * Returns a new array; the input is left as it is.
+ */
+export function gradesForChips<T extends { level: number }>(grades: readonly T[]): T[] {
+  return [...grades].sort((a, b) => b.level - a.level);
+}

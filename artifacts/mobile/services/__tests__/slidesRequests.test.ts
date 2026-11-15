@@ -237,8 +237,11 @@ describe('slides lesson fields — the lesson the teacher picked, not its title'
       assert.match(fields.additionalContext ?? '', /📚 Lesson:/);
       if (generatorLessonId(lesson.titleEn, 'en') !== lesson.id) titleWouldDrift += 1;
     }
-    // The trap this guards: the title alone lands somewhere else.
-    assert.ok(titleWouldDrift >= 19, `${titleWouldDrift}`);
+    // The trap this guards: the title alone lands somewhere else. 18, not 19,
+    // since 2026-11-13: «Vocabulary» (u0_l1) used to land on Grade 9 S1 u2_l2,
+    // a bare "Vocabulary" the book titles «Vocabulary: Education» — fixed, so
+    // that one title now finds itself. The other 18 still drift.
+    assert.ok(titleWouldDrift >= 18, `${titleWouldDrift}`);
   });
 
   it('reopens a saved deck on the lesson it was saved for', () => {

@@ -50,38 +50,6 @@
       "lessonStartPage": 15
     },
     {
-      "file": "p030b.png",
-      "sourceId": "g9-earth-science-s2-student-book",
-      "pdfPage": 30,
-      "rect": [
-        90.3,
-        348.6,
-        306.1,
-        512.2
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 15
-    },
-    {
-      "file": "p030c-v2.png",
-      "sourceId": "g9-earth-science-s2-student-book",
-      "pdfPage": 30,
-      "rect": [
-        335.0,
-        526.5,
-        558.7,
-        665.0
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 15
-    },
-    {
       "file": "p035.png",
       "sourceId": "g9-earth-science-s2-student-book",
       "pdfPage": 35,

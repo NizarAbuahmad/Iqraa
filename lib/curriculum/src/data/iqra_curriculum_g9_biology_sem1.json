@@ -7,7 +7,7 @@
     "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
     "semester_covered": 1,
     "schema_version": "1.0",
-    "provenance_note": "نُقلت الوحدتان ودروسُهما الخمسةُ من كتاب الطالب (sourceId: g9-biology-s1-student-book) في 2026-09-08. الوحدةُ من صفحةِ افتتاحِها (ص 7 و29)، والدرسُ من صفحةِ افتتاحِه (ص 10 و17 و32 و49 و57). عناوينُ الدروسِ الإنجليزيةُ مطبوعةٌ في الكتابِ ومنقولةٌ عنه لا مترجَمةٌ.",
+    "provenance_note": "نُقلت الوحدتان ودروسُهما الخمسةُ من كتاب الطالب (sourceId: g9-biology-s1-student-book) في 2026-09-08. الوحدةُ من صفحةِ افتتاحِها (ص 7 و29)، والدرسُ من صفحةِ افتتاحِه (ص 10 و17 و32 و49 و57). «الفكرةُ العامّةُ» للوحدةِ (general_idea_ar) منقولةٌ من الصفحةِ التي تلي صفحةَ الافتتاحِ (ص 8 و30) حيثُ يطبعُها الكتابُ بهذا العنوانِ، لا من فقرةِ «أتأمَّلُ الصورةَ» على صفحةِ الافتتاحِ. عناوينُ الدروسِ الإنجليزيةُ مطبوعةٌ في الكتابِ ومنقولةٌ عنه لا مترجَمةٌ.",
     "source_books": {
       "student_book": "كتاب الطالب - العلوم الحياتية - الصف التاسع - الفصل الدراسي الأول - المركز الوطني لتطوير المناهج والتقويم (sourceId: g9-biology-s1-student-book، 72 صفحة)"
     },
@@ -23,7 +23,7 @@
       "number": 1,
       "title_ar": "دراسةُ الحياةِ",
       "title_en": "The Study of Life",
-      "general_idea_ar": "يسعى الإنسانُ دائمًا إلى اكتشافِ أسرارِ الحياةِ، ويُوظِّفُ أدواتِ التكنولوجيا وأجهزتَها في عملياتِ البحثِ والاستقصاءِ العلميِّ. فمــا العلومُ التي تُعْنى بــدراسةِ الحياةِ على سطحِ الأرضِ؟ كيفَ تُسهِمُ هذهِ العلومُ في خدمةِ البشريةِ وتقدُّمِها؟",
+      "general_idea_ar": "تُقدِّمُ العلومُ الحياتيةُ كثيرًا منَ المعرفةِ العلميةِ التي تُسهِمُ في تحسينِ مناحي حياةِ الإنسانِ كلِّها، والمحافظةِ على صحتِهِ باتِّباعِ المنهجيةِ العلميةِ القائمةِ على الاستقصاءِ والبحثِ العلميِّ.",
       "total_periods": null,
       "data_tier": "lesson-level (student book only: main idea, learning outcomes and bilingual vocabulary printed per lesson opener; no teacher guide on disk for this semester, so no periods)",
       "prior_knowledge": [],
@@ -78,7 +78,7 @@
       "number": 2,
       "title_ar": "الخليةُ وعملياتُها الحيويةُ",
       "title_en": "The Cell and its Biological Processes",
-      "general_idea_ar": "الخليةُ سرُّ الحياةِ، فما هي الخليةُ؟ وما تركيبُها؟ وما أهمُّ العملياتِ الحيويةِ التي تحدثُ فيها؟",
+      "general_idea_ar": "تتكوَّنُ أجسامُ الكائناتِ الحيَّةِ منْ خلايا تحوي عُضَيّاتٍ وتراكيبَ، وتتولّى أداءَ العملياتِ الحيويةِ.",
       "total_periods": null,
       "data_tier": "lesson-level (student book only: main idea, learning outcomes and bilingual vocabulary printed per lesson opener; no teacher guide on disk for this semester, so no periods)",
       "prior_knowledge": [],

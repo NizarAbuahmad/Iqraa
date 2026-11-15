@@ -258,6 +258,54 @@
       "lessonStartPage": 65
     },
     {
+      "file": "p071.png",
+      "sourceId": "g4-social-s1-student-book",
+      "pdfPage": 71,
+      "rect": [
+        3.4,
+        448.9,
+        591.9,
+        746.5
+      ],
+      "unit": 4,
+      "lesson": 4,
+      "lessonTitleEn": "Human Activities and Their Effect on the Environment",
+      "lessonTitleAr": "الأَنْشِطَةُ البَشَرِيَّةُ وَأَثَرُها في البيئَةِ",
+      "lessonStartPage": 71
+    },
+    {
+      "file": "p072.png",
+      "sourceId": "g4-social-s1-student-book",
+      "pdfPage": 72,
+      "rect": [
+        49.3,
+        51.0,
+        547.7,
+        195.6
+      ],
+      "unit": 4,
+      "lesson": 4,
+      "lessonTitleEn": "Human Activities and Their Effect on the Environment",
+      "lessonTitleAr": "الأَنْشِطَةُ البَشَرِيَّةُ وَأَثَرُها في البيئَةِ",
+      "lessonStartPage": 71
+    },
+    {
+      "file": "p072b.png",
+      "sourceId": "g4-social-s1-student-book",
+      "pdfPage": 72,
+      "rect": [
+        3.4,
+        535.7,
+        591.9,
+        746.5
+      ],
+      "unit": 4,
+      "lesson": 4,
+      "lessonTitleEn": "Human Activities and Their Effect on the Environment",
+      "lessonTitleAr": "الأَنْشِطَةُ البَشَرِيَّةُ وَأَثَرُها في البيئَةِ",
+      "lessonStartPage": 71
+    },
+    {
       "file": "p073-v2.png",
       "sourceId": "g4-social-s1-student-book",
       "pdfPage": 73,
@@ -272,6 +320,70 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 71
+    },
+    {
+      "file": "p076.png",
+      "sourceId": "g4-social-s1-student-book",
+      "pdfPage": 76,
+      "rect": [
+        52.7,
+        62.9,
+        546.0,
+        387.7
+      ],
+      "unit": 4,
+      "lesson": 5,
+      "lessonTitleEn": "Wildlife in Jordan",
+      "lessonTitleAr": "الحَياةُ البَرِّيَّةُ في الأُرْدُنِّ",
+      "lessonStartPage": 75
+    },
+    {
+      "file": "p076b.png",
+      "sourceId": "g4-social-s1-student-book",
+      "pdfPage": 76,
+      "rect": [
+        52.7,
+        443.8,
+        527.3,
+        663.2
+      ],
+      "unit": 4,
+      "lesson": 5,
+      "lessonTitleEn": "Wildlife in Jordan",
+      "lessonTitleAr": "الحَياةُ البَرِّيَّةُ في الأُرْدُنِّ",
+      "lessonStartPage": 75
+    },
+    {
+      "file": "p077.png",
+      "sourceId": "g4-social-s1-student-book",
+      "pdfPage": 77,
+      "rect": [
+        3.4,
+        51.0,
+        544.3,
+        746.5
+      ],
+      "unit": 4,
+      "lesson": 5,
+      "lessonTitleEn": "Wildlife in Jordan",
+      "lessonTitleAr": "الحَياةُ البَرِّيَّةُ في الأُرْدُنِّ",
+      "lessonStartPage": 75
+    },
+    {
+      "file": "p078.png",
+      "sourceId": "g4-social-s1-student-book",
+      "pdfPage": 78,
+      "rect": [
+        49.3,
+        51.0,
+        544.3,
+        268.7
+      ],
+      "unit": 4,
+      "lesson": 5,
+      "lessonTitleEn": "Wildlife in Jordan",
+      "lessonTitleAr": "الحَياةُ البَرِّيَّةُ في الأُرْدُنِّ",
+      "lessonStartPage": 75
     }
   ]
 }

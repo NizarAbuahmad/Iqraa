@@ -178,22 +178,6 @@
       "lessonStartPage": 68
     },
     {
-      "file": "p077-v2.png",
-      "sourceId": "geo-s2-student-book",
-      "pdfPage": 77,
-      "rect": [
-        39.0,
-        353.7,
-        300.9,
-        617.2
-      ],
-      "unit": 3,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": "قاّرُّةُ أوقيانوسيا",
-      "lessonStartPage": 77
-    },
-    {
       "file": "p078-v2.png",
       "sourceId": "geo-s2-student-book",
       "pdfPage": 78,
@@ -234,6 +218,22 @@
         184.7,
         556.2,
         519.3
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": null,
+      "lessonTitleAr": "قاّرُّةُ أوقيانوسيا",
+      "lessonStartPage": 77
+    },
+    {
+      "file": "p086-v2.png",
+      "sourceId": "geo-s2-student-book",
+      "pdfPage": 86,
+      "rect": [
+        0.0,
+        0.0,
+        545.0,
+        357.2
       ],
       "unit": 3,
       "lesson": 3,

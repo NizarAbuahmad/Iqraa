@@ -2,6 +2,102 @@
   "sourceId": "g4-social-s2-student-book",
   "figures": [
     {
+      "file": "p008.png",
+      "sourceId": "g4-social-s2-student-book",
+      "pdfPage": 8,
+      "rect": [
+        3.4,
+        571.4,
+        591.9,
+        746.5
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "Character Building",
+      "lessonTitleAr": "بِناءُ الشَخْصِيَّةِ",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p009.png",
+      "sourceId": "g4-social-s2-student-book",
+      "pdfPage": 9,
+      "rect": [
+        3.4,
+        195.6,
+        238.1,
+        352.0
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "Character Building",
+      "lessonTitleAr": "بِناءُ الشَخْصِيَّةِ",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p009b.png",
+      "sourceId": "g4-social-s2-student-book",
+      "pdfPage": 9,
+      "rect": [
+        224.5,
+        545.9,
+        358.9,
+        727.8
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "Character Building",
+      "lessonTitleAr": "بِناءُ الشَخْصِيَّةِ",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p009c.png",
+      "sourceId": "g4-social-s2-student-book",
+      "pdfPage": 9,
+      "rect": [
+        3.4,
+        557.8,
+        132.7,
+        746.5
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "Character Building",
+      "lessonTitleAr": "بِناءُ الشَخْصِيَّةِ",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p010.png",
+      "sourceId": "g4-social-s2-student-book",
+      "pdfPage": 10,
+      "rect": [
+        62.9,
+        66.3,
+        326.6,
+        217.7
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "Character Building",
+      "lessonTitleAr": "بِناءُ الشَخْصِيَّةِ",
+      "lessonStartPage": 8
+    },
+    {
+      "file": "p011.png",
+      "sourceId": "g4-social-s2-student-book",
+      "pdfPage": 11,
+      "rect": [
+        56.1,
+        147.9,
+        227.9,
+        294.2
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "Character Building",
+      "lessonTitleAr": "بِناءُ الشَخْصِيَّةِ",
+      "lessonStartPage": 8
+    },
+    {
       "file": "p015-v2.png",
       "sourceId": "g4-social-s2-student-book",
       "pdfPage": 15,
@@ -842,22 +938,6 @@
         503.5,
         516.5,
         657.5
-      ],
-      "unit": 3,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 62
-    },
-    {
-      "file": "p066.png",
-      "sourceId": "g4-social-s2-student-book",
-      "pdfPage": 66,
-      "rect": [
-        237.7,
-        176.4,
-        408.4,
-        347.1
       ],
       "unit": 3,
       "lesson": 3,

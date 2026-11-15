@@ -194,22 +194,6 @@
       "lessonStartPage": 39
     },
     {
-      "file": "p051b-v2.png",
-      "sourceId": "g3-science-s2-student-book",
-      "pdfPage": 51,
-      "rect": [
-        80.0,
-        184.2,
-        547.0,
-        383.0
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 39
-    },
-    {
       "file": "p055-v2.png",
       "sourceId": "g3-science-s2-student-book",
       "pdfPage": 55,

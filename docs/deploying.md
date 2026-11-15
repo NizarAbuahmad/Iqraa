@@ -1100,8 +1100,9 @@ paths are `workflow_dispatch`-only:
   anything.
 
 Either way you get an APK and an AAB as downloadable run artifacts, not a
-store listing — getting from there into Google Play is a separate, manual
-process:
+store listing. An EAS production build can then be sent to Play's production
+track by `mobile-submit.yml` (see *Submitting to Google Play* below); the
+first-time Play setup is manual:
 
 1. **Finish the Play Console developer account** (Account → verify phone
    number, identity) if not already done — a one-time gate before anything
@@ -1125,6 +1126,56 @@ process:
    not against intent; it's checked against real behavior.
 6. Move Internal → Closed → Production testing tracks the same way, then
    submit for review.
+
+### Submitting to Google Play
+
+`.github/workflows/mobile-submit.yml` (manual, `workflow_dispatch`) hands a
+finished EAS **production** build to Play's production track with `eas submit`,
+so a release is no longer a download and a hand upload. It takes the build id
+from the summary of the `mobile-build.yml` run that made the bundle, and refuses
+anything that is not a finished production Android `.aab`.
+
+```bash
+gh workflow run mobile-submit.yml -f build_id=<EAS build id> -f send_for_review=false
+```
+
+- `send_for_review=false` (default): a **draft** release on the production
+  track. Then Play Console → *Publishing overview* → *Send changes for review*.
+  Use this whenever the store listing has edits drafted in the Console: they
+  live there, not in this repo, and go out with a review sent from there.
+- `send_for_review=true`: the release is committed as `completed` and Play
+  sends it for review straight away (or holds it in Publishing overview if
+  managed publishing is on). Only when no listing change is waiting.
+
+The version code needs nothing: `eas.json`'s production build profile has
+`autoIncrement` with `appVersionSource: "remote"`.
+
+**One-time setup: the `PLAY_SERVICE_ACCOUNT_JSON` secret.** Until it exists the
+workflow fails at its first step and sends nothing.
+
+1. Google Cloud console, in any project you own (`iqraa-auth-507315` is fine):
+   enable the **Google Play Android Developer API**, then *IAM & Admin →
+   Service accounts → Create service account* (no Cloud roles needed). On it,
+   *Keys → Add key → JSON*; a `.json` file downloads.
+2. Play Console → *Users and permissions → Invite new users*: the service
+   account's email. Give it, for this app only, *Release to production, exclude
+   devices, and use Play App Signing* and *Release apps to testing tracks*. It
+   needs no store-listing or financial rights.
+3. GitHub → this repo → *Settings → Secrets and variables → Actions → New
+   repository secret*: name `PLAY_SERVICE_ACCOUNT_JSON`, value the whole JSON
+   file. Then delete the downloaded file. The repo is public: never commit the
+   key, paste it in a PR or an issue, or put it in `.env`.
+
+The job writes the key to `artifacts/mobile/.play-service-account.json` (the
+path `eas.json`'s two submit profiles name; gitignored and easignored by the
+`*-service-account*.json` rule), never prints it, and deletes it in an `always()`
+step. `eas submit` passes it to Expo's submission service, the same service the
+EAS builds already trust with the signing key. To revoke: delete the key in
+Google Cloud (and the user in Play Console); the secret then stops working.
+
+Not yet verified (written 2026-11-13, before the first run): that Play accepts
+an API commit while the Console holds a drafted listing change (`false` avoids
+the question), and that a key on EAS's servers is not also required.
 
 ## Schema
 

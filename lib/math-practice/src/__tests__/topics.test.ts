@@ -11,6 +11,7 @@ import { ALGEBRA_TOPICS } from '../algebra.ts';
 import { GEOMETRY_TOPICS } from '../geometry.ts';
 import { STATS_TOPICS } from '../stats.ts';
 import { PROPORTION_TOPICS } from '../proportion.ts';
+import { G5_TOPICS } from '../g5.ts';
 import { mathBankCovers, takeElementaryMath, type DiffTier } from '../index.ts';
 import type { ConcreteItem } from '../index.ts';
 
@@ -42,7 +43,7 @@ function draws(id: string, n = 150): Array<{ item: ConcreteItem; grade: number; 
 
 const nums = (s: string) => (s.match(/\d+/g) ?? []).map(Number);
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
-const toJs = (eq: string) => eq.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/(\d+)²/g, '($1**2)');
+const toJs = (eq: string) => eq.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/(\d+)²/g, '($1**2)').replace(/√(\d+)/g, 'Math.sqrt($1)');
 const num = (s: string) => Number(s.replace('−', '-'));
 
 /** Value of «−3/4», «3 2/5», «35%», «0.75», «12»; null for anything else. */
@@ -59,8 +60,8 @@ function value(s: string): number | null {
 }
 
 describe('every generator, every grade, every tier', () => {
-  // algebra, geometry, stats and proportion have their own shape tests (some answers have fewer than three wrong options)
-  const OWN = new Set([...ALGEBRA_TOPICS, ...GEOMETRY_TOPICS, ...STATS_TOPICS, ...PROPORTION_TOPICS].map(t => t.id));
+  // algebra, geometry, stats, proportion and Grade 5 have their own shape tests (some answers have fewer than three wrong options)
+  const OWN = new Set([...ALGEBRA_TOPICS, ...GEOMETRY_TOPICS, ...STATS_TOPICS, ...PROPORTION_TOPICS, ...G5_TOPICS].map(t => t.id));
   for (const t of TOPICS.filter(t => !OWN.has(t.id))) {
     it(`${t.id}: well-formed items with three distinct wrong options`, () => {
       for (const { item, grade, diff } of draws(t.id, 240)) {
@@ -113,7 +114,7 @@ const toSup = (n: number) => [...String(n)].map(c => SUPS[Number(c)]).join('');
 const js = (expr: string) => Function(`return ${toJs(expr)}`)() as number;
 /** The slip: every operation strictly from left to right. */
 function leftToRight(expr: string): number {
-  const t = expr.replace(/[()]/g, '').split(' ').map(x => (x.endsWith('²') ? Number(x.slice(0, -1)) ** 2 : x));
+  const t = expr.replace(/[()]/g, '').split(' ').map(x => (x.endsWith('²') ? Number(x.slice(0, -1)) ** 2 : x.startsWith('√') ? Math.sqrt(Number(x.slice(1))) : x));
   let v = Number(t[0]);
   for (let i = 1; i < t.length; i += 2) {
     const r = Number(t[i + 1]);
@@ -444,6 +445,11 @@ describe('answers recomputed from the stem', () => {
       if (has(p, 'أوجد مربع العدد')) { kinds.add('square'); assert.equal(ans, x! ** 2, p); }
       else if (has(p, '√')) { kinds.add('root'); assert.equal(ans ** 2, x, p); }
       else if (has(p, '∛')) { kinds.add('cube'); assert.equal(ans ** 3, x, p); }
+      else if (has(p, 'مكعب حجمه')) { kinds.add('cube edge'); assert.equal(ans ** 3, x, p); }
+      else if (has(p, 'مكعب كامل')) {
+        kinds.add('perfect cube');
+        for (const o of listOf(p)) assert.equal(Number.isInteger(Math.round(Math.cbrt(Number(o)) * 1e9) / 1e9), o === item.answer, `${p}: ${o}`);
+      }
       else if (has(p, '³')) { kinds.add('cube'); assert.equal(ans, x! ** 3, p); }
       else if (has(p, 'ما طول ضلعها')) { kinds.add('side'); assert.equal(ans ** 2, x, p); }
       else if (has(p, 'ما مساحته')) { kinds.add('area'); assert.equal(ans, x! ** 2, p); }
@@ -452,7 +458,41 @@ describe('answers recomputed from the stem', () => {
         for (const o of listOf(p)) assert.equal(Number.isInteger(Math.sqrt(Number(o))), o === item.answer, `${p}: ${o}`);
       } else assert.fail(`unknown stem: ${p}`);
     }
-    assert.equal(kinds.size, 6, [...kinds].join());
+    assert.equal(kinds.size, 8, [...kinds].join());
+  });
+
+  it('Grade 6 «الجذر التربيعي والجذر التكعيبي» asks a cube about half the time (it was one in five)', () => {
+    const t = topicFor('الجَذْرُ التَّرْبيعيُّ وَالجَذْرُ التَّكْعيبيُّ', 6)!;
+    assert.equal(t.id, 'squares');
+    let cubes = 0;
+    for (let i = 0; i < 400; i++) if (/∛|³|مكعب/.test(makeTopicItem(t, 6, TIERS[i % 3]!, new Set(), seeded(i + 7)).promptAr!)) cubes++;
+    assert.ok(cubes >= 160 && cubes <= 240, `cubes in 400: ${cubes}`);
+    for (let i = 0; i < 200; i++) assert.ok(!/∛|³|مكعب/.test(makeTopicItem(t, 5, TIERS[i % 3]!, new Set(), seeded(i + 7)).promptAr!), 'Grade 5 has no cubes');
+  });
+
+  it('Grade 6 «النسبة المئوية من عدد»: every item is a percent of something, and the key is p% of it', () => {
+    const title = 'النِّسْبَةُ المِئَويَّةُ مِنْ عَدَدٍ';
+    assert.equal(topicFor(title, 6)?.id, 'pct_of_g6');
+    assert.ok(mathBankCovers(title, null, 6));
+    assert.equal(topicFor(title, 5), null);
+    const kinds = new Set<string>();
+    for (const { item } of draws('pct_of_g6', 300)) {
+      const p = item.promptAr!;
+      const pct = Number(p.match(/(\d+)%/)![1]);
+      const whole = Number(p.match(/(\d+)(?:kg|L|m| دينار| دنانير| طالب| طلاب|\.)/)![1]);
+      assert.ok(whole >= 20, `too small a whole: ${p}`);
+      const part = (pct * whole) / 100;
+      assert.ok(Number.isInteger(part), p);
+      let want = part;
+      if (has(p, 'بعد الخصم')) { kinds.add('after'); want = whole - part; }
+      else if (has(p, 'قيمة الخصم')) kinds.add('discount');
+      else if (has(p, 'النادي')) kinds.add('people');
+      else if (/kg|L|m/.test(p)) kinds.add('quantity');
+      else { kinds.add('number'); assert.ok(p.startsWith('أوجد'), p); }
+      assert.equal(Number(item.answer), want, p);
+      assert.ok(!/[٪]|على صورة|شبكة/.test(p), `not a percent of something: ${p}`);
+    }
+    assert.deepEqual([...kinds].sort(), ['after', 'discount', 'number', 'people', 'quantity']);
   });
 
   it('powers: as a power, its value, as repeated multiplication, a number as a power of a base', () => {
@@ -516,6 +556,48 @@ describe('answers recomputed from the stem', () => {
       }
     }
     assert.equal(kinds.size, 3, [...kinds].join());
+  });
+
+  it('Grade 6 order of operations names powers and roots on a medium paper (Grade 6 audit, 2026-11-14)', () => {
+    // The outcome is «مقادير عددية تحوي قوى وجذورًا»; powers came only on hard and roots never.
+    const t = topic('order_ops');
+    let pow = 0, root = 0;
+    for (let i = 0; i < 300; i++) {
+      const p = makeTopicItem(t, 6, 'medium', new Set(), seeded(i * 104729 + 7)).promptAr!;
+      if (p.includes('²')) pow++;
+      if (p.includes('√')) root++;
+    }
+    assert.ok(pow > 20 && root > 20, `powers ${pow}, roots ${root}`);
+    for (let i = 0; i < 300; i++) {
+      const p = makeTopicItem(t, 5, (['easy', 'medium', 'hard'] as const)[i % 3], new Set(), seeded(i * 104729 + 7)).promptAr!;
+      assert.ok(!/[²√]/.test(p), `Grade 5 drew a power or root: ${p}`);
+    }
+  });
+
+  it('Grade 7 counted nouns agree with their numbers (Grade 7 audit, 2026-11-14)', () => {
+    // «تكررت العملية 8 مرة» and «بين أشخاص بنسبة 1 : 3» were printed («في 2 ساعات» is fixed and pinned elsewhere).
+    for (const { item } of draws('unit_rate', 600)) assert.ok(!/(?:^|[^\d])2 ساعات/.test(item.promptAr!), item.promptAr);
+    for (const { item } of draws('prob_g7', 600)) assert.ok(!/(?:^|[^\d])(?:[3-9]|10) مرة/.test(item.promptAr!), item.promptAr);
+    for (const { item } of draws('proportional_division', 600)) {
+      const p = item.promptAr!, m = p.match(/بنسبة ((?:\d+ : )+\d+)/);
+      if (!m || !p.includes('قُسّم مبلغ') || p.includes('بين أخوين')) continue;
+      const parts = m[1]!.split(' : ').length;
+      assert.ok(p.includes(parts === 2 ? 'بين شخصين' : 'بين ثلاثة أشخاص'), `${parts} shares: ${p}`);
+    }
+  });
+
+  it('Grade 8 counted nouns and verbs agree (Grade 8 audit, 2026-11-14)', () => {
+    // «2 بناطيل», «2 أنواع من الحلوى», «لجنة من 2 طلاب», «فبأي حالة تتطابق المثلثان» and «إذا كان زاويتان» were printed.
+    for (const { item } of draws('counting', 600)) assert.ok(!/(?:^|[^\d])2 (?:قمصان|بناطيل|أنواع|طلاب)/.test(item.promptAr!), item.promptAr);
+    for (const id of ['congruence_a', 'congruence_b']) for (const { item } of draws(id, 300)) {
+      const p = item.promptAr!;
+      assert.ok(!p.includes('تتطابق المثلثان') && !/إذا كان (?:ثلاثة|زاويتان)/.test(p), p);
+    }
+  });
+
+  it('percent conversions never print a float artefact (Grade 6 audit, 2026-11-14)', () => {
+    // «اكتب 64% على صورة عدد عشري» offered «1.6400000000000001».
+    for (const { item } of draws('pct_conv', 600)) for (const s of [item.answer, ...item.wrongs]) assert.ok(!/\d\.\d{4,}/.test(s), `${item.promptAr}: ${s}`);
   });
 
   it('integers: compute, real-life problems, the missing number, an expression', () => {
@@ -861,9 +943,12 @@ describe('routing', () => {
     ['النسبة المئوية والكسور العادية', 6, 'pct_conv'],
     ['قوانين الأسس الصحيحة', 7, 'exp_laws'],
     // a title no generator is about, and a grade outside a generator's range
-    ['خطة حل المسألة: الرسم', 7, null],
+    // (the two Grade 7 lessons once listed here have generators since 2026-11-13: g7Lessons.test.ts)
+    ['خطة حل المسألة: الرسم', 7, 'g7_draw_diagram'],
+    ['خطة حل المسألة: الرسم', 6, null],
     ['العوامل', 8, null],
-    ['التطابق', 7, null],
+    ['التطابق', 7, 'g7_congruence'],
+    ['التطابق', 9, null],
   ];
   for (const [title, grade, id] of cases) {
     it(`${title} (G${grade}) → ${id ?? 'refused'}`, () => {

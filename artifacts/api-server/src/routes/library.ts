@@ -24,6 +24,7 @@ import {
   LIBRARY_EXTENSION_BY_MIME,
   MAX_LIBRARY_FILE_BYTES,
   isLibraryCategory,
+  parseLessonIdPatch,
   parseLibraryLink,
   parseLibraryMeta,
 } from "../lib/libraryResource.js";
@@ -173,7 +174,8 @@ router.delete("/library/:id", adminOnly, async (req, res) => {
   }
 });
 
-// PATCH /library/:id — update metadata only (title, description, category, thumbnailUrl, semester).
+// PATCH /library/:id — update metadata only (title, description, category, thumbnailUrl, semester, lessonId).
+// Grade and subject are fixed: the admin screen lists items per grade and offers lessons per subject.
 // The file/URL itself is immutable; to change the content, delete and re-upload.
 router.patch("/library/:id", adminOnly, async (req: AuthenticatedRequest, res) => {
   const id = req.params["id"] as string;
@@ -206,6 +208,12 @@ router.patch("/library/:id", adminOnly, async (req: AuthenticatedRequest, res) =
     res.status(400).json({ error: "invalid category" });
     return;
   }
+  // Absent leaves the lesson as it is; the admin screen always sends it.
+  const lesson = parseLessonIdPatch(body.lessonId);
+  if (lesson && "error" in lesson) {
+    res.status(400).json({ error: lesson.error });
+    return;
+  }
   try {
     const [row] = await db
       .update(libraryResources)
@@ -215,6 +223,7 @@ router.patch("/library/:id", adminOnly, async (req: AuthenticatedRequest, res) =
         thumbnailUrl,
         semester,
         ...(body.category ? { category: body.category as string } : {}),
+        ...(lesson ? { lessonId: lesson.lessonId } : {}),
       })
       .where(eq(libraryResources.id, id))
       .returning();

@@ -34,7 +34,7 @@
  * means nothing once it sits among the other videos.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -48,7 +48,7 @@ import { isStudentRole, isTeacherRole, useAuth } from '@/context/AuthContext';
 import { getMyExams, getMyGradeIds } from '@/services/studentExam';
 import { actionableCount } from '@/services/myExams';
 import { narrowSubjectsForGrade, narrowToSelection, preferredGrade, scopedSubjectIds, keepIfPresent } from '@/services/teacherCatalogFilter';
-import { listLibrary, type LibraryItem } from '@/services/libraryApi';
+import { listLibraryChecked, type LibraryItem } from '@/services/libraryApi';
 import { getLessonById } from '@/services/knowledgeBase';
 import { openExternal } from '@/services/externalLinks';
 import { printPremadeSheet } from '@/services/openResource';
@@ -66,7 +66,7 @@ import { allPremade } from '@workspace/curriculum/premade';
 import { getSubjectsForGrade, getVisibleGrades } from '@workspace/curriculum';
 import { ENGLISH_HUB_GRADES } from '@workspace/curriculum/englishHub';
 import type { TranslationKey } from '@/services/i18n';
-import { cellWidthPercent, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
+import { cellWidthPercent, gradesForChips, isVisualKind, libraryColumns, previewCount } from '@/services/libraryLayout';
 import { QURAN_CORNER_RELEASED, quranCornerVisible } from '@/services/quranRelease';
 import { palette, scheme } from '@/constants/colors';
 import { CORNERS, type CornerId, type MotifId } from '@/constants/corners';
@@ -104,6 +104,13 @@ const BRAND_TILE = {
   motif: 'leaf' as MotifId,
   motifOpacity: BRAND_MOTIF_OPACITY,
 };
+
+/** The frozen sheets by id, built once: every printable row looks its sheet up. */
+let premadeById: Map<string, ReturnType<typeof allPremade>[number]> | null = null;
+function premadeSheet(id: string) {
+  premadeById ??= new Map(allPremade().map(sheet => [sheet.id, sheet]));
+  return premadeById.get(id);
+}
 
 function itemThumbnail(item: ResourceItem): string | null {
   if (item.thumbnailUrl) return item.thumbnailUrl;
@@ -161,10 +168,13 @@ function interactionStyle(state: PressState, restBorder: string) {
 function ResourceRow({
   item,
   accent,
+  gradeId,
   cols = 1,
 }: {
   item: ResourceItem;
   accent: string;
+  /** The grade on screen: a book code carries no grade of its own, and its subject is named within one. */
+  gradeId: string;
   /** Cards per row in the surrounding track. */
   cols?: Cols;
 }) {
@@ -199,7 +209,7 @@ function ResourceRow({
         ? item.page.toLocaleString('ar-EG')
         : String(item.page);
   const printable = item.actions.includes('print');
-  const sheet = printable ? allPremade().find(s => s.id === item.nativeId) : undefined;
+  const sheet = printable ? premadeSheet(item.nativeId) : undefined;
   const questionCount = sheet?.content.sections.reduce((n, s) => n + s.questions.length, 0) ?? 0;
   // A sheet's note says what a teacher gets before printing; a title alone
   // does not tell «12 questions with a key» from «a blank page».
@@ -236,7 +246,7 @@ function ResourceRow({
   // Subject, not kind, is what tells two videos in one shelf apart.
   const subject =
     item.subjectId
-      ? getSubjectsForGrade(item.gradeId ?? '').find(s => s.id === item.subjectId)
+      ? getSubjectsForGrade(item.gradeId ?? gradeId).find(s => s.id === item.subjectId)
       : undefined;
   const subjectName = subject ? (isAr ? subject.nameAr : subject.name) : null;
 
@@ -445,20 +455,24 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     () => narrowToSelection(getVisibleGrades(), user?.gradeIds),
     [user?.gradeIds],
   );
-  const [pickedGrade, setGrade] = useState<string>(gradeId || grades[0]?.id || '');
+  // The chips show grades highest level first, and the default is the first
+  // chip — not `grades[0]`, whose catalog order puts Grade 1 before Grade 2.
+  const chipGrades = useMemo(() => gradesForChips(grades), [grades]);
+  const firstGrade = chipGrades[0]?.id ?? '';
+  const [pickedGrade, setGrade] = useState<string>(gradeId || firstGrade);
   // The tab stays mounted while the teacher edits their grades on the profile
   // page, so the initial pick can name a grade they no longer teach — and with
   // one grade left there is no picker to move off it. Fall back to the first
   // grade they do teach; an explicit grade param is still honoured.
   const grade =
-    pickedGrade === gradeId || grades.some(g => g.id === pickedGrade) ? pickedGrade : (grades[0]?.id ?? '');
+    pickedGrade === gradeId || grades.some(g => g.id === pickedGrade) ? pickedGrade : firstGrade;
   // A student has no grade picker of their own, so with no grade param the
   // library opened on the catalog's first grade — Grade 10 for a Grade 9
   // student. Start on the grade their class is in, unless they (or a param)
   // already chose one.
   useEffect(() => {
     if (!isStudent || gradeId) return;
-    const initial = grades[0]?.id || '';
+    const initial = firstGrade;
     let cancelled = false;
     void getMyGradeIds().then(ids => {
       const own = preferredGrade(grades, ids);
@@ -484,35 +498,63 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   };
 
   // Staff uploads for this grade. Refetched on focus so an item added on the
-  // upload screen is there on the way back.
-  const [uploaded, setUploaded] = useState<LibraryItem[]>([]);
+  // upload screen is there on the way back. `useFocusEffect` alone: it also
+  // re-runs when `grade` changes, and a second `useEffect` fetched everything
+  // twice. The rows are kept with the grade they belong to, so a grade still
+  // loading reads as loading, and a failed load is said — an unreachable
+  // server used to look exactly like an empty library.
+  // «أعد المحاولة» bumps `reloadKey` rather than calling the loader itself, so
+  // the focus effect owns every request and cancels it: a retry fired by hand
+  // could answer after the teacher had moved to another grade and overwrite
+  // that grade's rows. A failure is kept with its grade for the same reason,
+  // and so the notice does not flash on the next grade before it loads.
+  const [uploaded, setUploaded] = useState<{ gradeId: string; rows: LibraryItem[] } | null>(null);
+  const [failedGrade, setFailedGrade] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const loadUploaded = useCallback(() => {
     let live = true;
-    void listLibrary(grade).then(rows => { if (live) setUploaded(rows); });
+    void listLibraryChecked(grade).then(rows => {
+      if (!live) return;
+      if (rows) {
+        setUploaded({ gradeId: grade, rows });
+        setFailedGrade(null);
+      } else setFailedGrade(grade);
+    });
     return () => { live = false; };
-  }, [grade]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reloadKey re-runs the load on purpose
+  }, [grade, reloadKey]);
   useFocusEffect(loadUploaded);
-  useEffect(loadUploaded, [loadUploaded]);
+  const retryUploads = () => {
+    setFailedGrade(null);
+    setReloadKey(k => k + 1);
+  };
+  const haveUploads = uploaded?.gradeId === grade;
+  const uploadedRows = useMemo(() => (haveUploads && uploaded ? uploaded.rows : []), [haveUploads, uploaded]);
+  // A refocus that fails while this grade's rows are already on screen keeps
+  // them and says nothing; only a grade with nothing loaded reports the failure.
+  const uploadsFailed = !haveUploads && failedGrade === grade;
+  const uploadsLoading = !haveUploads && !uploadsFailed;
 
   const allItems = useMemo(
     () =>
       buildResourceCatalog({
-        uploaded,
+        uploaded: uploadedRows,
         premade: allPremade().filter(sheet => sheet.gradeId === grade),
         qr: qrResourcesForGrade(grade),
       }),
-    [grade, uploaded],
+    [grade, uploadedRows],
   );
 
   const inGrade = useMemo(() => filterResources(allItems, { gradeId: grade }), [allItems, grade]);
 
   // The grade's subjects, narrowed to what this teacher teaches.
+  const gradeSubjectsAll = useMemo(() => getSubjectsForGrade(grade), [grade]);
   const gradeSubjects = useMemo(
     () =>
       isTeacher
-        ? narrowSubjectsForGrade(getSubjectsForGrade(grade), grade, user?.teachingAssignments, user?.subjectIds)
-        : getSubjectsForGrade(grade),
-    [grade, isTeacher, user?.teachingAssignments, user?.subjectIds],
+        ? narrowSubjectsForGrade(gradeSubjectsAll, grade, user?.teachingAssignments, user?.subjectIds)
+        : gradeSubjectsAll,
+    [grade, gradeSubjectsAll, isTeacher, user?.teachingAssignments, user?.subjectIds],
   );
 
   // Chips only for subjects with a subject-specific row: a chip that re-shows
@@ -525,8 +567,8 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
   // «All subjects» means all of the teacher's subjects, not every subject in
   // the grade: the chips above were narrowed but the results were not.
   const scopeSubjectIds = useMemo(
-    () => (isTeacher ? scopedSubjectIds(gradeSubjects, getSubjectsForGrade(grade)) : undefined),
-    [isTeacher, gradeSubjects, grade],
+    () => (isTeacher ? scopedSubjectIds(gradeSubjects, gradeSubjectsAll) : undefined),
+    [isTeacher, gradeSubjects, gradeSubjectsAll],
   );
 
   // What was picked may no longer be offered (grades edited on the profile page
@@ -580,10 +622,24 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
     pickedLesson,
   );
 
-  // Search narrows on top of the chips, like every other filter here.
+  // Search narrows on top of the chips, like every other filter here. It also
+  // matches a row's lesson title and subject name, in both languages: a teacher
+  // types the lesson they are preparing, and a sheet filed under it rarely
+  // repeats that in its own title.
+  // Built once per list, not per keystroke: `getLessonById` walks the whole KB.
+  const searchText = useMemo(() => {
+    const byKey = new Map<string, string>();
+    for (const item of items) {
+      const lesson = item.lessonId ? getLessonById(item.lessonId) : undefined;
+      const subject = item.subjectId ? gradeSubjectsAll.find(s => s.id === item.subjectId) : undefined;
+      byKey.set(item.key, `${lesson ? `${lesson.titleAr} ${lesson.titleEn}` : ''} ${subject ? `${subject.nameAr} ${subject.name}` : ''}`);
+    }
+    return byKey;
+  }, [items, gradeSubjectsAll]);
+  const searchExtra = useCallback((item: ResourceItem) => searchText.get(item.key) ?? '', [searchText]);
   const shown = useMemo(
-    () => filterResources(items, { lessonId: lessonId ?? undefined, query }),
-    [items, lessonId, query],
+    () => filterResources(items, { lessonId: lessonId ?? undefined, query, alsoMatch: searchExtra }),
+    [items, lessonId, query, searchExtra],
   );
 
   const shelves = useMemo(() => groupIntoShelves(shown), [shown]);
@@ -749,7 +805,7 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
         {grades.length > 1 ? (
           <ChipRow
             isRTL={isRTL}
-            options={grades.map(g => ({ id: g.id, label: lang === 'ar' ? g.nameAr : g.name }))}
+            options={chipGrades.map(g => ({ id: g.id, label: lang === 'ar' ? g.nameAr : g.name }))}
             active={grade}
             onPick={id => id && pickGrade(id)}
           />
@@ -807,13 +863,33 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
           />
         ) : null}
 
+        {uploadsFailed ? (
+          <View
+            accessibilityRole="alert"
+            style={[styles.notice, { backgroundColor: colors.muted, borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          >
+            <Ionicons name="cloud-offline-outline" size={20} color={colors.mutedForeground} />
+            <Text style={[styles.noticeText, { color: colors.foreground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('libraryLoadFailed')}
+            </Text>
+            <Pressable
+              onPress={() => { Haptics.selectionAsync(); retryUploads(); }}
+              accessibilityRole="button"
+              hitSlop={8}
+              style={styles.noticeBtn}
+            >
+              <Text style={[styles.viewAllText, { color: ACCENT, fontFamily: 'ReadexPro_600SemiBold' }]}>{t('retry')}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {openShelf ? (
           // The tab above already names the shelf and counts it, so the list
           // starts straight away: there is no separate shelf page to get out of.
           <View style={styles.section}>
             <View style={[styles.rows, cols > 1 && styles.rowsGrid, cols > 1 && isRTL && { flexDirection: 'row-reverse' }]}>
               {openShelf.items.map(item => (
-                <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[openShelf.shelf]} cols={cols} />
+                <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[openShelf.shelf]} gradeId={grade} cols={cols} />
               ))}
             </View>
           </View>
@@ -871,14 +947,19 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
                 {preview.length > 0 ? (
                   <View style={[styles.rows, cols > 1 && styles.rowsGrid, cols > 1 && isRTL && { flexDirection: 'row-reverse' }]}>
                     {preview.map(item => (
-                      <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[id]} cols={cols} />
+                      <ResourceRow key={item.key} item={item} accent={SHELF_COLOR[id]} gradeId={grade} cols={cols} />
                     ))}
                   </View>
                 ) : null}
               </View>
             );
           })}
-          {shelves.length === 0 ? (
+          {shelves.length === 0 && uploadsLoading ? (
+            // Uploads still on their way: «nothing here» would be said, then taken back.
+            <View style={styles.empty}>
+              <ActivityIndicator color={ACCENT} />
+            </View>
+          ) : shelves.length === 0 && !uploadsFailed ? (
             <View style={styles.empty}>
               <Ionicons name="library-outline" size={40} color={colors.mutedForeground} />
               <Text
@@ -1114,6 +1195,9 @@ const styles = StyleSheet.create({
   pageText: { fontSize: 13 },
   rowNote: { fontSize: 14, lineHeight: 22, marginTop: 2 },
   empty: { alignItems: 'center', gap: 10, paddingTop: 48, paddingHorizontal: 40 },
+  notice: { alignItems: 'center', gap: 10, marginHorizontal: 20, marginTop: 12, paddingHorizontal: 14, paddingVertical: 10 },
+  noticeText: { flex: 1, fontSize: 14, lineHeight: 22 },
+  noticeBtn: { minHeight: 44, justifyContent: 'center' },
   emptyText: { fontSize: 15, textAlign: 'center', lineHeight: 23 },
 });
 
