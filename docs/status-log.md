@@ -10,6 +10,44 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 2 review: fifteen maths lessons asked about their own objective — 2026-11-15
+
+The same per-lesson read as «Grade 3 review: six maths lessons…» (below): every one of Grade 2's 61 maths lessons, its
+sample questions against its NCCD objective. «Grade 2 audit…» had read their keys (all right) and «Grade 2 review:
+coverage, images…» their coverage; neither asked whether a question was about its lesson. Fixed (`lib/math-practice`):
+
+- **Three digits where the objective says «ضمن 3 منازل».** «القيمة المنزلية» wrote «10 + 2» in expanded form, «مقارنة
+  الأعداد» / «ترتيب الأعداد» compared «10، 6، 22، 20», «الطرح» («من عدد يتكون من 3 منازل») asked «11 − 4», and «تمثيل
+  الأعداد على خط الأعداد» asked for the middle of «10 و 70». At Grade 2 these now draw 100–999 (`elementary.ts`: the
+  `place`, `compare` and `sub` ops take a lower bound there; `number_line_g2`).
+- **The four data lessons are two lessons about pictures and two about tallies**, and all four drew one pool. «تمثيل
+  البيانات بالصور» and «تفسير البيانات الممثلة بالصور» (`read_data_g12`) now ask only picture graphs — every table is
+  one; «جمع البيانات وتنظيمها» and «تفسير البيانات الممثلة بجدول الإشارات» (new `read_data_tally_g2`) ask only tallies:
+  a tally's total, the count of a raw list, how many full bundles a count takes, and two tally rows compared.
+- **Grade 2's tables are 2, 3, 4, 5 and 10.** «العلاقة بين القسمة والضرب» asked «63 ÷ 7» and «… إذا ضُرب في 8», and «كسر
+  الوحدة كجزء من مجموعة» «1/6 of 42»; both now stay in those tables. Grade 3's relation questions are unchanged.
+- **«الوقت لأقرب 5 دقائق» / «… لأقرب ربع ساعة» read the clock.** They rounded «6:01» to «6:00» and asked how long a
+  lesson lasted, which is Grade 3's «الفترات الزمنية». Now: the time from the hands, the minutes from the minute hand,
+  where the minute hand points for a time, and which two numbers the hour hand is between.
+- **«تكوين المجموعات المتساوية»** opens the division unit but also asked for the total of equal groups (multiplication,
+  the lesson before). Now it shares, groups and lays balls out in equal rows.
+- **«السنتيمتر»** — «تقدير أطوال الأشياء الصغيرة، وقياسها باستعمال المسطرة» — never measured or estimated. It now reads a
+  pencil off a ruler (from 0 or another mark) and picks a sensible length for a small thing (each other option at least
+  2.5 times off); its pencil-and-eraser sum no longer gives «ممحاة طولها 18 سم».
+
+**Verified.** `grade2Objectives.test.ts` (6) reads the printed questions for the three-digit bounds, the unit fractions
+and which generator each data lesson reaches; `stats.test.ts` recomputes the new tally kinds and fails a tally in a
+picture lesson or a picture in a tally lesson; `early.test.ts` recomputes the clock-reading kinds and fails rounding
+or elapsed time there, checks the division lesson never multiplies, the relation stays in Grade 2's tables, and the
+ruler and estimate keys. Ten planted bugs, one per fix, each failed a test (one, which moved the ruler's end mark,
+changed nothing — the stem moved with it — and was replaced by a wrong key, which failed). The new questions were read by
+hand, keys right. math-practice 1414 pass; typecheck; `noQuestionBank`, `mathLessonKinds`, `worksheetWideScope` 31/31.
+
+**Not done.** «المتر», «الغرام والكيلوغرام» and «اللتر والمليلتر» («تمييز» the units) also convert between them, which is
+Grade 3's objective («التحويل من…»); left, since each stem states the fact it uses and the book was not available to
+say whether Grade 2 does. «كسر الوحدة» compares unit fractions, which Grade 3 teaches as «مقارنة الكسور»; left for the
+same reason. Everything the audit left for the PDFs.
+
 ## Grade 3 review: six maths lessons asked about their own objective — 2026-11-14
 
 Follows «Grade 3 audit…» (book pages, figures, contents) and «Grade 3 maths: offline questions for the four lessons that
