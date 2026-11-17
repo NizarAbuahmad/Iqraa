@@ -173,7 +173,14 @@ const roundDec: Topic = {
  * or hundred (the Grade 2 objective), and a word problem.
  */
 const estSum = (id: string, match: RegExp, mode: 'add' | 'sub' | 'both'): Topic => {
+  // Grade 2 numbers stay within three places: an estimated sum once reached 1158 with 1300
+  // among its options (second pass, 2026-11-17). Such a draw is drawn again.
+  const fits = (d: Draft) => [d.ar, d.answer, ...(d.wrongs ?? [])].every(t => (String(t).match(/\d+/g) ?? []).every(n => Number(n) <= 999));
   const make = (c: Ctx): Draft => {
+    for (let i = 0; i < 60; i++) { const d = draw(c); if (c.grade > 2 || fits(d)) return d; }
+    return draw(c);
+  };
+  const draw = (c: Ctx): Draft => {
     const { rng, diff, grade } = c;
     const digits = Math.min(grade <= 2 ? 3 : 4, diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4);
     let a = 0, b = 0, add = true;

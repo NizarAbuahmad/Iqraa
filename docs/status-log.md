@@ -10,6 +10,55 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 2 second pass: numbers within 999, grams without conversions, the data unit split by lesson — 2026-11-17
+
+This is a second read of Grade 2 maths, run on top of three earlier entries: «Grade 2 review: coverage, images, and four generator
+fixes», «Grade 2 audit: book pages, contents, honorifics and offline maths checked» and «Grade 2 maths: offline questions
+for the four problem-solving lessons». The generators ran over all 236 Grade 2 lessons; each grounds by its own id, and
+all 61 maths lessons fill a ten-question quiz. Every question of every maths quiz was read against its lesson's objective. Every key was right. (The audit
+script's ten «wrong key» flags are its own: it ignores the «كل صورة تمثل طائرين» scale and the sign of a difference.)
+Six things did not fit the book:
+
+- **Numbers past 999.** Grade 2 works «ضمن 3 منازل», but some items went further:
+  - «تقدير ناتج الجمع» estimated sums up to 1158, with 1200 and 1300 among the options.
+  - Wrong options in the mental add/subtract, dinar and metre lessons offered 1000, 1081 and 5000.
+  - `estSum` now redraws a Grade 2 item that passes 999, and those options are capped.
+  - A rounding item may still offer 1000 for 960. That is a real round number, so it is left.
+- **«الغرام والكيلوغرام» and «اللتر والمليلتر» converted to four digits.** Items asked «7 كيلوغرامات = ؟ غرام» (7000)
+  and «3 لترات و 700 مليلتر» (3700), but the objectives only ask to tell the units apart and pick the fitting one.
+  At f = 1000 those conversions are gone. What remains: the fitting unit, what is left to make one kilogram or litre,
+  and two new kinds — a total of two small things, and how much more one holds or weighs (within 950).
+  «المتر» is unchanged.
+- **«العلاقة بين القسمة والضرب» used 6 × 7 = 42.** Grade 2 divides by 2, 3, 4 and 5 (u7_l4–l7). At Grade 2 the divisor
+  now comes from those tables. Grade 3 keeps 2–9.
+- **The four data lessons shared one pool**, so «جمع البيانات وتنظيمها» and «تفسير البيانات الممثلة بجدول الإشارات» asked
+  about picture graphs, and the picture lessons asked about tallies. They are now two generators:
+  - `read_pictures_g2` serves picture graphs, now worded «كل صورة تمثل حبتين من الفاكهة» (it used to say «تمثل 2 من الفاكهة»).
+  - `read_tally_g2` serves raw data to organise and a tally total. It adds two kinds: a tally table in words («التفاح:
+    حزمتان وإشارة واحدة») to read the most, the least, the total or one row from; and how many whole bundles or single
+    marks a count needs.
+- **«2 عشرات», «1 مئات».** The place-value stem «6 مئات و 2 عشرات و 6 آحاد» now uses counts of 3–9, as Grade 1's
+  tens and ones already did. So does Grade 3's «الألوف» stem, which had the same line.
+- **An eraser of 19 cm beside a pencil of 6 cm.** The eraser is now 2–6 cm and the pencil 8–20.
+
+**Verified:**
+- `grade2SecondPass.test.ts` (11 tests) was written first and failed 8 of its first 10. It recomputes the new kinds' keys, reading a
+  tally in words back to its count.
+- The `stats.test.ts` and `early.test.ts` checkers cover the split generators and the new unit kinds. Routing now sends
+  «تمثيل البيانات بالصور» to `read_pictures_g2`.
+- `lib/math-practice` passes 1,408 tests, and typecheck passes.
+- Rerunning the Grade 2 audit found nothing past 999 except the rounding option above. All 61 maths lessons still fill
+  ten questions.
+- New items were sampled and read by hand, which caught «رغيف خبز كتلتها» (now «كتلته») and an awkward capacity stem
+  (now «تتسع علبة العصير لـ 300 مليلتر»).
+
+**Not done:**
+- Grade 2 page images exist only for Islamic and PE (see the audit entry). Every other book still needs rendering from
+  the PDFs, so no page check was possible here.
+- «الأشكال المستوية» asks about sides and vertices, which is also the next lesson's content. Left as it is.
+
+No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+
 ## Grade 1 audit: every book page inside the ranges, two titles, a dual — 2026-11-14
 
 The Grade 2–10 audit, repeated for Grade 1 (279 lessons), on top of «Grade 1 review: book pages on the wrong unit…»,

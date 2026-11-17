@@ -166,7 +166,10 @@ const tensOnes = (id: string, match: RegExp, mode: 'tens' | 'mixed' | 'model') =
 });
 
 const hundreds = (id: string, match: RegExp) => T(id, match, [2, 2], ({ rng }) => {
-  const h = int(rng, 1, 9), t = int(rng, 1, 9), o = int(rng, 1, 9), n = h * 100 + t * 10 + o, k = pick(rng, [0, 1, 2, 3]);
+  const k = pick(rng, [0, 1, 2, 3]);
+  // «6 مئات و 3 عشرات و 7 آحاد»: counts of 3–9 there, so never «1 مئات» or «2 عشرات» (2026-11-17)
+  const lo = k === 1 ? 3 : 1;
+  const h = int(rng, lo, 9), t = int(rng, lo, 9), o = int(rng, lo, 9), n = h * 100 + t * 10 + o;
   if (k === 0) return { eq: `${n}`, answer: String(h), wrongs: ints(h, [t, o, h + 1, h - 1]), ar: `كم مئة في العدد ${n}؟`, en: `How many hundreds are in ${n}?` };
   if (k === 1) return { eq: `${h}, ${t}, ${o}`, answer: String(n), wrongs: ints(n, [o * 100 + t * 10 + h, h + t + o, n + 100, n - 10]), ar: `${h} مئات و ${t} عشرات و ${o} آحاد: ما العدد؟`, en: `${h} hundreds, ${t} tens and ${o} ones: what is the number?` };
   if (k === 2) return { eq: `${n}`, answer: String(t), wrongs: ints(t, [h, o, t * 10, t + 1]), ar: `ما رقم العشرات في العدد ${n}؟`, en: `What is the tens digit of ${n}?` };
@@ -194,7 +197,8 @@ const readWrite = T('expanded_form', /^قراءه الاعداد وكتابته�
 });
 
 const thousands = T('thousands', /^الالوف$/, [3, 3], ({ rng }) => {
-  const a = int(rng, 1, 9), b = int(rng, 1, 9), c = int(rng, 1, 9), d = int(rng, 1, 9), n = a * 1000 + b * 100 + c * 10 + d, k = pick(rng, [0, 1, 2]);
+  const k = pick(rng, [0, 1, 2]), lo = k === 1 ? 3 : 1; // «3 آلاف و 5 مئات…»: never «1 آلاف» or «2 مئات»
+  const a = int(rng, lo, 9), b = int(rng, lo, 9), c = int(rng, lo, 9), d = int(rng, lo, 9), n = a * 1000 + b * 100 + c * 10 + d;
   if (k === 0) return { eq: `${n}`, answer: String(a), wrongs: ints(a, [b, c, d, a + 1]), ar: `ما رقم الألوف في العدد ${n}؟`, en: `What is the thousands digit of ${n}?` };
   if (k === 1) return { eq: `${a}, ${b}, ${c}, ${d}`, answer: String(n), wrongs: ints(n, [a + b + c + d, d * 1000 + c * 100 + b * 10 + a, n + 1000, n - 100]), ar: `${a} آلاف و ${b} مئات و ${c} عشرات و ${d} آحاد: ما العدد؟`, en: `${a} thousands, ${b} hundreds, ${c} tens and ${d} ones: what is the number?` };
   const place = pick(rng, [[a, 1000, 'الألوف'], [b, 100, 'المئات'], [c, 10, 'العشرات']] as Array<[number, number, string]>);
@@ -787,16 +791,16 @@ const mentalMultiples = (id: string, match: RegExp, add: boolean, grade: number)
     do { N = int(rng, lo, hi); dg = Math.floor(N / place) % 10; } while (add ? dg > 8 : dg < 1 || N === place);
     // never take N down to nothing (200 − 200): when N is only that digit, stop one short of it
     const b = int(rng, 1, add ? 9 - dg : N === dg * place ? dg - 1 : dg), m = b * place, R = add ? N + m : N - m;
-    const wrongR = ints(R, [add ? N - m : N + m, add ? R + place : R - place, add ? N + b : N - b, add ? R - place : R + place]);
+    const wrongR = ints(R, [add ? N - m : N + m, add ? R + place : R - place, add ? N + b : N - b, add ? R - place : R + place].filter(v => v > 0 && v <= hi));
     if (k === 1) return { eq: `${N}, ${m}`, answer: String(R), wrongs: wrongR, ar: `ما ناتج ${N} ${op} ${m} ذهنيًا؟`, en: `Work out ${N} ${op} ${m} in your head.` };
     if (k === 2) return { eq: `${N}, ${m}`, answer: String(R), wrongs: wrongR, ar: `ما العدد الذي ${add ? 'يزيد على' : 'يقل عن'} ${N} بمقدار ${m}؟`, en: `Which number is ${m} ${add ? 'more' : 'less'} than ${N}?` };
-    return { eq: `${N}, ${R}`, answer: String(m), wrongs: ints(m, [b, m * 10, m / 10, m + place, R]), ar: `أي عدد ${add ? 'نضيفه إلى' : 'نطرحه من'} ${N} لنحصل على ${R}؟`, en: `Which number do we ${add ? 'add to' : 'take away from'} ${N} to get ${R}?` };
+    return { eq: `${N}, ${R}`, answer: String(m), wrongs: ints(m, [b, m * 10, m / 10, m + place, R].filter(v => v <= hi)), ar: `أي عدد ${add ? 'نضيفه إلى' : 'نطرحه من'} ${N} لنحصل على ${R}؟`, en: `Which number do we ${add ? 'add to' : 'take away from'} ${N} to get ${R}?` };
   }
   let a = 0, b = 0;
   // Grade 2 works within three places, so 900 + 600 is out of reach there
   do { a = int(rng, 1, 9); b = int(rng, 1, 9); } while (add ? grade === 2 && place === 100 && a + b > 9 : a <= b);
   const x = a * place, y = b * place, r = add ? x + y : x - y;
-  return { eq: `${x}, ${y}`, answer: String(r), wrongs: ints(r, [r * 10, r / 10, add ? x - y : x + y, r + place]), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
+  return { eq: `${x}, ${y}`, answer: String(r), wrongs: ints(r, [r * 10, r / 10, add ? x - y : x + y, r + place].filter(v => grade > 2 || v <= 999)), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
 });
 
 const equalGroups = (id: string, match: RegExp) => T(id, match, [2, 2], ({ rng }) => {
@@ -806,8 +810,9 @@ const equalGroups = (id: string, match: RegExp) => T(id, match, [2, 2], ({ rng }
   return { eq: `${t}, ${n}`, answer: String(g), wrongs: ints(g, [t, n, g + 1, t - n]), ar: `${pieces(t)}، وُضع في كل مجموعة ${pieces(n)}. كم مجموعة تكوّنت؟`, en: `${t} pieces are put into groups of ${n}. How many groups are made?` };
 });
 
-const divisionRelation = T('division_relation', /^العلاقه بين القسمه والضرب$|^علاقه القسمه بالضرب$/, [2, 3], ({ rng }) => {
-  const a = int(rng, 2, 9), b = int(rng, 2, 9), p = a * b, k = pick(rng, [0, 1, 2]);
+const divisionRelation = T('division_relation', /^العلاقه بين القسمه والضرب$|^علاقه القسمه بالضرب$/, [2, 3], ({ rng, grade }) => {
+  // Grade 2 divides by 2, 3, 4 and 5 (u7_l4–l7): 6 × 7 = 42 is a Grade 3 fact (2026-11-17)
+  const a = grade <= 2 ? pick(rng, [2, 3, 4, 5]) : int(rng, 2, 9), b = int(rng, 2, 9), p = a * b, k = pick(rng, [0, 1, 2]);
   if (k === 0) return { eq: `${a}, ${b}, ${p}`, answer: String(b), wrongs: ints(b, [a, p, b + 1, b - 1]), ar: `إذا كان ${a} × ${b} = ${p} فإن ${p} ÷ ${a} = ___`, en: `If ${a} × ${b} = ${p} then ${p} ÷ ${a} = ___` };
   if (k === 2) return { eq: `${a}, ${p}`, answer: String(b), wrongs: ints(b, [a, p, p - a, b + 1]), ar: `ما العدد الذي إذا ضُرب في ${a} كان الناتج ${p}؟`, en: `Which number multiplied by ${a} gives ${p}?` };
   return { eq: `${p}, ${a}, ${b}`, answer: String(b), wrongs: ints(b, [a, p, b + 1, b - 1]), ar: `أكمل: ${p} ÷ ${a} = ___ لأن ___ × ${a} = ${p}`, en: `Complete: ${p} ÷ ${a} = ___ because ___ × ${a} = ${p}` };
@@ -1268,7 +1273,7 @@ const dinar = T('dinar', /^الدينار$/, [2, 2], ({ rng }) => {
     const price = int(rng, 2, 5), m = 10 * int(rng, 1, 9), have = price * 100 - m;
     return { eq: `${price}, ${have}`, answer: String(m), wrongs: ints(m, [100 - m, m + 100, m + 10, m - 10]), ar: `ثمن لعبة ${dinars(price)}، ومع رامي ${qirsh(have)}. كم قرشًا ينقصه ليشتري اللعبة؟ (الدينار الواحد = 100 قرش)`, en: `A toy costs ${price} dinars and Rami has ${have} qirsh. How many more qirsh does he need to buy it? (1 dinar = 100 qirsh)` };
   }
-  if (k === 0) return { eq: `${d}`, answer: String(d * 100), wrongs: ints(d * 100, [d * 10, d, d * 1000, d * 100 + 100]), ar: `إذا كان الدينار الواحد = 100 قرش فكم قرشًا في ${dinarsAfterPreposition(d)}؟`, en: `If 1 dinar = 100 qirsh, how many qirsh are in ${d} dinars?` };
+  if (k === 0) return { eq: `${d}`, answer: String(d * 100), wrongs: ints(d * 100, [d * 10, d, d * 100 + 100, d * 100 - 100].filter(v => v > 0 && v <= 999)), ar: `إذا كان الدينار الواحد = 100 قرش فكم قرشًا في ${dinarsAfterPreposition(d)}؟`, en: `If 1 dinar = 100 qirsh, how many qirsh are in ${d} dinars?` };
   return { eq: `${d * 100}`, answer: String(d), wrongs: ints(d, [d * 10, d + 1, d - 1, d * 100]), ar: `إذا كان الدينار الواحد = 100 قرش فكم دينارًا في ${d * 100} قرش؟`, en: `If 1 dinar = 100 qirsh, how many dinars are in ${d * 100} qirsh?` };
 });
 const banknotes = T('banknotes', /^فئات النقود الورقيه$/, [2, 2], ({ rng }) => {
@@ -1456,8 +1461,37 @@ const UNIT_NOUN: Record<string, [string, string]> = {
 /** A measure of 3 or more: one and two take their own words, so counts start at 3. */
 const measure = (n: number, unit: string) => `${n} ${tamyiz(n, UNIT_NOUN[unit]![0], UNIT_NOUN[unit]![1], unit)}`;
 const howMany = (unit: string) => `كم ${UNIT_NOUN[unit]![1]}`;
+/**
+ * Two small things in grams or millilitres, for a total or a difference that stays under 1000:
+ * [indefinite, definite, «كتلتها/كتلته» or «لـ», English].
+ */
+const SMALL_THINGS: Record<string, Array<[string, string, string, string]>> = {
+  'غرام': [['تفاحة', 'التفاحة', 'كتلتها', 'an apple'], ['برتقالة', 'البرتقالة', 'كتلتها', 'an orange'], ['رغيف خبز', 'رغيف الخبز', 'كتلته', 'a loaf'], ['قطعة جبن', 'قطعة الجبن', 'كتلتها', 'a piece of cheese']],
+  'مليلتر': [['كوب', 'الكوب', 'يتسع', 'a cup'], ['قارورة صغيرة', 'القارورة الصغيرة', 'تتسع', 'a small bottle'], ['فنجان', 'الفنجان', 'يتسع', 'a small cup'], ['علبة عصير', 'علبة العصير', 'تتسع', 'a juice box']],
+};
 const unitsG2 = (id: string, match: RegExp, big: string, small: string, f: number, bigEn: string, smallEn: string) => T(id, match, [2, 2], ({ rng }) => {
-  const n = int(rng, 3, 9), k = pick(rng, [0, 1, 2, 3, 4, 4]), fact = `1 ${big} = ${f} ${small}.`, factEn = `1 ${bigEn} = ${f} ${smallEn}.`;
+  // Grams and millilitres (f = 1000): the objectives tell the units apart and pick the fitting one,
+  // and Grade 2 numbers stay within 999 — so no «7 كيلوغرامات = 7000 غرام» (second pass, 2026-11-17).
+  // Instead: what is left to make one, and a total of two small things (kinds 5 and 6).
+  const k = f === 1000 ? pick(rng, [3, 4, 4, 5, 6]) : pick(rng, [0, 1, 2, 3, 4, 4]);
+  const n = int(rng, 3, 9), fact = `1 ${big} = ${f} ${small}.`, factEn = `1 ${bigEn} = ${f} ${smallEn}.`;
+  if (k === 5 || k === 6) {
+    const mass = small === 'غرام', [x, y] = shuffle(rng, SMALL_THINGS[small]!).slice(0, 2) as [[string, string, string, string], [string, string, string, string]];
+    const a = int(rng, 2, 9) * 50;
+    let b = int(rng, 2, Math.min(9, (950 - a) / 50)) * 50;
+    if (k === 6 && a === b) b = b > 100 ? b - 50 : b + 50; // a difference of nothing is no question
+    if (k === 5) {
+      const v = a + b, wrongs = ints(v, [Math.abs(a - b), v + 50, v - 50, v + 100]);
+      return mass
+        ? { eq: `${a} + ${b}`, answer: String(v), wrongs, ar: `وضعت ليلى في كيس ${x[0]} ${x[2]} ${measure(a, small)}، و${y[0]} ${y[2]} ${measure(b, small)}. كم غرامًا في الكيس معًا؟`, en: `Layla puts ${x[3]} of ${a} g and ${y[3]} of ${b} g in a bag. How many grams are in the bag altogether?` }
+        : { eq: `${a} + ${b}`, answer: String(v), wrongs, ar: `سكب سامي في إبريق فارغ ${measure(a, small)} من العصير، و${measure(b, small)} من الماء. كم مليلترًا في الإبريق؟`, en: `Sami pours ${a} mL of juice and ${b} mL of water into an empty jug. How many millilitres are in the jug?` };
+    }
+    const [H, L] = a > b ? [x, y] : [y, x], hi = Math.max(a, b), lo = Math.min(a, b);
+    const wrongs = ints(hi - lo, [hi + lo, hi, lo, hi - lo + 50]);
+    return mass
+      ? { eq: `${hi} − ${lo}`, answer: String(hi - lo), wrongs, ar: `كتلة ${H[1]} ${measure(hi, small)}، وكتلة ${L[1]} ${measure(lo, small)}. كم غرامًا تزيد كتلة ${H[1]} على كتلة ${L[1]}؟`, en: `${H[3]} has a mass of ${hi} g and ${L[3]} ${lo} g. By how many grams is the first heavier?` }
+      : { eq: `${hi} − ${lo}`, answer: String(hi - lo), wrongs, ar: `${H[2]} ${H[1]} لـ ${measure(hi, small)}، و${L[2]} ${L[1]} لـ ${measure(lo, small)}. كم مليلترًا تزيد سعة ${H[1]} على سعة ${L[1]}؟`, en: `${H[3]} holds ${hi} mL and ${L[3]} holds ${lo} mL. By how many millilitres does the first hold more?` };
+  }
   if (k === 4) {
     // the unit that fits: a small thing in the small unit, a big thing in the big one
     const [what, smallThings, bigThings, slips] = UNIT_FIT[big]!, isBig = rng() < 0.5, [thing, thingEn] = pick(rng, isBig ? bigThings : smallThings);
@@ -1466,14 +1500,15 @@ const unitsG2 = (id: string, match: RegExp, big: string, small: string, f: numbe
   }
   // a part of the big unit: 10–90 cm, or 100–900 g / mL
   const m = int(rng, 1, 9) * (f / 10);
-  if (k === 2) { const w = int(rng, 3, 5), v = w * f + m; return { eq: `${w}, ${m}`, answer: String(v), wrongs: ints(v, [w * f, w + m, w * f + m * 10, (w + 1) * f + m]), ar: `${fact} ${howMany(small)} في ${measure(w, big)} و ${measure(m, small)}؟`, en: `${factEn} How many ${smallEn} are in ${w} ${bigEn} and ${m} ${smallEn}?` }; }
-  if (k === 3) return { eq: `${m}`, answer: String(f - m), wrongs: ints(f - m, [m, f + m, f - m + f / 10, f - m - f / 10]), ar: `${fact} ${howMany(small)} نضيف إلى ${measure(m, small)} لنحصل على ${big} واحد؟`, en: `${factEn} How many ${smallEn} do we add to ${m} ${smallEn} to make 1 ${bigEn}?` };
-  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: ints(n * f, [n * f * 10, n * f / 10, n + f, n * f + f]), ar: `${fact} ${howMany(small)} في ${measure(n, big)}؟`, en: `1 ${bigEn} = ${f} ${smallEn}. How many ${smallEn} are in ${n} ${bigEn}?` };
+  if (k === 2) { const w = int(rng, 3, 5), v = w * f + m; return { eq: `${w}, ${m}`, answer: String(v), wrongs: ints(v, [w * f, w + m, w * f + m * 10, (w + 1) * f + m, v - f].filter(x => x > 0 && x <= 999)), ar: `${fact} ${howMany(small)} في ${measure(w, big)} و ${measure(m, small)}؟`, en: `${factEn} How many ${smallEn} are in ${w} ${bigEn} and ${m} ${smallEn}?` }; }
+  if (k === 3) return { eq: `${m}`, answer: String(f - m), wrongs: ints(f - m, [m, f === 1000 ? f - m + 2 * f / 10 : f + m, f - m + f / 10, f - m - f / 10].filter(v => v > 0 && v < f)), ar: `${fact} ${howMany(small)} نضيف إلى ${measure(m, small)} لنحصل على ${big} واحد؟`, en: `${factEn} How many ${smallEn} do we add to ${m} ${smallEn} to make 1 ${bigEn}?` };
+  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: ints(n * f, [n * f * 10, n * f / 10, n + f, n * f + f, n * f - f].filter(v => v > 0 && v <= 999)), ar: `${fact} ${howMany(small)} في ${measure(n, big)}؟`, en: `1 ${bigEn} = ${f} ${smallEn}. How many ${smallEn} are in ${n} ${bigEn}?` };
   return { eq: `${n * f}`, answer: String(n), wrongs: ints(n, [n * 10, n + 1, n - 1, n * f]), ar: `${fact} ${howMany(big)} في ${measure(n * f, small)}؟`, en: `1 ${bigEn} = ${f} ${smallEn}. How many ${bigEn} are in ${n * f} ${smallEn}?` };
 });
 const centimetre = T('cm_lengths', /^السنتيمتر$/, [2, 2], ({ rng }) => {
   const a = int(rng, 5, 30), b = int(rng, 3, 25), k = pick(rng, [0, 1, 2]);
-  if (k === 0) return { eq: `${a}, ${b}`, answer: String(a + b), wrongs: ints(a + b, [Math.abs(a - b), a + b + 1, a + b - 1, a * 2]), ar: `قلم طوله ${a} سم وممحاة طولها ${b} سم. ما طولهما معًا بالسنتيمتر؟`, en: `A pencil is ${a} cm long and an eraser is ${b} cm long. How long are they together, in cm?` };
+  // an eraser of 2–6 cm beside a pencil of 8–20: it was once 19 cm beside a 6 cm pencil
+  if (k === 0) { const a = int(rng, 8, 20), b = int(rng, 2, 6); return { eq: `${a}, ${b}`, answer: String(a + b), wrongs: ints(a + b, [Math.abs(a - b), a + b + 1, a + b - 1, a * 2]), ar: `قلم طوله ${a} سم وممحاة طولها ${b} سم. ما طولهما معًا بالسنتيمتر؟`, en: `A pencil is ${a} cm long and an eraser is ${b} cm long. How long are they together, in cm?` }; }
   if (k === 1) { const hi = Math.max(a, b), lo = Math.min(a, b); if (hi === lo) return centimetre.make({ rng, diff: 'easy', grade: 2 }); return { eq: `${hi}, ${lo}`, answer: String(hi - lo), wrongs: ints(hi - lo, [hi + lo, hi, lo, hi - lo + 1]), ar: `طول حبل ${hi} سم وطول آخر ${lo} سم. بكم يزيد الأول على الثاني بالسنتيمتر؟`, en: `One rope is ${hi} cm long and another is ${lo} cm long. By how many cm is the first longer?` }; }
   return { eq: `${a}`, answer: String(a * 2), wrongs: ints(a * 2, [a, a + 2, a * 3, a * 2 + 1]), ar: `طول قلم ${a} سم. ما طول قلمين مثله إذا وُضعا طرفًا إلى طرف؟`, en: `A pencil is ${a} cm long. How long are two such pencils placed end to end?` };
 });

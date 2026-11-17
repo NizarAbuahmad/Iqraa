@@ -392,9 +392,11 @@ describe('statistics: answers recomputed', () => {
 
   it('reading a table of counts', () => {
     const kinds: Record<number, Set<string>> = { 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set() };
-    for (const id of ['read_data_g12', 'read_data_g34']) for (const item of draws(id, 300)) {
+    // Grade 2's four data lessons are split between read_pictures_g2 and read_tally_g2 (2026-11-17)
+    const G12 = ['read_data_g12', 'read_pictures_g2', 'read_tally_g2'];
+    for (const id of [...G12, 'read_data_g34']) for (const item of draws(id, 300)) {
       const p = item.promptAr!, g = item.id.split('-')[2]!;
-      const kind = (k: string) => { assert.equal(id, 'read_data_g12', p); kinds[Number(g)]!.add(k); };
+      const kind = (k: string) => { assert.ok(G12.includes(id), p); kinds[Number(g)]!.add(k); };
       const upper = (k: string) => { assert.equal(id, 'read_data_g34', p); kinds[Number(g)]!.add(k); };
       if (has(p, 'في منتصف المسافة')) {
         // halfway between two lines of the scale, which are one step apart
@@ -434,6 +436,18 @@ describe('statistics: answers recomputed', () => {
         assert.ok(Number(item.answer) > 0, p);
         continue;
       }
+      if (has(p, 'يمثّل')) {
+        // a count drawn as a tally: whole bundles of five, or the single marks left over
+        kind('tallyDraw');
+        const v = nums(p)[0]!;
+        assert.equal(Number(item.answer), has(p, 'حزمة كاملة') ? Math.floor(v / 5) : v % 5, p);
+        continue;
+      }
+      if (has(p, 'جدول إشارات')) {
+        // a tally table in words; its answers are recomputed in grade2SecondPass.test.ts
+        kind('tallyTable');
+        continue;
+      }
       if (has(p, 'جدول الإشارات')) {
         // a bundle of a tally is five
         kind('tally');
@@ -449,9 +463,9 @@ describe('statistics: answers recomputed', () => {
         assert.ok(Number.isInteger(v / per), p);
         continue;
       }
-      if (id === 'read_data_g12') kinds[Number(g)]!.add(has(p, 'جدول الصور') ? 'pictures' : 'table');
+      if (G12.includes(id)) kinds[Number(g)]!.add(has(p, 'جدول الصور') ? 'pictures' : 'table');
       const cats = [...p.matchAll(/(التفاح|الموز|البرتقال|العنب|الكرز): (\d+)/g)].map(m => [m[1]!, Number(m[2])] as const);
-      const key = has(p, 'كل صورة تمثل 2') ? 2 : 1;
+      const key = has(p, 'كل صورة تمثل حبتين') ? 2 : 1;
       const vals = cats.map(([, c]) => c * key);
       const q = p.slice(p.lastIndexOf('. ') + 2);
       if (has(q, 'بكم')) assert.equal(Number(item.answer), Math.max(...vals) - Math.min(...vals));
@@ -462,7 +476,7 @@ describe('statistics: answers recomputed', () => {
     }
     // Grade 1's data lessons have their own generators in early.ts (data_table_g1, picto_make_g1, picto_read_g1)
     assert.deepEqual([...kinds[1]!], [], 'Grade 1 is no longer drawn from read_data_g12');
-    assert.deepEqual([...kinds[2]!].sort(), ['compare', 'draw', 'pictures', 'raw', 'table', 'tally'], 'Grade 2 kinds');
+    assert.deepEqual([...kinds[2]!].sort(), ['compare', 'draw', 'pictures', 'raw', 'table', 'tally', 'tallyDraw', 'tallyTable'], 'Grade 2 kinds');
     assert.deepEqual([...kinds[3]!].sort(), ['halfStep', 'squares', 'table'], 'Grade 3 kinds');
     assert.deepEqual([...kinds[4]!].sort(), ['halfStep', 'squares', 'table'], 'Grade 4 kinds');
   });
@@ -824,7 +838,7 @@ describe('data and proportion routing', () => {
     ['أشكال ڤن', 3, 'venn_g3'], ['تمثيل البيانات بأشكال ڤن', 4, 'venn_g4'],
     ['الوسط الحسابي', 5, 'mean_g5'], ['الوسط الحسابي', 7, 'mean_g7'], ['الوسيط والمنوال', 5, 'median_mode_g5'], ['المدى', 5, 'range_g5'],
     ['الوسيط، والمنوال، والمدى', 7, 'median_mode_range_g7'], ['التمثيل بالساق والورقة', 7, 'stem_leaf'],
-    ['تمثيل البيانات بالصور', 2, 'read_data_g12'], ['تمثيل البيانات بالأعمدة', 3, 'read_data_g34'], ['الجداول التكرارية', 6, 'freq_table'],
+    ['تمثيل البيانات بالصور', 2, 'read_pictures_g2'], ['جمع البيانات وتنظيمها', 2, 'read_tally_g2'], ['تمثيل البيانات بالأعمدة', 3, 'read_data_g34'], ['الجداول التكرارية', 6, 'freq_table'],
     ['الجداول والمخططات التكرارية ذات الفئات', 6, 'grouped_g6'], ['المدرجات التكرارية', 9, 'grouped_g9'], ['مقاييس التشتت', 9, 'dispersion'],
     ['أشكال الانتشار', 10, 'scatter'], ['المنحنى التكراري التراكمي', 10, 'cumulative'], ['مقاييس التشتت للجداول التكرارية ذات الفئات', 10, 'grouped_mean'],
     ['معدل الوحدة', 7, 'unit_rate'], ['التناسب', 7, 'proportion'], ['العلاقات التناسبية', 7, 'proportional_relation'], ['التغير الطردي', 7, 'direct_variation'],
