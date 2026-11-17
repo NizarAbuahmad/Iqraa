@@ -679,6 +679,14 @@ export function LibraryScreen({ asTab = false }: { asTab?: boolean }) {
       key: 'book-images', icon: 'images', title: t('bookImagesTitle'), desc: t('bookImagesDesc'), ...BRAND_TILE,
       go: () => router.push('/curriculum/book-images' as never),
     },
+    // A teacher's own drawing, checked before it is printed. Teachers only:
+    // students and parents print nothing for a class.
+    ...(isTeacher
+      ? [{
+          key: 'figure-check', icon: 'brush-outline' as const, title: t('figureCheckTile'), desc: t('figureCheckTileDesc'), ...BRAND_TILE,
+          go: () => router.push('/curriculum/figure-check' as never),
+        }]
+      : []),
     ...(englishLevel !== null
       ? [{
           key: 'english', icon: 'headset' as const, title: t('hubTitle'), desc: t('hubListenDesc'), ...cornerTile('english'),
