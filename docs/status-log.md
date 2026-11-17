@@ -10,6 +10,32 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 10 vocational English: «المسار كاملًا» picks a whole track — 2026-11-17
+
+Follow-up to the track grouping in this PR. The four Grade 10 vocational English books (commerce, agriculture, hospitality, industrial) were kept out of «الكتاب كاملًا» and «الفصل الأول كاملًا» and listed under their own headings, but a teacher could only pick their units one at a time. Each track's heading now starts with «المسار كاملًا: القطاع التجاري» (and so on). It covers that track's units and nothing else.
+
+**How:** a 'book' scope may now name one track book, `ScopeSelection.bookId` (`services/scopeSelection.ts`). It is not a new scope kind.
+- `unitsInScope` returns that book's units. It returns none when the book is not a track of the picked grade and subject, so `parseScope` refuses that selection.
+- `scopeKey` is `book:<grade>:<subject>:<bookId>`. The plain book key is unchanged, so cached papers keep their keys.
+- `scopeFromKey` (`services/revisionScope.ts`) reads the four-part key.
+- `scopeLabel` / `revisionPhrase` say «المسار كاملًا: …» / «موضوعات مسار …».
+- `TopicSelector` adds the item under each track's heading, wherever the screen offers 'book'.
+
+The API needed no change. It treats `scope.scopeKey` as opaque (`scopeKeyOf`, `grounding.ts` caps it at 200 characters), and `scope.kind` is still `'book'`.
+
+**Where it shows:** the eight `/ai-tools` screens that offer the whole book: quiz, worksheet, lesson plan, activity, slides, lesson flow, classroom builder and game. The chat tab's lesson picker (`app/(tabs)/iqra.tsx`) also shows it, because it takes the default kinds and treats it as it treats «الكتاب كاملًا». The exam builder (`/evaluations/new`) has its own picker and does not get it. «ما الجديد»: `g10-english-whole-track`, which opens the quiz.
+
+**Test:** `englishTrackScope.test.ts`, two new cases.
+- A track scope covers exactly its 6 units. Its key differs from the book's, and its label, phrase, key round trip and `parseScope` round trip are pinned.
+- A track id on the English main book, or on maths, is refused, and so is an unknown book in a key.
+- Both cases failed before the change.
+
+**Verified:**
+- mobile: 9,324 pass.
+- `pnpm run typecheck`.
+
+**Not verified:** the picker was not opened in a browser. The new item is a `DropdownItem` like «الكتاب كاملًا», placed under the existing track heading.
+
 ## Grade 10 maths «حل معادلات خاصة»: its worked example gives the book's one real root, not ±3i — 2026-11-17
 
 The last item from the Grade 10 review. Main's audit had already added the 2026 edition's first lesson, «حل معادلات خاصة», as `u1_l5`, with its five objectives, summary and exercises. One thing it carried over was wrong. The hand-written enrichment row `kbl-math-s2-1-1` (`services/knowledgeBase.ts`) gave the example «x³−2x²+9x−18=0: حلول x=2 و x=±3i». The book (math S1 p.9) factors it as (x−2)(x²+9) = 0 and says «لا يوجد حل حقيقي للمعادلة x²+9=0، فللمعادلة جذر واحد هو 2». Grade 10 works in real numbers only.

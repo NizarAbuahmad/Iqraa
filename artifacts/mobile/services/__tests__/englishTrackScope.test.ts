@@ -9,7 +9,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { KB_BOOKS, getUnitsForSubjectGrade } from '../knowledgeBase.ts';
-import { groupUnitsForPicker, semestersAvailable, unitsInScope } from '../scopeSelection.ts';
+import { groupUnitsForPicker, parseScope, scopeKey, scopeLabel, semestersAvailable, unitsInScope } from '../scopeSelection.ts';
+import { revisionPhrase, scopeFromKey } from '../revisionScope.ts';
 
 const ENGLISH = { gradeId: 'grade-10', subjectId: 'english' };
 const TRACK_BOOKS = ['kb-eng-commerce-10-s1', 'kb-eng-agriculture-10-s1', 'kb-eng-hospitality-10-s1', 'kb-eng-industry-10-s1'];
@@ -43,6 +44,27 @@ describe('Grade 10 vocational English tracks', () => {
     assert.equal(book.length, 10);
     assert.ok(book.every(u => !TRACK_BOOKS.includes(u.bookId)));
     assert.deepEqual(semestersAvailable(ENGLISH.gradeId, ENGLISH.subjectId), [1, 2]);
+  });
+
+  it('can be picked whole, one track at a time', () => {
+    const track = { kind: 'book' as const, ...ENGLISH, bookId: 'kb-eng-commerce-10-s1' };
+    const units = unitsInScope(track);
+    assert.equal(units.length, 6);
+    assert.ok(units.every(u => u.bookId === 'kb-eng-commerce-10-s1'));
+    assert.equal(scopeKey(track), 'book:grade-10:english:kb-eng-commerce-10-s1');
+    assert.notEqual(scopeKey(track), scopeKey({ kind: 'book', ...ENGLISH }));
+    assert.equal(scopeLabel(track, 'ar'), 'المسار كاملًا: القطاع التجاري');
+    assert.equal(scopeLabel(track, 'en'), 'Entire Commerce track');
+    assert.equal(revisionPhrase(track, 'en'), 'Commerce track topics');
+    assert.equal(revisionPhrase(track, 'ar'), 'موضوعات مسار القطاع التجاري');
+    assert.deepEqual(scopeFromKey(scopeKey(track)), track);
+    assert.deepEqual(parseScope(JSON.parse(JSON.stringify(track))), track);
+  });
+
+  it('refuse a whole-track scope on a book that is not a track of that grade and subject', () => {
+    assert.equal(parseScope({ kind: 'book', ...ENGLISH, bookId: 'kb-eng-10-s1' }), null);
+    assert.equal(parseScope({ kind: 'book', gradeId: 'grade-10', subjectId: 'mathematics', bookId: 'kb-eng-commerce-10-s1' }), null);
+    assert.equal(scopeFromKey('book:grade-10:english:no-such-book'), null);
   });
 
   it('can still be picked one unit at a time', () => {

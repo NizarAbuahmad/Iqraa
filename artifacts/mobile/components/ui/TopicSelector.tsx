@@ -32,11 +32,18 @@ const ENTIRE_UNIT = '__entire_unit__';
 const entireSemesterId = (s: Semester) => `__entire_sem_${s}__`;
 const semesterFromId = (id: string | null): Semester | null =>
   id === entireSemesterId(1) ? 1 : id === entireSemesterId(2) ? 2 : null;
+/** Pseudo unit ids for «المسار كاملًا» — one per track book (`KBBook.track`). */
+const TRACK_PREFIX = '__entire_track_';
+const entireTrackId = (bookId: string) => `${TRACK_PREFIX}${bookId}__`;
+const trackFromId = (id: string | null): string | null =>
+  id?.startsWith(TRACK_PREFIX) && id.endsWith('__') ? id.slice(TRACK_PREFIX.length, -2) : null;
 
 type UnitSemesterGroup = {
   key: string;
   label: string;
   units: KBUnit[];
+  /** A track's group: its book, for «المسار كاملًا». */
+  trackBookId?: string;
 };
 
 /**
@@ -56,6 +63,7 @@ function groupUnitsBySemester(
       key: track ? `sem-${g.semester}-${g.units[0]!.bookId}` : `sem-${g.semester}`,
       label: track ? `${sem} · ${track}` : sem,
       units: g.units,
+      trackBookId: track ? g.units[0]!.bookId : undefined,
     };
   });
 }
@@ -131,8 +139,9 @@ export function TopicSelector({
   const [lessonOpen, setLessonOpen] = useState(false);
 
   const pickedSemester = semesterFromId(selectedUnitId);
-  // «الكتاب كاملًا» and «الفصل كاملًا» pick no single unit, so no lesson picker follows.
-  const isWide = selectedUnitId === ENTIRE_BOOK || pickedSemester !== null;
+  const pickedTrack = trackFromId(selectedUnitId);
+  // «الكتاب كاملًا», «الفصل كاملًا» and «المسار كاملًا» pick no single unit, so no lesson picker follows.
+  const isWide = selectedUnitId === ENTIRE_BOOK || pickedSemester !== null || pickedTrack !== null;
   const lessons = selectedUnitId && !isWide ? getLessonsForUnit(selectedUnitId) : [];
 
   // Reset selections when subject/grade changes.
@@ -182,6 +191,15 @@ export function TopicSelector({
       // the unit's; `t` is the interface language, which an English-subject
       // teacher on an Arabic interface does not share («Activity: الكتاب كاملًا»).
       const sel: ScopeSelection = { kind: 'book', ...base };
+      onChange(scopeLabel(sel, lang));
+      onSelectionDetail?.(noDetail);
+      onScopeChange?.(sel);
+      return;
+    }
+
+    const trackBookId = trackFromId(selectedUnitId);
+    if (trackBookId) {
+      const sel: ScopeSelection = { kind: 'book', ...base, bookId: trackBookId };
       onChange(scopeLabel(sel, lang));
       onSelectionDetail?.(noDetail);
       onScopeChange?.(sel);
@@ -282,6 +300,8 @@ export function TopicSelector({
     ? t('entireBook')
     : pickedSemester
       ? scopeLabel({ kind: 'semester', gradeId, subjectId, semester: pickedSemester }, lang)
+      : pickedTrack
+        ? scopeLabel({ kind: 'book', gradeId, subjectId, bookId: pickedTrack }, lang)
       : selectedUnit
         ? (selectedSemesterLabel ? `${selectedSemesterLabel} · ${unitTitle}` : unitTitle)
         : '';
@@ -359,6 +379,15 @@ export function TopicSelector({
                   colors={colors}
                   isRTL={isRTL}
                 />
+                {group.trackBookId && kinds.includes('book') && (
+                  <DropdownItem
+                    label={scopeLabel({ kind: 'book', gradeId, subjectId, bookId: group.trackBookId }, lang)}
+                    icon="library-outline"
+                    selected={selectedUnitId === entireTrackId(group.trackBookId)}
+                    onPress={() => handleUnitSelect(entireTrackId(group.trackBookId!))}
+                    accent={accent} colors={colors} isRTL={isRTL}
+                  />
+                )}
                 {group.units.map(unit => (
                   <DropdownItem
                     key={unit.id}

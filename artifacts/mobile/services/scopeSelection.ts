@@ -35,10 +35,23 @@ export type ScopeSelection = {
   semester?: Semester;
   /** kind 'lesson': the KB lesson id — never a title. */
   lessonId?: string;
+  /**
+   * kind 'book' only: one track book of this grade+subject (`KBBook.track`) —
+   * «المسار كاملًا», e.g. Grade 10's commerce English. Absent, 'book' is the
+   * subject's own book.
+   */
+  bookId?: string;
 };
 
 /** What the picker offers today. A screen that names no kinds gets exactly this. */
 export const LEGACY_SCOPE_KINDS: readonly ScopeKind[] = ['lesson', 'unit', 'book'];
+
+/** The track book a 'book' selection names, when it is one of this grade+subject's tracks. */
+function trackBookOf(sel: ScopeSelection) {
+  if (sel.kind !== 'book' || !sel.bookId) return undefined;
+  const book = KB_BOOKS.find(b => b.id === sel.bookId);
+  return book?.track && book.gradeId === sel.gradeId && book.subjectId === sel.subjectId ? book : undefined;
+}
 
 function semesterOf(unit: KBUnit): Semester {
   return (KB_BOOKS.find(b => b.id === unit.bookId)?.semester ?? 1) as Semester;
@@ -53,6 +66,7 @@ export function unitsInScope(sel: ScopeSelection): KBUnit[] {
   const main = getMainUnitsForSubjectGrade(sel.subjectId, sel.gradeId);
   switch (sel.kind) {
     case 'book':
+      if (sel.bookId) return trackBookOf(sel) ? units.filter(u => u.bookId === sel.bookId) : [];
       return main;
     case 'semester':
       return main.filter(u => semesterOf(u) === sel.semester);
@@ -99,7 +113,7 @@ export function availableKinds(
 export function scopeKey(sel: ScopeSelection): string {
   switch (sel.kind) {
     case 'book':
-      return `book:${sel.gradeId}:${sel.subjectId}`;
+      return sel.bookId ? `book:${sel.gradeId}:${sel.subjectId}:${sel.bookId}` : `book:${sel.gradeId}:${sel.subjectId}`;
     case 'semester':
       if (sel.semester !== 1 && sel.semester !== 2) throw new Error('scopeKey: semester scope without a semester');
       return `sem:${sel.gradeId}:${sel.subjectId}:${sel.semester}`;
@@ -120,8 +134,11 @@ export function scopeKey(sel: ScopeSelection): string {
 export function scopeLabel(sel: ScopeSelection, lang: 'ar' | 'en'): string {
   const isAr = lang === 'ar';
   switch (sel.kind) {
-    case 'book':
+    case 'book': {
+      const track = trackBookOf(sel)?.track;
+      if (track) return isAr ? `المسار كاملًا: ${track.titleAr}` : `Entire ${track.titleEn}`;
       return isAr ? 'الكتاب كاملًا' : 'Entire book';
+    }
     case 'semester':
       if (isAr) return sel.semester === 2 ? 'الفصل الثاني كاملًا' : 'الفصل الأول كاملًا';
       return `Entire semester ${sel.semester === 2 ? 2 : 1}`;
@@ -147,6 +164,7 @@ export function parseScope(raw: unknown): ScopeSelection | null {
   if (typeof r.unitId === 'string') sel.unitId = r.unitId;
   if (r.semester === 1 || r.semester === 2) sel.semester = r.semester;
   if (typeof r.lessonId === 'string') sel.lessonId = r.lessonId;
+  if (sel.kind === 'book' && typeof r.bookId === 'string') sel.bookId = r.bookId;
   try {
     scopeKey(sel);
   } catch {
