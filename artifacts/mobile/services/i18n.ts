@@ -618,6 +618,22 @@ const translations = {
     bookImagesDesc: 'صور كل درس من كتاب الطالب',
     bookImagesCount: (n: number) => arCountPhrase(n, 'صورة', 'صورتان', 'صور'),
     bookImagesEmpty: 'لا توجد صور من الكتاب هنا بعد',
+    // «قبل طباعة الرسوم» — app/curriculum/figure-check.tsx
+    figureCheckTile: 'قبل طباعة الرسوم',
+    figureCheckTileDesc: 'راجع رسمك في ثلاث خطوات',
+    figureCheckTitle: 'مراجعة الرسوم التوضيحية للدرس قبل الطباعة',
+    figureCheckIntro:
+      'صور الكتاب هنا تُطبع جاهزة مع مصدرها ورقم صفحتها. أما الرسم الذي تُعدّه بنفسك — بيدك أو ببرنامج رسم أو بأداة ذكاء اصطناعي — فراجعه بهذه الخطوات الثلاث قبل أن تطبعه.',
+    figureCheckLabelsTitle: 'اكتب التسميات نصًّا فوق الرسم',
+    figureCheckLabelsBody:
+      'أسماء أجزاء الرسم (أ، ب، س، ص…) تكون في طبقة نص عربية قابلة للتعديل، لا مدموجة في الصورة. أدوات الذكاء الاصطناعي كثيرًا ما ترسم الحروف العربية مقطّعة أو معكوسة؛ فاحذف ما كتبته داخل الصورة واكتبه بنفسك، لتصحّح أي حرف دون أن تعيد الرسم.',
+    figureCheckScaleTitle: 'صغّره ثم اقرَأه من جديد',
+    figureCheckScaleBody:
+      'بعد تصغير الرسم إلى حجمه في ورقة العمل، اقرَأ كل تسمية: هل الحروف متصلة كما يجب، والنقاط في مكانها، والقراءة من اليمين إلى اليسار؟ وهل ما زالت الأرقام والرموز الصغيرة واضحة على الورق؟',
+    figureCheckSourceTitle: 'ميّز ما أُخذ من الكتاب',
+    figureCheckSourceBody:
+      'إن نقلت الرسم عن صورة في الكتاب أو عدّلت عليها، فضع عليه وسمًا واضحًا مثل «عن كتاب الطالب، ص ٣٥»، ليعرف الطالب أين يجد الأصل ولا يظنّه من الكتاب كما هو.',
+    figureCheckBookImages: 'صور الكتاب جاهزة للطباعة برقم صفحتها',
     resourcesAllSubjects: 'كل المواد',
     libraryCatInfographic: 'إنفوجرافيك',
     libraryAllShelves: 'كل التصنيفات',
@@ -4316,6 +4332,22 @@ const translations = {
     bookImagesDesc: "Each lesson's pictures from the student book",
     bookImagesCount: (n: number) => `${n} image${n === 1 ? '' : 's'}`,
     bookImagesEmpty: 'No book images here yet',
+    // "Before you print a drawing" — app/curriculum/figure-check.tsx
+    figureCheckTile: 'Check a drawing',
+    figureCheckTileDesc: 'Three checks before printing',
+    figureCheckTitle: "Check a lesson's drawings before printing",
+    figureCheckIntro:
+      'Book images here print ready, with their source and page number. A drawing you make yourself — by hand, in a drawing program or with an AI tool — deserves these three checks before you print it.',
+    figureCheckLabelsTitle: 'Put the labels on top as text',
+    figureCheckLabelsBody:
+      "Name the parts of the drawing (A, B, x, y…) in an editable text layer, not inside the picture. AI tools often draw Arabic letters broken or reversed, so delete any writing they put in the image and type it yourself — then you can fix a letter without redrawing.",
+    figureCheckScaleTitle: 'Shrink it, then read it again',
+    figureCheckScaleBody:
+      'Once the drawing is at its worksheet size, read every label: are the Arabic letters joined properly, the dots in place, and does it read right to left? Are the small numbers and symbols still clear on paper?',
+    figureCheckSourceTitle: 'Mark what came from the book',
+    figureCheckSourceBody:
+      'If you traced or adapted a picture from the book, label it clearly, e.g. "After the student book, p. 35", so students know where the original is and do not take yours for the book\'s own.',
+    figureCheckBookImages: 'Book images print ready, with their page number',
     resourcesAllSubjects: 'All subjects',
     libraryCatInfographic: 'Infographic',
     libraryAllShelves: 'All categories',

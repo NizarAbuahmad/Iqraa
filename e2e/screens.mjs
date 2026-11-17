@@ -26,6 +26,7 @@ const CLASSES = [
 
 const ROUTES = [
   ['library', '/curriculum/resources'],
+  ['figure-check', '/curriculum/figure-check'],
   ['math-hub', '/curriculum/math'],
   ['math-grapher', '/curriculum/math/grapher'],
   ['lab-hub', '/curriculum/lab'],

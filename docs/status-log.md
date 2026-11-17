@@ -10,6 +10,24 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Library: «قبل طباعة الرسوم», a checklist for a teacher's own drawing — 2026-11-17
+
+From a suggestion sent through the site's contact form. A teacher-only tile in the library's front row, after «صور
+الكتاب», opens `/curriculum/figure-check`: three checks for a drawing the teacher made themselves (by hand, in a
+drawing program or with an AI tool) before printing it — labels as an editable Arabic text layer, not baked into the
+picture; read it again at worksheet size (joined letters, dots, right-to-left); and mark what was traced or adapted
+from the book (e.g. «عن كتاب الطالب، ص ٣٥»). A last row opens «صور الكتاب», whose figures already print with their
+page. Static copy, no state, no API.
+
+**Left out on purpose:** the suggestion linked a third-party prompt guide (dalilnano.com). The app does not send
+teachers to outside sites nobody here has vetted, so the page carries no link out.
+
+**Verified:** typecheck; mobile suite 9311 pass / 0 fail (`i18nTerminology` caught «طلاب» and an unvowelled
+«اقرأ» on the first run, `designScale` an off-scale font size); screenshots of the library and the new page, phone and
+desktop, light and dark, Arabic and English (`e2e/screens.mjs`, which now lists `figure-check`). **Not verified:** on
+an Android device. Students and parents never see the tile; the route itself is reachable under `/curriculum` like
+every library page, and shows only this copy. No «ما الجديد» entry: it is a tip, not a capability.
+
 ## Grade 1 audit: every book page inside the ranges, two titles, a dual — 2026-11-14
 
 The Grade 2–10 audit, repeated for Grade 1 (279 lessons), on top of «Grade 1 review: book pages on the wrong unit…»,
