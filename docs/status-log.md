@@ -10,54 +10,126 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Grade 2 second pass: numbers within 999, grams without conversions, the data unit split by lesson — 2026-11-17
+## Grade 2 second pass: numbers within 999, grams without conversions, and «2 عشرات» — 2026-11-17
 
-This is a second read of Grade 2 maths, run on top of three earlier entries: «Grade 2 review: coverage, images, and four generator
-fixes», «Grade 2 audit: book pages, contents, honorifics and offline maths checked» and «Grade 2 maths: offline questions
-for the four problem-solving lessons». The generators ran over all 236 Grade 2 lessons; each grounds by its own id, and
-all 61 maths lessons fill a ten-question quiz. Every question of every maths quiz was read against its lesson's objective. Every key was right. (The audit
-script's ten «wrong key» flags are its own: it ignores the «كل صورة تمثل طائرين» scale and the sign of a difference.)
-Six things did not fit the book:
+A second read of Grade 2 maths, on top of «Grade 2 review: fifteen maths lessons asked about their own objective»
+(below), «Grade 2 audit…» and «Grade 2 review: coverage, images…». The generators were run over all 236 Grade 2
+lessons: each grounds by its own id, and all 61 maths lessons fill a ten-question quiz. Every question of every maths
+quiz was read against its lesson's objective. Every key was right. (The audit script's «wrong key» flags are its own:
+it ignores the «كل صورة تمثل طائرين» scale and the sign of a difference.)
 
-- **Numbers past 999.** Grade 2 works «ضمن 3 منازل», but some items went further:
-  - «تقدير ناتج الجمع» estimated sums up to 1158, with 1200 and 1300 among the options.
-  - Wrong options in the mental add/subtract, dinar and metre lessons offered 1000, 1081 and 5000.
-  - `estSum` now redraws a Grade 2 item that passes 999, and those options are capped.
+This pass found the same data-unit, division-table and eraser problems that the «fifteen lessons» review fixed first; its
+fixes are kept. What this pass adds:
+
+- **Numbers past 999 in estimating and in wrong options.** Grade 2 works «ضمن 3 منازل», but:
+  - «تقدير ناتج الجمع» estimated sums up to 1158, with 1200 and 1300 among the options. `estSum` now redraws a Grade 2
+    item that passes 999.
+  - Wrong options in the mental add/subtract, dinar and metre lessons offered 1000, 1081 and 5000. They are capped at
+    999 there.
   - A rounding item may still offer 1000 for 960. That is a real round number, so it is left.
-- **«الغرام والكيلوغرام» and «اللتر والمليلتر» converted to four digits.** Items asked «7 كيلوغرامات = ؟ غرام» (7000)
-  and «3 لترات و 700 مليلتر» (3700), but the objectives only ask to tell the units apart and pick the fitting one.
-  At f = 1000 those conversions are gone. What remains: the fitting unit, what is left to make one kilogram or litre,
-  and two new kinds — a total of two small things, and how much more one holds or weighs (within 950).
-  «المتر» is unchanged.
-- **«العلاقة بين القسمة والضرب» used 6 × 7 = 42.** Grade 2 divides by 2, 3, 4 and 5 (u7_l4–l7). At Grade 2 the divisor
-  now comes from those tables. Grade 3 keeps 2–9.
-- **The four data lessons shared one pool**, so «جمع البيانات وتنظيمها» and «تفسير البيانات الممثلة بجدول الإشارات» asked
-  about picture graphs, and the picture lessons asked about tallies. They are now two generators:
-  - `read_pictures_g2` serves picture graphs, now worded «كل صورة تمثل حبتين من الفاكهة» (it used to say «تمثل 2 من الفاكهة»).
-  - `read_tally_g2` serves raw data to organise and a tally total. It adds two kinds: a tally table in words («التفاح:
-    حزمتان وإشارة واحدة») to read the most, the least, the total or one row from; and how many whole bundles or single
-    marks a count needs.
+- **«الغرام والكيلوغرام» and «اللتر والمليلتر» no longer convert to four digits.** They asked «7 كيلوغرامات = ؟ غرام»
+  (7000) and «3 لترات و 700 مليلتر» (3700); the objectives ask to tell the units apart and pick the fitting one (the
+  «fifteen lessons» review left this open). At f = 1000 the conversions are gone. What remains: the fitting unit, what
+  is left to make one kilogram or litre, and two new kinds — a total of two small things, and how much more one weighs
+  or holds (within 950). «المتر» keeps its conversions, which stay within 999.
 - **«2 عشرات», «1 مئات».** The place-value stem «6 مئات و 2 عشرات و 6 آحاد» now uses counts of 3–9, as Grade 1's
   tens and ones already did. So does Grade 3's «الألوف» stem, which had the same line.
-- **An eraser of 19 cm beside a pencil of 6 cm.** The eraser is now 2–6 cm and the pencil 8–20.
 
 **Verified:**
-- `grade2SecondPass.test.ts` (11 tests) was written first and failed 8 of its first 10. It recomputes the new kinds' keys, reading a
-  tally in words back to its count.
-- The `stats.test.ts` and `early.test.ts` checkers cover the split generators and the new unit kinds. Routing now sends
-  «تمثيل البيانات بالصور» to `read_pictures_g2`.
-- `lib/math-practice` passes 1,408 tests, and typecheck passes.
-- Rerunning the Grade 2 audit found nothing past 999 except the rounding option above. All 61 maths lessons still fill
-  ten questions.
-- New items were sampled and read by hand, which caught «رغيف خبز كتلتها» (now «كتلته») and an awkward capacity stem
-  (now «تتسع علبة العصير لـ 300 مليلتر»).
+- `grade2SecondPass.test.ts` was written first and failed before the fix. It recomputes the new gram and millilitre
+  kinds and checks every number in the touched Grade 2 stems and options is at most 999.
+- The `early.test.ts` units checker recomputes the new kinds and expects no conversion kind for grams and millilitres.
+- `lib/math-practice`, the full mobile suite and `pnpm run typecheck` pass (counts in the PR).
+- Rerunning the Grade 2 audit found nothing past 999 except the rounding option above. New items were sampled and read
+  by hand, which caught «رغيف خبز كتلتها» (now «كتلته») and an awkward capacity stem (now «تتسع علبة العصير لـ 300 مليلتر»).
 
 **Not done:**
-- Grade 2 page images exist only for Islamic and PE (see the audit entry). Every other book still needs rendering from
-  the PDFs, so no page check was possible here.
+- Grade 2 page images exist only for Islamic and PE, so no page check was possible here.
 - «الأشكال المستوية» asks about sides and vertices, which is also the next lesson's content. Left as it is.
 
 No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+
+## Grade 2 review: fifteen maths lessons asked about their own objective — 2026-11-15
+
+The same per-lesson read as «Grade 3 review: six maths lessons…» (below): every one of Grade 2's 61 maths lessons, its
+sample questions against its NCCD objective. «Grade 2 audit…» had read their keys (all right) and «Grade 2 review:
+coverage, images…» their coverage; neither asked whether a question was about its lesson. Fixed (`lib/math-practice`):
+
+- **Three digits where the objective says «ضمن 3 منازل».** «القيمة المنزلية» wrote «10 + 2» in expanded form, «مقارنة
+  الأعداد» / «ترتيب الأعداد» compared «10، 6، 22، 20», «الطرح» («من عدد يتكون من 3 منازل») asked «11 − 4», and «تمثيل
+  الأعداد على خط الأعداد» asked for the middle of «10 و 70». At Grade 2 these now draw 100–999 (`elementary.ts`: the
+  `place`, `compare` and `sub` ops take a lower bound there; `number_line_g2`).
+- **The four data lessons are two lessons about pictures and two about tallies**, and all four drew one pool. «تمثيل
+  البيانات بالصور» and «تفسير البيانات الممثلة بالصور» (`read_data_g12`) now ask only picture graphs — every table is
+  one; «جمع البيانات وتنظيمها» and «تفسير البيانات الممثلة بجدول الإشارات» (new `read_data_tally_g2`) ask only tallies:
+  a tally's total, the count of a raw list, how many full bundles a count takes, and two tally rows compared.
+- **Grade 2's tables are 2, 3, 4, 5 and 10.** «العلاقة بين القسمة والضرب» asked «63 ÷ 7» and «… إذا ضُرب في 8», and «كسر
+  الوحدة كجزء من مجموعة» «1/6 of 42»; both now stay in those tables. Grade 3's relation questions are unchanged.
+- **«الوقت لأقرب 5 دقائق» / «… لأقرب ربع ساعة» read the clock.** They rounded «6:01» to «6:00» and asked how long a
+  lesson lasted, which is Grade 3's «الفترات الزمنية». Now: the time from the hands, the minutes from the minute hand,
+  where the minute hand points for a time, and which two numbers the hour hand is between.
+- **«تكوين المجموعات المتساوية»** opens the division unit but also asked for the total of equal groups (multiplication,
+  the lesson before). Now it shares, groups and lays balls out in equal rows.
+- **«السنتيمتر»** — «تقدير أطوال الأشياء الصغيرة، وقياسها باستعمال المسطرة» — never measured or estimated. It now reads a
+  pencil off a ruler (from 0 or another mark) and picks a sensible length for a small thing (each other option at least
+  2.5 times off); its pencil-and-eraser sum no longer gives «ممحاة طولها 18 سم».
+
+**Verified.** `grade2Objectives.test.ts` (6) reads the printed questions for the three-digit bounds, the unit fractions
+and which generator each data lesson reaches; `stats.test.ts` recomputes the new tally kinds and fails a tally in a
+picture lesson or a picture in a tally lesson; `early.test.ts` recomputes the clock-reading kinds and fails rounding
+or elapsed time there, checks the division lesson never multiplies, the relation stays in Grade 2's tables, and the
+ruler and estimate keys. Ten planted bugs, one per fix, each failed a test (one, which moved the ruler's end mark,
+changed nothing — the stem moved with it — and was replaced by a wrong key, which failed). The new questions were read by
+hand, keys right. math-practice 1414 pass; typecheck; `noQuestionBank`, `mathLessonKinds`, `worksheetWideScope` 31/31.
+
+**Not done.** «المتر», «الغرام والكيلوغرام» and «اللتر والمليلتر» («تمييز» the units) also convert between them, which is
+Grade 3's objective («التحويل من…»); left, since each stem states the fact it uses and the book was not available to
+say whether Grade 2 does. «كسر الوحدة» compares unit fractions, which Grade 3 teaches as «مقارنة الكسور»; left for the
+same reason. Everything the audit left for the PDFs.
+
+## Grade 3 review: six maths lessons asked about their own objective — 2026-11-14
+
+Follows «Grade 3 audit…» (book pages, figures, contents) and «Grade 3 maths: offline questions for the four lessons that
+had none» (below), which this does not repeat. A sweep of all 254 Grade 3 lessons through the offline plan, quiz,
+worksheet and activity found nothing broken: every lesson grounds by id, plans and activities generate for all, and all 70
+maths lessons give a full paper. Every maths lesson's sample questions were then read against its NCCD objective (there
+is no Grade 3 book text, so the objective is the reference). Lessons that drew the right kind of question at the wrong
+size, or another lesson's questions:
+
+- **«الوقت بالدقائق» (S2 u10_l1)** — reading the clock to the minute — drew elapsed-time questions. New
+  `clock_minutes_g3` (`geometry.ts`): the minute hand on the n-th small mark after a number, counting on by fives then
+  ones, a time read in words («التاسعة و 13 دقيقة»), and a few minutes later across the hour («4:63» is a wrong option).
+- **«الفترات الزمنية (1)» (u10_l4)** — elapsed time *within the same hour* — shared that pool, which crossed hours. New
+  `elapsed_hour_g3`: how long, when it ended, when it started, and which of two activities was longer, every time in one
+  hour. «الفترات الزمنية (2)» (across the day) keeps `time_g3`.
+- **«المساحة» (u11_l6)** — area as unit squares covered — drew «مساحة المستطيل»'s length × width. New `area_units_g3`:
+  rows of squares on a grid, a shape of two parts, two shapes compared, cm² on 1 cm squared paper, a missing row length,
+  floor tiles. The next lesson keeps `area_rect`.
+- **«تقدير ناتج القسمة» (u8_l2)** — a two-digit number by a one-digit one — divided «237 ÷ 8». Grade 3 now rounds a two-digit
+  dividend to a ten that divides evenly (65 ÷ 2 ≈ 70 ÷ 2), or takes the nearest multiple of the divisor (23 ÷ 6 ≈ 24 ÷ 6);
+  Grades 4–6 are unchanged.
+- **«الكسور المتكافئة» (u9_l5)** — with models and the number line — multiplied by up to 9 («36/45»). Grade 3 now stays on
+  strips no finer than twelfths: the missing numerator, which listed fraction is equivalent, two strips, two number lines.
+  Multiplying numerator and denominator stays Grade 4's.
+- **«القيمة المنزلية ضمن الألوف» (S1 u1_l2)** asked «القيمة المنزلية للرقم 8 في العدد 18»: Grade 3 numbers now have 3–4
+  digits. The digit asked about is never 0 (any grade: «القيمة المنزلية للرقم 0» has nothing to find).
+
+Smaller: «الأرقام الهندية» gave a digit's value in Latin digits (now ٧٠٠, like its other answers); «ولُوّن 1 منها» reads «ولُوّن
+جزء واحد منها»; «الكسر كجزء من مجموعة» asked a bare «ما 2/3 من العدد 3؟» (now a part of a group of balls, at least 4);
+«قبل الظهر، بعد الظهر» gains the objective itself — which event of a school day is before or after noon (the first lesson
+and dinner are both at 8:00) — and loses its two 24-hour-clock kinds: «توقيت 24 ساعةً» is new vocabulary in Grade 5's
+«الزمن» (S2 u9_l3), so they are replaced by the hours until 12:00 noon and the hours slept across midnight.
+
+**Verified.** `grade3Objectives.test.ts` (14) routes each title to its generator and recomputes every key from its printed
+stem by code that shares nothing with the generators (minutes counted, clocks rolled over, squares multiplied, the nearest
+multiple found by walking the multiples), and checks the bounds: one hour, two-digit dividends, twelfths, no length ×
+width in «المساحة», no number below 100 in «ضمن الألوف». `early.test.ts`, `topics.test.ts`, `geometry.test.ts` and
+`grade3Lessons.test.ts` now read the new wordings. Six planted bugs (two-digit place values back, the old division path,
+a wrong roll-over, the minute mark off by one, an interval past the hour, strips past twelfths) each failed a test, and so
+did an hour added to the night's sleep; `early.test.ts` fails a «24 ساعة» or a 13:00–23:00 in an «قبل الظهر، بعد الظهر» stem.
+Thirty-odd new questions read by hand, keys correct. The PR body has the CI set.
+
+**Not done.** Everything the audit left for the PDFs.
 
 ## Grade 1 audit: every book page inside the ranges, two titles, a dual — 2026-11-14
 

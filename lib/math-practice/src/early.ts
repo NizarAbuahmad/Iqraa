@@ -701,7 +701,11 @@ const fractionOfSetG3 = T('fraction_of_set_g3', /^الكسر كجزء من مج�
     const top = red ? r : b, all = r + b, ans = `${top}/${all}`;
     return { eq: `${r}, ${b}`, answer: ans, wrongs: wrongsFrom(ans, [`${top}/${all - top}`, `${all - top}/${all}`, `${all}/${top}`, `${top}/${all + 1}`], j => `${top}/${all + 1 + Math.abs(j)}`), ar: `في كيس ${redBalls(r)} و${b > 2 ? ' ' : ''}${blueBalls(b)}. ما الكسر الذي يمثل الكرات ${red ? 'الحمراء' : 'الزرقاء'} من كرات الكيس كلها؟`, en: `A bag holds ${r} red ball${r === 1 ? '' : 's'} and ${b} blue ball${b === 1 ? '' : 's'}. What fraction of all the balls in the bag are ${red ? 'red' : 'blue'}?` };
   }
-  if (kind === 1) return { eq: `${a}/${d}, ${n}`, answer: String(a * q), wrongs: ints(a * q, [q, n - a * q, a + n / d, n - q]), ar: `ما ${a}/${d} من العدد ${n}؟`, en: `What is ${a}/${d} of ${n}?` };
+  if (kind === 1) {
+    // a part of a group of balls (until 2026-11-14 the bare «ما 2/3 من العدد 3»); at least 4 balls, so the count is a numeral
+    const q2 = Math.max(q, 2), n2 = d * q2;
+    return { eq: `${a}/${d}, ${n2}`, answer: String(a * q2), wrongs: ints(a * q2, [q2, n2 - a * q2, a + q2, n2 - q2]), ar: `في مجموعة ${balls(n2)}، ${a}/${d} منها حمراء. كم كرة حمراء في المجموعة؟`, en: `A group has ${n2} balls and ${a}/${d} of them are red. How many red balls are there?` };
+  }
   // a class of 3–10 students («طلاب»), some of them in hats; ask for those with or without one
   const c = pick(rng, [3, 4, 5, 6, 8, 10]); let k = int(rng, 1, c - 1); while (gcd(k, c) !== 1) k = int(rng, 1, c - 1);
   const without = rng() < 0.5, top = without ? c - k : k;
@@ -722,7 +726,8 @@ const unitFraction = T('unit_fraction', /^كسر الوحده$/, [2, 2], ({ rng 
   return { eq: `1/${d}, 1/${e}`, answer: `1/${big}`, wrongs: wrongsFrom(`1/${big}`, [`1/${small}`, `1/${small + 1}`, `1/${big + small}`], j => `1/${small + 1 + Math.abs(j)}`), ar: `أي الكسرين أكبر: 1/${d} أم 1/${e}؟ (اكتب الكسر الأكبر)`, en: `Which fraction is larger, 1/${d} or 1/${e}? (write the larger one)` };
 });
 const unitFractionOfSet = T('unit_fraction_set', /^كسر الوحده كجزء من مجموعه$/, [2, 2], ({ rng }) => {
-  const d = pick(rng, [2, 3, 4, 5, 6, 10]), k = pick(rng, [0, 1, 2]);
+  // the divisor is one of Grade 2's tables (2, 3, 4, 5, 10): «1/6 of 42» needed the 6 table
+  const d = pick(rng, [2, 3, 4, 5, 10]), k = pick(rng, [0, 1, 2]);
   if (k === 1) {
     // at least 11 apples, so «تفاحة» is the right form after the number
     const q = int(rng, Math.max(2, Math.ceil(11 / d)), 9), n = d * q;
@@ -739,10 +744,12 @@ const unitFractionOfSet = T('unit_fraction_set', /^كسر الوحده كجزء 
 const wholeFraction = T('fraction_of_whole', /^الكسر كجزء من كل$/, [3, 3], ({ rng }) => {
   const d = pick(rng, [3, 4, 5, 6, 8, 10]); let k = int(rng, 1, d - 1); while (gcd(k, d) !== 1) k = int(rng, 1, d - 1);
   const kind = pick(rng, [0, 1, 2, 3]);
-  if (kind === 1) { const u = d - k, ans = `${u}/${d}`; return { eq: `${k}, ${d}`, answer: ans, wrongs: wrongsFrom(ans, [`${k}/${d}`, `${u}/${k}`, `${d}/${u}`, `${u}/${d + 1}`], j => `${u + Math.abs(j) + 1}/${d + 1}`), ar: `قُسّم شكل إلى ${d} أجزاء متساوية ولُوّن ${k} منها. ما الكسر الذي يمثل الجزء غير الملوّن؟`, en: `A shape is split into ${d} equal parts and ${k} are coloured. What fraction is not coloured?` }; }
+  // «ولُوّن 1 منها» read as a numeral where the book says «جزء واحد»
+  const col = k === 1 ? 'جزء واحد' : k === 2 ? 'جزآن' : String(k);
+  if (kind === 1) { const u = d - k, ans = `${u}/${d}`; return { eq: `${k}, ${d}`, answer: ans, wrongs: wrongsFrom(ans, [`${k}/${d}`, `${u}/${k}`, `${d}/${u}`, `${u}/${d + 1}`], j => `${u + Math.abs(j) + 1}/${d + 1}`), ar: `قُسّم شكل إلى ${d} أجزاء متساوية ولُوّن ${col} منها. ما الكسر الذي يمثل الجزء غير الملوّن؟`, en: `A shape is split into ${d} equal parts and ${k} are coloured. What fraction is not coloured?` }; }
   if (kind === 2) return { eq: `${k}/${d}`, answer: String(d), wrongs: ints(d, [k, d - k, d + k, d + 1]), ar: `ما مقام الكسر ${k}/${d}؟`, en: `What is the denominator of ${k}/${d}?` };
   if (kind === 3) return { eq: `${k}/${d}`, answer: String(k), wrongs: ints(k, [d, d - k, k + 1, d + k]), ar: `يمثل الكسر ${k}/${d} الجزء الملوّن من شكل. كم جزءًا لُوّن؟`, en: `The fraction ${k}/${d} shows the coloured part of a shape. How many parts are coloured?` };
-  return { eq: `${k}, ${d}`, answer: `${k}/${d}`, wrongs: wrongsFrom(`${k}/${d}`, [`${d - k}/${d}`, `${k}/${d - k}`, `${d}/${k}`, `${k}/${d + 1}`], j => `${k + Math.abs(j) + 1}/${d + 1}`), ar: `قُسّم شكل إلى ${d} أجزاء متساوية ولُوّن ${k} منها. ما الكسر الذي يمثل الجزء الملوّن؟`, en: `A shape is split into ${d} equal parts and ${k} are coloured. What fraction is coloured?` };
+  return { eq: `${k}, ${d}`, answer: `${k}/${d}`, wrongs: wrongsFrom(`${k}/${d}`, [`${d - k}/${d}`, `${k}/${d - k}`, `${d}/${k}`, `${k}/${d + 1}`], j => `${k + Math.abs(j) + 1}/${d + 1}`), ar: `قُسّم شكل إلى ${d} أجزاء متساوية ولُوّن ${col} منها. ما الكسر الذي يمثل الجزء الملوّن؟`, en: `A shape is split into ${d} equal parts and ${k} are coloured. What fraction is coloured?` };
 });
 const fractionOne = T('fraction_equals_one', /^الكسور المساويه للواحد$/, [3, 3], ({ rng }) => {
   const n = int(rng, 3, 10), k = pick(rng, [0, 1, 2]);
@@ -768,7 +775,8 @@ const fractionLine = T('fraction_number_line', /^الكسور علي خط الا
 
 const numberLineG2 = T('number_line_g2', /^تمثيل الاعداد علي خط الاعداد$/, [2, 2], ({ rng, diff }) => {
   const k = pick(rng, [0, 1, 2, 3]);
-  if (k === 0) { const a = 10 * int(rng, 1, span(diff, 8, 20, 40)), gap = 20 * int(rng, 1, 4); return { eq: `${a}, ${a + gap}`, answer: String(a + gap / 2), wrongs: ints(a + gap / 2, [a + gap, a, a + gap / 2 + 10, a + gap / 2 - 10]), ar: `ما العدد الذي يقع في منتصف المسافة بين ${a} و ${a + gap} على خط الأعداد؟`, en: `Which number is exactly halfway between ${a} and ${a + gap} on a number line?` }; }
+  // every number has three digits: the objective is «تمثيل عدد من 3 منازل» (an easy paper asked «بين 10 و 70»)
+  if (k === 0) { const a = 10 * int(rng, 10, span(diff, 40, 70, 90)), gap = 20 * int(rng, 1, 4); return { eq: `${a}, ${a + gap}`, answer: String(a + gap / 2), wrongs: ints(a + gap / 2, [a + gap, a, a + gap / 2 + 10, a + gap / 2 - 10]), ar: `ما العدد الذي يقع في منتصف المسافة بين ${a} و ${a + gap} على خط الأعداد؟`, en: `Which number is exactly halfway between ${a} and ${a + gap} on a number line?` }; }
   if (k === 2) {
     // a number line from one hundred to the next, marked in tens
     const a = 100 * int(rng, 1, 8), j = int(rng, 3, 9), v = a + 10 * j;
@@ -778,7 +786,7 @@ const numberLineG2 = T('number_line_g2', /^تمثيل الاعداد علي خط
     const h = int(rng, 1, 8), n = 100 * h + int(rng, 1, 99), pair = (x: number) => `${x} و ${x + 100}`, ans = pair(100 * h);
     return { eq: `${n}`, answer: ans, wrongs: wrongsFrom(ans, [pair(100 * h + 100), h > 1 ? pair(100 * h - 100) : `0 و 100`, `${100 * h} و ${n % 100 === 50 ? 100 * h + 10 : 100 * h + 50}`], j => pair(100 * (h + Math.abs(j) + 1))), ar: `بين أي مئتين متتاليتين يقع العدد ${n} على خط الأعداد؟`, en: `Between which two consecutive hundreds does ${n} lie on a number line?` };
   }
-  const s = pick(rng, [5, 10]), a = s * int(rng, 1, 9), j = int(rng, 3, 6);
+  const s = pick(rng, [5, 10]), a = 100 * int(rng, 1, 8) + s * int(rng, 0, 9), j = int(rng, 3, 6);
   return { eq: `${a}, ${s}, ${j}`, answer: String(a + s * j), wrongs: ints(a + s * j, [a + j, a + s, a + s * (j + 1), a + s * (j - 1)]), ar: `ابدأ من ${a} على خط الأعداد واقفز ${j} قفزات، طول كل قفزة ${s}. عند أي عدد تصل؟`, en: `Start at ${a} on a number line and take ${j} jumps of ${s}. Which number do you reach?` };
 });
 
@@ -803,16 +811,22 @@ const mentalMultiples = (id: string, match: RegExp, add: boolean, grade: number)
   return { eq: `${x}, ${y}`, answer: String(r), wrongs: ints(r, [r * 10, r / 10, add ? x - y : x + y, r + place].filter(v => grade > 2 || v <= 999)), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
 });
 
-const equalGroups = (id: string, match: RegExp) => T(id, match, [2, 2], ({ rng }) => {
-  const g = int(rng, 2, 5), n = int(rng, 2, 6), t = g * n, k = pick(rng, [0, 1, 2]);
+/**
+ * Equal groups. «تكوين المجموعات المتساوية» (S2 u7_l1) opens the division unit — «القسمة بوصفها تشكيل مجموعات
+ * متساوية» — so it shares and groups, and lays balls out in equal rows; it never asks for the total, which is
+ * multiplication («المجموعات المتساوية», S2 u6_l1).
+ */
+const equalGroups = (id: string, match: RegExp, division = false) => T(id, match, [2, 2], ({ rng }) => {
+  const g = int(rng, 2, 5), n = int(rng, 2, 6), t = g * n, k = pick(rng, division ? [1, 2, 3] : [0, 1, 2]);
+  if (k === 3) return { eq: `${t} ÷ ${g} rows`, answer: String(n), wrongs: ints(n, [t, g, n + 1, t - g]), ar: `رتّبت ليلى ${balls(t)} في ${g === 2 ? 'صفّين متساويين' : `${g} صفوف متساوية`}. كم كرة في كل صف؟`, en: `Laila puts ${t} balls in ${g} equal rows. How many balls are in each row?` };
   if (k === 0) return { eq: `${g}, ${n}`, answer: String(t), wrongs: ints(t, [g + n, t + g, t - n, g * g]), ar: `${g === 2 ? 'مجموعتان متساويتان' : `${g} مجموعات متساوية`}، في كل منها ${pens(n)}. كم قلمًا في المجموع؟`, en: `There are ${g} equal groups with ${n} pencils in each. How many pencils are there in all?` };
   if (k === 1) return { eq: `${t}, ${g}`, answer: String(n), wrongs: ints(n, [t, g, n + 1, t - g]), ar: `وُزّعت ${pieces(t)} بالتساوي على ${g === 2 ? 'مجموعتين' : `${g} مجموعات`}. كم قطعة في كل مجموعة؟`, en: `${t} pieces are shared equally among ${g} groups. How many pieces are in each group?` };
   return { eq: `${t}, ${n}`, answer: String(g), wrongs: ints(g, [t, n, g + 1, t - n]), ar: `${pieces(t)}، وُضع في كل مجموعة ${pieces(n)}. كم مجموعة تكوّنت؟`, en: `${t} pieces are put into groups of ${n}. How many groups are made?` };
 });
 
 const divisionRelation = T('division_relation', /^العلاقه بين القسمه والضرب$|^علاقه القسمه بالضرب$/, [2, 3], ({ rng, grade }) => {
-  // Grade 2 divides by 2, 3, 4 and 5 (u7_l4–l7): 6 × 7 = 42 is a Grade 3 fact (2026-11-17)
-  const a = grade <= 2 ? pick(rng, [2, 3, 4, 5]) : int(rng, 2, 9), b = int(rng, 2, 9), p = a * b, k = pick(rng, [0, 1, 2]);
+  // Grade 2 has the 2, 3, 4, 5 and 10 tables only (S2 units 6–7): «63 ÷ 7» was Grade 3's
+  const a = grade === 2 ? pick(rng, [2, 3, 4, 5, 10]) : int(rng, 2, 9), b = int(rng, 2, 9), p = a * b, k = pick(rng, [0, 1, 2]);
   if (k === 0) return { eq: `${a}, ${b}, ${p}`, answer: String(b), wrongs: ints(b, [a, p, b + 1, b - 1]), ar: `إذا كان ${a} × ${b} = ${p} فإن ${p} ÷ ${a} = ___`, en: `If ${a} × ${b} = ${p} then ${p} ÷ ${a} = ___` };
   if (k === 2) return { eq: `${a}, ${p}`, answer: String(b), wrongs: ints(b, [a, p, p - a, b + 1]), ar: `ما العدد الذي إذا ضُرب في ${a} كان الناتج ${p}؟`, en: `Which number multiplied by ${a} gives ${p}?` };
   return { eq: `${p}, ${a}, ${b}`, answer: String(b), wrongs: ints(b, [a, p, b + 1, b - 1]), ar: `أكمل: ${p} ÷ ${a} = ___ لأن ___ × ${a} = ${p}`, en: `Complete: ${p} ÷ ${a} = ___ because ___ × ${a} = ${p}` };
@@ -1340,32 +1354,26 @@ const hourTime = (id: string, match: RegExp, half: boolean) => T(id, match, [1, 
 
 /** «ربع ساعة / نصف ساعة / ثلاثة أرباع الساعة», or «10 دقائق / 25 دقيقة» off the quarter hours. */
 const minutesAr = (m: number) => (m === 15 ? 'ربع ساعة' : m === 30 ? 'نصف ساعة' : m === 45 ? 'ثلاثة أرباع الساعة' : m === 60 ? 'ساعة واحدة' : `${m} ${tamyiz(m, 'دقائق', 'دقيقةً', 'دقيقة')}`);
+/**
+ * Grade 2 «الوقت لأقرب 5 دقائق» / «… لأقرب ربع ساعة»: reading a clock whose minute hand sits on a number
+ * (every 5 minutes, or every quarter hour) — the time from the hands, the minutes from the minute hand, where the
+ * minute hand points for a time, and which two numbers the hour hand is between. Until 2026-11-15 they also
+ * rounded «6:01» to «6:00» and asked how long a lesson lasted, which is Grade 3's «الفترات الزمنية».
+ */
 const nearestMinutes = (id: string, match: RegExp, step: 5 | 15) => T(id, match, [2, 2], ({ rng }) => {
-  // 0 round to the nearest step, 1 read the hands, 2 minutes past the hour from the minute hand, 3 the time some minutes later, 4 how long between two times.
-  const kind = pick(rng, [0, 1, 2, 3, 4]);
-  if (kind >= 3) {
-    const fmt = (t: number) => `${Math.floor(t / 60) % 12 || 12}:${String(t % 60).padStart(2, '0')}`;
-    const start = 60 * int(rng, 1, 12) + step * int(rng, 0, 60 / step - 1), dur = step * int(rng, 1, step === 15 ? 4 : 11), end = start + dur;
-    if (kind === 3) return { eq: `${fmt(start)} + ${dur}`, answer: fmt(end), wrongs: wrongsFrom(fmt(end), [fmt(start), fmt(end + 60), fmt(end + step)], j => fmt(end + step * (Math.abs(j) + 1))), ar: `الساعة الآن ${fmt(start)}. كم تكون الساعة بعد ${minutesAr(dur)}؟`, en: `It is ${fmt(start)} now. What time will it be in ${dur} minutes?` };
-    return { eq: `${fmt(start)} → ${fmt(end)}`, answer: String(dur), wrongs: ints(dur, [dur + step, dur > step ? dur - step : dur + 2 * step, dur + 10, dur + 60]), ar: `بدأ الدرس الساعة ${fmt(start)} وانتهى الساعة ${fmt(end)}. كم دقيقة استغرق الدرس؟`, en: `A lesson started at ${fmt(start)} and ended at ${fmt(end)}. How many minutes did it last?` };
+  const kind = pick(rng, [0, 1, 2, 3]);
+  // the minute hand on a number of the clock face: each number is 5 minutes on from the last
+  const h = int(rng, 1, 12), m = step * int(rng, 1, 60 / step - 1), mark = m / 5, next = h % 12 + 1;
+  const fmt = (x: number, y: number) => `${x}:${String(y).padStart(2, '0')}`;
+  if (kind === 1) return { eq: fmt(h, m), answer: fmt(h, m), wrongs: wrongsFrom(fmt(h, m), [fmt(next, m), fmt(h, mark), fmt(h, (m + step) % 60 || step)], j => fmt(h, (m + step * (Math.abs(j) + 1)) % 60)), ar: `عقرب الساعات بين ${h} و ${next}، وعقرب الدقائق عند العدد ${mark}. ما الوقت؟`, en: `The hour hand is between ${h} and ${next} and the minute hand points to ${mark}. What time is it?` };
+  if (kind === 2) return { eq: `${mark}`, answer: String(m), wrongs: ints(m, [mark, m + 5, m - 5, mark * 10]), ar: `يشير عقرب الدقائق إلى العدد ${mark}. كم دقيقة مضت بعد رأس الساعة؟`, en: `The minute hand points to ${mark}. How many minutes past the hour is it?` };
+  if (kind === 3) {
+    // the hour hand has left h and not reached the next number
+    const pair = (x: number) => `${x} و ${x % 12 + 1}`, prev = (h + 10) % 12 + 1;
+    return { eq: `${fmt(h, m)} hour hand`, answer: pair(h), wrongs: wrongsFrom(pair(h), [pair(prev), pair(next), `${h} و ${mark}`], j => pair((h + 2 + Math.abs(j)) % 12 + 1)), ar: `تشير الساعة إلى ${fmt(h, m)}. بين أي عددين يقع عقرب الساعات؟`, en: `A clock shows ${fmt(h, m)}. Between which two numbers is the hour hand?` };
   }
-  if (kind > 0) {
-    // the minute hand on a number of the clock face: each number is 5 minutes on from the last
-    const h = int(rng, 1, 12), m = step * int(rng, 1, 60 / step - 1), mark = m / 5, next = h % 12 + 1;
-    const fmt = (x: number, y: number) => `${x}:${String(y).padStart(2, '0')}`;
-    if (kind === 1) return { eq: fmt(h, m), answer: fmt(h, m), wrongs: wrongsFrom(fmt(h, m), [fmt(next, m), fmt(h, mark), fmt(h, (m + step) % 60 || step)], j => fmt(h, (m + step * (Math.abs(j) + 1)) % 60)), ar: `عقرب الساعات بين ${h} و ${next}، وعقرب الدقائق عند العدد ${mark}. ما الوقت؟`, en: `The hour hand is between ${h} and ${next} and the minute hand points to ${mark}. What time is it?` };
-    return { eq: `${mark}`, answer: String(m), wrongs: ints(m, [mark, m + 5, m - 5, mark * 10]), ar: `يشير عقرب الدقائق إلى العدد ${mark}. كم دقيقة مضت بعد رأس الساعة؟`, en: `The minute hand points to ${mark}. How many minutes past the hour is it?` };
-  }
-  for (;;) {
-    const h = int(rng, 1, 12), m = int(rng, 1, 58);
-    const lo = Math.floor(m / step) * step, hi = lo + step, d1 = m - lo, d2 = hi - m;
-    if (d1 === d2 || m % step === 0) continue;
-    const near = d1 < d2 ? lo : hi, hh = near === 60 ? h % 12 + 1 : h, mm = near === 60 ? 0 : near;
-    const fmt = (x: number, y: number) => `${x}:${String(y).padStart(2, '0')}`;
-    const ans = fmt(hh, mm);
-    const alt = d1 < d2 ? (hi === 60 ? fmt(h % 12 + 1, 0) : fmt(h, hi)) : fmt(h, lo);
-    return { eq: fmt(h, m), answer: ans, wrongs: wrongsFrom(ans, [alt, fmt(h, m), fmt(h % 12 + 1, 0)], k => fmt(h, (mm + step * (1 + Math.abs(k))) % 60)), ar: `تشير الساعة إلى ${fmt(h, m)}. ما الوقت لأقرب ${step === 5 ? '5 دقائق' : 'ربع ساعة'}؟`, en: `A clock shows ${fmt(h, m)}. What is the time to the nearest ${step === 5 ? '5 minutes' : 'quarter hour'}?` };
-  }
+  // where the minute hand points for a time
+  return { eq: `${fmt(h, m)} minute hand`, answer: String(mark), wrongs: ints(mark, [m, h, mark + 1, mark === 1 ? 11 : mark - 1, 12 - mark]), ar: `تشير الساعة إلى ${fmt(h, m)}. إلى أي عدد يشير عقرب الدقائق؟`, en: `A clock shows ${fmt(h, m)}. Which number does the minute hand point to?` };
 });
 
 const MONTHS = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
@@ -1386,16 +1394,33 @@ const monthsOfYear = T('months', /^اشهر السنه$/, [2, 2], ({ rng }) => {
   return { eq: '', answer: '12', wrongs: ['10', '11', '13'], ar: 'كم شهرًا في السنة؟', en: 'How many months are in a year?' };
 });
 
+/** A school day's events and their usual hour: the clock reads 8:00 for the first lesson and for dinner. */
+const DAY_AM: Array<[string, number]> = [['الاستيقاظ', 6], ['الإفطار', 7], ['الحصة الأولى', 8], ['الاستراحة', 10]];
+const DAY_PM: Array<[string, number]> = [['الغداء', 2], ['حلّ الواجبات', 5], ['العشاء', 8], ['النوم', 9]];
 const amPm = T('am_pm', /^قبل الظهر بعد الظهر$/, [3, 3], ({ rng }) => {
-  const a = int(rng, 5, 11), b = int(rng, 1, 9), k = pick(rng, [0, 1, 2, 3]);
-  if (k === 2) return { eq: `${b + 12}`, answer: String(b), wrongs: ints(b, [b + 12, b + 2, b + 1, b - 1]), ar: `الساعة ${b + 12}:00 بنظام 24 ساعةً. كم تكون الساعة بعد الظهر؟ (اكتب العدد قبل «:00»)`, en: `It is ${b + 12}:00 in 24-hour time. What time is it in the afternoon? (write the number before ':00')` };
+  const a = int(rng, 5, 11), b = int(rng, 1, 9), k = pick(rng, [0, 1, 2, 3, 4]);
+  if (k === 4) {
+    // the objective itself: which event of the day falls before or after noon — one from one list, three from the other
+    const pm = rng() < 0.5, [hit, rest] = pm ? [DAY_PM, DAY_AM] : [DAY_AM, DAY_PM];
+    const say = ([e, h]: [string, number]) => `${e} الساعة ${h}:00`;
+    const ans = say(pick(rng, hit)), wrongs = shuffle(rng, rest).slice(0, 3).map(say);
+    return { eq: `${pm ? 'pm' : 'am'}: ${ans}`, answer: ans, wrongs, ar: `أيّ هذه المواعيد في يوم سامي الدراسي يكون ${pm ? 'بعد الظهر' : 'قبل الظهر'}: ${shuffle(rng, [ans, ...wrongs]).join('، ')}؟`, en: `Which of these events in Sami's school day is ${pm ? 'in the afternoon (p.m.)' : 'in the morning (a.m.)'}: ${[ans, ...wrongs].join(', ')}? (Arabic event names)` };
+  }
+  // No 24-hour clock: «توقيت 24 ساعةً» is new vocabulary in Grade 5's «الزمن» (S2 u9_l3), so Grade 3 stays in the two halves of the day.
+  if (k === 2) {
+    // across midnight: to bed after noon, up before it
+    const p = int(rng, 8, 11), w = int(rng, 5, 7), hrs = 12 - p + w;
+    return { eq: `${p} pm → ${w} am`, answer: String(hrs), wrongs: ints(hrs, [p - w, p + w, 12 - p, hrs + 1, hrs - 1]), ar: `نام سامي الساعة ${p}:00 بعد الظهر، واستيقظ الساعة ${w}:00 قبل الظهر من اليوم التالي. كم ساعة نام؟`, en: `Sami went to sleep at ${p}:00 p.m. and woke up at ${w}:00 a.m. the next day. How many hours did he sleep?` };
+  }
   if (k === 3) {
     // a morning start that runs past noon
     const s = int(rng, 7, 11), len = int(rng, Math.max(3, 13 - s), 10), end = s + len - 12;
     return { eq: `${s}, ${len}`, answer: String(end), wrongs: ints(end, [s + len, end + 1, end - 1, len]), ar: `بدأت رحلة الساعة ${s}:00 قبل الظهر واستمرت ${len} ساعات. في أي ساعة بعد الظهر انتهت؟ (اكتب العدد قبل «:00»)`, en: `A trip starts at ${s}:00 a.m. and lasts ${len} hours. At what hour p.m. does it end? (write the number before ':00')` };
   }
   if (k === 0) return { eq: `${a}, ${b}`, answer: String(12 - a + b), wrongs: ints(12 - a + b, [b - a > 0 ? b - a : 2, 12 - a, a + b, 12 - a + b + 1]), ar: `بدأ نشاط الساعة ${a}:00 قبل الظهر وانتهى الساعة ${b}:00 بعد الظهر. كم ساعة استغرق؟`, en: `An activity starts at ${a}:00 a.m. and ends at ${b}:00 p.m. How many hours does it last?` };
-  return { eq: `${b}`, answer: String(b + 12), wrongs: ints(b + 12, [b, b + 10, 12 - b > 0 ? 12 - b : 11, b + 11]), ar: `الساعة ${b}:00 بعد الظهر. كم تبلغ الساعة بنظام 24 ساعةً؟ (اكتب العدد قبل «:00»)`, en: `It is ${b}:00 p.m. What is the hour in 24-hour time? (write the number before ':00')` };
+  // how long until noon, where قبل الظهر ends
+  const h = int(rng, 6, 11);
+  return { eq: `12 − ${h}`, answer: String(12 - h), wrongs: ints(12 - h, [h, 12 + h, 13 - h, 11 - h, 24 - h]), ar: `الساعة الآن ${h}:00 قبل الظهر. كم ساعة بقيت حتى الساعة 12:00 ظهرًا؟`, en: `It is ${h}:00 a.m. How many hours are left until 12:00 noon?` };
 });
 
 const calendar = T('calendar', /^التقويم$/, [3, 3], ({ rng }) => {
@@ -1505,10 +1530,30 @@ const unitsG2 = (id: string, match: RegExp, big: string, small: string, f: numbe
   if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: ints(n * f, [n * f * 10, n * f / 10, n + f, n * f + f, n * f - f].filter(v => v > 0 && v <= 999)), ar: `${fact} ${howMany(small)} في ${measure(n, big)}؟`, en: `1 ${bigEn} = ${f} ${smallEn}. How many ${smallEn} are in ${n} ${bigEn}?` };
   return { eq: `${n * f}`, answer: String(n), wrongs: ints(n, [n * 10, n + 1, n - 1, n * f]), ar: `${fact} ${howMany(big)} في ${measure(n * f, small)}؟`, en: `1 ${bigEn} = ${f} ${smallEn}. How many ${bigEn} are in ${n * f} ${smallEn}?` };
 });
+/** Small things and a sensible length for each, with lengths no ruler would give them. */
+const CM_GUESS: Array<[string, number, number[]]> = [
+  ['قلم رصاص جديد', 18, [2, 90, 300]], ['ممحاة', 5, [50, 100, 1]], ['إصبع اليد', 7, [70, 1, 200]],
+  ['دفتر المدرسة', 25, [2, 250, 900]], ['ملعقة الطعام', 15, [1, 150, 500]], ['مشبك الورق', 3, [30, 100, 300]],
+];
+/**
+ * Grade 2 «السنتيمتر»: «تقدير أطوال الأشياء الصغيرة، وقياسها باستعمال المسطرة». Since 2026-11-15 it measures
+ * with a ruler — a thing laid from one mark to another, or from the 0 — and estimates a length, besides the
+ * sums and differences of lengths it already asked.
+ */
 const centimetre = T('cm_lengths', /^السنتيمتر$/, [2, 2], ({ rng }) => {
-  const a = int(rng, 5, 30), b = int(rng, 3, 25), k = pick(rng, [0, 1, 2]);
-  // an eraser of 2–6 cm beside a pencil of 8–20: it was once 19 cm beside a 6 cm pencil
-  if (k === 0) { const a = int(rng, 8, 20), b = int(rng, 2, 6); return { eq: `${a}, ${b}`, answer: String(a + b), wrongs: ints(a + b, [Math.abs(a - b), a + b + 1, a + b - 1, a * 2]), ar: `قلم طوله ${a} سم وممحاة طولها ${b} سم. ما طولهما معًا بالسنتيمتر؟`, en: `A pencil is ${a} cm long and an eraser is ${b} cm long. How long are they together, in cm?` }; }
+  const a = int(rng, 5, 30), b = int(rng, 3, 25), k = pick(rng, [0, 1, 2, 3, 4]);
+  if (k === 3) {
+    // on a ruler: from the 0 the reading is the length; from another mark, take the start away
+    const s = pick(rng, [0, int(rng, 1, 6)]), e = s + int(rng, 3, 12);
+    const what = s === 0 ? `يبدأ عند العدد 0 وينتهي عند العدد ${e}` : `يبدأ عند العدد ${s} وينتهي عند العدد ${e}`;
+    return { eq: `${e} − ${s}`, answer: String(e - s), wrongs: ints(e - s, [e, e + s, e - s + 1, e - s - 1]), ar: `وُضع قلم على المسطرة، ${what}. كم سنتيمترًا طول القلم؟`, en: `A pencil lies on a ruler from ${s} to ${e}. How many centimetres long is it?` };
+  }
+  if (k === 4) {
+    const [thing, cm, far] = pick(rng, CM_GUESS), opt = (v: number) => `${v} سم`;
+    return { eq: `~${cm} cm`, answer: opt(cm), wrongs: far.map(opt), ar: `أيّ الأطوال الآتية أقرب إلى طول ${thing}: ${shuffle(rng, [cm, ...far]).map(opt).join('، ')}؟`, en: `Which length is closest to the length of a ${thing} (Arabic object name)?` };
+  }
+  // a pencil 10–20 cm and an eraser 3–7 cm: «ممحاة طولها 18 سم» contradicted the estimate kind below
+  if (k === 0) { const p = int(rng, 10, 20), e = int(rng, 3, 7); return { eq: `${p}, ${e}`, answer: String(p + e), wrongs: ints(p + e, [p - e, p + e + 1, p + e - 1, p * 2]), ar: `قلم طوله ${p} سم وممحاة طولها ${e} سم. ما طولهما معًا بالسنتيمتر؟`, en: `A pencil is ${p} cm long and an eraser is ${e} cm long. How long are they together, in cm?` }; }
   if (k === 1) { const hi = Math.max(a, b), lo = Math.min(a, b); if (hi === lo) return centimetre.make({ rng, diff: 'easy', grade: 2 }); return { eq: `${hi}, ${lo}`, answer: String(hi - lo), wrongs: ints(hi - lo, [hi + lo, hi, lo, hi - lo + 1]), ar: `طول حبل ${hi} سم وطول آخر ${lo} سم. بكم يزيد الأول على الثاني بالسنتيمتر؟`, en: `One rope is ${hi} cm long and another is ${lo} cm long. By how many cm is the first longer?` }; }
   return { eq: `${a}`, answer: String(a * 2), wrongs: ints(a * 2, [a, a + 2, a * 3, a * 2 + 1]), ar: `طول قلم ${a} سم. ما طول قلمين مثله إذا وُضعا طرفًا إلى طرف؟`, en: `A pencil is ${a} cm long. How long are two such pencils placed end to end?` };
 });
@@ -1778,7 +1823,7 @@ export const EARLY_TOPICS: readonly Topic[] = [
   numberLineG2,
   mentalMultiples('mental_mult_add_g2', /^جمع مضاعفات العشره والمئه ذهنيا$/, true, 2), mentalMultiples('mental_mult_sub_g2', /^طرح مضاعفات العشره والمئه ذهنيا$/, false, 2),
   mentalMultiples('mental_mult_add_g3', /^جمع مضاعفات 10 و100 و1000$/, true, 3), mentalMultiples('mental_mult_sub_g3', /^طرح مضاعفات 10 و100 و1000$/, false, 3),
-  equalGroups('equal_groups_a', /^المجموعات المتساويه$/), equalGroups('equal_groups_b', /^تكوين المجموعات المتساويه$/), divisionRelation,
+  equalGroups('equal_groups_a', /^المجموعات المتساويه$/), equalGroups('equal_groups_b', /^تكوين المجموعات المتساويه$/, true), divisionRelation,
   mulProps, divProps, remainder,
   divisionQ('div_no_rem', /^القسمه من دون باق \(الناتج من رقمين\)$/, true, false), divisionQ('div_rem_2', /^القسمه مع باق \(الناتج من رقمين\)$/, true, true), divisionQ('div_rem_1', /^القسمه مع باق \(الناتج من رقم واحد\)$/, false, true),
   tensMulG3, tensDivG3, distributive, mulNoRegroup('mul_no_regroup', /^الضرب من دون اعاده التجميع$/, false), mulNoRegroup('mul_regroup', /^الضرب مع اعاده التجميع$/, true),

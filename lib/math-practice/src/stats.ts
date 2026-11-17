@@ -480,53 +480,38 @@ const CATS: Array<[string, string]> = [['التفاح', 'apples'], ['الموز'
  * of its scale, how many squares a bar takes, and (Grade 4) counting a dot plot.
  */
 
-/** «حزمتان و 3 إشارات», «حزمة واحدة», «إشارتان» — a count of 1–19 as a tally is read aloud. */
-const tallyAr = (v: number) => {
-  const b = Math.floor(v / 5), r = v % 5;
-  const bs = b === 0 ? '' : b === 1 ? 'حزمة واحدة' : b === 2 ? 'حزمتان' : `${b} حزم`;
-  const rs = r === 0 ? '' : r === 1 ? 'إشارة واحدة' : r === 2 ? 'إشارتان' : `${r} إشارات`;
-  return [bs, rs].filter(Boolean).join(' و');
-};
 /**
- * Grade 2's four data lessons used to share this pool, so the tally lessons asked about pictures and
- * the picture lessons about tallies (second pass, 2026-11-17). `focus` keeps a lesson to its own:
- * 'pictures' (u5_l1–l2) reads and draws picture graphs; 'tally' (u5_l3–l4) organises raw data and
- * reads tally tables (kinds 11 and 12).
+ * Tables, picture graphs, tallies and bar graphs. `pool` names the kinds a lesson may draw and `pics` makes every
+ * table a picture graph: Grade 2's four data lessons are two about pictures and two about tallies («جمع البيانات
+ * وتنظيمها في جدول الإشارات»), and until 2026-11-15 all four drew from one pool.
  */
-const readData = (id: string, match: RegExp, grades: [number, number], focus?: 'pictures' | 'tally') => T(id, match, grades, ({ rng, diff, grade }) => {
+const readData = (id: string, match: RegExp, grades: [number, number], pool?: number[], pics = false) => T(id, match, grades, ({ rng, diff, grade }) => {
   const m = grade <= 1 ? 6 : grade === 2 ? 9 : span(diff, 12, 20, 30);
   const k = grade <= 2 ? 3 : 4;
   const cats = shuffle(rng, CATS).slice(0, k);
   const raw = shuffle(rng, Array.from({ length: m }, (_, i) => i + 1)).slice(0, k);
-  const key = focus === 'pictures' ? (rng() < 0.6 ? 2 : 1) : grade === 2 && rng() < 0.6 ? 2 : 1;
-  const pictures = focus === 'pictures' || key === 2;
-  const counts = raw; // symbols per category
+  const key = pics ? 2 : grade === 2 && rng() < 0.6 ? 2 : 1;
+  const counts = raw.map(v => (key === 2 ? v : v)); // symbols (or tally marks) per category
   const vals = counts.map(c => c * key);
-  const where = pictures ? `في جدول الصور الآتي كل صورة تمثل ${key === 2 ? 'حبتين' : 'حبة واحدة'} من الفاكهة، وعدد الصور: ` : 'في الجدول الآتي عدد الطلاب الذين يفضلون كل نوع من الفاكهة: ';
-  const whereEn = pictures ? `In a picture graph each picture stands for ${key === 2 ? 'two fruits' : 'one fruit'}; the numbers of pictures are: ` : 'The table shows how many students prefer each fruit: ';
+  const where = key === 2 ? `في جدول الصور الآتي كل صورة تمثل ${key} من الفاكهة، وعدد الصور: ` : 'في الجدول الآتي عدد الطلاب الذين يفضلون كل نوع من الفاكهة: ';
+  const whereEn = key === 2 ? `In a picture graph each picture stands for ${key} fruits; the numbers of pictures are: ` : 'The table shows how many students prefer each fruit: ';
   const tab = cats.map((c, i) => `${c[0]}: ${counts[i]}`).join('، ');
   const tabEn = cats.map((c, i) => `${c[1]}: ${counts[i]}`).join(', ');
-  const q = pick(rng, focus === 'pictures' ? [0, 1, 3, 5, 7] : focus === 'tally' ? [4, 6, 11, 11, 12] : grade === 1 ? [0, 1, 3, 4, 5] : grade === 2 ? [0, 1, 3, 4, 5, 6, 7] : [0, 1, 2, 3, 8, 9]); // the dot plot (once 10) is `dot_plot_g4`'s lesson since 2026-11-14
-  if (q === 11) { // read a tally table: most, least, total, or one row
-    const vs = shuffle(rng, Array.from({ length: 17 }, (_, i) => i + 3)).slice(0, 3);
-    const rows = cats.map((c, i) => `${c[0]}: ${tallyAr(vs[i]!)}`).join('، ');
-    const rowsEn = cats.map((c, i) => `${c[1]}: ${vs[i]}`).join(', ');
-    const head = `سجّل طلاب الصف في جدول إشارات، كل حزمة فيه 5 إشارات، نوع الفاكهة الذي يفضّله كل منهم. ${rows}.`;
-    const headEn = `Pupils tallied the fruit each of them prefers (each bundle is 5 marks): ${rowsEn}.`;
-    const t = sum(vs), hi = vs.indexOf(Math.max(...vs)), lo = vs.indexOf(Math.min(...vs)), w = pick(rng, [0, 1, 2, 3]);
-    const others = (i: number) => [...cats.filter((_, j) => j !== i), ...CATS.filter(c => !cats.includes(c))].map(c => c[0]).slice(0, 3);
-    if (w === 0) return { eq: rows, answer: cats[hi]![0], wrongs: others(hi), ar: `${head} أي نوع هو الأكثر تفضيلًا؟`, en: `${headEn} Which fruit is preferred most?` };
-    if (w === 1) return { eq: rows, answer: cats[lo]![0], wrongs: others(lo), ar: `${head} أي نوع هو الأقل تفضيلًا؟`, en: `${headEn} Which fruit is preferred least?` };
-    if (w === 2) return { eq: rows, answer: String(t), wrongs: countOpts(t, [t - 1, t + 1, t + 5, t - 5, Math.max(...vs)]), ar: `${head} كم طالبًا سُجّل في الجدول جميعًا؟`, en: `${headEn} How many pupils were tallied altogether?` };
-    const i = int(rng, 0, 2), v = vs[i]!, b = Math.floor(v / 5), r = v % 5;
-    return { eq: rows, answer: String(v), wrongs: countOpts(v, [b + r, 10 * b + r, v + 1, v - 1, v + 5]), ar: `${head} كم طالبًا يفضّل ${cats[i]![0]}؟`, en: `${headEn} How many pupils prefer ${cats[i]![1]}?` };
+  const q = pick(rng, pool ?? (grade === 1 ? [0, 1, 3, 4, 5] : grade === 2 ? [0, 1, 3, 4, 5, 6, 7] : [0, 1, 2, 3, 8, 9]));
+  if (q === 10) { // organise into a tally: how many full bundles of five a count takes
+    let v = 0;
+    do v = int(rng, 7, 24); while (v % 5 === 0);
+    const b = Math.floor(v / 5);
+    return { eq: `${v} → bundles`, answer: String(b), wrongs: countOpts(b, [v, v % 5, b + 1, b - 1]), ar: `عدّ سامر ${v} ${tamyiz(v, 'سيارات', 'سيارةً', 'سيارة')} مرّت أمام المدرسة، وسيمثّلها في جدول الإشارات. كم حزمة كاملة من 5 إشارات يرسم؟`, en: `Samer counted ${v} cars passing the school and will show them in a tally chart. How many full bundles of 5 marks does he draw?` };
   }
-  if (q === 12) { // represent a count as a tally: whole bundles, or single marks after them
-    const v = int(rng, 6, 19), b = Math.floor(v / 5), r = v % 5, bundles = r === 0 || rng() < 0.5;
-    const stem = `يريد سامر أن يمثّل ${v} ${tamyiz(v, 'سيارات', 'سيارةً', 'سيارة')} في جدول الإشارات، وكل حزمة 5 إشارات.`;
-    if (bundles) return { eq: `${v}`, answer: String(b), wrongs: countOpts(b, [v, r, b + 1, b - 1, 5]), ar: `${stem} كم حزمة كاملة يرسم؟`, en: `Samer wants to show ${v} cars in a tally chart, with 5 marks in each bundle. How many full bundles does he draw?` };
-    return { eq: `${v}`, answer: String(r), wrongs: countOpts(r, [b, v, 5 - r, r + 1]), ar: `${stem} كم إشارة منفردة يرسم بعد الحزم الكاملة؟`, en: `Samer wants to show ${v} cars in a tally chart, with 5 marks in each bundle. How many single marks does he draw after the full bundles?` };
-  }
+  if (q === 11) { // read two rows of a tally and compare them
+    const bundlesAr = (n: number) => (n === 1 ? 'حزمة واحدة' : n === 2 ? 'حزمتان' : `${n} حزم`);
+    const singlesAr = (n: number) => (n === 1 ? 'إشارة واحدة' : n === 2 ? 'إشارتان' : `${n} إشارات`);
+    let b1 = 0, s1 = 0, b2 = 0, s2 = 0;
+    do { b1 = int(rng, 1, 4); s1 = int(rng, 1, 4); b2 = int(rng, 1, 4); s2 = int(rng, 1, 4); } while (5 * b1 + s1 <= 5 * b2 + s2);
+    const v1 = 5 * b1 + s1, v2 = 5 * b2 + s2, d = v1 - v2;
+    return { eq: `${v1} − ${v2}`, answer: String(d), wrongs: countOpts(d, [v1 + v2, (b1 + s1) - (b2 + s2) || d + 5, v1, d + 1, d - 1]), ar: `في جدول الإشارات لألوان السيارات التي مرّت أمام المدرسة، كل حزمة 5 إشارات: الحمراء ${bundlesAr(b1)} و${singlesAr(s1)}، والزرقاء ${bundlesAr(b2)} و${singlesAr(s2)}. بكم يزيد عدد السيارات الحمراء على عدد الزرقاء؟`, en: `A tally chart of the cars passing the school, each bundle 5 marks: red ${b1} bundles and ${s1} singles, blue ${b2} bundles and ${s2} singles. How many more red cars than blue?` };
+  } // the dot plot (once 10) is `dot_plot_g4`'s lesson since 2026-11-14
   if (q === 8) { // read a bar that ends halfway between two lines of the scale
     const step = pick(rng, [2, 10]), lo = step * int(rng, 1, span(diff, 4, 6, 8)), v = lo + step / 2, [f, fEn] = pick(rng, CATS);
     return { eq: `${step}, ${lo}, ${lo + step}`, answer: String(v), wrongs: countOpts(v, [lo, lo + step, lo + 1, v + step]), ar: `في تمثيل بالأعمدة لعدد الطلاب الذين يفضلون كل نوع من الفاكهة، يزيد تدريج المحور الرأسي ${step} عند كل خط. ينتهي عمود ${f} في منتصف المسافة بين الخطين ${lo} و ${lo + step}. كم طالبًا يفضّل ${f}؟`, en: `In a bar graph of the fruits pupils prefer, the vertical scale goes up by ${step} at each line. The bar for ${fEn} ends halfway between the lines ${lo} and ${lo + step}. How many pupils prefer ${fEn}?` };
@@ -562,8 +547,8 @@ const readData = (id: string, match: RegExp, grades: [number, number], focus?: '
   // the other categories first, then fruits not in the table, so there are always three wrong options
   const others = (i: number) => [...cats.filter((_, j) => j !== i), ...CATS.filter(c => !cats.includes(c))].map(c => c[0]).slice(0, 3);
   const head = `${where}${tab}.`, headEn = `${whereEn}${tabEn}.`;
-  if (q === 0) return { eq: tab, answer: cats[hi]![0], wrongs: others(hi), ar: `${head} أي نوع هو الأكثر ${pictures ? 'عددًا' : 'تفضيلًا'}؟`, en: `${headEn} Which fruit has the most?` };
-  if (q === 1) return { eq: tab, answer: cats[lo]![0], wrongs: others(lo), ar: `${head} أي نوع هو الأقل ${pictures ? 'عددًا' : 'تفضيلًا'}؟`, en: `${headEn} Which fruit has the least?` };
+  if (q === 0) return { eq: tab, answer: cats[hi]![0], wrongs: others(hi), ar: `${head} أي نوع هو الأكثر ${key === 2 ? 'عددًا' : 'تفضيلًا'}؟`, en: `${headEn} Which fruit has the most?` };
+  if (q === 1) return { eq: tab, answer: cats[lo]![0], wrongs: others(lo), ar: `${head} أي نوع هو الأقل ${key === 2 ? 'عددًا' : 'تفضيلًا'}؟`, en: `${headEn} Which fruit has the least?` };
   if (q === 2) { const d = vals[hi]! - vals[lo]!; return { eq: tab, answer: String(d), wrongs: countOpts(d, [vals[hi]!, d + 1, d - 1, vals[hi]! + vals[lo]!]), ar: `${head} بكم يزيد عدد الأكثر على عدد الأقل؟`, en: `${headEn} By how many does the largest exceed the smallest?` }; }
   const t = sum(vals);
   return { eq: tab, answer: String(t), wrongs: countOpts(t, [t - 1, t + 1, Math.max(...vals), t + key]), ar: `${head} ما المجموع الكلي؟`, en: `${headEn} What is the total?` };
@@ -985,9 +970,9 @@ export const STATS_TOPICS: readonly Topic[] = [
   medianModeT('median_mode_g5', /^الوسيط والمنوال$/, [5, 5], ['median', 'mode', 'medianMissing', 'modeContext']), medianModeT('range_g5', /^المدي$/, [5, 5], ['range', 'rangeTable', 'rangeEnd']),
   medianModeT('median_mode_range_g7', /^الوسيط والمنوال والمدي$/, [7, 7], ['median', 'mode', 'range', 'medianMissing', 'bestMeasure']),
   stemLeaf,
-  readData('read_data_g12', /^جداول البيانات$/, [2, 2]),
-  readData('read_pictures_g2', /^(?:تمثيل البيانات بالصور|تفسير بيانات ممثله بالصور|تفسير البيانات الممثله بالصور)$/, [2, 2], 'pictures'),
-  readData('read_tally_g2', /^(?:تفسير البيانات الممثله بجدول الاشارات|جمع البيانات وتنظيمها)$/, [2, 2], 'tally'),
+  // Grade 2: the two picture-graph lessons, and the two tally lessons
+  readData('read_data_g12', /^(?:جداول البيانات|تمثيل البيانات بالصور|تفسير بيانات ممثله بالصور|تفسير البيانات الممثله بالصور)$/, [2, 2], [0, 1, 3, 5, 7], true),
+  readData('read_data_tally_g2', /^(?:تفسير البيانات الممثله بجدول الاشارات|جمع البيانات وتنظيمها)$/, [2, 2], [4, 6, 10, 11]),
   // Grade 1's three data lessons have one generator each in early.ts (they shared this one)
   // «تمثيل البيانات بالنقاط» has its own generator since 2026-11-14 (`dot_plot_g4`): here it was one kind among bar charts
   readData('read_data_g34', /^(?:تمثيل البيانات بالاعمده|تفسير البيانات الممثله بالاعمده)$/, [3, 4]), dotPlot,
