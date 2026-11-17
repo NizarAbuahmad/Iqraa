@@ -10,6 +10,28 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 10 maths «حل معادلات خاصة»: its worked example gives the book's one real root, not ±3i — 2026-11-17
+
+The last item from the Grade 10 review. Main's audit had already added the 2026 edition's first lesson, «حل معادلات خاصة», as `u1_l5`, with its five objectives, summary and exercises. One thing it carried over was wrong. The hand-written enrichment row `kbl-math-s2-1-1` (`services/knowledgeBase.ts`) gave the example «x³−2x²+9x−18=0: حلول x=2 و x=±3i». The book (math S1 p.9) factors it as (x−2)(x²+9) = 0 and says «لا يوجد حل حقيقي للمعادلة x²+9=0، فللمعادلة جذر واحد هو 2». Grade 10 works in real numbers only.
+
+**What changed:**
+- The example is rewritten, in Arabic and English, as the book works it: grouping, then factoring, then one real root.
+- Checked numerically: the real roots of x³−2x²+9x−18 are {2}, and of x⁶−3x³−40 are {2, ∛(−5)}. The second example was already right.
+- No other Grade 10 lesson text or offline bank item carries a complex root (searched).
+
+**Test:** `g10MathRealRoots.test.ts`. No Grade 10 maths KB lesson's summary, rules or examples may carry a complex root, and u1_l5's example must give the one real root. Both cases fail without the change.
+
+**Verified:**
+- mobile: 9,321 pass.
+- One run failed «Grade 1 maths difficulty, offline» in `earlyMathDifficulty.test.ts`. That file passes 5/5 alone and failed for Grade 4 once before; it is a flake in main's early-grade offline maths, outside this change.
+- `pnpm run typecheck`.
+
+**Still missing for u1_l5:**
+- **Figures:** `figure-lesson-map.json` still maps book lesson (1,1) to `null`. Mapping it would make crops reachable that were probably never uploaded to R2.
+- **Book pages:** `book-page-links.json` has none for the lesson.
+
+Both need the PDF and an R2 write token. Unchanged and still the owner's call: the two 2020-edition lessons, u1_l3 «تبسيط المقادير الأسية» and u1_l4 «حل المعادلة الأسية», whose ids are stored in Postgres.
+
 ## Grade 10 English: the vocational tracks get their own picker headings and stay out of whole-semester scopes — 2026-11-15
 
 Grade 10's four vocational-English coursebooks (commerce, agriculture, hospitality, industry) are their own KB books, but they share `subjectId: 'english'`, grade 10 and semester 1 with the English book. Read from the code and confirmed by running it:

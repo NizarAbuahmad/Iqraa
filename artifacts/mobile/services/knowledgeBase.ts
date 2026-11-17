@@ -3389,8 +3389,10 @@ const HARDCODED_KB_LESSONS: HardcodedKBLesson[] = [
     ],
     rulesAr: ['لحل x³ + 4x² − 5x = 0: أخرج x مشتركًا: x(x²+4x−5)=0 → x=0 أو حل x²+4x−5=0', 'لحل x⁶−3x³−40=0: ضع u=x³ → u²−3u−40=0 → حل u ثم x'],
     rulesEn: ['To solve x³+4x²−5x=0: factor x: x(x²+4x−5)=0 → x=0 or solve x²+4x−5=0', 'To solve x⁶−3x³−40=0: let u=x³ → u²−3u−40=0 → solve for u then x'],
-    examplesAr: ['x³−2x²+9x−18=0: حلول x=2 و x=±3i', 'x⁶−3x³−40=0: u=x³ → (u−8)(u+5)=0 → x=2 أو x=∛(−5)'],
-    examplesEn: ['x³−2x²+9x−18=0: solutions x=2 and x=±3i', 'x⁶−3x³−40=0: u=x³ → (u−8)(u+5)=0 → x=2 or x=∛(−5)'],
+    // Real roots only, as the book works it (math S1 p.9): x² + 9 = 0 has no real
+    // solution, so the equation has the one root 2. Grade 10 has no complex numbers.
+    examplesAr: ['x³−2x²+9x−18=0: بتجميع الحدود x²(x−2)+9(x−2)=0 → (x−2)(x²+9)=0 → x=2، ولا يوجد حل حقيقي للمعادلة x²+9=0، فللمعادلة جذر واحد هو 2', 'x⁶−3x³−40=0: u=x³ → (u−8)(u+5)=0 → x=2 أو x=∛(−5)'],
+    examplesEn: ['x³−2x²+9x−18=0: grouping gives x²(x−2)+9(x−2)=0 → (x−2)(x²+9)=0 → x=2; x²+9=0 has no real solution, so the equation has the one root 2', 'x⁶−3x³−40=0: u=x³ → (u−8)(u+5)=0 → x=2 or x=∛(−5)'],
   },
   {
     id: 'kbl-math-s2-1-2',
