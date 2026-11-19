@@ -37,6 +37,7 @@ import feedbackRouter from "./feedback";
 import adminRouter from "./admin";
 import messagingRouter from "./messaging";
 import moderationRouter from "./moderation";
+import usageRouter from "./usage";
 
 const router: IRouter = Router();
 
@@ -217,5 +218,8 @@ router.use(messagingRouter);
 // moderation.ts is the read side of messaging's reports. Same self-guarding
 // arrangement, admin-only on every route.
 router.use(moderationRouter);
+// The time-spent heartbeat (POST /usage/heartbeat): any signed-in role, guarded on its one
+// route inside usage.ts — no blanket middleware at this mount.
+router.use(usageRouter);
 
 export default router;
