@@ -15,6 +15,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { TYPE } from '@/constants/theme';
 import { ACCENT, DayBars, FilterChip, KeyValue, SectionTitle, StatCard, Table } from '@/components/admin/widgets';
 import { BackButton } from '@/components/ui/BackButton';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
@@ -93,7 +94,7 @@ export default function AdminInsightsUserScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}>
         <View style={[styles.header, { paddingTop: insets.top + 20, backgroundColor: ACCENT }]}>
           <BackButton color="#fff" style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: 8 }} />
-          <Text accessibilityRole="header" style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: align }}>
+          <Text accessibilityRole="header" style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title, textAlign: align }}>
             {data?.user.name ?? (ar ? 'مستخدم' : 'User')}
           </Text>
         </View>

@@ -19,6 +19,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { TYPE } from '@/constants/theme';
 import { ICON } from '@/constants/icons';
 import { ACCENT, Bar, DayBars, FilterChip, KeyValue, SectionTitle, StatCard, Table } from '@/components/admin/widgets';
 import { BackButton } from '@/components/ui/BackButton';
@@ -88,7 +89,7 @@ export default function AdminInsightsScreen() {
   const row = isRTL ? 'row-reverse' : 'row';
   const cardStyle = [styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }];
   const note = (text: string) => (
-    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>{text}</Text>
+    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 18, textAlign: align }}>{text}</Text>
   );
   /** `total` given: a teacher-profile breakdown ("N of total answered"). Absent: people per value, no "answered". */
   const breakdownTable = (title: string, b: Breakdown, label: (key: string) => string, total?: number) => (
@@ -121,7 +122,7 @@ export default function AdminInsightsScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 60, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' }}>
         <View style={[styles.header, { paddingTop: insets.top + 20, backgroundColor: ACCENT }]}>
           <BackButton color="#fff" style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginBottom: 8 }} />
-          <Text accessibilityRole="header" style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: 20, textAlign: align }}>
+          <Text accessibilityRole="header" style={{ color: '#fff', fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title, textAlign: align }}>
             {ar ? 'رؤى المستخدمين' : 'User insights'}
           </Text>
         </View>
@@ -239,9 +240,9 @@ export default function AdminInsightsScreen() {
                     style={({ pressed }) => [...cardStyle, { opacity: pressed ? 0.7 : 1 }]}
                   >
                     <View style={{ flexDirection: row, alignItems: 'center', gap: 8 }}>
-                      <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{i + 1}</Text>
-                      <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, textAlign: align }}>{u.name}</Text>
-                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12 }}>{roleName(u.role, ar)}</Text>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{i + 1}</Text>
+                      <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.body, textAlign: align }}>{u.name}</Text>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption }}>{roleName(u.role, ar)}</Text>
                       <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={ICON.md} color={colors.mutedForeground} />
                     </View>
                     <KeyValue
