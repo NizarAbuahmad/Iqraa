@@ -25,7 +25,7 @@ import {
   users,
 } from "@workspace/db";
 import { and, asc, desc, eq, getTableColumns, gte, ilike, inArray, isNotNull, isNull, lt, or, sql, type SQL } from "drizzle-orm";
-import { getBudgetStatus, getUserBudgetLimitUsd } from "../lib/aiBudget.js";
+import { getBudgetStatus, getUserBudgetLimitUsd, parseUserBudgetOverride } from "../lib/aiBudget.js";
 import { currentPeriodStart } from "../lib/aiUsageLog.js";
 import { RATE_LIMITS } from "../lib/rateLimit.js";
 import { parseSchoolAssignment, parseSchoolIdFilter, parseSchoolInput } from "../lib/adminSchools.js";
@@ -482,6 +482,8 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
           schoolId: users.schoolId,
           schoolName: schools.name,
           monthSpendUsd: spend,
+          // This account's own monthly allowance; null = the role default.
+          aiBudgetUsd: users.aiBudgetUsd,
         })
         .from(users)
         .leftJoin(schools, eq(schools.id, users.schoolId))
@@ -602,6 +604,52 @@ router.put(
     } catch (err) {
       logger.error({ err }, "admin set school failed");
       res.status(500).json({ error: "Failed to update the school" });
+    }
+  },
+);
+
+/**
+ * PUT /admin/users/:id/ai-budget { usd: number | null }
+ *
+ * One account's own monthly AI allowance, replacing the role default
+ * (`AI_USER_BUDGET_USD` / `AI_STUDENT_BUDGET_USD`) for that account only. Null
+ * returns it to the default. system_admin only: it decides how much of the
+ * project's money one person may spend. Stored on the user, so a deploy (which
+ * resets the env vars) does not undo it.
+ */
+router.put(
+  "/admin/users/:id/ai-budget",
+  authMiddleware,
+  requireRole("system_admin"),
+  async (req: AuthenticatedRequest, res) => {
+    const targetId = req.params["id"] as string;
+    if (!UUID.test(targetId)) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    let usd: number | null;
+    try {
+      usd = parseUserBudgetOverride(req.body);
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+      return;
+    }
+    try {
+      const updated = await db
+        .update(users)
+        .set({ aiBudgetUsd: usd })
+        .where(eq(users.id, targetId))
+        .returning({ id: users.id });
+      if (updated.length === 0) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      // ponytail: the log line is the audit trail, as for set-password above.
+      logger.info({ actorId: req.user!.id, targetId, aiBudgetUsd: usd }, "admin set user AI budget");
+      res.json({ ok: true, aiBudgetUsd: usd });
+    } catch (err) {
+      logger.error({ err }, "admin set AI budget failed");
+      res.status(500).json({ error: "Failed to update the AI limit" });
     }
   },
 );

@@ -23,6 +23,9 @@ import {
   getPromptSlidesModel,
   getUserBudgetLimitUsd,
   isClaudeModel,
+  MAX_USER_BUDGET_OVERRIDE_USD,
+  parseUserBudgetOverride,
+  pickUserBudgetLimitUsd,
   pricedModels,
   recordAudioUsage,
 } from "../aiBudget.ts";
@@ -131,6 +134,61 @@ describe("per-user budget, by role", () => {
       assert.equal(getUserBudgetLimitUsd("student"), 0.2);
       assert.equal(getUserBudgetLimitUsd("teacher"), 0);
     });
+  });
+});
+
+describe("per-account AI allowance (users.ai_budget_usd)", () => {
+  const withEnv = (vars: Record<string, string | undefined>, fn: () => void) => {
+    const keys = ["AI_USER_BUDGET_USD", "AI_STUDENT_BUDGET_USD"];
+    const saved = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+    try {
+      for (const k of keys) delete process.env[k];
+      Object.assign(process.env, vars);
+      fn();
+    } finally {
+      for (const k of keys) {
+        if (saved[k] === undefined) delete process.env[k];
+        else process.env[k] = saved[k]!;
+      }
+    }
+  };
+
+  it("an override replaces the role default, up or down", () => {
+    withEnv({ AI_USER_BUDGET_USD: "1", AI_STUDENT_BUDGET_USD: "0.20" }, () => {
+      assert.equal(pickUserBudgetLimitUsd(15, "teacher"), 15);
+      assert.equal(pickUserBudgetLimitUsd(0.5, "teacher"), 0.5);
+      assert.equal(pickUserBudgetLimitUsd(2, "student"), 2);
+    });
+  });
+
+  it("no override means the role default", () => {
+    withEnv({ AI_USER_BUDGET_USD: "1", AI_STUDENT_BUDGET_USD: "0.20" }, () => {
+      assert.equal(pickUserBudgetLimitUsd(null, "teacher"), 1);
+      assert.equal(pickUserBudgetLimitUsd(undefined, "student"), 0.2);
+      assert.equal(pickUserBudgetLimitUsd(0, "teacher"), 1);
+      assert.equal(pickUserBudgetLimitUsd(Number.NaN, "teacher"), 1);
+    });
+  });
+
+  it("an override still caps when the role has no default cap", () => {
+    withEnv({}, () => {
+      assert.equal(pickUserBudgetLimitUsd(null, "teacher"), 0);
+      assert.equal(pickUserBudgetLimitUsd(3, "teacher"), 3);
+    });
+  });
+
+  it("parses the admin body: a positive amount, or null/0 to clear", () => {
+    assert.equal(parseUserBudgetOverride({ usd: 15 }), 15);
+    assert.equal(parseUserBudgetOverride({ usd: 2.499 }), 2.5);
+    assert.equal(parseUserBudgetOverride({ usd: null }), null);
+    assert.equal(parseUserBudgetOverride({ usd: 0 }), null);
+    assert.equal(parseUserBudgetOverride({ usd: MAX_USER_BUDGET_OVERRIDE_USD }), MAX_USER_BUDGET_OVERRIDE_USD);
+  });
+
+  it("refuses junk, negatives, a missing field and a typo-sized amount", () => {
+    for (const body of [{ usd: "15" }, { usd: -1 }, { usd: Number.POSITIVE_INFINITY }, {}, null, { usd: MAX_USER_BUDGET_OVERRIDE_USD + 1 }]) {
+      assert.throws(() => parseUserBudgetOverride(body), Error, JSON.stringify(body));
+    }
   });
 });
 

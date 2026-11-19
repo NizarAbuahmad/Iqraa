@@ -43,7 +43,8 @@ Checked 2026-10-22:
   for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
   worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
   the secret and the switch are Nizar's — «Claude writes the documents» in the log); budgets `AI_BUDGET_USD=50`, per user `1`, per
-  student `0.20`; `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
+  student `0.20` (a system admin can give one account its own limit on the admin Users screen —
+  `users.ai_budget_usd`, which deploys do not reset); `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».
 - **Mobile:** `app.json` version `1.6.0` once the screen-recording PR merges (bumped 2026-10-29 for

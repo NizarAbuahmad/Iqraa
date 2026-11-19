@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, uuid, integer, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, uuid, integer, jsonb, index, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { schools } from "./schools";
@@ -58,6 +58,14 @@ export const users = pgTable("users", {
   suspendedAt: timestamp("suspended_at", { withTimezone: true }),
   /** Shown to the suspended person. Without it they only see a door that stopped opening. */
   suspendedReason: text("suspended_reason").notNull().default(""),
+  /**
+   * This account's own monthly AI allowance in USD, set by a system_admin
+   * (`PUT /admin/users/:id/ai-budget`). Null means the role's default
+   * (`AI_USER_BUDGET_USD` / `AI_STUDENT_BUDGET_USD`). A column, not an env var:
+   * every API deploy resets those vars, and a per-person list in deploy.yml
+   * would put users' emails in a public repo.
+   */
+  aiBudgetUsd: doublePrecision("ai_budget_usd"),
   /**
    * When this teacher confirmed their school holds the parental consent that
    * lets them enter student information here — see `lib/rosterConsent.ts`.

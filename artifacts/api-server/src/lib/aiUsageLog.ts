@@ -148,6 +148,25 @@ export async function readUserPeriodSpendUsd(userId: string): Promise<number | n
   }
 }
 
+/**
+ * This account's own monthly allowance (`users.ai_budget_usd`), when a
+ * system_admin has set one. Null means "use the role default" — including when
+ * the row cannot be read, so a database blip falls back to the default cap
+ * rather than to no cap.
+ */
+export async function readUserBudgetOverrideUsd(userId: string): Promise<number | null> {
+  try {
+    const { db, users } = await import("@workspace/db");
+    const { eq } = await import("drizzle-orm");
+    const [row] = await db.select({ usd: users.aiBudgetUsd }).from(users).where(eq(users.id, userId)).limit(1);
+    const usd = row?.usd;
+    return typeof usd === "number" && Number.isFinite(usd) && usd > 0 ? usd : null;
+  } catch (err) {
+    note(err, "read");
+    return null;
+  }
+}
+
 export async function readPeriodSpendUsd(): Promise<number | null> {
   try {
     const { db, aiGenerations } = await import("@workspace/db");

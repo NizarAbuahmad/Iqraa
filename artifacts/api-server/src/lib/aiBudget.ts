@@ -27,6 +27,7 @@ import {
   currentPeriodStart,
   getPersistenceFailure,
   readPeriodSpendUsd,
+  readUserBudgetOverrideUsd,
   readUserPeriodSpendUsd,
   recordGeneration,
 } from "./aiUsageLog.ts";
@@ -411,7 +412,7 @@ export class AiUserQuotaExceededError extends Error {
     const envVar = role === "student" ? "AI_STUDENT_BUDGET_USD" : "AI_USER_BUDGET_USD";
     super(
       `${who} has used $${spentUsd.toFixed(4)} of their $${limitUsd.toFixed(2)} monthly ` +
-        `allowance. Raise ${envVar} to change it.`,
+        `allowance. Raise ${envVar}, or set this account's own limit on the admin Users screen.`,
     );
     this.name = "AiUserQuotaExceededError";
   }
@@ -458,11 +459,43 @@ export async function assertUserQuotaAvailable(
   userId: string | null | undefined,
   role?: string | null,
 ): Promise<void> {
-  const limit = getUserBudgetLimitUsd(role);
-  if (!limit || !userId) return;
-  const spent = await readUserPeriodSpendUsd(userId);
-  if (spent === null) return;
+  if (!userId) return;
+  const [limit, spent] = await Promise.all([resolveUserBudgetLimitUsd(userId, role), readUserPeriodSpendUsd(userId)]);
+  if (!limit || spent === null) return;
   if (spent >= limit) throw new AiUserQuotaExceededError(spent, limit, role);
+}
+
+/**
+ * The allowance that governs this account: its own `users.ai_budget_usd` when a
+ * system_admin set one, else the role default from the env. An override is used
+ * even when the role default is 0 (no cap), so it can also tighten one account.
+ */
+export async function resolveUserBudgetLimitUsd(userId: string, role?: string | null): Promise<number> {
+  return pickUserBudgetLimitUsd(await readUserBudgetOverrideUsd(userId), role);
+}
+
+/** Pure half of `resolveUserBudgetLimitUsd`, for tests. */
+export function pickUserBudgetLimitUsd(override: number | null | undefined, role?: string | null): number {
+  return typeof override === "number" && Number.isFinite(override) && override > 0 ? override : getUserBudgetLimitUsd(role);
+}
+
+/** Highest per-account allowance an admin may set — a guard against a typo (150 for 15.0), not a policy. */
+export const MAX_USER_BUDGET_OVERRIDE_USD = 100;
+
+/**
+ * Body of `PUT /admin/users/:id/ai-budget`: `{ usd: number | null }`. Null (or 0)
+ * clears the override, returning the account to its role default.
+ */
+export function parseUserBudgetOverride(body: unknown): number | null {
+  const raw = (body as { usd?: unknown } | null | undefined)?.usd;
+  if (raw === null || raw === 0) return null;
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) {
+    throw new Error("usd must be a positive number, or null to use the default");
+  }
+  if (raw > MAX_USER_BUDGET_OVERRIDE_USD) {
+    throw new Error(`usd may be at most ${MAX_USER_BUDGET_OVERRIDE_USD}`);
+  }
+  return Math.round(raw * 100) / 100;
 }
 
 /**
