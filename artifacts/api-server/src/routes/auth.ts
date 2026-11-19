@@ -23,7 +23,8 @@ import {
   passwordResetTokens,
 } from "@workspace/db";
 import { eq, and, asc, desc, gt, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
-import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
+import { authMiddleware, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
+import { parseTeacherProfile, teacherProfileOf } from "../lib/teacherProfile.ts";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { emailKey } from "../lib/rateLimitKeys.js";
@@ -1309,6 +1310,9 @@ router.post("/role", authMiddleware, roleSwitchLimiter, async (req: Authenticate
             // Only a change into student carries the confirmation (the decision
             // refused it otherwise), and it is recorded like a sign-up's.
             ...(decision.role === "student" && !guardianApprovalEnabled() ? { guardianConfirmedAt: new Date() } : {}),
+            // The optional «عنك» answers are a teacher's; a student or parent account (possibly a
+            // minor) must not carry them (lib/teacherProfile.ts).
+            ...(TEACHER_ROLES.includes(decision.role) ? {} : { gender: null, ageRange: null, governorate: null, yearsTeaching: null }),
           })
           .where(eq(users.id, req.user!.id));
         // A name picked off a class code waits for a teacher to answer it as THIS
@@ -2437,6 +2441,8 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       gradeIds: user.gradeIds,
       subjectIds: user.subjectIds,
       teachingAssignments: user.teachingAssignments,
+      // A teacher's optional «عنك» answers (lib/teacherProfile.ts); all null for anyone else.
+      teacherProfile: teacherProfileOf(user),
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
       // Whether a parent must approve this student's account, and where the request stands. The app reads it on
@@ -2514,7 +2520,7 @@ const VALID_SUBJECT_IDS = new Set(SUBJECTS.map(s => s.id));
 // PATCH /users/profile
 router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
-    const { preferredLanguage, firstName, lastName, gradeIds, subjectIds, teachingAssignments } = req.body as {
+    const { preferredLanguage, firstName, lastName, gradeIds, subjectIds, teachingAssignments, teacherProfile } = req.body as {
       preferredLanguage?: string;
       firstName?: string;
       lastName?: string;
@@ -2523,9 +2529,24 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
       subjectIds?: unknown;
       /** Per-grade pairs from /setup-subjects. Takes priority over the flat ids below. */
       teachingAssignments?: unknown;
+      /** A teacher's optional «عنك» answers — see lib/teacherProfile.ts. */
+      teacherProfile?: unknown;
     };
 
     const updates: Record<string, unknown> = {};
+    // Never asked of a student or parent (either may be a minor), so never taken from one.
+    if (teacherProfile !== undefined) {
+      if (!TEACHER_ROLES.includes(req.user!.role)) {
+        res.status(403).json({ error: "Only a teacher account has these profile fields" });
+        return;
+      }
+      const parsedProfile = parseTeacherProfile(teacherProfile);
+      if (!parsedProfile.ok) {
+        res.status(400).json({ error: parsedProfile.error });
+        return;
+      }
+      Object.assign(updates, parsedProfile.updates);
+    }
     // Allow-listed: this string is stored verbatim and echoed on every
     // `/auth/me`, so it must not be free text.
     if (preferredLanguage !== undefined) {
@@ -2578,6 +2599,7 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
       gradeIds: updated.gradeIds,
       subjectIds: updated.subjectIds,
       teachingAssignments: updated.teachingAssignments,
+      teacherProfile: teacherProfileOf(updated),
       createdAt: updated.createdAt,
     });
   } catch (err) {

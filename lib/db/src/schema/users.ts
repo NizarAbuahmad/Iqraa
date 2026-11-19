@@ -143,6 +143,18 @@ export const users = pgTable("users", {
    * `PUT /auth/me/push-preferences`, which merges with `||` in SQL.
    */
   pushPrefs: jsonb("push_prefs").$type<Partial<Record<"homework" | "exams" | "results", boolean>>>().notNull().default({}),
+  /**
+   * A teacher's optional «عنك» answers, for the admin insights page
+   * (docs/superpowers/specs/2026-11-19-admin-user-insights-design.md). Each is
+   * one value from a closed list (api-server `lib/teacherProfile.ts`) or null
+   * for "not answered". Set only through `PATCH /auth/users/profile`, which
+   * refuses them from a student or parent account — they are never asked of
+   * anyone who may be a minor.
+   */
+  gender: text("gender"), // 'male' | 'female' | 'unspecified'
+  ageRange: text("age_range"), // '20-29' | '30-39' | '40-49' | '50+'
+  governorate: text("governorate"), // one of Jordan's 12, by id
+  yearsTeaching: text("years_teaching"), // '0-2' | '3-5' | '6-10' | '11+'
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastLogin: timestamp("last_login", { withTimezone: true }),
 }, t => [index("users_school_idx").on(t.schoolId)]);
