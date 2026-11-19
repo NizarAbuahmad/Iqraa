@@ -3,7 +3,9 @@
  * (users, saved materials, evaluations, feedback), not a second analytics
  * pipeline. Deep usage/trace data (screens visited, tool opens) lives in
  * PostHog already; this endpoint deliberately doesn't try to duplicate it —
- * see STATUS.md.
+ * see STATUS.md. The one exception, since 2026-11-19, is coarse time spent
+ * (minutes per app area per day, `usage_minutes`), read by
+ * routes/adminInsights.ts — see «Admin user insights» in the log.
  */
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { hashPassword } from "../lib/passwordHash.js";

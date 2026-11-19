@@ -10,6 +10,55 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Admin user insights — time spent, optional teacher profile, insights page — 2026-11-19
+
+A system admin asked to see where people spend their time, which features they use, how many come back, who the
+most frequent users are, what they like, and who the teachers are. Spec
+`docs/superpowers/specs/2026-11-19-admin-user-insights-design.md`, plan
+`docs/superpowers/plans/2026-11-19-admin-user-insights.md`. Three commits:
+
+- **Time spent (`usage_minutes`, migration 0026).** One row per user, Amman day, app area and platform. The app
+  (`hooks/useUsageHeartbeat.ts`, mounted in the root layout) sends `POST /usage/heartbeat` every 60 s, only when
+  signed in, in the foreground (AppState / tab visible) and touched in the last 2 minutes (`shouldBeat`). Only an
+  area name from a closed list leaves the device (`services/usageAreas.ts` ↔ API `lib/usageAreas.ts`, pinned
+  equal); `/guardian` never beats. The server counts at most one minute per 50 s per row whatever the client sends,
+  and stores an unknown area as `other`. The platform comes from `X-Iqraa-Platform`. Deferred-RLS table with the
+  `iqraa_app` grant; cascades with the user. **This reverses the earlier "screen-level usage is PostHog's" choice
+  (header of `routes/admin.ts`), but only for minutes per area per day — no screen path, id or content.**
+- **Optional teacher profile (migration 0027).** `users.gender`, `age_range`, `governorate`, `years_teaching`,
+  nullable, closed lists (`lib/teacherProfile.ts` ↔ app `services/teacherProfile.ts`, pinned equal). Set through
+  `PATCH /auth/users/profile` `teacherProfile`; a student or parent gets 403 (they may be minors). New screen
+  `app/teacher-profile.tsx` («عنك»): offered once after a new teacher's `/setup-subjects` with «تخطّ», and under
+  Profile. «ما الجديد» entry `teacher-profile-optional`. **Privacy policy:** two new lines in §1 (time in the app;
+  the optional teacher details), `LEGAL_VERSION` 2026-11-19 — model-written, like the rest, not lawyer-reviewed.
+- **Insights page.** `GET /admin/insights?days=7|30|90` and `/admin/insights/users/:id`
+  (`routes/adminInsights.ts`, `systemDb`, system admin only — a school admin gets 403). Screens
+  `app/admin/insights.tsx` and `insights-user.tsx`, card on the dashboard for system admins. "Active on a day" =
+  a beat, a generation, a saved material, an exam created, a homework posted or a chat message sent. Shows: time
+  per area / day / platform; generations by kind, saved materials by type, exams, homework, messages; active,
+  returning (2+ days), lapsed (active in the 30 days before the last 14, none since); weekly sign-up cohorts
+  (Sunday weeks, 8); top 50 users by active days then minutes, with role, school, subjects/grades, governorate,
+  top 3 areas, generations, last seen; likes per tool, favourites, subjects/grades saved; teacher breakdowns by
+  subject, grade, gender, age, governorate, experience. **Any breakdown group of 1–2 people is returned as null
+  and shown «<3»** (`breakdown` in `lib/insights.ts`); the answered total is hidden too when it is 1–2.
+
+**Verified:** typecheck; api-server full suite with a database (3522 pass at commit 2, plus the new
+`usageHeartbeat`, `teacherProfile`, `adminInsights` DB tests and `insights` / `usageAreas` / `teacherProfile` unit
+tests); mobile full suite (9323 pass, 10 skipped as before); `lib/db` `rlsCoverage` against a migrated database.
+In a browser (web build against a local API and a seeded database, Playwright): the insights page in Arabic
+desktop/light and English phone/dark, the per-user page, and «عنك» in both languages — picking two answers and
+saving changed exactly those two columns. That check found and fixed three bugs before commit: «عنك» saved all four
+fields, so opening it before `/auth/me` returned **erased stored answers** (now only touched fields are sent,
+`changedTeacherProfile`); Arabic ranges «٢٠–٢٩» showed reversed (now «من ٢٠ إلى ٢٩», pinned by a test); and the
+subject/grade breakdowns summed per value («16 of 12 answered», now `multiValueBreakdown`). Dates and percentages
+inside Arabic text are wrapped in `isolateLtr`.
+
+**Not verified:** a real device's heartbeat (Android AppState, touches inside a `<Modal>` — a separate window the root
+view's `onTouchStart` may not see, so time spent only in a modal can read as idle after 2 minutes); numbers from
+production (nothing is recorded until this ships; the page says «يُقاس منذ …»); the policy wording with a lawyer.
+**Known limits:** time spent has no history before the ship date; "lapsed" ignores the period picker; a teacher who
+never opens «عنك» is "not answered", so the demographic breakdowns start almost empty.
+
 ## Grade 2 review: fifteen maths lessons asked about their own objective — 2026-11-15
 
 The same per-lesson read as «Grade 3 review: six maths lessons…» (below): every one of Grade 2's 61 maths lessons, its
