@@ -1310,6 +1310,9 @@ router.post("/role", authMiddleware, roleSwitchLimiter, async (req: Authenticate
             // Only a change into student carries the confirmation (the decision
             // refused it otherwise), and it is recorded like a sign-up's.
             ...(decision.role === "student" && !guardianApprovalEnabled() ? { guardianConfirmedAt: new Date() } : {}),
+            // The optional «عنك» answers are a teacher's; a student or parent account (possibly a
+            // minor) must not carry them (lib/teacherProfile.ts).
+            ...(TEACHER_ROLES.includes(decision.role) ? {} : { gender: null, ageRange: null, governorate: null, yearsTeaching: null }),
           })
           .where(eq(users.id, req.user!.id));
         // A name picked off a class code waits for a teacher to answer it as THIS

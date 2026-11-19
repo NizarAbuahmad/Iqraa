@@ -53,7 +53,7 @@ describe("parseInsightsDays", () => {
 });
 
 describe("breakdown", () => {
-  it("hides a group of one or two people, keeps zero and three-plus, and counts who answered", () => {
+  it("hides a group of one or two people, keeps three-plus, and then hides both totals", () => {
     assert.equal(MIN_GROUP, 3);
     const out = breakdown([
       { key: "amman", count: 12 },
@@ -63,8 +63,8 @@ describe("breakdown", () => {
       { key: null, count: 40 },
     ]);
     assert.deepEqual(out, {
-      answered: 18,
-      unanswered: 40,
+      answered: null,
+      unanswered: null,
       rows: [
         { key: "amman", count: 12 },
         { key: "zarqa", count: 3 },
@@ -73,10 +73,15 @@ describe("breakdown", () => {
       ],
     });
   });
-  it("hides the answered total too when only one or two answered, so it cannot be subtracted", () => {
-    const out = breakdown([{ key: "male", count: 1 }, { key: null, count: 30 }]);
-    assert.equal(out.answered, null);
-    assert.deepEqual(out.rows, [{ key: "male", count: null }]);
+  it("gives no total from which one hidden cell could be subtracted", () => {
+    // male 10, female <3: with answered 12 shown, female would be 2; with unanswered 30 and 42
+    // teachers on the page, the same.
+    const out = breakdown([{ key: "male", count: 10 }, { key: "female", count: 2 }, { key: null, count: 30 }]);
+    assert.deepEqual(out, { answered: null, unanswered: null, rows: [{ key: "male", count: 10 }, { key: "female", count: null }] });
+  });
+  it("shows both totals when nothing is hidden", () => {
+    const out = breakdown([{ key: "male", count: 10 }, { key: "female", count: 4 }, { key: null, count: 30 }]);
+    assert.deepEqual([out.answered, out.unanswered], [14, 30]);
   });
 });
 
@@ -86,7 +91,6 @@ describe("multiValueBreakdown", () => {
       [
         { key: "mathematics", count: 4 },
         { key: "physics", count: 3 },
-        { key: "arabic", count: 1 },
       ],
       5,
       6,
@@ -97,9 +101,12 @@ describe("multiValueBreakdown", () => {
       rows: [
         { key: "mathematics", count: 4 },
         { key: "physics", count: 3 },
-        { key: "arabic", count: null },
       ],
     });
+  });
+  it("hides both totals when a value is held by one or two teachers", () => {
+    const out = multiValueBreakdown([{ key: "mathematics", count: 4 }, { key: "arabic", count: 1 }], 5, 6);
+    assert.deepEqual([out.answered, out.unanswered], [null, null]);
   });
 });
 

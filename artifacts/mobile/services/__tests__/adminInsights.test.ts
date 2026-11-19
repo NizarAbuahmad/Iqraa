@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { USAGE_AREAS } from '../usageAreas.ts';
-import { areaLabel, breakdownCell, cohortCell, formatMinutes, share } from '../adminInsights.ts';
+import { ammanDayOf, arDays, areaLabel, breakdownCell, cohortCell, formatMinutes, periodLabel, share } from '../adminInsights.ts';
 
 describe('admin insights formatting', () => {
   it('writes minutes as hours and minutes', () => {
@@ -31,6 +31,21 @@ describe('admin insights formatting', () => {
   it('writes a cohort cell as a percent of its size, blank for an empty cohort', () => {
     assert.equal(cohortCell(1, 4), '25%');
     assert.equal(cohortCell(0, 0), '');
+  });
+
+  it('counts days with Arabic number agreement', () => {
+    assert.equal(arDays(1), 'يوم واحد');
+    assert.equal(arDays(2), 'يومان');
+    assert.equal(arDays(7), '7 أيام');
+    assert.equal(arDays(30), '30 يومًا');
+    assert.equal(periodLabel(7, true), 'آخر 7 أيام');
+    assert.equal(periodLabel(90, true), 'آخر 90 يومًا');
+    assert.equal(periodLabel(30, false), 'Last 30 days');
+  });
+
+  it('dates an instant by its Amman day, not its UTC day', () => {
+    assert.equal(ammanDayOf('2026-11-18T22:30:00Z'), '2026-11-19');
+    assert.equal(ammanDayOf('2026-11-18T20:59:00Z'), '2026-11-18');
   });
 
   it('names every area in Arabic and English', () => {

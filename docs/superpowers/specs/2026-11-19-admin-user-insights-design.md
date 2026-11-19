@@ -47,7 +47,7 @@ both): `today`, `tools`, `gen-quiz`, `gen-worksheet`, `gen-lesson-plan`,
 `gen-activity`, `gen-slides`, `gen-other`, `classroom`, `chat`, `curriculum`,
 `corner-math`, `corner-lab`, `corner-quran`, `corner-english`, `play`,
 `classes`, `evaluations`, `homework`, `schedule`, `teaching-plans`,
-`workspace`, `messaging`, `notifications`, `profile`, `admin`, `student`,
+`workspace`, `messaging`, `school`, `notifications`, `profile`, `admin`,
 `other`. `areaForPath(pathname)` maps a route to an area; IDs and query
 strings are never sent.
 
@@ -61,8 +61,10 @@ key or scroll in the last 120 s. The gating decision is a pure function
 **Server.** `POST /usage/heartbeat` (`routes/usage.ts`, `authMiddleware`, any
 role). Validates `area` against `USAGE_AREAS` (unknown → `other`) and
 `platform`. Upsert: `minutes = minutes + 1`, `last_beat_at = now()`, **only if**
-the row's `last_beat_at` is older than 50 s (or the row is new) — so one user
-can earn at most ~1 minute per 50 s per area, whatever the client does.
+none of the person's rows has `last_beat_at` within the last 50 s — so one user
+can earn at most ~1 minute per 50 s in total (any area, any platform), whatever
+the client does. (Per row, as first written, let a client cycling areas or
+platforms earn many minutes a minute — changed after review.)
 Responds 204. Scoped to the caller's own row (RLS: owner write).
 
 **RLS.** `usage_minutes` classified in `rlsCoverage.test.ts` as owner-scoped
@@ -120,7 +122,12 @@ The option lists live in one small module on each side
   - `teachers`: counts by subject, grade, governorate, gender, age range,
     years teaching, each with `answered` / `total`.
   - **Suppression:** in `teachers` and `likes` breakdowns, any cell with
-    1–2 people is returned as `{ suppressed: true }` (shown "<3").
+    1–2 people is returned as `count: null` (shown "<3"), and then both the
+    answered and unanswered totals are null too, so no hidden cell can be
+    recovered by subtraction.
+  - **Who is named:** `topUsers` and the per-user page are teacher accounts
+    only (`TEACHER_ROLES`); a student or parent is counted in the totals and
+    answers 404 on the per-user route.
 - `GET /admin/insights/users/:id?days=…` → that user's profile fields, daily
   activity (minutes + events per day), feature mix, area mix, feedback list.
 

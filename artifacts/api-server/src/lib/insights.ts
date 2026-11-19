@@ -29,12 +29,21 @@ export interface BreakdownRow {
 }
 
 export interface Breakdown {
-  /** People with an answer; null when that total is itself 1–2. */
+  /**
+   * People with an answer, and people without one. Both are null when any cell is hidden: with
+   * either of them (and the teacher total shown on the page), a single hidden cell is the
+   * difference of what is shown — «male 10, female <3, answered 12» says female is 2.
+   */
   answered: number | null;
-  /** People with no answer (or no value) — never suppressed: it names nobody. */
-  unanswered: number;
+  unanswered: number | null;
   /** Largest first; suppressed cells last. */
   rows: BreakdownRow[];
+}
+
+/** Hides both totals when any cell is hidden, so no cell can be recovered by subtraction. */
+function sealTotals(answered: number, unanswered: number, rows: BreakdownRow[]): Breakdown {
+  const anyHidden = rows.some((r) => r.count === null) || (answered > 0 && answered < MIN_GROUP);
+  return anyHidden ? { answered: null, unanswered: null, rows } : { answered, unanswered, rows };
 }
 
 /** Counts per value (`key: null` = no answer) → a suppressed breakdown. */
@@ -54,7 +63,7 @@ export function breakdown(counts: { key: string | null; count: number }[]): Brea
   }
   shown.sort((a, b) => (b.count ?? 0) - (a.count ?? 0) || a.key.localeCompare(b.key));
   hidden.sort((a, b) => a.key.localeCompare(b.key));
-  return { answered: answered > 0 && answered < MIN_GROUP ? null : answered, unanswered, rows: [...shown, ...hidden] };
+  return sealTotals(answered, unanswered, [...shown, ...hidden]);
 }
 
 /** How far back the route reads activity: the longest period, which also covers churn (44 days) and the cohorts (8 weeks). */
@@ -110,11 +119,7 @@ export function summarizeActivity(rows: { userId: string; day: string }[], endDa
  */
 export function multiValueBreakdown(counts: { key: string; count: number }[], withAny: number, total: number): Breakdown {
   const { rows } = breakdown(counts);
-  return {
-    answered: withAny > 0 && withAny < MIN_GROUP ? null : withAny,
-    unanswered: Math.max(0, total - withAny),
-    rows,
-  };
+  return sealTotals(withAny, Math.max(0, total - withAny), rows);
 }
 
 /** The Sunday (Jordan's school week starts on Sunday) of a `YYYY-MM-DD` day. */

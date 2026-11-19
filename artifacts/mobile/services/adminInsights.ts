@@ -13,7 +13,8 @@ export type InsightsDays = 7 | 30 | 90;
 export const INSIGHTS_DAYS: readonly InsightsDays[] = [7, 30, 90];
 
 export interface BreakdownRow { key: string; count: number | null }
-export interface Breakdown { answered: number | null; unanswered: number; rows: BreakdownRow[] }
+/** Both totals are null when any cell is hidden, so a hidden cell cannot be subtracted out. */
+export interface Breakdown { answered: number | null; unanswered: number | null; rows: BreakdownRow[] }
 
 export interface Insights {
   days: number;
@@ -140,6 +141,23 @@ const ROLE_NAMES: Record<string, [string, string]> = {
 
 export function roleName(role: string, ar: boolean): string {
   return ROLE_NAMES[role]?.[ar ? 0 : 1] ?? role;
+}
+
+/** «يوم» with Arabic number agreement: 1 يوم، 2 يومان، 3–10 أيام، 11+ يومًا. */
+export function arDays(n: number): string {
+  if (n === 1) return 'يوم واحد';
+  if (n === 2) return 'يومان';
+  return n >= 3 && n <= 10 ? `${n} أيام` : `${n} يومًا`;
+}
+
+/** The period picker's label: «آخر 7 أيام» / «آخر 30 يومًا» / "Last 30 days". */
+export function periodLabel(days: number, ar: boolean): string {
+  return ar ? `آخر ${arDays(days)}` : `Last ${days} days`;
+}
+
+/** An instant's Amman calendar day (fixed UTC+3), not its UTC day. */
+export function ammanDayOf(iso: string): string {
+  return new Date(Date.parse(iso) + 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
 /** 135 → "2h 15m" / "2 س 15 د". */

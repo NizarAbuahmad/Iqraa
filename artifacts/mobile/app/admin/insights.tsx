@@ -28,7 +28,9 @@ import { teacherProfileLabel } from '@/services/teacherProfile';
 import { isolateLtr } from '@/services/growthMetrics';
 import {
   INSIGHTS_DAYS,
+  arDays,
   areaLabel,
+  periodLabel,
   breakdownCell,
   cohortCell,
   formatMinutes,
@@ -102,9 +104,14 @@ export default function AdminInsightsScreen() {
       {total === undefined
         ? note(ar ? 'عدد الأشخاص لكل قيمة؛ المجموعات الأقل من ٣ أشخاص مخفية.' : 'People per value; groups under 3 people are hidden.')
         : note(
-            ar
-              ? `أجاب ${b.answered === null ? 'أقل من ٣' : b.answered} من ${total}، ولم يُجب ${b.unanswered}. المجموعات الأقل من ٣ أشخاص مخفية.`
-              : `${b.answered === null ? 'Fewer than 3' : b.answered} of ${total} answered, ${b.unanswered} did not. Groups under 3 people are hidden.`,
+            // With a hidden group both totals are withheld too, or the group is one subtraction away.
+            b.answered === null || b.unanswered === null
+              ? ar
+                ? `من ${total}. المجموعات الأقل من ٣ أشخاص مخفية، ومعها عدد من أجاب، كي لا تُستنتج بالطرح.`
+                : `Of ${total}. Groups under 3 people are hidden, and so is how many answered, so they cannot be worked out.`
+              : ar
+                ? `أجاب ${b.answered} من ${total}، ولم يُجب ${b.unanswered}.`
+                : `${b.answered} of ${total} answered, ${b.unanswered} did not.`,
           )}
     </>
   );
@@ -122,7 +129,7 @@ export default function AdminInsightsScreen() {
         <View style={{ margin: 20, gap: 6 }}>
           <View style={{ flexDirection: row, gap: 8, marginBottom: 8 }}>
             {INSIGHTS_DAYS.map(d => (
-              <FilterChip key={d} label={ar ? `آخر ${d} يومًا` : `Last ${d} days`} active={days === d} onPress={() => setDays(d)} colors={colors} />
+              <FilterChip key={d} label={periodLabel(d, ar)} active={days === d} onPress={() => setDays(d)} colors={colors} />
             ))}
           </View>
           {!!error && <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }}>{error}</Text>}
@@ -213,7 +220,11 @@ export default function AdminInsightsScreen() {
 
               {/* ─── Frequent users ──────────────────────────────────────── */}
               <SectionTitle text={ar ? 'المستخدمون الأكثر نشاطًا' : 'Most frequent users'} isRTL={isRTL} colors={colors} />
-              {note(ar ? 'مرتّبون حسب أيام النشاط ثم الوقت. اضغط على اسم لفتح تفاصيله.' : 'By active days, then time. Tap a name for details.')}
+              {note(
+                ar
+                  ? 'حسابات المعلّمين فقط، مرتّبة حسب أيام النشاط ثم الوقت. الطلبة وأولياء الأمور محسوبون في الأرقام أعلاه ولا تُعرض أسماؤهم. اضغط على اسم لفتح تفاصيله.'
+                  : 'Teacher accounts only, by active days then time. Students and parents count in the numbers above but are never named. Tap a name for details.',
+              )}
               {data.topUsers.length === 0 ? note(ar ? 'لا أحد في هذه الفترة' : 'Nobody in this period') : null}
               {data.topUsers.map((u, i) => {
                 const teaches = [
@@ -236,7 +247,7 @@ export default function AdminInsightsScreen() {
                     <KeyValue
                       k={ar ? 'النشاط' : 'Activity'}
                       v={ar
-                        ? `${u.activeDays} يوم · ${formatMinutes(u.minutes, ar)} · ${u.generations} توليد`
+                        ? `${arDays(u.activeDays)} · ${formatMinutes(u.minutes, ar)} · التوليد ${u.generations}`
                         : `${u.activeDays} days · ${formatMinutes(u.minutes, ar)} · ${u.generations} generations`}
                       isRTL={isRTL}
                       colors={colors}

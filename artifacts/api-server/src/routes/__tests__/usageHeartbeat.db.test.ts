@@ -2,7 +2,8 @@
  * POST /usage/heartbeat, against a real database through the built bundle.
  *
  * What this guards: a beat counts one minute for the caller's own row (day, area, platform);
- * a second beat inside 50 s counts nothing, so a looping client cannot inflate the numbers; a
+ * a second beat inside 50 s counts nothing — in any area or platform, the gap is per person — so a
+ * looping client cannot inflate the numbers; a
  * beat after the gap counts again; an unknown area is stored as `other`; the platform comes
  * from X-Iqraa-Platform; the day is the Amman day; and an unauthenticated beat is refused.
  */
@@ -82,7 +83,20 @@ describeDb("POST /usage/heartbeat", () => {
     assert.equal(row!.minutes, 2);
   });
 
+  it("counts nothing for another area or platform inside the gap — the cap is per person", async () => {
+    assert.equal(await beat(teacherId, "chat", "android"), 204);
+    assert.equal(await beat(teacherId, "gen-quiz", "web"), 204);
+    assert.deepEqual(
+      (await rows(teacherId)).map((r) => [r.area, r.platform, r.minutes]),
+      [["gen-quiz", "android", 2]],
+    );
+  });
+
   it("stores an unknown area as `other` and a missing platform as `unknown`", async () => {
+    await db.pool.query(
+      `UPDATE usage_minutes SET last_beat_at = now() - interval '2 minutes' WHERE user_id = $1`,
+      [teacherId],
+    );
     assert.equal(await beat(teacherId, "/ai-tools/quiz?lesson=abc"), 204);
     const other = (await rows(teacherId)).find((r) => r.area === "other");
     assert.deepEqual(other && { area: other.area, platform: other.platform, minutes: other.minutes }, {

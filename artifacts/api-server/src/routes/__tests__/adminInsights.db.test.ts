@@ -25,6 +25,7 @@ describeDb("GET /admin/insights", () => {
   let ayla: string;
   let basel: string;
   let carmen: string;
+  let dina: string;
 
   const today = ammanDay(new Date());
   const day = (back: number) => addDays(today, -back);
@@ -85,6 +86,9 @@ describeDb("GET /admin/insights", () => {
       carmen,
       noon(1),
     ]);
+    // Dina: a student, the most active of all — counted in the totals, never named.
+    dina = await addUser("Dina", "student");
+    for (const back of [0, 1, 2, 3, 4]) await minutes(dina, back, "school", 1);
   });
 
   after(async () => {
@@ -108,12 +112,13 @@ describeDb("GET /admin/insights", () => {
     const res = await call(server, "GET", "/admin/insights?days=7", adminId);
     assert.equal(res.status, 200, res.text);
     const { time, retention, features } = res.json;
-    assert.equal(time.totalMinutes, 45);
+    assert.equal(time.totalMinutes, 50);
     assert.deepEqual(time.byArea[0], { area: "gen-quiz", minutes: 30, users: 1 });
     assert.equal(time.byDay.length, 7);
-    assert.equal(time.byDay.at(-1).minutes, 35);
-    assert.equal(retention.active, 3);
-    assert.equal(retention.returning, 2);
+    assert.equal(time.byDay.at(-1).minutes, 36);
+    // Ayla, Basel, Carmen and the student Dina; returning: Ayla, Basel, Dina.
+    assert.equal(retention.active, 4);
+    assert.equal(retention.returning, 3);
     assert.deepEqual(
       features.generations.map((g: { kind: string; count: number }) => [g.kind, g.count]).sort(),
       [["quiz", 1], ["worksheet", 1]],
@@ -152,10 +157,10 @@ describeDb("GET /admin/insights", () => {
     const { teachers } = res.json;
     assert.equal(teachers.total, 3);
     assert.deepEqual(teachers.governorate, { answered: 3, unanswered: 0, rows: [{ key: "amman", count: 3 }] });
-    // One woman and one man: each group, and the answered total, are hidden.
+    // One woman and one man: each group is hidden, and so are both totals (no subtraction).
     assert.deepEqual(teachers.gender, {
       answered: null,
-      unanswered: 1,
+      unanswered: null,
       rows: [
         { key: "female", count: null },
         { key: "male", count: null },
@@ -172,6 +177,12 @@ describeDb("GET /admin/insights", () => {
     assert.deepEqual(res.json.areas[0], { area: "gen-quiz", minutes: 30 });
     assert.equal(res.json.daily.length, 7);
     assert.deepEqual(res.json.daily.at(-1), { day: today, minutes: 30, active: true });
+  });
+
+  it("never names a student — not in the list, and no per-person page", async () => {
+    const res = await call(server, "GET", "/admin/insights?days=7", adminId);
+    assert.ok(!res.json.topUsers.some((u: { id: string }) => u.id === dina));
+    assert.equal((await call(server, "GET", `/admin/insights/users/${dina}`, adminId)).status, 404);
   });
 
   it("answers 404 for an unknown person and 400 for a malformed id", async () => {

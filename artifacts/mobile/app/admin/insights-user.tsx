@@ -20,7 +20,17 @@ import { BackButton } from '@/components/ui/BackButton';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { TEACHER_PROFILE_FIELDS, teacherProfileLabel } from '@/services/teacherProfile';
 import { isolateLtr } from '@/services/growthMetrics';
-import { INSIGHTS_DAYS, areaLabel, formatMinutes, roleName, share, type InsightsDays, type UserInsights } from '@/services/adminInsights';
+import {
+  INSIGHTS_DAYS,
+  ammanDayOf,
+  areaLabel,
+  formatMinutes,
+  periodLabel,
+  roleName,
+  share,
+  type InsightsDays,
+  type UserInsights,
+} from '@/services/adminInsights';
 
 const FIELD_NAMES: Record<string, [string, string]> = {
   gender: ['الجنس', 'Gender'],
@@ -76,7 +86,7 @@ export default function AdminInsightsUserScreen() {
   const totalMinutes = data?.areas.reduce((s, a) => s + a.minutes, 0) ?? 0;
   const dash = '—';
   // A date inside Arabic text is reordered by the bidi algorithm on web without the isolate.
-  const date = (iso: string | null) => (iso ? isolateLtr(iso.slice(0, 10)) : dash);
+  const date = (iso: string | null) => (iso ? isolateLtr(ammanDayOf(iso)) : dash);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -91,7 +101,7 @@ export default function AdminInsightsUserScreen() {
         <View style={{ margin: 20, gap: 6 }}>
           <View style={{ flexDirection: row, gap: 8, marginBottom: 8 }}>
             {INSIGHTS_DAYS.map(d => (
-              <FilterChip key={d} label={ar ? `آخر ${d} يومًا` : `Last ${d} days`} active={days === d} onPress={() => setDays(d)} colors={colors} />
+              <FilterChip key={d} label={periodLabel(d, ar)} active={days === d} onPress={() => setDays(d)} colors={colors} />
             ))}
           </View>
           {!!error && <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }}>{error}</Text>}

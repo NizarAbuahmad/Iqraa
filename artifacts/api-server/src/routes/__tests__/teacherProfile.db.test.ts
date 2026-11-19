@@ -91,6 +91,14 @@ describeDb("teacher profile", () => {
     assert.equal(row.rows[0].first_name, "Rana");
   });
 
+  it("drops the answers when a new teacher switches to a parent account", async () => {
+    const switcher = await addUser("Sami", "teacher");
+    await db.pool.query(`UPDATE users SET gender = 'male', governorate = 'aqaba' WHERE id = $1`, [switcher]);
+    const res = await call(server, "POST", "/auth/role", switcher, { role: "parent" });
+    assert.equal(res.status, 200, res.text);
+    assert.deepEqual(await stored(switcher), { gender: null, age_range: null, governorate: null, years_teaching: null });
+  });
+
   it("refuses the profile from a student or a parent", async () => {
     for (const id of [studentId, parentId]) {
       const res = await call(server, "PATCH", "/auth/users/profile", id, { teacherProfile: { gender: "male" } });

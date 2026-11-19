@@ -21,7 +21,8 @@ most frequent users are, what they like, and who the teachers are. Spec
   (`hooks/useUsageHeartbeat.ts`, mounted in the root layout) sends `POST /usage/heartbeat` every 60 s, only when
   signed in, in the foreground (AppState / tab visible) and touched in the last 2 minutes (`shouldBeat`). Only an
   area name from a closed list leaves the device (`services/usageAreas.ts` ↔ API `lib/usageAreas.ts`, pinned
-  equal); `/guardian` never beats. The server counts at most one minute per 50 s per row whatever the client sends,
+  equal); `/guardian` never beats. The server counts at most one minute per 50 s **per person** (any area, any
+  platform — two devices at once still earn one minute a minute) whatever the client sends,
   and stores an unknown area as `other`. The platform comes from `X-Iqraa-Platform`. Deferred-RLS table with the
   `iqraa_app` grant; cascades with the user. **This reverses the earlier "screen-level usage is PostHog's" choice
   (header of `routes/admin.ts`), but only for minutes per area per day — no screen path, id or content.**
@@ -37,10 +38,14 @@ most frequent users are, what they like, and who the teachers are. Spec
   a beat, a generation, a saved material, an exam created, a homework posted or a chat message sent. Shows: time
   per area / day / platform; generations by kind, saved materials by type, exams, homework, messages; active,
   returning (2+ days), lapsed (active in the 30 days before the last 14, none since); weekly sign-up cohorts
-  (Sunday weeks, 8); top 50 users by active days then minutes, with role, school, subjects/grades, governorate,
-  top 3 areas, generations, last seen; likes per tool, favourites, subjects/grades saved; teacher breakdowns by
-  subject, grade, gender, age, governorate, experience. **Any breakdown group of 1–2 people is returned as null
-  and shown «<3»** (`breakdown` in `lib/insights.ts`); the answered total is hidden too when it is 1–2.
+  (Sunday weeks, 8); top 50 **teacher accounts** by active days then minutes, with role, school, subjects/grades,
+  governorate, top 3 areas, generations, last seen; likes per tool, favourites, subjects/grades saved; teacher
+  breakdowns by subject, grade, gender, age, governorate, experience. **Students and parents (possibly minors) are
+  counted in every total but never named**: not in the list, and their per-person page answers 404. **Any breakdown
+  group of 1–2 people is returned as null and shown «<3»** (`breakdown` in `lib/insights.ts`), and then both the
+  answered and unanswered totals are withheld too — with either of them a single hidden cell is a subtraction away
+  (found in review). Teacher breakdowns count `role = 'teacher'` only; a school or system admin's «عنك» answers
+  are left out of them. Switching a teacher account to student or parent clears its four answers (`POST /auth/role`).
 
 **Verified:** typecheck; api-server full suite with a database (3522 pass at commit 2, plus the new
 `usageHeartbeat`, `teacherProfile`, `adminInsights` DB tests and `insights` / `usageAreas` / `teacherProfile` unit

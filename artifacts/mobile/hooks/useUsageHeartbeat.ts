@@ -67,7 +67,9 @@ export function useUsageHeartbeat(signedIn: boolean, pathname: string | null | u
         now: Date.now(),
       });
       if (!ok || !area) return;
-      apiFetch('/usage/heartbeat', { method: 'POST', body: JSON.stringify({ area }) }, false).catch(() => {
+      // With the usual refresh-on-401: the access token lives 15 minutes, and a screen that makes no
+      // other call (a corner, a game, the whiteboard) would otherwise stop counting after that.
+      apiFetch('/usage/heartbeat', { method: 'POST', body: JSON.stringify({ area }) }).catch(() => {
         // Dropped on purpose — see the header.
       });
     }, BEAT_MS);

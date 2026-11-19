@@ -15,13 +15,15 @@
  * (`trackingSince`); the other sources go back as far as their tables.
  *
  * Demographic and "what they like" breakdowns hide any group of 1–2 people (lib/insights.ts,
- * `breakdown`). The frequent-users list and the per-user page name people on purpose — that is
+ * `breakdown`), and then so are both totals, so no hidden cell is a subtraction away. The
+ * frequent-users list and the per-user page name TEACHER accounts only (a student or parent may be
+ * a minor: counted in the totals, never named). They name teachers on purpose — that is
  * what an admin asked for — and are admin-only for that reason.
  */
 import { Router } from "express";
 import { systemDb as db } from "@workspace/db";
 import { sql, type SQL } from "drizzle-orm";
-import { authMiddleware, requireRole } from "../middlewares/auth.js";
+import { authMiddleware, requireRole, TEACHER_ROLES } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { UUID } from "../lib/adminMetrics.js";
 import { AMMAN_OFFSET_HOURS, addDays, ammanDay, ammanDayStart } from "../lib/dailyActivity.js";
@@ -38,6 +40,8 @@ import {
 const router = Router();
 
 const TOP_USERS = 50;
+/** Who may be named on the page: teacher accounts (TEACHER_ROLES), never a student or parent. */
+const NAMED_ROLES = TEACHER_ROLES;
 const COHORT_WEEKS = 8;
 
 /** A timestamp column as its Amman calendar day. */
@@ -201,8 +205,17 @@ router.get("/admin/insights", authMiddleware, requireRole("system_admin"), async
     );
 
     // ─── the most frequent users ───────────────────────────────────────────
+    // Teacher accounts only. A student or parent may be a minor, so they are counted in every total
+    // above but never named here (and `/admin/insights/users/:id` refuses them).
+    const staff = new Set(
+      (
+        await rowsOf<{ id: string }>(sql`
+          select id from users where role in (${sql.join(NAMED_ROLES.map((r) => sql`${r}`), sql`, `)})`)
+      ).map((r) => r.id),
+    );
     const minutesOf = new Map(minutesByUser.map((r) => [r.user_id, r]));
     const ranked = [...summary.activeDays.entries()]
+      .filter(([userId]) => staff.has(userId))
       .map(([userId, activeDays]) => ({ userId, activeDays, minutes: minutesOf.get(userId)?.minutes ?? 0 }))
       .sort((a, b) => b.activeDays - a.activeDays || b.minutes - a.minutes)
       .slice(0, TOP_USERS);
@@ -341,7 +354,8 @@ router.get("/admin/insights/users/:id", authMiddleware, requireRole("system_admi
       select u.id, u.first_name, u.last_name, u.email, u.role, s.name as school, u.grade_ids, u.subject_ids,
              u.gender, u.age_range, u.governorate, u.years_teaching, u.signup_platform, u.created_at, u.last_login
       from users u left join schools s on s.id = u.school_id where u.id = ${id}`);
-    if (!person) {
+    // A student or parent (possibly a minor) has no per-person page: same answer as no such user.
+    if (!person || !NAMED_ROLES.includes(person.role)) {
       res.status(404).json({ error: "User not found" });
       return;
     }
