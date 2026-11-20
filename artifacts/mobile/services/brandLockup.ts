@@ -47,16 +47,21 @@ export function brandLockupSvg(width: number): string {
 export const WORD_LOCKUP_WIDTH = 104;
 export const WORD_LOCKUP_HEIGHT = Math.round(WORD_LOCKUP_WIDTH / LOCKUP_ASPECT);
 
+/** Space under the logo before the page's first line, in twips (12pt). */
+export const WORD_LOCKUP_SPACE_AFTER = 240;
+
 /**
- * The lockup as a Word paragraph, for the top of every page (a section header).
- * Its own paragraph, at the line's start — the right edge in an Arabic file.
+ * The lockup as a Word paragraph, for the top of every page (a section header):
+ * centred, with a gap under it so the title does not sit against it.
  */
 export function wordLockupHeader(isAr: boolean, docx: typeof import('docx')): import('docx').Header {
-  const { Header, ImageRun, Paragraph } = docx;
+  const { AlignmentType, Header, ImageRun, Paragraph } = docx;
   return new Header({
     children: [
       new Paragraph({
         bidirectional: isAr,
+        alignment: AlignmentType.CENTER,
+        spacing: { after: WORD_LOCKUP_SPACE_AFTER },
         children: [
           new ImageRun({
             type: 'png',
