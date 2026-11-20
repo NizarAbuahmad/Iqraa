@@ -6,7 +6,7 @@
  * Reads GET /admin/insights/users/:id (system-admin only on the server; this gate only redirects).
  */
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,6 +16,8 @@ import { useAuth } from '@/context/AuthContext';
 import { apiJson } from '@/services/apiClient';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { TYPE } from '@/constants/theme';
+import { ICON } from '@/constants/icons';
+import { Ionicons } from '@expo/vector-icons';
 import { ACCENT, DayBars, FilterChip, KeyValue, SectionTitle, StatCard, Table } from '@/components/admin/widgets';
 import { BackButton } from '@/components/ui/BackButton';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
@@ -69,6 +71,22 @@ export default function AdminInsightsUserScreen() {
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
   }, [isAdmin, id, days]);
+
+  const [savingInternal, setSavingInternal] = useState(false);
+  const [internalError, setInternalError] = useState('');
+  const toggleInternal = () => {
+    if (!data || savingInternal) return;
+    const internal = !data.user.internal;
+    setSavingInternal(true);
+    setInternalError('');
+    apiJson<{ id: string; internal: boolean }>(`/admin/insights/users/${encodeURIComponent(id)}/internal`, {
+      method: 'PUT',
+      body: JSON.stringify({ internal }),
+    })
+      .then(r => setData(d => (d ? { ...d, user: { ...d.user, internal: r.internal } } : d)))
+      .catch((e: unknown) => setInternalError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setSavingInternal(false));
+  };
 
   if (authLoading) {
     return <View style={[styles.center, { backgroundColor: colors.background }]}><ActivityIndicator color={ACCENT} /></View>;
@@ -139,6 +157,34 @@ export default function AdminInsightsUserScreen() {
                 <KeyValue k={ar ? 'سجّل في' : 'Joined'} v={`${date(data.user.createdAt)}${data.user.signupPlatform ? ` · ${data.user.signupPlatform}` : ''}`} isRTL={isRTL} colors={colors} />
                 <KeyValue k={ar ? 'آخر ظهور' : 'Last seen'} v={date(data.user.lastSeen)} isRTL={isRTL} colors={colors} />
               </View>
+
+              {/* Team and test accounts are marked internal so the insights page leaves them out.
+                  A system admin is always left out, so their mark cannot be changed. */}
+              {data.user.role === 'system_admin' ? (
+                <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                  {ar ? 'حساب إدارة النظام: لا يُحتسب في صفحة الرؤى أبدًا.' : 'A system admin account: never counted on the insights page.'}
+                </Text>
+              ) : (
+                <Pressable
+                  accessibilityRole="checkbox"
+                  aria-checked={data.user.internal}
+                  aria-disabled={savingInternal}
+                  disabled={savingInternal}
+                  onPress={toggleInternal}
+                  style={({ pressed }) => [...cardStyle, { minHeight: 44, flexDirection: row, alignItems: 'center', gap: 12, opacity: pressed || savingInternal ? 0.7 : 1 }]}
+                >
+                  <Ionicons name={data.user.internal ? 'checkbox' : 'square-outline'} size={ICON.lg} color={data.user.internal ? ACCENT : colors.mutedForeground} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.body, textAlign: align }}>
+                      {ar ? 'حساب داخلي' : 'Internal account'}
+                    </Text>
+                    <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                      {ar ? 'حساب للفريق أو للتجربة: لا يُحتسب في صفحة الرؤى.' : 'A team or test account: left out of the insights page.'}
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
+              {!!internalError && <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }}>{internalError}</Text>}
 
               <View style={{ flexDirection: row, flexWrap: 'wrap', gap: 10 }}>
                 <StatCard label={ar ? 'أيام النشاط' : 'Active days'} value={data.activeDays} colors={colors} />

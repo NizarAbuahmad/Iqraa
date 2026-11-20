@@ -17,6 +17,31 @@ export function parseInsightsDays(raw: unknown): { days: number } | { error: str
 }
 
 /**
+ * The page's role filter (`?role=`). `teacher` is everyone who uses the teacher app — a school
+ * admin included — while a `system_admin` is the team and is never counted (`COUNTED_ROLES`).
+ */
+export const INSIGHTS_ROLES = ["all", "teacher", "student", "parent"] as const;
+export type InsightsRole = (typeof INSIGHTS_ROLES)[number];
+
+const ROLE_GROUPS: Record<InsightsRole, readonly string[]> = {
+  all: ["teacher", "school_admin", "student", "parent"],
+  teacher: ["teacher", "school_admin"],
+  student: ["student"],
+  parent: ["parent"],
+};
+
+/** The account roles a filter counts. Never `system_admin`, whatever the filter. */
+export function rolesOf(role: InsightsRole): readonly string[] {
+  return ROLE_GROUPS[role];
+}
+
+export function parseInsightsRole(raw: unknown): { role: InsightsRole } | { error: string } {
+  if (raw === undefined || raw === "") return { role: "all" };
+  if (typeof raw === "string" && (INSIGHTS_ROLES as readonly string[]).includes(raw)) return { role: raw as InsightsRole };
+  return { error: `role must be one of ${INSIGHTS_ROLES.join(", ")}` };
+}
+
+/**
  * A breakdown cell for fewer people than this is shown as "<3", so a breakdown — alone or
  * against another one — cannot point at one teacher ("the only woman over 50 in Karak").
  */

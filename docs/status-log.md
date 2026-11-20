@@ -10,6 +10,40 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Admin insights — role filter, internal accounts left out — 2026-11-20
+
+The first day of time data on the insights page held about 5 person-days, and «لوحة الإدارة» was in it, which is the
+admin's own use. Teachers, students and parents were also all counted together. Two changes:
+
+- **Internal accounts are never counted.** A `system_admin` account is always left out. Any other teacher-side
+  account can be marked **«حساب داخلي»** from its insights page (`app/admin/insights-user.tsx`), which calls
+  `PUT /admin/insights/users/:id/internal` `{ internal: boolean }`. The mark is the new nullable
+  `users.insights_excluded_at`, from migration 0028, which only adds a column. Only `NAMED_ROLES` accounts can be
+  marked (teacher, school admin, system admin). A student or parent answers 404, because they have no page to mark
+  from. **So a test student or parent account cannot be excluded yet.** *Clearing* a mark works on any role, so a
+  marked test teacher who then switches to parent or student (`lib/roleSwitch.ts`) is not stuck marked. There is no
+  screen for that case, though: the per-user page answers 404 for a family account, so clearing it is a direct API
+  call. The mark affects nothing except the insights page. The only audit trail is the log line, as in
+  `routes/admin.ts`.
+- **Role filter.** `GET /admin/insights?role=all|teacher|student|parent` (`lib/insights.ts` `rolesOf`). Any other
+  value is a 400. «teacher» includes `school_admin`. Every user-keyed query goes through one predicate, `counted`:
+  minutes, generations, saved materials, exams, homework, chat, feedback, the activity behind
+  active/returning/lapsed, and the cohort sign-ups. «Who the teachers are» stays teacher accounts only, whatever the
+  filter, but now drops marked accounts (`REAL_TEACHER`). `trackingSince` is not filtered. The response gains `role`
+  and `excluded: { admins, flagged }`. Those are counted whatever the filter, and the page shows them as «مستثنى من
+  كل الأرقام: …». A second chip row picks the filter. The frequent-users list and the teacher sections are hidden on
+  «طلاب» / «أولياء أمور». They follow `data.role`, not the chip, and only the latest request may land, so chips
+  tapped quickly never show one filter's numbers under another. The lapsed card now says it ignores the period.
+
+Verified: `adminInsights.db.test.ts` has a new block. It checks that the admin's minutes never count, the four role
+totals, that a 400 comes back for `role=system_admin`, and that marking a busy test teacher drops it from the
+totals, saved materials, teacher count and frequent users until the mark is cleared. A marked newcomer also leaves
+the sign-up cohorts. It checks that the PUT refuses a student (404), a non-admin (403), no token (401) and a
+non-boolean body (400), and that a mark is cleared after the account switched to parent. Pure tests cover
+`parseInsightsRole`/`rolesOf` (API) and the chip labels, `showsTeacherSections` and the Arabic number agreement of
+`excludedNote` (mobile). Typecheck plus the api-server, mobile and `lib/db` suites ran against a local Postgres 16.
+**Not verified:** the screens were not opened in a browser. No «ما الجديد» entry, because the change is admin-only.
+
 ## Admin user insights — time spent, optional teacher profile, insights page — 2026-11-19
 
 A system admin asked to see where people spend their time, which features they use, how many come back, who the

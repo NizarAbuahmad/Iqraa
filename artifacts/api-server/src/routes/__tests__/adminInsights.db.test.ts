@@ -191,3 +191,170 @@ describeDb("GET /admin/insights", () => {
     assert.equal((await call(server, "GET", "/admin/insights/users/not-a-uuid", adminId)).status, 400);
   });
 });
+
+/**
+ * The role filter and the internal mark: `?role=` recomputes the page for one kind of account,
+ * a system admin is never counted, and an account marked internal
+ * (`PUT /admin/insights/users/:id/internal`) drops out of every count until the mark is cleared.
+ */
+describeDb("GET /admin/insights — role filter and internal accounts", () => {
+  let db: TestDb;
+  let server: TestServer;
+  let adminId: string;
+  let tina: string;
+  let sam: string;
+  let stu: string;
+  let tess: string;
+
+  const today = ammanDay(new Date());
+  const day = (back: number) => addDays(today, -back);
+  const noon = (back: number) => new Date(ammanDayStart(day(back)).getTime() + 12 * 3600_000).toISOString();
+
+  const addUser = async (name: string, role: string): Promise<string> =>
+    (
+      await db.pool.query<{ id: string }>(
+        `INSERT INTO users (first_name, last_name, role, email, email_verified, created_at)
+         VALUES ($1, 'Test', $2, $3, true, $4) RETURNING id`,
+        [name, role, `${name.toLowerCase()}@example.test`, noon(60)],
+      )
+    ).rows[0]!.id;
+  const minutes = (userId: string, back: number, area: string, n: number) =>
+    db.pool.query(
+      `INSERT INTO usage_minutes (user_id, day, area, platform, minutes) VALUES ($1, $2, $3, 'web', $4)`,
+      [userId, day(back), area, n],
+    );
+  const insights = async (query: string) => {
+    const res = await call(server, "GET", `/admin/insights?days=7${query}`, adminId);
+    assert.equal(res.status, 200, res.text);
+    return res.json;
+  };
+
+  before(async () => {
+    db = await setupTestDb();
+    server = await startServer({ databaseUrl: db.url });
+    adminId = await addUser("Admin", "system_admin");
+    await minutes(adminId, 0, "admin", 9); // the team's own use: never counted
+    tina = await addUser("Tina", "teacher");
+    await minutes(tina, 0, "gen-quiz", 4);
+    await minutes(tina, 1, "classes", 2);
+    sam = await addUser("Sam", "school_admin");
+    await minutes(sam, 0, "classes", 3);
+    stu = await addUser("Stu", "student");
+    await minutes(stu, 0, "school", 2);
+    const pat = await addUser("Pat", "parent");
+    await minutes(pat, 0, "family", 1);
+    // A test teacher account, busier than anyone real.
+    tess = await addUser("Tess", "teacher");
+    await minutes(tess, 0, "gen-quiz", 50);
+    await db.pool.query(`INSERT INTO saved_materials (user_id, type, title, created_at) VALUES ($1, 'worksheet', 't', $2)`, [
+      tess,
+      noon(0),
+    ]);
+  });
+
+  after(async () => {
+    await server?.stop();
+    await db?.drop();
+  });
+
+  it("never counts a system admin, and splits the rest by role", async () => {
+    const all = await insights("");
+    assert.equal(all.role, "all");
+    assert.equal(all.time.totalMinutes, 62); // 4+2 + 3 + 2 + 1 + 50 — not the admin's 9
+    assert.equal(all.retention.active, 5);
+    assert.deepEqual(all.excluded, { admins: 1, flagged: 0 });
+    assert.ok(!all.time.byArea.some((a: { area: string }) => a.area === "admin"));
+
+    const teachers = await insights("&role=teacher"); // a school admin is a teacher here
+    assert.equal(teachers.time.totalMinutes, 59);
+    assert.equal(teachers.retention.active, 3);
+    assert.equal(teachers.retention.returning, 1);
+    assert.equal((await insights("&role=student")).time.totalMinutes, 2);
+    const parents = await insights("&role=parent");
+    assert.equal(parents.time.totalMinutes, 1);
+    assert.equal(parents.retention.active, 1);
+    assert.deepEqual(parents.features.saved, []);
+  });
+
+  it("refuses a role outside the list", async () => {
+    for (const bad of ["system_admin", "nobody"]) {
+      assert.equal((await call(server, "GET", `/admin/insights?role=${bad}`, adminId)).status, 400);
+    }
+  });
+
+  it("leaves an account marked internal out of every count, until the mark is cleared", async () => {
+    const put = await call(server, "PUT", `/admin/insights/users/${tess}/internal`, adminId, { internal: true });
+    assert.equal(put.status, 200, put.text);
+    assert.deepEqual(put.json, { id: tess, internal: true });
+
+    const all = await insights("");
+    assert.equal(all.time.totalMinutes, 12);
+    assert.equal(all.retention.active, 4);
+    assert.deepEqual(all.features.saved, []);
+    assert.deepEqual(all.excluded, { admins: 1, flagged: 1 });
+    assert.equal(all.teachers.total, 1); // Tina; Sam is a school admin, Tess is internal
+    assert.deepEqual(
+      all.topUsers.map((u: { name: string }) => u.name),
+      ["Tina Test", "Sam Test"],
+    );
+    assert.equal((await insights("&role=teacher")).time.totalMinutes, 9);
+    // Their own page still opens, and says so.
+    const page = await call(server, "GET", `/admin/insights/users/${tess}`, adminId);
+    assert.equal(page.status, 200, page.text);
+    assert.equal(page.json.user.internal, true);
+    assert.equal((await call(server, "GET", `/admin/insights/users/${tina}`, adminId)).json.user.internal, false);
+    assert.equal((await call(server, "GET", `/admin/insights/users/${adminId}`, adminId)).json.user.internal, true);
+
+    const clear = await call(server, "PUT", `/admin/insights/users/${tess}/internal`, adminId, { internal: false });
+    assert.equal(clear.status, 200, clear.text);
+    assert.equal((await insights("")).time.totalMinutes, 62);
+  });
+
+  it("marks only teacher accounts, for a system admin only, with a true/false body", async () => {
+    const path = (id: string) => `/admin/insights/users/${id}/internal`;
+    assert.equal((await call(server, "PUT", path(stu), adminId, { internal: true })).status, 404);
+    assert.equal((await call(server, "PUT", path("00000000-0000-4000-8000-000000000000"), adminId, { internal: true })).status, 404);
+    assert.equal((await call(server, "PUT", "/admin/insights/users/nope/internal", adminId, { internal: true })).status, 400);
+    assert.equal((await call(server, "PUT", path(tina), adminId, { internal: "yes" })).status, 400);
+    assert.equal((await call(server, "PUT", path(tina), adminId)).status, 400);
+    for (const who of [sam, tina]) {
+      assert.equal((await call(server, "PUT", path(tess), who, { internal: true })).status, 403);
+    }
+    assert.equal((await call(server, "PUT", path(tess))).status, 401);
+    // The student was not marked by the refused call.
+    const { rows } = await db.pool.query(`SELECT insights_excluded_at FROM users WHERE id = $1`, [stu]);
+    assert.equal(rows[0].insights_excluded_at, null);
+  });
+
+  it("can clear the mark of a test teacher who switched to a family role", async () => {
+    const path = `/admin/insights/users/${tess}/internal`;
+    assert.equal((await call(server, "PUT", path, adminId, { internal: true })).status, 200);
+    await db.pool.query(`UPDATE users SET role = 'parent' WHERE id = $1`, [tess]);
+    try {
+      // Marking a parent is refused; clearing is not, or the mark would be stuck.
+      assert.equal((await call(server, "PUT", path, adminId, { internal: true })).status, 404);
+      const clear = await call(server, "PUT", path, adminId, { internal: false });
+      assert.equal(clear.status, 200, clear.text);
+      const { rows } = await db.pool.query(`SELECT insights_excluded_at FROM users WHERE id = $1`, [tess]);
+      assert.equal(rows[0].insights_excluded_at, null);
+    } finally {
+      await db.pool.query(`UPDATE users SET role = 'teacher' WHERE id = $1`, [tess]);
+    }
+  });
+
+  it("leaves a marked account out of the sign-up cohorts too", async () => {
+    const cohortSize = async (query: string) => (await insights(query)).retention.cohorts.at(-1).size as number;
+    const newbie = (
+      await db.pool.query<{ id: string }>(
+        `INSERT INTO users (first_name, last_name, role, email, email_verified, created_at)
+         VALUES ('Newbie', 'Test', 'teacher', 'newbie@example.test', true, $1) RETURNING id`,
+        [noon(0)],
+      )
+    ).rows[0]!.id;
+    assert.equal(await cohortSize(""), 1);
+    assert.equal(await cohortSize("&role=teacher"), 1);
+    assert.equal(await cohortSize("&role=student"), 0);
+    assert.equal((await call(server, "PUT", `/admin/insights/users/${newbie}/internal`, adminId, { internal: true })).status, 200);
+    assert.equal(await cohortSize(""), 0);
+  });
+});

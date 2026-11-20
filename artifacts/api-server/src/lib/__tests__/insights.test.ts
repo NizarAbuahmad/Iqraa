@@ -6,10 +6,32 @@ import {
   buildCohorts,
   MIN_GROUP,
   multiValueBreakdown,
+  INSIGHTS_ROLES,
   parseInsightsDays,
+  parseInsightsRole,
+  rolesOf,
   summarizeActivity,
   weekStartOf,
 } from "../insights.ts";
+
+describe("parseInsightsRole / rolesOf", () => {
+  it("defaults to everyone and refuses anything outside the list", () => {
+    assert.deepEqual(parseInsightsRole(undefined), { role: "all" });
+    assert.deepEqual(parseInsightsRole(""), { role: "all" });
+    assert.deepEqual(parseInsightsRole("parent"), { role: "parent" });
+    for (const bad of ["system_admin", "school_admin", "Teacher", ["teacher"], 1]) {
+      assert.ok("error" in parseInsightsRole(bad), String(bad));
+    }
+  });
+  it("counts a school admin as a teacher and never counts a system admin", () => {
+    assert.deepEqual([...rolesOf("teacher")].sort(), ["school_admin", "teacher"]);
+    assert.deepEqual(rolesOf("student"), ["student"]);
+    for (const r of INSIGHTS_ROLES) assert.ok(!rolesOf(r).includes("system_admin"), r);
+    // «all» is exactly the union of the three groups.
+    const union = new Set(["teacher", "student", "parent"].flatMap((r) => [...rolesOf(r as "teacher")]));
+    assert.deepEqual([...rolesOf("all")].sort(), [...union].sort());
+  });
+});
 
 describe("summarizeActivity", () => {
   const end = "2026-11-19";
