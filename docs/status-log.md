@@ -25,7 +25,7 @@ Follow-up to «المسار كاملًا» below. That one changed `TopicSelecto
 - A book with nothing to pick is never "everything".
 
 **Verified:**
-- mobile: full suite, on the head merged with main.
+- On the head merged with main (2026-11-20): mobile 9,368 pass, api-server 2,983 pass (after `pnpm build`), curriculum 937 pass plus `verify`.
 - `pnpm run typecheck`.
 
 **Not verified:**
