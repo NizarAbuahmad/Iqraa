@@ -10,6 +10,27 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Paper scan: a whole book's objectives always fit — 2026-11-20
+
+`POST /evaluations/scan-paper` reads the photos of an exam a teacher already handed out and fills the marks grid. It refused more than 100 objectives (`MAX_SETUP_OBJECTIVES`, `artifacts/api-server/src/modules/assessment/scanRequest.ts`). Three books have more: Grade 10 Islamic Education S2 (116), S1 (105) and Grade 7 S1 (102). A teacher who picked the whole book there, by hand or with the new «الكتاب كاملًا (كل الدروس)» row, got the generic `scanFailed` message, «تعذّرت قراءة الصورة. أدخل العلامات يدويًا.», which blames the photo. Nothing said why.
+
+**What changed:** the cap is now 200.
+- It was a sanity bound on the request body, not a model limit. The objectives reach the prompt only as an id-and-label list.
+- 200 ids are about 8 KB of body. At 116, the prompt grows by the labels, around 10–15k characters.
+- The output budget (`max_completion_tokens: 3000`) is unaffected: the model returns one row per question, not per objective.
+
+**Test:** `scanRequest.test.ts` now checks that every catalog book's whole objective list passes `parsePaperScanBody`. It also checks that the largest book is above 100, so the test cannot pass vacuously. It failed on `book-islamic-10-s1` (105) before the change. The existing over-the-cap case now sends 201.
+
+**Verified:**
+- api-server: `pnpm build` then `pnpm test`, 2,984 pass.
+- `pnpm run typecheck`.
+
+**Not verified:**
+- A live scan of a real 116-objective paper.
+- Whether the model maps questions to objectives as well from a list of 116 as from a short one. A teacher still checks every row before saving; the scan writes nothing.
+
+No «ما الجديد»: a scan that used to fail on three books now works, and there is nothing new to point at.
+
 ## Exam builder: «الكتاب كاملًا (كل الدروس)» — a whole vocational English track in one tap — 2026-11-20
 
 Follow-up to «المسار كاملًا» below. That one changed `TopicSelector`, which the exam builder (`app/evaluations/new.tsx`) does not use: there a teacher picks a catalog book and ticks lessons. Each Grade 10 vocational English track is already its own catalog book there: `book-english-10-commerce`, `-agriculture`, `-hospitality` and `-industry`, with 30–31 objectives each. So an exam on the whole track was possible, but only by ticking every lesson one by one.
@@ -32,7 +53,7 @@ Follow-up to «المسار كاملًا» below. That one changed `TopicSelecto
 - The screen was not opened in a browser.
 - A live exam generated from a whole track (30 objectives).
 
-**Known limit, not new:** the paper scan (`/evaluations/scan`) refuses more than 100 objectives (`MAX_SETUP_OBJECTIVES`). Three Islamic-education books have more: Grade 10 S2 (116), Grade 10 S1 (105) and Grade 7 S1 (102). On those, «الكتاب كاملًا» followed by a scan fails with the generic scan error. So does ticking every lesson by hand today.
+**Known limit, not new (fixed the same day, see «Paper scan: a whole book's objectives always fit» above):** the paper scan (`POST /evaluations/scan-paper`) refused more than 100 objectives (`MAX_SETUP_OBJECTIVES`). Three Islamic-education books have more: Grade 10 S2 (116), Grade 10 S1 (105) and Grade 7 S1 (102). On those, «الكتاب كاملًا» followed by a scan failed with the generic scan error, and so did ticking every lesson by hand.
 
 ## Grade 10 vocational English: «المسار كاملًا» picks a whole track — 2026-11-17
 
