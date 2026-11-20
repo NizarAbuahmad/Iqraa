@@ -61,6 +61,11 @@ class TimeoutError extends Error {
  * default would end those requests on the teacher's screen while the server was
  * still working, and `prompt-slides` has no offline fallback to hide it. Only
  * these four calls get the longer wait; everything else keeps the default.
+ *
+ * The activity is the fifth (2026-11-20): two production requests in a row came
+ * back as the offline template while the server allows the model 120 s per
+ * attempt. A timeout there is not visible — the fallback hides it behind
+ * sample content — so the wait has to cover what the server will.
  */
 const DOCUMENT_TIMEOUT_MS = 90_000;
 
@@ -163,7 +168,7 @@ export class RemoteAIService extends AIService {
     // reads markdown, so it would print as asterisks.
     return plainActivity(await generateWithProvenance(
       'activity',
-      () => postJSON<ActivityOutput>('/generate/activity', req, opts),
+      () => postJSON<ActivityOutput>('/generate/activity', req, opts, DOCUMENT_TIMEOUT_MS),
       () => this.fallback.generateActivity(req),
     ));
   }
