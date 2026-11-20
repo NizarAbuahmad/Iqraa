@@ -582,7 +582,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
         loadingSlides={loadingSlides}
         labels={{
           title: t('exportTitle'),
-          shareLabel: t('exportShare'), shareSub: t('exportShareSub'),
+          shareLabel: t('exportShareText'), shareSub: t('exportShareTextSub'),
           copyLabel: t('exportCopy'), copySub: t('exportCopySub'),
           pdfLabel: t('exportPDF'), pdfSub: t('exportPDFSub'),
           wordLabel: t('exportWord'), wordSub: t('exportWordSub'),
