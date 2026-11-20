@@ -1450,7 +1450,33 @@ const fracDec: Topic = {
   make({ rng, diff, grade }) {
     // Grade 5's place-value lesson («أجزاء الألف») has its own generator (`thousandths_g5`), so here Grade 5 is
     // «التحويل بين الكسور والأعداد العشرية» and converts (review, 2026-11-20)
-    const kind = pick(rng, grade >= 7 ? [0, 1, 4, 5] : grade === 5 ? [0, 1] : [0, 1, 2, 3]);
+    const kind = pick(rng, grade >= 7 ? [0, 1, 4, 5] : grade === 5 ? [0, 1, 6, 7] : [0, 1, 2, 3]);
+    if (kind === 6) {
+      // the book's method (S2 p. 11): an equivalent fraction over 10, 100 or 1000, then the decimal
+      const [d, to] = pick(rng, [[2, 10], [5, 10], [4, 100], [20, 100], [25, 100], [50, 100], [8, 1000], [40, 1000], [125, 1000]] as Array<[number, number]>);
+      let n = int(rng, 1, d - 1);
+      while (gcd(n, d) !== 1) n = int(rng, 1, d - 1);
+      const ans = String((n * to) / d);
+      return {
+        eq: `${n}/${d} = ?/${to}`, answer: ans,
+        wrongs: wrongsFrom(ans, [String(n * to), String(to / d), String(n + to - d)].filter(w => w !== ans && Number(w) > 0), j => String((n * to) / d + Math.abs(j))),
+        ar: `لكتابة الكسر ${n}/${d} على صورة عدد عشري، نكتبه كسرًا مكافئًا مقامه ${to}. ما بسط هذا الكسر؟`,
+        en: `To write ${n}/${d} as a decimal, write it as an equivalent fraction over ${to}. What is its numerator?`,
+      };
+    }
+    if (kind === 7) {
+      // a mixed number and its decimal, either way
+      const [d, places] = pick(rng, TERMINATING.slice(0, 8));
+      let n = int(rng, 1, d - 1);
+      while (gcd(n, d) !== 1) n = int(rng, 1, d - 1);
+      const w = int(rng, 1, 9);
+      const dec = fmtDec(w * 10 ** places + (n * 10 ** places) / d, places);
+      const mx = `${w} ${n}/${d}`;
+      if (rng() < 0.5) {
+        return { eq: mx, answer: dec, wrongs: wrongsFrom(dec, [`${w}.${n}${d}`, `${w}.${n}`, fmtDec(w * 10 ** places + (d * 10 ** places) / n, places)].filter(x => x !== dec && !/NaN/.test(x)), j => fmtDec(w * 10 ** places + (n * 10 ** places) / d + Math.abs(j) * 10 ** places, places)), ar: `اكتب العدد الكسري ${mx} على صورة عدد عشري.`, en: `Write the mixed number ${mx} as a decimal.` };
+      }
+      return { eq: dec, answer: mx, wrongs: wrongsFrom(mx, [`${w} ${n}/${d * 10}`, `${w + 1} ${n}/${d}`, `${w} ${d - n}/${d}`].filter(x => x !== mx), j => `${w + 1 + Math.abs(j)} ${n}/${d}`), ar: `اكتب العدد العشري ${dec} على صورة عدد كسري في أبسط صورة.`, en: `Write ${dec} as a mixed number in simplest form.` };
+    }
     if (kind === 2) {
       const places = grade <= 4 ? pick(rng, diff === 'easy' ? [1] : [1, 2]) : pick(rng, diff === 'easy' ? [1, 2] : [2, 3]);
       const e = expanded(rng, places, int(rng, 0, diff === 'hard' ? 99 : 9));

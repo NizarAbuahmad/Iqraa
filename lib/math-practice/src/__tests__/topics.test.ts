@@ -805,6 +805,18 @@ describe('answers recomputed from the stem', () => {
         const [lo, hi] = item.answer.split(' ، ').map(num);
         assert.equal(hi, lo! + 1, p);
         assert.ok(lo! < f && f < hi!, p);
+      } else if (has(p, 'نكتبه كسرًا مكافئًا مقامه')) {
+        // Grade 5 (2026-11-20): the numerator over 10, 100 or 1000
+        kinds.add('equivalent');
+        assert.equal(grade, 5, p);
+        const [n, d, to] = nums(p);
+        assert.ok(close(Number(item.answer) / to!, n! / d!), p);
+      } else if (has(p, 'على صورة عدد كسري') || has(p, 'العدد الكسري')) {
+        // Grade 5 (2026-11-20): a mixed number and its decimal, either way
+        kinds.add('mixed and decimal');
+        assert.equal(grade, 5, p);
+        const shown = p.match(/(?:الكسري|العشري) (\d+ \d+\/\d+|\d+\.\d+)/)![1]!;
+        assert.ok(close(value(shown)!, value(item.answer)!), `${shown} ≠ ${item.answer}`);
       } else if (has(p, 'كسر غير فعلي')) {
         kinds.add('mixed to improper');
         assert.ok(close(value(item.answer)!, sval(p.match(/العدد (−?\d+ \d+\/\d+)/)![1]!)), p);
@@ -815,7 +827,7 @@ describe('answers recomputed from the stem', () => {
         assert.ok(close(sval(shown), sval(item.answer)), `${shown} ≠ ${item.answer}`);
       }
     }
-    assert.equal(kinds.size, 6, [...kinds].join());
+    assert.equal(kinds.size, 8, [...kinds].join());
     for (const { item } of draws('pct_conv')) {
       const a = value(item.eq), b = value(item.answer);
       assert.ok(a !== null && b !== null, `${item.eq} → ${item.answer}`);

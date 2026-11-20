@@ -34,7 +34,10 @@ asked whether a question was about its lesson. Fixed (`lib/math-practice`):
 - **«أجزاء الألف» (S2 u6_l1)** and **«التحويل بين الكسور والأعداد العشرية» (u6_l2)** drew one pool (`frac_dec`), mostly
   hundredths, so each asked the other's questions. «أجزاء الألف» has its own `thousandths_g5` (`topics.ts`): every number has
   three decimal places — a digit's place value, the digit in a named place, expanded ↔ standard form, «65 جزءًا من ألف».
-  Grade 5's `frac_dec` now only converts. Grade 4's tenths and hundredths lessons are unchanged.
+  Grade 5's `frac_dec` now only converts, in four kinds: fraction → decimal, decimal → fraction, and two from the book
+  (S2 p. 11) so the lesson keeps three kinds or more (`mathLessonKinds.test.ts`): the numerator of the equivalent fraction
+  over 10, 100 or 1000, and a mixed number ↔ decimal («2 3/4» ↔ «2.75»). Grade 4's tenths and hundredths lessons are
+  unchanged.
 - **«ضرب الأعداد العشرية وقسمتها» (u6_l7)** is «في 10, 100, 1000 … على 10, 100, 1000» (S2 p. 29); it asked «9.1 × 0.6» and
   «9.6 ÷ 0.8», Grade 6's. Grade 5 now multiplies and divides by 10, 100 and 1000 only (`decPowerOfTen`): the product or
   quotient, the missing power of ten, the price of 100 pens, the price of one of 100 notebooks. At most four decimal places.

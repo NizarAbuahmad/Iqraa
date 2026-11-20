@@ -205,9 +205,22 @@ describe('Grade 5: each maths lesson asks about its own objective', () => {
       } else assert.fail(`unknown stem: ${stem}`);
     }
     assert.deepEqual([...kinds].sort(), ['digit', 'expanded → standard', 'place value', 'standard → expanded', 'thousandths']);
-    for (const { stem } of lesson('التَّحْويلُ بَيْنَ الكُسورِ وَالأَعْدادِ الْعَشْرِيَّةِ')) {
+    const conv = new Set<string>();
+    for (const { item, stem } of lesson('التَّحْويلُ بَيْنَ الكُسورِ وَالأَعْدادِ الْعَشْرِيَّةِ')) {
       assert.match(stem, /على صورة/, `not a conversion: ${stem}`);
+      let m: RegExpMatchArray | null;
+      if ((m = stem.match(/الكسر (\d+)\/(\d+) على صورة عدد عشري، نكتبه كسرًا مكافئًا مقامه (\d+)/))) {
+        conv.add('equivalent');
+        assert.ok(near(Number(item.answer) / Number(m[3]), Number(m[1]) / Number(m[2])), stem);
+      } else if ((m = stem.match(/العدد الكسري (\d+ \d+\/\d+) على صورة عدد عشري/))) {
+        conv.add('mixed → decimal');
+        assert.ok(near(Number(item.answer), value(m[1]!)), stem);
+      } else if ((m = stem.match(/العدد العشري (\d+\.\d+) على صورة عدد كسري/))) {
+        conv.add('decimal → mixed');
+        assert.ok(near(value(item.answer), Number(m[1])) && simplest(item.answer), stem);
+      } else conv.add('fraction ↔ decimal');
     }
+    assert.equal(conv.size, 4, `conversion kinds drawn: ${[...conv]}`);
   });
 
   it('«ضرب الأعداد العشرية وقسمتها» multiplies and divides by 10, 100, 1000 only', () => {
