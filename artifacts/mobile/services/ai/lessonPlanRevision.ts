@@ -25,6 +25,7 @@
 import type { AIRequest, LessonPlanOutput } from './AIService.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
 import { englishOnly } from '../englishText.ts';
+import { WRITING_LIMIT, type EarlyGrade } from './lessonPlanFirstGrade.ts';
 import {
   leftOutSentence, revisionPhrase, revisionUnits, revisionUnitsFromLessons, scopeFromKey, splitShown,
   REVISION_SHOWN_PER_UNIT, type RevisionUnit,
@@ -42,8 +43,8 @@ export type RevisionPlanInput = {
   duration: number;
   /** The teacher's own objectives, one per line — used verbatim, as on a single-lesson plan. */
   customObjectives?: string;
-  /** A Grade 1 scope: six-year-olds learning to read — see `firstGradeRevision`. */
-  firstGrade?: boolean;
+  /** A Grade 1 or 2 scope: six- and seven-year-olds — see `firstGradeRevision`. */
+  earlyGrade?: EarlyGrade;
 };
 
 export type RevisionPlanFields = Pick<
@@ -367,7 +368,8 @@ function materials(style: RevisionStyle, c: Ctx): string[] {
 
 type FirstGradeRevision = Omit<RevisionPlanFields, 'objectives'>;
 
-function firstGradeRevision(style: RevisionStyle, c: Ctx, left: string | null): FirstGradeRevision {
+function firstGradeRevision(style: RevisionStyle, c: Ctx, left: string | null, grade: EarlyGrade = 1): FirstGradeRevision {
+  const limit = WRITING_LIMIT[grade];
   // What the session leaves out is said here too, as in every review.
   const tail = left ? ` ${left}` : '';
   const m = c.label(c.min(0.4)), g = c.label(c.min(0.2)), ind = c.label(c.min(0.15)), t = c.label(c.min(0.1));
@@ -389,9 +391,9 @@ function firstGradeRevision(style: RevisionStyle, c: Ctx, left: string | null): 
       materials: ['صور وبطاقات من دروس المراجعة', 'أشياء محسوسة للعدّ أو للعرض', 'كتاب الطالب', 'ألوان'],
       mainActivity,
       guidedPractice: `(${g}) – نفعل معًا:\n\n• سأختار من كل ${part} مثالًا واحدًا من الكتاب، ونحلّه معًا بالأشياء أو بالإشارة، والأطفال يقولون كل خطوة بصوت واحد.\n• وسأصحّح فورًا وبلطف، وأمدح المحاولة.`,
-      independentPractice: `(${ind}) – كل طفل وحده:\n\n• يلوّن كل طفل أو يصل أو ينسخ في كتابه مثالًا واحدًا من كل ${part} (${titles}).\n• وسأمرّ على كل طفل وأسأله سؤالًا شفويًا قصيرًا.`,
+      independentPractice: `(${ind}) – كل طفل وحده:\n\n• ${grade === 2 ? `يكتب كل طفل في دفتره جملة قصيرة أو مثالًا واحدًا من كل ${part}` : `يلوّن كل طفل أو يصل أو ينسخ في كتابه مثالًا واحدًا من كل ${part}`} (${titles}).\n• وسأمرّ على كل طفل وأسأله سؤالًا شفويًا قصيرًا.`,
       closure: `(${t}) غلق الحصة: سنلعب «صح أم خطأ» بجملة من كل ${part}، يقف الأطفال للصح ويجلسون للخطأ، ثم سأختم بأنشودة أو بجملة قصيرة عمّا راجعناه.`,
-      assessment: 'سأقيّم بالملاحظة: من أجاب في الجولات وفي «صح أم خطأ»، وسأسأل كل طفل سؤالًا شفويًا واحدًا وأسجّل في قائمة الصف من يحتاج إلى إعادة.\nلن أطلب كتابة إلا نسخ حرف أو كلمة أو عدد.',
+      assessment: 'سأقيّم بالملاحظة: من أجاب في الجولات وفي «صح أم خطأ»، وسأسأل كل طفل سؤالًا شفويًا واحدًا وأسجّل في قائمة الصف من يحتاج إلى إعادة.\n' + limit.ar,
       differentiation: 'دعم: سأُجلس من يحتاج قريبًا مني، وأعطيه صورًا وأشياء أكثر ومثالًا أسهل من كل وحدة.\nتحدٍّ: سأعطي من ينهي مبكرًا مثالًا إضافيًا، أو دور «المعلّم الصغير» في جولة.\nالمبدأ: مراجعة قصيرة محسوسة لكل طفل، لا يكتب فيها إلا حرفًا أو كلمة أو عددًا.',
       homework: `يُري الطفل أسرته مثالًا واحدًا من كل ${part} في كتابه، ويقوله لهم بصوته.`,
     };
@@ -411,9 +413,9 @@ function firstGradeRevision(style: RevisionStyle, c: Ctx, left: string | null): 
     materials: ['Pictures and cards from the review lessons', 'Concrete objects to count or show', 'Student book', 'Crayons'],
     mainActivity,
     guidedPractice: `(${g}) – Together:\n\n• I will pick one textbook example from each ${part} and we work it together with objects or by pointing, the children saying each step in one voice.\n• I will correct straight away and gently, and praise the try.`,
-    independentPractice: `(${ind}) – Each child alone:\n\n• Each child colours, matches or copies in the book one example from each ${part} (${titles}).\n• I will go round and ask each child one short spoken question.`,
+    independentPractice: `(${ind}) – Each child alone:\n\n• ${grade === 2 ? `Each child writes a short sentence or one example from each ${part} in their notebook` : `Each child colours, matches or copies in the book one example from each ${part}`} (${titles}).\n• I will go round and ask each child one short spoken question.`,
     closure: `(${t}) Closing: we will play “true or false” with one sentence from each ${part} — children stand for true and sit for false — then I will end with a song or one short sentence about what we reviewed.`,
-    assessment: 'I will assess by watching: who answered in the rounds and in “true or false”; I will ask each child one spoken question and note on the class list who needs to go over it again.\nThe only writing is copying a letter, a word or a number.',
+    assessment: 'I will assess by watching: who answered in the rounds and in “true or false”; I will ask each child one spoken question and note on the class list who needs to go over it again.\n' + limit.en,
     differentiation: 'Support: I will seat children who need it near me with more pictures and objects and an easier example from each unit.\nChallenge: early finishers get one more example, or the job of “little teacher” in a round.\nPrinciple: a short, concrete review for every child, with no written review sheet.',
     homework: `The child shows the family one example from each ${part} in the book and says it aloud.`,
   };
@@ -423,7 +425,7 @@ function firstGradeRevision(style: RevisionStyle, c: Ctx, left: string | null): 
 export function buildRevisionPlan(input: RevisionPlanInput): RevisionPlanFields {
   const c = ctxFor(input);
   const style = styleOf(input.style);
-  if (input.firstGrade) return { objectives: objectives(input, c), ...firstGradeRevision(style, c, leftOutSentence(c.units, REVISION_SHOWN_PER_UNIT, input.lang)) };
+  if (input.earlyGrade) return { objectives: objectives(input, c), ...firstGradeRevision(style, c, leftOutSentence(c.units, REVISION_SHOWN_PER_UNIT, input.lang), input.earlyGrade) };
   return {
     objectives: objectives(input, c),
     materials: materials(style, c),
@@ -480,7 +482,8 @@ export function revisionPlanFromRequest(req: AIRequest): LessonPlanOutput {
   const duration = req.duration ?? 45;
   const fields = buildRevisionPlan({
     units: lang === 'en' ? englishUnits(units) : units, phrase, lang, style: req.teachingStyle ?? 'direct', duration, customObjectives: req.objectives,
-    firstGrade: sel?.gradeId === 'grade-1' || (req.coverage?.lessons ?? []).some(l => /^kbl-g1-/.test(l.id)),
+    earlyGrade: sel?.gradeId === 'grade-1' || (req.coverage?.lessons ?? []).some(l => /^kbl-g1-/.test(l.id)) ? 1
+      : sel?.gradeId === 'grade-2' || (req.coverage?.lessons ?? []).some(l => /^kbl-g2-/.test(l.id)) ? 2 : undefined,
   });
   return {
     title: lang === 'ar'

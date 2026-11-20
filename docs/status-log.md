@@ -58,6 +58,243 @@ CI set.
 **Not done.** Live AI was not run. Everything the audit left for the PDFs. No «ما الجديد» entry: this changes which
 questions an offline paper draws, not what a teacher can do.
 
+## Grade 2 review, the Grade 1 way: plans, activities, quick checks and live prompts for seven-year-olds — 2026-11-15
+
+The Grade 1 review (below, «Grade 1 review: coverage, generated results, book images — 2026-11-13») repeated for Grade 2
+(14 books, 236 lessons). Three earlier Grade 2 entries had covered the catalog, the book pages that exist and offline
+maths for all 61 lessons («Grade 2 review: coverage, images, and four generator fixes», «Grade 2 audit: book pages,
+contents, honorifics and offline maths checked», «Grade 2 maths: offline questions for the four problem-solving
+lessons»). What none had touched is what the generators write for a seven-year-old.
+
+**Swept.** The offline plan (three styles), the six activity formats and the quick check, for all 236 lessons. Every
+lesson got the all-grades templates:
+- «اكتب من ذاكرتك — الدفاتر مغلقة», a claim to defend, teams betting points, a "worked example", a written summary, a
+  debate and an individual worksheet: all 236;
+- «اشرح بكلماتك» in 175, a concept map in 148, paragraphs in all of Arabic and social studies;
+- a controlled experiment in all 13 science lessons.
+
+The first Grade 2 review had also noted one plan per subject: «أركان الإيمان» got a recitation plan, a drama lesson
+"show the finished artwork", and Arabic listening and speaking lessons were told to read aloud.
+
+**Offline (`artifacts/mobile`).**
+- **Grade 2 now uses the early-grade plans and activities** (`lessonPlanFirstGrade.ts`, `activityFirstGrade.ts`,
+  `earlyGradeOf` → `EarlyGrade` 1 or 2), with its own level:
+  - **Arabic follows the book's strands**, each from the lesson's own text or rule (`titleDetail`). «أقرأ بطلاقة وفهم
+    (الغراب وإناء الماء)» reads «نص «الغراب وإناء الماء»» aloud and answers one question in a written word or
+    sentence. «أكتب (اللام الشمسية واللام القمرية)» sorts and writes words by that rule, then writes a short sentence.
+    «أبني لغتي» builds sentences on the lesson's pattern. Listening and speaking are retelling and talking in connected
+    sentences.
+  - **Writing is a word or a short sentence of the child's own**, where Grade 1 copies one: science writes the thing's
+    name under its picture, social studies a sentence, Islamic education the sentence it said. Every assessment ends
+    with the Grade 2 limit (`WRITING_LIMIT`), and so does an activity's writing tip.
+  - The quick check for a lesson with no bank is spoken. A Grade 2 reading lesson asks about its own text, a spelling
+    lesson about its rule.
+  - A Grade 2 unit or semester review is the early-grade review, and each child writes a short sentence or an example
+    from each unit.
+- **«أكتب (التنوين)» and «أكتب (همزة الوصل…)» are spelling lessons.** `arabicLessonType` read «تنوين» before the strand
+  and gave them Grade 1's mark lesson (an objective «أن يميّز الطفل «أكتب (التنوين)» شكلًا وصوتًا»). The strand is now
+  read first; Grade 1's «تنوين الضمة» has no strand and is still a mark lesson.
+- **An arts lesson is a picture, a piece of music or a scene, in Grades 1 and 2** (`makingContent`). «خشبة المسرح» and
+  «آلة (البيانو)» had both got «ينفّذ الطفل عملًا صغيرًا بخطواته». Theatre now performs a movement or a line for the
+  class, music listens and claps the rhythm, art draws.
+- Measured again over all 236 lessons: every phrase above → 0. The only matches left are «يتعرّف» (recognise) and
+  «الصورة التحليلية», the book's term for expanded form.
+
+**Live (`artifacts/api-server`).**
+- **A Grade 2 clause** (`firstGrade.ts`, `isSecondGrade`) for every use the Grade 1 clause covers: plan, paper,
+  activity, classroom, explanation, visual. It says:
+  - reading is a short text from the book read aloud, and writing is words or one or two short sentences;
+  - no paragraphs, summaries, justifying, analysing or controlled experiments;
+  - a problem is one or two steps;
+  - by subject, Arabic's strands, and maths within 999 with the 2, 3, 4, 5 and 10 facts.
+
+  `firstGradeClause*` returns it for a Grade 2 request, so it reaches the plan, worksheet, homework, quiz, activity,
+  lesson explanation, Prompt Slides, classroom, infographic and evaluation prompts. The evaluation's Grade 1 type notes
+  stay Grade 1's.
+- **The pool key gains `secondGrade: "2026-11-15"`** for a Grade 2 request of those kinds, so nothing pooled under the
+  grade-blind prompt is served. Grade 3 and Grade 12 keys are unchanged, pinned by literal keys computed from the code
+  before the change (`secondGradePrompts.test.ts`).
+
+**Verified.**
+- `secondGradePlans.test.ts` (mobile) runs every Grade 2 lesson through the plan in three styles, the six formats and
+  the quick check. It checks for none of the phrases, the teacher's first-person voice and the Grade 2 limit, and pins
+  the Arabic strands, «أكتب (التنوين)», the arts split in Grades 1 and 2, the review, and Grade 3 unchanged.
+- `secondGradePrompts.test.ts` (API) checks the clause in each builder for Grade 2 only, and the keys.
+- Each failed on the old code (the sweep: 236 of 236).
+- `pnpm run typecheck`; api-server `build` + `test` (2,960 pass); the mobile suite (9,321 pass, 10 skipped).
+- `activityFirstGrade.test.ts` had pinned a Grade 2 activity as the all-grades one; it now pins Grade 3.
+
+**Not verified:** a live model's Grade 2 output; the Arabic wording by a native reader; anything needing the PDFs.
+
+**Still open.**
+- Grade 2 book images and the missing PE Semester 2 book, both of which need the PDFs (as the earlier entries say).
+- Grade 2 evaluations keep every question type: a seven-year-old can write a short answer, so only Grade 1's list is
+  narrowed.
+- Grade 2 offline maths already follows difficulty («Maths difficulty… grades 1–4»).
+
+No «ما الجديد» entry: these correct what existing generators write for Grade 2.
+
+## Grade 2 second pass: numbers within 999, grams without conversions, and «2 عشرات» — 2026-11-17
+
+A second read of Grade 2 maths, on top of «Grade 2 review: fifteen maths lessons asked about their own objective»
+(below), «Grade 2 audit…» and «Grade 2 review: coverage, images…». The generators were run over all 236 Grade 2
+lessons: each grounds by its own id, and all 61 maths lessons fill a ten-question quiz. Every question of every maths
+quiz was read against its lesson's objective. Every key was right. (The audit script's «wrong key» flags are its own:
+it ignores the «كل صورة تمثل طائرين» scale and the sign of a difference.)
+
+This pass found the same data-unit, division-table and eraser problems that the «fifteen lessons» review fixed first; its
+fixes are kept. What this pass adds:
+
+- **Numbers past 999 in estimating and in wrong options.** Grade 2 works «ضمن 3 منازل», but:
+  - «تقدير ناتج الجمع» estimated sums up to 1158, with 1200 and 1300 among the options. `estSum` now redraws a Grade 2
+    item that passes 999.
+  - Wrong options in the mental add/subtract, dinar and metre lessons offered 1000, 1081 and 5000. They are capped at
+    999 there.
+  - A rounding item may still offer 1000 for 960. That is a real round number, so it is left.
+- **«الغرام والكيلوغرام» and «اللتر والمليلتر» no longer convert to four digits.** They asked «7 كيلوغرامات = ؟ غرام»
+  (7000) and «3 لترات و 700 مليلتر» (3700); the objectives ask to tell the units apart and pick the fitting one (the
+  «fifteen lessons» review left this open). At f = 1000 the conversions are gone. What remains: the fitting unit, what
+  is left to make one kilogram or litre, and two new kinds — a total of two small things, and how much more one weighs
+  or holds (within 950). «المتر» keeps its conversions, which stay within 999.
+- **«2 عشرات», «1 مئات».** The place-value stem «6 مئات و 2 عشرات و 6 آحاد» now uses counts of 3–9, as Grade 1's
+  tens and ones already did. So does Grade 3's «الألوف» stem, which had the same line.
+
+**Verified:**
+- `grade2SecondPass.test.ts` was written first and failed before the fix. It recomputes the new gram and millilitre
+  kinds and checks every number in the touched Grade 2 stems and options is at most 999.
+- The `early.test.ts` units checker recomputes the new kinds and expects no conversion kind for grams and millilitres.
+- `lib/math-practice`, the full mobile suite and `pnpm run typecheck` pass (counts in the PR).
+- Rerunning the Grade 2 audit found nothing past 999 except the rounding option above. New items were sampled and read
+  by hand, which caught «رغيف خبز كتلتها» (now «كتلته») and an awkward capacity stem (now «تتسع علبة العصير لـ 300 مليلتر»).
+
+**Not done:**
+- Grade 2 page images exist only for Islamic and PE, so no page check was possible here.
+- «الأشكال المستوية» asks about sides and vertices, which is also the next lesson's content. Left as it is.
+
+No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+## Printed page (PDF): the logo is centred above the masthead — 2026-11-20
+
+Follow-up to «Word exports: the logo is centred, with space under it». On the printed page the logo sat inside
+the masthead band, at its start edge, beside «مساعد التدريس الذكي». It now has its own line above the band
+(`.brand-top` in the page shell, `exportHtml.ts`): centred, 104px wide (`PDF_LOCKUP_WIDTH`), with 16px under it.
+The band keeps the tagline, the school field and the date. This is the shell every printed paper shares (worksheet,
+quiz and the others built on it).
+
+Verified: `brandLockup.test.ts` checks the lockup is in its own `brand-top` block, centred with space under it, and
+above the masthead. The worksheet (Arabic, colour and ink-saver) and quiz (English) pages were rendered in
+Chromium and looked at. **Not changed:** in the ink-saver style the logo stays in colour.
+
+## Chat: a material on a topic no lesson is about goes to the live model — 2026-11-20
+
+**What happened.** On app.iqrra.com «نشاط صفي لو كنت وزير تعليم ليوم واحد» answered «سؤالك قد يخص أكثر من
+مادة. أيّ مادة تقصد؟» with chips الكيمياء / التربية المهنية / اللغة الإنجليزية. Traced offline with the app's own
+functions, «نشاط صفي 15 دقيقة للصف السادس: لو كنت وزير التربية ليوم واحد» went like this:
+- «نشاط» makes it an `artifact` ask.
+- The keyword search ranked grade 10 English «يوم في الفندق», grade 4 English and grade 10 civics on «يوم» and
+  «التربية».
+- The grade-6 filter emptied `results`, but the «which lesson?» check read the unfiltered `ranked` and offered
+  wrong-grade chips.
+- A chip re-sent the ask pinned to a lesson the grade filter dropped again, so it ended in «حاضر — عن أي درس
+  نجهّز هذه المادة؟».
+
+The model was never called. Those stops exist for the offline assistant, which can only answer from a lesson. A
+`teaching` question already skipped them in live mode (`liveTeaching`); an `artifact` ask never did.
+
+**What changed** (`app/(tabs)/iqra.tsx`, pure helpers in `services/kbSuggestion.ts`):
+- **`freeTopicArtifactGoesLive`.** In live mode only, an artifact ask goes to the live chat model like a teaching
+  question, when all of these hold:
+  - no confident lesson match;
+  - no hard context (pinned lesson, named subject, teaching context);
+  - no uploaded documents;
+  - not a bare shortcut on the soft-pinned lesson;
+  - a topic of its own (`topicFromQuery` ≥ 6 characters, so «نشاط صفي», «ورقة عمل» and «اعمل نشاط» are
+    unchanged).
+
+  Its weak keyword matches are dropped, so no generator is built on them. The subject and lesson stops are
+  skipped. The model gets the whole message, «15 دقيقة» included, and its prompt already says how to write a
+  classroom activity.
+- **`rankedInScope`.** The «which lesson?» candidates keep to the grade and subject the teacher named, as
+  `results` already did. This fixes the wrong-grade chips and the chip loop wherever that check still runs (demo
+  mode, short topics).
+
+**Verified.**
+- 11 new tests in `kbSuggestion.test.ts`, watched failing first.
+- `topicFromQuery` on the two real prompts leaves a topic. On «نشاط صفي», «ورقة عمل» and «اعمل نشاط» it leaves
+  none.
+- Typecheck and the mobile suite.
+- A production-mode web build (`EXPO_PUBLIC_DEMO_MODE=false`) with `/api/chat` stubbed: both prompts reach
+  `/chat` and show its reply, with no chips.
+
+**Not changed / not verified.**
+- **No live model has answered these asks.** The reply is chat text, not an exportable activity.
+- **With a hard context** (a lesson in the lesson bar, a named subject) an artifact ask still builds on that
+  context's lesson, as before.
+- **In demo mode** the offline stops stay, since there is nothing else to answer with.
+- **Duration:** chat-made artifacts still default to 45 minutes when they DO go to a generator
+  (`chatArtifacts.ts`).
+
+## A fallback result says so on the result, and the offline discussion uses the teacher's question — 2026-11-20
+
+**What happened.** On app.iqrra.com a teacher made a Grade 6 «نقاش» activity for «حُرِّيَّةُ التَّعْبيرِ»
+(`kbl-g6-social-s1-nccd-u5_l1`, 30 min) with the objective «يعبّر الطالب عن رأيه بحرية واحترام: لو كنت وزير
+التربية ليوم واحد، شو أول إشي بتغيّره ولماذا؟». The live call failed and the screen showed the offline discussion
+blueprint. The only sign was the header pill «تعذّر الاتصال · محتوى تجريبي». The content argued «يمكن تطبيق
+حُرِّيَّةُ التَّعْبيرِ في كل الحالات دون استثناء» and never mentioned her question. On the board line the claim
+was wrapped twice («««…» — هل توافق؟»), and «فكّر بمفردك» said «دقيقتان» while the step was given 5 minutes.
+
+**What changed.**
+- **The notice.** New `AiFallbackNotice` (`components/ui`) sits above the result on the activity, worksheet
+  (worksheet + homework), lesson-plan and quiz screens. It shows only when this screen's last generation was a
+  `fallback` (`resultFallbackNotice` in `services/ai/aiProvenance.ts`): never in demo mode, never for `failed`,
+  `saved-copy`, `cancelled` or another screen's kind. It reads «تعذّر الوصول إلى الذكاء الاصطناعي — ما تراه أدناه
+  نموذج عام من التطبيق، لم يكتبه الذكاء الاصطناعي لطلبك…» and has «أعد المحاولة», which calls the screen's
+  `generate()`. The failure text stays in the accessibility label only, as on the badge.
+- **The offline discussion** (`activityBlueprints.ts`):
+  - **The teacher's question is used.** The blueprint context gets the teacher's `objective`
+    (`generators.ts` passes `req.objectives`). When that objective asks a question (`teacherQuestion`: the clause
+    ending in «؟»/"?", at least 8 characters), the discussion is built around it (`discussionQuestionAr/En`). The
+    question goes on the board, then think alone, pairs and the same talk moves, then a vote on the strongest
+    answers. There are no agree/disagree cards, since an open question has no sides.
+  - **No objective, or one with no question:** the contestable-claim version is unchanged except for the next
+    two fixes.
+  - **The claim is quoted once.** The step no longer wraps it again, so the board line has a single «…».
+  - **«فكّر بمفردك» says its own minutes** (`arMinutes` / "N minutes").
+- **The live prompt** (`ACTIVITY_FORMAT_RULES_AR`/`_EN`, discussion) gets the same rule: if the objective holds
+  the teacher's question, use it word for word as the discussion question instead of an invented claim, and vote
+  on the strongest answers. CLAUDE.md: a format lives in two places and both move.
+
+**Verified.**
+- New `services/__tests__/discussionActivity.test.ts`, 11 tests, watched failing first: no doubled quotes
+  (ar/en); the silent-thinking minutes at 20/30/45 (ar/en); the teacher's question on the board with no
+  invented claim and no agree/disagree cards (ar/en); the claim kept when the objective asks nothing.
+- `resultFallbackNotice`: 6 tests in `aiProvenance.test.ts`.
+- API: 2 tests in `activityPrompts.test.ts`.
+- `pnpm run typecheck`, the mobile suite and the api-server build + suite.
+
+**Not verified.**
+- **Why the live call failed.** Not looked at; there are no production logs from the session. Check Cloud Run
+  for `generate activity` around 11:35 Asia/Amman on 2026-11-20. A 45 s client timeout is one candidate. It was
+  **not** raised here: `documentTimeout.test.ts` deliberately keeps the activity call on the default, since
+  `gpt-5.4-mini` was never measured as slow, and a guess is not a reason to move it.
+- **No live model has run with the new clause.**
+- **The question variant fits open questions only.** A question that is really a yes/no claim gets the
+  open-question form.
+- **Not covered:** the Grade 1 activity path (`activityFirstGrade.ts`) and the other formats do not read the
+  objective.
+- No «ما الجديد» entry: a notice that appears only when generation fails is not a feature to announce.
+
+## Word exports: the logo is centred, with space under it — 2026-11-20
+
+Follow-up to «Exports carry the Iqrra logo; worksheet and quiz exports pick with/without answers». In Word the
+logo sat at the right edge of the header, against the title. `wordLockupHeader` (`services/brandLockup.ts`) now
+centres its paragraph and puts 12pt (`WORD_LOCKUP_SPACE_AFTER`, 240 twips) after it. The header grows past the
+top margin, so Word pushes the page body down by that much. This applies to every Word export that carries the
+header (the plain-text builder and the quiz paper). The printed page (PDF) header is unchanged.
+
+Verified: `brandLockup.test.ts` checks the header paragraph is `<w:jc w:val="center"/>` with
+`<w:spacing w:after="240"`; a worksheet `.docx` converted with LibreOffice shows the logo centred with a gap
+before the title. Not verified in Microsoft Word itself.
+
 ## Exports carry the Iqrra logo; worksheet and quiz exports pick with/without answers — 2026-11-20
 
 A teacher exported a worksheet to Word and found no logo and no answers. Two separate causes:

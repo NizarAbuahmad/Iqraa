@@ -17,7 +17,7 @@
 import { createHash } from "node:crypto";
 
 import { parseCoverage } from "./coverage.ts";
-import { isFirstGrade } from "./firstGrade.ts";
+import { isFirstGrade, isSecondGrade } from "./firstGrade.ts";
 import { EARLY_DIFFICULTY_KINDS, EARLY_DIFFICULTY_VERSION, earlyGradeOf } from "./earlyGrade.ts";
 
 /**
@@ -34,6 +34,8 @@ export const FIRST_GRADE_KINDS: ReadonlySet<string> = new Set([
   "lesson-teaching", "prompt-slides", "classroom-activity", "infographic",
 ]);
 export const FIRST_GRADE_CLAUSE_VERSION = "2026-11-13";
+/** The date the Grade 2 clause entered the same kinds (`isSecondGrade`): a Grade 2 request of them is keyed with it. */
+export const SECOND_GRADE_CLAUSE_VERSION = "2026-11-15";
 
 /**
  * Bump when a prompt changes in a way that makes previously generated
@@ -257,6 +259,8 @@ export function generationKeys(
     activityVariant: normalizeValue(body.activityVariant),
     // Only on a Grade 1 request of a kind whose prompt has the Grade 1 clause.
     firstGrade: FIRST_GRADE_KINDS.has(kind) && isFirstGrade(body) ? FIRST_GRADE_CLAUSE_VERSION : undefined,
+    // Only on a Grade 2 request of those kinds: the Grade 2 clause entered them on this date.
+    secondGrade: FIRST_GRADE_KINDS.has(kind) && isSecondGrade(body) ? SECOND_GRADE_CLAUSE_VERSION : undefined,
     // Only on a grade 2–4 worksheet, homework or quiz: its level wording is its own (`earlyGrade.ts`).
     earlyDifficulty: EARLY_DIFFICULTY_KINDS.has(kind) && earlyGradeOf(body) ? EARLY_DIFFICULTY_VERSION : undefined,
   };

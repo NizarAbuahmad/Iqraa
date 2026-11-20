@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as docx from 'docx';
 
-import { BRAND_LOCKUP_PNG_BASE64, BRAND_LOCKUP_PNG_SIZE, brandLockupSvg } from '../brandLockup.ts';
+import { BRAND_LOCKUP_PNG_BASE64, BRAND_LOCKUP_PNG_SIZE, PDF_LOCKUP_WIDTH, WORD_LOCKUP_SPACE_AFTER, brandLockupSvg } from '../brandLockup.ts';
 import { LOCKUP_ASPECT } from '../../constants/brandMark.ts';
 import { buildWordDocument } from '../docxBuild.ts';
 import { buildQuizDocx } from '../quizDocx.ts';
@@ -60,6 +60,9 @@ describe('Word exports carry the logo', () => {
       assert.equal(media.length, 1);
       assert.ok(media[0]!.equals(Buffer.from(BRAND_LOCKUP_PNG_BASE64, 'base64')));
       assert.ok(headers.some(h => h.includes('<w:drawing>')), 'header places the image');
+      const logoHeader = headers.find(h => h.includes('<w:drawing>'))!;
+      assert.match(logoHeader, /<w:jc w:val="center"\/>/, 'centred');
+      assert.match(logoHeader, new RegExp(`<w:spacing w:after="${WORD_LOCKUP_SPACE_AFTER}"`), 'space under it');
     });
   }
 
@@ -81,7 +84,9 @@ describe('Word exports carry the logo', () => {
 describe('the printed page carries the logo', () => {
   it('worksheet PDF header draws the lockup, not just its name', () => {
     const html = buildWorksheetHTML(ws, 'ورقة', meta, true, [], false);
-    assert.ok(html.includes(brandLockupSvg(78)));
+    assert.ok(html.includes(`<div class="brand-top">${brandLockupSvg(PDF_LOCKUP_WIDTH)}</div>`), 'on its own line');
+    assert.match(html, /\.brand-top \{ display: flex; justify-content: center; margin-bottom: 16px; \}/, 'centred, with space under it');
+    assert.ok(html.indexOf('class="brand-top"') < html.indexOf('class="school-header"'), 'above the masthead');
   });
 });
 
