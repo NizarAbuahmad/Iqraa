@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as docx from 'docx';
 
-import { BRAND_LOCKUP_PNG_BASE64, BRAND_LOCKUP_PNG_SIZE, WORD_LOCKUP_SPACE_AFTER, brandLockupSvg } from '../brandLockup.ts';
+import { BRAND_LOCKUP_PNG_BASE64, BRAND_LOCKUP_PNG_SIZE, PDF_LOCKUP_WIDTH, WORD_LOCKUP_SPACE_AFTER, brandLockupSvg } from '../brandLockup.ts';
 import { LOCKUP_ASPECT } from '../../constants/brandMark.ts';
 import { buildWordDocument } from '../docxBuild.ts';
 import { buildQuizDocx } from '../quizDocx.ts';
@@ -84,7 +84,9 @@ describe('Word exports carry the logo', () => {
 describe('the printed page carries the logo', () => {
   it('worksheet PDF header draws the lockup, not just its name', () => {
     const html = buildWorksheetHTML(ws, 'ورقة', meta, true, [], false);
-    assert.ok(html.includes(brandLockupSvg(78)));
+    assert.ok(html.includes(`<div class="brand-top">${brandLockupSvg(PDF_LOCKUP_WIDTH)}</div>`), 'on its own line');
+    assert.match(html, /\.brand-top \{ display: flex; justify-content: center; margin-bottom: 16px; \}/, 'centred, with space under it');
+    assert.ok(html.indexOf('class="brand-top"') < html.indexOf('class="school-header"'), 'above the masthead');
   });
 });
 
