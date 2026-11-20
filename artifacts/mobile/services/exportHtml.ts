@@ -1143,7 +1143,13 @@ export function buildWorksheetSlidesHTML(
   const hasInstructions = !!ws.instructions;
   const showAnswerKey = includeAnswers && !!ws.answerKey && ws.answerKey.length > 0;
   const keyPages = showAnswerKey ? planKeySlides(ws) : [];
-  const TOTAL = 1 + (hasInstructions ? 1 : 0) + (ws.workedExample ? 1 : 0) + ws.sections.length
+  // A section is one slide unless it holds drawings (see `drawingSlideGroups`).
+  const sectionGroups = ws.sections.map(sec => {
+    const groups = drawingSlideGroups(sec.questions, Infinity);
+    return groups.length ? groups : [{ start: 0, questions: sec.questions }];
+  });
+  const sectionSlideCount = sectionGroups.reduce((n, g) => n + g.length, 0);
+  const TOTAL = 1 + (hasInstructions ? 1 : 0) + (ws.workedExample ? 1 : 0) + sectionSlideCount
     + keyPages.length + (figures.length ? 1 : 0);
 
   const footer = (num: number) => `
@@ -1198,8 +1204,9 @@ export function buildWorksheetSlidesHTML(
 
   // One slide per section
   let qCounter = 1;
-  const sectionSlides = ws.sections.map(sec => {
-    const questionsHtml = sec.questions.map(q => {
+  const sectionSlides = ws.sections.flatMap((sec, si) => sectionGroups[si].map((group, gi) => {
+    const secTitle = gi === 0 ? sec.title : `${sec.title}${L(' (تابع)', ' (cont.)')}`;
+    const questionsHtml = group.questions.map(q => {
       // As on paper: a structured format prints its stem and its own empty
       // body (never `pairs`, `order`, `fix`, `why` or a curve), and its options
       // are not drawn.
@@ -1215,13 +1222,13 @@ export function buildWorksheetSlidesHTML(
     }).join('');
 
     const slide = `<div class="slide">
-      ${header(e(sec.title))}
+      ${header(e(secTitle))}
       <div class="slide-body">
-        ${sBlock('📝', e(sec.title), questionsHtml)}
+        ${sBlock('📝', e(secTitle), questionsHtml)}
       </div>
       ${footer(slideNum++)}</div>`;
     return slide;
-  });
+  }));
 
   // Answer key slide. Key rows map to questions by flat position, as on paper;
   // the drawn curve is only ever built here, and only when answers are shown.
@@ -1374,12 +1381,25 @@ export function planKeySlides(ws: WorksheetOutput): WorksheetOutput['answerKey']
  * do not fit. Without drawings this is exactly the old grouping by threes.
  */
 export function quizSlideGroups(questions: QuizQuestion[]): { start: number; questions: QuizQuestion[] }[] {
-  const out: { start: number; questions: QuizQuestion[] }[] = [];
+  return drawingSlideGroups(questions, 3);
+}
+
+/**
+ * The one grouping rule for both question decks: a slide holds at most one shown
+ * drawing, and a slide that holds a drawing at most three questions. `maxPlain`
+ * caps a slide with no drawing (quiz: 3; worksheet: Infinity, one slide per section).
+ */
+export function drawingSlideGroups<T extends { visual?: unknown; text?: unknown }>(
+  questions: T[],
+  maxPlain: number,
+): { start: number; questions: T[] }[] {
+  const out: { start: number; questions: T[] }[] = [];
   let drawn = false;
   questions.forEach((q, i) => {
     const has = paperVisualOf(q) !== null;
     const last = out[out.length - 1];
-    if (!last || last.questions.length >= 3 || (has && drawn)) {
+    const cap = drawn || has ? 3 : maxPlain;
+    if (!last || last.questions.length >= cap || (has && drawn)) {
       out.push({ start: i, questions: [q] });
       drawn = has;
     } else {

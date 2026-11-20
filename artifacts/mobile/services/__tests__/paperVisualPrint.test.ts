@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildQuizHTML, buildQuizSlidesHTML, buildWorksheetHTML, buildWorksheetSlidesHTML, quizSlideGroups } from '../exportHtml.ts';
+import { buildQuizHTML, buildQuizSlidesHTML, buildWorksheetHTML, buildWorksheetSlidesHTML, drawingSlideGroups, quizSlideGroups } from '../exportHtml.ts';
 import type { QuizOutput, QuizQuestion, WorksheetOutput } from '../ai/AIService.ts';
 
 const PROJ = { kind: 'projectile', launch: 'ground', angle: 30, speed: { n: 20, unit: 'm/s' }, marks: ['v0', 'H', 'R'] } as unknown as QuizQuestion['visual'];
@@ -17,6 +17,7 @@ const sheet = (questions: { text: string; visual?: unknown }[]): WorksheetOutput
   answerKey: questions.map((_, i) => ({ num: i + 1, answer: 'a' })),
 });
 const count = (html: string, s: string) => html.split(s).length - 1;
+const slideCount = (html: string) => (html.match(/<div class="slide( title-slide)?">/g) ?? []).length;
 
 describe('drawings in the quiz paper', () => {
   for (const withKey of [false, true]) {
@@ -69,6 +70,34 @@ describe('drawings on the class-mode slides', () => {
     const groups = quizSlideGroups(qs);
     assert.deepEqual(groups.map(g => g.questions.map(x => x.id)), [['a'], ['b', 'c', 'd'], ['e']]);
     assert.deepEqual(groups.map(g => g.start), [0, 1, 4]);
+  });
+  it('a worksheet section with drawings spans several slides and loses no question', () => {
+    const items = [{ text: STEM, visual: PROJ }, { text: STEM, visual: PROJ }, { text: STEM, visual: PROJ }, { text: 'بلا رسم' }];
+    const ws = sheet(items);
+    const groups = drawingSlideGroups(ws.sections[0].questions, Infinity);
+    assert.deepEqual(groups.map(g => g.questions.length), [1, 1, 2]);
+    assert.deepEqual(groups.map(g => g.start), [0, 1, 2]);
+    const html = buildWorksheetSlidesHTML(ws, 't', meta, true, [], false);
+    assert.equal(count(html, 'class="q-vis"'), 3);
+    for (const n of [1, 2, 3, 4]) assert.ok(html.includes(`<span class="q-num">${n}.</span>`), `question ${n} is printed`);
+    assert.equal(count(html, '(تابع)'), 2 * 2, 'header and section label of the 2nd and 3rd slide');
+  });
+  it('a worksheet without drawings keeps one slide per section and no continuation mark', () => {
+    const ws: WorksheetOutput = {
+      ...sheet([{ text: 'a' }, { text: 'b' }, { text: 'c' }, { text: 'd' }, { text: 'e' }]),
+    };
+    ws.sections.push({ type: 'short_answer', title: 's2', questions: [{ text: 'f', points: 2 }] });
+    const html = buildWorksheetSlidesHTML(ws, 't', meta, true, [], false);
+    assert.equal(count(html, '(تابع)'), 0);
+    // title slide + instructions slide + one slide per section
+    assert.equal(slideCount(html), 2 + ws.sections.length);
+  });
+  it('the footer total equals the number of slides in a drawn worksheet deck', () => {
+    const ws = sheet([{ text: STEM, visual: PROJ }, { text: STEM, visual: PROJ }, { text: STEM, visual: PROJ }, { text: 'بلا رسم' }]);
+    const html = buildWorksheetSlidesHTML(ws, 't', meta, true, [], false);
+    const slides = slideCount(html);
+    assert.ok(html.includes(`${slides} / ${slides}`), 'last footer reads n / n');
+    assert.equal(count(html, `/ ${slides}</span>`), slides, 'every footer carries the real total');
   });
   it('without drawings the slides group in threes exactly as before', () => {
     const qs = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map(id => q(id, 'x'));
