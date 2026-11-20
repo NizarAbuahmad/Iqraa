@@ -1396,7 +1396,7 @@ const translations = {
 
     // Export & sharing
     exportTitle: 'تصدير الملف',
-    exportShare: 'مشاركة',
+    exportShare: 'مشاركة رابط',
     exportShareSub: 'يفتحه زميلك كما هو، دون إعادة توليد',
     exportShareText: 'مشاركة النص',
     exportShareTextSub: 'واتساب، البريد، وغيرها — ويُنسخ النص أيضًا',
@@ -3182,6 +3182,8 @@ const translations = {
     whatsNewGamesUpgradeBody: 'في ألعاب الأسئلة تظهر بعد الإجابة جملة تشرح السبب في كثير منها، وتصدر أصوات خفيفة ويهتز الهاتف قليلًا، وزر السماعة يكتمها. ويحفظ التطبيق أفضل نتيجة لك ويتيح لك إعادة الأسئلة التي أخطأت فيها. وتعرض «محافظات الأردن» خريطة بعد كل إجابة.',
     whatsNewWorksheetExportTitle: 'ورقة العمل والاختبار: مع الإجابات أو بدونها',
     whatsNewWorksheetExportBody: 'عند تصدير ورقة العمل أو الاختبار القصير تختار الآن «نسخة الطالب» بلا إجابات، أو «نسخة المعلم» ومفتاح الإجابات في آخرها. ويظهر شعار «إقرأ» أعلى ملف Word وملف PDF.',
+    whatsNewShareLinkTitle: 'شارك موادك برابط',
+    whatsNewShareLinkBody: 'من «تصدير» اختر «مشاركة رابط» على أي خطة درس أو اختبار أو ورقة عمل أو نشاط، وأرسله لزميلك على واتساب. يفتحه كما هو دون إعادة توليد، والمعلمون يرون الإجابات ويحفظونه في ملفاتهم. يمكنك إيقاف الرابط متى شئت من «ملفاتي».',
     whatsNewTeacherProfileTitle: 'عرّفنا بك (اختياري)',
     whatsNewTeacherProfileBody: 'أضفنا في «الملف الشخصي» أربعة أسئلة اختيارية عنك: الجنس، والعمر، والمحافظة، وسنوات الخبرة. إجاباتك تساعدنا في تحسين «إقرأ» للمعلمين، ويمكنك تخطّيها أو مسحها متى شئت.',
     whatsNewG10VocationalTitle: 'التربية المهنية للصف العاشر',
@@ -5080,7 +5082,7 @@ const translations = {
 
     // Export & sharing
     exportTitle: 'Export file',
-    exportShare: 'Share',
+    exportShare: 'Share a link',
     exportShareSub: 'A colleague opens it as is, no regenerating',
     exportShareText: 'Share as text',
     exportShareTextSub: 'WhatsApp, email and more — the text is copied too',
@@ -6818,6 +6820,8 @@ const translations = {
     whatsNewGamesUpgradeBody: 'In the question games, many now explain why after you answer, with soft sounds and a light vibration on phones; the speaker button mutes them. The app keeps your best score and lets you retry the questions you missed. The governorates game shows a map after each answer.',
     whatsNewWorksheetExportTitle: 'Worksheets and quizzes: with or without answers',
     whatsNewWorksheetExportBody: 'When you export a worksheet or a quiz you now pick the student copy, with no answers, or the teacher copy, with the answer key at the end. The Iqrra logo now sits at the top of the Word and PDF files.',
+    whatsNewShareLinkTitle: 'Share your materials by link',
+    whatsNewShareLinkBody: 'In Export, choose "Share a link" on any lesson plan, quiz, worksheet or activity and send it to a colleague on WhatsApp. They open it as is, with no regenerating; teachers see the answers and can save it to their files. Stop the link any time from My files.',
     whatsNewTeacherProfileTitle: 'Tell us about you (optional)',
     whatsNewTeacherProfileBody: 'Profile now has four optional questions about you: gender, age, governorate and years teaching. Your answers help us improve Iqrra for teachers, and you can skip or clear them any time.',
     whatsNewG10VocationalTitle: 'Grade 10 Vocational Education',

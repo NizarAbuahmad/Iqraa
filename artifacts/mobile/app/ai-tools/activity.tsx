@@ -409,7 +409,9 @@ export default function ActivityScreen() {
     // over a material that no longer existed and the work was never saved
     // again. Folding the call into the condition makes a failed update fall
     // through to creating a fresh one, which is what pressing Save meant.
+    let id: string;
     if (savedId && (await updateItem(savedId, payload))) {
+      id = savedId;
       setSaveLabel('updated');
     } else {
       // Its own type, not 'lesson'. That substitution existed only because
@@ -418,16 +420,19 @@ export default function ActivityScreen() {
       // material can say what it is. Activities already saved as 'lesson'
       // are rescued there by shape — nothing needs migrating.
       const saved = await saveItem({ type: 'activity', ...payload });
+      id = saved.id;
       setSavedId(saved.id);
       setSaveLabel('saved');
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // The id «مشاركة رابط» shares (useGeneratorExport's `ensureSaved`).
+    return id;
   };
 
 
   const {
     getExportFigures,
-    handleShareText,
+    handleShareLink,
     handleCopy,
     handlePDF,
     handleWord,
@@ -450,6 +455,7 @@ export default function ActivityScreen() {
     buildSlidesHTML: buildActivitySlidesHTML,
     onError: key => showToast(t(key)),
     onCopied: key => showToast(t(key)),
+    ensureSaved: handleSave,
   });
 
   // An English material saved in Arabic (before 2026-10-04) is redone in
@@ -696,7 +702,7 @@ export default function ActivityScreen() {
     <ExportMenu
       visible={showExport}
       onClose={() => setShowExport(false)}
-      onShare={handleShareText}
+      onShare={handleShareLink}
       onCopy={handleCopy}
       onPDF={handlePDF}
       onWord={handleWord}

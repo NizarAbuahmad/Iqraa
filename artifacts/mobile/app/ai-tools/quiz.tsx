@@ -557,14 +557,19 @@ export default function QuizScreen() {
     // over a material that no longer existed and the work was never saved
     // again. Folding the call into the condition makes a failed update fall
     // through to creating a fresh one, which is what pressing Save meant.
+    let id: string;
     if (savedId && (await updateItem(savedId, payload))) {
+      id = savedId;
       setSaveLabel('updated');
     } else {
       const saved = await saveItem({ type: 'quiz', ...payload });
+      id = saved.id;
       setSavedId(saved.id);
       setSaveLabel('saved');
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // The id «مشاركة رابط» shares (useGeneratorExport's `ensureSaved`).
+    return id;
   };
 
 
@@ -591,7 +596,7 @@ export default function QuizScreen() {
 
   const {
     getExportFigures,
-    handleShareText,
+    handleShareLink,
     handleCopy,
     handlePDF,
     handleWord,
@@ -616,6 +621,7 @@ export default function QuizScreen() {
     buildWord: (quiz, title, meta, isAr, docx) => buildQuizDocx(quiz, title, meta, isAr, exportWithKey, docx),
     onError: key => showToast(t(key)),
     onCopied: key => showToast(t(key)),
+    ensureSaved: handleSave,
   });
 
   const exportLabels = {
@@ -1066,7 +1072,7 @@ export default function QuizScreen() {
     <ExportMenu
       visible={showExport}
       onClose={() => setShowExport(false)}
-      onShare={handleShareText}
+      onShare={handleShareLink}
       onCopy={handleCopy}
       onPDF={handlePDF}
       onWord={handleWord}

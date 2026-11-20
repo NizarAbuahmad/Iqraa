@@ -10,6 +10,43 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Share a saved material by link (`/m/CODE`) — 2026-11-20
+
+A teacher asked to send a generated lesson plan to a colleague on WhatsApp so the colleague opens it as it is,
+without regenerating. Spec `docs/superpowers/specs/2026-11-20-material-share-link-design.md`, plan
+`docs/superpowers/plans/2026-11-20-material-share-link.md`. Three decisions from the owner: anyone with the link can
+open it (no account); answer keys only for teachers; the link is live (shows the current saved version), never
+expires, and the owner can stop it.
+
+- **Schema (migration 0030, additive).** `saved_materials.share_code` (unique, 8 characters from
+  `SHARE_CODE_ALPHABET` — two more than an exam's, since this never expires) and `shared_at`. Stopping clears both,
+  so a re-share draws a new code and a forwarded old link stays dead; deleting the material kills it too.
+- **API.** `POST|DELETE /workspace/items/:id/share` (owner only; the code is set with `share_code IS NULL` in the
+  WHERE so two taps cannot send two links). New router at `/shared` (`routes/sharedMaterials.ts`): `GET /:code` is
+  public and per-IP rate limited, and serves the **student copy** through the existing `studentCopy`
+  (`modules/homework/materialCopy.ts`); `GET /:code/full` (teacher roles) keeps the answers;
+  `POST /:code/save` (teacher roles) copies it into the caller's files. Every miss is the same 404 body. The public
+  read sends only `type, title, subject, grade, topic, language, content, savedAt` — never `formState`, never the
+  owner. The copy's `formState` keeps only the pickers (`copyableFormState` in `lib/materialShare.ts`: primitives,
+  ≤ 200 characters, minus `priorTopicsNotes`, `adaptations`, `objectives`, `objective`, `notes`,
+  `additionalContext`). Reads are `systemDb` in `lib/sharedMaterial.ts`, pinned in `systemDbFiles.test.ts`.
+- **App.** `app/m/[code].tsx` renders `workspace/view.tsx` in a new `code` mode: read-only, teacher tools hidden as
+  in family mode; a teacher (who gets `/full`) sees «احفظ في ملفاتي», a visitor «سجّل كمعلم مجانًا» / «لديّ حساب». `/m`
+  is in `PUBLIC_ROUTES`; `crashReportingCore` scrubs `/m/<code>` and `/shared/<code>`. The Share row of the quiz,
+  worksheet, lesson-plan and activity menus and of a saved material is now «مشاركة رابط» (it saves first, so the link
+  is what is on screen, then shares «<title> — <link>», which also copies it — `services/materialShareAction.ts`).
+  Menus that still share text (lesson prep, virtual lab, Iqra tab, an exam result) say «مشاركة النص». A shared
+  material shows «مُشارَك برابط» with «إيقاف المشاركة». «ما الجديد» entry `material-share-link`.
+- **Verified:** `sharedMaterial.db.test.ts` (6, real Postgres), `materialShare.test.ts`, mount order (public read
+  not 401; `/full`, `/save` 401), mobile `materialShareLink.test.ts`; new e2e `e2e/tests/share-link.spec.ts`
+  (owner shares → visitor sees the paper without the answer and the sign-up offer → teacher sees the answer, saves a
+  copy → stopped link shows «لم يعد يعمل»).
+- **Not done / limits:** no WhatsApp preview card (the web app has no per-route preview tags); the link opens in
+  the browser, not the Android app; the page does not say who shared it. Slides, flows and whiteboards are not
+  offered a link from their tools yet (a saved deck or flow can be shared from its own screen in ملفاتي; a board
+  cannot). A device-only save (`ws_…`) cannot be shared and says so. The public read is `studentCopy`, which strips
+  by field name — a new answer-bearing field leaks until it is named there (`materialCopy.test.ts`).
+
 ## Exports carry the Iqrra logo; worksheet and quiz exports pick with/without answers — 2026-11-20
 
 A teacher exported a worksheet to Word and found no logo and no answers. Two separate causes:

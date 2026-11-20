@@ -4417,8 +4417,8 @@ export default function IqraScreen() {
         }}
         labels={{
           title: t('exportTitle'),
-          shareLabel: t('exportShare'),
-          shareSub: t('exportShareSub'),
+          shareLabel: t('exportShareText'),
+          shareSub: t('exportShareTextSub'),
           copyLabel: t('exportCopy'),
           copySub: t('exportCopySub'),
           pdfLabel: t('exportPDF'),

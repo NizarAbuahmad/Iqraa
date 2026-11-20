@@ -270,10 +270,10 @@ export default function WorkspaceViewScreen() {
   const handleShareLink = async () => {
     setShowExport(false);
     const key = await shareMaterialLink(item.id, item.title, isAr);
-    if (key === 'shareLinkCopied' || key === 'shareLinkAlsoCopied' || key === null) {
-      // The server made (or kept) the code; read it back so the «مُشارَك برابط» row shows.
-      getItem(item.id).then(m => setShareCode(m?.shareCode ?? null)).catch(() => {});
-    }
+    // Read the share state back, whatever the sheet did: the server may have made
+    // the code even if the clipboard then refused, and the «مُشارَك برابط» row
+    // (with its stop) must show whenever a link exists.
+    getItem(item.id).then(m => setShareCode(m?.shareCode ?? null)).catch(() => {});
     if (key) showToast(t(key));
   };
   const handleStopSharing = async () => {

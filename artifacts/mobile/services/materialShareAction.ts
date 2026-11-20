@@ -17,6 +17,11 @@ export async function shareMaterialLink(id: string | null, title: string, isAr: 
   } catch {
     return 'shareLinkFailed';
   }
-  const how = await shareAsText(shareLinkMessage(title, materialShareUrl(code), isAr), title);
-  return how === 'copied' ? 'shareLinkCopied' : how === 'both' ? 'shareLinkAlsoCopied' : null;
+  try {
+    // Throws only when neither the sheet nor the clipboard worked.
+    const how = await shareAsText(shareLinkMessage(title, materialShareUrl(code), isAr), title);
+    return how === 'copied' ? 'shareLinkCopied' : how === 'both' ? 'shareLinkAlsoCopied' : null;
+  } catch {
+    return 'shareLinkFailed';
+  }
 }
