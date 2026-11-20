@@ -17,12 +17,16 @@
  * this router at the root shadows nothing (mountOrder.test.ts).
  *
  * The send is synchronous, like the waitlist broadcast: 100 per batch, ~0.6 s apart, fine into
- * the low thousands. The answer is written after the mail is handed over and recorded, because
- * work after `res.json` may never run on Cloud Run.
+ * the low thousands. The answer is written after the work is done, because work after `res.json`
+ * may never run on Cloud Run.
+ *
+ * Who is mailed is recorded BEFORE each batch is handed to the provider (and taken back for the
+ * ones the provider did not accept), so a crash can make a teacher miss an issue but never get it
+ * twice. A retry skips everyone recorded, by user id and by address.
  */
 import { Router } from "express";
 import { newsletterIssues, newsletterSends, systemDb as db, users } from "@workspace/db";
-import { and, desc, eq, inArray, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { UUID } from "../lib/adminMetrics.js";
 import { sendBroadcast } from "../lib/email.js";
@@ -56,7 +60,21 @@ const teacherRows = () =>
   db
     .select({ id: users.id, email: users.email, role: users.role, emailVerified: users.emailVerified, suspendedAt: users.suspendedAt })
     .from(users)
-    .where(inArray(users.role, [...NEWSLETTER_ROLES]));
+    .where(inArray(users.role, [...NEWSLETTER_ROLES]))
+    .orderBy(users.createdAt, users.id);
+
+const releaseClaim = (issueId: string) =>
+  db
+    .update(newsletterIssues)
+    .set({ sendingAt: null })
+    .where(eq(newsletterIssues.id, issueId))
+    .then(() => undefined)
+    .catch((err) => logger.error({ err, issueId }, "newsletter claim not released"));
+
+/** Recipients per provider call: matches the batch size of sendBroadcast (lib/email.ts). */
+const CHUNK = 100;
+const CHUNK_PAUSE_MS = 600;
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 router.get("/admin/newsletter", authMiddleware, requireRole("system_admin"), async (_req, res) => {
   try {
@@ -87,6 +105,16 @@ router.post("/admin/newsletter/test", authMiddleware, requireRole("system_admin"
     return;
   }
   try {
+    // Never touch an issue that is being sent: its draft row is what the send is reading.
+    const [busy] = await db
+      .select({ id: newsletterIssues.id })
+      .from(newsletterIssues)
+      .where(gte(newsletterIssues.sendingAt, sql`now() - make_interval(mins => ${SENDING_CLAIM_MINUTES})`))
+      .limit(1);
+    if (busy) {
+      res.status(409).json({ error: "sending" });
+      return;
+    }
     const out = await sendBroadcast(
       [{ id: me.id, email: me.email }],
       `[تجريبي] ${parsed.subject}`,
@@ -100,7 +128,14 @@ router.post("/admin/newsletter/test", authMiddleware, requireRole("system_admin"
       return;
     }
     // One unsent issue at a time: this test replaces the last one, whose id then no longer sends.
-    await db.delete(newsletterIssues).where(isNull(newsletterIssues.sentAt));
+    await db
+      .delete(newsletterIssues)
+      .where(
+        and(
+          isNull(newsletterIssues.sentAt),
+          or(isNull(newsletterIssues.sendingAt), lt(newsletterIssues.sendingAt, sql`now() - make_interval(mins => ${SENDING_CLAIM_MINUTES})`)),
+        ),
+      );
     const [issue] = await db
       .insert(newsletterIssues)
       .values({ subject: parsed.subject, body: parsed.text, contentHash: newsletterHash(parsed.subject, parsed.text), createdBy: me.id })
@@ -148,39 +183,60 @@ router.post("/admin/newsletter/send", authMiddleware, requireRole("system_admin"
     }
 
     try {
-      const already = new Set(
-        (await db.select({ userId: newsletterSends.userId }).from(newsletterSends).where(eq(newsletterSends.issueId, issueId))).map((r) => r.userId),
+      const sentUsers = await db
+        .select({ userId: newsletterSends.userId, email: users.email })
+        .from(newsletterSends)
+        .innerJoin(users, eq(users.id, newsletterSends.userId))
+        .where(eq(newsletterSends.issueId, issueId));
+      const alreadyIds = new Set(sentUsers.map((r) => r.userId));
+      const alreadyEmails = new Set(sentUsers.map((r) => (r.email ?? "").toLowerCase()));
+      const recipients = pickTeacherRecipients(await teacherRows()).filter(
+        (r) => !alreadyIds.has(r.id) && !alreadyEmails.has(r.email.toLowerCase()),
       );
-      const recipients = pickTeacherRecipients(await teacherRows()).filter((r) => !already.has(r.id));
-      const out = await sendBroadcast(recipients, parsed.subject, renderBroadcastBody(parsed.text), teacherUnsubscribeUrl, TEACHER_FOOTER);
+      const html = renderBroadcastBody(parsed.text);
 
-      const accepted = new Set(out.sent.map((e) => e.toLowerCase()));
-      const sentIds = recipients.filter((r) => accepted.has(r.email.toLowerCase())).map((r) => r.id);
-      if (sentIds.length > 0) {
+      let sent = 0;
+      let failed = 0;
+      let skipped = 0;
+      for (let at = 0; at < recipients.length; at += CHUNK) {
+        const chunk = recipients.slice(at, at + CHUNK);
+        if (at > 0) await sleep(CHUNK_PAUSE_MS);
+        await db.update(newsletterIssues).set({ sendingAt: sql`now()` }).where(eq(newsletterIssues.id, issueId));
         try {
-          await db.insert(newsletterSends).values(sentIds.map((userId) => ({ issueId, userId }))).onConflictDoNothing();
+          // Write ahead: if we die after the provider took the mail, nobody is mailed twice.
+          await db.insert(newsletterSends).values(chunk.map((r) => ({ issueId, userId: r.id }))).onConflictDoNothing();
+        } catch (err) {
+          logger.error({ err, issueId, chunk: chunk.length }, "newsletter write-ahead failed — chunk not sent, stopping");
+          failed += recipients.length - at;
+          break;
+        }
+        const out = await sendBroadcast(chunk, parsed.subject, html, teacherUnsubscribeUrl, TEACHER_FOOTER);
+        const accepted = new Set(out.sent.map((e) => e.toLowerCase()));
+        const notSent = chunk.filter((r) => !accepted.has(r.email.toLowerCase())).map((r) => r.id);
+        if (notSent.length > 0) {
+          try {
+            await db.delete(newsletterSends).where(and(eq(newsletterSends.issueId, issueId), inArray(newsletterSends.userId, notSent)));
+          } catch (err) {
+            // They stay marked as sent: missing an issue is the safe side.
+            logger.error({ err, issueId, count: notSent.length }, "newsletter: unsent recipients could not be un-recorded");
+          }
+        }
+        if (out.sent.length > 0) {
           await db
             .update(newsletterIssues)
             .set({ sentAt: sql`coalesce(${newsletterIssues.sentAt}, now())` })
             .where(eq(newsletterIssues.id, issueId));
-        } catch (err) {
-          // The mail is out and we cannot remember to whom: a retry would mail them again, so say so loudly.
-          logger.error({ err, issueId, sent: sentIds.length }, "newsletter sent but not recorded — do not retry this issue");
-          res.status(500).json({ error: "sent-not-recorded", sent: sentIds.length });
-          return;
         }
+        sent += out.sent.length;
+        failed += out.failed.length;
+        skipped += out.skipped.length;
       }
-      logger.info(
-        { by: req.user!.id, issueId, sent: out.sent.length, failed: out.failed.length, skipped: out.skipped.length },
-        "teacher newsletter",
-      );
-      res.json({ sent: out.sent.length, failed: out.failed.length, skipped: out.skipped.length });
+      logger.info({ by: req.user!.id, issueId, sent, failed, skipped }, "teacher newsletter");
+      // Release before answering: nothing is guaranteed to run after `res.json`.
+      await releaseClaim(issueId);
+      res.json({ sent, failed, skipped });
     } finally {
-      await db
-        .update(newsletterIssues)
-        .set({ sendingAt: null })
-        .where(eq(newsletterIssues.id, issueId))
-        .catch((err) => logger.error({ err, issueId }, "newsletter claim not released"));
+      await releaseClaim(issueId); // also on an error path; harmless twice
     }
   } catch (err) {
     logger.error({ err }, "newsletter send failed");

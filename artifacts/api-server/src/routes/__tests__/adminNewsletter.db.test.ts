@@ -22,6 +22,7 @@ describeDb("teacher newsletter", () => {
   let server: TestServer;
   let stub: ResendStub;
   let admin: string;
+  let admin2: string;
   let principal: string;
   let ayla: string;
 
@@ -54,6 +55,7 @@ describeDb("teacher newsletter", () => {
       env: { RESEND_API_KEY: "re_test_key", RESEND_API_URL: stub.url },
     });
     admin = await addUser("Admin", "system_admin");
+    admin2 = await addUser("Admin2", "system_admin");
     principal = await addUser("Principal", "school_admin");
     ayla = await addUser("Ayla", "teacher");
     await addUser("Basel", "teacher"); // unsubscribed, below
@@ -175,5 +177,62 @@ describeDb("teacher newsletter", () => {
     const stale = await send(first.json.issueId, SUBJECT, `${BODY}\n\nFourth issue`);
     assert.equal(stale.status, 409);
     assert.equal(stale.json.error, "not-tested");
+  });
+
+  // The second admin carries the cases below: the first is near the hourly limit.
+  const test2 = (body: string) => call(server, "POST", "/admin/newsletter/test", admin2, { subject: SUBJECT, body });
+  const send2 = (issueId: string, body: string) =>
+    call(server, "POST", "/admin/newsletter/send", admin2, { issueId, subject: SUBJECT, body });
+  const sendsOf = async (issueId: string) =>
+    Number((await db.pool.query(`SELECT count(*) FROM newsletter_sends WHERE issue_id = $1`, [issueId])).rows[0].count);
+
+  it("a send in progress blocks a second send and a new test", async () => {
+    const body = `${BODY}\n\nSixth issue`;
+    const tested = await test2(body);
+    assert.equal(tested.status, 200, tested.text);
+    const issueId: string = tested.json.issueId;
+    await db.pool.query(`UPDATE newsletter_issues SET sending_at = now() WHERE id = $1`, [issueId]);
+    stub.clear();
+    const second = await send2(issueId, body);
+    assert.equal(second.status, 409);
+    assert.equal(second.json.error, "sending");
+    const another = await test2(`${BODY}\n\nSeventh issue`);
+    assert.equal(another.status, 409);
+    assert.equal(another.json.error, "sending");
+    assert.equal(stub.mails().length, 0);
+    const rows = await db.pool.query(`SELECT 1 FROM newsletter_issues WHERE id = $1`, [issueId]);
+    assert.equal(rows.rowCount, 1);
+  });
+
+  it("a stale claim is taken", async () => {
+    const body = `${BODY}\n\nEighth issue`;
+    await db.pool.query(`UPDATE newsletter_issues SET sending_at = NULL WHERE sending_at IS NOT NULL`);
+    const tested = await test2(body);
+    const issueId: string = tested.json.issueId;
+    await db.pool.query(`UPDATE newsletter_issues SET sending_at = now() - interval '11 minutes' WHERE id = $1`, [issueId]);
+    stub.clear();
+    const res = await send2(issueId, body);
+    assert.equal(res.status, 200, res.text);
+    assert.deepEqual(recipients(), [mail("Ayla"), mail("Principal")]);
+    const row = await db.pool.query(`SELECT sending_at FROM newsletter_issues WHERE id = $1`, [issueId]);
+    assert.equal(row.rows[0].sending_at, null);
+  });
+
+  it("who is mailed is recorded, and only them", async () => {
+    const body = `${BODY}\n\nNinth issue`;
+    const tested = await test2(body);
+    const issueId: string = tested.json.issueId;
+    stub.clear();
+    assert.equal((await send2(issueId, body)).status, 200);
+    assert.equal(await sendsOf(issueId), stub.mails().length);
+    assert.equal(stub.mails().length, 2);
+
+    const body2 = `${BODY}\n\nTenth issue`;
+    const t2 = await test2(body2);
+    stub.clear();
+    stub.failNext(500);
+    const failed = await send2(t2.json.issueId, body2);
+    assert.deepEqual(failed.json, { sent: 0, failed: 2, skipped: 1 });
+    assert.equal(await sendsOf(t2.json.issueId), 0);
   });
 });

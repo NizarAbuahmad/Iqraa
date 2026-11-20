@@ -20,7 +20,7 @@ export interface ResendStub {
   /** Every mail accepted since the last clear(), in arrival order. */
   mails(): StubMail[];
   clear(): void;
-  /** Refuse the next request with this status (default 500) and record nothing from it. */
+  /** Refuse the next request, whatever it is, with this status (default 500) and record nothing from it. */
   failNext(status?: number): void;
   close(): Promise<void>;
 }
