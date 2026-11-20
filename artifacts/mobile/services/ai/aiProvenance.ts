@@ -325,6 +325,29 @@ export async function generateWithProvenance<T>(
   }
 }
 
+/**
+ * Whether the result a generator screen shows is the offline sample, said on
+ * the result itself rather than only in the header badge.
+ *
+ * The badge alone was not enough (2026-11-20): a teacher got a full, plausible
+ * discussion activity that ignored the question she had typed, and the only
+ * sign was a small «تعذّر الاتصال · محتوى تجريبي» pill above the form. Only
+ * `fallback` qualifies: `failed` showed no content, `saved-copy` is a real
+ * artifact, and demo mode is sample content everywhere and says so already.
+ * `kinds` are the generation kinds the screen makes (the worksheet screen
+ * makes worksheets and homework), so another screen's fallback is not this
+ * result's.
+ */
+export function resultFallbackNotice(
+  demoMode: boolean,
+  last: AiGenerationRecord | null,
+  kinds: readonly AiGenerationKind[],
+): { error?: string } | null {
+  if (demoMode || !last) return null;
+  if (last.reason !== 'fallback' || !kinds.includes(last.kind)) return null;
+  return { error: last.error };
+}
+
 /** What the badge should say — the i18n key, and how loud to be about it. */
 export interface AiSourceBadgeState {
   labelKey: 'demoModeBadge' | 'aiLiveBadge' | 'aiFallbackBadge' | 'aiSavedCopyBadge';

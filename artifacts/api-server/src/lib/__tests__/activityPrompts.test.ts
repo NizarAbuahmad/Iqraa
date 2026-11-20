@@ -126,3 +126,18 @@ describe("each format's clause names what that format requires", () => {
     assert.match(activityPromptEn({ ...baseBody, activityVariant: "warmup" }), /Forbidden: teaching the new content/);
   });
 });
+
+// A teacher who types a question as the objective («…: لو كنت وزير التربية ليوم
+// واحد، ماذا تغيّر؟») wants THAT question discussed. The discussion clause asked
+// for an invented contestable claim regardless, and the offline blueprint did
+// the same; both now build the discussion around the teacher's question.
+describe("discussion uses the teacher's question", () => {
+  it("tells the model to make the objective's question the discussion question (ar)", () => {
+    const p = activityPromptAr({ ...baseBody, activityType: "discussion", objectives: "لو كنت وزير التربية ليوم واحد، ماذا تغيّر؟" });
+    assert.match(p, /إن كان في هدف النشاط سؤال كتبه المعلم/);
+  });
+  it("tells the model to make the objective's question the discussion question (en)", () => {
+    const p = activityPromptEn({ ...baseBody, activityType: "discussion", objectives: "If you were minister for a day, what would you change?" });
+    assert.match(p, /If the activity objective contains a question the teacher wrote/);
+  });
+});
