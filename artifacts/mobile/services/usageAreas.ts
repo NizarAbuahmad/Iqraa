@@ -42,6 +42,9 @@ export const USAGE_AREAS = [
   'profile',
   'admin',
   'other',
+  // Split out of `classroom` on 2026-11-20. Minutes before that day are still under
+  // `classroom`, which is why the list is appended to and `classroom` is not renamed.
+  'whiteboard',
 ] as const;
 
 export type UsageArea = (typeof USAGE_AREAS)[number];
@@ -90,7 +93,7 @@ const GENERATORS: Record<string, UsageArea> = {
   'slides': 'gen-slides',
   'prompt-slides': 'gen-slides',
   'classroom': 'classroom',
-  'whiteboard': 'classroom',
+  'whiteboard': 'whiteboard',
 };
 
 const CORNERS: Record<string, UsageArea> = {
