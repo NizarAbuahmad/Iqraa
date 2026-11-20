@@ -10,6 +10,25 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Lesson plan: «استراتيجية التدريس» in the Ministry's words — 2026-11-20
+
+A teacher found the lesson-plan field «أسلوب التدريس» unclear and asked whether it is the term the Ministry uses.
+It is not. Counted across the extracted Ministry books (`lib/curriculum/src/data/extracted`): «أسلوب التدريس» 0
+(«أساليب التدريس» appears only in library-catalogue descriptors), «استراتيجيات التدريس» 45 and «استراتيجية التدريس»
+18; «التعليم المباشر» 1 against «التدريس المباشر» 196; «التعلم التعاوني» 55; «التعلم الاستقصائي» 0, while
+«الاستقصاء» appears 121 times as the noun.
+
+- **Arabic labels** (`services/i18n.ts`): the field is «استراتيجية التدريس» (singular — one is picked), the options
+  «التدريس المباشر» · «الاستقصاء» · «التعلم التعاوني». The shorter inquiry label also stops it wrapping onto two lines
+  in the segmented control on a phone. The help answer (`howPlanOptions`) and the export dialog's message follow.
+  English is unchanged. Stored state is the index / `direct|inquiry|collaborative` key, so nothing saved moves.
+- **Help matcher** (`appHelp.ts`): «كيف أختار استراتيجية التدريس…» now reaches `howPlanOptions` like the old wording;
+  both phrasings pinned in `appHelp.test.ts`, and an advice question with the new word still goes to the model.
+- **Not changed:** the model-facing prompt clause «أسلوب التدريس: مباشر» (`prompts.ts` `lessonStyleClauseAr`). The
+  teacher never sees it, and several prompt tests anchor on it.
+- **Verified:** mobile suite (9,397 pass, 0 fail) and `pnpm run typecheck`. **Not verified:** the screen in a browser;
+  the no-wrap claim follows from the label's length, not from a screenshot.
+
 ## Share a saved material by link (`/m/CODE`) — 2026-11-20
 
 A teacher asked to send a generated lesson plan to a colleague on WhatsApp so the colleague opens it as it is,

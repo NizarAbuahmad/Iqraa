@@ -25,7 +25,7 @@ export interface SummaryParts extends SummaryCounts {
   /**
    * A word and not a count, already in the display language. It closes the line:
    * the worksheet's difficulty level («20 سؤالًا · 3 أنواع · متوسط»), the lesson
-   * plan's teaching style («45 دقيقة · 10 أقسام · التعليم المباشر»).
+   * plan's teaching style («45 دقيقة · 10 أقسام · التدريس المباشر»).
    */
   level?: string;
 }

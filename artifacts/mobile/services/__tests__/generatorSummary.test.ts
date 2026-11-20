@@ -95,8 +95,8 @@ test('an empty or blank level adds nothing, and the quiz line is unchanged', () 
   assert.equal(summaryLine({ questions: 10, minutes: 20, marks: 20, kinds: 4 }, 'ar'), '10 أسئلة · 20 دقيقة · 20 درجة · 4 أنواع');
 });
 
-test('a lesson plan names its duration, sections and style: «45 دقيقة · 10 أقسام · التعليم المباشر»', () => {
-  assert.equal(summaryLine({ minutes: 45, sections: 10, level: 'التعليم المباشر' }, 'ar'), '45 دقيقة · 10 أقسام · التعليم المباشر');
+test('a lesson plan names its duration, sections and style: «45 دقيقة · 10 أقسام · التدريس المباشر»', () => {
+  assert.equal(summaryLine({ minutes: 45, sections: 10, level: 'التدريس المباشر' }, 'ar'), '45 دقيقة · 10 أقسام · التدريس المباشر');
   assert.equal(summaryLine({ minutes: 90, sections: 11, level: 'التعلم التعاوني' }, 'ar'), '90 دقيقة · 11 قسمًا · التعلم التعاوني');
   assert.equal(summaryLine({ minutes: 30, sections: 10, level: 'Direct instruction' }, 'en'), '30 min · 10 sections · Direct instruction');
 });
