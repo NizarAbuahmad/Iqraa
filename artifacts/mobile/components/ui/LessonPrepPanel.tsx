@@ -49,6 +49,7 @@ import {
   formatLessonPlanText,
   shareAsText,
 } from '@/services/share';
+import { shareToastKey } from '@/services/shareText';
 import { exportFilename } from '@/services/exportFilename';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { Button } from '@/components/ui/Button';
@@ -243,10 +244,11 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
 
   const handleShareText = async () => {
     if (!result) return;
-    await shareAsText(
+    const key = shareToastKey(await shareAsText(
       formatLessonPlanText(result, exportTitle, exportMeta, lang === 'ar'),
       exportTitle,
-    );
+    ));
+    if (key) showToast(t(key));
   };
 
   const handleCopy = async () => {

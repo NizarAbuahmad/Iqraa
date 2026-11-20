@@ -436,12 +436,13 @@ export default function ParentMessageScreen() {
   const onShare = async () => {
     if (!ready) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // shareAsText falls back to the clipboard where the OS share sheet is
-    // unavailable (desktop web), and says which happened so the toast is honest.
+    // shareAsText copies the letter too, and only copies where the OS share
+    // sheet is unavailable (desktop web). It says which happened so the toast
+    // is honest: 'copied' means the sheet never opened.
     const how = await shareAsText(letter.text, t('parentMsgTitle'));
-    recordContact(how === 'shared' ? 'share' : 'copy');
+    recordContact(how !== 'copied' ? 'share' : 'copy');
     rememberSignature();
-    showToast(how === 'shared' ? t('parentMsgSent') : t('copiedToClipboard'));
+    showToast(how !== 'copied' ? t('parentMsgSent') : t('copiedToClipboard'));
   };
 
   /** The guardians still ticked — who the in-app send, its confirmation and the log will name. */

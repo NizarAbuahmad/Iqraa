@@ -4,6 +4,7 @@ import { exportFilename } from '@/services/exportFilename';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { copyToClipboard, exportAsPDF, exportAsWord, exportBuiltWord, shareAsText } from '@/services/share';
+import { shareToastKey } from '@/services/shareText';
 import type { Lang, TranslationKey } from '@/services/i18n';
 
 export type GeneratorExportMeta = { subject: string; grade: string; duration?: number };
@@ -62,8 +63,9 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
   const handleShareText = useCallback(async () => {
     if (!result) return;
     const title = getTitle();
-    await shareAsText(formatText(result, title, getMeta(), isAr), title);
-  }, [result, getTitle, getMeta, formatText, isAr]);
+    const key = shareToastKey(await shareAsText(formatText(result, title, getMeta(), isAr), title));
+    if (key) onCopied(key);
+  }, [result, getTitle, getMeta, formatText, isAr, onCopied]);
 
   const handleCopy = useCallback(async () => {
     if (!result) return;
