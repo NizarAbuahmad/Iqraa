@@ -167,11 +167,11 @@ export default function AdminInsightsUserScreen() {
               ) : (
                 <Pressable
                   accessibilityRole="checkbox"
-                  accessibilityState={{ checked: data.user.internal, disabled: savingInternal }}
                   aria-checked={data.user.internal}
+                  aria-disabled={savingInternal}
                   disabled={savingInternal}
                   onPress={toggleInternal}
-                  style={({ pressed }) => [...cardStyle, { minHeight: 44, flexDirection: row, alignItems: 'center', gap: 10, opacity: pressed || savingInternal ? 0.7 : 1 }]}
+                  style={({ pressed }) => [...cardStyle, { minHeight: 44, flexDirection: row, alignItems: 'center', gap: 12, opacity: pressed || savingInternal ? 0.7 : 1 }]}
                 >
                   <Ionicons name={data.user.internal ? 'checkbox' : 'square-outline'} size={ICON.lg} color={data.user.internal ? ACCENT : colors.mutedForeground} />
                   <View style={{ flex: 1, gap: 2 }}>
