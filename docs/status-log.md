@@ -27,8 +27,10 @@ offline blueprint stood in. Reproduced exactly with `buildOfflineActivity`: step
   fits its step at every offered length (20–60) and is pinned, not changed. Individual, hands-on and warm-up state
   no step lengths.
 - **The teacher's objective reaches the discussion.** `ActivityBlueprintContext` gains `objective`. When it holds a
-  question (`teacherQuestion`: from the sentence with the first ؟/? to the last, after any «:» lead-in), the
-  discussion is about that question: it is posted word for word, and since an open question is answered rather than
+  question of opinion or choice (`teacherQuestion`: from the sentence with the first ؟/? to the last, after any
+  «:», «؛» or dash lead-in — a «.» or «:» only breaks before a space, so «1.5» and «3:4» stay whole — and only if it
+  carries a cue such as «لو», «برأيك», «تفضّل»; «ما قيمة س…؟» and «ما هي الخلية؟» do not count, nor does any
+  question in a maths lesson), the discussion is about that question: it is posted word for word, and since an open question is answered rather than
   voted on, the agree/disagree cards and the two votes give way to a written first answer and a return to it at the
   close (`questionDiscussionAr/En`). Without a question the claim-and-vote format is unchanged. Every format already
   showed a typed objective as the activity's `objective` (`buildOfflineActivity`); now pinned.
@@ -45,9 +47,12 @@ offline blueprint stood in. Reproduced exactly with `buildOfflineActivity`: step
   its pool (more live spend); the owner's call.
 - **A fallback is said on the result.** `aiFallbackNotice` (`aiProvenance.ts`) decides through `aiSourceBadgeState`,
   so the pill and the notice cannot disagree, and adds: the record is this generator's and produced content (`mock`;
-  a strict failure has no result to annotate). The activity screen captures the record when the result arrives (a
-  later chat reply cannot clear it), shows `AiFallbackNotice` above the result («هذا محتوى تجريبي، لم يكتبه الذكاء
-  الاصطناعي…» and «أعد المحاولة», which re-runs the same request), and hides «النشاط جاهز» with its tick under it.
+  a strict failure has no result to annotate). The activity screen keeps this call's own record (`generationSince`: the
+  newest `activity` record since the call started — not the last record, because a fallback is recorded before the
+  offline generator's 1–2 s delay and a chat reply in that window would otherwise replace it), clears it when a
+  saved material is reopened, shows `AiFallbackNotice` above the result («هذا محتوى تجريبي، لم يكتبه الذكاء
+  الاصطناعي…» and «أعد المحاولة», which runs the generator again with the form as it now stands — if the teacher
+  changed it after the fallback, that is what is asked for), and hides «النشاط جاهز» with its tick under it.
   **Only the activity screen** has it; the quiz, worksheet, lesson plan and slides screens could take the same
   component.
 - **No «ما الجديد» entry:** the content changes are fixes to what the offline path serves, and the notice appears
@@ -62,7 +67,11 @@ Verified: typecheck; mobile tests (`activityDiscussionFit.test.ts`, new: no doub
 language; stated minutes equal the step's for discussion and game at 20/30/45/60; jigsaw turns fit; the question
 reaches the discussion in Arabic and English; Grade 6 vs Grade 10 wording; the two helpers; plus `aiFallbackNotice`
 cases in `aiProvenance.test.ts`); `activityBlueprints.test.ts` and the other activity suites unchanged and passing;
-api-server build + tests (2991 pass, with new cases in `activityPrompts.test.ts`). **Not verified:** the notice in a
+api-server build + tests (2991 pass, with new cases in `activityPrompts.test.ts`). A review of the first version
+found, and this fixes with a test each: any «؟» made a factual question an "open" one; the question was cut inside
+«1.5» / «3:4» and not at «؛» or a dash; «الصف الثاني عشر» read as Grade 2 (`activityGradeNumber`); the screen could
+keep another generation's record; an unbalanced «» was left on the board. The question discussion is also pinned to
+differ from every other format on every field but the objective. **Not verified:** the notice in a
 browser or on a phone (no app run in this session), and the live prompt against a model.
 
 ## Per-account AI limit, set by a system admin — 2026-11-19

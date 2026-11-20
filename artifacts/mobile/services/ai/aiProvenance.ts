@@ -407,3 +407,23 @@ export function aiFallbackNotice(
     ...(badge.detail ? { detail: badge.detail } : {}),
   };
 }
+
+/**
+ * The newest record of `kind` made at or after `since` — the record of the
+ * call a screen just made.
+ *
+ * Not `getLastGeneration()`: a fallback is recorded before the offline
+ * generator's 1–2 s delay, so a chat reply or another screen's generation in
+ * that window would be "last", and the activity's notice would be lost.
+ */
+export function generationSince(
+  log: readonly AiGenerationRecord[],
+  kind: AiGenerationKind,
+  since: number,
+): AiGenerationRecord | null {
+  for (let i = log.length - 1; i >= 0; i--) {
+    const r = log[i]!;
+    if (r.kind === kind && r.at >= since) return r;
+  }
+  return null;
+}

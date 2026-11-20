@@ -31,7 +31,7 @@ import {
   type ActivityTypeId } from '@/constants/activityType';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
-import { aiErrorText, aiFallbackNotice, getLastGeneration, isAbortError, type AiGenerationRecord } from '@/services/ai/aiProvenance';
+import { aiErrorText, aiFallbackNotice, generationSince, getGenerationHistory, isAbortError, type AiGenerationRecord } from '@/services/ai/aiProvenance';
 import { DEMO_MODE } from '@/services/ai/demoMode';
 import { AiFallbackNotice } from '@/components/ui/AiFallbackNotice';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
@@ -253,6 +253,8 @@ export default function ActivityScreen() {
     if (params.savedId) {
       getItem(params.savedId).then(item => {
         if (item) {
+          // Nothing is known about how a saved material was made: no notice.
+          setResultRecord(null);
           try { setResult(plainActivity(JSON.parse(item.content) as ActivityOutput)); } catch { /* noop */ }
           setFavorited(item.isFavorite);
         }
@@ -334,6 +336,7 @@ export default function ActivityScreen() {
     setLoading(true); setResult(null); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
+    const startedAt = Date.now();
     try {
       const grounding = wide
         ? WIDE_GROUNDING
@@ -347,8 +350,9 @@ export default function ActivityScreen() {
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setWideFrozen(wide ? wideScope.scopeSel : null);
       setBuiltWith({ activityTypeIdx, durationIdx, objective });
-      // Recorded by `generateWithProvenance` before it returned this activity.
-      setResultRecord(getLastGeneration());
+      // This call's own record — not the last one, which a chat reply during
+      // the offline generator's delay could have replaced.
+      setResultRecord(generationSince(getGenerationHistory(), 'activity', startedAt));
       setResult(out);
       // A regenerated activity is a new copy: leave the saved one alone, and
       // let «حفظ» create it. The star belonged to the saved material.

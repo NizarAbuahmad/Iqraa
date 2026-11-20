@@ -5,6 +5,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/Button';
 import { ICON } from '@/constants/icons';
+import { SPACE, TYPE } from '@/constants/theme';
 import type { AiFallbackNotice as Notice } from '@/services/ai/aiProvenance';
 
 /**
@@ -36,7 +37,7 @@ export function AiFallbackNotice({ notice, onRetry, disabled }: {
       accessibilityLabel={notice.detail ? `${title}. ${body} — ${notice.detail}` : `${title}. ${body}`}
     >
       <View style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Ionicons name="alert-circle" size={ICON.lg} color={colors.warning} style={{ marginTop: 1 }} />
+        <Ionicons name="alert-circle" size={ICON.lg} color={colors.warning} style={{ marginTop: SPACE.xxs }} />
         <View style={{ flex: 1 }}>
           <Text style={[styles.title, { color: colors.foreground, textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
           <Text style={[styles.body, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left' }]}>{body}</Text>
@@ -50,8 +51,8 @@ export function AiFallbackNotice({ notice, onRetry, disabled }: {
 }
 
 const styles = StyleSheet.create({
-  box: { borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12, gap: 10 },
-  row: { alignItems: 'flex-start', gap: 12 },
-  title: { fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, lineHeight: 21, marginBottom: 2 },
-  body: { fontFamily: 'Almarai_400Regular', fontSize: 13, lineHeight: 20 },
+  box: { borderWidth: 1, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, marginBottom: SPACE.md, gap: SPACE.sm },
+  row: { alignItems: 'flex-start', gap: SPACE.md },
+  title: { fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.label, lineHeight: 21, marginBottom: SPACE.xxs },
+  body: { fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 20 },
 });

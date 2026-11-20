@@ -126,7 +126,8 @@ describe("the teacher's objective reaches the offline activity", () => {
 
   it('an English question objective leads the discussion too', () => {
     const q = 'If you could change one school rule, which would it be and why?';
-    const a = make({ ...CASES[3], activityType: 'discussion', objectives: `Students give a reasoned opinion: ${q}` });
+    // A social-studies lesson: a maths lesson's question is answered, not discussed.
+    const a = make({ ...G6_SOCIAL, language: 'english', activityType: 'discussion', objectives: `Students give a reasoned opinion: ${q}` });
     assert.ok(a.steps[0]!.description.includes(q), a.steps[0]!.description);
     assert.doesNotMatch(stepText(a), /Do you agree\?/);
   });
@@ -152,11 +153,49 @@ describe('teacherQuestion', () => {
     assert.equal(teacherQuestion('ما رأيك في الواجبات؟ ولماذا؟'), 'ما رأيك في الواجبات؟ ولماذا؟');
   });
   it('drops quotation marks around the question', () => {
-    assert.equal(teacherQuestion('ناقش: «هل الواجب ضروري؟»'), 'هل الواجب ضروري؟');
+    assert.equal(teacherQuestion('ناقش: «هل الواجب ضروري برأيك؟»'), 'هل الواجب ضروري برأيك؟');
   });
   it('is null for an objective with no question', () => {
     assert.equal(teacherQuestion('أن يعبّر الطالب عن رأيه باحترام'), null);
     assert.equal(teacherQuestion(undefined), null);
+  });
+  // Found in review: a «.» or «:» inside a number is not a sentence break.
+  it('does not cut inside a number', () => {
+    assert.equal(teacherQuestion('أن يقدّر الطالب: لو كان طولك 1.5 متر، كيف ستتغيّر حياتك؟'), 'لو كان طولك 1.5 متر، كيف ستتغيّر حياتك؟');
+    assert.equal(teacherQuestion('لو قسّمنا الصف بنسبة 3:4، أي قسم تفضّل أن تكون فيه؟'), 'لو قسّمنا الصف بنسبة 3:4، أي قسم تفضّل أن تكون فيه؟');
+  });
+  it('breaks on «؛» and a dash', () => {
+    assert.equal(teacherQuestion('يعبّر الطالب عن رأيه؛ ما رأيك في الواجبات المدرسية؟'), 'ما رأيك في الواجبات المدرسية؟');
+    assert.equal(teacherQuestion('نقاش حول الواجبات — برأيك هل الواجب ضروري؟'), 'برأيك هل الواجب ضروري؟');
+  });
+  it('strips only a balanced pair of quotation marks', () => {
+    assert.equal(teacherQuestion('ناقش: «هل الواجب ضروري برأيك؟» ولماذا؟'), 'هل الواجب ضروري برأيك؟ ولماذا؟');
+    assert.equal(teacherQuestion('ناقش: «برأيك، هل الواجب ضروري؟'), 'برأيك، هل الواجب ضروري؟');
+  });
+  // A question with one answer is not an open discussion question: the
+  // question format would tell the teacher it has no right answer.
+  it('is null for a question with one answer', () => {
+    assert.equal(teacherQuestion('أن يحل الطالب: ما قيمة س إذا كان 2س + 3 = 7؟'), null);
+    assert.equal(teacherQuestion('أن يجيب الطالب عن: ما هي الخلية؟'), null);
+    assert.equal(teacherQuestion('Students answer: what is a cell?'), null);
+  });
+});
+
+describe('a factual question objective keeps the claim discussion', () => {
+  it('maths: the question is not posted as an open discussion', () => {
+    const a = make({ ...CASES[1], activityType: 'discussion', objectives: 'أن يحل الطالب: لو كان 2س + 3 = 7، فما قيمة س؟' });
+    assert.doesNotMatch(stepText(a), /اكتب سؤال النقاش/);
+  });
+});
+
+describe('the question discussion is still its own format', () => {
+  it('differs from every other type on every field but the objective', () => {
+    const out = Object.fromEntries(TYPES.map(t => [t, make({ ...G6_SOCIAL, activityType: t, objectives: TEACHER_OBJECTIVE })]));
+    for (const field of ['groupSize', 'materials', 'steps', 'teacherTips', 'differentiation', 'assessment'] as const) {
+      const values = TYPES.map(t => JSON.stringify((out[t] as any)[field]));
+      assert.equal(new Set(values).size, TYPES.length, `"${field}" is shared between activity types`);
+    }
+    assert.doesNotMatch(out.discussion!.groupSize, /مجموعات/);
   });
 });
 
@@ -167,6 +206,11 @@ describe('activityGradeNumber', () => {
     assert.equal(activityGradeNumber(null, 'الصف الأول'), 1);
     assert.equal(activityGradeNumber(undefined, 'Grade 4'), 4);
     assert.equal(activityGradeNumber(null, ''), null);
+  });
+  // Found in review: «الصف الثاني عشر» matched «الثاني» and read as Grade 2.
+  it('does not read Grades 11 and 12 as 1 and 2', () => {
+    assert.equal(activityGradeNumber(null, 'الصف الثاني عشر'), 12);
+    assert.equal(activityGradeNumber(null, 'الصف الحادي عشر'), 11);
   });
 });
 

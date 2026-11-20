@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   aiErrorMessageKey,
   aiFallbackNotice,
+  generationSince,
   aiSourceBadgeState,
   type AiGenerationRecord,
   describeAiError,
@@ -455,4 +456,22 @@ test('aiFallbackNotice: a strict failure produced no content, so there is no res
 
 test("aiFallbackNotice: another generator's fallback is not this result's", () => {
   assert.equal(aiFallbackNotice(false, rec({ kind: 'chat' }), 'activity'), null);
+});
+
+// ─── generationSince ─────────────────────────────────────────────────────────
+// Found in review: the activity screen took `getLastGeneration()` when its
+// result arrived, but the fallback is recorded BEFORE the mock's 1–2 s delay,
+// so a chat reply in that window became "last" and the notice was lost.
+
+test('generationSince: the newest record of this kind since the call started', () => {
+  const log: AiGenerationRecord[] = [
+    rec({ at: AT - 10 }),                                   // an earlier activity
+    rec({ at: AT + 1, reason: 'fallback' }),                // this call's
+    rec({ kind: 'chat', source: 'live', reason: 'live', at: AT + 2 }), // a chat reply meanwhile
+  ];
+  assert.equal(generationSince(log, 'activity', AT)?.at, AT + 1);
+});
+
+test('generationSince: null when this call recorded nothing', () => {
+  assert.equal(generationSince([rec({ at: AT - 10 })], 'activity', AT), null);
 });

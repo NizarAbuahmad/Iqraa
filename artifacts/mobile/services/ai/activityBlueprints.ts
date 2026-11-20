@@ -194,11 +194,34 @@ export function activityGradeNumber(bookGradeId?: string | null, gradeName?: str
   const name = (gradeName ?? '').trim();
   const digits = Number(name.match(/\d{1,2}/)?.[0]);
   if (digits) return digits;
-  // Longest first, so «الحادي عشر» could never read as «الأول» if it is added.
-  for (let i = ORDINAL_GRADES_AR.length - 1; i >= 0; i--) {
-    if (new RegExp(`الصف\\s+${ORDINAL_GRADES_AR[i]}(?:\\s|$)`).test(name)) return i + 1;
+  // Grades 11 and 12 first: «الصف الثاني عشر» (the catalog's Grade 12) also
+  // starts «الصف الثاني», and read as Grade 2 before review caught it.
+  if (/الصف\s+الحادي\s+عشر/.test(name)) return 11;
+  if (/الصف\s+الثاني\s+عشر/.test(name)) return 12;
+  for (let i = 0; i < ORDINAL_GRADES_AR.length; i++) {
+    if (new RegExp(`الصف\\s+${ORDINAL_GRADES_AR[i]}(?!\\s*عشر)(?:\\s|$)`).test(name)) return i + 1;
   }
   return null;
+}
+
+/**
+ * Words that make a question one of opinion or choice — which an open
+ * discussion is for. Without one, a question in the objective is taken as
+ * having a single answer («ما قيمة س…؟», «ما هي الخلية؟»), and the format
+ * that tells the teacher «لا جواب واحدًا صحيحًا له» must not be used for it.
+ * «لماذا» alone is not a cue: «لماذا تحدث الفصول؟» has an answer.
+ */
+const OPINION_CUE_AR = /(?:^|[\s،«])(?:و?لو|برأيك|رأيك|بنظرك|هل توافق|هل تؤيد|تفضّل|تفضل|تختار|ستختار|ستغيّر|ستغير|بتغيّر|بتغير)(?=[\s،؟?»]|$)/;
+const OPINION_CUE_EN = /\b(?:do you think|in your opinion|would you|should|if you|if we|agree|prefer|choose|would it)\b/i;
+
+/** Drop quotation marks the board will add again, keeping a pair only if it is whole. */
+function unquote(s: string, open: string, close: string): string {
+  const opens = s.split(open).length - 1;
+  const closes = s.split(close).length - 1;
+  if (opens === closes) return s.split(open).join('').split(close).join('');
+  if (opens > closes && s.startsWith(open)) return s.slice(open.length);
+  if (closes > opens && s.endsWith(close)) return s.slice(0, -close.length);
+  return s;
 }
 
 /**
@@ -208,7 +231,11 @@ export function activityGradeNumber(bookGradeId?: string | null, gradeName?: str
  * إشي بتغيّره ولماذا؟» is an objective with the discussion question already in
  * it. The question runs from the start of the sentence that holds the first
  * question mark to the last question mark, so «ما رأيك؟ ولماذا؟» stays whole
- * and the lead-in before a colon is left out.
+ * and the lead-in before a colon, «؛» or a dash is left out. A «.» or «:» only
+ * breaks when a space follows, so «1.5» and «3:4» stay whole.
+ *
+ * Only a question of opinion or choice counts (`OPINION_CUE_*`): a question
+ * with one answer is not what the open-discussion format is for.
  */
 export function teacherQuestion(objective?: string): string | null {
   const text = (objective ?? '').trim();
@@ -216,9 +243,12 @@ export function teacherQuestion(objective?: string): string | null {
   if (first < 0) return null;
   const end = Math.max(text.lastIndexOf('؟'), text.lastIndexOf('?')) + 1;
   const before = text.slice(0, first);
-  const start = Math.max(...[':', '：', '\n', '.', '!'].map(b => before.lastIndexOf(b))) + 1;
-  const q = text.slice(start, end).trim().replace(/^[«“"']+|[»”"']+$/g, '').trim();
-  return q.length >= 6 ? q : null;
+  let start = 0;
+  for (const m of before.matchAll(/[.:!：](?=\s|$)|[؛\n—–]/g)) start = m.index! + m[0].length;
+  let q = text.slice(start, end).trim();
+  q = unquote(unquote(q, '«', '»'), '“', '”').replace(/^["']+|["']+$/g, '').trim();
+  if (q.length < 6) return null;
+  return OPINION_CUE_AR.test(q) || OPINION_CUE_EN.test(q) ? q : null;
 }
 
 function steps(
@@ -785,7 +815,8 @@ function questionDiscussionEn(ctx: ActivityBlueprintContext, question: string, m
 
 function discussionAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
   const mins = distributeMinutes(ctx.duration, [1, 1.2, 3.4, 1.4]);
-  const question = teacherQuestion(ctx.objective);
+  // A maths lesson's question has an answer to reach, not opinions to hear.
+  const question = ctx.math ? null : teacherQuestion(ctx.objective);
   if (question) return questionDiscussionAr(ctx, question, mins);
   const claim = contestableClaim(ctx);
   const young = isYoung(ctx);
@@ -999,7 +1030,8 @@ function groupEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
 
 function discussionEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
   const mins = distributeMinutes(ctx.duration, [1, 1.2, 3.4, 1.4]);
-  const question = teacherQuestion(ctx.objective);
+  // A maths lesson's question has an answer to reach, not opinions to hear.
+  const question = ctx.math ? null : teacherQuestion(ctx.objective);
   if (question) return questionDiscussionEn(ctx, question, mins);
   const claim = contestableClaim(ctx);
   const young = isYoung(ctx);
