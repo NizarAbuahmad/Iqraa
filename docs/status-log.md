@@ -41,6 +41,22 @@ for an ungrounded topic and leaves a grounded body without it; the wide-scope fi
 **Not verified:** a live generation with the field set (no model call was made). `services/cqv/batch.ts`
 (the content-QA batch) still sends its context without the field; it is an internal tool. No «ما الجديد»: the
 teacher sees no new control, only material that no longer quotes another grade's book.
+## The Activity tool waits 90 s for the model, not 45 — 2026-11-20
+
+**What happened.** After «A fallback result says so on the result…» deployed, the owner made an activity on
+app.iqrra.com, and it came back as the offline template once more: the steps read word for word as
+`activityBlueprints.ts`'s group jigsaw. That makes two Activity-tool requests in a row that day. The client gave
+`/generate/activity` the 45 s default, while the server allows the model 120 s per attempt
+(`lib/integrations-openai-ai-server/src/client.ts`). Any request the model took longer than 45 s to answer was
+abandoned on the teacher's screen and replaced with sample content.
+
+**What changed.** `generateActivity` passes `DOCUMENT_TIMEOUT_MS` (90 s), like the lesson plan, worksheet, quiz
+and prompt slides. `documentTimeout.test.ts` now lists `activity` among the calls that get it; until now it
+pinned the activity to the default, because `gpt-5.4-mini` had never been measured as slow.
+
+**Not verified.** That the timeout was the cause. No production logs were read: nothing in the session could
+reach Cloud Run. If activities still fall back, open the request in the browser's Network tab. A server error
+there means the timeout was not the cause.
 
 ## Chat builds material on a topic the curriculum does not have — 2026-11-20
 
