@@ -34,11 +34,14 @@ import { printStyleCss, type PrintStyle } from './printStyle.ts';
 import { FORMAT_CSS, formatBodyHTML, formatKeyExtraHTML } from './formatPrintHtml.ts';
 import { blankLine, hasOwnBlanks, optionColumns, unattachedFigures, worksheetInstructions, worksheetPointsTotal } from './worksheetPaper.ts';
 import { displayObjective } from './objectiveDisplay.ts';
+import { figureSvg } from '@workspace/figure';
+import { paperVisualOf } from './paperVisual.ts';
 import type {
   ActivityOutput,
   LessonFlowOutput,
   LessonPlanOutput,
   QuizOutput,
+  QuizQuestion,
   WorksheetOutput,
 } from './ai/AIService.ts';
 
@@ -199,6 +202,9 @@ function htmlBase(
     .q-fig { margin: 6px 0 4px; text-align: center; break-inside: avoid; }
     .q-fig img { max-width: 75%; max-height: 62mm; object-fit: contain; }
     .q-fig figcaption { font-size: 10.5px; color: #6b7280; margin-top: 3px; }
+    /* A physics question's own drawing (services/paperVisual.ts). */
+    .q-vis { margin: 6px 0 4px; text-align: center; break-inside: avoid; }
+    .q-vis svg { width: 100%; max-width: 110mm; height: auto; }
     /* A numbered blank in a half-solved question, ruled across the card. */
     .q-blank { display: flex; flex-direction: row; gap: 6px; align-items: flex-end; height: 24px; }
     .q-option {
@@ -532,6 +538,16 @@ function questionFigureHTML(figure: WorksheetOutput['sections'][number]['questio
 }
 
 /**
+ * A physics question's own drawing, printed inside its card under the text, when
+ * `paperVisualOf` shows it (gate + every printed number stated). `figureSvg` is
+ * self-contained (its own colours and clip path); `id` keeps clip ids unique on a page.
+ */
+function paperVisualHTML(q: { visual?: unknown; text?: unknown }, isAr: boolean, id: string): string {
+  const figure = paperVisualOf(q);
+  return figure ? `<figure class="q-vis">${figureSvg(figure, { lang: isAr ? 'ar' : 'en', id })}</figure>` : '';
+}
+
+/**
  * A worksheet question's text, its blank lines drawn as full-width lines to
  * write on. «3) __________» is ten underscores — too short for one step of
  * working on paper. The newline on either side of a blank goes with it: the
@@ -592,7 +608,7 @@ export function buildWorksheetHTML(
       const room = fmt || q.options || hasOwnBlanks(text) ? '' : `<div class="q-lines">${ANSWER_RULES.map(() => '<div class="q-rule"></div>').join('')}</div>`;
       const html = `<div class="q-card">`
         + `<div class="q-head"><span class="q-num">${qNum}</span><span class="q-text q-break">${questionBodyHTML(text)}</span></div>`
-        + `${questionFigureHTML(q.figure)}${fmt ? formatBodyHTML(fmt, isAr) : options}${room}`
+        + `${questionFigureHTML(q.figure)}${paperVisualHTML(q, isAr, `pv-w${qNum}`)}${fmt ? formatBodyHTML(fmt, isAr) : options}${room}`
         + `<div class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</div>`
         + `</div>`;
       qNum++;
@@ -731,6 +747,7 @@ export function buildQuizHTML(
         <span class="q-text">${esc(q.text)}</span>
         <span class="q-type">${typeLabel(q.type)}</span>
       </div>
+      ${paperVisualHTML(q, isAr, `pv-q${i + 1}`)}
       ${options}${room}
       <div class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</div>
     </div>`;
@@ -1192,7 +1209,7 @@ export function buildWorksheetSlidesHTML(
         : q.options
           ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${e(labelOptionLine(o, oi, isAr))}</div>`).join('')}</div>`
           : '';
-      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text q-break">${e(printableQuestionText(fmt ? fmt.stem : q.text))}</span>${questionFigureHTML(q.figure)}${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
+      const html = `<div class="q-card"><span class="q-num">${qCounter}.</span> <span class="q-text q-break">${e(printableQuestionText(fmt ? fmt.stem : q.text))}</span>${questionFigureHTML(q.figure)}${paperVisualHTML(q, isAr, `pv-s${qCounter}`)}${opts}<span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span></div>`;
       qCounter++;
       return html;
     }).join('');
@@ -1271,6 +1288,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .q-fig { width:100%; margin:4px 0; text-align:center; }
 .q-fig img { max-height:70mm; max-width:60%; object-fit:contain; }
 .q-fig figcaption { font-size:9px; color:#6b7280; }
+.q-vis { width:100%; margin:4px 0; text-align:center; } .q-vis svg { max-height:60mm; width:auto; max-width:60%; height:auto; }
 .q-pts { font-size:10px; color:#9ca3af; margin-${isAr ? 'right' : 'left'}:auto; }
 .ak-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:8px; }
 .ak-row { display:flex; gap:6px; align-items:baseline; background:#FBF6EC; border:1px solid ${ACCENT}22; border-radius:6px; padding:6px 10px; font-size:11.5px; }
@@ -1350,6 +1368,28 @@ export function planKeySlides(ws: WorksheetOutput): WorksheetOutput['answerKey']
 
 // ─── Slides HTML (quiz) ───────────────────────────────────────────────────────
 
+/**
+ * Question slides for a quiz: up to three questions each, as always, but never more
+ * than one shown drawing on a slide — a slide is a fixed page and three drawings
+ * do not fit. Without drawings this is exactly the old grouping by threes.
+ */
+export function quizSlideGroups(questions: QuizQuestion[]): { start: number; questions: QuizQuestion[] }[] {
+  const out: { start: number; questions: QuizQuestion[] }[] = [];
+  let drawn = false;
+  questions.forEach((q, i) => {
+    const has = paperVisualOf(q) !== null;
+    const last = out[out.length - 1];
+    if (!last || last.questions.length >= 3 || (has && drawn)) {
+      out.push({ start: i, questions: [q] });
+      drawn = has;
+    } else {
+      last.questions.push(q);
+      drawn = drawn || has;
+    }
+  });
+  return out;
+}
+
 export function buildQuizSlidesHTML(
   quiz: QuizOutput,
   title: string,
@@ -1375,11 +1415,7 @@ export function buildQuizSlidesHTML(
         : t === 'fill_blank' ? L('أكمل الفراغ', 'Fill in')
           : L('إجابة قصيرة', 'Short');
 
-  const GROUP_SIZE = 3;
-  const questionGroups: typeof quiz.questions[] = [];
-  for (let i = 0; i < quiz.questions.length; i += GROUP_SIZE) {
-    questionGroups.push(quiz.questions.slice(i, i + GROUP_SIZE));
-  }
+  const questionGroups = quizSlideGroups(quiz.questions);
 
   // title + groups + the answer key (teacher's copy only) + the optional
   // book-figures slide
@@ -1410,9 +1446,9 @@ export function buildQuizSlidesHTML(
     ${footer(slideNum++)}</div>`;
 
   // Question group slides
-  const qSlides = questionGroups.map((group, gi) => {
-    const startIdx = gi * GROUP_SIZE;
-    const questionsHtml = group.map((q, qi) => {
+  const qSlides = questionGroups.map(group => {
+    const startIdx = group.start;
+    const questionsHtml = group.questions.map((q, qi) => {
       const idx = startIdx + qi + 1;
       const opts = q.options
         ? `<div class="q-opts">${q.options.map((o, oi) => `<div class="q-opt">${e(labelOptionLine(o, oi, isAr))}</div>`).join('')}</div>`
@@ -1424,12 +1460,13 @@ export function buildQuizSlidesHTML(
           <span class="q-pts">${L(arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط'), `${q.points} pts`)}</span>
         </div>
         <div class="q-text">${e(q.text)}</div>
+        ${paperVisualHTML(q, isAr, `pv-z${idx}`)}
         ${opts}
       </div>`;
     }).join('');
 
     return `<div class="slide">
-      ${header(L(`الأسئلة ${startIdx + 1}–${startIdx + group.length}`, `Questions ${startIdx + 1}–${startIdx + group.length}`))}
+      ${header(L(`الأسئلة ${startIdx + 1}–${startIdx + group.questions.length}`, `Questions ${startIdx + 1}–${startIdx + group.questions.length}`))}
       <div class="slide-body">${questionsHtml}</div>
       ${footer(slideNum++)}</div>`;
   });
@@ -1473,6 +1510,7 @@ body { font-family: ${isAr ? "'Arial','Tahoma',sans-serif" : "'Helvetica Neue','
 .q-text { font-size:12px; color:#111827; line-height:1.5; }
 .q-opts { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:6px; padding-${isAr ? 'right' : 'left'}:12px; font-size:10.5px; color:#6b7280; }
 .q-opt { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.q-vis { width:100%; margin:4px 0; text-align:center; } .q-vis svg { max-height:60mm; width:auto; max-width:60%; height:auto; }
 .ak-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
 .ak-row { display:flex; gap:6px; align-items:baseline; background:#FCF1F4; border:1px solid ${ACCENT}33; border-radius:6px; padding:6px 10px; font-size:11.5px; }
 .ak-num { font-weight:700; color:${ACCENT}; flex-shrink:0; }
