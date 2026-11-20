@@ -13,7 +13,8 @@ describe('pickForFormat', () => {
     const p = pickForFormat('match', EXP, null, 'ar', used) as any;
     assert.ok(p && p.pairs.length >= 4 && p.pairs.length <= 5);
     assert.equal(new Set(p.pairs.map((x: any) => x.answer)).size, p.pairs.length);
-    assert.equal(used.size, p.pairs.length);
+    // Item ids only: a pair also spends its equation (`eq:…`).
+    assert.equal([...used].filter(k => !/^(?:ask|eq|shown):/.test(k)).length, p.pairs.length);
   });
 
   it('order: the steps are an item\'s real working, 3–6 lines', () => {

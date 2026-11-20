@@ -44,8 +44,8 @@ const TEMPLATED = { topic: 'الخلية ووظائفها', subject: 'الأحي
 /**
  * An exponential-equations lesson, not «قانون الجيوب».
  *
- * `detectMathFamily` maps the sine rule to `trig_apps`, which holds exactly one
- * bank item per tier — so a six-question quiz exhausts it and
+ * `detectMathFamily` maps the sine rule to `trig_apps`, which held exactly one
+ * bank item per tier when this was written — so a six-question quiz exhausted it and
  * `takeConcreteMath` falls back across tiers by design, making easy and hard
  * legitimately overlap. `exp_eq` has 6 easy / 6 medium / 5 hard, enough to see
  * the tier actually being honoured.
