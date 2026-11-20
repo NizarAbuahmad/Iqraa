@@ -99,6 +99,32 @@ const area = T('area_rect', /^(?:المساحه|مساحه المستطيل)$/, 
   return { eq: `${l * w}, ${l}`, answer: String(w), wrongs: pos(w, [l * w - l, l * w + l, l + w, l]), ar: `مساحة مستطيل ${l * w} سم² وطوله ${l} سم. ما عرضه؟`, en: `A rectangle has area ${l * w} cm² and length ${l} cm. What is its width?` };
 });
 
+/**
+ * Grade 3 «المساحة»: area as the unit squares a shape covers — counted in rows,
+ * added over a shape of two parts, compared, in cm² on squared paper, a missing
+ * row length, and floor tiles. The formula is the next lesson's («مساحة
+ * المستطيل», still `area_rect`). Rows 3–6 and 3–9 squares a row keep every
+ * counted noun in its 3–10 plural.
+ */
+const areaUnits = T('area_units_g3', /^المساحه$/, [3, 3], ({ rng }) => {
+  const r = int(rng, 3, 6), c = int(rng, 3, 9), A = r * c, k = pick(rng, [0, 1, 2, 3, 4, 5]);
+  const slips = [2 * (r + c), r + c, A + r, A - c];
+  if (k === 1) {
+    const r2 = int(rng, 3, 6), c2 = int(rng, 3, 9), t = A + r2 * c2;
+    return { eq: `${r} × ${c} + ${r2} × ${c2}`, answer: String(t), wrongs: pos(t, [A, r2 * c2, r + c + r2 + c2, (r + r2) * Math.max(c, c2), t + c]), ar: `شكل مرسوم على شبكة مربعات، يتكوّن من جزأين: في الجزء الأول ${r} صفوف، في كل صف ${c} مربعات، وفي الجزء الثاني ${r2} صفوف، في كل صف ${c2} مربعات. ما مساحة الشكل بالوحدات المربعة؟`, en: `A shape on a square grid has two parts: ${r} rows of ${c} squares, and ${r2} rows of ${c2} squares. What is its area in square units?` };
+  }
+  if (k === 2) {
+    let r2 = 0, c2 = 0;
+    do { r2 = int(rng, 3, 6); c2 = int(rng, 3, 9); } while (r2 * c2 === A);
+    const gap = Math.abs(A - r2 * c2);
+    return { eq: `|${r} × ${c} − ${r2} × ${c2}|`, answer: String(gap), wrongs: pos(gap, [A, r2 * c2, Math.abs(r + c - r2 - c2), A + r2 * c2, gap + r]), ar: `الشكل (أ) على شبكة مربعات فيه ${r} صفوف، في كل صف ${c} مربعات، والشكل (ب) فيه ${r2} صفوف، في كل صف ${c2} مربعات. بكم وحدة مربعة تزيد مساحة الشكل الأكبر على مساحة الشكل الأصغر؟`, en: `Shape A on a square grid has ${r} rows of ${c} squares; shape B has ${r2} rows of ${c2} squares. By how many square units is the larger area greater than the smaller?` };
+  }
+  if (k === 3) return { eq: `${r} × ${c} × 1 cm²`, answer: String(A), wrongs: pos(A, slips), ar: `رُسم مستطيل على ورق مربعات طول ضلع كل مربع فيه 1 سم، فغطّى ${r} صفوف، في كل صف ${c} مربعات. ما مساحة المستطيل بالسنتيمتر المربع؟`, en: `A rectangle drawn on 1 cm squared paper covers ${r} rows of ${c} squares. What is its area in square centimetres?` };
+  if (k === 4) return { eq: `${A} ÷ ${r}`, answer: String(c), wrongs: pos(c, [A - r, r, c + 1, c - 1, A]), ar: `شكل مستطيل مساحته ${A} من الوحدات المربعة، مرسوم على شبكة مربعات في ${r} صفوف متساوية. كم مربعًا في كل صف؟`, en: `A rectangle of area ${A} square units is drawn on a grid in ${r} equal rows. How many squares are in each row?` };
+  if (k === 5) return { eq: `${r} × ${c} tiles`, answer: String(A), wrongs: pos(A, slips), ar: `غُطّيت أرضية مستطيلة ببلاط مربع، فكان فيها ${r} صفوف، في كل صف ${c} بلاطات. كم بلاطة غطّت الأرضية؟`, en: `A rectangular floor is covered with square tiles: ${r} rows of ${c} tiles. How many tiles cover the floor?` };
+  return { eq: `grid ${r} × ${c}`, answer: String(A), wrongs: pos(A, slips), ar: `شكل مستطيل مرسوم على شبكة مربعات، فيه ${r} صفوف، في كل صف ${c} مربعات وحدة. كم مربع وحدة يغطي الشكل؟`, en: `A rectangle on a square grid has ${r} rows with ${c} unit squares in each. How many unit squares does it cover?` };
+});
+
 const composite = T('composite_L', /^محيط الشكل المركب ومساحته$/, [5, 5], ({ rng, diff }) => {
   const W = int(rng, 8, span(diff, 12, 16, 20)), H = int(rng, 6, span(diff, 10, 14, 18));
   const w = int(rng, 2, W - 3), h = int(rng, 2, H - 3);
@@ -977,24 +1003,63 @@ const pyth = T('pythagoras', /^نظريه فيثاغورس$/, [8, 8], ({ rng, di
 
 // ─── transformations and the coordinate plane ───────────────────────────────
 
-const reflectLine = T('reflect_line', /^الانعكاس$/, [4, 4], ({ rng, diff }) => {
-  const a = int(rng, 3, 8), x = int(rng, 1, a - 1), y = int(rng, 1, 9);
-  const dx = a - x;
-  // 0 in a vertical line, 1 in a horizontal line, 2 find the mirror line from a point and its image, 3 how far a point is from its image.
-  const k = pick(rng, [0, 1, 2, 3]);
+/**
+ * Grade 4 «الانعكاس» (S1 pp. 115-117, «أرسم صورة شكل بالانعكاس حول محور، وأصفه»). The book reflects a shape on a
+ * square grid in a drawn vertical or horizontal mirror line: each vertex and its image are the same number of squares
+ * from the line, on its other side, and no measure changes. It prints no coordinates and no equations, so until
+ * 2026-11-14 this generator's «(3 ، 4)» points and «x = 7» lines were Grade 6 work in a Grade 4 stem.
+ */
+const squaresAr = (n: number) => `${n} ${tamyiz(n, 'مربعات', 'مربعًا', 'مربع')}`;
+const reflectLine: Topic = { ...T('reflect_line', /^الانعكاس$/, [4, 4], ({ rng, diff }) => {
+  // 0 where the image of a vertex lies, 1 squares between a vertex and its image, 2 the grid line the image is on,
+  // 3 a side's length after the reflection, 4 what a reflection keeps.
+  const k = pick(rng, diff === 'easy' ? [0, 0, 1, 3] : [0, 1, 2, 3, 4]);
+  const n = int(rng, 3, diff === 'hard' ? 9 : 6);
+  const vertical = rng() < 0.5;
+  const [side, other, axis] = vertical
+    ? (rng() < 0.5 ? ['يمين', 'يسار', 'رأسي'] : ['يسار', 'يمين', 'رأسي'])
+    : (rng() < 0.5 ? ['فوق', 'أسفل', 'أفقي'] : ['أسفل', 'فوق', 'أفقي']);
+  if (k === 0) {
+    const ans = `على بُعد ${squaresAr(n)} ${other} المحور`;
+    return {
+      eq: `image ${n} ${side} ${axis}`, answer: ans,
+      wrongs: [`على بُعد ${squaresAr(n)} ${side} المحور`, `على بُعد ${squaresAr(2 * n)} ${other} المحور`, 'على المحور نفسه'],
+      ar: `على شبكة مربعات، يقع رأس شكل على بُعد ${squaresAr(n)} ${side} محور انعكاس ${axis}. أين تقع صورة هذا الرأس بالانعكاس حول المحور؟`,
+      en: `On a square grid, a vertex of a shape is ${n} squares ${{ يمين: 'to the right of', يسار: 'to the left of', فوق: 'above', أسفل: 'below' }[side]} a ${vertical ? 'vertical' : 'horizontal'} mirror line. Where is its image?`,
+    };
+  }
   if (k === 1) {
-    const b = int(rng, 3, 8), yy = int(rng, 1, b - 1), xx = int(rng, 1, 9);
-    const img: [number, number] = [xx, 2 * b - yy];
-    return { eq: `h ${pt(xx, yy)}, ${b}`, answer: pt(...img), wrongs: ptOpts(img, [[xx, yy], [xx, b], [2 * b - yy, xx], [2 * b - xx, yy], [xx, b + yy]]), ar: `انعكاس النقطة ${pt(xx, yy)} حول المستقيم الأفقي y = ${b}. ما إحداثيات صورتها؟`, en: `Reflect the point ${pt(xx, yy)} in the horizontal line y = ${b}. What are the coordinates of the image?` };
+    return {
+      eq: `between ${n}`, answer: String(2 * n), wrongs: pos(2 * n, [n, n + 1, 2 * n + 1, 2 * n - 1]),
+      ar: `على شبكة مربعات، يبعد رأس شكل ${squaresAr(n)} عن محور الانعكاس. كم مربعًا بين هذا الرأس وصورته بالانعكاس؟`,
+      en: `On a square grid, a vertex is ${n} squares from the mirror line. How many squares are there between the vertex and its image?`,
+    };
   }
   if (k === 2) {
-    const x2 = a + dx;
-    return { eq: `mirror ${pt(x, y)}, ${pt(x2, y)}`, answer: `x = ${a}`, wrongs: wrongsFrom(`x = ${a}`, [`x = ${x2 - x}`, `y = ${y}`, `x = ${x + x2}`, `y = ${a}`], j => `x = ${a + Math.abs(j)}`), ar: `صورة النقطة ${pt(x, y)} بالانعكاس حول مستقيم رأسي هي النقطة ${pt(x2, y)}. ما معادلة محور الانعكاس؟`, en: `The image of ${pt(x, y)} after a reflection in a vertical line is ${pt(x2, y)}. What is the equation of the line of reflection?` };
+    // numbered vertical grid lines; the mirror is line a, the vertex on line c < a; the image is on 2a − c
+    const a = int(rng, 6, 12), c = int(rng, Math.max(1, 2 * a - 20), a - 2);
+    const ans = 2 * a - c;
+    return {
+      eq: `grid line ${a} ${c}`, answer: String(ans), wrongs: pos(ans, [a + c, a - c + a - 1, c, a + (a - c) + 1, 2 * a]),
+      ar: `على شبكة مربعات خطوطها الرأسية مرقّمة من اليسار إلى اليمين، محور الانعكاس هو الخط الرأسي رقم ${a}، ورأس شكل على الخط الرأسي رقم ${c}. على أي خط رأسي تقع صورة هذا الرأس؟`,
+      en: `On a square grid whose vertical lines are numbered from left to right, the mirror line is vertical line ${a} and a vertex is on vertical line ${c}. On which vertical line is its image?`,
+    };
   }
-  if (k === 3) return { eq: `dist ${pt(x, y)}, ${a}`, answer: String(2 * dx), wrongs: pos(2 * dx, [dx, a, 2 * a, x + a, 2 * dx + 1]), ar: `ما المسافة بالوحدات بين النقطة ${pt(x, y)} وصورتها بالانعكاس حول المستقيم الرأسي x = ${a}؟`, en: `What is the distance, in units, between ${pt(x, y)} and its image after a reflection in the vertical line x = ${a}?` };
-  const ans: [number, number] = [a + dx, y];
-  return { eq: pt(x, y), answer: pt(...ans), wrongs: ptOpts(ans, [[x, y], [a, y], [x + dx, y], [y, a + dx], [a + dx, -y]]), ar: `انعكاس النقطة ${pt(x, y)} حول المستقيم الرأسي x = ${a}. ما إحداثيات صورتها؟`.replace(`x = ${a}`, `x = ${a}`), en: `Reflect the point ${pt(x, y)} in the vertical line x = ${a}. What are the coordinates of the image?` };
-});
+  if (k === 3) {
+    const L = int(rng, 3, 12), W = int(rng, 2, L - 1);
+    return {
+      eq: `keeps ${L} ${W}`, answer: String(L), wrongs: pos(L, [2 * L, L + W, W, L - 1]),
+      ar: `مستطيل طوله ${L} سم وعرضه ${W} سم، رُسمت صورته بالانعكاس حول محور. كم سنتيمترًا طول صورة المستطيل؟`,
+      en: `A rectangle is ${L} cm long and ${W} cm wide. Its image is drawn by a reflection in a mirror line. How many centimetres long is the image?`,
+    };
+  }
+  return {
+    eq: 'what a reflection keeps', answer: 'أطوال الأضلاع وقياسات الزوايا',
+    wrongs: ['اتجاه الشكل يمينًا ويسارًا', 'موقع الشكل على الشبكة', 'بُعد الشكل عن المحور يتضاعف'],
+    ar: 'أيّ مما يأتي يبقى كما هو في صورة الشكل بالانعكاس حول محور؟',
+    en: 'Which of these stays the same in the image of a shape after a reflection in a mirror line?',
+  };
+}), ownsDifficulty: true };
 
 const translate = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng, diff }) => {
   const m = span(diff, 5, 8, 10);
@@ -1560,8 +1625,58 @@ const clockWords = T('time_words', /^قراءه الوقت/, [3, 3], ({ rng }) =
   return { eq: `${HOURS_AR[h]} ${word}`, answer: clock(h2, m2), wrongs: wrongsFrom(clock(h2, m2), [clock(...addMinutes(h, 0, -off)), clock(h, 0), clock(...addMinutes(h, 0, off + 5)), clock(...addMinutes(h, 0, off - 5))], j => clock(...addMinutes(h, 0, off + 5 * Math.abs(j) + 10))), ar: `كيف تُكتب الساعة «${HOURS_AR[h]} ${word}» بالأرقام؟`, en: `How is the time «${HOURS_AR[h]} ${word}» (Arabic wording) written in digits?` };
 });
 
+const TICK_AR = ['', 'الأولى', 'الثانية', 'الثالثة', 'الرابعة'];
+/**
+ * Grade 3 «الوقت بالدقائق» — reading the clock to the minute, which is the
+ * lesson's objective: the minute hand a few small marks past a number, counting
+ * on by fives then ones, the time read in words, and a few minutes later across
+ * the hour («4:63» is the slip). Until 2026-11-14 the lesson drew the elapsed-time
+ * questions of the lessons after it.
+ */
+const clockMinutes = T('clock_minutes_g3', /^الوقت بالدقائق$/, [3, 3], ({ rng }) => {
+  const h = int(rng, 1, 11), nx = h + 1, k = pick(rng, [0, 1, 2, 3]);
+  if (k === 0) {
+    const n = int(rng, 1, 11), s = int(rng, 1, 4), m = 5 * n + s;
+    return { eq: `${h}, ${n}+${s}`, answer: clock(h, m), wrongs: wrongsFrom(clock(h, m), [clock(h, n + s), clock(nx, m), clock(h, 5 * n - s), ...(n < 11 ? [clock(h, 5 * (n + 1) + s)] : [])], j => clock(h, (m + 5 * Math.abs(j)) % 60)), ar: `يشير عقرب الدقائق إلى التدريجة ${TICK_AR[s]} بعد العدد ${n}، ويقع عقرب الساعات بين العددين ${h} و ${nx}. ما الوقت؟ (بين كل عددين متتاليين على الساعة 5 تدريجات، كل تدريجة دقيقة واحدة)`, en: `The minute hand points to the ${['', 'first', 'second', 'third', 'fourth'][s]} small mark after ${n}, and the hour hand is between ${h} and ${nx}. What time is it? (each small mark is one minute)` };
+  }
+  if (k === 1) {
+    const n = int(rng, 2, 11), s = int(rng, 1, 4), m = 5 * n + s;
+    return { eq: `5 × ${n} + ${s}`, answer: String(m), wrongs: pos(m, [n + s, 5 * n, 5 * (n + s), 5 * n - s, 10 * n + s]), ar: `يعدّ فارس دقائق الساعة: عدّ بالخمسات من العدد 12 حتى العدد ${n}، ثم عدّ ${minAr(s)} أخرى. كم دقيقة مضت بعد بداية الساعة؟`, en: `Fares counts in fives from 12 to ${n}, then counts on ${s} more minute${s === 1 ? '' : 's'}. How many minutes past the hour is it?` };
+  }
+  if (k === 2) {
+    let m = 0;
+    do m = int(rng, 11, 59); while (m % 5 === 0);
+    const say = (hr: number, mm: number) => `${HOURS_AR[hr]} و ${minAr(mm)}`;
+    const swap = (m % 10) * 10 + Math.floor(m / 10);
+    const ans = say(h, m);
+    return { eq: clock(h, m), answer: ans, wrongs: wrongsFrom(ans, [say(nx, m), say(h, 60 - m), ...(swap < 60 && swap > 10 && swap !== m ? [say(h, swap)] : [])], j => say(h, ((m + 5 * Math.abs(j)) % 49) + 11)), ar: `كيف نقرأ الوقت ${clock(h, m)}؟`, en: `How do we read the time ${clock(h, m)} in Arabic words?` };
+  }
+  const m = int(rng, 52, 59), d = int(rng, 61 - m, 9), m2 = m + d - 60;
+  return { eq: `${clock(h, m)} + ${d}`, answer: clock(nx, m2), wrongs: wrongsFrom(clock(nx, m2), [`${h}:${m + d}`, clock(h, m2), clock(nx, m + d - 50)], j => clock(nx, m2 + Math.abs(j))), ar: `تشير الساعة إلى ${clock(h, m)}. إلى أي وقت تشير بعد ${minAr(d)}؟`, en: `A clock shows ${clock(h, m)}. What will it show ${d} minutes later?` };
+});
+
+/**
+ * Grade 3 «الفترات الزمنية (1)»: elapsed time in minutes within one hour — the
+ * lesson's own limit, which the shared elapsed-time generator ignored (it crossed
+ * hours and asked how many minutes are in «5 ساعات و 35 دقيقة»). How long, when it
+ * ended, when it started, and which of two activities was longer.
+ */
+const elapsedInHour = T('elapsed_hour_g3', /^الفترات الزمنيه \(1\)$/, [3, 3], ({ rng, diff }) => {
+  const h = int(rng, 1, 11), step = diff === 'easy' ? 5 : 1;
+  const span2 = () => { const a = step * int(rng, 0, Math.floor(40 / step)); const b = step * int(rng, Math.ceil((a + 5) / step), Math.floor(59 / step)); return [a, b] as const; };
+  const [m1, m2] = span2(), d = m2 - m1, k = pick(rng, [0, 1, 2, 3]);
+  if (k === 0) return { eq: `${clock(h, m2)} − ${clock(h, m1)}`, answer: String(d), wrongs: pos(d, [m2, m1 + m2, d + 10, d - 10, 60 - d]), ar: `بدأت حصة الرسم الساعة ${clock(h, m1)} وانتهت الساعة ${clock(h, m2)}. كم دقيقة استغرقت؟`, en: `An art class starts at ${clock(h, m1)} and ends at ${clock(h, m2)}. How many minutes does it last?` };
+  if (k === 1) return { eq: `${clock(h, m1)} + ${d}`, answer: clock(h, m2), wrongs: wrongsFrom(clock(h, m2), [clock(h, d), clock(h + 1, m2), ...(m1 >= d ? [clock(h, m1 - d)] : []), ...(m2 + 10 < 60 ? [clock(h, m2 + 10)] : [])], j => clock(h, (m2 + Math.abs(j)) % 60)), ar: `بدأ سامي حلّ واجبه الساعة ${clock(h, m1)}، واستمر ${minAr(d)}. متى انتهى؟`, en: `Sami starts his homework at ${clock(h, m1)} and works for ${d} minutes. When does he finish?` };
+  if (k === 2) return { eq: `${clock(h, m2)} − ${d}`, answer: clock(h, m1), wrongs: wrongsFrom(clock(h, m1), [clock(h, d), clock(h - 1 || 12, m1), ...(m2 + d < 60 ? [clock(h, m2 + d)] : []), clock(h, m1 + 5)], j => clock(h, (m1 + 5 * Math.abs(j) + 5) % 60)), ar: `انتهت مباراة الساعة ${clock(h, m2)}، وقد استمرت ${minAr(d)}. متى بدأت؟`, en: `A match ends at ${clock(h, m2)} after lasting ${d} minutes. When did it start?` };
+  let [a1, a2] = span2(), [b1, b2] = span2();
+  while (a2 - a1 === b2 - b1) [b1, b2] = span2();
+  const [lw, lf, lt, sw, sf, st] = a2 - a1 > b2 - b1 ? ['قراءة ليلى', a1, a2, 'رسم سامي', b1, b2] as const : ['رسم سامي', b1, b2, 'قراءة ليلى', a1, a2] as const;
+  const gap = (lt - lf) - (st - sf);
+  return { eq: `(${lt} − ${lf}) − (${st} − ${sf})`, answer: String(gap), wrongs: pos(gap, [lt - lf, st - sf, lt - st, gap + 5, gap + 10]), ar: `قرأت ليلى من الساعة ${clock(h, a1)} إلى الساعة ${clock(h, a2)}، ورسم أخوها سامي من الساعة ${clock(h, b1)} إلى الساعة ${clock(h, b2)}. بكم دقيقة تزيد مدة ${lw} على مدة ${sw}؟`, en: `Laila reads from ${clock(h, a1)} to ${clock(h, a2)}, and her brother Sami draws from ${clock(h, b1)} to ${clock(h, b2)}. By how many minutes is ${lw === 'قراءة ليلى' ? "Laila's reading" : "Sami's drawing"} longer than ${sw === 'قراءة ليلى' ? "Laila's reading" : "Sami's drawing"}?` };
+});
+
 export const GEOMETRY_TOPICS: readonly Topic[] = [
-  perimeter, area, composite, parallelogramArea, triangleArea, trapezoidArea, rectPrism,
+  perimeter, areaUnits, area, composite, parallelogramArea, triangleArea, trapezoidArea, rectPrism,
   circleParts, sector, circumference, circleArea, constructions,
   prismCylinderVolume, pyramidConeVolume, prismCylinderSurface, pyramidConeSurface, sphere,
   angleKind, lineAndPoint, triBySides, triByAngles,
@@ -1578,5 +1693,5 @@ export const GEOMETRY_TOPICS: readonly Topic[] = [
   convertGen('units_mass', /^الغرام والكيلوغرام$/, ['mass'], [3, 3]), convertGen('units_volume', /^اللتر والمليلتر$/, ['volume'], [3, 3]),
   unitsMixed('units_length', /^وحدات قياس الطول$/, ['length_m', 'length_km']), unitsMixed('units_mass_g45', /^وحدات قياس الكتله$/, ['mass']),
   unitsMixed('units_capacity', /^وحدات قياس السعه$/, ['volume']), unitsMixed('units_capacity_length', /^وحدات قياس السعه والطول$/, ['length_m', 'volume']),
-  timeGen('time_g3', /^(?:الوقت بالدقائق|الفترات الزمنيه)/, [3, 3]), timeGen('time_g45', /^الزمن$/, [4, 5]), clockWords,
+  timeGen('time_g3', /^الفترات الزمنيه \(2\)$/, [3, 3]), timeGen('time_g45', /^الزمن$/, [4, 5]), clockWords, clockMinutes, elapsedInHour,
 ];

@@ -25,6 +25,7 @@ import { buildMinistryPlanDocx, type MinistryLessonPage } from './ministryPlan.t
 import { trackEvent } from '@/services/analytics';
 import { capturePdf } from './pdfCapture';
 import { saveBlob } from './webSave.ts';
+import { shareOrCopy, type ShareOutcome } from './shareText.ts';
 
 // Re-exported here so existing callers (`import { buildDeckSlidesHTML } from
 // '@/services/share'`) don't need to know it actually lives in its own pure
@@ -62,21 +63,21 @@ export async function copyToClipboard(text: string): Promise<void> {
 // ─── Share as text (native share sheet) ──────────────────────────────────────
 
 /**
+ * Opens the share sheet and always copies the text to the clipboard too, on
+ * web and in the app. See `shareText.ts` for why, and for what each outcome
+ * means. Callers say which happened: `copied` means the text is only on the
+ * clipboard, and `both` means a toast should say it was copied as well.
+ *
  * `Share.share` throws "Share is not supported in this browser" on
- * react-native-web whenever `navigator.share` is missing — true of most
- * desktop browsers, not an edge case. Same failure shape `Alert.alert` has on
- * web (see `services/confirm.ts`): looks fine on a phone, throws in the
- * browser teachers are actually demoed on. Falls back to the clipboard rather
- * than crashing the screen, and says which one happened so the caller can
- * tell the teacher correctly.
+ * react-native-web whenever `navigator.share` is missing. That is true of most
+ * desktop browsers, so there the copy is all that happens.
  */
-export async function shareAsText(text: string, title: string): Promise<'shared' | 'copied'> {
-  if (Platform.OS === 'web' && typeof navigator !== 'undefined' && !('share' in navigator)) {
-    await copyToClipboard(text);
-    return 'copied';
-  }
-  await Share.share({ message: text, title });
-  return 'shared';
+export async function shareAsText(text: string, title: string): Promise<ShareOutcome> {
+  return shareOrCopy(text, title, {
+    canShare: Platform.OS !== 'web' || (typeof navigator !== 'undefined' && 'share' in navigator),
+    copy: copyToClipboard,
+    share: (message, t) => Share.share({ message, title: t }),
+  });
 }
 
 // ─── PDF export ───────────────────────────────────────────────────────────────

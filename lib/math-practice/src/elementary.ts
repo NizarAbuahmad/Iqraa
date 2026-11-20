@@ -13,6 +13,7 @@
  */
 import type { ConcreteItem, DiffTier } from './index.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
+import { EARLY_CHOICE, EARLY_DRAWS, choosesByDifficulty, pickByDifficulty } from './earlyDifficulty.ts';
 
 export type ElementaryOp =
   | 'add' | 'sub' | 'mul' | 'div' | 'compare' | 'place'
@@ -134,6 +135,8 @@ const TABLE_MAX: Record<number, number> = { 1: 2, 2: 5, 3: 10, 4: 10, 5: 10, 6: 
 const PLACE_DIGITS: Record<number, number> = { 1: 2, 2: 3, 3: 4, 4: 6, 5: 8, 6: 7 };
 
 const TIER_SCALE: Record<DiffTier, number> = { easy: 0.1, medium: 0.5, hard: 1 };
+/** Grade 1 compares and orders two-digit numbers: 10 up to this, by tier. */
+const G1_COMPARE_MAX: Record<DiffTier, number> = { easy: 30, medium: 60, hard: 99 };
 
 export type Rng = () => number;
 export const int = (rng: Rng, lo: number, hi: number) => lo + Math.floor(rng() * (hi - lo + 1));
@@ -450,8 +453,8 @@ function addKinds(base: Base, max: number, rng: Rng): ConcreteItem {
   }
 }
 
-function subKinds(base: Base, max: number, rng: Rng): ConcreteItem {
-  const a = int(rng, 2, max);
+function subKinds(base: Base, max: number, rng: Rng, lo = 2): ConcreteItem {
+  const a = int(rng, lo, max);
   const b = int(rng, 1, a - 1);
   const d = a - b;
   switch (int(rng, 1, 4)) {
@@ -468,7 +471,7 @@ function subKinds(base: Base, max: number, rng: Rng): ConcreteItem {
     }
     case 2:
     case 3: {
-      const x = int(rng, 6, Math.max(6, max));
+      const x = int(rng, Math.max(6, lo), Math.max(6, max));
       const y = int(rng, 3, x - 3);
       const t = x - y;
       const wr = wrongNums(t, rng, [x + y, t + 10, t - 10, t + 1, t - 1]);
@@ -610,12 +613,12 @@ function divKinds(base: Base, b: number, q0: number, grade: number, diff: DiffTi
   }
 }
 
-function compareKinds(base: Base, max: number, rng: Rng): ConcreteItem {
+function compareKinds(base: Base, max: number, rng: Rng, lo = 0): ConcreteItem {
   const show = (v: number) => String(v);
   const what = { ar: 'الأعداد', one: 'العدد', en: 'numbers' };
   const k = int(rng, 1, 3);
-  if (k === 1) return orderItem(base, distinctInts(rng, 3, 0, max), show, rng() < 0.5, what);
-  if (k === 2 || max < 100) return extremeItem(base, distinctInts(rng, 4, 0, max), show, rng() < 0.5, what);
+  if (k === 1) return orderItem(base, distinctInts(rng, 3, lo, max), show, rng() < 0.5, what);
+  if (k === 2 || max < 100) return extremeItem(base, distinctInts(rng, 4, lo, max), show, rng() < 0.5, what);
   // The greatest / least number made from given digits — place value deciding order.
   const L = Math.min(4, String(max).length);
   const digits = distinctInts(rng, L, 1, 9);
@@ -1028,8 +1031,10 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'sub': {
-      if (int(rng, 0, 4) > 0) return subKinds(base, max, rng);
-      const a = int(rng, 2, max);
+      // Grade 2 «الطرح» takes a 2- or 3-digit number FROM a 3-digit one: an easy paper asked «11 − 4».
+      const [lo, hi] = grade === 2 ? [100, 999] : [2, max];
+      if (int(rng, 0, 4) > 0) return subKinds(base, hi, rng, lo);
+      const a = int(rng, lo, hi);
       const b = int(rng, 1, a - 1);
       const d = a - b;
       return {
@@ -1081,9 +1086,13 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'compare': {
-      if (int(rng, 0, 3) > 0) return compareKinds(base, max, rng);
-      const a = int(rng, 0, max);
-      const b = rng() < 0.15 ? a : int(rng, 0, max);
+      // Grade 1 compares and orders «ضمن منزلتين» (u2_l4, u2_l5): the add range
+      // (0–10 at easy and medium) never showed a two-digit number (review, 2026-11-15).
+      // Grade 2 compares and orders numbers «ضمن 3 منازل»: an easy paper asked about «10، 6، 22، 20».
+      const [lo, hi] = grade === 1 ? [10, G1_COMPARE_MAX[diff]] : grade === 2 ? [100, 999] : [0, max];
+      if (int(rng, 0, 3) > 0) return compareKinds(base, hi, rng, lo);
+      const a = int(rng, lo, hi);
+      const b = rng() < 0.15 ? a : int(rng, lo, hi);
       const sign = a > b ? '>' : a < b ? '<' : '=';
       return {
         ...base, eq: `${a} ___ ${b}`, answer: sign,
@@ -1097,7 +1106,10 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       // their tiers start higher, or a Grade 4 paper never passed 4 digits.
       // Grades 1–3 keep 2/3/4 capped by the grade.
       const top = PLACE_DIGITS[grade] ?? 4;
-      const digits = Math.min(top, (diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4) + Math.max(0, top - 4));
+      // Grade 3's lesson is «ضمن الألوف»: an easy paper asked about «الرقم 8 في العدد 18».
+      // Grade 2's is «لأرقام عدد مكوّن من 3 منازل»: an easy paper wrote «10 + 2» in expanded form.
+      const digits = grade === 2 ? 3 : grade === 3 ? (diff === 'easy' ? 3 : 4)
+        : Math.min(top, (diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4) + Math.max(0, top - 4));
       if (int(rng, 0, 3) > 0) return placeKinds(base, digits, rng);
       // The digit asked about must occur once: «الرقم 4 في العدد 344» has two
       // place values and no single answer.
@@ -1107,7 +1119,8 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       for (let t = 0; t < 50 && once.length === 0; t++) {
         n = int(rng, 10 ** (digits - 1), 10 ** digits - 1);
         s = String(n);
-        once = [...s].flatMap((c, i) => (s.indexOf(c) === s.lastIndexOf(c) ? [i] : []));
+        // and is not a zero: «القيمة المنزلية للرقم 0» has nothing to find
+        once = [...s].flatMap((c, i) => (c !== '0' && s.indexOf(c) === s.lastIndexOf(c) ? [i] : []));
       }
       if (once.length === 0) { n = Number('1234'.slice(0, digits)); s = String(n); once = [0]; }
       const pos = choose(rng, once);
@@ -1312,7 +1325,12 @@ export function makeElementaryItem(
   let best: ConcreteItem | null = null;
   let bestScore = Infinity;
   let fresh = 0;
-  for (let attempt = 0; attempt < 25 && fresh < FRESH_DRAWS; attempt++) {
+  // Grades 1–4 choose by difficulty among the least-served kinds (`earlyDifficulty.ts`).
+  const byDifficulty = choosesByDifficulty(g);
+  let least: ConcreteItem[] = [];
+  const draws = byDifficulty ? EARLY_DRAWS : FRESH_DRAWS;
+  const enough = () => fresh >= draws && (!byDifficulty || least.length >= EARLY_CHOICE);
+  for (let attempt = 0; attempt < 6 * draws && !enough(); attempt++) {
     const op = pool[int(rng, 0, pool.length - 1)]!;
     // The id's last digit decides a true/false item's claim (see
     // `formatItem`); a fixed suffix made every one of them «صح».
@@ -1323,10 +1341,15 @@ export function makeElementaryItem(
     if (score < bestScore) {
       best = item;
       bestScore = score;
+      least = [item];
+    } else if (score === bestScore && !least.some(x => x.eq === item!.eq)) {
+      least.push(item);
     }
-    if (score === 0) break;
+    if (score === 0 && !byDifficulty) break;
   }
-  item = best ?? item;
+  item = byDifficulty && least.length > 0
+    ? pickByDifficulty(least, diff, rng, x => ({ ar: x.promptAr ?? x.eq, answer: x.answer }))
+    : best ?? item;
   used.add(`stem:${item!.eq}`);
   used.add(`ask:${item!.promptAr ?? item!.eq}`);
   return item!;

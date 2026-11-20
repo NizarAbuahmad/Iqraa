@@ -71,3 +71,29 @@ describe('counted nouns', () => {
     assert.deepEqual([...bad].slice(0, 400), []);
   });
 });
+
+describe('a noun after a decimal', () => {
+  // «في 3.7 ساعات» (Grade 6 «خطة حل المسألة: حل مسألة أبسط», status log 2026-11-14).
+  // The bank writes the singular after a number with a decimal part, as its dinar
+  // stems already do («بـ 2.5 دينار»): «3.7 ساعة».
+  it('is never the plural', () => {
+    const rng = seeded(11);
+    const bad = new Set<string>();
+    let seen = 0;
+    const plurals = NOUNS.map(f => f[0]).concat(['دقائق', 'سنوات', 'كيلومترات']);
+    const re = new RegExp(`(?<![\\d.])(\\d+\\.\\d+) (${plurals.join('|')}|${NOUNS.map(f => f[2]).join('|')}|ساعة)(?![\\u0621-\\u065F\\u0670-\\u06FF])`, 'g');
+    for (const topic of TOPICS) {
+      for (let grade = topic.grades[0]; grade <= topic.grades[1]; grade++) {
+        for (let i = 0; i < 150; i++) {
+          const ar = topic.make({ rng, diff: (['easy', 'medium', 'hard'] as const)[i % 3], grade }).ar;
+          for (const m of ar.matchAll(re)) {
+            seen++;
+            if (plurals.includes(m[2]!)) bad.add(`${topic.id}: «${m[0]}» — ${ar}`);
+          }
+        }
+      }
+    }
+    assert.ok(seen > 50, `only ${seen} nouns after a decimal read`);
+    assert.deepEqual([...bad].slice(0, 50), []);
+  });
+});

@@ -18,7 +18,9 @@ const EXP = { topic: 'المعادلات الأسية', subject: 'الرياضي
 const MOLE = { topic: 'المول والكتلة المولية', subject: 'الكيمياء', grade: 'الصف العاشر' };
 // A thin bank: `vectors` holds five solved items. «قانون الجيوب» (three) was the
 // example until 2026-11-13; it has its own generator now and never runs short.
-const THIN = { topic: 'المتجهات في المستوى الإحداثي', subject: 'الرياضيات', grade: 'الصف العاشر' };
+// A lesson on a thin bank family: the systems lab draws `system_graph`, eight items. (It was the
+// vectors lesson, five items, until that lesson got its own generator on 2026-11-14.)
+const THIN = { topic: 'معمل برمجية جيوجبرا: حل أنظمة المعادلات بيانياً', subject: 'الرياضيات', grade: 'الصف العاشر' };
 
 const squash = (s: string) => s.replace(/[\s،,]+/g, '');
 const questions = (w: WorksheetOutput) => w.sections.flatMap(s => s.questions);
@@ -126,10 +128,10 @@ describe('the total the teacher picked', () => {
   });
 
   it('degrades to a short paper on a thin bank without repeating anything', async () => {
-    // The vectors family has five items in total: one to study, one to finish, three to practise.
+    // The family has eight items in total: one to study, one to finish, six to practise.
     const w = await make(THIN, { numQuestions: 12 });
     const total = questions(w).length + (w.workedExample ? 1 : 0);
-    assert.ok(total <= 5, `${total} items from a 5-item bank`);
+    assert.ok(total <= 8, `${total} items from an 8-item bank`);
     const texts = questions(w).map(q => q.text);
     assert.equal(new Set(texts).size, texts.length);
   });
@@ -137,10 +139,10 @@ describe('the total the teacher picked', () => {
 
 describe('the "shorter than asked" notice counts the worked example', () => {
   it('reports the example among what was produced, matching the total that was requested', async () => {
-    // The vectors family holds five items: one to study, one to finish, three to practise.
+    // The family holds eight items: one to study, one to finish, six to practise.
     const w = await make(THIN, { numQuestions: 12 });
     const delivered = questions(w).length + (w.workedExample ? 1 : 0);
-    assert.ok(w.shortfall, 'a three-item bank cannot fill twelve');
+    assert.ok(w.shortfall, 'an eight-item bank cannot fill twelve');
     assert.equal(w.shortfall!.requested, 12);
     assert.equal(w.shortfall!.produced, delivered, 'the example is one of the items the total promised');
   });

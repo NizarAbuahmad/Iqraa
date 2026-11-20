@@ -72,3 +72,31 @@ export function hasSentence(frame: string): boolean {
 export function sameAsk(frameA: string, frameB: string): boolean {
   return sameKind(frameA, frameB, MAX_WORDS_CHANGED);
 }
+
+/**
+ * The evaluation types a Grade 1 paper may hold (decided 2026-11-13). Six-year-olds
+ * learning to read answer by choosing, saying صح/خطأ, matching, writing one letter,
+ * word or number in a blank, or doing something with objects while the teacher
+ * watches. `short_answer`, `open_ended` and `problem_solving` ask for written
+ * sentences or written working, which a Grade 1 child cannot give; `read_aloud`
+ * and `dictation` are never generated for any grade.
+ */
+export const FIRST_GRADE_EVALUATION_TYPES = [
+  'multiple_choice', 'true_false', 'matching', 'fill_blank', 'practical_task',
+] as const;
+
+/** What a Grade 1 evaluation asks for when none of its stored types is allowed. */
+export const FIRST_GRADE_DEFAULT_TYPES = ['multiple_choice', 'true_false'] as const;
+
+/**
+ * The types an evaluation of this grade may be generated with: unchanged for every
+ * grade but Grade 1, which keeps only `FIRST_GRADE_EVALUATION_TYPES`. Used when an
+ * evaluation is created and again when it is generated, so an evaluation saved
+ * before the rule (or by an old app) is held to it too; an empty result is the
+ * caller's to handle.
+ */
+export function evaluationTypesForGrade<T extends string>(gradeId: string | null | undefined, types: readonly T[]): T[] {
+  if (gradeId !== 'grade-1') return [...types];
+  const allowed: readonly string[] = FIRST_GRADE_EVALUATION_TYPES;
+  return types.filter(t => allowed.includes(t));
+}

@@ -25,6 +25,7 @@ import { G8_TOPICS } from './g8.ts';
 import { G7_TOPICS } from './g7.ts';
 import { G5_TOPICS } from './g5.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
+import { EARLY_CHOICE, EARLY_DRAWS, choosesByDifficulty, pickByDifficulty } from './earlyDifficulty.ts';
 import {
   dinars, gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tamyiz, tier, valueOf, wrongsFrom,
   type Ctx, type Draft, type Rng, type Topic,
@@ -349,10 +350,53 @@ const estProd: Topic = {
   },
 };
 
+/**
+ * Grade 3 «تقدير ناتج القسمة» divides a TWO-digit number by a one-digit one (the
+ * lesson's objective); the shared path below gave Grade 3 «237 ÷ 8». Round the
+ * dividend to the nearest ten when that ten divides evenly (62 ÷ 3 ≈ 60 ÷ 3), or
+ * take the nearest multiple of the divisor — a basic fact (58 ÷ 7 ≈ 56 ÷ 7).
+ */
+function estQuotG3(rng: Rng): Draft {
+  const k = pick(rng, [0, 1, 2]);
+  const ints = (est: number, xs: number[]) => numWrongs(est, xs.filter(x => Number.isInteger(x) && x > 0 && x !== est));
+  for (;;) {
+    const d = int(rng, k === 2 ? 3 : 2, 9), n = int(rng, 11, 99);
+    if (k === 1) {
+      const r = n % d;
+      if (r === 0 || 2 * r === d) continue; // already a fact, or two multiples equally near
+      const M = Math.round(n / d) * d, est = M / d;
+      if (est < 2 || est > 10) continue;
+      return {
+        eq: `${n} ÷ ${d}`, answer: String(est),
+        wrongs: ints(est, [M, est + 1, est - 1, Math.round(n / 10) * 10 / d, n - d]),
+        ar: `قدّر ناتج ${n} ÷ ${d} باستعمال الأعداد المتناغمة (أقرب عدد إلى ${n} من مضاعفات ${d}).`,
+        en: `Estimate ${n} ÷ ${d} using compatible numbers (the multiple of ${d} nearest to ${n}).`,
+      };
+    }
+    const R = Math.round(n / 10) * 10;
+    if (R === n || R % d !== 0 || R / d < 2) continue;
+    const est = R / d;
+    const wrongs = ints(est, [Math.floor(n / d), est * 10, R, (R - 10) / d, (R + 10) / d]);
+    if (k === 2) {
+      return {
+        eq: `${n} ÷ ${d}`, answer: String(est), wrongs,
+        ar: `وُزّع ${counted(n, 'أقلام', 'قلمًا', 'قلم')} بالتساوي على ${d} مجموعات. قدّر عدد أقلام كل مجموعة بتقريب ${n} إلى أقرب عشرة.`,
+        en: `${n} pencils are shared equally among ${d} groups. Estimate how many pencils each group gets by rounding ${n} to the nearest ten.`,
+      };
+    }
+    return {
+      eq: `${n} ÷ ${d}`, answer: String(est), wrongs,
+      ar: `قدّر ناتج ${n} ÷ ${d} بتقريب ${n} إلى أقرب عشرة.`,
+      en: `Estimate ${n} ÷ ${d} by rounding ${n} to the nearest ten.`,
+    };
+  }
+}
+
 /** Estimate by rounding the dividend; with compatible numbers (the Grade 5 objective); and a word problem. */
 const estQuot: Topic = {
   id: 'est_quot', match: /تقدير.*قسم/, grades: [3, 6],
   make({ rng, diff, grade }) {
+    if (grade <= 3) return estQuotG3(rng);
     const k = pick(rng, [0, 1, 2]);
     const d = k === 2 ? int(rng, 3, 9) : int(rng, 2, 9);
     const q = int(rng, 2, 9);
@@ -1221,6 +1265,49 @@ function fracWrongs(answer: string, cands: string[]): string[] {
   return out;
 }
 
+/** «جزأين متساويين», «4 أجزاء متساوية», «12 جزءًا متساويًا». */
+const equalParts = (x: number) => (x === 2 ? 'جزأين متساويين' : x <= 10 ? `${x} أجزاء متساوية` : `${x} جزءًا متساويًا`);
+
+/**
+ * Grade 3 «الكسور المتكافئة» finds them with models and the number line (the
+ * objective), on fraction strips no finer than twelfths. The shared path below
+ * multiplies numerator and denominator by up to 9 («36/45»), a Grade 4 rule.
+ * The missing numerator, which listed fraction is equivalent, two strips, two
+ * number lines.
+ */
+function equivFracG3(rng: Rng): Draft {
+  const d = pick(rng, [2, 3, 4, 6]), k = int(rng, 2, Math.floor(12 / d));
+  let n = int(rng, 1, d - 1);
+  while (gcd(n, d) !== 1) n = int(rng, 1, d - 1);
+  const D = d * k, N = n * k, ans = `${N}/${D}`, kind = pick(rng, [0, 1, 2, 3]);
+  const slips = [`${n}/${D}`, `${N}/${d}`, `${n + k}/${D}`, `${N + 1}/${D}`, `${N - 1}/${D}`, `${n + k}/${d + k}`];
+  if (kind === 1) {
+    const wrongs = fracWrongs(ans, slips);
+    const L = listed(rng, ans, wrongs);
+    return { eq: `${n}/${d}`, answer: ans, wrongs, ar: `أيّ الكسور الآتية يكافئ الكسر ${n}/${d}: ${L.ar}؟`, en: `Which of these fractions is equivalent to ${n}/${d}: ${L.en}?` };
+  }
+  if (kind === 2) {
+    const coloured = n === 1 ? 'جزء واحد' : n === 2 ? 'جزآن' : String(n);
+    return {
+      eq: `${n}/${d} = ?/${D}`, answer: String(N), wrongs: numWrongs(N, [n, n + k, D - N, N + 1, N - 1].filter(x => x > 0 && x !== N)),
+      ar: `شريطان متطابقان: قُسّم الأول إلى ${equalParts(d)} ولُوّن ${coloured} منه، وقُسّم الثاني إلى ${equalParts(D)}. كم جزءًا نلوّن من الشريط الثاني ليكون الجزء الملوّن منه مساويًا للجزء الملوّن من الأول؟`,
+      en: `Two identical strips: the first is cut into ${d} equal parts with ${n} coloured; the second into ${D} equal parts. How many parts of the second must be coloured to colour as much as the first?`,
+    };
+  }
+  if (kind === 3) {
+    return {
+      eq: `${n}/${d} on a line of ${D}ths`, answer: ans, wrongs: fracWrongs(ans, slips),
+      ar: `خطّا أعداد متطابقان من 0 إلى 1: قُسّم الأول إلى ${equalParts(d)}، والثاني إلى ${equalParts(D)}. أيّ كسر على الخط الثاني يقع عند النقطة نفسها التي يقع عندها الكسر ${n}/${d} على الخط الأول؟`,
+      en: `Two identical number lines from 0 to 1: the first is cut into ${d} equal parts, the second into ${D}. Which fraction on the second line is at the same point as ${n}/${d} on the first?`,
+    };
+  }
+  return {
+    eq: `${n}/${d} = ?/${D}`, answer: String(N), wrongs: numWrongs(N, [n + k, n * (k - 1), n + D - d, N + d].filter(x => x > 0 && x !== N)),
+    ar: `أكمل لتحصل على كسرين متكافئين: ${n}/${d} = ؟/${D}`,
+    en: `Complete the equivalent fractions: ${n}/${d} = ?/${D}`,
+  };
+}
+
 /**
  * Equivalent fractions: the missing numerator; which listed fraction is
  * equivalent; multiplying numerator and denominator by the same number; and
@@ -1229,6 +1316,7 @@ function fracWrongs(answer: string, cands: string[]): string[] {
 const equivFrac: Topic = {
   id: 'equiv_frac', match: /الكسور المتكافئه/, grades: [3, 5],
   make({ rng, diff, grade }) {
+    if (grade <= 3) return equivFracG3(rng);
     const d = pick(rng, [2, 3, 4, 5, 6, 8]);
     let n = int(rng, 1, d - 1);
     while (gcd(n, d) !== 1) n = int(rng, 1, d - 1);
@@ -2254,7 +2342,7 @@ const hindiNumerals: Topic = {
       const value = dig * p;
       const others = PLACE_G3.map(([q]) => dig * q).filter(v => v !== value);
       return {
-        eq: `${dig} × ${p} in ${n}`, answer: String(value), wrongs: wrongsFrom(String(value), [dig, ...others]),
+        eq: `${dig} × ${p} in ${n}`, answer: toHindi(value), wrongs: wrongsFrom(toHindi(value), [dig, ...others].map(toHindi)),
         ar: `ما قيمة الرقم ${toHindi(dig)} في العدد ${toHindi(n)}؟`,
         en: `What is the value of the digit ${toHindi(dig)} in the number ${toHindi(n)}?`,
       };
@@ -2605,25 +2693,40 @@ export function topicFor(title: string, grade: number): Topic | null {
  * nearly every paper, and «أعد التجهيز» could no longer find a paper that
  * avoids the last one (`quizRegenerateStems.test.ts`). A generator makes new
  * numbers on every draw, so nothing is lost here.
+ *
+ * Grades 1–4 draw more and choose by difficulty among the least-served kinds
+ * (`pickByDifficulty`, `earlyDifficulty.ts`): their generators take their
+ * numbers from the lesson's range and mostly ignored `diff`, so an easy and a
+ * hard paper drew the same questions (Grade 1–4 sweep, 2026-11-13).
  */
-export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used: Set<string>, rng: Rng = Math.random): ConcreteItem {
+export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used: Set<string>, rng: Rng = Math.random, opts: { word?: boolean } = {}): ConcreteItem {
   const served = servedFrames(used);
   let d: Draft | null = null;
   let best: Draft | null = null;
   let bestServed = Infinity;
   let fresh = 0;
-  for (let attempt = 0; attempt < 25 && fresh < FRESH_DRAWS; attempt++) {
-    d = topic.make({ rng, diff, grade });
+  const byDifficulty = choosesByDifficulty(grade) && !topic.ownsDifficulty;
+  /** Grades 1–4: every fresh draw of the least-served kinds, to choose among. */
+  let least: Draft[] = [];
+  const draws = byDifficulty ? EARLY_DRAWS : FRESH_DRAWS;
+  // Grades 1–4 go on drawing until the least-served kinds offer a choice of
+  // `EARLY_CHOICE`, so a later item of a paper is chosen by difficulty too.
+  const enough = () => fresh >= draws && (!byDifficulty || least.length >= EARLY_CHOICE);
+  for (let attempt = 0; attempt < 6 * draws && !enough(); attempt++) {
+    d = topic.make({ rng, diff, grade, ...(opts.word ? { word: true } : {}) });
     if (used.has(`stem:${d.ar}`)) continue;
     fresh += 1;
     const n = spreadScore(stemFrame(d.ar), served);
     if (n < bestServed) {
       best = d;
       bestServed = n;
+      least = [d];
+    } else if (n === bestServed && !least.some(x => x.ar === d!.ar)) {
+      least.push(d);
     }
-    if (n === 0) break;
+    if (n === 0 && !byDifficulty) break;
   }
-  d = best ?? d;
+  d = byDifficulty && least.length > 0 ? pickByDifficulty(least, diff, rng, x => x) : best ?? d;
   used.add(`stem:${d!.ar}`);
   used.add(`ask:${d!.ar}`);
   const wrongs = d!.wrongs.filter(w => w !== d!.answer).slice(0, 3);
@@ -2631,5 +2734,6 @@ export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used:
     id: `topic-${topic.id}-${grade}-${used.size}-${int(rng, 0, 9)}`,
     family: 'topic', diff, eq: d!.eq, answer: d!.answer, wrongs,
     promptAr: d!.ar, promptEn: d!.en,
+    ...(d!.word ? { kind: 'word' as const, wordAr: d!.ar, wordEn: d!.en } : {}),
   };
 }

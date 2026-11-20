@@ -672,11 +672,31 @@ describe('answers recomputed from the stem', () => {
     for (const { item, grade } of draws('equiv_frac', 300)) {
       const p = item.promptAr!;
       const [n, d, k] = nums(p);
+      // Grade 3 works on fraction strips no finer than twelfths
+      if (grade === 3) for (const f of [...p.matchAll(/\d+\/(\d+)/g), ...item.answer.matchAll(/\d+\/(\d+)/g)]) assert.ok(Number(f[1]) <= 12, `${p} → ${item.answer}`);
+      const parts = (s: string) => (/^جزأين|^جزآن/.test(s) ? 2 : /^جزء واحد/.test(s) ? 1 : Number(s.match(/^\d+/)![0]));
+      const strip = p.match(/قُسّم الأول إلى (.+?) ولُوّن (.+?) منه، وقُسّم الثاني إلى (.+?)\. كم جزءًا/);
+      const line = p.match(/قُسّم الأول إلى (.+?)، والثاني إلى (.+?)\. .*الكسر (\d+)\/(\d+) على الخط الأول/);
+      if (strip) {
+        kinds.add('strips'); assert.equal(grade, 3, p);
+        const [a, c, b] = [parts(strip[1]!), parts(strip[2]!), parts(strip[3]!)];
+        assert.equal(Number(item.answer) * a, c * b, p);
+        continue;
+      }
+      if (line) {
+        kinds.add('lines'); assert.equal(grade, 3, p);
+        const [a, b, top, bot] = [parts(line[1]!), parts(line[2]!), Number(line[3]), Number(line[4])];
+        assert.equal(a, bot, p);
+        assert.equal(Number(item.answer.split('/')[1]), b, p);
+        assert.ok(close(value(item.answer)!, top / bot), p);
+        for (const w of item.wrongs) assert.ok(!close(value(w)!, top / bot), `${p}: ${w}`);
+        continue;
+      }
       if (has(p, 'أكمل')) { kinds.add('complete'); assert.ok(close(Number(item.answer) / k!, n! / d!), p); }
       else if (has(p, 'يكافئ الكسر')) {
         kinds.add('which');
         for (const o of listOf(p)) assert.equal(close(value(o)!, n! / d!), o === item.answer, `${p}: ${o}`);
-      } else if (has(p, 'اضرب كلًّا')) { kinds.add('multiply'); assert.equal(item.answer, `${n! * k!}/${d! * k!}`, p); }
+      } else if (has(p, 'اضرب كلًّا')) { kinds.add('multiply'); assert.ok(grade >= 4, `${p}: the rule is Grade 4's, Grade 3 uses models`); assert.equal(item.answer, `${n! * k!}/${d! * k!}`, p); }
       else if (has(p, 'أبسط صورة')) {
         kinds.add('simplest');
         assert.ok(grade >= 4, `${p}: simplest form is a Grade 4 objective`);
@@ -684,7 +704,7 @@ describe('answers recomputed from the stem', () => {
         lowest(item.answer);
       } else assert.fail(`unknown stem: ${p}`);
     }
-    assert.equal(kinds.size, 4, [...kinds].join());
+    assert.equal(kinds.size, 6, [...kinds].join());
 
     const rKinds = new Set<string>();
     for (const { item } of draws('ratio_equiv', 300)) {

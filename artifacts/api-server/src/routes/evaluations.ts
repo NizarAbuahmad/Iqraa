@@ -61,6 +61,7 @@ import {
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
 import { inPaperOrder } from "../modules/assessment/paperOrder";
+import { FIRST_GRADE_DEFAULT_TYPES, evaluationTypesForGrade } from "@workspace/exam-paper";
 import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import {
   assembleLivePaper,
@@ -354,11 +355,21 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
       ? req.body.difficulty
       : "standard";
 
-    const requestedTypes: QuestionType[] = Array.isArray(req.body?.assessmentTypes)
+    const askedTypes: QuestionType[] = Array.isArray(req.body?.assessmentTypes)
       ? req.body.assessmentTypes.filter((t: QuestionType) => GENERATABLE_TYPES.includes(t))
       : [];
-    if (requestedTypes.length === 0) {
+    if (askedTypes.length === 0) {
       res.status(400).json({ error: "Select at least one assessment type" });
+      return;
+    }
+    // A Grade 1 paper is answered by choosing, matching, one word in a blank or a
+    // task the teacher watches — never written sentences (`evaluationTypesForGrade`).
+    const requestedTypes = evaluationTypesForGrade(book.gradeId, askedTypes);
+    if (requestedTypes.length === 0) {
+      res.status(400).json({
+        error: "A Grade 1 evaluation takes multiple choice, true/false, matching, fill in the blank or a practical task",
+        code: "grade1_types",
+      });
       return;
     }
 
@@ -449,7 +460,8 @@ router.post("/evaluations/from-worksheet", async (req: AuthenticatedRequest, res
       return;
     }
 
-    const converted = convertWorksheet(worksheet, language);
+    // A Grade 1 paper holds only the types a six-year-old can answer (`fromWorksheet.ts`).
+    const converted = convertWorksheet(worksheet, language, { firstGrade: book.gradeId === "grade-1" });
     if (!converted.ok) {
       res.status(400).json({ error: "Some questions have no answer in the key", missingKey: converted.missingKey });
       return;
@@ -496,7 +508,8 @@ router.post("/evaluations/from-worksheet", async (req: AuthenticatedRequest, res
           objectiveIds: [objectiveId],
           difficulty: "standard",
           targetQuestionCount: converted.questions.length,
-          assessmentTypes: [...new Set(converted.questions.map(q => q.type))],
+          // The converter already keeps a Grade 1 paper to its types; this is the backstop.
+          assessmentTypes: evaluationTypesForGrade(book.gradeId, [...new Set(converted.questions.map(q => q.type))]),
           language: book.subjectId === "english" ? "en" : language,
           levelScaleId: defaultScale.id,
           classGroupId,
@@ -817,15 +830,22 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
 
 router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedRequest, res) => {
   try {
-    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
-    if (!evaluation) {
+    const stored = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!stored) {
       res.status(404).json({ error: "Evaluation not found" });
       return;
     }
-    if (evaluation.status !== "draft") {
+    if (stored.status !== "draft") {
       res.status(409).json({ error: "Only a draft can be generated into" });
       return;
     }
+    // A Grade 1 evaluation saved before its types were limited (or by an old app)
+    // is generated with the Grade 1 ones: what it kept, else choice and صح/خطأ.
+    const gradeTypes = evaluationTypesForGrade(stored.gradeId, stored.assessmentTypes);
+    const evaluation = {
+      ...stored,
+      assessmentTypes: gradeTypes.length > 0 ? gradeTypes : [...FIRST_GRADE_DEFAULT_TYPES] as QuestionType[],
+    };
 
     const { found: objectives, missing } = resolveObjectiveIds(evaluation.objectiveIds);
     if (objectives.length === 0) {
@@ -870,6 +890,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
     let generator: "mock" | "llm" = "mock";
     let modelId: string | null = null;
     const generationNotes: string[] = [];
+    const dropped = stored.assessmentTypes.filter(t => !evaluation.assessmentTypes.includes(t));
+    if (dropped.length > 0) {
+      generationNotes.push(
+        `Grade 1: generated with ${evaluation.assessmentTypes.join(", ")}; ${dropped.join(", ")} ask for written answers a Grade 1 child cannot give.`,
+      );
+    }
 
     // The exact request handed to the generator, stored on the evaluation —
     // the schema has promised this since Phase 3 and nothing ever wrote it.

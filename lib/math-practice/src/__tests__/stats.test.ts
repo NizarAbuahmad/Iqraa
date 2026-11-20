@@ -392,9 +392,13 @@ describe('statistics: answers recomputed', () => {
 
   it('reading a table of counts', () => {
     const kinds: Record<number, Set<string>> = { 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set() };
-    for (const id of ['read_data_g12', 'read_data_g34']) for (const item of draws(id, 300)) {
+    const g2: Record<string, Set<string>> = { read_data_g12: new Set(), read_data_tally_g2: new Set() };
+    for (const id of ['read_data_g12', 'read_data_tally_g2', 'read_data_g34']) for (const item of draws(id, 300)) {
       const p = item.promptAr!, g = item.id.split('-')[2]!;
-      const kind = (k: string) => { assert.equal(id, 'read_data_g12', p); kinds[Number(g)]!.add(k); };
+      const kind = (k: string) => { assert.notEqual(id, 'read_data_g34', p); kinds[Number(g)]!.add(k); g2[id]!.add(k); };
+      // Grade 2's picture lessons never draw a tally, its tally lessons never a picture (2026-11-15)
+      if (id === 'read_data_g12') assert.doesNotMatch(p, /إشار/, p);
+      if (id === 'read_data_tally_g2') assert.doesNotMatch(p, /صور/, p);
       const upper = (k: string) => { assert.equal(id, 'read_data_g34', p); kinds[Number(g)]!.add(k); };
       if (has(p, 'في منتصف المسافة')) {
         // halfway between two lines of the scale, which are one step apart
@@ -414,18 +418,7 @@ describe('statistics: answers recomputed', () => {
         assert.ok(Number.isInteger(v / per), p);
         continue;
       }
-      if (has(p, 'التمثيل بالنقاط')) {
-        // count the dots over every value from the asked one up
-        upper('dots');
-        assert.equal(g, '4', `dot plots are a Grade 4 lesson: ${p}`);
-        const rows = [...p.matchAll(/(\d+): (●*)/g)].map(m => [Number(m[1]), m[2]!.length] as const);
-        assert.equal(rows.length, 6, p);
-        const v = Number(p.match(/قرأ (\d+) ساعات أو أكثر/)![1]);
-        const want = rows.filter(([h]) => h >= v).reduce((t, [, c]) => t + c, 0);
-        assert.equal(Number(item.answer), want, p);
-        assert.ok(rows.some(([h, c]) => h === v && c > 0), `«or more» and «more than» differ: ${p}`);
-        continue;
-      }
+      assert.ok(!has(p, 'التمثيل بالنقاط'), `a dot plot belongs to «تمثيل البيانات بالنقاط»: ${p}`);
       if (id === 'read_data_g34') kinds[Number(g)]!.add('table');
       if (has(p, 'عدد الأقلام')) {
         // organising raw data: how many times the value occurs
@@ -445,6 +438,28 @@ describe('statistics: answers recomputed', () => {
         assert.ok(Number(item.answer) > 0, p);
         continue;
       }
+      if (has(p, 'كم حزمة كاملة')) {
+        // organising a count into a tally: whole bundles of five
+        kind('bundles');
+        const [v, per] = nums(p);
+        assert.equal(per, 5, p);
+        assert.equal(Number(item.answer), Math.floor(v! / 5), p);
+        assert.ok(v! % 5 !== 0 && Number(item.answer) >= 1, p);
+        continue;
+      }
+      if (has(p, 'لألوان السيارات')) {
+        // two rows of a tally, read as bundles of five and single marks («حزمتان», «إشارة واحدة» are words)
+        kind('tallyCompare');
+        const count = (s: string) => (/^(حزمة واحدة|إشارة واحدة)/.test(s) ? 1 : /^(حزمتان|إشارتان)/.test(s) ? 2 : Number(s.match(/^\d+/)![0]));
+        const row = (colour: string) => {
+          const m = p.match(new RegExp(`${colour} (حزمة واحدة|حزمتان|\\d+ حزم) و(إشارة واحدة|إشارتان|\\d+ إشارات)`))!;
+          assert.ok(m, `${colour}: ${p}`);
+          return 5 * count(m[1]!) + count(m[2]!);
+        };
+        assert.equal(Number(item.answer), row('الحمراء') - row('الزرقاء'), p);
+        assert.ok(Number(item.answer) > 0, p);
+        continue;
+      }
       if (has(p, 'جدول الإشارات')) {
         // a bundle of a tally is five
         kind('tally');
@@ -460,7 +475,7 @@ describe('statistics: answers recomputed', () => {
         assert.ok(Number.isInteger(v / per), p);
         continue;
       }
-      if (id === 'read_data_g12') kinds[Number(g)]!.add(has(p, 'جدول الصور') ? 'pictures' : 'table');
+      if (id !== 'read_data_g34') { const k = has(p, 'جدول الصور') ? 'pictures' : 'table'; kinds[Number(g)]!.add(k); g2[id]!.add(k); }
       const cats = [...p.matchAll(/(التفاح|الموز|البرتقال|العنب|الكرز): (\d+)/g)].map(m => [m[1]!, Number(m[2])] as const);
       const key = has(p, 'كل صورة تمثل 2') ? 2 : 1;
       const vals = cats.map(([, c]) => c * key);
@@ -471,10 +486,12 @@ describe('statistics: answers recomputed', () => {
       else assert.equal(Number(item.answer), sum(vals));
       assert.equal(new Set(vals).size, vals.length, 'counts are distinct so the answer is unique');
     }
-    assert.deepEqual([...kinds[1]!].sort(), ['compare', 'raw', 'table'], 'Grade 1 kinds');
-    assert.deepEqual([...kinds[2]!].sort(), ['compare', 'draw', 'pictures', 'raw', 'table', 'tally'], 'Grade 2 kinds');
+    // Grade 1's data lessons have their own generators in early.ts (data_table_g1, picto_make_g1, picto_read_g1)
+    assert.deepEqual([...kinds[1]!], [], 'Grade 1 is no longer drawn from read_data_g12');
+    assert.deepEqual([...g2.read_data_g12!].sort(), ['compare', 'draw', 'pictures'], 'Grade 2 picture lessons: every table is a picture graph');
+    assert.deepEqual([...g2.read_data_tally_g2!].sort(), ['bundles', 'raw', 'tally', 'tallyCompare'], 'Grade 2 tally lessons');
     assert.deepEqual([...kinds[3]!].sort(), ['halfStep', 'squares', 'table'], 'Grade 3 kinds');
-    assert.deepEqual([...kinds[4]!].sort(), ['dots', 'halfStep', 'squares', 'table'], 'Grade 4 kinds');
+    assert.deepEqual([...kinds[4]!].sort(), ['halfStep', 'squares', 'table'], 'Grade 4 kinds');
   });
 
   it('frequency tables and grouped data', () => {

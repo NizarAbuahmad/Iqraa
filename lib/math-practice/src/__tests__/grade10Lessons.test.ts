@@ -457,8 +457,9 @@ const KINDS: Record<string, string[]> = {
 // ─── the tests ──────────────────────────────────────────────────────────────
 
 describe('Grade 10 lessons with thin or no offline questions', () => {
-  it('the lesson-first list is exactly these ten generators', () => {
-    assert.deepEqual([...G10_LESSON_FIRST].sort(), LESSONS.map(([id]) => id).sort());
+  it('the lesson-first list holds these ten generators', () => {
+    // The second batch (2026-11-14) is listed and checked in grade10LessonsB.test.ts.
+    for (const [id] of LESSONS) assert.ok(G10_LESSON_FIRST.has(id), id);
   });
 
   for (const [id, lesson, sem] of LESSONS) {
@@ -522,7 +523,8 @@ describe('Grade 10 lessons with thin or no offline questions', () => {
 });
 
 describe('every other Grade 10 lesson keeps the bank', () => {
-  for (const title of ['حل المعادلة الأسية', 'المتتاليات', 'الاشتقاق', 'الضرب القياسي', 'تبسيط المقادير الأسية']) {
+  // «المتتاليات», «الاشتقاق» and «الضرب القياسي» have their own generators since 2026-11-14.
+  for (const title of ['حل المعادلة الأسية', 'تبسيط المقادير الأسية']) {
     it(`«${title}» still draws banked items`, () => {
       const fam = matchMathFamily(title, null);
       assert.ok(fam, 'has a family');
