@@ -1043,6 +1043,8 @@ describe('geometry generators: answers recomputed from the stem', () => {
     const wrap = (t: number) => ((t % 720) + 720) % 720;
     for (const id of ['time_g3', 'time_g45']) for (const item of draws(id)) {
       const p = item.promptAr!;
+      // Grade 5's 24-hour clock, a.m./p.m. and days-and-hours kinds are recomputed in grade5Objectives.test.ts
+      if (/a\.m\.|p\.m\.|24 ساعةً|أيام وساعات/.test(p)) continue;
       const clocks = p.match(/\d+:\d\d/g) ?? [];
       if (has(p, 'متى انتهى')) assert.equal(wrap(min(item.answer)), wrap(min(clocks[0]!) + nums(p.replace(/\d+:\d\d/g, ''))[0]!), p);
       else if (has(p, 'كم دقيقة استغرق')) assert.equal(Number(item.answer), wrap(min(clocks[1]!) - min(clocks[0]!)), p);

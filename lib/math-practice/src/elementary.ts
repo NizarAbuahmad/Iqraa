@@ -137,6 +137,8 @@ const PLACE_DIGITS: Record<number, number> = { 1: 2, 2: 3, 3: 4, 4: 6, 5: 8, 6: 
 const TIER_SCALE: Record<DiffTier, number> = { easy: 0.1, medium: 0.5, hard: 1 };
 /** Grade 1 compares and orders two-digit numbers: 10 up to this, by tier. */
 const G1_COMPARE_MAX: Record<DiffTier, number> = { easy: 30, medium: 60, hard: 99 };
+/** Grade 5 «مقارنة الأعداد وترتيبها» is «ضمن الملايين»: 7 digits, 8 from medium. */
+const G5_COMPARE: Record<DiffTier, [number, number]> = { easy: [1_000_000, 9_999_999], medium: [1_000_000, 99_999_999], hard: [10_000_000, 99_999_999] };
 
 export type Rng = () => number;
 export const int = (rng: Rng, lo: number, hi: number) => lo + Math.floor(rng() * (hi - lo + 1));
@@ -613,14 +615,14 @@ function divKinds(base: Base, b: number, q0: number, grade: number, diff: DiffTi
   }
 }
 
-function compareKinds(base: Base, max: number, rng: Rng, lo = 0): ConcreteItem {
+function compareKinds(base: Base, max: number, rng: Rng, lo = 0, maxDigits = 4): ConcreteItem {
   const show = (v: number) => String(v);
   const what = { ar: 'الأعداد', one: 'العدد', en: 'numbers' };
   const k = int(rng, 1, 3);
   if (k === 1) return orderItem(base, distinctInts(rng, 3, lo, max), show, rng() < 0.5, what);
   if (k === 2 || max < 100) return extremeItem(base, distinctInts(rng, 4, lo, max), show, rng() < 0.5, what);
   // The greatest / least number made from given digits — place value deciding order.
-  const L = Math.min(4, String(max).length);
+  const L = Math.min(maxDigits, String(max).length);
   const digits = distinctInts(rng, L, 1, 9);
   const big = rng() < 0.5;
   const desc = [...digits].sort((x, y) => y - x);
@@ -780,6 +782,192 @@ function fracSubKinds(base: Base, grade: number, rng: Rng): ConcreteItem {
         `بكم يزيد الكسر ${a}/${d1} على الكسر ${b}/${d2}؟`,
         `How much greater is ${a}/${d1} than ${b}/${d2}?`);
   }
+}
+
+// ─── Grade 5 mixed numbers (review, 2026-11-20) ─────────────────────────────
+//
+// «جمع الكسور» («أجمع أعدادًا كسرية غير متشابهة»), «طرح الكسور» («أطرح الكسور
+// والأعداد الكسرية») and «مقارنة الكسور والأعداد الكسرية» never showed a mixed
+// number. The book adds «2 1/2 + 3 1/6 = 5 2/3» (S1 p. 87) and writes the result
+// as a mixed number in simplest form.
+
+/** «5 2/3» in lowest terms from n/d ≥ 0; «4» or «2/3» when there is no whole or no fraction part. */
+const mixedOf = (n: number, d: number) => {
+  const g = gcd(n, d), nn = n / g, dd = d / g, w = Math.floor(nn / dd), r = nn % dd;
+  return r === 0 ? String(w) : w === 0 ? `${r}/${dd}` : `${w} ${r}/${dd}`;
+};
+type MixedNum = { w: number; r: number; d: number };
+const MIXED_DENS = [2, 3, 4, 5, 6, 8, 10, 12];
+function mixedNum(rng: Rng, diff: DiffTier, d?: number): MixedNum {
+  const dd = d ?? choose(rng, diff === 'easy' ? [2, 4, 8] : MIXED_DENS);
+  let r = int(rng, 1, dd - 1);
+  while (gcd(r, dd) !== 1) r = int(rng, 1, dd - 1);
+  return { w: int(rng, 1, diff === 'hard' ? 9 : diff === 'medium' ? 6 : 4), r, d: dd };
+}
+const showM = (x: MixedNum) => `${x.w} ${x.r}/${x.d}`;
+/** Value of an answer string — «2 1/3», «5/6», «4» — for de-duplicating wrong options. */
+const mixedValue = (s: string) => {
+  const m = s.match(/^(\d+) (\d+)\/(\d+)$/);
+  return m ? Number(m[1]) + Number(m[2]) / Number(m[3]) : fracValue(s);
+};
+function distinctMixed(answer: string, candidates: string[], fallback: (k: number) => string): string[] {
+  const seen = [mixedValue(answer)];
+  const out: string[] = [];
+  const take = (w: string) => {
+    const v = mixedValue(w);
+    if (!Number.isFinite(v) || v <= 0 || seen.some(x => Math.abs(x - v) < 1e-9)) return;
+    seen.push(v);
+    out.push(w);
+  };
+  candidates.forEach(take);
+  for (let k = 1; out.length < 3 && k < 50; k++) take(fallback(k));
+  return out.slice(0, 3);
+}
+
+/** Two mixed numbers added or subtracted, the result a mixed number in simplest form. */
+function mixedAddSub(base: Base, op: '+' | '−', diff: DiffTier, rng: Rng): ConcreteItem {
+  let A = mixedNum(rng, diff), B = mixedNum(rng, diff, rng() < 0.3 ? undefined : choose(rng, MIXED_DENS));
+  let an = A.w * A.d + A.r, bn = B.w * B.d + B.r;
+  if (op === '−' && an * B.d <= bn * A.d) {
+    if (an * B.d === bn * A.d) return mixedAddSub(base, op, diff, rng);
+    [A, B, an, bn] = [B, A, bn, an];
+  }
+  const D = A.d * B.d;
+  const n = op === '+' ? an * B.d + bn * A.d : an * B.d - bn * A.d;
+  const answer = mixedOf(n, D);
+  // the slips: the parts added or subtracted straight across, the fraction parts taken the other way round,
+  // a whole one lost or gained in the regrouping
+  const dd = Math.abs(A.d - B.d) || A.d, rr = Math.abs(A.r - B.r);
+  const across = op === '+' ? `${A.w + B.w} ${A.r + B.r}/${A.d + B.d}`
+    : A.w > B.w && rr > 0 && rr < dd ? `${A.w - B.w} ${rr}/${dd}` : '';
+  const flipped = op === '−' ? mixedOf(Math.abs(A.r * B.d - B.r * A.d) + (A.w - B.w) * D, D) : mixedOf(n + D, D);
+  const wrongs = distinctMixed(answer, [across, flipped, mixedOf(n + D, D), mixedOf(Math.max(1, n - D), D)], k => mixedOf(n + k * D, D));
+  const eq = `${showM(A)} ${op} ${showM(B)}`;
+  const k = int(rng, 0, 2);
+  if (k === 0) {
+    return ask(base, eq, answer, wrongs, `أوجد ناتج ${eq}، واكتبه في أبسط صورة.`, `Work out ${eq} and write it in simplest form.`);
+  }
+  if (op === '+') {
+    if (k === 1) {
+      return ask(base, `word:${eq}`, answer, wrongs,
+        `اشترت سيدة خاتمين من الذهب، كتلة الأول ${showM(A)} غ وكتلة الثاني ${showM(B)} غ. ما كتلة الخاتمين معًا بالغرام؟`,
+        `A woman buys two gold rings of ${showM(A)} g and ${showM(B)} g. What is their total mass in grams?`, true);
+    }
+    return ask(base, `word:${eq}`, answer, wrongs,
+      `مشى طلبة في رحلة علمية ${showM(A)} كم ذهابًا، و${showM(B)} كم في طريق العودة. كم كيلومترًا مشوا في الرحلة؟`,
+      `On a field trip pupils walked ${showM(A)} km out and ${showM(B)} km back. How many kilometres did they walk?`, true);
+  }
+  if (k === 1) {
+    return ask(base, `word:${eq}`, answer, wrongs,
+      `حبل طوله ${showM(A)} م، قُصّ منه ${showM(B)} م. كم مترًا بقي من الحبل؟`,
+      `A rope is ${showM(A)} m long and ${showM(B)} m is cut off. How many metres are left?`, true);
+  }
+  return ask(base, `more:${eq}`, answer, wrongs,
+    `بكم يزيد العدد الكسري ${showM(A)} على العدد الكسري ${showM(B)}؟`,
+    `How much greater is ${showM(A)} than ${showM(B)}?`);
+}
+
+/** Comparing and ordering mixed numbers, and a mixed number against an improper fraction. */
+function mixedCompare(base: Base, diff: DiffTier, rng: Rng): ConcreteItem {
+  const k = int(rng, 0, 2);
+  if (k === 0) {
+    // the same whole, so the fraction parts decide; or a mixed number against an improper fraction
+    const A = mixedNum(rng, diff);
+    let left = showM(A), lv = A.w + A.r / A.d, right: string, rv: number;
+    if (rng() < 0.5) {
+      const B = mixedNum(rng, diff);
+      B.w = A.w;
+      right = showM(B); rv = B.w + B.r / B.d;
+    } else {
+      const d = choose(rng, [2, 3, 4, 5, 6, 8]);
+      const n = (A.w + (rng() < 0.5 ? 0 : 1)) * d + int(rng, 1, d - 1);
+      right = `${n}/${d}`; rv = n / d;
+      if (rng() < 0.5) [left, lv, right, rv] = [right, rv, left, lv];
+    }
+    const sign = lv > rv + 1e-9 ? '>' : lv < rv - 1e-9 ? '<' : '=';
+    return {
+      ...base, eq: `${left} ___ ${right}`, answer: sign, wrongs: ['>', '<', '='].filter(s => s !== sign),
+      promptAr: `ضع الإشارة المناسبة (> أو < أو =):\n${left} ___ ${right}`,
+      promptEn: `Write the correct sign (>, < or =):\n${left} ___ ${right}`,
+    };
+  }
+  // three mixed numbers, two of them with the same whole, all of different value
+  const xs: MixedNum[] = [];
+  while (xs.length < 3) {
+    const x = mixedNum(rng, diff);
+    if (xs.length === 1) x.w = xs[0]!.w;
+    if (!xs.some(y => Math.abs(y.w + y.r / y.d - (x.w + x.r / x.d)) < 1e-9)) xs.push(x);
+  }
+  const shown = xs.map(showM);
+  const val = (s: string) => mixedValue(s);
+  if (k === 1) {
+    const asc = rng() < 0.5;
+    const sorted = [...shown].sort((a, b) => (asc ? val(a) - val(b) : val(b) - val(a)));
+    const answer = sorted.join('، ');
+    const wrongs = wrongStrs(answer, [[...sorted].reverse().join('، '), shown.join('، '), [sorted[1], sorted[0], sorted[2]].join('، '), [sorted[0], sorted[2], sorted[1]].join('، ')]);
+    return ask(base, `order:${shown.join(',')}`, answer, wrongs,
+      `رتّب الأعداد الكسرية الآتية ${asc ? 'تصاعديًّا' : 'تنازليًّا'}: ${shown.join('، ')}`,
+      `Order these mixed numbers from ${asc ? 'least to greatest' : 'greatest to least'}: ${shown.join(', ')}`);
+  }
+  const big = rng() < 0.5;
+  const answer = [...shown].sort((a, b) => (big ? val(b) - val(a) : val(a) - val(b)))[0]!;
+  const top = Math.max(...xs.map(x => x.w));
+  return ask(base, `extreme:${shown.join(',')}`, answer, distinctMixed(answer, shown.filter(s => s !== answer), j => `${top + j} ${xs[0]!.r}/${xs[0]!.d}`),
+    `ما العدد ${big ? 'الأكبر' : 'الأصغر'} بين الأعداد الكسرية الآتية: ${shown.join('، ')}؟`,
+    `Which is the ${big ? 'greatest' : 'least'} of these mixed numbers: ${shown.join(', ')}?`);
+}
+
+// ─── Grade 5 decimals × and ÷ by 10, 100, 1000 (review, 2026-11-20) ─────────
+//
+// «ضرب الأعداد العشرية وقسمتها»: «أضرب أعدادًا عشرية في 10, 100, 1000، وأقسمها
+// على 10, 100, 1000» (S2 p. 29). It drew Grade 6's «9.1 × 0.6» and «9.6 ÷ 0.8».
+
+/** A × 10^k, A an integer read with `places` decimals: «3.45» × 100 → «345». */
+const shiftDec = (A: number, places: number, k: number) => (k >= places ? String(A * 10 ** (k - places)) : fmtDec(A, places - k));
+/** No option longer than four decimal places: «0.006932» is a slip no pupil writes. */
+const short = (xs: string[]) => xs.filter(s => !/\.\d{5,}/.test(s));
+const NOTEBOOK = (n: number) => (n === 10 ? '10 دفاتر' : `${n} دفتر`);
+const PEN_G = (n: number) => (n === 10 ? '10 أقلام' : `${n} قلم`);
+function decPowerOfTen(base: Base, op: 'dec_mul' | 'dec_div', diff: DiffTier, rng: Rng): ConcreteItem {
+  const k = choose(rng, diff === 'easy' ? [1, 2] : [1, 2, 3]);
+  const P = 10 ** k;
+  // at most four decimal places in a quotient, as the book's «56.9 ÷ 1000 = 0.0569»
+  const places = Math.min(choose(rng, diff === 'easy' ? [1, 2] : [1, 2, 3]), Math.max(1, 4 - k));
+  let A = int(rng, 11, diff === 'hard' ? 99999 : 9999);
+  while (A % 10 === 0) A = int(rng, 11, 9999); // a last digit of 0 is not written: «3.40» is «3.4»
+  const x = fmtDec(A, places);
+  const kind = int(rng, 0, 2);
+  if (op === 'dec_mul') {
+    const answer = shiftDec(A, places, k);
+    const wrongs = distinctDecimals(answer, short([shiftDec(A, places, k - 1), shiftDec(A, places, k + 1), fmtDec(A, places + k), String(A)]));
+    if (kind === 0) return ask(base, `${x} × ${P}`, answer, wrongs, `اضرب العدد ${x} في ${P}.`, `Multiply ${x} by ${P}.`);
+    if (kind === 1) {
+      return ask(base, `${x} × ؟ = ${answer}`, String(P), wrongStrs(String(P), ['10', '100', '1000', '10000'].filter(s => s !== String(P))),
+        `أوجد العدد المجهول: ${x} × ؟ = ${answer}`, `Find the missing number: ${x} × ? = ${answer}`);
+    }
+    let pc = 5 * int(rng, 3, 99);
+    while (pc % 100 === 0) pc = 5 * int(rng, 3, 99); // a whole price is not a decimal
+    const price = fmtDec(pc, 2);
+    const total = shiftDec(pc, 2, k);
+    return ask(base, `word:${price} × ${P}`, total, distinctDecimals(total, [shiftDec(pc, 2, k - 1), shiftDec(pc, 2, k + 1), price]),
+      `ثمن القلم الواحد ${price} دينار. ما ثمن ${PEN_G(P)} بالدينار؟`,
+      `One pen costs ${price} JD. What do ${P} pens cost, in JD?`, true);
+  }
+  const answer = fmtDec(A, places + k);
+  const wrongs = distinctDecimals(answer, short([fmtDec(A, places + k - 1), fmtDec(A, places + k + 1), shiftDec(A, places, k), fmtDec(A, k)]));
+  if (kind === 0) return ask(base, `${x} ÷ ${P}`, answer, wrongs, `اقسم العدد ${x} على ${P}.`, `Divide ${x} by ${P}.`);
+  if (kind === 1) {
+    return ask(base, `${x} ÷ ؟ = ${answer}`, String(P), wrongStrs(String(P), ['10', '100', '1000', '10000'].filter(s => s !== String(P))),
+      `أوجد العدد المجهول: ${x} ÷ ؟ = ${answer}`, `Find the missing number: ${x} ÷ ? = ${answer}`);
+  }
+  // a notebook costs from about a quarter of a dinar to a dinar, so 1000 of them cost hundreds
+  const t = int(rng, 25 * 10 ** (k - 1), 999 * 10 ** (k - 1));
+  const total = fmtDec(t, 1);
+  const one = fmtDec(t, 1 + k);
+  return ask(base, `word:${total} ÷ ${P}`, one, distinctDecimals(one, short([fmtDec(t, k), fmtDec(t, 2 + k), total])),
+    // a decimal takes «دينار» («7.5 دينار»); a whole number agrees with its last two digits («907 دنانير», «526 دينارًا»)
+    `ثمن ${NOTEBOOK(P)} ${total.includes('.') ? `${total} دينار` : counted(t / 10, DINAR)}. ما ثمن الدفتر الواحد بالدينار؟`,
+    `${P} notebooks cost ${total} JD. What does one notebook cost, in JD?`, true);
 }
 
 function fracMulKinds(base: Base, rng: Rng): ConcreteItem {
@@ -1074,7 +1262,9 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       const twoDigit = g5 && (diff === 'hard' || (diff === 'medium' && rng() < 0.5));
       const b = table ?? (twoDigit ? int(rng, 11, diff === 'hard' ? 49 : 25) : int(rng, 2, g5 ? 9 : tableMax));
       const q = table ? int(rng, 1, 10)
-        : g5 ? (twoDigit ? int(rng, 2, Math.floor(999 / b)) : diff === 'easy' ? int(rng, 2, 10) : int(rng, 11, Math.floor(999 / b)))
+        // past the times tables at every tier: an easy paper asked «؟ ÷ 7 = 4» and «12 ÷ ؟ = 2»;
+        // the book's easiest is a two-digit number by a one-digit one, 85 ÷ 5 (review, 2026-11-20)
+        : g5 ? (twoDigit ? int(rng, 11, Math.floor(999 / b)) : diff === 'easy' ? int(rng, 11, Math.max(11, Math.floor(99 / b))) : int(rng, 11, Math.floor(999 / b)))
         : grade >= 4 && diff !== 'easy' ? int(rng, 11, diff === 'hard' ? 250 : 60) : int(rng, 1, 10);
       if (int(rng, 0, 5) > 0) return divKinds(base, b, q, grade, diff, rng);
       const a = b * q;
@@ -1089,8 +1279,9 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       // Grade 1 compares and orders «ضمن منزلتين» (u2_l4, u2_l5): the add range
       // (0–10 at easy and medium) never showed a two-digit number (review, 2026-11-15).
       // Grade 2 compares and orders numbers «ضمن 3 منازل»: an easy paper asked about «10، 6، 22، 20».
-      const [lo, hi] = grade === 1 ? [10, G1_COMPARE_MAX[diff]] : grade === 2 ? [100, 999] : [0, max];
-      if (int(rng, 0, 3) > 0) return compareKinds(base, hi, rng, lo);
+      // Grade 5 compares and orders «ضمن الملايين» (the book: 3456210 and 3759120): it drew 4–6 digits (review, 2026-11-20).
+      const [lo, hi] = grade === 1 ? [10, G1_COMPARE_MAX[diff]] : grade === 2 ? [100, 999] : grade === 5 ? G5_COMPARE[diff] : [0, max];
+      if (int(rng, 0, 3) > 0) return compareKinds(base, hi, rng, lo, grade === 5 ? 7 : 4);
       const a = int(rng, lo, hi);
       const b = rng() < 0.15 ? a : int(rng, lo, hi);
       const sign = a > b ? '>' : a < b ? '<' : '=';
@@ -1136,6 +1327,7 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'frac': {
+      if (grade === 5 && int(rng, 0, 2) === 0) return mixedAddSub(base, '+', diff, rng);
       if (grade >= 4 && int(rng, 0, 3) > 0) return fracAddKinds(base, grade, rng);
       if (grade <= 3) {
         // Unit fractions: the larger denominator is the smaller part.
@@ -1166,6 +1358,7 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       ]);
     }
     case 'frac_sub': {
+      if (grade === 5 && int(rng, 0, 2) === 0) return mixedAddSub(base, '−', diff, rng);
       if (int(rng, 0, 3) > 0) return fracSubKinds(base, grade, rng);
       if (grade >= 5) {
         let [a, d1, b, d2] = unlikePair(rng);
@@ -1215,6 +1408,7 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
         [r + 1, r - 1, r + scale, r - scale]);
     }
     case 'dec_mul': {
+      if (grade === 5) return decPowerOfTen(base, 'dec_mul', diff, rng);
       if (int(rng, 0, 3) > 0) return decMulKinds(base, diff, rng);
       // One decimal place times a whole number: the point has one place in the
       // answer, and the classic slip is to move it.
@@ -1227,6 +1421,7 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'dec_div': {
+      if (grade === 5) return decPowerOfTen(base, 'dec_div', diff, rng);
       if (int(rng, 0, 3) > 0) return decDivKinds(base, diff, rng);
       const b = int(rng, 2, 9);
       // A dividend whose tenths are 0 prints as a whole number («40 ÷ 8»): not a decimal.
@@ -1252,6 +1447,7 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'frac_compare': {
+      if (grade === 5 && int(rng, 0, 2) === 0) return mixedCompare(base, diff, rng);
       if (int(rng, 0, 2) > 0) return fracCompareKinds(base, grade, rng);
       // Different denominators, compared by cross-multiplying.
       let [n1, d1, n2, d2] = [0, 0, 0, 0];
