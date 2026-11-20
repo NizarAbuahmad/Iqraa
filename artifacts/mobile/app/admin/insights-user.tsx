@@ -154,6 +154,7 @@ export default function AdminInsightsUserScreen() {
                   valueOf={d => data.daily.find(x => x.day === d)?.minutes ?? 0}
                   isRTL={isRTL}
                   colors={colors}
+                  stretch
                 />
               </View>
 
