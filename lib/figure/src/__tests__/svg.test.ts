@@ -76,6 +76,16 @@ describe('figureSvg: left-to-right inside a right-to-left page', () => {
     const f = resolveFigure({ kind: 'vectors', vectors: [{ from: [0, 0], to: [-2, -1], label: 'A' }] })!;
     for (const lang of ['ar', 'en'] as const) assert.ok(rootOf(figureSvg(f, { lang })).includes(' direction="ltr"'), lang);
   });
+  it('ends the x-axis name inside the box, so a wide «س» is not cut at the edge', () => {
+    // Start-anchored at w - 14, «س» ran past the right edge once ltr held it there.
+    const f = resolveFigure({ kind: 'vectors', vectors: [{ from: [0, 0], to: [-2, -1], label: 'A' }] })!;
+    for (const [lang, name] of [['ar', 'س'], ['en', 'x']] as const) {
+      const tag = new RegExp(`<text x="([\\d.]+)"[^>]*text-anchor="(\\w+)">${name}</text>`).exec(figureSvg(f, { lang }));
+      assert.ok(tag, lang);
+      assert.equal(tag[2], 'end', lang);
+      assert.equal(Number(tag[1]), 480 - 6, lang);
+    }
+  });
   it('puts direction="ltr" on the root svg of a scene', () => {
     const w: SceneFigure = { kind: 'wave', cycles: 1, marks: ['crest', 'trough'] };
     for (const lang of ['ar', 'en'] as const) assert.ok(rootOf(figureSvg(w, { lang })).includes(' direction="ltr"'), lang);

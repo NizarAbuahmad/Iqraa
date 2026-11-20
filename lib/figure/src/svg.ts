@@ -93,7 +93,8 @@ export function figureSvg(figure: AnyFigure, opts: { lang?: 'ar' | 'en'; width?:
   const labelX = Math.min(w - 28, Math.max(4, (axisX ?? 0) + 5));
   for (const t of xs) if (t.value !== 0) out.push(text({ x: t.px, y: labelY }, String(t.value), '#6b7280', 10, 'middle'));
   for (const t of ys) if (t.value !== 0) out.push(text({ x: labelX, y: t.px - 3 }, String(t.value), '#6b7280', 10));
-  if (axisY !== null) out.push(text({ x: w - 14, y: axisY - 5 }, lang === 'ar' ? 'س' : 'x', '#374151'));
+  // End-anchored, as on screen (FigureView): a start anchor at w - 14 left no room for «س».
+  if (axisY !== null) out.push(text({ x: w - 6, y: axisY - 5 }, lang === 'ar' ? 'س' : 'x', '#374151', 13, 'end'));
   if (axisX !== null) out.push(text({ x: axisX + 6, y: 14 }, lang === 'ar' ? 'ص' : 'y', '#374151'));
 
   for (const c of lay.curves) {
