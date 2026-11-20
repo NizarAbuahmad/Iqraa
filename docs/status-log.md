@@ -10,6 +10,33 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## OpenAI credit ran out; the app-wide AI cap is now $100 — 2026-11-20
+
+**What happened.** On 2026-11-20 every Activity-tool request on app.iqrra.com came back as the offline template,
+under «تعذّر الاتصال · محتوى تجريبي». Neither «A fallback result says so on the result…» nor the 90 s activity
+timeout changed that. Checked by command from the session after the API host was added to the session's network:
+- `GET /api/healthz/ai-budget` read `liveMode: true`, `spentUsd: 48.6606`, `limitUsd: 50`. The app's own cap was not
+  reached.
+- `POST /api/site/ask` with a non-curated question read `{"answered":false,"reason":"error"}`. That reason is
+  returned only when the OpenAI call itself throws, so the failure was not specific to the Activity tool.
+
+The owner found the OpenAI account's credit balance used up and added credit. The same `/api/site/ask` question
+then answered with `"source":"ai"`, and an activity made on app.iqrra.com came back written by the model.
+
+**What changed (config, no code).**
+- `AI_BUDGET_USD` 50 → **100**, set by the owner with `gcloud run services update --update-env-vars`. It made
+  revision `iqraa-api-00551-pzt`, read back as `limitUsd: 100`. It lives on the service, not in `deploy.yml`, so
+  deploys keep it.
+- Two of the owner's accounts got a $20 monthly limit with no end date, on the admin Users screen.
+
+**The lesson.** The app's caps track estimated spend; they do not hold money. When the provider's balance runs out,
+every live call fails, and because generators fall back to sample content, the app keeps looking like it works. The
+new on-result notice now says so. Turning on the OpenAI account's auto-recharge, or a balance alert, is the guard;
+the app cannot see the provider's balance.
+
+**Not verified.** The exact OpenAI error text (no logs were read). The provider balance itself was checked by the
+owner, not from the session.
+
 ## The API no longer attaches a book to a topic the app found no lesson for — 2026-11-20
 
 The follow-up named in «Chat builds material on a topic the curriculum does not have». When a generation
