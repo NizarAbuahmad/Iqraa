@@ -64,6 +64,7 @@ import {
 import {
   KB_SUGGEST_SCORE,
   chooseArtifactLesson,
+  freeTopicArtifactGoesLive,
   inAskScope,
   lessonsInAskScope,
   namedLessonBeatsGrade,
@@ -2516,7 +2517,12 @@ export default function IqraScreen() {
       // only answer from a lesson; in front of a model they turned «كيف أتعامل
       // مع طالب مشاغب؟» into a subject menu, because the keyword search had
       // matched an English, a maths and a physics lesson.
-      const liveTeaching = !DEMO_MODE && route.intent === 'teaching';
+      //
+      // A material on a topic no lesson is about («نشاط صفي للصف السادس: لو كنت
+      // وزير التربية ليوم واحد») goes to the model too: those stops sent it to
+      // wrong-grade and wrong-subject chips that led back to the same question
+      // (`freeTopicArtifactGoesLive`). Its weak keyword matches are dropped so
+      // nothing below builds a generator on them.
 
       // 1b. Ambiguity check — only when nothing is pinned (soft default does not count).
       // Also skipped when the teacher named any recognisable subject in their query;
@@ -2530,6 +2536,24 @@ export default function IqraScreen() {
         || teachingCtx
         || sessionMemory.lessonPin === 'hard',
       );
+      const softBareArtifact =
+        route.intent === 'artifact'
+        && isBareArtifactShortcut(q)
+        && sessionMemory.lessonPin === 'soft'
+        && !!sessionMemory.activeLessonId
+        && !confidentHit
+        && !hasDocsEarly;
+      const freeTopicArtifact = freeTopicArtifactGoesLive({
+        demoMode: DEMO_MODE,
+        intent: route.intent,
+        hasHardContext,
+        hasDocuments: hasDocsEarly,
+        isSoftBareArtifact: softBareArtifact,
+        confidentHit,
+        topic: topicFromQuery(q),
+      });
+      if (freeTopicArtifact) results = [];
+      const liveTeaching = !DEMO_MODE && (route.intent === 'teaching' || freeTopicArtifact);
       // A confident single-subject hit has already settled the subject: a weak
       // other-subject lesson further down `results` is not a second reading.
       if (!hasHardContext && !liveTeaching && !confidentHit && results.length > 0) {
@@ -2665,14 +2689,6 @@ export default function IqraScreen() {
         artifactFromQuery(q)
         ?? (route.intent === 'refinement' ? sessionMemory.lastGeneratedResource : null);
 
-      const softBareArtifact =
-        route.intent === 'artifact'
-        && isBareArtifactShortcut(q)
-        && sessionMemory.lessonPin === 'soft'
-        && !!sessionMemory.activeLessonId
-        && !confidentHit
-        && !hasDocs;
-
       // Guessed lesson → confirm before building on it.
       //
       // An artifact is where being wrong is expensive: a weak fuzzy match still
@@ -2685,26 +2701,31 @@ export default function IqraScreen() {
       // Deliberately not applied to teaching answers: there, a near-miss costs a
       // sentence the teacher can correct in the next turn, and the question
       // would cost more than the mistake.
-      const lessonGuess = shouldAskWhichLesson({
-        intent: route.intent,
-        hasHardContext,
-        hasDocuments: hasDocs,
-        isSoftBareArtifact: softBareArtifact,
-        // Guesses from the ask's own grade and subject only — the whole-KB
-        // search offered grade 10 English for a grade 6 activity — and none
-        // when the search already decided (see `artifactGuessRanked`).
-        ranked: route.intent === 'artifact'
-          ? artifactGuessRanked({
-            query: q,
-            topic: freeArtifactTopic(q),
-            lang: lang as 'ar' | 'en',
-            ranked,
-            confidentHit,
-            scope: artifactAskScope,
-            teaches: isSubjectShown,
-          })
-          : ranked,
-      });
+      // A free-topic ask going to the live model asks nothing
+      // (`freeTopicArtifactGoesLive`). Otherwise the guesses come from the
+      // ask's own grade and subject only — the whole-KB search offered grade 10
+      // English for a grade 6 activity, and a chip outside the scope re-sent
+      // the ask pinned to a lesson the grade filter dropped again, a loop — and
+      // none when the search already decided (see `artifactGuessRanked`).
+      const lessonGuess = freeTopicArtifact
+        ? { ask: false as const }
+        : shouldAskWhichLesson({
+          intent: route.intent,
+          hasHardContext,
+          hasDocuments: hasDocs,
+          isSoftBareArtifact: softBareArtifact,
+          ranked: route.intent === 'artifact'
+            ? artifactGuessRanked({
+              query: q,
+              topic: freeArtifactTopic(q),
+              lang: lang as 'ar' | 'en',
+              ranked,
+              confidentHit,
+              scope: artifactAskScope,
+              teaches: isSubjectShown,
+            })
+            : ranked,
+        });
       // The topic as typed, for an ask for material (or the one a refinement
       // changes): what the material is built on when no lesson in scope
       // grounds it.
@@ -2743,7 +2764,11 @@ export default function IqraScreen() {
       // Nothing in scope grounds an ask for material, and it names a topic:
       // build on that topic, labelled, rather than asking «عن أي درس؟» — the
       // teacher already said.
-      const freeTopicAsk = isFreeTopicArtifactAsk({
+      // A free-topic ask main's live route already took
+      // (`freeTopicArtifactGoesLive`: no hard context, live mode) stays with
+      // the model; this one covers the rest — a picked lesson, demo mode, the
+      // «كما كتبته» chip, a refinement.
+      const freeTopicAsk = !freeTopicArtifact && isFreeTopicArtifactAsk({
         intent: route.intent,
         hasArtifactType: !!artifactType,
         hasKBMatch,

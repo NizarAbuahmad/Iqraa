@@ -186,6 +186,61 @@ export function shouldAskWhichLesson(opts: {
 }
 
 /**
+ * Should an artifact ask with no lesson behind it go to the live model?
+ *
+ * The «which subject?» / «which lesson?» / «اكتب اسم الدرس» stops in chat exist
+ * for the offline assistant, which can only answer from a lesson. A teaching
+ * question already skips them in front of a model (`liveTeaching` in
+ * `iqra.tsx`); an artifact ask never did. So «نشاط صفي 15 دقيقة للصف السادس:
+ * لو كنت وزير التربية ليوم واحد» (2026-11-20) — «نشاط» makes it an artifact,
+ * and no lesson is about that — got wrong-subject and wrong-grade chips that
+ * led back to the same question, and the model was never called.
+ *
+ * Only when the search is not confident, nothing pins the context (a lesson,
+ * a named subject, a teaching context), there are no uploaded documents, it
+ * is not a bare shortcut riding the soft-pinned lesson, and the ask carries a
+ * topic of its own (`topic` is `topicFromQuery`, the material words removed).
+ * A confident lesson match still goes to the generators, which ground it.
+ */
+export function freeTopicArtifactGoesLive(opts: {
+  demoMode: boolean;
+  intent: string;
+  hasHardContext: boolean;
+  hasDocuments: boolean;
+  isSoftBareArtifact: boolean;
+  confidentHit: boolean;
+  topic: string;
+}): boolean {
+  if (opts.demoMode || opts.intent !== 'artifact') return false;
+  if (opts.hasHardContext || opts.hasDocuments || opts.isSoftBareArtifact || opts.confidentHit) return false;
+  return opts.topic.trim().length >= 6;
+}
+
+/**
+ * `ranked` kept to the grade and subject the teacher named.
+ *
+ * The «which lesson?» chips were built from the whole-KB ranking while the
+ * results beside them had already been cut to the named grade, so a grade 6
+ * ask offered grade 10 and grade 4 lessons — and a chip re-sent the ask pinned
+ * to a lesson the grade filter then dropped again. `scopeOf` is injected
+ * (`getBookForLesson` in the app) so this module stays free of curriculum data.
+ */
+export function rankedInScope(
+  ranked: KBScoredLesson[],
+  scopeOf: (lesson: KBLesson) => { gradeId?: string; subjectId?: string } | undefined,
+  scope: { gradeId?: string | null; subjectId?: string | null },
+): KBScoredLesson[] {
+  if (!scope.gradeId && !scope.subjectId) return ranked;
+  return ranked.filter(({ lesson }) => {
+    const s = scopeOf(lesson);
+    if (!s) return false;
+    if (scope.gradeId && s.gradeId !== scope.gradeId) return false;
+    if (scope.subjectId && s.subjectId !== scope.subjectId) return false;
+    return true;
+  });
+}
+
+/**
  * The grade and subject a chat ask is about, for deciding which lessons it may
  * be offered. Either part may be unknown; an unknown part does not narrow.
  */
