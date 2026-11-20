@@ -50,8 +50,9 @@ const QUALIFIERS = [
   `كامل${ACC}`, 'كاملة', `صفي${ACC}`, 'صفية', `منزلي${ACC}`, 'منزلية',
   `قصير${ACC}`, 'قصيرة', `سريع${ACC}`, 'سريعة',
   // How the activity runs, not what it is about: «نشاط ممتع» has no topic.
+  // Arabic only: "fun" and "interactive" are as often part of an English
+  // topic ("fun facts about space") as a description of the activity.
   `ممتع${ACC}`, 'ممتعة', `تفاعلي${ACC}`, 'تفاعلية', `جماعي${ACC}`, 'جماعية', `فردي${ACC}`, 'فردية',
-  'fun', 'interactive',
   // 'class' on its own is deliberately absent: it strips «Class Management»
   // down to «Management». Bare, it is likelier to be part of a topic than a
   // description of the artifact, and «صفية» / 'in-class' / 'classroom' already
@@ -90,6 +91,14 @@ const SCOPE_PHRASE_RE = new RegExp(
 );
 
 /**
+ * Minutes that are the lesson, not the length of the activity: «الوقت لأقرب 5
+ * دقائق» (a grade 2 maths lesson), «تحويل 120 دقيقة إلى ساعات», "to the nearest 5
+ * minutes". Shared with `durationFromAsk` (examAsk.ts).
+ */
+export const NOT_A_LENGTH_BEFORE = '(?:أقرب|لأقرب|اقرب|لاقرب|nearest|every|each|كل)';
+export const NOT_A_LENGTH_AFTER = '\\s+(?:إلى|الى|الي|إلي|to|into|in\\s+hours?|بالساعات|ساعة|ساعات|hours?)(?=\\s|$)';
+
+/**
  * A length the ask names — «15 دقيقة», «لمدة ٢٠ دقائق», «ربع ساعة», "a 15-minute",
  * "for 20 minutes". It is how long, not what about: left in, «15 دقيقة» headed
  * the activity. `durationFromAsk` (examAsk.ts) reads the number.
@@ -99,12 +108,12 @@ const DURATION_RE = new RegExp(
     '(?:(?:لمدة|مدته|مدتها|مدة|بمدة|في|خلال)\\s+)?[0-9٠-٩]{1,3}\\s*(?:-\\s*)?(?:دقيقة|دقيقه|دقائق|د)',
     '(?:(?:لمدة|مدته|مدتها|مدة|بمدة|في|خلال)\\s+)?(?:ربع|نصف|ثلث)\\s+ساعة',
     '(?:(?:for|of|in|lasting)\\s+)?(?:a\\s+)?[0-9]{1,3}\\s*(?:-\\s*)?(?:minutes?|mins?)(?:\\s+long)?',
-  ].map(p => `(^|\\s)${p}(?=[\\s:،,.؟?!]|$)`).join('|'),
+  ].map(p => `(^|\\s)(?<!${NOT_A_LENGTH_BEFORE}\\s*)${p}(?=[\\s:،,.؟?!]|$)(?!${NOT_A_LENGTH_AFTER})`).join('|'),
   'gi',
 );
 
 /** «لو سمحت» / «لو تكرمت» anywhere: polite, and never part of a topic. */
-const POLITE_RE = /(^|\s)لو\s+(?:سمحت|سمحتي|سمحتِ|تكرمت|تكرمتي)(?=[\s:،,.؟?!]|$)/g;
+const POLITE_RE = /(^|\s)لو\s+(?:سمحت|سمحتي|سمحتِ|سمحتوا|سمحتم|تكرمت|تكرمتي|تكرمتم)(?=[\s:،,.؟?!]|$)/g;
 
 /**
  * Words that ask politely but name nothing. Trimmed from the edges only, never

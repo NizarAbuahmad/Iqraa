@@ -262,3 +262,41 @@ export function topHitHoldsTopic(
     .filter(r => r.score * CONFIDENT_MARGIN > top.score)
     .every(r => unitOf(r.lesson) === unit);
 }
+
+/**
+ * The lesson a chat-made material is built on, or `null` for none (the typed
+ * topic, labelled as not from the book).
+ *
+ *  1. a lesson tapped this turn — a chip or the sheet — always;
+ *  2. none, when the teacher chose «على موضوعي كما كتبته»;
+ *  3. the topic search's top hit, when it holds the topic (`strong`);
+ *  4. else a search result for the whole message — in scope, and, when the
+ *     teacher typed a topic, one the topic search also finds. «اختبار عن الخلية»
+ *     with a grade 10 lesson picked kept grade 10 maths «الاقتران العكسي» from
+ *     the whole-message search (it matched «اختبار») and made a maths quiz
+ *     titled «الخلية»;
+ *  5. else the card's lesson for a bare ask («خطة»).
+ *
+ * Uploads without a hard pin build on the files, not a lesson.
+ */
+export function chooseArtifactLesson(opts: {
+  pinned: KBLesson | null;
+  asTyped: boolean;
+  topicRanked: KBScoredLesson[];
+  strong: boolean;
+  results: KBLesson[];
+  inScope: (lesson: KBLesson) => boolean;
+  /** The topic the teacher typed, '' when none (a bare ask, a refinement). */
+  typedTopic: string;
+  documentsFirst: boolean;
+  softLesson: KBLesson | null;
+}): KBLesson | null {
+  if (opts.pinned) return opts.pinned;
+  if (opts.asTyped) return null;
+  if (opts.strong && opts.topicRanked[0]) return opts.topicRanked[0].lesson;
+  if (opts.documentsFirst) return null;
+  const supported = (lesson: KBLesson) =>
+    !opts.typedTopic
+    || opts.topicRanked.some(r => r.lesson.id === lesson.id && r.score >= KB_SUGGEST_SCORE);
+  return opts.results.find(l => opts.inScope(l) && supported(l)) ?? opts.softLesson ?? null;
+}

@@ -14,7 +14,7 @@
  * cannot load.
  */
 import { stripSubjectNames } from '../lessonCopilot.ts';
-import { topicFromQuery } from './artifactTopic.ts';
+import { quotedTopic, topicFromQuery } from './artifactTopic.ts';
 
 /**
  * The lesson-chip id that means «build it on what I typed», offered next to
@@ -44,12 +44,42 @@ export function freeArtifactTopic(query: string): string {
 
 /**
  * Build the material on the typed topic, with no lesson? Only for an ask for
- * material (not a question, not a change to the last one), when nothing else
+ * material, or a change to one that was built on a typed topic (the caller
+ * passes that topic, see `refinementFreeTopic`) — never a question — when nothing else
  * grounds it — no lesson in scope, no upload, not a bare «خطة» riding on the
  * card's lesson — and the ask names a topic. Otherwise the caller's other
  * branches answer, and a bare «نشاط» with nothing picked still asks for the
  * topic.
  */
+/**
+ * The topic a refinement («اجعله أقصر») changes, when the last material was
+ * built on a typed topic and not a lesson: that topic, unless the message fences
+ * another in quotes (then the usual path reads it). Without this the refinement
+ * went back to the lesson on the card, or, with none, asked «أي درس؟».
+ */
+export function refinementFreeTopic(query: string, lastFreeTopic: string | null | undefined): string {
+  if (!lastFreeTopic?.trim() || quotedTopic(query)) return '';
+  return lastFreeTopic.trim();
+}
+
+/**
+ * The subject a material is labelled with when no lesson grounds it, from the
+ * lessons the chat holds (the picked one, the card's): the first one IN the
+ * request's grade. A grade 10 maths lesson on the card does not make a grade 6
+ * «لو كنت وزير التربية» activity a maths one — generators read the subject NAME
+ * (`isMathContext`) and would write maths. Null when none is in that grade.
+ */
+export function pickedSubjectInGrade(
+  gradeId: string | null | undefined,
+  picked: ReadonlyArray<{ gradeId?: string | null; subjectId?: string | null } | null | undefined>,
+): string | null {
+  for (const p of picked) {
+    if (!p?.subjectId) continue;
+    if (!gradeId || p.gradeId === gradeId) return p.subjectId;
+  }
+  return null;
+}
+
 export function isFreeTopicArtifactAsk(opts: {
   intent: string;
   hasArtifactType: boolean;
@@ -58,7 +88,7 @@ export function isFreeTopicArtifactAsk(opts: {
   isSoftBareArtifact: boolean;
   typedTopic: string;
 }): boolean {
-  return opts.intent === 'artifact'
+  return (opts.intent === 'artifact' || opts.intent === 'refinement')
     && opts.hasArtifactType
     && !opts.hasKBMatch
     && !opts.hasDocuments

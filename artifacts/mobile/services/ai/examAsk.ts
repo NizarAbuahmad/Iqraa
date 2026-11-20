@@ -7,6 +7,8 @@
  * deliberately conservative: it only reports a type the message names, and a
  * message that names none leaves the defaults alone. Arabic digits count.
  */
+import { NOT_A_LENGTH_AFTER, NOT_A_LENGTH_BEFORE } from './artifactTopic.ts';
+
 export type AskedQuizType = 'multiple_choice' | 'true_false' | 'fill_blank' | 'short_answer';
 
 const TYPE_CUES: [AskedQuizType, RegExp][] = [
@@ -39,9 +41,16 @@ export function questionCountFromAsk(ask: string): number | null {
  * artifactTopic.ts, which takes it out). Between 5 and 180, or it is not a
  * length a class runs to.
  */
+const MINUTES_RE = new RegExp(
+  `(?<!\\d)(?<!${NOT_A_LENGTH_BEFORE}\\s*)(?:(\\d{1,3})\\s*-?\\s*(?:دقيقة|دقيقه|دقائق|minutes?|mins?)|(\\d{1,3})\\s*د)(?=[\\s:،,.؟?!]|$)(?!${NOT_A_LENGTH_AFTER})`,
+  'i',
+);
+
 export function durationFromAsk(ask: string): number | null {
   const s = toLatin(ask);
-  const m = s.match(/(\d{1,3})\s*-?\s*(?:دقيقة|دقيقه|دقائق|minutes?|mins?)(?=[\s:،,.؟?!]|$)|(\d{1,3})\s*د(?=[\s:،,.؟?!]|$)/i);
+  // Minutes that are the lesson («لأقرب 5 دقائق», «120 دقيقة إلى ساعات») are
+  // not a length — the same guard as the topic's (artifactTopic.ts).
+  const m = s.match(MINUTES_RE);
   const n = m ? Number(m[1] ?? m[2]) : NaN;
   if (Number.isInteger(n)) return n >= 5 && n <= 180 ? n : null;
   if (/(?:^|\s)ربع\s+ساعة/.test(s)) return 15;

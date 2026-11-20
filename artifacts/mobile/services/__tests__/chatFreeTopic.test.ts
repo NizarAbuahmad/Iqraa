@@ -20,11 +20,14 @@ import {
   chatArtifactLeadIn,
   freeArtifactTopic,
   isFreeTopicArtifactAsk,
+  pickedSubjectInGrade,
+  refinementFreeTopic,
 } from '../ai/chatArtifactRoute.ts';
 import { durationFromAsk } from '../ai/examAsk.ts';
 import { topicFromQuery } from '../ai/artifactTopic.ts';
 import { resolveArtifactScope } from '../ai/artifactScope.ts';
 import {
+  chooseArtifactLesson,
   inAskScope,
   lessonsInAskScope,
   rankedInAskScope,
@@ -33,11 +36,14 @@ import {
 } from '../kbSuggestion.ts';
 import { getBookForLesson, searchKBRanked, type KBLesson } from '../knowledgeBase.ts';
 import {
+  artifactGuessRanked,
   detectSubjectAmbiguity,
   isConfidentSingleSubjectHit,
   resolveGeneratorGrounding,
+  ungroundedGeneratorNote,
 } from '../kbContext.ts';
-import { extractQueryGradeId, extractQuerySubjectId } from '../lessonCopilot.ts';
+import { extractQueryGradeId, extractQuerySubjectId, pinLesson } from '../lessonCopilot.ts';
+import { emptyChatSessionMemory } from '../ai/teachingAssistant.ts';
 import { classifyChatIntent } from '../ai/intentRouter.ts';
 import { artifactFromQuery } from '../ai/teachingAssistant.ts';
 
@@ -66,22 +72,53 @@ describe('the reported asks, as the chat reads them', () => {
 });
 
 describe('chips come from the ask\'s own grade and subject', () => {
-  it('«which lesson?» offers no lesson outside grade 6 for a grade 6 ask', () => {
-    const ranked = searchKBRanked(GRADE6_ASK, 'ar');
-    const scoped = rankedInAskScope(ranked, { gradeId: 'grade-6' }, bookOf, teachesAll);
-    assert.ok(scoped.length > 0, 'grade 6 has some lexical hits, so the filter is exercised');
-    assert.ok(scoped.every(r => gradeOf(r.lesson) === 'grade-6'));
-    const guess = shouldAskWhichLesson({
-      intent: 'artifact',
-      hasHardContext: false,
-      hasDocuments: false,
-      isSoftBareArtifact: false,
-      ranked: scoped,
+  /** What «which lesson?» is given for an ask in `gradeId`, as the screen builds it. */
+  const guessFor = (q: string, gradeId: string) => {
+    const ranked = searchKBRanked(q, 'ar');
+    return artifactGuessRanked({
+      query: q,
+      topic: freeArtifactTopic(q),
+      lang: 'ar',
+      ranked,
+      confidentHit: isConfidentSingleSubjectHit(ranked),
+      scope: { gradeId },
+      teaches: teachesAll,
     });
-    if (guess.ask) {
-      assert.ok(guess.candidates.every(c => gradeOf(c) === 'grade-6'));
-      assert.ok(!guess.candidates.some(c => c.titleAr.includes('الفندق')));
-    }
+  };
+  const asks = (ranked: ReturnType<typeof guessFor>) => shouldAskWhichLesson({
+    intent: 'artifact',
+    hasHardContext: false,
+    hasDocuments: false,
+    isSoftBareArtifact: false,
+    ranked,
+  });
+
+  it('«which lesson?» offers only grade 6 lessons for the grade 6 ask', () => {
+    const guess = asks(guessFor(GRADE6_ASK, 'grade-6'));
+    // It still asks: grade 6 has lexical near-misses (social studies 12,
+    // «التربية الإعلامية» 11 on «التربية»). The screen adds «على موضوعي كما
+    // كتبته» to these chips, so the question is never a dead end.
+    assert.equal(guess.ask, true);
+    assert.ok(guess.ask && guess.candidates.length > 0);
+    assert.ok(guess.ask && guess.candidates.every(c => gradeOf(c) === 'grade-6'));
+    assert.ok(guess.ask && !guess.candidates.some(c => c.titleAr.includes('الفندق')));
+  });
+
+  it('a confident whole-KB hit with a named grade does not ask (the topic search decides)', () => {
+    // Scoping the whole-message list here once offered grade 10 English «طرق
+    // العمل» (it matches «ورقة عمل») as the first chip.
+    assert.deepEqual(guessFor('ورقة عمل عن محيط الدائرة للصف العاشر', 'grade-10'), []);
+  });
+
+  it('an in-scope hit that holds the topic does not ask', () => {
+    assert.deepEqual(guessFor('نشاط عن الماء للصف الرابع', 'grade-4'), []);
+  });
+
+  it('a real choice in scope is still asked', () => {
+    const guess = asks(guessFor('خطة درس عن الكسور للصف السادس', 'grade-6'));
+    assert.equal(guess.ask, true);
+    assert.ok(guess.ask && guess.candidates.every(c => gradeOf(c) === 'grade-6'));
+    assert.ok(guess.ask && guess.candidates.some(c => c.titleAr.includes('الكُسورِ')));
   });
 
   it('the unscoped guess is the reported bug: grade 10 English on the word «يوم»', () => {
@@ -146,12 +183,71 @@ describe('a topic search in the grade grounds only a real topic', () => {
     assert.equal(topHitHoldsTopic([{ lesson: lesson('a', 'u1'), score: 9 }], l => l.unitId), false);
   });
 
+  it('chat\'s «no lesson» note is the generator\'s ungrounded note', () => {
+    // Sent as-is when chat decided there is no lesson: re-grounding «الصداقة»
+    // by its words found grade 2 Islamic «الصَّداقَة» for a grade 5 worksheet.
+    assert.ok(resolveGeneratorGrounding('الصداقة', 'ar', { scope: { gradeId: 'grade-5' } }).grounded);
+    assert.match(ungroundedGeneratorNote('ar'), /غير موجود في المنهاج/);
+    assert.equal(ungroundedGeneratorNote('en'), resolveGeneratorGrounding('zzqq no such topic', 'en').ungroundedNote);
+  });
+
   it('the generator\'s own grounding calls it ungrounded in the grade', () => {
     assert.equal(resolveGeneratorGrounding(topic, 'ar', { scope: { gradeId: 'grade-6' } }).grounded, false);
     assert.match(
       resolveGeneratorGrounding(topic, 'ar', { scope: { gradeId: 'grade-6' } }).ungroundedNote,
       /غير موجود في المنهاج/,
     );
+  });
+});
+
+describe('the lesson a material is built on', () => {
+  const lesson = (id: string) => ({ id, titleAr: id, titleEn: id }) as unknown as KBLesson;
+  const base = {
+    pinned: null,
+    asTyped: false,
+    topicRanked: [] as { lesson: KBLesson; score: number }[],
+    strong: false,
+    results: [] as KBLesson[],
+    inScope: () => true,
+    typedTopic: '',
+    documentsFirst: false,
+    softLesson: null,
+  };
+
+  it('a tapped lesson, always; none when the teacher chose the typed topic', () => {
+    const tapped = lesson('tapped');
+    assert.equal(chooseArtifactLesson({ ...base, pinned: tapped, strong: true, topicRanked: [{ lesson: lesson('x'), score: 50 }] }), tapped);
+    assert.equal(chooseArtifactLesson({ ...base, asTyped: true, strong: true, topicRanked: [{ lesson: lesson('x'), score: 50 }] }), null);
+  });
+
+  it('a whole-message hit the topic search does not find is no lesson («اختبار عن الخلية»)', () => {
+    // Grade 10 picked: the whole-message search kept maths «الاقتران العكسي»
+    // (it matched «اختبار»), and the quiz was going to be a maths one titled «الخلية».
+    const q = 'اختبار عن الخلية';
+    const maths = searchKBRanked(q, 'ar').map(r => r.lesson).find(l => gradeOf(l) === 'grade-10')!;
+    assert.ok(maths, 'the whole-message search has a grade 10 hit');
+    const topicRanked = searchKBRanked(freeArtifactTopic(q), 'ar', { gradeId: 'grade-10' });
+    assert.equal(chooseArtifactLesson({
+      ...base,
+      topicRanked,
+      strong: isConfidentSingleSubjectHit(topicRanked) || topHitHoldsTopic(topicRanked, l => l.unitId),
+      results: [maths],
+      typedTopic: freeArtifactTopic(q),
+    }), null);
+  });
+
+  it('a whole-message hit is kept when the topic search finds it too, or no topic was typed', () => {
+    const hit = lesson('hit');
+    assert.equal(chooseArtifactLesson({ ...base, results: [hit], typedTopic: 'x', topicRanked: [{ lesson: hit, score: 6 }] }), hit);
+    assert.equal(chooseArtifactLesson({ ...base, results: [hit] }), hit);
+  });
+
+  it('never a hit outside the scope; the card\'s lesson for a bare ask; uploads first', () => {
+    const out = lesson('out');
+    const soft = lesson('soft');
+    assert.equal(chooseArtifactLesson({ ...base, results: [out], inScope: () => false }), null);
+    assert.equal(chooseArtifactLesson({ ...base, results: [out], inScope: () => false, softLesson: soft }), soft);
+    assert.equal(chooseArtifactLesson({ ...base, results: [out], documentsFirst: true }), null);
   });
 });
 
@@ -196,6 +292,23 @@ describe('the topic and the length the ask names', () => {
     assert.equal(durationFromAsk('activity for 40 mins'), 40);
   });
 
+  it('minutes that are the lesson are neither a length nor taken out of the topic', () => {
+    // Grade 2 maths «الْوَقْتُ لِأَقْرَبِ 5 دَقائِق», typed without vowels.
+    assert.equal(topicFromQuery('ورقة عمل عن الوقت لأقرب 5 دقائق'), 'الوقت لأقرب 5 دقائق');
+    assert.equal(durationFromAsk('ورقة عمل عن الوقت لأقرب 5 دقائق'), null);
+    assert.equal(durationFromAsk('ورقة عمل عن الوقت لأقرب 15 دقيقة'), null);
+    assert.equal(topicFromQuery('ورقة عمل عن تحويل 120 دقيقة إلى ساعات'), 'تحويل 120 دقيقة إلى ساعات');
+    assert.equal(durationFromAsk('ورقة عمل عن تحويل 120 دقيقة إلى ساعات'), null);
+    assert.equal(topicFromQuery('worksheet on Time to the Nearest 5 Minutes'), 'Time to the Nearest 5 Minutes');
+    assert.equal(durationFromAsk('worksheet on Time to the Nearest 5 Minutes'), null);
+    // …while a length next to them is still read.
+    assert.equal(durationFromAsk('نشاط 20 دقيقة عن الوقت لأقرب 5 دقائق'), 20);
+  });
+
+  it('English "fun" and "interactive" stay in a topic', () => {
+    assert.equal(topicFromQuery('activity about fun facts of space'), 'fun facts of space');
+  });
+
   it('names no length when there is none, or none a class runs to', () => {
     assert.equal(durationFromAsk(MINISTER_ASK), null);
     assert.equal(durationFromAsk('نشاط للصف 10'), null);
@@ -226,10 +339,38 @@ describe('when chat builds on the typed topic', () => {
     assert.equal(isFreeTopicArtifactAsk({ ...base, typedTopic: '' }), false);
   });
 
-  it('not for a question or a change to the last material', () => {
+  it('not for a question, or with no material to make', () => {
     assert.equal(isFreeTopicArtifactAsk({ ...base, intent: 'teaching' }), false);
-    assert.equal(isFreeTopicArtifactAsk({ ...base, intent: 'refinement' }), false);
     assert.equal(isFreeTopicArtifactAsk({ ...base, hasArtifactType: false }), false);
+  });
+
+  it('a change to a material built on a typed topic keeps that topic', () => {
+    // «اجعله أقصر» went back to the card's lesson, or with none asked «أي درس؟».
+    const last = 'لو كنت وزير التربية ليوم واحد';
+    assert.equal(refinementFreeTopic('اجعله أقصر', last), last);
+    assert.equal(isFreeTopicArtifactAsk({ ...base, intent: 'refinement', typedTopic: refinementFreeTopic('اجعله أقصر', last) }), true);
+    // A quoted lesson names its own topic; no free topic, none to keep.
+    assert.equal(refinementFreeTopic('حسّن خطة الدرس عن «الدائرة»', last), '');
+    assert.equal(refinementFreeTopic('اجعله أقصر', null), '');
+  });
+
+  it('pinning a lesson forgets the free topic', () => {
+    const lesson = searchKBRanked('الدائرة', 'ar')[0]!.lesson;
+    const memory = { ...emptyChatSessionMemory(), freeTopic: 'لو كنت وزير التربية' };
+    assert.equal(pinLesson(memory, lesson, 'hard').freeTopic, null);
+  });
+});
+
+describe('the subject a free topic is labelled with', () => {
+  it('the picked lesson\'s only when it is in the request\'s grade', () => {
+    const maths10 = { gradeId: 'grade-10', subjectId: 'mathematics' };
+    const arabic6 = { gradeId: 'grade-6', subjectId: 'arabic' };
+    // A grade 10 maths card does not make a grade 6 activity maths.
+    assert.equal(pickedSubjectInGrade('grade-6', [maths10, null]), null);
+    assert.equal(pickedSubjectInGrade('grade-6', [maths10, arabic6]), 'arabic');
+    assert.equal(pickedSubjectInGrade('grade-10', [maths10]), 'mathematics');
+    assert.equal(pickedSubjectInGrade(null, [maths10]), 'mathematics');
+    assert.equal(pickedSubjectInGrade('grade-6', []), null);
   });
 });
 

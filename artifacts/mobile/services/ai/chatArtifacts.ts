@@ -13,7 +13,7 @@ import type {
 } from '@/services/ai/AIService';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import type { SessionArtifact } from '@/services/ai/teachingAssistant';
-import { buildGeneratorContext, nccdUnitId, resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildGeneratorContext, nccdUnitId, resolveGeneratorGrounding, ungroundedGeneratorNote } from '@/services/kbContext';
 import { getBookForLesson, type KBLesson } from '@/services/knowledgeBase';
 import { contentLang } from '@/services/contentLanguage';
 import {
@@ -116,6 +116,7 @@ function buildRequest(
   documentContext?: string | null,
   scope?: ArtifactScope | null,
   ask?: string,
+  noLesson = false,
 ): AIRequest {
   // The lesson's own book, else the picked scope — never a bare maths default
   // for a chemistry teacher's upload. See `resolveArtifactScope`. A topic no
@@ -147,7 +148,14 @@ function buildRequest(
     // The lesson's id, when chat holds one, and the ask's grade and subject:
     // re-grounding the topic string alone could land on another grade's lesson
     // (CLAUDE.md, «A lesson title does not identify a lesson»).
-    additionalContext: [documentContext?.trim(), buildGeneratorContext(topic, lang, groundingOptions(lesson, scope))]
+    //
+    // When chat already decided no lesson grounds the ask (`noLesson`), the
+    // note says so outright: grounding «الصداقة» by its words alone found grade
+    // 2 Islamic «الصَّداقَة» for a grade 5 worksheet.
+    additionalContext: [
+      documentContext?.trim(),
+      noLesson ? ungroundedGeneratorNote(lang) : buildGeneratorContext(topic, lang, groundingOptions(lesson, scope)),
+    ]
       .filter(Boolean)
       .join('\n\n') || undefined,
     unitId: nccdUnitId(lesson?.unitId),
@@ -186,6 +194,11 @@ export async function generateChatArtifact(opts: {
   scope?: ArtifactScope | null;
   /** The teacher's own message, for the question types and count it names. */
   ask?: string;
+  /**
+   * Chat found no lesson for this ask in its grade and subject: build on the
+   * topic as typed and say so, without grounding the topic again here.
+   */
+  noLesson?: boolean;
 }): Promise<ChatArtifactResult> {
   const {
     artifact,
@@ -196,6 +209,7 @@ export async function generateChatArtifact(opts: {
     fromSoftPin = false,
     scope = null,
     ask,
+    noLesson = false,
   } = opts;
   const isAr = lang === 'ar';
   const fromDocuments = !!documentContext?.trim();
@@ -203,7 +217,8 @@ export async function generateChatArtifact(opts: {
   const lessonForGen = fromDocuments && fromSoftPin ? null : lesson;
   const material = materialLang(topic, lessonForGen, scope, lang);
   const matAr = material.lang === 'ar';
-  const req = buildRequest(material.topic, lessonForGen, material.lang, documentContext, scope, ask);
+  const ungrounded = noLesson && !lessonForGen && !fromDocuments;
+  const req = buildRequest(material.topic, lessonForGen, material.lang, documentContext, scope, ask, ungrounded);
   const meta = { subject: req.subject, grade: req.grade, duration: req.duration, lang: material.lang };
   const titleBase = material.topic;
 
@@ -283,7 +298,8 @@ export async function generateChatArtifact(opts: {
     isAr,
     fromSoftPin: fromSoftPin && !fromDocuments,
     fromDocuments,
-    inCurriculum: resolveGeneratorGrounding(material.topic, material.lang, groundingOptions(lessonForGen, scope)).grounded,
+    inCurriculum: !ungrounded
+      && resolveGeneratorGrounding(material.topic, material.lang, groundingOptions(lessonForGen, scope)).grounded,
   });
   const nextStep = `→ ${nextStepLine(artifact, isAr)}`;
   const text = `${lead}${body}\n\n${nextStep}`;
