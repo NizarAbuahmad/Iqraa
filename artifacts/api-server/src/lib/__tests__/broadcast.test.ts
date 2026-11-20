@@ -11,6 +11,7 @@ import { sendBroadcast, setSuppressionCheck } from "../email.ts";
 
 const realFetch = globalThis.fetch;
 const realKey = process.env.RESEND_API_KEY;
+const realNodeEnv = process.env.NODE_ENV;
 const unsub = (r: { id: string }) => `https://api.test/unsub?id=${r.id}`;
 const people = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `id-${i}`, email: `p${i}@school.jo` }));
 
@@ -21,6 +22,8 @@ afterEach(() => {
   setSuppressionCheck(null);
   globalThis.fetch = realFetch;
   delete process.env.RESEND_API_URL;
+  if (realNodeEnv === undefined) delete process.env.NODE_ENV;
+  else process.env.NODE_ENV = realNodeEnv;
   if (realKey === undefined) delete process.env.RESEND_API_KEY;
   else process.env.RESEND_API_KEY = realKey;
 });
@@ -62,9 +65,25 @@ describe("sendBroadcast", () => {
       url = String(u);
       return new Response("{}", { status: 200 });
     }) as typeof fetch;
+    process.env.NODE_ENV = "test";
     process.env.RESEND_API_URL = "http://127.0.0.1:9/";
     await sendBroadcast(people(1), "s", "<p>x</p>", unsub);
     assert.equal(url, "http://127.0.0.1:9/emails/batch");
+  });
+
+  it("ignores RESEND_API_URL in production: the key and the addresses go to Resend only", async () => {
+    let url = "";
+    globalThis.fetch = (async (u: unknown) => {
+      url = String(u);
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    // Production refuses to mail without an unsubscribe check; give it one that suppresses nobody.
+    setSuppressionCheck(async () => new Set());
+    process.env.NODE_ENV = "production";
+    process.env.RESEND_API_URL = "http://127.0.0.1:9/";
+    const out = await sendBroadcast(people(1), "s", "<p>x</p>", unsub);
+    assert.equal(url, "https://api.resend.com/emails/batch");
+    assert.deepEqual(out.sent, ["p0@school.jo"]);
   });
 
   it("gives each recipient their own unsubscribe link, in the footer and the headers", async () => {

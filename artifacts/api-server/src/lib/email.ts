@@ -394,8 +394,25 @@ const WAITLIST_FOOTER: BroadcastFooter = {
   ar: "تلقّيت هذه الرسالة لأنك سجّلت اهتمامك بتطبيق إقرأ على iqrra.com.",
   en: "You received this because you signed up for Iqrra at iqrra.com.",
 };
-/** Resend's origin. Overridden only by tests, which point it at a local stub (test-support/resendStub.ts). */
-const resendBase = () => (process.env.RESEND_API_URL || "https://api.resend.com").replace(/\/+$/, "");
+const RESEND_ORIGIN = "https://api.resend.com";
+let overrideIgnoredLogged = false;
+/**
+ * Resend's origin. Overridden only by tests, which point it at a local stub
+ * (test-support/resendStub.ts). Never in production: a stray RESEND_API_URL there would send
+ * the provider key and every address to another origin, so it is ignored and logged once.
+ */
+const resendBase = () => {
+  const override = process.env.RESEND_API_URL;
+  if (!override) return RESEND_ORIGIN;
+  if (process.env.NODE_ENV === "production") {
+    if (!overrideIgnoredLogged) {
+      overrideIgnoredLogged = true;
+      logger.error("RESEND_API_URL is set in production — ignored; mail goes to Resend");
+    }
+    return RESEND_ORIGIN;
+  }
+  return override.replace(/\/+$/, "");
+};
 
 export async function sendBroadcast(
   recipients: readonly BroadcastRecipient[],
