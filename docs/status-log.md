@@ -42,6 +42,82 @@ generate for all, and 63 of 66 maths lessons gave a full paper. What was left (`
 **Not done.** Grade 1 has no extracted book text, so as before the objectives were the reference. The non-maths subjects
 have no offline question bank, by design. Everything the audit left for the page images.
 
+## Grade 2 review, the Grade 1 way: plans, activities, quick checks and live prompts for seven-year-olds — 2026-11-15
+
+The Grade 1 review (below, «Grade 1 review: coverage, generated results, book images — 2026-11-13») repeated for Grade 2
+(14 books, 236 lessons). Three earlier Grade 2 entries had covered the catalog, the book pages that exist and offline
+maths for all 61 lessons («Grade 2 review: coverage, images, and four generator fixes», «Grade 2 audit: book pages,
+contents, honorifics and offline maths checked», «Grade 2 maths: offline questions for the four problem-solving
+lessons»). What none had touched is what the generators write for a seven-year-old.
+
+**Swept.** The offline plan (three styles), the six activity formats and the quick check, for all 236 lessons. Every
+lesson got the all-grades templates:
+- «اكتب من ذاكرتك — الدفاتر مغلقة», a claim to defend, teams betting points, a "worked example", a written summary, a
+  debate and an individual worksheet: all 236;
+- «اشرح بكلماتك» in 175, a concept map in 148, paragraphs in all of Arabic and social studies;
+- a controlled experiment in all 13 science lessons.
+
+The first Grade 2 review had also noted one plan per subject: «أركان الإيمان» got a recitation plan, a drama lesson
+"show the finished artwork", and Arabic listening and speaking lessons were told to read aloud.
+
+**Offline (`artifacts/mobile`).**
+- **Grade 2 now uses the early-grade plans and activities** (`lessonPlanFirstGrade.ts`, `activityFirstGrade.ts`,
+  `earlyGradeOf` → `EarlyGrade` 1 or 2), with its own level:
+  - **Arabic follows the book's strands**, each from the lesson's own text or rule (`titleDetail`). «أقرأ بطلاقة وفهم
+    (الغراب وإناء الماء)» reads «نص «الغراب وإناء الماء»» aloud and answers one question in a written word or
+    sentence. «أكتب (اللام الشمسية واللام القمرية)» sorts and writes words by that rule, then writes a short sentence.
+    «أبني لغتي» builds sentences on the lesson's pattern. Listening and speaking are retelling and talking in connected
+    sentences.
+  - **Writing is a word or a short sentence of the child's own**, where Grade 1 copies one: science writes the thing's
+    name under its picture, social studies a sentence, Islamic education the sentence it said. Every assessment ends
+    with the Grade 2 limit (`WRITING_LIMIT`), and so does an activity's writing tip.
+  - The quick check for a lesson with no bank is spoken. A Grade 2 reading lesson asks about its own text, a spelling
+    lesson about its rule.
+  - A Grade 2 unit or semester review is the early-grade review, and each child writes a short sentence or an example
+    from each unit.
+- **«أكتب (التنوين)» and «أكتب (همزة الوصل…)» are spelling lessons.** `arabicLessonType` read «تنوين» before the strand
+  and gave them Grade 1's mark lesson (an objective «أن يميّز الطفل «أكتب (التنوين)» شكلًا وصوتًا»). The strand is now
+  read first; Grade 1's «تنوين الضمة» has no strand and is still a mark lesson.
+- **An arts lesson is a picture, a piece of music or a scene, in Grades 1 and 2** (`makingContent`). «خشبة المسرح» and
+  «آلة (البيانو)» had both got «ينفّذ الطفل عملًا صغيرًا بخطواته». Theatre now performs a movement or a line for the
+  class, music listens and claps the rhythm, art draws.
+- Measured again over all 236 lessons: every phrase above → 0. The only matches left are «يتعرّف» (recognise) and
+  «الصورة التحليلية», the book's term for expanded form.
+
+**Live (`artifacts/api-server`).**
+- **A Grade 2 clause** (`firstGrade.ts`, `isSecondGrade`) for every use the Grade 1 clause covers: plan, paper,
+  activity, classroom, explanation, visual. It says:
+  - reading is a short text from the book read aloud, and writing is words or one or two short sentences;
+  - no paragraphs, summaries, justifying, analysing or controlled experiments;
+  - a problem is one or two steps;
+  - by subject, Arabic's strands, and maths within 999 with the 2, 3, 4, 5 and 10 facts.
+
+  `firstGradeClause*` returns it for a Grade 2 request, so it reaches the plan, worksheet, homework, quiz, activity,
+  lesson explanation, Prompt Slides, classroom, infographic and evaluation prompts. The evaluation's Grade 1 type notes
+  stay Grade 1's.
+- **The pool key gains `secondGrade: "2026-11-15"`** for a Grade 2 request of those kinds, so nothing pooled under the
+  grade-blind prompt is served. Grade 3 and Grade 12 keys are unchanged, pinned by literal keys computed from the code
+  before the change (`secondGradePrompts.test.ts`).
+
+**Verified.**
+- `secondGradePlans.test.ts` (mobile) runs every Grade 2 lesson through the plan in three styles, the six formats and
+  the quick check. It checks for none of the phrases, the teacher's first-person voice and the Grade 2 limit, and pins
+  the Arabic strands, «أكتب (التنوين)», the arts split in Grades 1 and 2, the review, and Grade 3 unchanged.
+- `secondGradePrompts.test.ts` (API) checks the clause in each builder for Grade 2 only, and the keys.
+- Each failed on the old code (the sweep: 236 of 236).
+- `pnpm run typecheck`; api-server `build` + `test` (2,960 pass); the mobile suite (9,321 pass, 10 skipped).
+- `activityFirstGrade.test.ts` had pinned a Grade 2 activity as the all-grades one; it now pins Grade 3.
+
+**Not verified:** a live model's Grade 2 output; the Arabic wording by a native reader; anything needing the PDFs.
+
+**Still open.**
+- Grade 2 book images and the missing PE Semester 2 book, both of which need the PDFs (as the earlier entries say).
+- Grade 2 evaluations keep every question type: a seven-year-old can write a short answer, so only Grade 1's list is
+  narrowed.
+- Grade 2 offline maths already follows difficulty («Maths difficulty… grades 1–4»).
+
+No «ما الجديد» entry: these correct what existing generators write for Grade 2.
+
 ## Grade 2 second pass: numbers within 999, grams without conversions, and «2 عشرات» — 2026-11-17
 
 A second read of Grade 2 maths, on top of «Grade 2 review: fifteen maths lessons asked about their own objective»

@@ -360,10 +360,11 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
       ]
       : []),
     // Grade 1: six-year-olds learning to read (`firstGrade.ts`); empty for any other grade.
-    ...(req.gradeId === "grade-1"
+    // Grades 1 and 2 (`firstGrade.ts`); empty for any other grade. Only Grade 1 limits the types.
+    ...(req.gradeId === "grade-1" || req.gradeId === "grade-2"
       ? [
         firstGradeClauseEn({ gradeId: req.gradeId, subjectId: req.objectives[0]?.subjectId }, "paper").trim(),
-        firstGradeTypeNotesEn(req.assessmentTypes),
+        req.gradeId === "grade-1" ? firstGradeTypeNotesEn(req.assessmentTypes) : "",
       ].filter(Boolean)
       : []),
     "",
