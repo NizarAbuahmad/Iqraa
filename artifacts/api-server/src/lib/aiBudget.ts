@@ -23,11 +23,12 @@
  */
 import { logger } from "./logger.ts";
 import { getCacheFailure, type CacheOperation } from "./artifactCache.ts";
+import { ammanDay } from "./dailyActivity.ts";
 import {
   currentPeriodStart,
   getPersistenceFailure,
   readPeriodSpendUsd,
-  readUserBudgetOverrideUsd,
+  readUserBudgetOverride,
   readUserPeriodSpendUsd,
   recordGeneration,
 } from "./aiUsageLog.ts";
@@ -467,35 +468,69 @@ export async function assertUserQuotaAvailable(
 
 /**
  * The allowance that governs this account: its own `users.ai_budget_usd` when a
- * system_admin set one, else the role default from the env. An override is used
- * even when the role default is 0 (no cap), so it can also tighten one account.
+ * system_admin set one and its end date (`ai_budget_until`, an Amman calendar
+ * day, inclusive) has not passed, else the role default from the env. An
+ * override is used even when the role default is 0 (no cap), so it can also
+ * tighten one account.
  */
-export async function resolveUserBudgetLimitUsd(userId: string, role?: string | null): Promise<number> {
-  return pickUserBudgetLimitUsd(await readUserBudgetOverrideUsd(userId), role);
+export async function resolveUserBudgetLimitUsd(
+  userId: string,
+  role?: string | null,
+  now: Date = new Date(),
+): Promise<number> {
+  return pickUserBudgetLimitUsd(await readUserBudgetOverride(userId), role, ammanDay(now));
 }
 
-/** Pure half of `resolveUserBudgetLimitUsd`, for tests. */
-export function pickUserBudgetLimitUsd(override: number | null | undefined, role?: string | null): number {
-  return typeof override === "number" && Number.isFinite(override) && override > 0 ? override : getUserBudgetLimitUsd(role);
+/** Pure half of `resolveUserBudgetLimitUsd`, for tests. `today` is an Amman YYYY-MM-DD. */
+export function pickUserBudgetLimitUsd(
+  override: { usd: number | null; until: string | null } | null | undefined,
+  role: string | null | undefined,
+  today: string,
+): number {
+  const usd = override?.usd;
+  const live = typeof usd === "number" && Number.isFinite(usd) && usd > 0;
+  // YYYY-MM-DD strings order the same as the days they name.
+  const expired = !!override?.until && override.until < today;
+  return live && !expired ? usd : getUserBudgetLimitUsd(role);
 }
 
 /** Highest per-account allowance an admin may set — a guard against a typo (150 for 15.0), not a policy. */
 export const MAX_USER_BUDGET_OVERRIDE_USD = 100;
 
+const CALENDAR_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
 /**
- * Body of `PUT /admin/users/:id/ai-budget`: `{ usd: number | null }`. Null (or 0)
- * clears the override, returning the account to its role default.
+ * Body of `PUT /admin/users/:id/ai-budget`:
+ * `{ usd: number | null, until?: "YYYY-MM-DD" | null }`. Null (or 0) `usd`
+ * clears the override, returning the account to its role default, and clears
+ * the end date with it. `until` is the last Amman day the amount applies,
+ * inclusive; absent or null means no end date. A day before `today` is refused:
+ * it would save a limit that is already over.
  */
-export function parseUserBudgetOverride(body: unknown): number | null {
-  const raw = (body as { usd?: unknown } | null | undefined)?.usd;
-  if (raw === null || raw === 0) return null;
+export function parseUserBudgetOverride(
+  body: unknown,
+  today: string,
+): { usd: number | null; until: string | null } {
+  const b = body as { usd?: unknown; until?: unknown } | null | undefined;
+  const raw = b?.usd;
+  if (raw === null || raw === 0) return { usd: null, until: null };
   if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) {
     throw new Error("usd must be a positive number, or null to use the default");
   }
   if (raw > MAX_USER_BUDGET_OVERRIDE_USD) {
     throw new Error(`usd may be at most ${MAX_USER_BUDGET_OVERRIDE_USD}`);
   }
-  return Math.round(raw * 100) / 100;
+  let until: string | null = null;
+  if (b?.until !== undefined && b.until !== null && b.until !== "") {
+    const u = b.until;
+    // Round-trip through Date so 2026-02-30 is refused, not rolled into March.
+    if (typeof u !== "string" || !CALENDAR_DAY.test(u) || new Date(`${u}T00:00:00Z`).toISOString().slice(0, 10) !== u) {
+      throw new Error("until must be a real date in YYYY-MM-DD form, or null");
+    }
+    if (u < today) throw new Error("until is in the past");
+    until = u;
+  }
+  return { usd: Math.round(raw * 100) / 100, until };
 }
 
 /**

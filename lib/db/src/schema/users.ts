@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, uuid, integer, jsonb, index, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, uuid, integer, jsonb, index, doublePrecision, date } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { schools } from "./schools";
@@ -66,6 +66,12 @@ export const users = pgTable("users", {
    * would put users' emails in a public repo.
    */
   aiBudgetUsd: doublePrecision("ai_budget_usd"),
+  /**
+   * Last Amman calendar day (YYYY-MM-DD) `aiBudgetUsd` applies, inclusive. From
+   * the next day the account is back on its role default with no one having to
+   * remember to clear it. Null = no end date.
+   */
+  aiBudgetUntil: date("ai_budget_until", { mode: "string" }),
   /**
    * When this teacher confirmed their school holds the parental consent that
    * lets them enter student information here — see `lib/rosterConsent.ts`.

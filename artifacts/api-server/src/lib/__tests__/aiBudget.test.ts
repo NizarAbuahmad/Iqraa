@@ -153,41 +153,68 @@ describe("per-account AI allowance (users.ai_budget_usd)", () => {
     }
   };
 
+  const TODAY = "2026-11-20";
+  const o = (usd: number | null, until: string | null = null) => ({ usd, until });
+
   it("an override replaces the role default, up or down", () => {
     withEnv({ AI_USER_BUDGET_USD: "1", AI_STUDENT_BUDGET_USD: "0.20" }, () => {
-      assert.equal(pickUserBudgetLimitUsd(15, "teacher"), 15);
-      assert.equal(pickUserBudgetLimitUsd(0.5, "teacher"), 0.5);
-      assert.equal(pickUserBudgetLimitUsd(2, "student"), 2);
+      assert.equal(pickUserBudgetLimitUsd(o(15), "teacher", TODAY), 15);
+      assert.equal(pickUserBudgetLimitUsd(o(0.5), "teacher", TODAY), 0.5);
+      assert.equal(pickUserBudgetLimitUsd(o(2), "student", TODAY), 2);
     });
   });
 
   it("no override means the role default", () => {
     withEnv({ AI_USER_BUDGET_USD: "1", AI_STUDENT_BUDGET_USD: "0.20" }, () => {
-      assert.equal(pickUserBudgetLimitUsd(null, "teacher"), 1);
-      assert.equal(pickUserBudgetLimitUsd(undefined, "student"), 0.2);
-      assert.equal(pickUserBudgetLimitUsd(0, "teacher"), 1);
-      assert.equal(pickUserBudgetLimitUsd(Number.NaN, "teacher"), 1);
+      assert.equal(pickUserBudgetLimitUsd(null, "teacher", TODAY), 1);
+      assert.equal(pickUserBudgetLimitUsd(undefined, "student", TODAY), 0.2);
+      assert.equal(pickUserBudgetLimitUsd(o(null), "teacher", TODAY), 1);
+      assert.equal(pickUserBudgetLimitUsd(o(0), "teacher", TODAY), 1);
+      assert.equal(pickUserBudgetLimitUsd(o(Number.NaN), "teacher", TODAY), 1);
     });
   });
 
   it("an override still caps when the role has no default cap", () => {
     withEnv({}, () => {
-      assert.equal(pickUserBudgetLimitUsd(null, "teacher"), 0);
-      assert.equal(pickUserBudgetLimitUsd(3, "teacher"), 3);
+      assert.equal(pickUserBudgetLimitUsd(null, "teacher", TODAY), 0);
+      assert.equal(pickUserBudgetLimitUsd(o(3), "teacher", TODAY), 3);
+    });
+  });
+
+  it("an end date holds through its own day and lapses the day after", () => {
+    withEnv({ AI_USER_BUDGET_USD: "1" }, () => {
+      const dec31 = o(15, "2026-12-31");
+      assert.equal(pickUserBudgetLimitUsd(dec31, "teacher", TODAY), 15);
+      assert.equal(pickUserBudgetLimitUsd(dec31, "teacher", "2026-12-31"), 15);
+      assert.equal(pickUserBudgetLimitUsd(dec31, "teacher", "2027-01-01"), 1);
     });
   });
 
   it("parses the admin body: a positive amount, or null/0 to clear", () => {
-    assert.equal(parseUserBudgetOverride({ usd: 15 }), 15);
-    assert.equal(parseUserBudgetOverride({ usd: 2.499 }), 2.5);
-    assert.equal(parseUserBudgetOverride({ usd: null }), null);
-    assert.equal(parseUserBudgetOverride({ usd: 0 }), null);
-    assert.equal(parseUserBudgetOverride({ usd: MAX_USER_BUDGET_OVERRIDE_USD }), MAX_USER_BUDGET_OVERRIDE_USD);
+    assert.deepEqual(parseUserBudgetOverride({ usd: 15 }, TODAY), o(15));
+    assert.deepEqual(parseUserBudgetOverride({ usd: 2.499 }, TODAY), o(2.5));
+    assert.deepEqual(parseUserBudgetOverride({ usd: null }, TODAY), o(null));
+    assert.deepEqual(parseUserBudgetOverride({ usd: 0 }, TODAY), o(null));
+    assert.deepEqual(parseUserBudgetOverride({ usd: MAX_USER_BUDGET_OVERRIDE_USD }, TODAY), o(MAX_USER_BUDGET_OVERRIDE_USD));
+  });
+
+  it("parses an end date, and clearing the amount clears the date too", () => {
+    assert.deepEqual(parseUserBudgetOverride({ usd: 15, until: "2026-12-31" }, TODAY), o(15, "2026-12-31"));
+    assert.deepEqual(parseUserBudgetOverride({ usd: 15, until: TODAY }, TODAY), o(15, TODAY));
+    assert.deepEqual(parseUserBudgetOverride({ usd: 15, until: null }, TODAY), o(15));
+    assert.deepEqual(parseUserBudgetOverride({ usd: 15, until: "" }, TODAY), o(15));
+    assert.deepEqual(parseUserBudgetOverride({ usd: null, until: "2026-12-31" }, TODAY), o(null));
   });
 
   it("refuses junk, negatives, a missing field and a typo-sized amount", () => {
     for (const body of [{ usd: "15" }, { usd: -1 }, { usd: Number.POSITIVE_INFINITY }, {}, null, { usd: MAX_USER_BUDGET_OVERRIDE_USD + 1 }]) {
-      assert.throws(() => parseUserBudgetOverride(body), Error, JSON.stringify(body));
+      assert.throws(() => parseUserBudgetOverride(body, TODAY), Error, JSON.stringify(body));
+    }
+  });
+
+  it("refuses a malformed, impossible or past end date", () => {
+    for (const until of ["31/12/2026", "2026-12-31T00:00:00Z", "2026-02-30", "2026-11-19", 20261231]) {
+      assert.throws(() => parseUserBudgetOverride({ usd: 15, until }, TODAY), Error, String(until));
     }
   });
 });

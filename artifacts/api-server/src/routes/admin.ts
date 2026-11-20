@@ -484,6 +484,8 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
           monthSpendUsd: spend,
           // This account's own monthly allowance; null = the role default.
           aiBudgetUsd: users.aiBudgetUsd,
+          // Last Amman day it applies; null = no end date.
+          aiBudgetUntil: users.aiBudgetUntil,
         })
         .from(users)
         .leftJoin(schools, eq(schools.id, users.schoolId))
@@ -609,11 +611,12 @@ router.put(
 );
 
 /**
- * PUT /admin/users/:id/ai-budget { usd: number | null }
+ * PUT /admin/users/:id/ai-budget { usd: number | null, until?: "YYYY-MM-DD" | null }
  *
  * One account's own monthly AI allowance, replacing the role default
  * (`AI_USER_BUDGET_USD` / `AI_STUDENT_BUDGET_USD`) for that account only. Null
- * returns it to the default. system_admin only: it decides how much of the
+ * returns it to the default. `until` ends it by itself after that Amman day.
+ * system_admin only: it decides how much of the
  * project's money one person may spend. Stored on the user, so a deploy (which
  * resets the env vars) does not undo it.
  */
@@ -628,8 +631,9 @@ router.put(
       return;
     }
     let usd: number | null;
+    let until: string | null;
     try {
-      usd = parseUserBudgetOverride(req.body);
+      ({ usd, until } = parseUserBudgetOverride(req.body, ammanDay(new Date())));
     } catch (err) {
       res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
       return;
@@ -637,7 +641,7 @@ router.put(
     try {
       const updated = await db
         .update(users)
-        .set({ aiBudgetUsd: usd })
+        .set({ aiBudgetUsd: usd, aiBudgetUntil: until })
         .where(eq(users.id, targetId))
         .returning({ id: users.id });
       if (updated.length === 0) {
@@ -645,8 +649,8 @@ router.put(
         return;
       }
       // ponytail: the log line is the audit trail, as for set-password above.
-      logger.info({ actorId: req.user!.id, targetId, aiBudgetUsd: usd }, "admin set user AI budget");
-      res.json({ ok: true, aiBudgetUsd: usd });
+      logger.info({ actorId: req.user!.id, targetId, aiBudgetUsd: usd, aiBudgetUntil: until }, "admin set user AI budget");
+      res.json({ ok: true, aiBudgetUsd: usd, aiBudgetUntil: until });
     } catch (err) {
       logger.error({ err }, "admin set AI budget failed");
       res.status(500).json({ error: "Failed to update the AI limit" });
