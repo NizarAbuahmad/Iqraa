@@ -10,6 +10,55 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat: a material on a topic no lesson is about goes to the live model — 2026-11-20
+
+**What happened.** On app.iqrra.com «نشاط صفي لو كنت وزير تعليم ليوم واحد» answered «سؤالك قد يخص أكثر من
+مادة. أيّ مادة تقصد؟» with chips الكيمياء / التربية المهنية / اللغة الإنجليزية. Traced offline with the app's own
+functions, «نشاط صفي 15 دقيقة للصف السادس: لو كنت وزير التربية ليوم واحد» went like this:
+- «نشاط» makes it an `artifact` ask.
+- The keyword search ranked grade 10 English «يوم في الفندق», grade 4 English and grade 10 civics on «يوم» and
+  «التربية».
+- The grade-6 filter emptied `results`, but the «which lesson?» check read the unfiltered `ranked` and offered
+  wrong-grade chips.
+- A chip re-sent the ask pinned to a lesson the grade filter dropped again, so it ended in «حاضر — عن أي درس
+  نجهّز هذه المادة؟».
+
+The model was never called. Those stops exist for the offline assistant, which can only answer from a lesson. A
+`teaching` question already skipped them in live mode (`liveTeaching`); an `artifact` ask never did.
+
+**What changed** (`app/(tabs)/iqra.tsx`, pure helpers in `services/kbSuggestion.ts`):
+- **`freeTopicArtifactGoesLive`.** In live mode only, an artifact ask goes to the live chat model like a teaching
+  question, when all of these hold:
+  - no confident lesson match;
+  - no hard context (pinned lesson, named subject, teaching context);
+  - no uploaded documents;
+  - not a bare shortcut on the soft-pinned lesson;
+  - a topic of its own (`topicFromQuery` ≥ 6 characters, so «نشاط صفي», «ورقة عمل» and «اعمل نشاط» are
+    unchanged).
+
+  Its weak keyword matches are dropped, so no generator is built on them. The subject and lesson stops are
+  skipped. The model gets the whole message, «15 دقيقة» included, and its prompt already says how to write a
+  classroom activity.
+- **`rankedInScope`.** The «which lesson?» candidates keep to the grade and subject the teacher named, as
+  `results` already did. This fixes the wrong-grade chips and the chip loop wherever that check still runs (demo
+  mode, short topics).
+
+**Verified.**
+- 11 new tests in `kbSuggestion.test.ts`, watched failing first.
+- `topicFromQuery` on the two real prompts leaves a topic. On «نشاط صفي», «ورقة عمل» and «اعمل نشاط» it leaves
+  none.
+- Typecheck and the mobile suite.
+- A production-mode web build (`EXPO_PUBLIC_DEMO_MODE=false`) with `/api/chat` stubbed: both prompts reach
+  `/chat` and show its reply, with no chips.
+
+**Not changed / not verified.**
+- **No live model has answered these asks.** The reply is chat text, not an exportable activity.
+- **With a hard context** (a lesson in the lesson bar, a named subject) an artifact ask still builds on that
+  context's lesson, as before.
+- **In demo mode** the offline stops stay, since there is nothing else to answer with.
+- **Duration:** chat-made artifacts still default to 45 minutes when they DO go to a generator
+  (`chatArtifacts.ts`).
+
 ## A fallback result says so on the result, and the offline discussion uses the teacher's question — 2026-11-20
 
 **What happened.** On app.iqrra.com a teacher made a Grade 6 «نقاش» activity for «حُرِّيَّةُ التَّعْبيرِ»
