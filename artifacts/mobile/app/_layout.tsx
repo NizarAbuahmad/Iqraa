@@ -41,6 +41,7 @@ import { identifyUser, initAnalytics, resetAnalyticsIdentity, trackEvent, trackS
 import { contentsquareTrackPageview, initContentsquare } from '@/services/contentsquare';
 import { subscribeToGenerations } from '@/services/ai/aiProvenance';
 import { clearCrashContext, initCrashReporting, setCrashContext } from '@/services/crashReporting';
+import { noteInteraction, useUsageHeartbeat } from '@/hooks/useUsageHeartbeat';
 
 SplashScreen.preventAutoHideAsync();
 // Module scope, not an effect: the library's error handlers should exist before the first render.
@@ -50,6 +51,8 @@ initCrashReporting();
 function RootLayoutNav() {
   const { user, isLoading, gradeSetupSkipped } = useAuth();
   const pathname = usePathname();
+  // Minutes per app area for the admin insights page — area names only, never the path.
+  useUsageHeartbeat(!!user, pathname);
   // Only navigate on auth transitions (boot / login / logout) — never bounce
   // away from Workspace, Profile, or AI tools on every user truthy render.
   const wasLoading = useRef(true);
@@ -318,7 +321,8 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <LanguageProvider>
             <AuthProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
+              {/* A touch anywhere bubbles here: it is what tells the usage heartbeat the person is present. */}
+              <GestureHandlerRootView style={{ flex: 1 }} onTouchStart={noteInteraction}>
                 <KeyboardProvider>
                   <RootLayoutNav />
                 </KeyboardProvider>

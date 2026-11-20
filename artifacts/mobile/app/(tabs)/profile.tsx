@@ -358,6 +358,8 @@ export default function ProfileScreen() {
               <SettingRow icon="clipboard-outline" label={t('myTeachingPlans')} onPress={() => router.push('/teaching-plans' as any)} isRTL={isRTL} colors={colors} />
               <SettingRow icon="time-outline" label={t('myWeeklySchedule')} onPress={() => router.push('/schedule' as any)} isRTL={isRTL} colors={colors} />
               <SettingRow icon="calendar-outline" label={t('myCalendar')} onPress={() => router.push('/calendar' as any)} isRTL={isRTL} colors={colors} />
+              {/* The optional «عنك» questions (app/teacher-profile.tsx) — teachers only, never a student or parent. */}
+              <SettingRow icon="person-circle-outline" label={t('teacherProfileRow')} onPress={() => router.push('/teacher-profile' as any)} isRTL={isRTL} colors={colors} />
             </View>
           </>
         ) : null}

@@ -208,7 +208,8 @@ export default function SetupSubjectsScreen() {
       await updateProfile({ teachingAssignments: assignments.filter(a => a.subjectIds.length > 0) });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (editMode) goBack();
-      else router.replace('/(tabs)');
+      // A new teacher is offered the optional «عنك» questions once, with a skip; it goes on to the tabs.
+      else router.replace({ pathname: '/teacher-profile', params: { from: 'setup' } } as never);
     } catch {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(t('teacherSetupFailed'));

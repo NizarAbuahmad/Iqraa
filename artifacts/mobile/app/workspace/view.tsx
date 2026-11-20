@@ -48,6 +48,7 @@ import {
   formatActivityText, formatLessonPlanText,
   shareAsText,
 } from '@/services/share';
+import { shareToastKey } from '@/services/shareText';
 import { exportFilename } from '@/services/exportFilename';
 import { quizExports, type QuizCopy } from '@/services/quizExport';
 import { worksheetExports } from '@/services/worksheetExport';
@@ -235,7 +236,10 @@ export default function WorkspaceViewScreen() {
     return quizExports(content as QuizOutput, item.title, meta, isAr, docCopy, figures, printStyle).html;
   };
 
-  const handleShareText = async () => { await shareAsText(getPlainText(), item.title); };
+  const handleShareText = async () => {
+    const key = shareToastKey(await shareAsText(getPlainText(), item.title));
+    if (key) showToast(t(key));
+  };
   const handleCopy = async () => { await copyToClipboard(getPlainText()); showToast(t('copiedToClipboard')); };
   const handlePDF = async () => {
     setLoadingPDF(true);

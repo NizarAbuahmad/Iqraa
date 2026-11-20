@@ -37,6 +37,8 @@ import feedbackRouter from "./feedback";
 import adminRouter from "./admin";
 import messagingRouter from "./messaging";
 import moderationRouter from "./moderation";
+import usageRouter from "./usage";
+import adminInsightsRouter from "./adminInsights";
 
 const router: IRouter = Router();
 
@@ -211,11 +213,16 @@ router.use(libraryRouter);
 // same file), so no blanket guard is needed at this mount site.
 router.use(feedbackRouter);
 router.use(adminRouter);
+// /admin/insights* — system_admin only, guarded per route inside the router like admin.ts.
+router.use(adminInsightsRouter);
 // messaging.ts self-guards too (see its own note) — deliberately signed-in-only,
 // not teacher-only, since parents and students must reach it.
 router.use(messagingRouter);
 // moderation.ts is the read side of messaging's reports. Same self-guarding
 // arrangement, admin-only on every route.
 router.use(moderationRouter);
+// The time-spent heartbeat (POST /usage/heartbeat): any signed-in role, guarded on its one
+// route inside usage.ts — no blanket middleware at this mount.
+router.use(usageRouter);
 
 export default router;
