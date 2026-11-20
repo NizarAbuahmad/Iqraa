@@ -10,6 +10,95 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Teacher newsletter: a what's-new email an admin sends after a test copy (2026-11-20)
+
+**What it is.** A system admin can mail every verified teacher a «ما الجديد» digest from a new screen,
+`/admin/newsletter` (`artifacts/mobile/app/admin/newsletter.tsx`, linked from the admin dashboard). The screen
+builds a draft from the app's «ما الجديد» entries (`artifacts/mobile/services/newsletterDraft.ts`: the first issue
+covers the last 31 days, later ones start after the previous issue), the admin edits it, sends themselves a test
+copy, and only then can send. Design: `docs/superpowers/specs/2026-11-20-teacher-newsletter-design.md`; plan:
+`docs/superpowers/plans/2026-11-20-teacher-newsletter.md`.
+
+- **API** (`artifacts/api-server/src/routes/adminNewsletter.ts`, system admin only): `GET /admin/newsletter`
+  (eligible-teacher count and the last issue), `POST /admin/newsletter/test` (mails the admin one copy and stores
+  the text), `POST /admin/newsletter/send`. The rules live in `lib/newsletter.ts`: who is eligible, a hash of the
+  text, and the test-before-send decision.
+- **Tables** `newsletter_issues` and `newsletter_sends`, created by migration `0031_oval_mantis.sql`. Row-level
+  security is on and the app role gets no grant, so only `systemDb` reads them (listed in `systemDbFiles.test.ts`).
+- **Mail:** `sendBroadcast` now builds each recipient's own unsubscribe link, takes a teacher footer, and sets the
+  text direction per paragraph. That last change also affects the waitlist mail.
+- **Policy:** one sentence added to section 2 of the privacy policy in both languages, and `LEGAL_VERSION` is now
+  2026-11-20.
+
+**The approval rule.** The server sends only text whose hash matches a test copy mailed to the admin less than 24
+hours ago; any edit after the test, an older test, or an unreadable test date refuses the send. There is no
+schedule: nothing is ever sent unless an admin presses send.
+
+**How it differs from the spec and the plan.**
+
+- It has its own rate limiter, `admin-newsletter` (20 an hour per admin), not the waitlist one.
+- `newsletter_issues.sending_at` is a 10-minute claim taken while a send runs. A second send, or a new test copy,
+  is refused with 409 `sending` while it is fresh.
+- Who is mailed is recorded **before** each batch of 100 goes to the provider, and removed again for anyone the
+  provider did not accept. The plan recorded after the whole send, and review found that could mail teachers twice.
+  Now a crash can make a teacher miss an issue, never get it twice.
+- Recipients are read in a stable order and excluded by user id or by an address already mailed.
+- A test copy never deletes an issue that already has recorded recipients.
+- The route has no `sent-not-recorded` answer any more. The 24-hour check refuses a test exactly 24 hours old.
+
+**Verified** (by command, in this session, against a local throwaway Postgres 16; nothing against production):
+
+- `lib/db` suite with `RLS_TEST_DATABASE_URL`: 72 pass, 0 fail, including «row-level security covers every table»
+  (at `2558130`).
+- API: `adminNewsletter.db.test.ts` 12 of 12; the whole suite after `pnpm build` with `TEST_DATABASE_URL` set:
+  3,604 pass, 0 fail, 0 skipped, re-run at `a8196e3` for this entry. Mail in these tests went only to a local stub
+  (`test-support/resendStub.ts`).
+- Mobile `pnpm test` at `a8196e3`: 9,455 tests, 9,445 pass, 0 fail, 10 skipped.
+- `lib/curriculum`: `pnpm test` 931 pass, 0 fail; `pnpm run verify` 0 errors (3,369 lessons, 200 files).
+- `pnpm run typecheck` at `a8196e3`: exits 0.
+- CI on `b152778`: row-level security, migrations match schema, destructive migrations acknowledged, math verifier
+  and the teacher-to-student smoke test passed.
+- Browser (headless Chromium, built web app, local API with no mail key, a seeded system admin, two teachers of
+  whom one had unsubscribed), English light and Arabic dark: the count line and «no issue has been sent yet» show;
+  send is disabled before a draft; the draft button fills the subject and a body of 11 notes with 22
+  `app.iqrra.com` links and both opening sentences; send stays disabled after the draft; «send me a test copy»
+  answers «Could not send» (there is no mail key) and send stays disabled; no page errors.
+
+**Not verified.**
+
+- **No real email was ever sent.** Delivery, spam placement, how the mail looks in Gmail and Outlook, the one-click
+  unsubscribe from a real inbox, and how the mixed Arabic and English subject orders in an inbox are all untested.
+- The success path on screen (a test copy arriving, send unlocking, the confirm dialog, the result line) was not seen
+  in a browser; only the API's database test covers it.
+- Not seen on a phone or in the Android app.
+- Resend plan caps and whether the sending domain is verified were not checked.
+- The policy sentence was written by a model and not read by a lawyer. Existing teachers are not shown the change
+  (there is no re-acceptance flow).
+- A failing write-ahead insert and a failing un-record delete have no test (they need fault injection).
+- The math verifier's Python test (`test_equations.py`) was not run; this change does not touch it.
+
+**Known limits.**
+
+- Opt-out, not opt-in: every verified teacher receives it unless they unsubscribe (the owner's decision,
+  2026-11-20). The repo's own waitlist rule (`UPDATES_CONSENT_FROM`) is stricter.
+- Unsubscribe stops all general mail to that address, not only the newsletter. Security codes still arrive.
+- The send is synchronous (100 per batch, about 0.6 s apart): fine into the low thousands of teachers.
+- If the provider accepts a batch but the connection fails before it answers, that batch is treated as refused and a
+  retry can mail those teachers again. There is no timeout on the provider call.
+- A crash in the middle of a batch can leave up to 100 teachers marked as mailed who were not.
+- Two test copies sent at the same instant can leave two unsent issues.
+- Screen copy: counts read «1 teachers» / «1 معلّمًا»; in the English interface the body box is left-aligned, so
+  Arabic lines show their full stop on the wrong side while editing (the email itself is right). The Arabic policy
+  says «رسالة دورية» (periodic) where the English says «occasional».
+
+**Before the first real issue (owner).** Read the policy sentence (`constants/legal.ts`, section 2, both languages).
+In the Resend dashboard, check the plan's daily and monthly caps against the count on `/admin/newsletter`, and that
+the sending domain is verified. Then on `/admin/newsletter`: draft, edit, send yourself the test copy, open every
+link in it, and only then send.
+
+No «ما الجديد» entry: only a system admin can see the screen. The migration only creates tables, so no
+`destructive-migration` line is needed.
+
 ## The API no longer attaches a book to a topic the app found no lesson for — 2026-11-20
 
 The follow-up named in «Chat builds material on a topic the curriculum does not have». When a generation
