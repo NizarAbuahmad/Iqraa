@@ -10,6 +10,42 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The API no longer attaches a book to a topic the app found no lesson for — 2026-11-20
+
+The follow-up named in «Chat builds material on a topic the curriculum does not have». When a generation
+request carries no `unitId`, the API's `groundingFor` (`artifacts/api-server/src/lib/grounding.ts`) resolves a
+unit from the topic's title across the **whole** catalog and appends that unit's book pages to the prompt. The
+app's own search is scoped to the picked grade and subject; when it finds no lesson it sends
+«تنبيه: الموضوع غير موجود في المنهاج…» as the context. Both then reached one prompt: «الصداقة» for a grade 5
+worksheet carried the not-in-the-curriculum note and grade 2 Islamic «الصَّداقَة» pages. That held for chat's
+free topics and for every tool screen given a topic outside its scope.
+
+- **API:** a request with `grounding: "none"` gets no book pages, whatever else it carries (`unitId`, a wide
+  `scope`). Absent, and any other value, change nothing, so older clients behave exactly as before.
+- **App:** `noLessonField(grounded)` (`services/kbContext.ts`) adds the field when, and only when, no lesson
+  grounds the request: `groundingRequestFields` (quiz, game, slides, classroom builder, lesson flow), the
+  worksheet / lesson-plan / lesson-teaching / activity builders and `scopeRequestFields` (a wide scope with no
+  lessons) in `services/generatorRequests.ts`, the two `lessonPrep.ts` requests, and chat's `buildRequest`
+  (from the grounding it actually used, or `noLesson`).
+- **Pool:** nothing to re-key. `generateContent` keys on the body *after* grounding, so a request that no
+  longer gets pages has a different `additionalContext` hash already; a grounded body is byte-for-byte what
+  it was. The pooled artifacts of topics the server used to ground this way are simply not served to the new
+  requests (they were built with the wrong book).
+- **Deploy order does not matter:** an old API ignores the field; a new API without it grounds as before.
+
+Verified: `grounding.test.ts` (none → null, including with a unit id and a wide scope; another value grounds;
+`withGrounding` returns a «none» body unchanged); `generatorRequests.test.ts` (every builder adds the field
+for an ungrounded topic and leaves a grounded body without it; the wide-scope fields likewise); api-server
+`pnpm build` + `pnpm test` (2,999 pass); mobile `pnpm test` (9,447, 0 fail); `pnpm run typecheck`.
+
+- **Content-QA batch** (`services/cqv/batch.ts`): its context now comes from `cqvGroundingFields`
+  (`services/cqv/grounding.ts`), grounded in its own scope, Grade 10 Mathematics, and carries the flag when
+  nothing grounds. Of its 37 lessons, 34 ground exactly as before; «تبسيط المقادير الأسية» and «النسب المثلثية»
+  had grounded on Grade 9 lessons of the same title and now ground on Grade 10's; «جمع المتجهات وطرحها» picks
+  the other Grade 10 lesson of that title. Pinned by `cqvGrounding.test.ts`.
+
+**Not verified:** a live generation with the field set (no model call was made). No «ما الجديد»: the teacher
+sees no new control, only material that no longer quotes another grade's book.
 ## The Activity tool waits 90 s for the model, not 45 — 2026-11-20
 
 **What happened.** After «A fallback result says so on the result…» deployed, the owner made an activity on
