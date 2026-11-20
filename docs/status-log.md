@@ -42,6 +42,33 @@ in Chromium. `exportHtml.test.ts`'s "no curve on the student copy" check now rem
 `<path>`. **Not verified:** the Word file opened in Microsoft Word itself, and the export on a native Android
 build.
 
+## Per-account AI limit, set by a system admin — 2026-11-19
+
+The owner asked to raise one teacher's monthly AI limit to $15. There was no way to: the per-user cap is one env
+var for every teacher (`AI_USER_BUDGET_USD=1`), and every API deploy resets it (`deploy.yml`). A per-person list in
+`deploy.yml` would put users' emails in a public repo, so the limit now lives on the user.
+
+- **`users.ai_budget_usd`** (migration 0028, one nullable `double precision` column, additive). Null = the role
+  default. Set by `PUT /admin/users/:id/ai-budget { usd: number | null }`, **system_admin only**, `0 < usd ≤ 100`
+  (`parseUserBudgetOverride`; the 100 is a typo guard), rounded to cents; `null` or `0` clears it. Logged
+  («admin set user AI budget») as the audit trail, like the other admin user actions.
+- **Where it applies.** `assertUserQuotaAvailable` and `GET /auth/me/ai-usage` now use
+  `resolveUserBudgetLimitUsd(userId, role)`: the account's own value when set (up or down, and even when the role
+  has no cap), else the env default. A row that cannot be read falls back to the default, never to "no cap".
+  `GET /admin/users` returns `aiBudgetUsd` and `aiBudgetUntil`.
+- **Optional end date, `users.ai_budget_until`** (migration 0029, nullable `date`, additive): the last Amman
+  calendar day the amount applies, inclusive (`until` in the PUT body, `YYYY-MM-DD`; a past or impossible day is
+  a 400). From the next day the account is on its role default again with nothing to clear — asked for so a
+  tester's $15 ends by itself on 2026-12-31. Clearing the amount clears the date. The row keeps the old values
+  after they lapse; the screen shows them with their date.
+- **Admin Users screen** (`app/admin/users.tsx`): a system admin sees «حد الذكاء الاصطناعي الشهري» on each card
+  (amount, optional end date, «حفظ», «الافتراضي», «إلغاء»); a set limit shows next to the month's spend as «/ $15 (حد خاص)».
+  No «ما الجديد» entry — the screen is admin-only.
+
+Verified: typecheck; api-server build + tests (2980 pass), with new cases in `aiBudget.test.ts` for the pick and the
+parser and the end date (its own day still counts, the next does not); mobile tests. **Not verified:** the migration against a live Postgres (no database in the session —
+CI applies it to an empty one), the route against a database, and the screen in a browser.
+
 ## Share also copies the text — web and app — 2026-11-20
 
 A teacher shared a generated quiz on the web and the Windows share sheet (desktop Edge/Chrome) offered WhatsApp,
