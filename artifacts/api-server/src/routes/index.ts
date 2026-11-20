@@ -40,6 +40,7 @@ import messagingRouter from "./messaging";
 import moderationRouter from "./moderation";
 import usageRouter from "./usage";
 import adminInsightsRouter from "./adminInsights";
+import adminNewsletterRouter from "./adminNewsletter";
 
 const router: IRouter = Router();
 
@@ -221,6 +222,7 @@ router.use(feedbackRouter);
 router.use(adminRouter);
 // /admin/insights* — system_admin only, guarded per route inside the router like admin.ts.
 router.use(adminInsightsRouter);
+router.use(adminNewsletterRouter);
 // messaging.ts self-guards too (see its own note) — deliberately signed-in-only,
 // not teacher-only, since parents and students must reach it.
 router.use(messagingRouter);
