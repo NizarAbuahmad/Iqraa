@@ -1103,7 +1103,10 @@ describe('geometry routing', () => {
     ['تطابق المثلثات (SSS, SAS, HL)', 8, 'congruence_a'], ['تطابق المثلثات (ASA, AAS)', 8, 'congruence_b'], ['نظرية فيثاغورس', 8, 'pythagoras'],
     ['المستوى الإحداثي', 5, 'coord_plane_g5'], ['المستوى الإحداثي', 6, 'coord_plane_g6'], ['الدوران', 7, 'rotate'], ['التمدد', 8, 'dilate_g8'],
     ['المسافة في المستوى الإحداثي', 9, 'distance_plane'], ['النسب المثلثية', 9, 'trig_ratios'], ['الاتجاه من الشمال (Bearing)', 10, 'bearing'],
-    ['المتر والسنتيمتر', 3, 'units_m'], ['الزمن', 4, 'time_g45'], ['الفترات الزمنية (1)', 3, 'time_g3'], ['قراءة الوقت باستعمال (و، إلا)', 3, 'time_words'],
+    ['المتر والسنتيمتر', 3, 'units_m'], ['الزمن', 4, 'time_g45'], ['الفترات الزمنية (1)', 3, 'elapsed_hour_g3'],
+    // Grade 3's three time lessons and two area lessons each draw their own since 2026-11-14 (grade3Objectives.test.ts)
+    ['الفترات الزمنية (2)', 3, 'time_g3'], ['الوقت بالدقائق', 3, 'clock_minutes_g3'],
+    ['المساحة', 3, 'area_units_g3'], ['مساحة المستطيل', 3, 'area_rect'], ['المساحة', 4, 'area_rect'], ['قراءة الوقت باستعمال (و، إلا)', 3, 'time_words'],
     // lessons that stay refused: no generator is about them
     // («رسم الأشكال ثلاثية الأبعاد» is Grade 8 only since 2026-11-13: g8Lessons.test.ts;
     // «التطابق» is Grade 7 only since 2026-11-13: g7Lessons.test.ts;

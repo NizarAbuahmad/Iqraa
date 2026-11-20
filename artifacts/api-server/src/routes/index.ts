@@ -21,6 +21,7 @@ import attemptsRouter from "./attempts";
 import guardianConsentRouter from "./guardianConsent";
 import emailPreferencesRouter from "./emailPreferences";
 import studentAttemptRouter from "./studentAttempt";
+import sharedMaterialsRouter from "./sharedMaterials";
 import studentExamsRouter from "./studentExams";
 import liveRouter from "./live";
 import liveHostRouter from "./liveHost";
@@ -37,6 +38,8 @@ import feedbackRouter from "./feedback";
 import adminRouter from "./admin";
 import messagingRouter from "./messaging";
 import moderationRouter from "./moderation";
+import usageRouter from "./usage";
+import adminInsightsRouter from "./adminInsights";
 
 const router: IRouter = Router();
 
@@ -116,6 +119,11 @@ router.use(attemptsRouter);
 // both ways: reachable without a token, and not having made anything else so.
 // The parent's approval page: public (the parent has no account), every path under /guardian-consent, rate limited.
 router.use(guardianConsentRouter);
+// A teacher's saved material opened from its share link (/m/CODE in the app):
+// `GET /shared/:code` is public like /take — the paper without its answers —
+// and `/full` and `/save` carry their own teacher guard on the route. Prefixed,
+// so its rate limiter cannot reach any other path; mountOrder.test.ts asserts it.
+router.use("/shared", sharedMaterialsRouter);
 // The unsubscribe link in every email: public (the recipient may have no account), every path under /email/, rate
 // limited, the encrypted token is the credential. Importing it also registers the unsubscribe list with the senders.
 router.use(emailPreferencesRouter);
@@ -211,11 +219,16 @@ router.use(libraryRouter);
 // same file), so no blanket guard is needed at this mount site.
 router.use(feedbackRouter);
 router.use(adminRouter);
+// /admin/insights* — system_admin only, guarded per route inside the router like admin.ts.
+router.use(adminInsightsRouter);
 // messaging.ts self-guards too (see its own note) — deliberately signed-in-only,
 // not teacher-only, since parents and students must reach it.
 router.use(messagingRouter);
 // moderation.ts is the read side of messaging's reports. Same self-guarding
 // arrangement, admin-only on every route.
 router.use(moderationRouter);
+// The time-spent heartbeat (POST /usage/heartbeat): any signed-in role, guarded on its one
+// route inside usage.ts — no blanket middleware at this mount.
+router.use(usageRouter);
 
 export default router;

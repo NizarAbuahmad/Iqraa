@@ -627,6 +627,22 @@ export const MATH_BANK: ConcreteItem[] = [
     wordAr: 'تنطلق سفينتان من الميناء في الوقت نفسه بمسارين مستقيمين بينهما زاوية 60°. بعد ساعة قطعت الأولى 5 كم والثانية 8 كم. كم تبعد السفينتان إحداهما عن الأخرى عندئذ؟',
     wordEn: 'Two ships leave port at the same time on straight courses 60° apart. After an hour the first has sailed 5 km and the second 8 km. How far apart are the ships then?',
   },
+  // More of «قانون جيب التمام»: an equilateral triangle found by the rule, a
+  // second right angle, a larger 120° triangle, a second 60° angle from three
+  // sides, a 120° angle from an isosceles triangle, a parallelogram's long
+  // diagonal, and measuring across a lake. No triangle is another item's
+  // (`lessonFocus.test.ts` recomputes every key and checks the triangles).
+  { id: 'lc-e3', family: 'trig_apps', diff: 'easy', eq: 'a=4, b=4, C=60°', answer: 'c = 4', wrongs: ['c = 8', 'c = 4√3', 'c = 16'], promptAr: 'في المثلث ABC: a = 4، b = 4، C = 60°. أوجد c بقانون جيب التمام. ما نوع المثلث؟', promptEn: 'In triangle ABC, a = 4, b = 4, C = 60°. Find c using the cosine rule. What kind of triangle is it?' },
+  { id: 'lc-e4', family: 'trig_apps', diff: 'easy', eq: 'a=9, b=12, C=90°', answer: 'c = 15', wrongs: ['c = 21', 'c = 3', 'c = 225'], promptAr: 'في المثلث ABC: a = 9، b = 12، C = 90°. أوجد c بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 9, b = 12, C = 90°. Find c using the cosine rule.' },
+  { id: 'lc-m4', family: 'trig_apps', diff: 'medium', eq: 'a=5, b=16, C=120°', answer: 'c = 19', wrongs: ['c = 21', 'c = √201', 'c = √281'], promptAr: 'في المثلث ABC: a = 5، b = 16، C = 120°. أوجد c بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 5, b = 16, C = 120°. Find c using the cosine rule.' },
+  { id: 'lc-m5', family: 'trig_apps', diff: 'medium', eq: 'a=8, b=15, c=13', answer: 'C = 60°', wrongs: ['C = 30°', 'C = 90°', 'C = 120°'], promptAr: 'في المثلث ABC: a = 8، b = 15، c = 13. أوجد قياس الزاوية C بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 8, b = 15, c = 13. Find angle C using the cosine rule.' },
+  { id: 'lc-m6', family: 'trig_apps', diff: 'medium', eq: 'a=5, b=5, c=5√3', answer: 'C = 120°', wrongs: ['C = 60°', 'C = 150°', 'C = 30°'], promptAr: 'مثلث متطابق الضلعين ABC فيه a = b = 5 و c = 5√3. أوجد قياس الزاوية C بقانون جيب التمام.', promptEn: 'Isosceles triangle ABC has a = b = 5 and c = 5√3. Find angle C using the cosine rule.' },
+  { id: 'lc-h2', family: 'trig_apps', diff: 'hard', eq: 'parallelogram 6, 10, 60°', answer: 'القطر الأطول = 14 سم', wrongs: ['القطر الأطول = 2√19 سم', 'القطر الأطول = 16 سم', 'القطر الأطول = √136 سم'], promptAr: 'متوازي أضلاع طولا ضلعين متجاورين فيه 6 سم و 10 سم، وقياس الزاوية بينهما 60°. أوجد طول قطره الأطول.', promptEn: 'A parallelogram has adjacent sides 6 cm and 10 cm with a 60° angle between them. Find its longer diagonal.' },
+  {
+    id: 'lc-w2', family: 'trig_apps', diff: 'hard', eq: 'lake 80, 150, 60°', answer: 'AB = 130 م', wrongs: ['AB = 230 م', 'AB = 70 م', 'AB = 170 م'], kind: 'word', story: true,
+    wordAr: 'أراد مسّاح أن يقيس المسافة AB بين نقطتين على طرفي بحيرة. وقف عند نقطة C على اليابسة، فوجد أن CA = 80 م و CB = 150 م، وأن قياس الزاوية ACB يساوي 60°. أوجد المسافة AB عبر البحيرة.',
+    wordEn: 'A surveyor wants the distance AB between two points on opposite shores of a lake. Standing at a point C on land, they find CA = 80 m, CB = 150 m and angle ACB = 60°. Find the distance AB across the lake.',
+  },
 
   // ── Functions ──
   { id: 'f-e1', family: 'functions', diff: 'easy', eq: 'f(x)=2x+3, f(4)', answer: '11', wrongs: ['8', '14', '5'], promptAr: 'إذا كان f(x) = 2x + 3، أوجد f(4).', promptEn: 'If f(x) = 2x + 3, find f(4).' },

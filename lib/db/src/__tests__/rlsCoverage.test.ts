@@ -26,7 +26,7 @@ const DEFERRED = [
   "ai_artifact_reports", "ai_artifacts", "ai_generations", "class_resources", "competency_definitions",
   "conversations", "feedback", "game_results", "homework", "homework_completions", "homework_reminders", "lesson_media", "level_bands", "level_scales", "library_resources",
   "live_answers", "live_games", "live_players", "manual_metrics", "math_practice_results", "messages", "rate_limit_buckets", "rubric_templates", "saved_materials",
-  "schedule_periods", "schedule_slots", "schools", "site_signups", "teaching_plans", "users",
+  "schedule_periods", "schedule_slots", "schools", "site_signups", "teaching_plans", "usage_minutes", "users",
 ] as const;
 
 describe("row-level security covers every table", { skip: !TEST_URL && "RLS_TEST_DATABASE_URL not set" }, () => {

@@ -59,6 +59,13 @@ export const ITEM_FOCUS: Record<string, LessonFocus> = {
   'lc-m3': 'cosine_rule',
   'lc-h1': 'cosine_rule',
   'lc-w1': 'cosine_rule',
+  'lc-e3': 'cosine_rule',
+  'lc-e4': 'cosine_rule',
+  'lc-m4': 'cosine_rule',
+  'lc-m5': 'cosine_rule',
+  'lc-m6': 'cosine_rule',
+  'lc-h2': 'cosine_rule',
+  'lc-w2': 'cosine_rule',
 
   // Circumference and area of a whole circle are what an arc and a sector are a fraction of.
   'c-e1': 'circle_measure',

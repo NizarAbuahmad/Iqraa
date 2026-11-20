@@ -38,6 +38,7 @@ import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { LessonPlanView } from '@/components/ui/LessonPlanView';
 import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
+import { AiFallbackNotice } from '@/components/ui/AiFallbackNotice';
 import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
 import { buildLessonPlanHTML, buildLessonPlanSlidesHTML, exportMinistryPlanWord, formatLessonPlanText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
@@ -440,14 +441,19 @@ export default function LessonPlanScreen() {
     // over a material that no longer existed and the work was never saved
     // again. Folding the call into the condition makes a failed update fall
     // through to creating a fresh one, which is what pressing Save meant.
+    let id: string;
     if (savedId && (await updateItem(savedId, payload))) {
+      id = savedId;
       setSaveLabel('updated');
     } else {
       const saved = await saveItem({ type: 'lesson', ...payload });
+      id = saved.id;
       setSavedId(saved.id);
       setSaveLabel('saved');
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // The id «مشاركة رابط» shares (useGeneratorExport's `ensureSaved`).
+    return id;
   };
 
 
@@ -465,7 +471,7 @@ export default function LessonPlanScreen() {
 
   const {
     getExportFigures,
-    handleShareText,
+    handleShareLink,
     handleCopy,
     handlePDF,
     handleWord,
@@ -487,6 +493,7 @@ export default function LessonPlanScreen() {
     buildSlidesHTML: buildLessonPlanSlidesHTML,
     onError: key => showToast(t(key)),
     onCopied: key => showToast(t(key)),
+    ensureSaved: handleSave,
   });
 
   /**
@@ -848,6 +855,9 @@ export default function LessonPlanScreen() {
       {/* Grounding status — never present ungrounded output as curriculum-backed */}
       {/* What the material is anchored to. Shown both ways: a teacher needs
           to know it IS tied to the lesson as much as when it isn't. */}
+      {/* Above everything else in the result: when it is the offline sample,
+          the teacher reads that before reading the content. */}
+      {result && !loading && <AiFallbackNotice kinds={['lesson-plan']} onRetry={() => generate()} isRTL={isRTL} />}
       {result && curriculumGrounded !== null && (
         <View style={{ marginHorizontal: 20 }}>
           <GroundingNotice
@@ -918,7 +928,7 @@ export default function LessonPlanScreen() {
     <ExportMenu
       visible={showExport}
       onClose={() => setShowExport(false)}
-      onShare={handleShareText}
+      onShare={handleShareLink}
       onCopy={handleCopy}
       onPDF={handlePDF}
       onWord={handleWord}

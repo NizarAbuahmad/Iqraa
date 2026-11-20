@@ -15,7 +15,7 @@ type Props = {
 };
 
 /** `getLastGeneration` returns the same object until a new one is recorded. */
-function useLastGeneration(): AiGenerationRecord | null {
+export function useLastGeneration(): AiGenerationRecord | null {
   return React.useSyncExternalStore(
     subscribeToGenerations,
     getLastGeneration,

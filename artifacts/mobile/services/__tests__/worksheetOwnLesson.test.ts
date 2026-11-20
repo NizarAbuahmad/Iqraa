@@ -69,7 +69,7 @@ describe('«قانون جيب التمام» studies its own law', () => {
       const half = w.sections.find(s => s.title === 'مثال نكمله');
       assert.ok(half, 'no half-solved question');
       assert.doesNotMatch(half.questions[0]!.text, /قانون الجيوب|المساحة/, half.questions[0]!.text);
-      assert.match(w.sections.find(s => s.type === 'word_problem')!.questions[0]!.text, /سفينت/);
+      assert.match(w.sections.find(s => s.type === 'word_problem')!.questions[0]!.text, /سفينت|بحيرة/);
     }
   });
 });

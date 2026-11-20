@@ -15,6 +15,7 @@ import {
   figureCountForLesson,
   getUnitPriorKnowledge,
   nccdUnitId,
+  noLessonField,
   resolveGeneratorGrounding,
   type GeneratorGrounding,
 } from './kbContext.ts';
@@ -61,6 +62,8 @@ export function buildWorksheetRequest(form: WorksheetForm, grounding: GeneratorG
     unitId: nccdUnitId(grounding.lesson?.unitId),
     lessonId: grounding.lesson?.id,
     bookFigureCount: figureCountForLesson(grounding.lesson?.id),
+    // No lesson in this scope: the API must not find one by the title.
+    ...noLessonField(grounding.grounded),
     contextSource: 'curriculum' as const,
     ...regenerationFields(form.regenerate === true, form.previous),
     includePriorReview: usePrior,
@@ -76,11 +79,14 @@ export function buildWorksheetRequest(form: WorksheetForm, grounding: GeneratorG
  */
 export function scopeRequestFields(
   g: ScopeGrounding,
-): Pick<AIRequest, 'scope' | 'additionalContext' | 'contextSource'> {
+): Pick<AIRequest, 'scope' | 'additionalContext' | 'contextSource' | 'grounding'> {
   if (g.kind === 'lesson') return {};
   return {
     scope: g.grounded ? { kind: g.kind, scopeKey: g.scopeKey, unitIds: g.unitIds } : undefined,
     additionalContext: (g.grounded ? g.context : g.ungroundedNote) || undefined,
+    // A scope with no lessons: its topic is a label («الفصل الأول كاملًا»),
+    // never a title to match.
+    ...noLessonField(g.grounded),
     contextSource: 'curriculum',
   };
 }
@@ -137,6 +143,7 @@ export function buildLessonPlanRequest(form: LessonPlanForm, grounding: Generato
     unitId: nccdUnitId(grounding.lesson?.unitId),
     lessonId: grounding.lesson?.id,
     bookFigureCount: figureCountForLesson(grounding.lesson?.id),
+    ...noLessonField(grounding.grounded),
     // Objectives, adaptations and prior-topic notes are all free text the
     // teacher typed, and all three are carried into the plan verbatim. A
     // plan built from any of them is that teacher's and is never pooled;
@@ -191,6 +198,7 @@ export function buildLessonTeachingRequest(
     additionalContext: grounding.grounded ? grounding.context : grounding.ungroundedNote,
     unitId: nccdUnitId(grounding.lesson?.unitId),
     lessonId: grounding.lesson?.id,
+    ...noLessonField(grounding.grounded),
     contextSource: 'curriculum' as const,
     ...regen,
   };
@@ -229,6 +237,7 @@ export function buildActivityRequest(form: ActivityForm, grounding: GeneratorGro
     unitId: nccdUnitId(grounding.lesson?.unitId),
     lessonId: grounding.lesson?.id,
     bookFigureCount: figureCountForLesson(grounding.lesson?.id),
+    ...noLessonField(grounding.grounded),
     // A typed objective is the teacher's own words, and they end up inside
     // the generated activity — so that request is theirs alone and never
     // enters the shared pool. Picking a lesson and generating does.

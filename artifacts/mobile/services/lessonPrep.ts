@@ -32,6 +32,7 @@ import {
   buildAdaptationsDirective,
   getUnitPriorKnowledge,
   nccdUnitId,
+  noLessonField,
   resolveGeneratorGrounding,
 } from './kbContext.ts';
 
@@ -473,6 +474,7 @@ export function buildLessonPrepRequest(args: {
       objectives: context.objectives || undefined,
       additionalContext,
       lessonId: grounding.lesson?.id,
+      ...noLessonField(grounding.grounded),
       // Adaptations and prior-topic notes are the teacher's own words and end
       // up in the plan verbatim, so a request carrying either is theirs alone.
       // Objectives come from the curriculum context here, not a text box.
@@ -524,6 +526,7 @@ export function buildGapWarmupRequest(
       additionalContext: grounding.grounded ? grounding.context : grounding.ungroundedNote,
       unitId: nccdUnitId(grounding.lesson?.unitId),
       lessonId: grounding.lesson?.id,
+      ...noLessonField(grounding.grounded),
       contextSource: 'curriculum',
     },
   };

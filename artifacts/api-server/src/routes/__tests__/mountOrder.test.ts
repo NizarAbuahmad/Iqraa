@@ -692,6 +692,18 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     );
   });
 
+  it("keeps a material's share link public, and its answers and save-a-copy guarded", async () => {
+    // The public read must get past every guard mounted before it (404 or a
+    // database 500, never 401); the teacher's view and the copy must not.
+    const open = await fetch(`${base}/shared/ZZZZZZZZ`);
+    assert.notEqual(open.status, 401, "the share link must not require a token");
+    assert.ok(open.status === 404 || open.status === 500, `expected 404 or 500, got ${open.status}`);
+    assert.equal((await fetch(`${base}/shared/ZZZZZZZZ/full`)).status, 401, "/full must require a token");
+    assert.equal((await fetch(`${base}/shared/ZZZZZZZZ/save`, { method: "POST" })).status, 401, "/save must require a token");
+    // Sharing is an owner's write on the guarded workspace router.
+    assert.equal((await fetch(`${base}/workspace/items/x/share`, { method: "POST" })).status, 401);
+  });
+
   it("guards the signed-in auto-claim, unlike every other /take route", async () => {
     // The one authenticated route on an otherwise-public router. A regression
     // here is either direction: leaking `router.use(authMiddleware, …)` onto

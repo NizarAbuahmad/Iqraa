@@ -13,6 +13,7 @@ import {
   getLastGeneration,
   recordGeneration,
   resetGenerationLog,
+  resultFallbackNotice,
   subscribeToGenerations,
 } from '../ai/aiProvenance.ts';
 
@@ -417,4 +418,44 @@ test('startClassFailure keeps the generic retry message for everything else', ()
   for (const e of [new Error('boom'), { code: 'generation_in_flight' }, { code: 'no_question_bank' }, null, undefined]) {
     assert.deepEqual(startClassFailure(e), { key: 'startClassFailed', note: false });
   }
+});
+
+// ─── resultFallbackNotice ────────────────────────────────────────────────────
+// The header badge was the only sign that a result was the offline sample: a
+// teacher on 2026-11-20 got a full discussion activity that ignored her
+// question, under a small «تعذّر الاتصال · محتوى تجريبي» pill. The notice sits
+// on the result itself, so it must say so exactly when THIS screen's result is
+// the fallback, and never otherwise.
+
+const rec = (over: Partial<Parameters<typeof recordGeneration>[0]>) =>
+  ({ kind: 'activity', source: 'mock', reason: 'fallback', at: AT, ...over }) as Parameters<typeof recordGeneration>[0];
+
+test('resultFallbackNotice shows when this screen\'s result fell back, with the reason', () => {
+  assert.deepEqual(
+    resultFallbackNotice(false, rec({ error: 'Request timed out' }), ['activity']),
+    { error: 'Request timed out' },
+  );
+});
+
+test('resultFallbackNotice stays hidden for another screen\'s fallback', () => {
+  assert.equal(resultFallbackNotice(false, rec({ kind: 'quiz' }), ['activity']), null);
+});
+
+test('resultFallbackNotice covers every kind a screen generates', () => {
+  assert.ok(resultFallbackNotice(false, rec({ kind: 'homework' }), ['worksheet', 'homework']));
+});
+
+test('resultFallbackNotice stays hidden in demo mode, where everything is sample content', () => {
+  assert.equal(resultFallbackNotice(true, rec({}), ['activity']), null);
+});
+
+test('resultFallbackNotice stays hidden for live, saved, failed and cancelled results', () => {
+  for (const reason of ['live', 'saved-copy', 'failed', 'cancelled'] as const) {
+    const source = reason === 'live' || reason === 'saved-copy' ? 'live' : 'none';
+    assert.equal(resultFallbackNotice(false, rec({ reason, source }), ['activity']), null, reason);
+  }
+});
+
+test('resultFallbackNotice stays hidden before anything was generated', () => {
+  assert.equal(resultFallbackNotice(false, null, ['activity']), null);
 });

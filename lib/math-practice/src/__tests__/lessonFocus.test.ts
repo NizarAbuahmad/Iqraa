@@ -49,7 +49,7 @@ describe('lessonFocus', () => {
 
 for (const [title, focus, story] of [
   ['قانون الجيوب', 'sine_rule', /نهر/],
-  ['قانون جيب التمام', 'cosine_rule', /سفينت/],
+  ['قانون جيب التمام', 'cosine_rule', /سفينت|بحيرة/],
 ] as const) {
   describe(`«${title}» has a lesson's worth of items`, () => {
     const own = () => MATH_BANK.filter(i => i.focus === focus);
@@ -128,6 +128,66 @@ describe('the worked example is the lesson\'s own', () => {
   });
 });
 
+describe('every law-of-cosines key, recomputed from its triangle', () => {
+  // [id, what is asked, two sides and the angle between them | three sides].
+  // An angle item asks the angle facing the third side.
+  const SIDE = 'side', ANGLE = 'angle';
+  const TRIANGLES: Array<[string, typeof SIDE | typeof ANGLE, number, number, number]> = [
+    ['ta-m1', SIDE, 7, 7, 60],
+    ['lc-e1', SIDE, 3, 5, 60],
+    ['lc-e2', SIDE, 6, 8, 90],
+    ['lc-e3', SIDE, 4, 4, 60],
+    ['lc-e4', SIDE, 9, 12, 90],
+    ['lc-m1', SIDE, 3, 5, 120],
+    ['lc-m2', ANGLE, 3, 8, 7],
+    ['lc-m3', ANGLE, 5, 12, 13],
+    ['lc-m4', SIDE, 5, 16, 120],
+    ['lc-m5', ANGLE, 8, 15, 13],
+    ['lc-m6', ANGLE, 5, 5, 5 * Math.sqrt(3)],
+    ['lc-h1', ANGLE, 7, 8, 13],
+    ['lc-h2', SIDE, 6, 10, 120],
+    ['lc-w1', SIDE, 5, 8, 60],
+    ['lc-w2', SIDE, 80, 150, 60],
+  ];
+  const rad = (d: number) => (d * Math.PI) / 180;
+  /** The number an answer states: «c = 5√3», «C = 60°», «المسافة = 130 م». */
+  const stated = (answer: string): number => {
+    const rhs = answer.split('=').pop()!.replace(/[^0-9.√]/g, '');
+    const m = /^(\d*(?:\.\d+)?)√(\d+)$/.exec(rhs);
+    return m ? (m[1] ? Number(m[1]) : 1) * Math.sqrt(Number(m[2])) : Number(rhs);
+  };
+  const sides = (kind: string, x: number, y: number, z: number) =>
+    (kind === SIDE ? [x, y, Math.sqrt(x * x + y * y - 2 * x * y * Math.cos(rad(z)))] : [x, y, z]).sort((p, q) => p - q);
+
+  it('lists every item of the lesson', () => {
+    const own = MATH_BANK.filter(i => i.focus === 'cosine_rule').map(i => i.id).sort();
+    assert.deepEqual(own, TRIANGLES.map(t => t[0]).sort());
+  });
+
+  it('every key is the triangle\'s own side or angle', () => {
+    for (const [id, kind, x, y, z] of TRIANGLES) {
+      const want = kind === SIDE
+        ? Math.sqrt(x * x + y * y - 2 * x * y * Math.cos(rad(z)))
+        : (Math.acos((x * x + y * y - z * z) / (2 * x * y)) * 180) / Math.PI;
+      const got = stated(item(id).answer);
+      assert.ok(Math.abs(got - want) < 1e-9, `${id}: key «${item(id).answer}», triangle gives ${want}`);
+    }
+  });
+
+  it('no two items are the same triangle, so one\'s working never answers another', () => {
+    const seen = new Map<string, string>();
+    for (const [id, kind, x, y, z] of TRIANGLES) {
+      const key = sides(kind, x, y, z).map(v => v.toFixed(6)).join(',');
+      assert.ok(!seen.has(key), `${id} is the same triangle as ${seen.get(key)}`);
+      seen.set(key, id);
+    }
+  });
+
+  it('has more than one real-life story', () => {
+    assert.ok(MATH_BANK.filter(i => i.focus === 'cosine_rule' && i.story).length >= 2);
+  });
+});
+
 describe('one equation is one question', () => {
   it('two items of the same equation, asked two ways, are spent together', () => {
     const used = new Set<string>();
@@ -180,10 +240,10 @@ describe('a word problem is a story', () => {
 
   it('says so when the lesson has none — another lesson\'s story in its family does not count', () => {
     // `trig_apps` holds the law-of-sines river crossing; once «قانون جيب التمام»'s
-    // own story is spent, the river crossing must not stand in for it.
+    // own stories are spent, the river crossing must not stand in for them.
     for (let k = 0; k < 20; k++) {
       const used = new Set<string>();
-      spendItem(item('lc-w1'), used);
+      for (const s of MATH_BANK.filter(i => i.focus === 'cosine_rule' && i.story)) spendItem(s, used);
       const q = takeConcreteMath('word_problem', 'قانون جيب التمام', null, 'medium', 'ar', 6, used, false)!;
       assert.notEqual(q.story, true, q.text);
       assert.doesNotMatch(q.text, /نهر/);

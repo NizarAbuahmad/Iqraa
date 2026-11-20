@@ -404,6 +404,108 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'd is a length, so the ships are 7 km apart',
     ],
   },
+  'lc-e3': {
+    ar: [
+      'قانون جيب التمام: c² = a² + b² − 2ab cos C',
+      'نعوّض: c² = 4² + 4² − 2 × 4 × 4 × cos 60°',
+      'cos 60° = 1/2، فتكون c² = 16 + 16 − 32 × (1/2) = 16',
+      'c طول موجب، إذن c = 4 (والمثلث متطابق الأضلاع)',
+    ],
+    en: [
+      'Cosine rule: c² = a² + b² − 2ab cos C',
+      'Substitute: c² = 4² + 4² − 2 × 4 × 4 × cos 60°',
+      'cos 60° = 1/2, so c² = 16 + 16 − 32 × (1/2) = 16',
+      'c is a length, so c = 4 (and the triangle is equilateral)',
+    ],
+  },
+  'lc-e4': {
+    ar: [
+      'قانون جيب التمام: c² = a² + b² − 2ab cos C',
+      'نعوّض: c² = 9² + 12² − 2 × 9 × 12 × cos 90°',
+      'cos 90° = 0 فيختفي الحد الأخير: c² = 81 + 144 = 225',
+      'c طول موجب، إذن c = 15',
+    ],
+    en: [
+      'Cosine rule: c² = a² + b² − 2ab cos C',
+      'Substitute: c² = 9² + 12² − 2 × 9 × 12 × cos 90°',
+      'cos 90° = 0, so the last term vanishes: c² = 81 + 144 = 225',
+      'c is a length, so c = 15',
+    ],
+  },
+  'lc-m4': {
+    ar: [
+      'قانون جيب التمام: c² = a² + b² − 2ab cos C',
+      'نعوّض: c² = 5² + 16² − 2 × 5 × 16 × cos 120°',
+      'cos 120° = −1/2، فتكون c² = 25 + 256 − 160 × (−1/2) = 25 + 256 + 80',
+      'c² = 361',
+      'c طول موجب، إذن c = 19',
+    ],
+    en: [
+      'Cosine rule: c² = a² + b² − 2ab cos C',
+      'Substitute: c² = 5² + 16² − 2 × 5 × 16 × cos 120°',
+      'cos 120° = −1/2, so c² = 25 + 256 − 160 × (−1/2) = 25 + 256 + 80',
+      'c² = 361',
+      'c is a length, so c = 19',
+    ],
+  },
+  'lc-m5': {
+    ar: [
+      'قانون جيب التمام لإيجاد زاوية: cos C = (a² + b² − c²) / (2ab)',
+      'نعوّض: cos C = (8² + 15² − 13²) / (2 × 8 × 15)',
+      'cos C = (64 + 225 − 169) / 240 = 120/240 = 1/2',
+      'C زاوية في مثلث (بين 0° و 180°)، إذن C = 60°',
+    ],
+    en: [
+      'Cosine rule for an angle: cos C = (a² + b² − c²) / (2ab)',
+      'Substitute: cos C = (8² + 15² − 13²) / (2 × 8 × 15)',
+      'cos C = (64 + 225 − 169) / 240 = 120/240 = 1/2',
+      'C is an angle of a triangle (between 0° and 180°), so C = 60°',
+    ],
+  },
+  'lc-m6': {
+    ar: [
+      'قانون جيب التمام لإيجاد زاوية: cos C = (a² + b² − c²) / (2ab)',
+      'نعوّض: cos C = (5² + 5² − (5√3)²) / (2 × 5 × 5)',
+      '(5√3)² = 25 × 3 = 75، فتكون cos C = (25 + 25 − 75) / 50 = −25/50 = −1/2',
+      'cos C سالب فالزاوية منفرجة، إذن C = 120°',
+    ],
+    en: [
+      'Cosine rule for an angle: cos C = (a² + b² − c²) / (2ab)',
+      'Substitute: cos C = (5² + 5² − (5√3)²) / (2 × 5 × 5)',
+      '(5√3)² = 25 × 3 = 75, so cos C = (25 + 25 − 75) / 50 = −25/50 = −1/2',
+      'cos C is negative, so the angle is obtuse: C = 120°',
+    ],
+  },
+  'lc-h2': {
+    ar: [
+      'زاويتا متوازي الأضلاع المتجاورتان مجموعهما 180°، فالزاوية الأخرى 180° − 60° = 120°',
+      'القطر الأطول يقابل الزاوية المنفرجة 120° في المثلث الذي ضلعاه 6 و 10',
+      'قانون جيب التمام: d² = 6² + 10² − 2 × 6 × 10 × cos 120°',
+      'cos 120° = −1/2، فتكون d² = 36 + 100 + 60 = 196',
+      'd طول موجب، إذن القطر الأطول = 14 سم',
+    ],
+    en: [
+      'Adjacent angles of a parallelogram sum to 180°, so the other angle is 180° − 60° = 120°',
+      'The longer diagonal faces the obtuse 120° angle in the triangle with sides 6 and 10',
+      'Cosine rule: d² = 6² + 10² − 2 × 6 × 10 × cos 120°',
+      'cos 120° = −1/2, so d² = 36 + 100 + 60 = 196',
+      'd is a length, so the longer diagonal is 14 cm',
+    ],
+  },
+  'lc-w2': {
+    ar: [
+      'AB هو الضلع المقابل للزاوية C = 60° في المثلث ABC',
+      'قانون جيب التمام: AB² = 80² + 150² − 2 × 80 × 150 × cos 60°',
+      'cos 60° = 1/2، فتكون AB² = 6400 + 22500 − 12000 = 16900',
+      'AB طول موجب، إذن AB = 130 م',
+    ],
+    en: [
+      'AB is the side facing the angle C = 60° in triangle ABC',
+      'Cosine rule: AB² = 80² + 150² − 2 × 80 × 150 × cos 60°',
+      'cos 60° = 1/2, so AB² = 6400 + 22500 − 12000 = 16900',
+      'AB is a length, so AB = 130 m',
+    ],
+  },
 
   // ── Functions ──
   'f-e1': {

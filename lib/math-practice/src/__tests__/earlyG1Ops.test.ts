@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 
 import { TOPICS, makeTopicItem, topicFor } from '../topics.ts';
 import { mathBankCovers, takeElementaryMath, type ConcreteItem, type DiffTier } from '../index.ts';
+import { makeElementaryItem } from '../elementary.ts';
 
 const TIERS: DiffTier[] = ['easy', 'medium', 'hard'];
 function seeded(seed: number) {
@@ -352,6 +353,67 @@ describe('Grade 1 lessons that were refused or shared a bank: answers recomputed
         else { kinds.add('story'); assert.equal(Number(item.answer), 2 * nums(p)[0]!, p); }
       }
       assert.equal(kinds.size, 3, `${id}: ${[...kinds]}`);
+    }
+  });
+});
+
+describe('Grade 1 second pass (review, 2026-11-15)', () => {
+  it('«مقارنة الأعداد» and «ترتيب الأعداد» use numbers of two places, as their objectives say', () => {
+    // «المقارنة بين عددين ضمن منزلتين», «ترتيب الأعداد ضمن منزلتين»: the op drew 0–10 at
+    // easy and medium, so neither lesson ever showed a two-digit number.
+    for (const title of ['مُقارَنَةُ الْأَعْدادِ', 'تَرْتيبُ الْأَعْدادِ']) {
+      for (const diff of TIERS) {
+        let twoDigit = 0;
+        for (let i = 0; i < 60; i++) {
+          const item = makeElementaryItem(title, 1, diff, new Set(), seeded(i * 31 + 7));
+          const ns = nums(item.promptAr ?? item.eq);
+          for (const n of ns) assert.ok(n <= 99, `${title} ${diff}: past 99: ${item.promptAr}`);
+          if (ns.filter(n => n >= 10).length >= 2) twoDigit += 1;
+        }
+        assert.ok(twoDigit >= 45, `${title} ${diff}: only ${twoDigit} of 60 compare two-digit numbers`);
+      }
+    }
+  });
+
+  it('the Grade 2+ compare lessons keep their own ranges', () => {
+    const item = makeElementaryItem('مقارنة الأعداد', 3, 'hard', new Set(), seeded(5));
+    assert.ok(Math.max(...nums(item.promptAr ?? item.eq)) > 99 || /أرقام/.test(item.promptAr ?? ''), item.promptAr);
+  });
+
+  it('«العدد صفر» comes after 4 and 5 and before 6–10: no number past 5', () => {
+    for (const item of g1Draws('count_zero')) {
+      const t = `${item.promptAr} ${item.answer} ${item.wrongs.join(' ')}`;
+      for (const n of nums(t)) assert.ok(n <= 5, `past 5: ${t}`);
+    }
+  });
+
+  it('the thin number lessons hold at least ten different questions', () => {
+    for (const id of ['count_45', 'count_910', 'count_123', 'count_678', 'solid_names']) {
+      const stems = new Set(g1Draws(id, 600).map(i => i.promptAr));
+      assert.ok(stems.size >= 10, `${id}: ${stems.size} stems`);
+    }
+  });
+
+  it('a counting lesson stays inside the numbers taught so far', () => {
+    for (const [id, hi] of [['count_123', 3], ['count_45', 5], ['count_678', 8], ['count_910', 10]] as const) {
+      for (const item of g1Draws(id)) {
+        const t = `${item.promptAr} ${item.answer}`;
+        for (const n of nums(t)) assert.ok(n <= hi, `${id}: ${t}`);
+        for (const w of item.wrongs) if (/^\d+$/.test(w)) assert.ok(Number(w) >= 0 && Number(w) <= hi + 3, `${id}: wrong ${w}`);
+      }
+    }
+  });
+
+  it('new counting kinds: the answers are right', () => {
+    for (const id of ['count_123', 'count_45', 'count_678', 'count_910']) {
+      for (const item of g1Draws(id)) {
+        const p = item.promptAr!;
+        const m = p.match(/أيهما أكبر: (\d+) أم (\d+)؟/) ?? p.match(/أيهما أصغر: (\d+) أم (\d+)؟/);
+        if (m) assert.equal(Number(item.answer), (/أكبر/.test(p) ? Math.max : Math.min)(Number(m[1]), Number(m[2])), p);
+        const seq = p.match(/أكمل العد: (\d+)، (\d+)، ___/);
+        if (seq) assert.equal(Number(item.answer), Number(seq[2]) + 1, p);
+        if (/●/.test(p)) assert.equal(Number(item.answer), (p.match(/●/g) ?? []).length, p);
+      }
     }
   });
 });
