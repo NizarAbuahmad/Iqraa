@@ -45,24 +45,36 @@ schedule: nothing is ever sent unless an admin presses send.
 - Recipients are read in a stable order and excluded by user id or by an address already mailed.
 - A test copy never deletes an issue that already has recorded recipients.
 - The route has no `sent-not-recorded` answer any more. The 24-hour check refuses a test exactly 24 hours old.
+- Re-testing the identical text resumes the issue that already has it: the test refreshes that issue's test time
+  and makes it the tester's, so a send after a partly failed one, or after its test expired, skips everyone already
+  mailed. An edited text, even by one typo, is a new issue and goes to every teacher again.
+- Only the admin who received the test copy can send it. Another admin gets 409 `not-tested` until they send
+  themselves a test of the same text, which makes the issue theirs.
+- A send mails only the teachers whose record its own insert wrote. If two sends of one issue overlap (a stale claim
+  taken while the first is stalled), a teacher the other run recorded is not mailed or counted by this one.
+- `RESEND_API_URL` (the test stub's address) is ignored in production, with one error in the log, so a stray value
+  cannot send the provider key and the addresses anywhere but Resend.
 
-**Verified** (by command, in this session, against a local throwaway Postgres 16; nothing against production):
+**Verified** (by command, on 2026-11-20, on the author's machine against a local throwaway Postgres 16; nothing
+against production):
 
 - `lib/db` suite with `RLS_TEST_DATABASE_URL`: 72 pass, 0 fail, including «row-level security covers every table»
   (at `2558130`).
-- API: `adminNewsletter.db.test.ts` 12 of 12; the whole suite after `pnpm build` with `TEST_DATABASE_URL` set:
-  3,604 pass, 0 fail, 0 skipped, re-run at `a8196e3` for this entry. Mail in these tests went only to a local stub
-  (`test-support/resendStub.ts`).
-- Mobile `pnpm test` at `a8196e3`: 9,455 tests, 9,445 pass, 0 fail, 10 skipped.
+- API: `adminNewsletter.db.test.ts` 16 of 16; the whole suite after `pnpm build` with `TEST_DATABASE_URL` set:
+  3,611 pass, 0 fail, 0 skipped, at the fix commit (the code of `ef3abc4`). Mail in these tests went only to a local
+  stub (`test-support/resendStub.ts`).
+- Mobile `pnpm test` at the fix commit: 9,456 tests, 9,446 pass, 0 fail, 10 skipped.
 - `lib/curriculum`: `pnpm test` 931 pass, 0 fail; `pnpm run verify` 0 errors (3,369 lessons, 200 files).
-- `pnpm run typecheck` at `a8196e3`: exits 0.
+- `pnpm run typecheck` at the fix commit: exits 0.
 - CI on `b152778`: row-level security, migrations match schema, destructive migrations acknowledged, math verifier
   and the teacher-to-student smoke test passed.
 - Browser (headless Chromium, built web app, local API with no mail key, a seeded system admin, two teachers of
-  whom one had unsubscribed), English light and Arabic dark: the count line and «no issue has been sent yet» show;
+  whom one had unsubscribed), English light and Arabic dark: the count line and "No issue has been sent yet." show;
   send is disabled before a draft; the draft button fills the subject and a body of 11 notes with 22
-  `app.iqrra.com` links and both opening sentences; send stays disabled after the draft; «send me a test copy»
-  answers «Could not send» (there is no mail key) and send stays disabled; no page errors.
+  `app.iqrra.com` links and both opening sentences; send stays disabled after the draft; "Send me a test copy"
+  answers "Could not send" (there is no mail key) and send stays disabled; no page errors. This was before the
+  count wording below changed.
+- No database-backed test was skipped: all of them ran locally.
 
 **Not verified.**
 
@@ -75,6 +87,8 @@ schedule: nothing is ever sent unless an admin presses send.
 - The policy sentence was written by a model and not read by a lawyer. Existing teachers are not shown the change
   (there is no re-acceptance flow).
 - A failing write-ahead insert and a failing un-record delete have no test (they need fault injection).
+- The screen's count wording (below) and the Amman date of the last issue were not seen in a browser; only the
+  typechecker and the mobile suite ran over them.
 - The math verifier's Python test (`test_equations.py`) was not run; this change does not touch it.
 
 **Known limits.**
@@ -87,9 +101,17 @@ schedule: nothing is ever sent unless an admin presses send.
   retry can mail those teachers again. There is no timeout on the provider call.
 - A crash in the middle of a batch can leave up to 100 teachers marked as mailed who were not.
 - Two test copies sent at the same instant can leave two unsent issues.
-- Screen copy: counts read «1 teachers» / «1 معلّمًا»; in the English interface the body box is left-aligned, so
-  Arabic lines show their full stop on the wrong side while editing (the email itself is right). The Arabic policy
-  says «رسالة دورية» (periodic) where the English says «occasional».
+- An edited text is a new issue: correcting one typo after a send and sending again mails every teacher a second
+  time. Only the identical text resumes an issue.
+- Screen copy: in the English interface the body box is left-aligned, so Arabic lines show their full stop on the
+  wrong side while editing (the email itself is right). The Arabic policy says «رسالة دورية» (periodic) where the
+  English says "occasional".
+
+**Screen copy.** Counts are worded so no plural agreement is needed, with Latin digits throughout: «عدد المعلّمين
+المستلمين: N · ألغوا الاشتراك: M» / "Teachers who would receive it: N · Unsubscribed: M"; the button «أرسل إلى
+المعلّمين (N)» / "Send to teachers (N)"; the result «وصلت: A · تعذّرت: B». The confirm dialog says the number is an
+upper bound («ما لا يزيد على N من المعلّمين» / "at most N teachers"), since a retry skips anyone already mailed. The
+last issue's date is its Amman day (`ammanToday`), not the device's.
 
 **Before the first real issue (owner).** Read the policy sentence (`constants/legal.ts`, section 2, both languages).
 In the Resend dashboard, check the plan's daily and monthly caps against the count on `/admin/newsletter`, and that

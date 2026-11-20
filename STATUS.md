@@ -38,7 +38,7 @@ Checked 2026-10-22:
   month, 30.92 used, after which Neon suspends the compute), autoscaling 0.25-0.5 CU, scale to
   zero on, $10 spend alert — see «Neon leaves the Free plan before launch» in the log and the
   first item under *Open*. The schema deploys as migrations (32 files in
-  `lib/db/migrations` on this branch, up to `0031`; `0018` was applied by deploy run 801 on 2026-10-25); `verify-schema` runs before every API deploy.
+  `lib/db/migrations`, up to `0031` (the newsletter tables; applied by the first deploy after that PR merges); `0018` was applied by deploy run 801 on 2026-10-25); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
   for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
   worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
@@ -115,7 +115,7 @@ Checked 2026-10-22:
   running, and whether masking hides their photos is unverified, like every other screen. The
   teacher's screens are reached from the tracked class page, so on the web a Contentsquare
   recording is usually already running when they open and only the body-level mask protects the
-  photos; Android replay has `maskAllImages` true. The policy (`LEGAL_VERSION` 2026-11-20 now; its recording text dates from 2026-10-30, its «time in the app» and optional-teacher-details lines from 2026-11-19, «Admin user insights» in the log, and its occasional what's-new email to teachers from 2026-11-20, «Teacher newsletter: a what's-new email an admin sends after a test copy» in the log) was written by a model and **not reviewed by a
+  photos; Android replay has `maskAllImages` true. The policy (`LEGAL_VERSION` 2026-11-20 from the merge of the newsletter PR (2026-11-19 until then); its recording text dates from 2026-10-30, its «time in the app» and optional-teacher-details lines from 2026-11-19, «Admin user insights» in the log, and its occasional what's-new email to teachers from 2026-11-20, «Teacher newsletter: a what's-new email an admin sends after a test copy» in the log) was written by a model and **not reviewed by a
   lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
   and the Contentsquare plan shows a 200K sessions a month cap.
   Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
