@@ -1397,7 +1397,7 @@ const translations = {
     // Export & sharing
     exportTitle: 'تصدير الملف',
     exportShare: 'مشاركة',
-    exportShareSub: 'واتساب، البريد، وغيرها',
+    exportShareSub: 'واتساب، البريد، وغيرها — ويُنسخ النص أيضًا',
     exportCopy: 'نسخ النص',
     exportCopySub: 'انسخ المحتوى كاملًا',
     exportPDF: 'تصدير PDF',
@@ -5065,7 +5065,7 @@ const translations = {
     // Export & sharing
     exportTitle: 'Export file',
     exportShare: 'Share',
-    exportShareSub: 'WhatsApp, email and more',
+    exportShareSub: 'WhatsApp, email and more — the text is copied too',
     exportCopy: 'Copy text',
     exportCopySub: 'Copy full content to clipboard',
     exportPDF: 'Export PDF',

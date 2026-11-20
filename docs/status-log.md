@@ -88,6 +88,9 @@ generated quiz has no link (the shareable paper is an Evaluation). Copy existed 
   result now toast. Before this they toasted nothing, even when desktop web had only copied. The class join code
   toasts on `both` too. Parent message and claim code read `!== 'copied'` where they read `=== 'shared'`, so their
   "sent / shared" toasts are unchanged.
+- **Follow-up, same day:** the export menu's Share subtitle (`exportShareSub`) now says so —
+  «واتساب، البريد، وغيرها — ويُنسخ النص أيضًا» / "WhatsApp, email and more — the text is copied too" — because
+  the menu itself looked unchanged and the copy was only discoverable after tapping.
 - **Not verified:** the real Windows sheet and the Android/iOS sheets (no device or desktop browser with
   `navigator.share` here). The order and outcomes are unit-tested. No «ما الجديد» entry: the toast explains the
   change when it happens.
