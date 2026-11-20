@@ -10,6 +10,56 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Physics drawings show in quizzes, worksheets and their PDFs — 2026-11-20
+
+Third of three PRs (part 1 is the package, NizarAbuahmad/Iqraa#1443; part 2 is the server, NizarAbuahmad/Iqraa#1467).
+This one is the app: a physics question's `visual` is now drawn on screen and in the PDF.
+
+**What it does.**
+- **One display gate.** `paperVisualOf` (`services/paperVisual.ts`) runs `resolvePhysicsFigure` AND
+  `figureNumbersInText` on the question's own text. It is re-checked every time a drawing is shown, on screen and in
+  print, so a stored paper is never trusted. A drawing that fails is not shown and the question still is.
+- **Screens.** `PaperVisual` (`components/ui/PaperVisual.tsx`) on the quiz and worksheet/homework result cards
+  (`app/ai-tools/quiz.tsx`, `worksheet.tsx`) and on the saved-material viewer (`app/workspace/view.tsx`, `QuizView`
+  and `WorksheetView`, which gained a `lang` prop). The exam path `QuestionVisual` is untouched (maths only). The
+  worksheet's «attach a book figure» highlight is not shown for a question that has a drawing.
+- **Print.** `paperVisualHTML` (`exportHtml.ts`) draws it in the quiz and worksheet paper (student and teacher copy)
+  and in both slide decks. Ink style greys the drawing; large print widens it.
+- **Slides: one grouping rule, `drawingSlideGroups`.** A slide holds at most one shown drawing, and at most 3 questions
+  when it holds one. Quiz slides without drawings still group in threes and worksheet sections without drawings stay
+  on one slide, both byte for byte as before (the controller compared 16 cases). Continuation slides of a section say
+  «(تابع)» / "(cont.)".
+- **Word and the text copies.** `quizDocx` and `exportText` (which also feed the chat bubble, the WhatsApp share and
+  copy) print «(الرسم في نسخة PDF)» / "(The drawing is in the PDF.)" under a question whose drawing is shown.
+- **The edit rule.** A new question text or a new answer removes the drawing (`quizEdits`, `worksheetEdits`);
+  rewriting the correct option removes it too. Points, explanation and book-figure changes keep it. An edit to the same
+  value also removes it (it fails safe).
+
+**Seen by eye.**
+- **PDFs** of a fixture (6 drawn and 2 plain questions), Arabic and English, student, teacher and ink, quiz and
+  worksheet paper and both slide decks: every drawing in its own card, nothing cut at a page edge, ink grey.
+- **Found and fixed.** Worksheet slides put a whole section on one fixed slide and clipped the bottom when it held
+  several drawings, so questions disappeared. They are now split by the rule above.
+- **Screens.** A saved quiz and worksheet in `/workspace/view` at phone (390) and desktop (1366), light and dark,
+  Arabic, plus English at phone width (throwaway Postgres, local API, web build). Drawings show; a question whose
+  stem does not state the drawing's number shows none; dark mode reads; RTL alignment is right.
+
+**Not verified.**
+- **The result cards in `quiz.tsx` and `worksheet.tsx` on screen.** They show only fresh generations, and no live
+  model has written a drawing (the OpenAI key is out of credit).
+- **Native devices.**
+- **Small drawings on mostly empty slides** (60 mm cap): cosmetic.
+
+**Known gaps (not in this PR).**
+- **Chat:** the bubble is text only and shows the note; its PDF export draws.
+- **Lesson-flow previews:** text only.
+- **The in-app class-mode deck** (`classDeck.ts`): text only.
+- **Send to students:** `worksheetSendPayload` does not carry `visual`, so a sent worksheet's exam has no drawing.
+- **Games:** text only.
+
+**«ما الجديد»:** added, id `physics-drawn-figures`, for teachers, opens the quiz tool, dated 2026-11-20. **Correct the
+date on merge day.** Merge PR 2 and PR 3 close together.
+
 ## Physics quizzes and worksheets ask for drawings, and the server checks them — 2026-11-13
 
 Second of three PRs to let a physics question carry a drawing (part 1 is
