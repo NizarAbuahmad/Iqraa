@@ -311,6 +311,12 @@ export interface WorksheetQuestion {
    * item — a person matches them, as `BookFiguresPanel` explains.
    */
   figure?: QuestionFigure;
+  /**
+   * A drawing the model proposed for a physics question (spec 2026-11-13 physics
+   * figures). Never trusted as stored: shown only through `paperVisualOf`
+   * (services/paperVisual.ts). Removed when the question's text or answer is edited.
+   */
+  visual?: PhysicsFigure;
   /** A structured format (spec 2026-10-11). `text` is still the whole question in plain text. */
   format?: WorksheetQuestionFormat;
 }
@@ -366,6 +372,12 @@ export interface QuizQuestion {
   lessonId?: string;
   /** The model's raw lesson code (`L3`). Mapped to `lessonId` on arrival and then removed. */
   lesson?: string;
+  /**
+   * A drawing the model proposed for a physics question (spec 2026-11-13 physics
+   * figures). Never trusted as stored: shown only through `paperVisualOf`
+   * (services/paperVisual.ts). Removed when the question's text or answer is edited.
+   */
+  visual?: PhysicsFigure;
 }
 
 export interface ActivityStep {
@@ -821,6 +833,7 @@ export type { InfographicOutput } from './infographic.ts';
 import type { InfographicOutput } from './infographic.ts';
 import type { FormatKind } from '@workspace/math-practice';
 import type { PhotoCredit } from '../photoCredit.ts';
+import type { PhysicsFigure } from '@workspace/figure';
 
 export abstract class AIService {
   abstract generateLessonPlan(req: AIRequest, opts?: GenerateOptions): Promise<LessonPlanOutput>;
