@@ -170,11 +170,13 @@ export default function AdminInsightsScreen() {
                   valueOf={d => data.time.byDay.find(x => x.day === d)?.minutes ?? 0}
                   isRTL={isRTL}
                   colors={colors}
+                  stretch
                 />
                 {data.time.byPlatform.map(p => (
                   <View key={p.platform}>
                     <KeyValue k={p.platform} v={`${formatMinutes(p.minutes, ar)} · ${isolateLtr(share(p.minutes, data.time.totalMinutes))}`} isRTL={isRTL} colors={colors} />
-                    <Bar ratio={data.time.totalMinutes ? p.minutes / data.time.totalMinutes : 0} isRTL={isRTL} colors={colors} />
+                    {/* A share of all minutes: 100% on one platform is not a warning, so never red. */}
+                    <Bar ratio={data.time.totalMinutes ? p.minutes / data.time.totalMinutes : 0} isRTL={isRTL} colors={colors} warn={false} />
                   </View>
                 ))}
               </View>
