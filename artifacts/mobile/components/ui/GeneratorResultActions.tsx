@@ -38,7 +38,8 @@ export interface GeneratorResultActionsProps {
   savedId: string | null | undefined;
   onToast: (message: string) => void;
   saveState: SaveState;
-  onSave: () => void | Promise<void>;
+  /** May resolve to the saved id (the screens' `handleSave` does, for «مشاركة رابط»); ignored here. */
+  onSave: () => unknown;
   /** Omit entirely for a screen with no favouriting (activity has none). */
   favorite?: { favorited: boolean; onToggle: () => void };
   /** Opens the screen's own ExportMenu. */

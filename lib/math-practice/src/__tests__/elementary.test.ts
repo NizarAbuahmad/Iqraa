@@ -116,13 +116,15 @@ describe('numbers fit the grade', () => {
     }
   });
 
-  it('grade 1 never sees a three-digit number, and adds and compares within 20', () => {
+  // Grade 1 adds and subtracts within 20, but compares and orders «ضمن منزلتين»
+  // (objectives of u2_l4, u2_l5), so those two go to 99 (second pass, 2026-11-15).
+  it('grade 1 never sees a three-digit number, adds within 20 and compares within 99', () => {
     const rng = seeded(11);
     for (const title of ['الجمع', 'الطرح', 'مقارنة الأعداد', 'ترتيب الأعداد', 'القيمة المنزلية']) {
       for (let i = 0; i < 300; i++) {
         const item = makeElementaryItem(title, 1, (['easy', 'medium', 'hard'] as const)[i % 3], new Set(), rng);
         const stem = itemStem(item, true);
-        const limit = /منزلي/.test(title) ? 99 : 20;
+        const limit = /منزلي|مقارنة|ترتيب/.test(title) ? 99 : 20;
         for (const n of nums(stem)) assert.ok(n <= limit, `${title}: ${stem}`);
       }
     }

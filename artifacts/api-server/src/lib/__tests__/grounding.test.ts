@@ -136,6 +136,23 @@ describe("groundingFor", () => {
     assert.equal(groundingFor({ topic: "المشتقات" }, true), null);
   });
 
+  it("grounds nothing when the client says there is no lesson", () => {
+    // The app already searched the teacher's grade and subject and found no
+    // lesson for this topic (chat's free topic, a tool screen's ungrounded
+    // topic). A title match over the whole catalog here attached another
+    // grade's book to a prompt the app had labelled «غير موجود في المنهاج».
+    assert.ok(groundingFor({ topic: CIRCLE_LESSON }, true), "the topic alone grounds (precondition)");
+    assert.equal(groundingFor({ topic: CIRCLE_LESSON, grounding: "none" }, true), null);
+    // It wins over anything else the body carries: «none» is the client's verdict.
+    assert.equal(groundingFor({ topic: CIRCLE_LESSON, unitId: CIRCLE, grounding: "none" }, true), null);
+    assert.equal(
+      groundingFor({ topic: "الفصل الأول كاملًا", scope: { kind: "semester", scopeKey: "k", unitIds: [CIRCLE] }, grounding: "none" }, true),
+      null,
+    );
+    // Any other value is not a verdict, and changes nothing.
+    assert.ok(groundingFor({ topic: CIRCLE_LESSON, grounding: "auto" }, true));
+  });
+
   it("answers in the requested language", () => {
     const en = groundingFor({ unitId: CIRCLE }, false);
     assert.ok(en);
@@ -158,6 +175,13 @@ describe("withGrounding", () => {
     // Not "an empty block appended". An ungrounded request must be exactly the
     // request that was sent, or the fallback is its own silent edit.
     const sent = { topic: "لا شيء", additionalContext: "سياق المعلم", grade: "الصف العاشر" };
+    const { body, grounding } = withGrounding(sent, true);
+    assert.equal(grounding, null);
+    assert.deepEqual(body, sent);
+  });
+
+  it("sends a «no lesson» body exactly as it came", () => {
+    const sent = { topic: CIRCLE_LESSON, additionalContext: "تنبيه: الموضوع غير موجود في المنهاج", grounding: "none" };
     const { body, grounding } = withGrounding(sent, true);
     assert.equal(grounding, null);
     assert.deepEqual(body, sent);

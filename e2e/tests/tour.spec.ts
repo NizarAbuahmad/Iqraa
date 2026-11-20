@@ -5,8 +5,8 @@ import { pinLocale, signUpAndVerify } from "../helpers/journey";
 /**
  * The first-run tour, as a brand-new teacher meets it, against the real API:
  *
- *   sign up → verify → pick subjects (no tour over that screen) → land on
- *   Today → the tour opens → walk it → it does not come back → Profile →
+ *   sign up → verify → pick subjects (no tour over that screen) → skip the
+ *   optional «About you» → land on Today → the tour opens → walk it → it does not come back → Profile →
  *   «Replay the tour» → it does.
  *
  * What the unit tests cannot say is that the tour is only ever drawn over a
@@ -36,7 +36,12 @@ test("a new teacher is walked through Today once, and can replay it", async ({ b
     await page.getByText("Grade 10", { exact: true }).click();
     await page.getByText("Mathematics", { exact: true }).click();
     await page.getByText("Show my curriculum", { exact: true }).click();
-    await expect(page).not.toHaveURL(/setup-subjects/);
+    // A new teacher is offered the optional «About you» questions once (app/teacher-profile.tsx),
+    // with no tour over them; skipping goes on to Today.
+    await expect(page).toHaveURL(/teacher-profile/);
+    await expect(tour).toHaveCount(0);
+    await page.getByText("Skip", { exact: true }).click();
+    await expect(page).not.toHaveURL(/setup-subjects|teacher-profile/);
     await expect(tour.getByText(/^Step 1 of \d+$/)).toBeVisible();
   });
 

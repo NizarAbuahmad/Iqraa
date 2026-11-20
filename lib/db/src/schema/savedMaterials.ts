@@ -30,6 +30,14 @@ export const savedMaterials = pgTable("saved_materials", {
   classGroupId: uuid("class_group_id").references(() => classGroups.id, {
     onDelete: "set null",
   }),
+  /**
+   * The share link's code (`/m/CODE`), set while the owner shares this material
+   * and null otherwise. Stopping clears it, so a re-share gets a new code and a
+   * forwarded old link stays dead. See lib/materialShare.ts in the API and spec
+   * docs/superpowers/specs/2026-11-20-material-share-link-design.md.
+   */
+  shareCode: text("share_code").unique(),
+  sharedAt: timestamp("shared_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

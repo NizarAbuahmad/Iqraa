@@ -6,7 +6,7 @@
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { runLessonFlowFrom } from '@/services/ai/lessonFlowRunner';
 import type { AIRequest } from '@/services/ai/AIService';
-import { buildGeneratorContext } from '@/services/kbContext';
+import { cqvGroundingFields } from './grounding';
 import { saveItem, type MaterialType } from '@/services/workspace';
 import { getArtifactDef } from './artifacts';
 import { getCqvLesson } from './catalog';
@@ -42,7 +42,10 @@ export type BatchRunResult = {
   failed: number;
 };
 
-function baseRequest(topic: string, additionalContext?: string): AIRequest {
+function baseRequest(
+  topic: string,
+  { additionalContext, grounding }: { additionalContext?: string; grounding?: 'none' } = {},
+): AIRequest {
   return {
     grade: 'الصف العاشر',
     subject: 'الرياضيات',
@@ -50,6 +53,7 @@ function baseRequest(topic: string, additionalContext?: string): AIRequest {
     duration: 45,
     language: 'arabic',
     additionalContext,
+    grounding,
     difficulty: 'mixed',
     numQuestions: 8,
     totalMarks: 20,
@@ -161,8 +165,7 @@ export async function testEntireLesson(
   if (!lesson) throw new Error(`Unknown CQV lesson: ${lessonId}`);
 
   const topic = lesson.lessonNameAr;
-  const additionalContext = buildGeneratorContext(topic, 'ar');
-  const req = baseRequest(topic, additionalContext);
+  const req = baseRequest(topic, cqvGroundingFields(topic));
   const total = CQV_ARTIFACT_IDS.length;
   const reports: CqvReport[] = [];
   let succeeded = 0;
