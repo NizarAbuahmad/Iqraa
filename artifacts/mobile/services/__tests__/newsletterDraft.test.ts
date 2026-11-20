@@ -55,6 +55,19 @@ test('with no issue sent yet, looks back 31 days and opens by saying what this m
   assert.match(paragraphs[2]!, /Unsubscribe/);
 });
 
+test('the first issue is: Arabic intro, Arabic block, English intro, English block', () => {
+  const out = draft([entry('in', '2026-11-10', { route: '/iqra' })], null);
+  assert.equal(
+    out.body,
+    [
+      'هذه رسالة إقرأ الشهرية للمعلّمين: ما الجديد في التطبيق. لإيقافها اضغط «إلغاء الاشتراك» أسفل الرسالة.',
+      'ع:inTitle\nع:inBody\nhttps://app.iqrra.com/iqra',
+      "This is Iqrra's monthly email for teachers: what is new in the app. To stop it, press Unsubscribe at the bottom.",
+      'E:inTitle\nE:inBody\nhttps://app.iqrra.com/iqra',
+    ].join('\n\n'),
+  );
+});
+
 test('a later issue has no opening sentence', () => {
   const out = draft([entry('a', '2026-11-05')], '2026-11-01');
   assert.ok(!out.body.includes('monthly email'));

@@ -17,6 +17,7 @@ import {
   type TeacherRow,
 } from "../newsletter.ts";
 import { readEmailUnsubscribeToken } from "../emailUnsubscribe.ts";
+import { BODY_MAX, SUBJECT_MAX } from "../siteMail.ts";
 
 let n = 0;
 const row = (over: Partial<TeacherRow> = {}): TeacherRow => ({
@@ -54,6 +55,12 @@ describe("pickTeacherRecipients", () => {
     const out = pickTeacherRecipients([first, row({ email: "same@school.jo" })]);
     assert.deepEqual(out, [{ id: first.id, email: "Same@School.jo" }]);
   });
+
+  it("keeps an address when its first row is ineligible and a later one, in another case, is", () => {
+    const later = row({ email: "same@school.jo" });
+    const out = pickTeacherRecipients([row({ email: "Same@School.jo", emailVerified: false }), later]);
+    assert.deepEqual(out, [{ id: later.id, email: "same@school.jo" }]);
+  });
 });
 
 describe("parseNewsletter", () => {
@@ -66,6 +73,14 @@ describe("parseNewsletter", () => {
     assert.deepEqual(parseNewsletter(null), { error: "subject" });
     assert.deepEqual(parseNewsletter({ subject: "x".repeat(151), body: "long enough body" }), { error: "subject" });
     assert.deepEqual(parseNewsletter({ subject: "Hello", body: "x".repeat(10_001) }), { error: "body" });
+  });
+  it("accepts the exact limits", () => {
+    const body = "b".repeat(10);
+    assert.deepEqual(parseNewsletter({ subject: "abc", body }), { subject: "abc", text: body });
+    const longSubject = "s".repeat(SUBJECT_MAX);
+    assert.deepEqual(parseNewsletter({ subject: longSubject, body }), { subject: longSubject, text: body });
+    const longBody = "b".repeat(BODY_MAX);
+    assert.deepEqual(parseNewsletter({ subject: "abc", body: longBody }), { subject: "abc", text: longBody });
   });
 });
 
