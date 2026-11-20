@@ -1174,6 +1174,14 @@ describe('money, time and measurement: answers recomputed', () => {
           assert.ok(item.wrongs.includes(`ال${BIG.includes(thing) ? small : big}`), p);
           continue;
         }
+        if (f === 1000 && !has(p, `1 ${big} =`)) {
+          // grams and millilitres (since 2026-11-17): a total of two small things, or how much more one is
+          const [x, y] = nums(p);
+          if (has(p, 'تزيد')) { kinds.add('more'); assert.equal(a, Math.abs(x! - y!), p); assert.ok(a > 0, p); }
+          else { kinds.add('total'); assert.equal(a, x! + y!, p); }
+          assert.ok(a <= 999 && x! <= 999 && y! <= 999, p);
+          continue;
+        }
         assert.equal(n[0], 1); assert.equal(n[1], f);
         // «كم مترًا في 900 سنتيمتر؟» asks for the big unit; «كم سنتيمترًا في 5 أمتار؟» for the small one.
         const asksBig = has(p, `كم ${({ 'متر': 'مترًا', 'كيلوغرام': 'كيلوغرامًا', 'لتر': 'لترًا' } as Record<string, string>)[big!]}`);
@@ -1182,7 +1190,8 @@ describe('money, time and measurement: answers recomputed', () => {
         else if (!asksBig) { kinds.add('to small'); assert.equal(a, n[2]! * f); }
         else { kinds.add('to big'); assert.equal(a * f, n[2]); }
       }
-      assert.equal(kinds.size, 5, `${id}: ${[...kinds]}`);
+      // the metre converts both ways and mixes; grams and millilitres (Grade 2 stays within 999) do not
+      assert.deepEqual([...kinds].sort(), f === 100 ? ['complete', 'fit', 'mixed', 'to big', 'to small'] : ['complete', 'fit', 'more', 'total'], `${id}: ${[...kinds]}`);
     }
   });
 });
