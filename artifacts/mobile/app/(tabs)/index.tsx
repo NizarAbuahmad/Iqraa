@@ -44,6 +44,7 @@ import { Celebrate } from '@/components/ui/Celebrate';
 import { Band } from '@/components/ui/Band';
 import { useSurface } from '@/components/ui/Surface';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { trackEvent } from '@/services/analytics';
 import { BRAND_BAND, subjectChipColor, subjectTheme } from '@/services/subjectTheme';
 import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
@@ -288,7 +289,10 @@ function LessonWorkspace() {
             {quickTools.map(tool => (
               <PressableScale
                 key={tool.id}
-                onPress={() => router.push({ pathname: tool.route as never, params: toolParams as never })}
+                onPress={() => {
+                  trackEvent('tool_opened', { toolId: tool.id, source: 'today' });
+                  router.push({ pathname: tool.route as never, params: toolParams as never });
+                }}
                 style={[s.tool, surface]}
                 accessibilityLabel={t(tool.titleKey as never)}
               >

@@ -125,6 +125,46 @@ unverified, as for the student's and the teacher's project screens (STATUS.md, �
 
 
 
+## The whiteboard has a card of its own, and the in-class tools report what is done in them — 2026-11-20
+
+The admin insights showed teachers spending time in «وضع الصف والسبورة» and nothing else about it: one
+usage area covered the whiteboard, the classroom hub, the presentation player and the book-page view, and
+only two actions in them were events (`game_started`, `game_finished`). The whiteboard itself could be
+opened only from inside a running presentation or from a saved board in «ملفاتي».
+
+- **A Tools-tab card.** `whiteboard` is a tool in `services/toolCatalog.ts` (second in «أثناء الحصة»), so it
+  is on the Tools tab and, being one of the first four tools with no prep-board row, in Today's «أدوات سريعة
+  لهذا الدرس» on phone and desktop. From Today it opens with the lesson's `topic`, which names the board
+  «السبورة — <الدرس>». A «ما الجديد» entry (`whiteboard-in-tools`, teachers) names the tool, so the card wears
+  «جديد». `howWhiteboard` in the help now gives the direct way in first.
+- **A concept.** `CONCEPTS.whiteboard` is the easel in slate `#475569`, the look a saved board already had;
+  `MATERIAL_CONCEPT.board` now reads it, so every saved-material kind is a concept. The Library's `document`
+  shelf was the same slate and moved to warm grey `#57534E` (a shelf with a colour of its own may not twin a
+  concept).
+- **Usage area.** `whiteboard` is appended to `USAGE_AREAS` in the app and the API; `/ai-tools/whiteboard`
+  beats under it. `classroom` is not renamed: its minutes before this day include the whiteboard's, and the
+  admin label is now «وضع الصف» beside «السبورة». An app updated before the API deploys would have its
+  whiteboard minutes stored as `other`; `deploy.yml` ships the API first.
+- **Events** (`services/classUsage.ts`, PostHog, counts and choices only, never a title, lesson or problem):
+  `whiteboard_opened {source: saved | presentation | menu}`, `whiteboard_drawn` (first stroke of a visit),
+  `whiteboard_solved {ok}`, `whiteboard_saved {pages, first, withSolution}`, `whiteboard_exported {pages}`,
+  `classroom_activity_started {format, duration, group, setup}`, `class_pen_used {surface: slides |
+  book_page}` (first stroke of a visit). Today's quick tools now send `tool_opened {source: 'today'}`, which
+  they never did for any tool.
+
+Verified: `classUsage.test.ts` (the names are pinned, each screen calls its events, no whiteboard event
+carries a title or topic); `usageAreas.test.ts`, `toolCatalog.test.ts`, `iconSystem.test.ts`,
+`whatsNew.test.ts`; mobile `pnpm test` (9,449 pass, 0 fail); api-server `pnpm build` + `pnpm test` (2,999
+pass); `pnpm run typecheck`. In Chromium against a local API and Postgres, with a new teacher account: the
+card on the Tools tab (desktop and 390 px, light and dark, Arabic and English), the card in Today's quick
+tools at 390 px dark, opening the board from both, and a stroke drawn with the mouse.
+
+Not verified: that the events arrive in PostHog (the local build has no key, so every call is a no-op);
+the admin insights page showing the new area (no minutes were recorded locally); Android, and touch on a
+real phone. Known limits: a board opened from the Tools tab or Today is saved with an empty `subject` and
+`grade` (only the presentation passes them); `whiteboard_drawn` and `class_pen_used` say that the pen was
+used, not how much; an event fires only where `EXPO_PUBLIC_POSTHOG_API_KEY` is set.
+
 ## Grade 3 second pass: skip counting by 10s, 100s and 1000s, four-digit comparing, like fractions, conversions within 9999 — 2026-11-20
 
 This is a second read of Grade 3 maths, on top of «Grade 3 review: six maths lessons asked about their own objective»,
@@ -167,6 +207,7 @@ draws no two thousands that sum past 9000.
   content. Left as it is.
 
 No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+
 ## Grade 1 review: the last three thin maths lessons fill a quiz, two shapes named in their own question, no elapsed time — 2026-11-20
 
 The same per-lesson read as «Grade 2 review: fifteen maths lessons…» and «Grade 3 review: six maths lessons…» (below),

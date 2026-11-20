@@ -33,6 +33,7 @@ import { useWideScope } from '@/hooks/useWideScope';
 import { buildScopeRequest } from '@/services/wideScopeRequest';
 import { ToolHeader } from '@/components/ui/ToolHeader';
 import { palette } from '@/constants/colors';
+import { trackClassroomActivityStarted } from '@/services/classUsage';
 
 const ACCENT = palette.primary;
 /** Solid fills carry white text: `hero` stays deep enough for that in dark mode. */
@@ -193,6 +194,13 @@ export default function ClassroomBuilderScreen() {
 
   const handleStartPresentation = () => {
     if (!result) return;
+    // The activity's own duration and grouping: the form may have moved since it was generated.
+    trackClassroomActivityStarted({
+      format: resolveActivityType(params),
+      duration: result.duration,
+      group: result.groupType,
+      setup: classroomSetup,
+    });
     setPendingClassroomActivity(result);
     router.push('/ai-tools/classroom/presentation' as any);
   };
