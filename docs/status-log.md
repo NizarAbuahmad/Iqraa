@@ -311,6 +311,56 @@ First fix from a Grade 10 review covering coverage, results and book images, acr
 - the vocational-English tracks mixed into the English unit picker;
 - the 2026 maths lesson «حل معادلات خاصة» missing from the catalog;
 - the vocational books: Part 2 on file is the Grade 9 book.
+## Grade 2 second pass: numbers within 999, grams without conversions, and «2 عشرات» — 2026-11-17
+
+A second read of Grade 2 maths, on top of «Grade 2 review: fifteen maths lessons asked about their own objective»
+(below), «Grade 2 audit…» and «Grade 2 review: coverage, images…». The generators were run over all 236 Grade 2
+lessons: each grounds by its own id, and all 61 maths lessons fill a ten-question quiz. Every question of every maths
+quiz was read against its lesson's objective. Every key was right. (The audit script's «wrong key» flags are its own:
+it ignores the «كل صورة تمثل طائرين» scale and the sign of a difference.)
+
+This pass found the same data-unit, division-table and eraser problems that the «fifteen lessons» review fixed first; its
+fixes are kept. What this pass adds:
+
+- **Numbers past 999 in estimating and in wrong options.** Grade 2 works «ضمن 3 منازل», but:
+  - «تقدير ناتج الجمع» estimated sums up to 1158, with 1200 and 1300 among the options. `estSum` now redraws a Grade 2
+    item that passes 999.
+  - Wrong options in the mental add/subtract, dinar and metre lessons offered 1000, 1081 and 5000. They are capped at
+    999 there.
+  - A rounding item may still offer 1000 for 960. That is a real round number, so it is left.
+- **«الغرام والكيلوغرام» and «اللتر والمليلتر» no longer convert to four digits.** They asked «7 كيلوغرامات = ؟ غرام»
+  (7000) and «3 لترات و 700 مليلتر» (3700); the objectives ask to tell the units apart and pick the fitting one (the
+  «fifteen lessons» review left this open). At f = 1000 the conversions are gone. What remains: the fitting unit, what
+  is left to make one kilogram or litre, and two new kinds — a total of two small things, and how much more one weighs
+  or holds (within 950). «المتر» keeps its conversions, which stay within 999.
+- **«2 عشرات», «1 مئات».** The place-value stem «6 مئات و 2 عشرات و 6 آحاد» now uses counts of 3–9, as Grade 1's
+  tens and ones already did. So does Grade 3's «الألوف» stem, which had the same line.
+
+**Verified:**
+- `grade2SecondPass.test.ts` was written first and failed before the fix. It recomputes the new gram and millilitre
+  kinds and checks every number in the touched Grade 2 stems and options is at most 999.
+- The `early.test.ts` units checker recomputes the new kinds and expects no conversion kind for grams and millilitres.
+- `lib/math-practice`, the full mobile suite and `pnpm run typecheck` pass (counts in the PR).
+- Rerunning the Grade 2 audit found nothing past 999 except the rounding option above. New items were sampled and read
+  by hand, which caught «رغيف خبز كتلتها» (now «كتلته») and an awkward capacity stem (now «تتسع علبة العصير لـ 300 مليلتر»).
+
+**Not done:**
+- Grade 2 page images exist only for Islamic and PE, so no page check was possible here.
+- «الأشكال المستوية» asks about sides and vertices, which is also the next lesson's content. Left as it is.
+
+No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+## Printed page (PDF): the logo is centred above the masthead — 2026-11-20
+
+Follow-up to «Word exports: the logo is centred, with space under it». On the printed page the logo sat inside
+the masthead band, at its start edge, beside «مساعد التدريس الذكي». It now has its own line above the band
+(`.brand-top` in the page shell, `exportHtml.ts`): centred, 104px wide (`PDF_LOCKUP_WIDTH`), with 16px under it.
+The band keeps the tagline, the school field and the date. This is the shell every printed paper shares (worksheet,
+quiz and the others built on it).
+
+Verified: `brandLockup.test.ts` checks the lockup is in its own `brand-top` block, centred with space under it, and
+above the masthead. The worksheet (Arabic, colour and ink-saver) and quiz (English) pages were rendered in
+Chromium and looked at. **Not changed:** in the ink-saver style the logo stays in colour.
+
 ## Chat: a material on a topic no lesson is about goes to the live model — 2026-11-20
 
 **What happened.** On app.iqrra.com «نشاط صفي لو كنت وزير تعليم ليوم واحد» answered «سؤالك قد يخص أكثر من
