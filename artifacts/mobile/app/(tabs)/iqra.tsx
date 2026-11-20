@@ -60,7 +60,22 @@ import {
   lessonsTheTeacherTeaches,
   liveChatGrounding,
 } from '@/services/kbContext';
-import { KB_SUGGEST_SCORE, namedLessonBeatsGrade, shouldAskWhichLesson } from '@/services/kbSuggestion';
+import {
+  KB_SUGGEST_SCORE,
+  inAskScope,
+  lessonsInAskScope,
+  namedLessonBeatsGrade,
+  rankedInAskScope,
+  shouldAskWhichLesson,
+  topHitHoldsTopic,
+  type AskScope,
+} from '@/services/kbSuggestion';
+import {
+  AS_TYPED_CHOICE,
+  asTypedChoiceLabel,
+  freeArtifactTopic,
+  isFreeTopicArtifactAsk,
+} from '@/services/ai/chatArtifactRoute';
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
@@ -2016,6 +2031,11 @@ export default function IqraScreen() {
       attachments?: ChatAttachment[],
       /** Shelf document the teacher tapped — named first in the support block. */
       pinnedResourceId?: string,
+      /**
+       * «على موضوعي كما كتبته» was tapped under guessed lessons: build the
+       * material on the typed topic, with no lesson and no further question.
+       */
+      asTyped?: boolean,
     ) => {
       const shown = text.trim();
       // «الثاني» after «أي درس…؟» picks the second lesson offered, and keeps
@@ -2394,8 +2414,15 @@ export default function IqraScreen() {
 
       // Scope to a specific subject: chip tap takes priority, then an explicit
       // subject name in the query text (e.g. "الكيمياء" / "الرياضيات").
+      //
+      // Neither applies to a lesson pinned this turn: the teacher tapped it (a
+      // chip, the sheet), which is a stronger signal than a word in the text.
+      // A chip offered for «…للصف السادس…» used to re-send the ask pinned to
+      // its lesson, and the grade filter then dropped the lesson it had pinned.
       const querySubjectId = extractQuerySubjectId(q);
-      if (scopeSubjectId) {
+      if (pinnedLessonId) {
+        // kept as tapped
+      } else if (scopeSubjectId) {
         results = filterResultsBySubject(results, scopeSubjectId);
       } else if (querySubjectId) {
         results = filterResultsBySubject(results, querySubjectId);
@@ -2404,16 +2431,38 @@ export default function IqraScreen() {
       // Scope to a grade the teacher named explicitly — same reasoning as the
       // subject scope above, so a wrong-grade default lesson can't sneak back
       // in through the general KB search results.
-      if (queryGradeId) {
+      if (queryGradeId && !pinnedLessonId) {
         results = filterResultsByGrade(results, queryGradeId);
       }
+
+      // «على موضوعي كما كتبته»: no lesson, by the teacher's choice.
+      if (asTyped) {
+        results = [];
+        pendingHardPin = null;
+      }
+
+      // The grade and subject an ask for material is built in — the grade the
+      // message names, else the picked lesson's (a new topic keeps the picked
+      // grade: "a quiz on fractions" with grade 7 picked is grade 7's), and the
+      // subject a chip or the message names. A chip offered for an ask must be
+      // in it, or the next step drops the lesson the chip pinned.
+      const pickedGradeId =
+        (activeLesson ? getBookForLesson(activeLesson)?.gradeId : null)
+        ?? (ctxLesson ? getBookForLesson(ctxLesson)?.gradeId : null)
+        ?? teachingCtxScope?.gradeId
+        ?? null;
+      const artifactAskScope: AskScope = {
+        gradeId: queryGradeId ?? pickedGradeId,
+        subjectId: scopeSubjectId ?? querySubjectId ?? null,
+      };
+      const lessonBook = (l: KBLesson) => getBookForLesson(l);
 
       // A named subject keeps the picked grade unless the message names
       // another: with grade 3 picked, "a study plan for english" is grade 3
       // English. `results` came from a whole-KB search capped at three, so
       // it rarely holds that scope — search the scope itself, and keep only a
       // confident match. None → `subjectScopeLessons` offers the lessons.
-      const subjectScopeGradeId = querySubjectId && !scopeSubjectId && !pinnedLessonId
+      const subjectScopeGradeId = querySubjectId && !scopeSubjectId && !pinnedLessonId && !asTyped
         ? queryGradeId
           ?? (activeLesson ? getBookForLesson(activeLesson)?.gradeId : null)
           ?? (ctxLesson ? getBookForLesson(ctxLesson)?.gradeId : null)
@@ -2463,6 +2512,7 @@ export default function IqraScreen() {
       // asking "which subject?" when they just said "الأحياء" is confusing.
       const hasHardContext = Boolean(
         pinnedLessonId
+        || asTyped
         || scopeSubjectId
         || querySubjectId
         || teachingCtx
@@ -2471,8 +2521,14 @@ export default function IqraScreen() {
       // A confident single-subject hit has already settled the subject: a weak
       // other-subject lesson further down `results` is not a second reading.
       if (!hasHardContext && !liveTeaching && !confidentHit && results.length > 0) {
-        // Only subjects this teacher teaches are worth asking about.
-        const askable = lessonsTheTeacherTeaches(results, isSubjectShown);
+        // Only subjects this teacher teaches are worth asking about — and for
+        // an ask for material, only lessons in the grade it is built in:
+        // «نشاط صفي لو كنت وزير تعليم ليوم واحد» with a grade 8 Arabic lesson
+        // picked asked «الكيمياء أم التربية المهنية أم اللغة الإنجليزية؟» on the
+        // words «يوم» and «التعليم».
+        const askable = route.intent === 'artifact'
+          ? lessonsInAskScope(results, artifactAskScope, lessonBook, isSubjectShown)
+          : lessonsTheTeacherTeaches(results, isSubjectShown);
         const ambiguousSubjects = detectSubjectAmbiguity(askable);
         if (!ambiguousSubjects && askable.length < results.length) results = askable;
         if (ambiguousSubjects) {
@@ -2622,17 +2678,27 @@ export default function IqraScreen() {
         hasHardContext,
         hasDocuments: hasDocs,
         isSoftBareArtifact: softBareArtifact,
-        ranked,
+        // Guesses from the ask's own grade and subject only — the whole-KB
+        // search offered grade 10 English for a grade 6 activity.
+        ranked: rankedInAskScope(ranked, artifactAskScope, lessonBook, isSubjectShown),
       });
+      // The topic as typed, for an ask for material: what the material is
+      // built on when no lesson in scope grounds it.
+      const typedTopic = route.intent === 'artifact' && artifactType && !hasDocs ? freeArtifactTopic(q) : '';
       if (lessonGuess.ask) {
         const clarifyMsg: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           text: lessonGuess.candidates.length === 1 ? t('iqraDidYouMean') : t('iqraWhichLesson'),
-          clarificationLessons: lessonGuess.candidates.map(c => ({
-            id: c.id,
-            title: lang === 'ar' ? c.titleAr : c.titleEn,
-          })),
+          // A guess is never the only way on: the teacher can keep the topic
+          // they typed («لو كنت وزير التربية…» is no lesson, and need not be).
+          clarificationLessons: [
+            ...lessonGuess.candidates.map(c => ({
+              id: c.id,
+              title: lang === 'ar' ? c.titleAr : c.titleEn,
+            })),
+            ...(typedTopic ? [{ id: AS_TYPED_CHOICE, title: asTypedChoiceLabel(lang as 'ar' | 'en') }] : []),
+          ],
           clarificationQuery: q,
           timestamp: new Date(),
         };
@@ -2646,7 +2712,19 @@ export default function IqraScreen() {
         return;
       }
 
-      if (!hasKBMatch && !hasDocs && !(softBareArtifact && artifactType) && !liveTeaching) {
+      // Nothing in scope grounds an ask for material, and it names a topic:
+      // build on that topic, labelled, rather than asking «عن أي درس؟» — the
+      // teacher already said.
+      const freeTopicAsk = isFreeTopicArtifactAsk({
+        intent: route.intent,
+        hasArtifactType: !!artifactType,
+        hasKBMatch,
+        hasDocuments: hasDocs,
+        isSoftBareArtifact: softBareArtifact,
+        typedTopic,
+      });
+
+      if (!hasKBMatch && !hasDocs && !(softBareArtifact && artifactType) && !liveTeaching && !freeTopicAsk) {
         if (subjectScopeLessons.length) {
           // Subject and grade are known, the lesson is not: ask, with that
           // scope's lessons as chips (a chip pins its lesson).
@@ -2681,7 +2759,7 @@ export default function IqraScreen() {
       } else if (
         artifactType
         && (route.intent === 'artifact' || route.intent === 'refinement')
-        && (hasKBMatch || hasDocs || softBareArtifact)
+        && (hasKBMatch || hasDocs || softBareArtifact || freeTopicAsk)
       ) {
         // Real generators (same as AI Tools) — not thin chat outlines
         // Resolve topic from the typed ask FIRST so soft-pinned "تركيب الاقترانات"
@@ -2711,46 +2789,66 @@ export default function IqraScreen() {
         // free-typed topic): the subject the message names, else the lesson
         // the chat is on, else the sheet's pick. Never a bare maths default.
         const artScope: ArtifactScope = {
-          subjectId: querySubjectId
+          subjectId: scopeSubjectId
+            ?? querySubjectId
             ?? (activeLesson ? getBookForLesson(activeLesson)?.subjectId : null)
             ?? (ctxLesson ? getBookForLesson(ctxLesson)?.subjectId : null)
             ?? teachingCtxScope?.subjectId
             ?? null,
           gradeId: artGradeId,
         };
+        // The lessons this material may be built on: the grade above, and the
+        // subject a chip or the message names.
+        const artLessonScope: AskScope = { gradeId: artGradeId, subjectId: artifactAskScope.subjectId };
+        const inArtScope = (l: KBLesson) => inAskScope(l, artLessonScope, lessonBook);
         const topicRankedAll = searchKBRanked(topicForArt, lang as 'ar' | 'en');
         const topicRankedInGrade = artGradeId
           ? searchKBRanked(topicForArt, lang as 'ar' | 'en', { gradeId: artGradeId })
+            .filter(r => inArtScope(r.lesson))
           : [];
-        // …unless the message names a lesson whole in a subject the grade has no answer in.
-        const topicRanked = !namedLessonBeatsGrade(topicRankedInGrade, topicRankedAll, l => getBookForLesson(l)?.subjectId) && topicRankedInGrade.length
-          ? topicRankedInGrade
-          : topicRankedAll;
+        // The grade's own hits, unless the message names a lesson whole in a
+        // subject the grade has no answer in. No hit in the grade is no lesson:
+        // falling back to the whole KB put «لو كنت وزير التربية ليوم واحد» for
+        // grade 6 on grade 10 English «يوم في الفندق».
+        const topicRanked = !artGradeId || namedLessonBeatsGrade(topicRankedInGrade, topicRankedAll, l => getBookForLesson(l)?.subjectId)
+          ? topicRankedAll.filter(r => !artLessonScope.subjectId || inAskScope(r.lesson, { subjectId: artLessonScope.subjectId }, lessonBook))
+          : topicRankedInGrade;
         const topicConfident = isConfidentSingleSubjectHit(topicRanked);
-        // Unit-level asks (الدائرة) often tie several lessons — still prefer that unit
+        // Unit-level asks (الدائرة) often tie several lessons — still prefer
+        // that unit; a tie across units is common words, not a topic.
         const topicStrong =
           topicConfident
-          || ((topicRanked[0]?.score ?? 0) >= KB_CONFIDENT_SCORE);
-        let lessonForArt = topicStrong
-          ? topicRanked[0]!.lesson
-          : (hasDocs && sessionMemory.lessonPin !== 'hard'
+          || topHitHoldsTopic(topicRanked, l => l.unitId);
+        let lessonForArt = pinnedLesson
+          // Tapped this turn — a chip or the sheet. The topic search does not
+          // get to swap it for its own guess.
+          ?? (asTyped
             ? null
-            : (
-              results[0]
-              ?? (softBareArtifact && sessionMemory.activeLessonId
-                ? getLessonById(sessionMemory.activeLessonId)
-                : null)
-              ?? null
-            ));
+            : topicStrong
+              ? topicRanked[0]!.lesson
+              : (hasDocs && sessionMemory.lessonPin !== 'hard'
+                ? null
+                : (
+                  // Not a lesson from another grade or subject that the search
+                  // happened to return (see `artLessonScope`).
+                  results.find(inArtScope)
+                  ?? (softBareArtifact && sessionMemory.activeLessonId
+                    ? getLessonById(sessionMemory.activeLessonId)
+                    : null)
+                  ?? null
+                )));
         // Soft pin only when the teacher did not name a different topic
         if (
           softBareArtifact
+          && !pinnedLesson
           && !topicStrong
           && sessionMemory.activeLessonId
         ) {
           lessonForArt = getLessonById(sessionMemory.activeLessonId) ?? lessonForArt;
         }
-        const finalTopic = resolveArtifactTopic({
+        // No lesson grounds it: the topic as typed, without the subject name
+        // and the length (they are the request's scope and duration).
+        const finalTopic = !lessonForArt && !hasDocs && typedTopic ? typedTopic : resolveArtifactTopic({
           lang: lang as 'ar' | 'en',
           query: q,
           lesson: lessonForArt,
@@ -2769,7 +2867,7 @@ export default function IqraScreen() {
             lesson: lessonForArt,
             lang: lang as 'ar' | 'en',
             documentContext: hasDocs ? docBundle.promptBlock : null,
-            fromSoftPin: softBareArtifact && !topicStrong,
+            fromSoftPin: softBareArtifact && !topicStrong && !pinnedLesson,
             scope: artScope,
             ask: q,
           });
@@ -2793,7 +2891,9 @@ export default function IqraScreen() {
           teachingActions = undefined;
           setSessionMemory(prev => {
             let next = prev;
-            if (pendingHardPin) next = pinLesson(next, pendingHardPin, 'hard');
+            // Pin the lesson the material was built on, never a search hit it
+            // was not (an out-of-scope hit is no longer used, see above).
+            if (pendingHardPin && pendingHardPin.id === lessonForArt?.id) next = pinLesson(next, pendingHardPin, 'hard');
             else if (lessonForArt && (prev.lessonPin === 'soft' || softBareArtifact)) {
               next = pinLesson(next, lessonForArt, softBareArtifact ? 'soft' : 'hard');
             } else if (lessonForArt && prev.lessonPin === 'none') {
@@ -3163,7 +3263,9 @@ export default function IqraScreen() {
   const handleClarifyLesson = useCallback(
     (originalQuery: string, lessonId: string) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      sendMessage(originalQuery, lessonId);
+      // «على موضوعي كما كتبته» is no lesson: the same ask, built on its topic.
+      if (lessonId === AS_TYPED_CHOICE) sendMessage(originalQuery, undefined, undefined, undefined, undefined, true);
+      else sendMessage(originalQuery, lessonId);
     },
     [sendMessage],
   );

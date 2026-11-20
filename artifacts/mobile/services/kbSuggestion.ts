@@ -184,3 +184,81 @@ export function shouldAskWhichLesson(opts: {
     ? { ask: true, candidates: guess.candidates, reason: guess.reason }
     : { ask: false };
 }
+
+/**
+ * The grade and subject a chat ask is about, for deciding which lessons it may
+ * be offered. Either part may be unknown; an unknown part does not narrow.
+ */
+export type AskScope = { gradeId?: string | null; subjectId?: string | null };
+
+type BookOf = (lesson: KBLesson) => { gradeId: string; subjectId: string } | undefined;
+
+/** Whether `lesson` is in `scope`. A lesson with no book is never in a scope that names anything. */
+export function inAskScope(lesson: KBLesson, scope: AskScope, bookOf: BookOf): boolean {
+  if (!scope.gradeId && !scope.subjectId) return true;
+  const book = bookOf(lesson);
+  if (!book) return false;
+  if (scope.gradeId && book.gradeId !== scope.gradeId) return false;
+  if (scope.subjectId && book.subjectId !== scope.subjectId) return false;
+  return true;
+}
+
+/**
+ * The lessons a chat ask may put on a chip: in its grade and subject, and taught
+ * by this teacher (`teaches` is true for everything before set-up).
+ *
+ * «نشاط صفي 15 دقيقة للصف السادس: لو كنت وزير التربية ليوم واحد» filtered its
+ * results to grade 6 and found nothing, while «which lesson?» read the
+ * unfiltered search and offered grade 10 English «يوم في الفندق» on the word
+ * «يوم». A chip outside the scope the answer is built in is a chip the next
+ * step throws away. Unlike `lessonsTheTeacherTeaches`, nothing taught means
+ * nothing to offer, not everything.
+ */
+export function lessonsInAskScope(
+  lessons: KBLesson[],
+  scope: AskScope,
+  bookOf: BookOf,
+  teaches: (subjectId: string, gradeId: string) => boolean,
+): KBLesson[] {
+  return lessons.filter(lesson => {
+    if (!inAskScope(lesson, scope, bookOf)) return false;
+    const book = bookOf(lesson);
+    return !book || teaches(book.subjectId, book.gradeId);
+  });
+}
+
+/** `lessonsInAskScope` for a ranked list, scores kept. */
+export function rankedInAskScope(
+  ranked: KBScoredLesson[],
+  scope: AskScope,
+  bookOf: BookOf,
+  teaches: (subjectId: string, gradeId: string) => boolean,
+): KBScoredLesson[] {
+  const keep = new Set(lessonsInAskScope(ranked.map(r => r.lesson), scope, bookOf, teaches).map(l => l.id));
+  return ranked.filter(r => keep.has(r.lesson.id));
+}
+
+/**
+ * A strong top hit that is not confident still names the topic when every
+ * lesson near it is in its unit: «ورقة عمل عن الدائرة» ties the circle lessons,
+ * and any of them is the circle unit.
+ *
+ * Score alone used to be enough (`>= KB_CONFIDENT_SCORE`), and in one grade a
+ * sentence with no lesson in it clears that on common words: «لو كنت وزير
+ * التربية ليوم واحد» scored 13 on three grade 8 art lessons from different units
+ * (every «التربية الفنية» lesson matches «التربية») and 12 on grade 6 social
+ * studies, and the chat would have built the activity on one of them, silently.
+ */
+export function topHitHoldsTopic(
+  ranked: KBScoredLesson[],
+  unitOf: (lesson: KBLesson) => string | undefined,
+): boolean {
+  const top = ranked[0];
+  if (!top || top.score < KB_CONFIDENT_SCORE) return false;
+  const unit = unitOf(top.lesson);
+  if (!unit) return false;
+  return ranked
+    .slice(1)
+    .filter(r => r.score * CONFIDENT_MARGIN > top.score)
+    .every(r => unitOf(r.lesson) === unit);
+}
