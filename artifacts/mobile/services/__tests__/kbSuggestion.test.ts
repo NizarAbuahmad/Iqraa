@@ -15,7 +15,9 @@ import assert from 'node:assert/strict';
 import {
   KB_CONFIDENT_SCORE,
   KB_SUGGEST_SCORE,
+  freeTopicArtifactGoesLive,
   isConfidentKbHit,
+  rankedInScope,
   resolveKbCandidates,
   shouldAskWhichLesson,
 } from '../kbSuggestion.ts';
@@ -183,5 +185,80 @@ describe('shouldAskWhichLesson', () => {
   it('passes the reason through so contested and weak can be told apart', () => {
     const out = shouldAskWhichLesson({ ...base, ranked: ranked(20, 19) });
     assert.equal(out.ask === true && out.reason, 'contested');
+  });
+});
+
+// ─── A material on a topic that is not a lesson (2026-11-20) ────────────────
+// «نشاط صفي 15 دقيقة للصف السادس: لو كنت وزير التربية ليوم واحد» never reached
+// the live model: «نشاط» makes it an artifact ask, the keyword search matched
+// a grade 10 English lesson, a grade 4 English lesson and grade 10 civics on
+// «يوم» and «التربية», and the teacher got «أيّ مادة؟» / «أيّ درس؟» chips that
+// led nowhere. In front of a model, an ask with a topic of its own and no
+// lesson behind it goes to the model, as a teaching question already does.
+
+describe('freeTopicArtifactGoesLive', () => {
+  const base = {
+    demoMode: false,
+    intent: 'artifact',
+    hasHardContext: false,
+    hasDocuments: false,
+    isSoftBareArtifact: false,
+    confidentHit: false,
+    topic: 'لو كنت وزير التربية ليوم واحد',
+  };
+
+  it('sends a live artifact ask with its own topic and no lesson to the model', () => {
+    assert.equal(freeTopicArtifactGoesLive(base), true);
+  });
+
+  it('keeps the offline stops in demo mode, where no model can answer', () => {
+    assert.equal(freeTopicArtifactGoesLive({ ...base, demoMode: true }), false);
+  });
+
+  it('leaves a confident lesson match to the generators', () => {
+    assert.equal(freeTopicArtifactGoesLive({ ...base, confidentHit: true }), false);
+  });
+
+  it('leaves a pinned lesson, a named subject or a teaching context alone', () => {
+    assert.equal(freeTopicArtifactGoesLive({ ...base, hasHardContext: true }), false);
+  });
+
+  it('leaves uploaded documents alone', () => {
+    assert.equal(freeTopicArtifactGoesLive({ ...base, hasDocuments: true }), false);
+  });
+
+  it('leaves a bare shortcut on the soft-pinned lesson alone', () => {
+    assert.equal(freeTopicArtifactGoesLive({ ...base, isSoftBareArtifact: true }), false);
+  });
+
+  it('does not treat a bare «نشاط» as a topic', () => {
+    assert.equal(freeTopicArtifactGoesLive({ ...base, topic: '' }), false);
+    assert.equal(freeTopicArtifactGoesLive({ ...base, topic: 'صفي' }), false);
+  });
+
+  it('only concerns artifact asks', () => {
+    assert.equal(freeTopicArtifactGoesLive({ ...base, intent: 'teaching' }), false);
+  });
+});
+
+describe('rankedInScope', () => {
+  const scopes: Record<string, { gradeId: string; subjectId: string }> = {
+    l0: { gradeId: 'grade-10', subjectId: 'english' },
+    l1: { gradeId: 'grade-6', subjectId: 'social' },
+    l2: { gradeId: 'grade-6', subjectId: 'arabic' },
+  };
+  const scopeOf = (l: KBLesson) => scopes[l.id];
+  const r = ranked(30, 20, 10, 5); // l3 has no book
+
+  it('keeps only the grade the teacher named', () => {
+    assert.deepEqual(rankedInScope(r, scopeOf, { gradeId: 'grade-6' }).map(x => x.lesson.id), ['l1', 'l2']);
+  });
+
+  it('keeps only the subject the teacher named', () => {
+    assert.deepEqual(rankedInScope(r, scopeOf, { gradeId: 'grade-6', subjectId: 'social' }).map(x => x.lesson.id), ['l1']);
+  });
+
+  it('changes nothing when no scope is named', () => {
+    assert.equal(rankedInScope(r, scopeOf, {}), r);
   });
 });

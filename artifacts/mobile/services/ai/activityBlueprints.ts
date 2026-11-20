@@ -26,6 +26,7 @@
 import type { ActivityStep } from './AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 import type { Lang, PracticeWQ } from './mathPractice.ts';
+import { arMinutes } from './lessonPlanTypes.ts';
 
 export const ACTIVITY_BLUEPRINT_IDS = [
   'individual', 'group', 'discussion', 'hands-on', 'game', 'warmup',
@@ -79,6 +80,26 @@ export interface ActivityBlueprintContext {
   variant?: number;
   /** Total minutes the steps must sum to exactly. */
   duration: number;
+  /**
+   * What the teacher typed as the activity's objective, if anything. Only the
+   * discussion format reads it: a question in it becomes the discussion's
+   * question (`teacherQuestion`). The live prompt already received it; the
+   * offline path ignored it, so a failed call handed the teacher a discussion
+   * that never mentioned the question she had written (2026-11-20).
+   */
+  objective?: string;
+}
+
+/**
+ * The question in a teacher's objective, if it asks one: the clause that ends
+ * in «؟» / "?", without whatever precedes it up to a colon or sentence break.
+ * «يعبّر الطالب عن رأيه: لو كنت وزير التربية ليوم واحد، ماذا تغيّر؟» → «لو كنت
+ * وزير التربية ليوم واحد، ماذا تغيّر؟». Null when there is no real question.
+ */
+export function teacherQuestion(objective?: string): string | null {
+  const m = objective?.match(/[^.!:؛;\n]*[؟?]/);
+  const q = m?.[0].trim() ?? '';
+  return q.replace(/[؟?]/g, '').trim().length >= 8 ? q : null;
 }
 
 export interface ActivityBlueprint {
@@ -573,8 +594,11 @@ function groupAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
 }
 
 function discussionAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
-  const claim = contestableClaim(ctx);
   const mins = distributeMinutes(ctx.duration, [1, 1.2, 3.4, 1.4]);
+  const question = teacherQuestion(ctx.objective);
+  if (question) return discussionQuestionAr(ctx, question, mins);
+  // The claim carries its own «…» and its «— هل توافق؟»; the step quotes it as is.
+  const claim = contestableClaim(ctx);
   return {
     titleSuffix: 'نقاش صفّي',
     groupSize: 'الصف كامل، مع مرحلة ثنائية',
@@ -586,8 +610,8 @@ function discussionAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
       'ورقة صغيرة لتدوين التبرير',
     ],
     steps: steps([
-      ['اعرض الادعاء وصوّتوا', `اكتب هذا الادعاء على السبورة واتركه ظاهرًا طوال الحصة:\n«${claim}»\nتصويت أول برفع البطاقات — سجّل العدد في زاوية السبورة. لا تعلّق ولا تلمّح إلى الإجابة.`],
-      ['فكّر بمفردك', 'دقيقتان صمتًا تامًا. يكتب كل طالب على ورقته: موقفي (أوافق / لا أوافق) + **سبب واحد**. لا يتكلم أحد بعد — من يتكلم مبكرًا يسرق تفكير من حوله.'],
+      ['اعرض الادعاء وصوّتوا', `اكتب هذا الادعاء على السبورة واتركه ظاهرًا طوال الحصة:\n${claim}\nتصويت أول برفع البطاقات — سجّل العدد في زاوية السبورة. لا تعلّق ولا تلمّح إلى الإجابة.`],
+      ['فكّر بمفردك', `${arMinutes(mins[1]!)} صمتًا تامًا. يكتب كل طالب على ورقته: موقفي (أوافق / لا أوافق) + **سبب واحد**. لا يتكلم أحد بعد — من يتكلم مبكرًا يسرق تفكير من حوله.`],
       ['ناقش: ثنائي ثم الصف', `ثنائيات أولًا (دقيقتان): كل طالب يعرض سببه، ثم يعيد صياغة سبب زميله قبل الردّ عليه.\nثم نقاش صفّي تديره بهذه العبارات — لا بالتصحيح:\n• «من يستطيع إعادة صياغة ما قاله زميله بكلماته؟»\n• «ما الدليل الذي يسند رأيك؟»\n• «هل توجد حالة واحدة يفشل فيها هذا الادعاء؟»\n• «من غيّر رأيه؟ ما الذي غيّره؟»\nسجّل الحجج في عمودين على السبورة دون أن تحكم أيها الصحيح.`],
       ['أعيدوا التصويت واحسموا', 'تصويت ثانٍ بالبطاقات. قارنه بالعدد الأول واجعل التحوّل مرئيًا للصف. عندها فقط احسم الادعاء بدقة، مع تسمية الشرط الذي كان مفقودًا فيه.'],
     ], mins),
@@ -774,8 +798,11 @@ function groupEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
 }
 
 function discussionEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
-  const claim = contestableClaim(ctx);
   const mins = distributeMinutes(ctx.duration, [1, 1.2, 3.4, 1.4]);
+  const question = teacherQuestion(ctx.objective);
+  if (question) return discussionQuestionEn(ctx, question, mins);
+  // The claim carries its own “…” and its “— Do you agree?”; the step quotes it as is.
+  const claim = contestableClaim(ctx);
   return {
     titleSuffix: 'Class Discussion',
     groupSize: 'Whole class, with a paired stage',
@@ -787,8 +814,8 @@ function discussionEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
       'Slip for writing the justification',
     ],
     steps: steps([
-      ['Post the claim and vote', `Write this claim on the board and leave it visible for the whole lesson:\n“${claim}”\nFirst vote by raised cards — record the count in the corner of the board. Do not comment or hint at the answer.`],
-      ['Think alone', 'Two minutes of complete silence. Each student writes on their slip: my position (agree / disagree) plus **one reason**. Nobody speaks yet — early talkers steal the thinking of everyone around them.'],
+      ['Post the claim and vote', `Write this claim on the board and leave it visible for the whole lesson:\n${claim}\nFirst vote by raised cards — record the count in the corner of the board. Do not comment or hint at the answer.`],
+      ['Think alone', `${enMinutes(mins[1]!)} of complete silence. Each student writes on their slip: my position (agree / disagree) plus **one reason**. Nobody speaks yet — early talkers steal the thinking of everyone around them.`],
       ['Discuss: pairs, then class', `Pairs first (two minutes): each states their reason, then restates their partner’s reason before responding to it.\nThen whole-class discussion, run with these moves — not with corrections:\n• “Who can put what your classmate just said in their own words?”\n• “What evidence supports that?”\n• “Is there a single case where this claim fails?”\n• “Who changed their mind? What changed it?”\nRecord arguments in two columns without ruling on which is right.`],
       ['Re-vote and settle it', 'Second vote by cards. Compare it with the first count and make the shift visible to the class. Only now settle the claim precisely, naming the condition it was missing.'],
     ], mins),
@@ -799,6 +826,69 @@ function discussionEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
     ],
     differentiation: 'For reluctant talkers: hand them sentence stems on a card (“I agree because…” / “I disagree because…” / “I agree with my partner but…”). Stretch: assign them to argue the opposite of their own first position.',
     assessment: 'Correctness is not the measure — the quality of justification is: collect the slips and sort them into (reason grounded in a rule / reason grounded in an example / reason with no support). The swing between the two votes is a direct read on what the discussion did.',
+  };
+}
+
+/** "One minute", "5 minutes" — the start of a step's sentence. */
+function enMinutes(n: number): string {
+  return n === 1 ? 'One minute' : `${n} minutes`;
+}
+
+/**
+ * The discussion when the teacher wrote the question. An open question («لو
+ * كنت وزير التربية…») has no agree/disagree, so the votes on a claim become a
+ * vote on the strongest answers; the think-alone, the paired restating and the
+ * talk moves stay, which is what makes it a discussion and not a poll.
+ */
+function discussionQuestionAr(ctx: ActivityBlueprintContext, question: string, mins: number[]): ActivityBlueprint {
+  return {
+    titleSuffix: 'نقاش صفّي',
+    groupSize: 'الصف كامل، مع مرحلة ثنائية',
+    objective: `أن يجيب الطالب عن سؤال النقاش برأي مبرَّر، وأن يستمع إلى آراء زملائه ويبني عليها`,
+    materials: [
+      'سؤال النقاش مكتوبًا على السبورة أو معروضًا',
+      'ورقة صغيرة لكل طالب لتدوين إجابته وسببها',
+      'سبورة لتسجيل أفكار الطلبة',
+    ],
+    steps: steps([
+      ['اعرض سؤال النقاش', `اكتب سؤال النقاش على السبورة واتركه ظاهرًا طوال الحصة:\n«${question}»\nاقرأه بصوت واضح، واطلب من الطلبة ألا يجيبوا بعد. وضّح أن كل رأي مقبول ما دام معه سبب.`],
+      ['فكّر بمفردك', `${arMinutes(mins[1]!)} صمتًا تامًا. يكتب كل طالب على ورقته إجابته عن السؤال + **سببًا واحدًا** يدعمها. لا يتكلم أحد بعد — من يتكلم مبكرًا يسرق تفكير من حوله.`],
+      ['ناقش: ثنائي ثم الصف', `ثنائيات أولًا (دقيقتان): كل طالب يعرض إجابته وسببها، ثم يعيد صياغة فكرة زميله قبل الردّ عليها.\nثم نقاش صفّي تديره بهذه العبارات — لا بالتقييم:\n• «من يستطيع إعادة صياغة ما قاله زميله بكلماته؟»\n• «لماذا اخترت هذا قبل غيره؟»\n• «من سيتأثر بهذه الفكرة؟ وكيف؟»\n• «من يختلف مع هذه الفكرة؟ ولماذا؟»\nسجّل الأفكار على السبورة كما قالها الطلبة، دون أن تحكم أيها أفضل.`],
+      ['اختاروا أقوى الأفكار', `يصوّت الصف على أقوى فكرتين على السبورة، ويشرح صاحب كل فكرة سببه في جملة واحدة. اختم بربط ما قيل بدرس «${ctx.topic}».`],
+    ], mins),
+    teacherTips: [
+      'اقبل كل إجابة في البداية واكتبها كما قيلت؛ تقييمك المبكر يجعل الطلبة يبحثون عن «الجواب الذي يريده المعلم» بدل رأيهم.',
+      'لا تصحّح ولا تفاضل أثناء الخطوة 3؛ اسأل «لماذا؟» بدل أن تحكم.',
+      'انتظر 5 ثوانٍ كاملة بعد كل سؤال قبل أن تنادي على أحد؛ هذه الثواني هي ما يُدخل الطلبة الأبطأ إلى النقاش.',
+    ],
+    differentiation: 'للمتردّدين في الكلام: امنحهم صيغة جاهزة على بطاقة («أختار … لأن…» / «أتفق مع زميلي لكن…»). للمتقدمين: اطلب منهم أن يذكروا من قد يتضرر من فكرتهم وكيف يعالجون ذلك.',
+    assessment: 'ليست هناك إجابة صحيحة واحدة؛ المقياس جودة التبرير: اجمع الأوراق وصنّفها إلى (سبب مدعوم بمثال أو تجربة / سبب عام / بلا سبب). وعدد الطلبة الذين سُجّلت لهم فكرة على السبورة مؤشّر مباشر على اتساع المشاركة.',
+  };
+}
+
+function discussionQuestionEn(ctx: ActivityBlueprintContext, question: string, mins: number[]): ActivityBlueprint {
+  return {
+    titleSuffix: 'Class Discussion',
+    groupSize: 'Whole class, with a paired stage',
+    objective: 'Students answer the discussion question with a justified opinion, and listen to and build on their classmates’ views',
+    materials: [
+      'The discussion question written on the board or projected',
+      'A slip per student for their answer and reason',
+      'Board space for recording students’ ideas',
+    ],
+    steps: steps([
+      ['Post the discussion question', `Write the discussion question on the board and leave it visible for the whole lesson:\n“${question}”\nRead it aloud and ask students not to answer yet. Make clear that every opinion is welcome as long as it comes with a reason.`],
+      ['Think alone', `${enMinutes(mins[1]!)} of complete silence. Each student writes their answer to the question on their slip, plus **one reason** for it. Nobody speaks yet — early talkers steal the thinking of everyone around them.`],
+      ['Discuss: pairs, then class', 'Pairs first (two minutes): each states their answer and reason, then restates their partner’s idea before responding to it.\nThen whole-class discussion, run with these moves — not with judgements:\n• “Who can put what your classmate just said in their own words?”\n• “Why did you choose that over anything else?”\n• “Who would this idea affect? How?”\n• “Who disagrees with this idea? Why?”\nRecord the ideas on the board as students said them, without ruling on which is best.'],
+      ['Pick the strongest ideas', `The class votes for the two strongest ideas on the board, and the author of each explains their reason in one sentence. Close by linking what was said to the lesson “${ctx.topic}”.`],
+    ], mins),
+    teacherTips: [
+      'Accept every answer at first and write it as it was said; an early judgement sends students hunting for the answer the teacher wants instead of their own view.',
+      'Do not correct or rank during step 3; ask “why?” instead of ruling.',
+      'Wait a full 5 seconds after each question before calling on anyone; those seconds are what bring slower processors into the discussion.',
+    ],
+    differentiation: 'For reluctant talkers: hand them sentence stems on a card (“I would choose … because…” / “I agree with my partner but…”). Stretch: ask them who their idea might harm, and how they would deal with that.',
+    assessment: 'There is no single right answer; the measure is the quality of justification: collect the slips and sort them into (reason backed by an example or experience / general reason / no reason). How many students got an idea onto the board is a direct read on how wide participation was.',
   };
 }
 
