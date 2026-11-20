@@ -17,6 +17,7 @@ import type * as Docx from 'docx';
 
 import type { QuizOutput } from './ai/AIService.ts';
 import { arCountPhrase } from './arCount.ts';
+import { wordLockupHeader } from './brandLockup.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
 import { labelAnswerParts, labelOption } from './optionLabels.ts';
 import { quizBlockPoints, quizBlocks, quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields } from './quizPaper.ts';
@@ -184,6 +185,7 @@ export function buildQuizDocx(
       properties: {
         page: { margin: { top: PAGE_MARGIN, bottom: PAGE_MARGIN, left: PAGE_MARGIN, right: PAGE_MARGIN } },
       },
+      headers: { default: wordLockupHeader(isAr, docx) },
       children: [
         ...head,
         ...instructions,
