@@ -25,6 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { copyToClipboard, formatAttemptResultText, shareAsText } from '@/services/share';
+import { shareToastKey } from '@/services/shareText';
 import { scopePickerParams } from '@/services/lessonPrep';
 import { pickMarkSheetPhoto } from '@/services/documents/pick';
 import { Toast } from '@/components/ui/Toast';
@@ -379,7 +380,8 @@ export default function AnswerEntryScreen() {
   };
   const onShare = async () => {
     const outcome = await shareAsText(resultText, evaluationTitle || t('resultTitle'));
-    if (outcome === 'copied') showToast(t('copiedToClipboard'));
+    const key = shareToastKey(outcome);
+    if (key) showToast(t(key));
   };
 
   if (loading) {

@@ -37,6 +37,29 @@ Verified: typecheck; api-server build + tests (2980 pass), with new cases in `ai
 parser and the end date (its own day still counts, the next does not); mobile tests. **Not verified:** the migration against a live Postgres (no database in the session —
 CI applies it to an empty one), the route against a database, and the screen in a browser.
 
+## Share also copies the text — web and app — 2026-11-20
+
+A teacher shared a generated quiz on the web and the Windows share sheet (desktop Edge/Chrome) offered WhatsApp,
+Outlook and Teams but no way to copy it. That sheet shows "Copy link" only for a URL, and Share passes text: a
+generated quiz has no link (the shareable paper is an Evaluation). Copy existed only as a separate row
+(«نسخ النص») in the export menu.
+
+- **`shareAsText` (`services/share.ts`) now always copies the text as well, on web and in the app**, then opens the
+  sheet. The decision lives in `services/shareText.ts` (`shareOrCopy`, no React Native, tested in
+  `shareText.test.ts`). The copy starts *before* the sheet and is not awaited first, because on web
+  `navigator.share` uses up the click's user activation. Outcomes: `both` (sheet opened, text copied), `shared`
+  (sheet opened, copy refused), `copied` (no sheet, or the sheet was closed or failed). It throws only when
+  neither worked. Before this, closing the web sheet rejected with `AbortError`, which nothing caught.
+- **Toasts:** `shareToastKey` picks one. `both` → «نُسخ النص أيضًا — الصقه حيث تشاء» (`sharedAlsoCopied`),
+  `copied` → «نُسخ ✓». The generator screens (quiz, worksheet, lesson plan, activity, via `useGeneratorExport`), the
+  lesson-prep panel, the virtual lab card, a saved material (`workspace/view`), the Iqra chat export and an exam
+  result now toast. Before this they toasted nothing, even when desktop web had only copied. The class join code
+  toasts on `both` too. Parent message and claim code read `!== 'copied'` where they read `=== 'shared'`, so their
+  "sent / shared" toasts are unchanged.
+- **Not verified:** the real Windows sheet and the Android/iOS sheets (no device or desktop browser with
+  `navigator.share` here). The order and outcomes are unit-tested. No «ما الجديد» entry: the toast explains the
+  change when it happens.
+
 ## Admin user insights — time spent, optional teacher profile, insights page — 2026-11-19
 
 A system admin asked to see where people spend their time, which features they use, how many come back, who the
