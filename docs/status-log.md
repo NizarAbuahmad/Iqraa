@@ -48,6 +48,105 @@ fixes are kept. What this pass adds:
 - «الأشكال المستوية» asks about sides and vertices, which is also the next lesson's content. Left as it is.
 
 No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+## Chat: a material on a topic no lesson is about goes to the live model — 2026-11-20
+
+**What happened.** On app.iqrra.com «نشاط صفي لو كنت وزير تعليم ليوم واحد» answered «سؤالك قد يخص أكثر من
+مادة. أيّ مادة تقصد؟» with chips الكيمياء / التربية المهنية / اللغة الإنجليزية. Traced offline with the app's own
+functions, «نشاط صفي 15 دقيقة للصف السادس: لو كنت وزير التربية ليوم واحد» went like this:
+- «نشاط» makes it an `artifact` ask.
+- The keyword search ranked grade 10 English «يوم في الفندق», grade 4 English and grade 10 civics on «يوم» and
+  «التربية».
+- The grade-6 filter emptied `results`, but the «which lesson?» check read the unfiltered `ranked` and offered
+  wrong-grade chips.
+- A chip re-sent the ask pinned to a lesson the grade filter dropped again, so it ended in «حاضر — عن أي درس
+  نجهّز هذه المادة؟».
+
+The model was never called. Those stops exist for the offline assistant, which can only answer from a lesson. A
+`teaching` question already skipped them in live mode (`liveTeaching`); an `artifact` ask never did.
+
+**What changed** (`app/(tabs)/iqra.tsx`, pure helpers in `services/kbSuggestion.ts`):
+- **`freeTopicArtifactGoesLive`.** In live mode only, an artifact ask goes to the live chat model like a teaching
+  question, when all of these hold:
+  - no confident lesson match;
+  - no hard context (pinned lesson, named subject, teaching context);
+  - no uploaded documents;
+  - not a bare shortcut on the soft-pinned lesson;
+  - a topic of its own (`topicFromQuery` ≥ 6 characters, so «نشاط صفي», «ورقة عمل» and «اعمل نشاط» are
+    unchanged).
+
+  Its weak keyword matches are dropped, so no generator is built on them. The subject and lesson stops are
+  skipped. The model gets the whole message, «15 دقيقة» included, and its prompt already says how to write a
+  classroom activity.
+- **`rankedInScope`.** The «which lesson?» candidates keep to the grade and subject the teacher named, as
+  `results` already did. This fixes the wrong-grade chips and the chip loop wherever that check still runs (demo
+  mode, short topics).
+
+**Verified.**
+- 11 new tests in `kbSuggestion.test.ts`, watched failing first.
+- `topicFromQuery` on the two real prompts leaves a topic. On «نشاط صفي», «ورقة عمل» and «اعمل نشاط» it leaves
+  none.
+- Typecheck and the mobile suite.
+- A production-mode web build (`EXPO_PUBLIC_DEMO_MODE=false`) with `/api/chat` stubbed: both prompts reach
+  `/chat` and show its reply, with no chips.
+
+**Not changed / not verified.**
+- **No live model has answered these asks.** The reply is chat text, not an exportable activity.
+- **With a hard context** (a lesson in the lesson bar, a named subject) an artifact ask still builds on that
+  context's lesson, as before.
+- **In demo mode** the offline stops stay, since there is nothing else to answer with.
+- **Duration:** chat-made artifacts still default to 45 minutes when they DO go to a generator
+  (`chatArtifacts.ts`).
+
+## A fallback result says so on the result, and the offline discussion uses the teacher's question — 2026-11-20
+
+**What happened.** On app.iqrra.com a teacher made a Grade 6 «نقاش» activity for «حُرِّيَّةُ التَّعْبيرِ»
+(`kbl-g6-social-s1-nccd-u5_l1`, 30 min) with the objective «يعبّر الطالب عن رأيه بحرية واحترام: لو كنت وزير
+التربية ليوم واحد، شو أول إشي بتغيّره ولماذا؟». The live call failed and the screen showed the offline discussion
+blueprint. The only sign was the header pill «تعذّر الاتصال · محتوى تجريبي». The content argued «يمكن تطبيق
+حُرِّيَّةُ التَّعْبيرِ في كل الحالات دون استثناء» and never mentioned her question. On the board line the claim
+was wrapped twice («««…» — هل توافق؟»), and «فكّر بمفردك» said «دقيقتان» while the step was given 5 minutes.
+
+**What changed.**
+- **The notice.** New `AiFallbackNotice` (`components/ui`) sits above the result on the activity, worksheet
+  (worksheet + homework), lesson-plan and quiz screens. It shows only when this screen's last generation was a
+  `fallback` (`resultFallbackNotice` in `services/ai/aiProvenance.ts`): never in demo mode, never for `failed`,
+  `saved-copy`, `cancelled` or another screen's kind. It reads «تعذّر الوصول إلى الذكاء الاصطناعي — ما تراه أدناه
+  نموذج عام من التطبيق، لم يكتبه الذكاء الاصطناعي لطلبك…» and has «أعد المحاولة», which calls the screen's
+  `generate()`. The failure text stays in the accessibility label only, as on the badge.
+- **The offline discussion** (`activityBlueprints.ts`):
+  - **The teacher's question is used.** The blueprint context gets the teacher's `objective`
+    (`generators.ts` passes `req.objectives`). When that objective asks a question (`teacherQuestion`: the clause
+    ending in «؟»/"?", at least 8 characters), the discussion is built around it (`discussionQuestionAr/En`). The
+    question goes on the board, then think alone, pairs and the same talk moves, then a vote on the strongest
+    answers. There are no agree/disagree cards, since an open question has no sides.
+  - **No objective, or one with no question:** the contestable-claim version is unchanged except for the next
+    two fixes.
+  - **The claim is quoted once.** The step no longer wraps it again, so the board line has a single «…».
+  - **«فكّر بمفردك» says its own minutes** (`arMinutes` / "N minutes").
+- **The live prompt** (`ACTIVITY_FORMAT_RULES_AR`/`_EN`, discussion) gets the same rule: if the objective holds
+  the teacher's question, use it word for word as the discussion question instead of an invented claim, and vote
+  on the strongest answers. CLAUDE.md: a format lives in two places and both move.
+
+**Verified.**
+- New `services/__tests__/discussionActivity.test.ts`, 11 tests, watched failing first: no doubled quotes
+  (ar/en); the silent-thinking minutes at 20/30/45 (ar/en); the teacher's question on the board with no
+  invented claim and no agree/disagree cards (ar/en); the claim kept when the objective asks nothing.
+- `resultFallbackNotice`: 6 tests in `aiProvenance.test.ts`.
+- API: 2 tests in `activityPrompts.test.ts`.
+- `pnpm run typecheck`, the mobile suite and the api-server build + suite.
+
+**Not verified.**
+- **Why the live call failed.** Not looked at; there are no production logs from the session. Check Cloud Run
+  for `generate activity` around 11:35 Asia/Amman on 2026-11-20. A 45 s client timeout is one candidate. It was
+  **not** raised here: `documentTimeout.test.ts` deliberately keeps the activity call on the default, since
+  `gpt-5.4-mini` was never measured as slow, and a guess is not a reason to move it.
+- **No live model has run with the new clause.**
+- **The question variant fits open questions only.** A question that is really a yes/no claim gets the
+  open-question form.
+- **Not covered:** the Grade 1 activity path (`activityFirstGrade.ts`) and the other formats do not read the
+  objective.
+- No «ما الجديد» entry: a notice that appears only when generation fails is not a feature to announce.
+
 ## Word exports: the logo is centred, with space under it — 2026-11-20
 
 Follow-up to «Exports carry the Iqrra logo; worksheet and quiz exports pick with/without answers». In Word the
