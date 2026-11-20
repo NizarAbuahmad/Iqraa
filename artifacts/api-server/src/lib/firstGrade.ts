@@ -21,6 +21,14 @@
  * `kbl-g1-…`, `unitId` `kbu-g1-…`, `gradeId` `grade-1`) or the grade's name in
  * either language. Only an exact name counts, so «الصف الأول الثانوي» is not
  * Grade 1.
+ *
+ * **Grade 2 has a clause of its own (since 2026-11-15)**, recognised the same way
+ * (`isSecondGrade`; «الصف الثاني عشر» is not Grade 2). Seven-year-olds read a short
+ * text from the book and write words or a short sentence, so it allows what Grade 1's
+ * forbids there and still rules out paragraphs, summaries, justifying, analysis and
+ * controlled experiments. `firstGradeClause*` returns it for a Grade 2 request, so every
+ * prompt that carries the Grade 1 clause carries this one; the offline plans say the same
+ * (`artifacts/mobile/services/ai/lessonPlanFirstGrade.ts`, `EarlyGrade`).
  */
 
 /**
@@ -48,6 +56,17 @@ function bareName(s: string): string {
 }
 
 const FIRST_GRADE_NAMES = new Set(["الصف الأول", "الأول", "grade 1", "first grade", "1"]);
+const SECOND_GRADE_NAMES = new Set(["الصف الثاني", "الثاني", "grade 2", "second grade", "2"]);
+
+/** A Grade 2 request, by the same fields and rules as `isFirstGrade`. */
+export function isSecondGrade(b: GradeFields): boolean {
+  const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+  if (/^kbl-g2-/.test(str(b.lessonId)) || /^kbu-g2-/.test(str(b.unitId))) return true;
+  if (str(b.gradeId) === "grade-2") return true;
+  if (b.grade === 2) return true;
+  const name = str(b.grade);
+  return name !== "" && SECOND_GRADE_NAMES.has(bareName(name));
+}
 
 export function isFirstGrade(b: GradeFields): boolean {
   const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
@@ -138,6 +157,79 @@ const SUBJECT_EN: Record<"arabic" | "english" | "mathematics", string> = {
   mathematics: `- Grade 1 mathematics: numbers only within the lesson's range (never beyond what the lesson teaches, and never above 99), counting concrete objects, no multiplication, division, decimals or negative numbers.`,
 };
 
+const SECOND_OVERRIDE_AR = "هذا البند خاص بالصف الثاني، وهو يحلّ محلّ أي مطلب أعلاه لا يناسب طفلًا في السابعة (فقرة مكتوبة، تلخيص، تعليل أو تحليل، تجربة مضبوطة، بطاقة خروج مكتوبة)؛ ويبقى ما سواه.";
+const SECOND_OVERRIDE_EN = "This section is for Grade 2 and replaces anything above that does not fit a seven-year-old (a written paragraph, a summary, justifying or analysing, a controlled experiment, a written exit ticket); everything else above still applies.";
+
+const SECOND_BASE_AR: Record<FirstGradeUse, string> = {
+  plan: `الصف الثاني (أطفال في السابعة يقرؤون نصوصًا قصيرة ويكتبون جملًا قصيرة):
+- قسّم الحصة إلى نشاطات قصيرة (5-8 دقائق) محسوسة: صور وبطاقات ومجسّمات وحركة وألعاب، وكلام المعلم للطلبة جمل قصيرة واضحة.
+- القراءة نص قصير من الكتاب يقرؤه الطلبة جهرًا، والكتابة كلمات أو جملة قصيرة أو جملتان من إنتاج الطفل؛ لا فقرات ولا تلخيص ولا ملء جداول أو أوراق ملاحظات ولا بطاقة خروج مكتوبة.
+- لا تعليل ولا مقارنة مجرّدة ولا تحليل ولا تجربة مضبوطة؛ الأسئلة «من؟ أين؟ ماذا؟ لماذا؟» يُجاب عنها بجملة قصيرة.
+- التقييم ملاحظة المعلم وسؤاله الشفوي وما يكتبه الطفل من كلمات أو جملة، والواجب البيتي مهمة قصيرة مع الأسرة (يقرأ، يحكي، يكتب جملتين)، لا صفحة كتابة.`,
+  paper: `الصف الثاني (أطفال في السابعة يقرؤون نصوصًا قصيرة):
+- كل سؤال جملة قصيرة بكلمات مألوفة، يُجاب عنه بكلمة أو عدد أو اختيار أو صح/خطأ أو جملة قصيرة واحدة.
+- لا أسئلة «علّل» أو «حلّل» أو «اكتب فقرة»؛ ونص القراءة إن وُجد جمل قليلة قصيرة، وأسئلته عمّا فيه صراحة (من؟ أين؟ ماذا؟).
+- المسألة خطوة أو خطوتان على الأكثر بأعداد الدرس.
+- ما يحتاج صورة صِفه بالكلمات أو ارسمه برموز في نص السؤال (★ ★ ★)، ولا تشر إلى «الصورة» أو «الشكل».
+- الإجابة النموذجية كلمة أو عدد أو جملة قصيرة.`,
+  activity: `الصف الثاني (أطفال في السابعة يقرؤون نصوصًا قصيرة ويكتبون جملًا قصيرة):
+- خطوات قصيرة محسوسة يقودها المعلم: صور وبطاقات ومجسّمات وحركة وألعاب، وتعليمات المعلم جمل قصيرة يقولها بصوته.
+- يقرأ الطفل جملًا قصيرة ويكتب كلمات أو جملة قصيرة؛ لا فقرات ولا أوراق عمل طويلة ولا تلخيص ولا دفاع عن رأي.
+- التقييم ملاحظة المعلم وسؤاله الشفوي.`,
+  classroom: `الصف الثاني (أطفال في السابعة يقرؤون نصوصًا قصيرة):
+- ما على الشريحة جمل قصيرة يقرؤها الطلبة مع المعلم، وكل سؤال جملة قصيرة بكلمات مألوفة.
+- يجيب الطلبة معًا بالإشارة أو بصوت واحد أو برفع الإبهام أو بكلمة أو عدد يكتبونه على ألواحهم؛ لا جمل طويلة تُكتب.
+- لا «اشرح» ولا «علّل»، والمسألة خطوة أو خطوتان على الأكثر.`,
+  explain: `الصف الثاني (أطفال في السابعة يقرؤون نصوصًا قصيرة):
+- كل ما يُعرض جمل قصيرة (ثماني كلمات أو أقل) بكلمات يعرفها الطفل، وفكرة واحدة في كل شريحة.
+- الشرح بأمثلة محسوسة من حياة الطفل، لا تعريفات مجرّدة ولا مصطلحات صعبة غير مصطلحات الدرس.
+- المثال المحلول والتدريب خطوة أو خطوتان بأعداد الدرس وكلماته، والحلّ الخاطئ فيه خطأ واحد بسيط.`,
+  visual: `الصف الثاني (أطفال في السابعة يقرؤون نصوصًا قصيرة):
+- كلمات قليلة في كل شريحة أو قسم (ثماني كلمات أو أقل في السطر)، وصورة أو رمز يوضّح الفكرة.
+- فكرة واحدة في كل شريحة أو قسم؛ لا فقرات ولا قوانين ولا مصطلحات صعبة.`,
+};
+
+const SECOND_BASE_EN: Record<FirstGradeUse, string> = {
+  plan: `Grade 2 (seven-year-olds who read short texts and write short sentences):
+- Split the lesson into short, concrete activities (5–8 minutes): pictures, cards, objects, movement and games; the teacher speaks in short, clear sentences.
+- Reading is a short text from the book the children read aloud; writing is words or one or two short sentences of the child's own. No paragraphs, no summaries, no tables, observation sheets or written exit tickets.
+- No justifying, abstract comparing, analysing or controlled experiments; "who? where? what? why?" questions are answered in a short sentence.
+- Assessment is the teacher watching, asking aloud and reading the words or sentence a child writes; homework is a short task with the family (read, retell, write two sentences), not a page of writing.`,
+  paper: `Grade 2 (seven-year-olds who read short texts):
+- Every question is a short sentence in familiar words, answered with a word, a number, a choice, True/False or one short sentence.
+- No "justify", "analyse" or "write a paragraph"; a reading text, if any, is a few short sentences, and its questions ask what it says (who? where? what?).
+- A problem is one or two steps at most, with the lesson's numbers.
+- Anything that needs a picture is described in words or drawn with symbols in the question text (★ ★ ★); never refer to "the picture" or "the figure".
+- The model answer is a word, a number or a short sentence.`,
+  activity: `Grade 2 (seven-year-olds who read short texts and write short sentences):
+- Short, concrete steps the teacher leads: pictures, cards, objects, movement and games; the teacher gives instructions aloud in short sentences.
+- A child reads short sentences and writes words or a short sentence; no paragraphs, long worksheets, summaries or defending an opinion.
+- Assessment is the teacher's observation and spoken questions.`,
+  classroom: `Grade 2 (seven-year-olds who read short texts):
+- A slide holds short sentences the children read with the teacher, and every question is a short sentence in familiar words.
+- The children answer together by pointing, in one voice, with thumbs, or with a word or number they write on their boards; no long sentences to write.
+- No "explain" or "justify"; a problem is one or two steps at most.`,
+  explain: `Grade 2 (seven-year-olds who read short texts):
+- Everything shown is a short sentence (eight words or fewer) in words a child knows, one idea per slide.
+- Explain with concrete examples from the child's life, not abstract definitions or hard terms beyond the lesson's own.
+- The worked example and the practice are one or two steps with the lesson's numbers and words; the mistake has one simple error.`,
+  visual: `Grade 2 (seven-year-olds who read short texts):
+- Few words on each slide or section (eight words or fewer per line), and a picture or symbol that shows the idea.
+- One idea per slide or section; no paragraphs, formulas or hard terms.`,
+};
+
+const SECOND_SUBJECT_AR: Record<"arabic" | "english" | "mathematics", string> = {
+  arabic: `- اللغة العربية في الصف الثاني مقسّمة إلى «أستمع» و«أتحدث» و«أقرأ» و«أكتب» و«أبني لغتي»: درس «أقرأ» نص قصير من الكتاب (عنوانه بين القوسين) يقرؤه الطلبة جهرًا ويُسألون عمّا فيه، ودرس «أكتب» قاعدة إملائية (بين القوسين) يميّزها الطفل في كلمات ويكتب بها كلمات وجملة قصيرة، و«أبني لغتي» نمط لغوي تُبنى عليه جمل قصيرة. لا تحليل للنص ولا فقرات.`,
+  english: `- اللغة الإنجليزية في الصف الثاني: مفردات الدرس وتراكيبه القصيرة مع الصور والأناشيد؛ ينتج الطفل كلمة أو جملة قصيرة على نمط الدرس يقولها أو ينسخها، لا فقرة.`,
+  mathematics: `- الرياضيات في الصف الثاني: أعداد ضمن مدى الدرس (لا تتجاوز 999)، وجمع وطرح ضمن ثلاث منازل، وضرب وقسمة في حقائق 2 و3 و4 و5 و10 فقط حين يدرسها الدرس، وكسور الوحدة البسيطة؛ بلا كسور عشرية ولا أعداد سالبة.`,
+};
+
+const SECOND_SUBJECT_EN: Record<"arabic" | "english" | "mathematics", string> = {
+  arabic: `- Grade 2 Arabic runs in the book's strands «أستمع», «أتحدث», «أقرأ», «أكتب» and «أبني لغتي»: an «أقرأ» lesson is a short text from the book (its title in brackets) the children read aloud and are asked about; an «أكتب» lesson is a spelling rule (in brackets) the child spots in words and uses to write words and a short sentence; «أبني لغتي» is a language pattern for building short sentences. No analysing the text, no paragraphs.`,
+  english: `- Grade 2 English: the lesson's words and short structures, with pictures and songs; a child produces a word or a short sentence on the lesson's pattern by saying or copying it — never a paragraph.`,
+  mathematics: `- Grade 2 mathematics: numbers within the lesson's range (never above 999), adding and subtracting within three places, multiplying and dividing only by the 2, 3, 4, 5 and 10 facts when the lesson teaches them, and simple unit fractions; no decimals or negative numbers.`,
+};
+
 /** An activity's format, as the prompt reads it (`activityFormatKey` in prompts.ts). */
 function activityFormat(b: GradeFields & { activityType?: unknown; activityVariant?: unknown }): string {
   return b.activityVariant === "warmup" ? "warmup" : typeof b.activityType === "string" ? b.activityType : "group";
@@ -160,19 +252,23 @@ const groupLineEn = (b: GradeFields) => (GROUPED.has(activityFormat(b)) ? "\n- S
 type ClauseOptions = { ifLesson?: boolean };
 
 export function firstGradeClauseAr(b: GradeFields, use: FirstGradeUse, opts: ClauseOptions = {}): string {
-  if (!isFirstGrade(b)) return "";
+  const first = isFirstGrade(b);
+  if (!first && !isSecondGrade(b)) return "";
   const subject = subjectOf(b);
   const group = use === "activity" ? groupLineAr(b) : "";
   const lead = opts.ifLesson ? "\nإن كان العرض درسًا أو مراجعة لطلبة هذا الصف، فالتزم بما يأتي:" : "";
-  return `${lead}\n${BASE_AR[use]}${group}${subject ? `\n${SUBJECT_AR[subject]}` : ""}\n${OVERRIDE_AR}`;
+  const [base, subjects, override] = first ? [BASE_AR, SUBJECT_AR, OVERRIDE_AR] : [SECOND_BASE_AR, SECOND_SUBJECT_AR, SECOND_OVERRIDE_AR];
+  return `${lead}\n${base[use]}${group}${subject ? `\n${subjects[subject]}` : ""}\n${override}`;
 }
 
 export function firstGradeClauseEn(b: GradeFields, use: FirstGradeUse, opts: ClauseOptions = {}): string {
-  if (!isFirstGrade(b)) return "";
+  const first = isFirstGrade(b);
+  if (!first && !isSecondGrade(b)) return "";
   const subject = subjectOf(b);
   const group = use === "activity" ? groupLineEn(b) : "";
   const lead = opts.ifLesson ? "\nIf the deck is a lesson or a review for this class, follow this:" : "";
-  return `${lead}\n${BASE_EN[use]}${group}${subject ? `\n${SUBJECT_EN[subject]}` : ""}\n${OVERRIDE_EN}`;
+  const [base, subjects, override] = first ? [BASE_EN, SUBJECT_EN, OVERRIDE_EN] : [SECOND_BASE_EN, SECOND_SUBJECT_EN, SECOND_OVERRIDE_EN];
+  return `${lead}\n${base[use]}${group}${subject ? `\n${subjects[subject]}` : ""}\n${override}`;
 }
 
 /**
