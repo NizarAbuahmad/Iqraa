@@ -21,6 +21,7 @@ import attemptsRouter from "./attempts";
 import guardianConsentRouter from "./guardianConsent";
 import emailPreferencesRouter from "./emailPreferences";
 import studentAttemptRouter from "./studentAttempt";
+import sharedMaterialsRouter from "./sharedMaterials";
 import studentExamsRouter from "./studentExams";
 import liveRouter from "./live";
 import liveHostRouter from "./liveHost";
@@ -118,6 +119,11 @@ router.use(attemptsRouter);
 // both ways: reachable without a token, and not having made anything else so.
 // The parent's approval page: public (the parent has no account), every path under /guardian-consent, rate limited.
 router.use(guardianConsentRouter);
+// A teacher's saved material opened from its share link (/m/CODE in the app):
+// `GET /shared/:code` is public like /take — the paper without its answers —
+// and `/full` and `/save` carry their own teacher guard on the route. Prefixed,
+// so its rate limiter cannot reach any other path; mountOrder.test.ts asserts it.
+router.use("/shared", sharedMaterialsRouter);
 // The unsubscribe link in every email: public (the recipient may have no account), every path under /email/, rate
 // limited, the encrypted token is the credential. Importing it also registers the unsubscribe list with the senders.
 router.use(emailPreferencesRouter);
