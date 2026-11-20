@@ -15,10 +15,13 @@
  * bullet markers on the wrong side. A bidi paragraph also *flips* the meaning
  * of `left`/`right` (they become start/end), so alignment is left to the
  * default — start — which is right for both directions.
+ *
+ * Every page's header carries the Iqrra logo (`wordLockupHeader`).
  */
 
 import type * as Docx from 'docx';
 
+import { wordLockupHeader } from './brandLockup.ts';
 import { classifyDocLines, docLineText } from './docxOutline.ts';
 
 export function buildWordDocument(text: string, isAr: boolean, docx: typeof Docx): Docx.Document {
@@ -61,5 +64,6 @@ export function buildWordDocument(text: string, isAr: boolean, docx: typeof Docx
     }
   });
 
-  return new Document({ sections: [{ properties: {}, children }] });
+  // The Iqrra logo at the top of every page, as the app's own files had none.
+  return new Document({ sections: [{ properties: {}, headers: { default: wordLockupHeader(isAr, docx) }, children }] });
 }
