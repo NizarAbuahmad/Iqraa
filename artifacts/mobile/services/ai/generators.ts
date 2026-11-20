@@ -1133,6 +1133,7 @@ export function buildOfflineActivity(req: AIRequest, variant = 0, probe?: Revisi
       // The lesson's own subject id, else the caller's name — see `handsOnKind`.
       // A revision's composite lesson sits in a real unit, so this is the scope's.
       subject: subjectForKind,
+      objective: req.objectives,
     });
 
   const activity = plainActivity({
