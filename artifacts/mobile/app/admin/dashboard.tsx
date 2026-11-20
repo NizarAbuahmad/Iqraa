@@ -273,10 +273,11 @@ export default function AdminDashboardScreen() {
                 ['/admin/users', 'people-outline', 'المستخدمون والحظر', 'Users & blocking'],
                 ['/admin/schools', 'business-outline', 'المدارس', 'Schools'],
                 ['/admin/signups', 'mail-outline', 'البريد المجمّع', 'Collected emails'],
+                ['/admin/newsletter', 'newspaper-outline', 'نشرة المعلّمين', 'Teacher newsletter'],
                 ['/admin/ai-costs', 'cash-outline', 'تكاليف الذكاء الاصطناعي', 'AI costs'],
               ] as const)
-                // Schools and insights span every school: the server answers them for a system admin only.
-                .filter(([href]) => (href !== '/admin/schools' && href !== '/admin/insights') || user?.role === 'system_admin')
+                // Schools, insights and the newsletter span every school: the server answers them for a system admin only.
+                .filter(([href]) => (href !== '/admin/schools' && href !== '/admin/insights' && href !== '/admin/newsletter') || user?.role === 'system_admin')
                 .map(([href, icon, ar, en]) => (
                 <Pressable
                   key={href}
