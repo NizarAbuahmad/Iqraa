@@ -10,6 +10,24 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## `earlyMathDifficulty.test.ts`: seeded draws, no more random CI failures — 2026-11-20
+
+The test checks that a Grade 1–4 offline maths paper is easier at «سهل» than at «صعب», with «متوسط» in between. It averaged 12 papers per lesson and difficulty, drawn with `Math.random`, so every run measured different papers. Now and then one lesson's mean fell outside its band by chance, and the mobile suite went red on a PR that never touched early-grade maths. It happened at least three times on NizarAbuahmad/Iqraa#1429: once for Grade 4, and twice for Grade 1, the last on «التَّماثُلُ», whose «متوسط» mean fell outside the 5% band.
+
+**What changed:** the test only, in `artifacts/mobile/services/__tests__/earlyMathDifficulty.test.ts`.
+- While it measures, `meanLoad` swaps `Math.random` for mulberry32, the same pattern `classroomWideScope.test.ts` uses, and restores it in a `finally`.
+- The seed is an FNV-1a hash of the lesson id and the difficulty, so a result does not depend on test order.
+- The thresholds and assertions are unchanged.
+
+**Verified:**
+- Deterministic: two runs give identical per-grade sums to four decimals. Every random draw on this path goes through `Math.random`; the generators' own `rng` parameters default to it.
+- Not a lucky seed: under 10 other seed salts every assertion passes, with room to spare.
+  - Clear lessons per grade: Grade 1 55–56 of 66 (minimum 48), Grade 2 58 of 61 (50), Grade 3 67–68 of 70 (60), Grade 4 49–50 of 50 (44).
+  - No lesson was harder at «سهل», and none had «متوسط» out of order.
+- The test passes 3 of 3 runs.
+- On this branch: mobile 9,440 pass, api-server 2,999 pass (after `pnpm build`), and `pnpm run typecheck`.
+
+**Still true:** a change to an early-grade generator changes the draws. A generator that stops honouring difficulty still fails here. One that only shifts the draws gets a new fixed measurement, which, judging by the 10 salts, should pass.
 ## Grade 1 review: the last three thin maths lessons fill a quiz, two shapes named in their own question, no elapsed time — 2026-11-20
 
 The same per-lesson read as «Grade 2 review: fifteen maths lessons…» and «Grade 3 review: six maths lessons…» (below),
