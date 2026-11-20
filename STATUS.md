@@ -42,9 +42,14 @@ Checked 2026-10-22:
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
   for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
   worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
-  the secret and the switch are Nizar's — «Claude writes the documents» in the log); budgets `AI_BUDGET_USD=50`, per user `1`, per
+  the secret and the switch are Nizar's — «Claude writes the documents» in the log); budgets `AI_BUDGET_USD=100` (raised from 50 by the
+  owner on 2026-11-20, revision `iqraa-api-00551-pzt`, read back as `limitUsd: 100` from `/api/healthz/ai-budget`; it is
+  set on the service, not in `deploy.yml`, and deploys keep it), per user `1`, per
   student `0.20` (a system admin can give one account its own limit on the admin Users screen —
-  `users.ai_budget_usd`, optionally ending after `ai_budget_until`; deploys do not reset it); `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
+  `users.ai_budget_usd`, optionally ending after `ai_budget_until`; deploys do not reset it; two of the owner's
+  accounts have $20 since 2026-11-20); `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`. **These caps are the app's own
+  tracking, not money:** the OpenAI account must hold the credit. On 2026-11-20 its balance ran out and every live
+  call failed while the app showed sample content (see «OpenAI credit ran out» in the log).
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».
 - **Mobile:** `app.json` version `1.6.0` once the screen-recording PR merges (bumped 2026-10-29 for
