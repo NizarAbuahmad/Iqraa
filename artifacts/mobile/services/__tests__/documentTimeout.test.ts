@@ -12,6 +12,13 @@
  * retry is needed), so none of them may use the 45 s default — `prompt-slides`
  * has no offline fallback to hide a timeout behind. And the long wait stays
  * scoped: a call that was never slow must not inherit it.
+ *
+ * The activity joined them on 2026-11-20. Two Activity-tool requests in a row
+ * on production came back as the offline template (the result read word for
+ * word as `activityBlueprints.ts`), and the server allows the model 120 s per
+ * attempt (`lib/integrations-openai-ai-server`), so a 45 s client wait can end
+ * a request the server was still answering. Not confirmed from logs; the owner
+ * chose to raise it.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -31,7 +38,7 @@ describe("document timeout", () => {
     assert.ok(Number(m[1]!.replace(/_/g, "")) >= 90_000);
   });
 
-  for (const path of ["lesson-plan", "worksheet", "quiz", "prompt-slides"]) {
+  for (const path of ["lesson-plan", "worksheet", "quiz", "prompt-slides", "activity"]) {
     it(`/generate/${path} passes it`, () => {
       const line = postLine(path);
       assert.ok(line, `no postJSON call for /generate/${path}`);
@@ -40,7 +47,7 @@ describe("document timeout", () => {
   }
 
   it("is not handed to a call that was never slow", () => {
-    for (const path of ["activity", "infographic", "homework", "classroom-activity", "lesson-teaching"]) {
+    for (const path of ["infographic", "homework", "classroom-activity", "lesson-teaching"]) {
       const line = postLine(path);
       assert.ok(line, `no postJSON call for /generate/${path}`);
       assert.doesNotMatch(line!, /DOCUMENT_TIMEOUT_MS/, `/generate/${path} should keep the default`);

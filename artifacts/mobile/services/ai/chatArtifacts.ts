@@ -13,7 +13,7 @@ import type {
 } from '@/services/ai/AIService';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import type { SessionArtifact } from '@/services/ai/teachingAssistant';
-import { buildGeneratorContext, nccdUnitId } from '@/services/kbContext';
+import { buildGeneratorContext, nccdUnitId, resolveGeneratorGrounding, ungroundedGeneratorNote } from '@/services/kbContext';
 import { getBookForLesson, type KBLesson } from '@/services/knowledgeBase';
 import { contentLang } from '@/services/contentLanguage';
 import {
@@ -24,7 +24,8 @@ import {
 } from '@/services/share';
 import { formatInfographicText } from './infographic.ts';
 import { resolveArtifactScope, type ArtifactScope } from './artifactScope.ts';
-import { questionCountFromAsk, quizTypesFromAsk } from './examAsk.ts';
+import { durationFromAsk, questionCountFromAsk, quizTypesFromAsk } from './examAsk.ts';
+import { chatArtifactLeadIn } from './chatArtifactRoute.ts';
 
 /**
  * The structured output, kept alongside the text.
@@ -115,16 +116,21 @@ function buildRequest(
   documentContext?: string | null,
   scope?: ArtifactScope | null,
   ask?: string,
+  noLesson = false,
 ): AIRequest {
   // The lesson's own book, else the picked scope — never a bare maths default
-  // for a chemistry teacher's upload. See `resolveArtifactScope`.
-  const { subject, grade } = resolveArtifactScope(lesson, scope, lang);
+  // for a chemistry teacher's upload. See `resolveArtifactScope`. A topic no
+  // lesson grounds is labelled «عام» rather than maths when no subject is known.
+  const freeTopic = !lesson && !documentContext?.trim();
+  const { subject, grade } = resolveArtifactScope(lesson, scope, lang, { freeTopic });
 
   return {
     grade,
     subject,
     topic,
-    duration: 45,
+    // «نشاط 15 دقيقة» is a fifteen-minute activity, not the 45 every chat
+    // request used to carry.
+    duration: (ask && durationFromAsk(ask)) || 45,
     language: lang === 'ar' ? 'arabic' : 'english',
     teachingStyle: 'direct',
     difficulty: 'medium',
@@ -138,7 +144,18 @@ function buildRequest(
     // whatever a teacher had attached, and nothing about the lesson itself. The
     // teacher's own documents stay first — they are the more specific source —
     // and the curriculum block (or the note saying there isn't one) follows.
-    additionalContext: [documentContext?.trim(), buildGeneratorContext(topic, lang)]
+    //
+    // The lesson's id, when chat holds one, and the ask's grade and subject:
+    // re-grounding the topic string alone could land on another grade's lesson
+    // (CLAUDE.md, «A lesson title does not identify a lesson»).
+    //
+    // When chat already decided no lesson grounds the ask (`noLesson`), the
+    // note says so outright: grounding «الصداقة» by its words alone found grade
+    // 2 Islamic «الصَّداقَة» for a grade 5 worksheet.
+    additionalContext: [
+      documentContext?.trim(),
+      noLesson ? ungroundedGeneratorNote(lang) : buildGeneratorContext(topic, lang, groundingOptions(lesson, scope)),
+    ]
       .filter(Boolean)
       .join('\n\n') || undefined,
     unitId: nccdUnitId(lesson?.unitId),
@@ -151,25 +168,15 @@ function buildRequest(
   };
 }
 
-function leadIn(
-  topic: string,
-  isAr: boolean,
-  fromSoftPin: boolean,
-  fromDocuments: boolean,
-): string {
-  if (fromDocuments) {
-    return isAr
-      ? `جهّزت المادة اعتمادًا على الملفات التي رفعتها — موضوع «${topic}».\n\n`
-      : `Prepared the material from your uploaded files — topic “${topic}”.\n\n`;
-  }
-  if (fromSoftPin) {
-    return isAr
-      ? `جهّزت المادة لدرس «${topic}» (الدرس الحالي في البطاقة). قل لي إن أردت درساً آخر.\n\n`
-      : `Prepared for “${topic}” (current lesson on the card). Tell me if you meant a different lesson.\n\n`;
-  }
-  return isAr
-    ? `المادة جاهزة لدرس «${topic}».\n\n`
-    : `Ready for “${topic}”.\n\n`;
+/** How the topic is grounded: the lesson chat holds, else the ask's own scope. */
+function groundingOptions(lesson: KBLesson | null, scope?: ArtifactScope | null) {
+  return {
+    lessonId: lesson?.id,
+    scope: {
+      gradeId: scope?.gradeId ?? undefined,
+      subjectId: scope?.subjectId ?? undefined,
+    },
+  };
 }
 
 /**
@@ -187,6 +194,11 @@ export async function generateChatArtifact(opts: {
   scope?: ArtifactScope | null;
   /** The teacher's own message, for the question types and count it names. */
   ask?: string;
+  /**
+   * Chat found no lesson for this ask in its grade and subject: build on the
+   * topic as typed and say so, without grounding the topic again here.
+   */
+  noLesson?: boolean;
 }): Promise<ChatArtifactResult> {
   const {
     artifact,
@@ -197,6 +209,7 @@ export async function generateChatArtifact(opts: {
     fromSoftPin = false,
     scope = null,
     ask,
+    noLesson = false,
   } = opts;
   const isAr = lang === 'ar';
   const fromDocuments = !!documentContext?.trim();
@@ -204,7 +217,8 @@ export async function generateChatArtifact(opts: {
   const lessonForGen = fromDocuments && fromSoftPin ? null : lesson;
   const material = materialLang(topic, lessonForGen, scope, lang);
   const matAr = material.lang === 'ar';
-  const req = buildRequest(material.topic, lessonForGen, material.lang, documentContext, scope, ask);
+  const ungrounded = noLesson && !lessonForGen && !fromDocuments;
+  const req = buildRequest(material.topic, lessonForGen, material.lang, documentContext, scope, ask, ungrounded);
   const meta = { subject: req.subject, grade: req.grade, duration: req.duration, lang: material.lang };
   const titleBase = material.topic;
 
@@ -279,7 +293,14 @@ export async function generateChatArtifact(opts: {
       body = isAr ? 'تعذر تجهيز هذه المادة.' : 'Could not prepare this material.';
   }
 
-  const lead = leadIn(titleBase, isAr, fromSoftPin && !fromDocuments, fromDocuments);
+  const lead = chatArtifactLeadIn({
+    topic: titleBase,
+    isAr,
+    fromSoftPin: fromSoftPin && !fromDocuments,
+    fromDocuments,
+    inCurriculum: !ungrounded
+      && resolveGeneratorGrounding(material.topic, material.lang, groundingOptions(lessonForGen, scope)).grounded,
+  });
   const nextStep = `→ ${nextStepLine(artifact, isAr)}`;
   const text = `${lead}${body}\n\n${nextStep}`;
   const prose = `${lead}${nextStep}`;
