@@ -5,6 +5,7 @@ import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { copyToClipboard, exportAsPDF, exportAsWord, exportBuiltWord, shareAsText } from '@/services/share';
 import { shareToastKey } from '@/services/shareText';
+import { shareMaterialLink } from '@/services/materialShareAction';
 import type { Lang, TranslationKey } from '@/services/i18n';
 
 export type GeneratorExportMeta = { subject: string; grade: string; duration?: number };
@@ -46,8 +47,14 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
   buildWord?: (result: TResult, title: string, meta: TMeta, isAr: boolean, docx: typeof import('docx')) => import('docx').Document;
   onError: (key: TranslationKey) => void;
   onCopied: (key: TranslationKey) => void;
+  /**
+   * Saves what is on screen to the teacher's files and returns its id (or
+   * nothing when there is no result). «مشاركة رابط» saves first, so the link
+   * opens exactly the paper on screen, edits included.
+   */
+  ensureSaved: () => Promise<string | undefined>;
 }) {
-  const { result, topic, lessonId, noFigures, lang, getTitle, getMeta, formatText, buildHTML, buildSlidesHTML, buildWord, onError, onCopied } = config;
+  const { result, topic, lessonId, noFigures, lang, getTitle, getMeta, formatText, buildHTML, buildSlidesHTML, buildWord, onError, onCopied, ensureSaved } = config;
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingWord, setLoadingWord] = useState(false);
   const [loadingSlides, setLoadingSlides] = useState(false);
@@ -66,6 +73,20 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
     const key = shareToastKey(await shareAsText(formatText(result, title, getMeta(), isAr), title));
     if (key) onCopied(key);
   }, [result, getTitle, getMeta, formatText, isAr, onCopied]);
+
+  /** «مشاركة رابط»: save, then share a link a colleague opens as is (spec 2026-11-20-material-share-link). */
+  const handleShareLink = useCallback(async () => {
+    if (!result) return;
+    let id: string | undefined;
+    try {
+      id = await ensureSaved();
+    } catch {
+      onError('shareLinkFailed');
+      return;
+    }
+    const key = await shareMaterialLink(id ?? null, getTitle(), isAr);
+    if (key) onCopied(key);
+  }, [result, ensureSaved, getTitle, isAr, onCopied, onError]);
 
   const handleCopy = useCallback(async () => {
     if (!result) return;
@@ -122,6 +143,7 @@ export function useGeneratorExport<TResult, TMeta extends GeneratorExportMeta>(c
   return {
     getExportFigures,
     handleShareText,
+    handleShareLink,
     handleCopy,
     handlePDF,
     handleWord,

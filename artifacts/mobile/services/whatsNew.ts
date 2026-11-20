@@ -47,6 +47,14 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
     route: '/iqra',
   },
   {
+    id: 'material-share-link',
+    date: '2026-11-20',
+    roles: ['teacher'],
+    titleKey: 'whatsNewShareLinkTitle',
+    bodyKey: 'whatsNewShareLinkBody',
+    route: '/ai-tools/lesson-plan',
+  },
+  {
     id: 'worksheet-export-key-logo',
     date: '2026-11-20',
     roles: ['teacher'],

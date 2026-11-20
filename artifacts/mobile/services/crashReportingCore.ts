@@ -33,6 +33,8 @@ const RULES: ReadonlyArray<readonly [RegExp, string]> = [
   [/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, '<email>'],
   // The student link, /take/ABC234: short-lived, but it opens a class roster.
   [/\/take\/[A-Za-z0-9]{4,}/g, '/take/<code>'],
+  // A material's share link, /m/K7QX4MPA, and its API read: the code is the link's only credential.
+  [/\/(m|shared)\/[A-Za-z0-9]{4,}/g, '/$1/<code>'],
   // A 12-character personal login code: letters and digits both present.
   [/\b(?=[A-Z0-9]*\d)(?=[A-Z0-9]*[A-Z])[A-Z0-9]{12}\b/g, '<code>'],
   // Phone numbers, national ids, verification codes.
