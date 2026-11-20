@@ -80,7 +80,7 @@ import { decideRoleSwitch } from "../lib/roleSwitch.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avatarUpload.js";
 import { parseDataUrl } from "../lib/lessonMediaUpload.js";
-import { getUserBudgetLimitUsd } from "../lib/aiBudget.js";
+import { resolveUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart, readUserPeriodSpendUsd } from "../lib/aiUsageLog.js";
 import { isUniqueViolation } from "../lib/pgErrors.js";
 import { parsePushPrefsPatch, readPushPrefs } from "../modules/notifications/pushPrefs.ts";
@@ -2466,7 +2466,7 @@ router.get("/me/ai-usage", authMiddleware, async (req: AuthenticatedRequest, res
   const start = currentPeriodStart();
   res.json({
     spentUsd: await readUserPeriodSpendUsd(req.user!.id),
-    limitUsd: getUserBudgetLimitUsd(req.user!.role),
+    limitUsd: await resolveUserBudgetLimitUsd(req.user!.id, req.user!.role),
     resetsAt: new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1)).toISOString(),
   });
 });

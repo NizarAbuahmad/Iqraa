@@ -185,6 +185,7 @@ import {
   exportBuiltWord,
   shareAsText,
 } from '@/services/share';
+import { shareToastKey } from '@/services/shareText';
 import { quizExports, type QuizCopy } from '@/services/quizExport';
 import { worksheetExports } from '@/services/worksheetExport';
 import { buildClassDeck } from '@/services/startClass';
@@ -4407,7 +4408,8 @@ export default function IqraScreen() {
         printStyle={exportDoc ? { value: printStyle, onChange: setPrintStyle } : undefined}
         onShare={async () => {
           setExportVisible(false);
-          await shareAsText(exportDocs()?.text ?? exportText, currentLessonView?.topic ?? 'Iqrra');
+          const key = shareToastKey(await shareAsText(exportDocs()?.text ?? exportText, currentLessonView?.topic ?? 'Iqrra'));
+          if (key) showToast(t(key));
         }}
         onCopy={async () => {
           setExportVisible(false);
