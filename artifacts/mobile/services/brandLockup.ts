@@ -43,6 +43,12 @@ export function brandLockupSvg(width: number): string {
     + `</svg>`;
 }
 
+/**
+ * How wide the lockup sits at the top of the printed page (PDF), in CSS pixels —
+ * centred on its own line above the masthead, as in Word.
+ */
+export const PDF_LOCKUP_WIDTH = 104;
+
 /** How wide the lockup sits in a Word header, in pixels (docx scales the PNG to it). */
 export const WORD_LOCKUP_WIDTH = 104;
 export const WORD_LOCKUP_HEIGHT = Math.round(WORD_LOCKUP_WIDTH / LOCKUP_ASPECT);
