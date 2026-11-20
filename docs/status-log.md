@@ -10,6 +10,71 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Physics drawings show in quizzes, worksheets and their PDFs — 2026-11-20
+
+Third of three PRs (part 1 is the package, NizarAbuahmad/Iqraa#1443; part 2 is the server, NizarAbuahmad/Iqraa#1467).
+This one is the app: a physics question's `visual` is now drawn on screen and in the PDF.
+
+**What it does.**
+- **One display gate.** `paperVisualOf` (`services/paperVisual.ts`) runs `resolvePhysicsFigure` AND
+  `figureNumbersInText` on the question's own text. It is re-checked every time a drawing is shown, on screen and in
+  print, so a stored paper is never trusted. A drawing that fails is not shown and the question still is.
+- **Screens.** `PaperVisual` (`components/ui/PaperVisual.tsx`) on the quiz and worksheet/homework result cards
+  (`app/ai-tools/quiz.tsx`, `worksheet.tsx`) and on the saved-material viewer (`app/workspace/view.tsx`, `QuizView`
+  and `WorksheetView`, which gained a `lang` prop). The exam path `QuestionVisual` is untouched (maths only). The
+  worksheet's «attach a book figure» highlight is not shown for a question that has a drawing.
+- **Print.** `paperVisualHTML` (`exportHtml.ts`) draws it in the quiz and worksheet paper (student and teacher copy)
+  and in both slide decks. Ink style greys the drawing; large print widens it.
+- **Slides: one grouping rule, `drawingSlideGroups`.** A slide holds at most one shown drawing, and at most 3 questions
+  when it holds one. Without drawings, quiz slides and worksheet sections group as before (the HTML is byte-identical
+  to the commit before the split, 16 cases; both decks gained only the `.q-vis` style). Continuation slides of a section say
+  «(تابع)» / "(cont.)".
+- **Word and the text copies.** `quizDocx` and `exportText` (which also feed the chat bubble, the WhatsApp share and
+  copy) print «(الرسم في نسخة PDF)» / "(The drawing is in the PDF.)" under a question whose drawing is shown.
+- **The edit rule.** A new question text or a new answer removes the drawing (`quizEdits`, `worksheetEdits`);
+  rewriting the correct option removes it too. Points, explanation and book-figure changes keep it. An edit to the same
+  value also removes it (it fails safe).
+
+**Seen by eye.**
+- **PDFs** of a fixture (6 drawn and 2 plain questions), Arabic and English, student, teacher and ink, quiz and
+  worksheet paper and both slide decks: every drawing in its own card, nothing cut at a page edge, ink grey.
+- **Found and fixed.** Worksheet slides put a whole section on one fixed slide and clipped the bottom when it held
+  several drawings, so questions disappeared. They are now split by the rule above.
+- **Screens.** A saved quiz and worksheet in `/workspace/view` at phone (390) and desktop (1366), light and dark,
+  Arabic, plus English at phone width (throwaway Postgres, local API, web build). Drawings show; a question whose
+  stem does not state the drawing's number shows none; dark mode reads; RTL alignment is right.
+- **The first pass had no vectors drawing.** The final review added one and found the Arabic PDF printed it
+  right-to-left: the inline svg inherits the page's `dir="rtl"`, so the start-anchored ticks read «2-» and the y labels
+  and «ص» sat on the axis (scenes were unaffected: centred labels, no negatives). Fixed at both layers: `dir="ltr"` on
+  the printed `<figure class="q-vis">` and `direction="ltr"` on `figureSvg`'s root svg (plane and scene). Once ltr held
+  it, «س» (start-anchored at w − 14) was cut at the right edge, so it is now end-anchored at w − 6, as `FigureView`
+  draws it on screen. Seen after the fix in Chromium, Arabic quiz PDF: «قوتان A = 3 N و B = 4 N» and a vector from
+  (0,0) to (−2,−1) — ticks read «-2», «-1», «ص» and the y ticks sit beside the axis, «س» whole.
+- **On screen, the same two vectors questions**, Arabic, phone (390), light, in `/workspace/view` and on the result
+  cards (the saved quiz and worksheet reopened through «عدّل», `/ai-tools/quiz|worksheet?savedId=…`): the result
+  cards draw every shown drawing, the hidden one stays hidden, ticks read «−٢» left to right, labels sit beside their
+  axis and vector. The screen never had the bug: the web app's document is `dir="ltr"` (RTL is laid out by
+  `row-reverse`, not inherited), so `PaperVisual` is unchanged. The drawing sits under the text column as before.
+  (Native RTL, where `I18nManager` flips the layout, was not seen — see below.)
+
+**Not verified.**
+- **The result cards after a live generation.** Only a saved material reopened there was seen; no live model has
+  written a drawing (the OpenAI key is out of credit).
+- **Native devices** (including whether native RTL mirrors a drawing's text).
+- **Small drawings on mostly empty slides** (60 mm cap): cosmetic.
+- **A label can touch a tick number** in a plane drawing (B beside the y tick «2»; «ص» over a tick near the top), on
+  paper and on screen, in both languages, as before the fix: cosmetic.
+
+**Known gaps (not in this PR).**
+- **Chat:** the bubble is text only and shows the note; its PDF export draws.
+- **Lesson flow** (its screen, the saved view and its PDF): text only, and no note.
+- **The in-app class-mode deck** (`classDeck.ts`): text only.
+- **Send to students:** `worksheetSendPayload` does not carry `visual`, so a sent worksheet's exam has no drawing.
+- **Games:** text only.
+
+**«ما الجديد»:** added, id `physics-drawn-figures`, for teachers, opens the quiz tool, dated 2026-11-20. **Correct the
+date on merge day.** Merge PR 2 and PR 3 close together.
+
 ## Physics quizzes and worksheets ask for drawings, and the server checks them — 2026-11-13
 
 Second of three PRs to let a physics question carry a drawing (part 1 is

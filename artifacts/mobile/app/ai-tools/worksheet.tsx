@@ -61,6 +61,8 @@ import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { buildWorksheetHTML, buildWorksheetSlidesHTML, formatWorksheetText } from '@/services/share';
 import { EditableText } from '@/components/ui/Editable';
 import { MathParagraph } from '@/components/ui/MathParagraph';
+import { PaperVisual } from '@/components/ui/PaperVisual';
+import { paperVisualOf } from '@/services/paperVisual';
 import { optionLetter } from '@/services/optionLabels';
 import { confirm } from '@/services/confirm';
 import { ToolHeader } from '@/components/ui/ToolHeader';
@@ -1220,6 +1222,7 @@ export default function WorksheetScreen() {
                       placeholder={t('editPlaceholder')}
                       edited={editedFlatIndexes.has(flatIndex)}
                     />
+                    <PaperVisual question={q} lang={outLang} />
                     {q.figure ? (
                       <Pressable
                         onPress={() => setFigurePickFor({ si, qi: i })}
@@ -1288,7 +1291,7 @@ export default function WorksheetScreen() {
                       {lessonFigures.length > 0 ? (() => {
                         // A question whose words point at a figure («انظر الشكل»)
                         // and has none yet is the one a teacher must not miss.
-                        const wanted = !q.figure && questionRefersToFigure(q.text);
+                        const wanted = !q.figure && !paperVisualOf(q) && questionRefersToFigure(q.text);
                         return (
                           <Pressable
                             onPress={() => setFigurePickFor({ si, qi: i })}

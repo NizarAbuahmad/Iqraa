@@ -9,6 +9,7 @@
  */
 import { labelAnswer, labelOptionLine } from './optionLabels.ts';
 import { arCountPhrase } from './arCount.ts';
+import { drawingInPdfNote, paperVisualOf } from './paperVisual.ts';
 import { quizBlockPoints, quizBlocks, quizStudentFields } from './quizPaper.ts';
 import { worksheetInstructions } from './worksheetPaper.ts';
 import { keyWorkingNote, workingProvenance } from './worksheetWorking.ts';
@@ -121,6 +122,7 @@ export function formatWorksheetText(
       lines.push(`\n${qNum}. ${q.text} (${isAr ? arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط') : `${q.points} pts`})`);
       // Text cannot carry the picture; say which figure, so it can be found.
       if (q.figure) lines.push(`   [${isAr ? 'الشكل' : 'Figure'}: ${q.figure.caption}]`);
+      if (paperVisualOf(q)) lines.push(`   ${drawingInPdfNote(isAr)}`);
       q.options?.forEach(o => lines.push(`   ○ ${o}`));
       qNum++;
     });
@@ -164,6 +166,7 @@ export function formatQuizText(
 ${block.heading} (${isAr ? arCountPhrase(pts, 'علامة', 'علامتان', 'علامات') : `${pts} marks`})`);
     block.questions.forEach((q, bi) => {
       lines.push(`${block.start + bi + 1}. ${q.text} (${isAr ? arCountPhrase(q.points, 'نقطة', 'نقطتان', 'نقاط') : `${q.points} pts`})`);
+      if (paperVisualOf(q)) lines.push(`   ${drawingInPdfNote(isAr)}`);
       q.options?.forEach((opt, oi) => lines.push(`   ${labelOptionLine(opt, oi, isAr)}`));
     });
   });

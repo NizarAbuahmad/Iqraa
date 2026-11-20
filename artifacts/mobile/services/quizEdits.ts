@@ -33,7 +33,16 @@ export function totalPointsOf(questions: readonly QuizQuestion[]): number {
 }
 
 /**
+ * The same question without its drawing. A drawing is made from the words and
+ * the answer the question was generated with; once either changes it no longer
+ * matches, and a wrong figure on a paper is worse than none.
+ */
+const withoutVisual = ({ visual: _visual, ...rest }: QuizQuestion): QuizQuestion => rest;
+
+/**
  * Rewrite one option, carrying the answer key if that option was the answer.
+ * Rewriting the answer option changes the answer, so it drops the drawing;
+ * another option keeps it.
  */
 export function applyOptionEdit(
   question: QuizQuestion,
@@ -42,20 +51,26 @@ export function applyOptionEdit(
 ): QuizQuestion {
   const options = (question.options ?? []).map((o, i) => (i === optionIndex ? next : o));
   const wasCorrect = (question.options ?? [])[optionIndex] === question.correctAnswer;
+  const base = wasCorrect ? withoutVisual(question) : question;
   return {
-    ...question,
+    ...base,
     options,
     correctAnswer: wasCorrect ? next : question.correctAnswer,
   };
 }
 
-/** Patch a question by index and keep the paper's total in step. */
+/**
+ * Patch a question by index and keep the paper's total in step. A reworded
+ * question or a changed answer drops the drawing; points and explanation keep it.
+ */
 export function applyQuestionEdit(
   quiz: QuizOutput,
   index: number,
   patch: Partial<QuizQuestion>,
 ): QuizOutput {
-  const questions = quiz.questions.map((q, i) => (i === index ? { ...q, ...patch } : q));
+  const questions = quiz.questions.map((q, i) =>
+    i === index ? { ...('text' in patch || 'correctAnswer' in patch ? withoutVisual(q) : q), ...patch } : q,
+  );
   return { ...quiz, questions, totalPoints: totalPointsOf(questions) };
 }
 

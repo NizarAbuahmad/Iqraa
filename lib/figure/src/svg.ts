@@ -54,8 +54,10 @@ export function figureSvg(figure: AnyFigure, opts: { lang?: 'ar' | 'en'; width?:
   const lang = opts.lang ?? 'en';
   if (isSceneFigure(figure)) {
     const clip = clipIdFor(opts.id);
+    // `direction="ltr"` on both roots: an inline svg in an Arabic (`dir="rtl"`)
+    // page inherits rtl, and a `text-anchor="start"` label then runs leftwards.
     return [
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" overflow="hidden" role="img" aria-label="${esc(figureAltText(figure, lang))}">`,
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" direction="ltr" overflow="hidden" role="img" aria-label="${esc(figureAltText(figure, lang))}">`,
       `<defs><clipPath id="${clip}"><rect width="${w}" height="${h}"/></clipPath></defs>`,
       `<g clip-path="url(#${clip})">`,
       `<rect width="${w}" height="${h}" fill="#ffffff"/>`,
@@ -79,7 +81,7 @@ export function figureSvg(figure: AnyFigure, opts: { lang?: 'ar' | 'en'; width?:
   // `overflow="hidden"` and a clipPath on the drawing group.
   const clipId = clipIdFor(opts.id);
   const out: string[] = [];
-  out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" overflow="hidden" role="img" aria-label="${esc(figureAltText(figure, lang))}">`);
+  out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" direction="ltr" overflow="hidden" role="img" aria-label="${esc(figureAltText(figure, lang))}">`);
   out.push(`<defs><clipPath id="${clipId}"><rect width="${w}" height="${h}"/></clipPath></defs>`);
   out.push(`<g clip-path="url(#${clipId})">`);
   out.push(`<rect width="${w}" height="${h}" fill="#ffffff"/>`);
@@ -91,7 +93,8 @@ export function figureSvg(figure: AnyFigure, opts: { lang?: 'ar' | 'en'; width?:
   const labelX = Math.min(w - 28, Math.max(4, (axisX ?? 0) + 5));
   for (const t of xs) if (t.value !== 0) out.push(text({ x: t.px, y: labelY }, String(t.value), '#6b7280', 10, 'middle'));
   for (const t of ys) if (t.value !== 0) out.push(text({ x: labelX, y: t.px - 3 }, String(t.value), '#6b7280', 10));
-  if (axisY !== null) out.push(text({ x: w - 14, y: axisY - 5 }, lang === 'ar' ? 'س' : 'x', '#374151'));
+  // End-anchored, as on screen (FigureView): a start anchor at w - 14 left no room for «س».
+  if (axisY !== null) out.push(text({ x: w - 6, y: axisY - 5 }, lang === 'ar' ? 'س' : 'x', '#374151', 13, 'end'));
   if (axisX !== null) out.push(text({ x: axisX + 6, y: 14 }, lang === 'ar' ? 'ص' : 'y', '#374151'));
 
   for (const c of lay.curves) {

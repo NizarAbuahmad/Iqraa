@@ -19,6 +19,7 @@ import type { QuizOutput } from './ai/AIService.ts';
 import { arCountPhrase } from './arCount.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
 import { labelAnswerParts, labelOption } from './optionLabels.ts';
+import { drawingInPdfNote, paperVisualOf } from './paperVisual.ts';
 import { quizBlockPoints, quizBlocks, quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields } from './quizPaper.ts';
 
 /** The marks table's header grey. */
@@ -166,7 +167,9 @@ export function buildQuizDocx(
         : q.type === 'fill_blank'
           ? []
           : [0, 1, 2].map(() => para('_'.repeat(70), { color: '9CA3AF', after: 120 }));
-      return [stem, ...body];
+      // The drawing prints in the PDF only; say so, between stem and options.
+      const note = paperVisualOf(q) ? [para(drawingInPdfNote(isAr), { color: '6B7280', size: 18, after: 60 })] : [];
+      return [stem, ...note, ...body];
     })];
   });
 

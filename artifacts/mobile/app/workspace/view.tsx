@@ -38,6 +38,7 @@ import { setPendingClassroomActivity } from '@/services/classroomStore';
 import { normalizeQuestionOptions, optionLetter } from '@/services/optionLabels';
 import { bookFigureRefsForLesson } from '@/services/bookFigureUri';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
+import { PaperVisual } from '@/components/ui/PaperVisual';
 import { resolveGeneratorGrounding } from '@/services/kbContext';
 import { isWideScopeFormState } from '@/services/materialLessonId';
 import { ExportMenu } from '@/components/ui/ExportMenu';
@@ -390,7 +391,7 @@ export default function WorkspaceViewScreen() {
         ) : kind === 'activity' ? (
           <ActivityView activity={content as ActivityOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} isAr={isAr} />
         ) : kind === 'worksheet' ? (
-          <WorksheetView ws={content as WorksheetOutput} lessonId={sendLessonId} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
+          <WorksheetView ws={content as WorksheetOutput} lessonId={sendLessonId} colors={colors} isRTL={docRTL} t={docT} accent={accent} lang={docLang} />
         ) : kind === 'flow' ? (
           <FlowView flow={content as unknown as LessonFlowOutput} colors={colors} isRTL={docRTL} lang={docLang} accent={accent} revision={wideMaterial} />
         ) : kind === 'slides' || kind === 'prompt-slides' ? (
@@ -632,8 +633,8 @@ function ActivityView({ activity, colors, isRTL, t, accent, isAr }: {
 
 // ─── Worksheet renderer ───────────────────────────────────────────────────────
 
-function WorksheetView({ ws, lessonId, colors, isRTL, t, accent }: {
-  ws: WorksheetOutput; lessonId?: string; colors: any; isRTL: boolean; t: any; accent: string;
+function WorksheetView({ ws, lessonId, colors, isRTL, t, accent, lang }: {
+  ws: WorksheetOutput; lessonId?: string; colors: any; isRTL: boolean; t: any; accent: string; lang: string;
 }) {
   return (
     <>
@@ -681,6 +682,7 @@ function WorksheetView({ ws, lessonId, colors, isRTL, t, accent }: {
               <Text style={[{ color: accent, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, width: 20 }]}>{i + 1}.</Text>
               <View style={{ flex: 1 }}>
                 <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
+                <PaperVisual question={q} lang={lang === 'ar' ? 'ar' : 'en'} />
                 {q.figure ? (
                   <View style={{ marginTop: 8, alignItems: 'center', gap: 4 }}>
                     <Image source={{ uri: q.figure.uri }} style={{ width: '100%', height: 160 }} contentFit="contain" accessibilityLabel={q.figure.caption} />
@@ -758,6 +760,7 @@ function QuizView({ quiz, colors, isRTL, t, accent, lang }: {
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 11, lineHeight: 18 }}>{q.points} {t('pts')}</Text>
           </View>
           <Text style={[{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginBottom: 10, textAlign: isRTL ? 'right' : 'left' }]}>{q.text}</Text>
+          <PaperVisual question={q} lang={lang === 'ar' ? 'ar' : 'en'} />
           {q.options?.map((opt, oi) => (
             <View key={oi} style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, padding: 10, marginBottom: 6, backgroundColor: colors.muted, borderRadius: 8 }]}>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, width: 20 }}>{optionLetter(oi, lang === 'ar')}.</Text>
