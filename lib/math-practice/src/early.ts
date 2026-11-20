@@ -433,7 +433,8 @@ const mentalG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1
   const d = k === 2 ? 20 : 10;
   const r = add ? n + (k === 2 ? 20 : 10) : n - (k === 2 ? 20 : 10);
   if (k === 0 || k === 2) return { eq: `${n}, ${d}`, answer: String(r), wrongs: ints(r, [add ? r + 10 : r - 10, add ? n + 1 : n - 1, r + 1, r - 1]), ar: `${n} ${add ? '+' : '−'} ${d} = ___`, en: `${n} ${add ? '+' : '−'} ${d} = ___` };
-  const m = add ? int(rng, 1, 70) : int(rng, 21, 99), r9 = add ? m + 9 : m - 9;
+  // a two-digit number and 9 (the objective's «عدد من منزلتين مع عدد من منزلة واحدة»): it once drew «8 + 9»
+  const m = add ? int(rng, 10, 70) : int(rng, 21, 99), r9 = add ? m + 9 : m - 9;
   return { eq: `${m}, 9`, answer: String(r9), wrongs: ints(r9, [add ? m + 10 : m - 10, add ? m + 8 : m - 8, r9 + 2, r9 - 2]), ar: `${m} ${add ? '+' : '−'} 9 = ___ (فكّر: ${add ? 'أضف 10 ثم انقص 1' : 'انقص 10 ثم أضف 1'})`, en: `${m} ${add ? '+' : '−'} 9 = ___ (think: ${add ? 'add 10 then take away 1' : 'take away 10 then add 1'})` };
 });
 
@@ -556,10 +557,16 @@ const PLANE: Array<[string, number]> = [['المثلث', 3], ['المربع', 4]
 /** Grade 1 names only these (book unit 8); the pentagon and hexagon are later. */
 const PLANE_G1: Array<[string, number]> = [['المثلث', 3], ['المربع', 4], ['المستطيل', 4]];
 const G1_SHAPE_NAMES = ['المثلث', 'المربع', 'المستطيل', 'الدائرة'];
-/** Things in a classroom and a home, and the flat shape each looks like. */
+/**
+ * Things in a classroom and a home, and the flat shape each looks like. No thing may carry its shape's name:
+ * «قطعة الجبنة المثلثة» and «بلاطة الأرض المربعة» gave the answer away (Grade 1 review, 2026-11-20), as
+ * «كرة القدم» did for the solids.
+ */
 const LOOKS_LIKE: Array<[string, string, string]> = [
-  ['باب الصف', 'المستطيل', 'the classroom door'], ['ساعة الحائط', 'الدائرة', 'the wall clock'], ['قطعة الجبنة المثلثة', 'المثلث', 'a triangle of cheese'],
-  ['بلاطة الأرض المربعة', 'المربع', 'a square floor tile'], ['عجلة الدراجة', 'الدائرة', 'a bicycle wheel'], ['السبورة', 'المستطيل', 'the board'],
+  ['باب الصف', 'المستطيل', 'the classroom door'], ['السبورة', 'المستطيل', 'the board'], ['الدفتر', 'المستطيل', 'an exercise book'],
+  ['ساعة الحائط', 'الدائرة', 'the wall clock'], ['عجلة الدراجة', 'الدائرة', 'a bicycle wheel'], ['الصحن', 'الدائرة', 'a plate'],
+  ['قطعة البيتزا', 'المثلث', 'a slice of pizza'], ['شماعة الملابس', 'المثلث', 'a coat hanger'], ['إشارة التحذير المرورية', 'المثلث', 'a warning road sign'],
+  ['لوحة الشطرنج', 'المربع', 'a chessboard'], ['وجه حجر النرد', 'المربع', 'a face of a dice'],
 ];
 const planeShapes = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, grade }) => {
   if (grade === 1 && id === 'plane_shapes') {
@@ -571,7 +578,19 @@ const planeShapes = (id: string, match: RegExp, grades: [number, number]) => T(i
     return { eq: thing, answer: shape, wrongs: G1_SHAPE_NAMES.filter(x => x !== shape), ar: `أي شكل يشبه ${thing}؟`, en: `Which shape does ${thingEn} look like?` };
   }
   if (grade === 1) {
-    const k1 = pick(rng, [0, 1, 2, 3]);
+    const k1 = pick(rng, [0, 1, 2, 3, 4, 5, 6]);
+    // added 2026-11-20: the lesson held 8 questions and could not fill a ten-question quiz
+    if (k1 === 4) {
+      // the sides of two shapes together
+      const [[a, ca], [b, cb]] = shuffle(rng, PLANE_G1).slice(0, 2) as [[string, number], [string, number]], t = ca + cb;
+      return { eq: `${ca} + ${cb}`, answer: String(t), wrongs: ints(t, [t + 1, t - 1, ca, cb, 2 * ca]), ar: `كم ضلعًا ${li(a)} و${li(b)} معًا؟`, en: `How many sides do the ${a} and the ${b} have together?` };
+    }
+    if (k1 === 5) {
+      // which of two shapes has more sides: the triangle against a four-sided one
+      const four = pick(rng, ['المربع', 'المستطيل']), first = rng() < 0.5;
+      return { eq: `3 < 4`, answer: four, wrongs: ['المثلث', 'الدائرة', 'كلاهما'], ar: `أيّ الشكلين له أضلاع أكثر: ${first ? `المثلث أم ${four}` : `${four} أم المثلث`}؟`, en: `Which has more sides: the triangle or the ${four}?` };
+    }
+    if (k1 === 6) return { eq: '4 =', answer: 'المربع', wrongs: ['المثلث', 'المستطيل', 'الدائرة'], ar: 'أي شكل له 4 أضلاع متساوية في الطول؟', en: 'Which shape has 4 sides of equal length?' };
     if (k1 === 2) return { eq: '3', answer: 'المثلث', wrongs: ['المربع', 'المستطيل', 'الدائرة'], ar: 'أي شكل له 3 أضلاع و 3 رؤوس؟', en: 'Which shape has 3 sides and 3 vertices?' };
     if (k1 === 3) return { eq: '0', answer: 'الدائرة', wrongs: ['المثلث', 'المربع', 'المستطيل'], ar: 'أي شكل ليس له أضلاع ولا رؤوس؟', en: 'Which shape has no sides and no vertices?' };
     const [nm1, c1] = pick(rng, PLANE_G1);
@@ -640,8 +659,13 @@ const geoPattern = T('geo_pattern', /^الانماط الهندسيه$/, [1, 4],
 
 const halfQuarter = (id: string, match: RegExp, name: 'نصف' | 'ربع') => T(id, match, [1, 1], ({ rng }) => {
   // no «ما العدد الذي نصفه …؟» (k 3): that is multiplication, which Grade 1 does not do
-  const d = name === 'نصف' ? 2 : 4, q = int(rng, 1, name === 'نصف' ? 10 : 5), n = d * q, k = pick(rng, [0, 0, 1, 2]);
+  // 4–6 added 2026-11-20: «الربع» held 8 questions and could not fill a ten-question quiz
+  const d = name === 'نصف' ? 2 : 4, q = int(rng, 1, name === 'نصف' ? 10 : 5), n = d * q, k = pick(rng, name === 'نصف' ? [0, 0, 1, 2, 4, 5] : [0, 0, 1, 2, 4, 5, 6]);
   const nameEn = name === 'نصف' ? 'half' : 'a quarter';
+  const parts = name === 'نصف' ? 'جزأين متطابقين' : '4 أجزاء متطابقة';
+  if (k === 4) return { eq: `1/${d}`, answer: name, wrongs: [name === 'نصف' ? 'ربع' : 'نصف', 'الكل', 'ضعف'], ar: `قُسّمت كعكة إلى ${parts}. ماذا يسمّى كل جزء منها؟`, en: `A cake is cut into ${d} equal parts. What is each part called?` };
+  if (k === 5) return { eq: `${d} − 1`, answer: String(d - 1), wrongs: ints(d - 1, [d, 1, d + 1, d - 2 || 3]), ar: `قُسّمت كعكة إلى ${parts}، وأُكل منها ${name} واحد. كم ${name === 'نصف' ? 'نصفًا' : 'ربعًا'} بقي؟`, en: `A cake is cut into ${d} equal parts and one ${name === 'نصف' ? 'half' : 'quarter'} is eaten. How many are left?` };
+  if (k === 6) return { eq: '2/4 = 1/2', answer: '2', wrongs: ['4', '1', '3'], ar: 'كم ربعًا في النصف؟', en: 'How many quarters make a half?' };
   if (k === 2) {
     // a share of a few balls: 4–10 of them, so «كرات» is the right plural
     const qq = name === 'نصف' ? int(rng, 2, 5) : int(rng, 1, 2), m = d * qq;
@@ -1353,7 +1377,9 @@ const hourTime = (id: string, match: RegExp, half: boolean) => T(id, match, [1, 
   }
   // reading the time, not elapsed time: the half hour said aloud, shown on a digital clock
   if (k === 2) return { eq: `${h}:30`, answer: `${h}:30`, wrongs: wrongsFrom(`${h}:30`, [`${h}:00`, `${h % 12 + 1}:30`, `${(h + 10) % 12 + 1}:30`, `6:${String(h * 5).padStart(2, '0')}`], j => `${(h + Math.abs(j)) % 12 + 1}:30`), ar: `الساعة الآن ${HOUR_W[h - 1]} والنصف. كيف تعرض الساعة الرقمية هذا الوقت؟`, en: `It is half past ${h}. How does a digital clock show this time?` };
-  return { eq: `${h}:00`, answer: `${h}:30`, wrongs: wrongsFrom(`${h}:30`, [`${h}:00`, `${h % 12 + 1}:00`, `${h}:15`, `${h % 12 + 1}:30`], k => `${(h + Math.abs(k)) % 12 + 1}:30`), ar: `الساعة الآن ${h}:00. ما الوقت بعد نصف ساعة؟`, en: `It is ${h}:00 now. What time will it be in half an hour?` };
+  // where the hour hand is at half past — until 2026-11-20 this asked «ما الوقت بعد نصف ساعة؟», elapsed time, which is Grade 3's
+  const pair = (x: number) => `${x} و ${x % 12 + 1}`;
+  return { eq: `${h}:30 hour hand`, answer: pair(h), wrongs: wrongsFrom(pair(h), [pair((h + 10) % 12 + 1), pair(h % 12 + 1), `${h} و 6`], j => pair((h + 2 + Math.abs(j)) % 12 + 1)), ar: `الساعة الآن ${h}:30. بين أي عددين يقع عقرب الساعات؟`, en: `It is ${h}:30. Between which two numbers is the hour hand?` };
 });
 
 /** «ربع ساعة / نصف ساعة / ثلاثة أرباع الساعة», or «10 دقائق / 25 دقيقة» off the quarter hours. */
