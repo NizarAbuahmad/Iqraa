@@ -10,6 +10,43 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Cost review: cached input tokens are recorded, and a hidden tab stops polling — 2026-11-20
+
+From a review of what the app costs to run (OpenAI about three quarters of it, by the app's own estimate:
+$48.66 by 2026-11-20; Cloud Run and Neon about $10 each, both estimates). Two small changes, neither of which
+changes what a model is asked or what it answers.
+
+- **Cached input tokens are recorded.** OpenAI serves a repeated prompt prefix from its own cache and bills it
+  below the input rate; chat sends up to 24,000 characters of book text on every turn, so later turns of a
+  conversation are likely mostly cached. The ledger priced and stored every input token alike. New column
+  `ai_generations.cached_prompt_tokens` (migration `0031`, additive, default 0), filled by `recordUsage` from
+  `usage.prompt_tokens_details.cached_tokens` (`cachedPromptTokensOf`, `lib/aiBudget.ts`); `GET /admin/ai-costs`
+  returns the sum in `totals` and `byModel`, and the admin AI costs screen shows it as a count and a share of
+  input. **The cost estimate and the caps are unchanged**: they still bill every input token at the full rate,
+  because no cached-input rate was read from the provider's price list (the pricing pages are not reachable
+  from a cloud session). To price them, add a cached rate per model to `PRICING_PER_MILLION_USD` once it has
+  been read there. Claude calls report none (that path sets no cache breakpoints).
+- **A timer skips its turn when the app is not in front.** `usePollingRefresh` (the unread badge in the tab
+  layout, notifications, a message thread, settings, the guardian waiting screen) kept fetching every 10-20 s
+  in a browser tab behind another one, for as long as the tab stayed open, which also keeps Neon from scaling
+  to zero. It now asks `isInFront` (`services/foreground.ts`, shared with the usage heartbeat, which already
+  had the rule inline). Coming back to the tab or the app still loads at once, as before.
+
+**Looked at and not done:** dropping the fields prompts ask the model to echo (`grade`, `subject`, `duration`…),
+listed as outstanding in `docs/ai-cost-savings-plan.md`. Counted in the prompts, it is three to six short
+fields, some 20-40 output tokens of a 1,300+ token artifact (about $0.0001 a call), and a prompt edit changes
+the prompt version, which empties the shared pool for those kinds. It would cost more than it saves.
+
+**Verified:** `aiBudget.test.ts` (the cached count is read, clamped to the prompt, zero when absent or bad, and
+written while the cost line still prices every input token), `foreground.test.ts` (web follows the tab, a phone
+the app state; both hooks call it), each seen failing first; `pnpm run typecheck`; api-server `pnpm build` and
+`pnpm test`; mobile `pnpm test`.
+
+**Not verified:** a live completion (no model call was made, so no real `cached_tokens` value was seen, and the
+size of the overstatement is unknown until the admin page has a few days of rows); the admin screen in a
+browser; the polling change in a browser tab or on a phone; any change in Neon's compute hours. No «ما الجديد»:
+nothing a teacher, student or parent sees changes.
+
 ## OpenAI credit ran out; the app-wide AI cap is now $100 — 2026-11-20
 
 **What happened.** On 2026-11-20 every Activity-tool request on app.iqrra.com came back as the offline template,
