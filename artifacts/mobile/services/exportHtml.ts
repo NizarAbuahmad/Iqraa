@@ -541,10 +541,12 @@ function questionFigureHTML(figure: WorksheetOutput['sections'][number]['questio
  * A physics question's own drawing, printed inside its card under the text, when
  * `paperVisualOf` shows it (gate + every printed number stated). `figureSvg` is
  * self-contained (its own colours and clip path); `id` keeps clip ids unique on a page.
+ * `dir="ltr"`: an Arabic page is rtl, and a drawing that inherits it prints its
+ * start-anchored ticks and labels leftwards («2-», «ص» on the axis).
  */
 function paperVisualHTML(q: { visual?: unknown; text?: unknown }, isAr: boolean, id: string): string {
   const figure = paperVisualOf(q);
-  return figure ? `<figure class="q-vis">${figureSvg(figure, { lang: isAr ? 'ar' : 'en', id })}</figure>` : '';
+  return figure ? `<figure class="q-vis" dir="ltr">${figureSvg(figure, { lang: isAr ? 'ar' : 'en', id })}</figure>` : '';
 }
 
 /**

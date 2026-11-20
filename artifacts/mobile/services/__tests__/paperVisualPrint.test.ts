@@ -28,9 +28,20 @@ describe('drawings in the quiz paper', () => {
       // Match the markup, never the CSS: the page's <style> names the same classes first.
       const first = html.indexOf('class="q-card"');
       const card = html.slice(first, html.indexOf('class="q-card"', first + 1));
-      assert.ok(card.includes('<figure class="q-vis"><svg'), 'the drawing sits in its own question card');
+      assert.ok(card.includes('<figure class="q-vis" dir="ltr"><svg'), 'the drawing sits in its own question card');
     });
   }
+  it('prints a vectors drawing left-to-right in an Arabic paper', () => {
+    // The page is dir="rtl"; an svg that inherits it runs its start-anchored
+    // ticks and labels leftwards («2-»). The figure and its svg both say ltr.
+    const VEC = { kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 0], label: 'A' }, { from: [0, 0], to: [0, 4], label: 'B' }] };
+    const html = buildQuizHTML(quiz([q('v', 'قوتان A = 3 N و B = 4 N متعامدتان. احسب مقدار المحصلة.', VEC)]), 't', meta, true);
+    assert.equal(count(html, 'class="q-vis" dir="ltr"'), 1);
+    assert.equal(count(html, '<svg'), 1);
+    const vis = html.indexOf('class="q-vis" dir="ltr"');
+    const svg = html.slice(html.indexOf('<svg', vis), html.indexOf('>', html.indexOf('<svg', vis)) + 1);
+    assert.ok(svg.includes(' direction="ltr"'), svg);
+  });
   it('does not print a drawing whose numbers the question does not state', () => {
     assert.equal(count(buildQuizHTML(quiz([q('a', STEM_NO_SPEED, PROJ)]), 't', meta, true), '<svg'), 0);
   });

@@ -28,6 +28,17 @@ describe('paperVisualOf — what a paper question may show', () => {
     const vec = { kind: 'vectors', vectors: [{ from: [0, 0], to: [3, 0], label: 'A' }, { from: [0, 0], to: [0, 4], label: 'B' }] };
     assert.ok(paperVisualOf({ text: 'قوتان A = 3 N و B = 4 N متعامدتان. احسب المحصلة.', visual: vec }));
   });
+  it('hides a drawing that would give the answer away, whatever the stem says', () => {
+    // A drawn sum of two waves is the superposition the question asks for.
+    const wave = { kind: 'wave', cycles: 2, marks: ['A'], second: { phase: 'out', sum: true } };
+    assert.equal(paperVisualOf({ text: STEM, visual: wave }), null);
+    assert.equal(paperVisualOf({ text: 'موجتان متساويتان في السعة A. ارسم محصلتهما.', visual: wave }), null);
+    // A drawn resultant R of A and B is the answer to «find the resultant».
+    const withR = { kind: 'vectors', vectors: [
+      { from: [0, 0], to: [3, 0], label: 'A' }, { from: [0, 0], to: [0, 4], label: 'B' }, { from: [0, 0], to: [3, 4], label: 'R' },
+    ] };
+    assert.equal(paperVisualOf({ text: 'A = 3 N و B = 4 N', visual: withR }), null);
+  });
   it('the Word / text note, in each language', () => {
     assert.equal(drawingInPdfNote(true), DRAWING_IN_PDF_AR);
     assert.equal(drawingInPdfNote(false), DRAWING_IN_PDF_EN);
