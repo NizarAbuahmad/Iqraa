@@ -1527,6 +1527,7 @@ describe('families, lesson-plan options, schedule and email (fourteenth live pas
     ['نسيت رمز الدخول', 'howLoginCodeLost'],
     ['i forgot my login code', 'howLoginCodeLost'],
     ['كيف أختار أسلوب التدريس في خطة الدرس؟', 'howPlanOptions'],
+    ['كيف أختار استراتيجية التدريس في خطة الدرس؟', 'howPlanOptions'],
     ['كيف أضيف أهدافاً تعليمية لخطة الدرس؟', 'howPlanOptions'],
     ['how do i set the duration of the lesson plan', 'howPlanOptions'],
     ['كيف أغير لغة خطة الدرس إلى الإنجليزية؟', 'howPlanLanguage'],
@@ -1556,6 +1557,7 @@ describe('families, lesson-plan options, schedule and email (fourteenth live pas
   const stayWithModel = [
     'what is the best teaching style for weak students',
     'كيف أختار أسلوب التدريس المناسب لطلاب ضعاف',
+    'كيف أختار استراتيجية التدريس المناسبة لطلاب ضعاف',
     'كيف أشرح أسلوب التدريس التعاوني',
     'how do i verify my answer to a math problem',
     'how do i change the email template in marketing',

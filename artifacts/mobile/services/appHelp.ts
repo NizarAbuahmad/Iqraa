@@ -2885,7 +2885,7 @@ const RULE_PLACES: { id: string; res: RegExp[] }[] = [
       new RegExp(EN_RULE_LEAD + String.raw`(?:set|change|choose|pick)\s+(?:the\s+)?(?:duration|length)\s+(?:of\s+)?(?:the\s+|my\s+)?(?:lesson\s+plan|plan)` + EN_RULE_TAIL),
       new RegExp(EN_RULE_LEAD + String.raw`(?:add|write|set|enter|change)\s+(?:the\s+|my\s+|some\s+)?(?:learning\s+|lesson\s+)?objectives\s+(?:to|for|in|of)\s+(?:the\s+|my\s+)?(?:lesson\s+plan|plan)` + EN_RULE_TAIL),
       new RegExp(
-        AR_RULE_LEAD + String.raw`(?:اختار|اغير|احدد|اضبط|اعدل|تغيير|اختيار)\s+(?:ال)?اسلوب\s+(?:ال)?تدريس(?:\s+(?:في|ل|لل)\s*(?:ال)?خطه(?:\s+(?:ال)?درس)?)?` + AR_RULE_TAIL,
+        AR_RULE_LEAD + String.raw`(?:اختار|اغير|احدد|اضبط|اعدل|تغيير|اختيار)\s+(?:ال)?(?:اسلوب|استراتيجيه)\s+(?:ال)?تدريس(?:\s+(?:في|ل|لل)\s*(?:ال)?خطه(?:\s+(?:ال)?درس)?)?` + AR_RULE_TAIL,
       ),
       new RegExp(
         AR_RULE_LEAD + String.raw`(?:اضيف|اكتب|احدد|اغير|اضع|ادخل)\s+(?:ال)?(?:اهداف|هدف)(?:\s+(?:ال)?(?:تعليميه|تعليمي|درس))?\s+(?:ل|لل|في|الي)\s*(?:ال)?خطه(?:\s+(?:ال)?درس)?` + AR_RULE_TAIL,
