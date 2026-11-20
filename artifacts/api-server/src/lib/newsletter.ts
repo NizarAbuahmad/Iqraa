@@ -73,7 +73,9 @@ export function sendDecision(
   now: Date = new Date(),
 ): SendDecision {
   if (!issue || issue.contentHash !== newsletterHash(subject, text)) return "not-tested";
-  if (now.getTime() - issue.testedAt.getTime() > TEST_MAX_AGE_MS) return "test-expired";
+  const age = now.getTime() - issue.testedAt.getTime();
+  // Fails closed: an unreadable date (NaN) is not provably under the limit.
+  if (!(age < TEST_MAX_AGE_MS)) return "test-expired";
   return "ok";
 }
 

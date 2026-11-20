@@ -12,6 +12,7 @@ import {
   pickTeacherRecipients,
   sendDecision,
   teacherUnsubscribeUrl,
+  TEACHER_FOOTER,
   TEST_MAX_AGE_MS,
   type TeacherRow,
 } from "../newsletter.ts";
@@ -90,8 +91,24 @@ describe("sendDecision", () => {
     assert.equal(sendDecision(tested(TEST_MAX_AGE_MS + 1), "Hello", "The body text", now), "test-expired");
     assert.equal(sendDecision(tested(TEST_MAX_AGE_MS - 1), "Hello", "The body text", now), "ok");
   });
+  it("fails closed on an unreadable testedAt", () => {
+    const issue = { contentHash: newsletterHash("Hello", "The body text"), testedAt: new Date(NaN) };
+    assert.equal(sendDecision(issue, "Hello", "The body text", now), "test-expired");
+  });
+  it("refuses a test exactly 24 hours old", () => {
+    assert.equal(sendDecision(tested(TEST_MAX_AGE_MS), "Hello", "The body text", now), "test-expired");
+  });
   it("does not confuse where the subject ends and the body begins", () => {
     assert.notEqual(newsletterHash("ab", "c long enough"), newsletterHash("a", "bc long enough"));
+  });
+});
+
+describe("TEACHER_FOOTER", () => {
+  it("says why the teacher got the mail, in both languages", () => {
+    assert.deepEqual(TEACHER_FOOTER, {
+      ar: "تصلك هذه الرسالة لأن لديك حساب معلّم في إقرأ.",
+      en: "You received this because you have a teacher account on Iqrra.",
+    });
   });
 });
 
