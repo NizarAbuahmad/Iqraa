@@ -33,8 +33,9 @@ its own: it reads only three-digit numbers and misreads «ولُوّن 3 منه�
   reads both, and each item draws one of them.
 - **«ما 1/6 العدد 30»** now reads «ما 1/6 من العدد 30» (and «… نجد بها 1/6 من العدد 78»).
 
-The mental add/subtract options past 9999 («3000 + 4000» offering 70000) are capped together with Grade 2's in «Grade 2
-second pass…»; this change extends that cap to the plain-sum kind at Grade 3.
+**Mental adding of thousands went past 9999 too.** «9000 + 3000 = ___» (12000) and options such as 80000 for «3000 + 5000».
+«Grade 2 second pass…» (below) capped most of those options; this change caps the plain-sum kind at Grade 3 as well, and
+draws no two thousands that sum past 9000.
 
 **Verified:**
 - `grade3SecondPass.test.ts` (8 tests) was written first. Six of its eight failed before the fix; the other two pin

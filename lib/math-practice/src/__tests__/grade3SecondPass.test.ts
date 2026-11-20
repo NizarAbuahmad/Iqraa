@@ -98,6 +98,12 @@ describe('Grade 3 second pass (review, 2026-11-20)', () => {
     }
   });
 
+  it('mental adding and subtracting of 10s, 100s and 1000s: no option past 9999', () => {
+    for (const id of ['mental_mult_add_g3', 'mental_mult_sub_g3']) {
+      for (const item of draws(id)) for (const n of nums(all(item))) assert.ok(n <= 9999, `${id}: ${all(item)}`);
+    }
+  });
+
   it('«الضرب في 6 و9» and «الضرب في 7 و8» drill both of their tables', () => {
     for (const [title, x, y] of [['الضرب في 6 و9', 6, 9], ['الضرب في 7 و8', 7, 8]] as const) {
       const seen = new Set<number>();

@@ -809,9 +809,10 @@ const mentalMultiples = (id: string, match: RegExp, add: boolean, grade: number)
   }
   let a = 0, b = 0;
   // Grade 2 works within three places, so 900 + 600 is out of reach there
-  do { a = int(rng, 1, 9); b = int(rng, 1, 9); } while (add ? grade === 2 && place === 100 && a + b > 9 : a <= b);
+  // …and Grade 3 within four, so 9000 + 3000 is out of reach there (2026-11-20)
+  do { a = int(rng, 1, 9); b = int(rng, 1, 9); } while (add ? ((grade === 2 && place === 100) || (grade === 3 && place === 1000)) && a + b > 9 : a <= b);
   const x = a * place, y = b * place, r = add ? x + y : x - y;
-  return { eq: `${x}, ${y}`, answer: String(r), wrongs: ints(r, [r * 10, r / 10, add ? x - y : x + y, r + place].filter(v => grade > 2 || v <= 999)), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
+  return { eq: `${x}, ${y}`, answer: String(r), wrongs: ints(r, [r * 10, r / 10, add ? x - y : x + y, r + place].filter(v => v <= (grade === 2 ? 999 : 9999))), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
 });
 
 /**
