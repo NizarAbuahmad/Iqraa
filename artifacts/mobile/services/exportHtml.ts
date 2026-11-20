@@ -29,7 +29,7 @@ import { dateLocale } from './dateLabels.ts';
 import { quizBlockPoints, quizBlocks, quizInstructions, quizMarkRows, quizMarksTotal, quizStudentFields, quizTypeLabel } from './quizPaper.ts';
 import { isolateForeignRuns, normalizeExponents } from './mathRender.ts';
 import { esc, escAttr, escLines } from './htmlEscape.ts';
-import { brandLockupSvg } from './brandLockup.ts';
+import { PDF_LOCKUP_WIDTH, brandLockupSvg } from './brandLockup.ts';
 import { labQrSvg } from './labQr.ts';
 import { printStyleCss, type PrintStyle } from './printStyle.ts';
 import { FORMAT_CSS, formatBodyHTML, formatKeyExtraHTML } from './formatPrintHtml.ts';
@@ -157,8 +157,10 @@ function htmlBase(
     .school-fill { display: flex; flex-direction: row; gap: 6px; align-items: flex-end; min-width: 200px; }
     .exam-score { flex: 0 0 auto; white-space: nowrap; }
     .callout p + p, .callout p + ul { margin-top: 4px; }
-    .school-placeholder { font-weight: 700; color: ${accent}; font-size: 14px; display: flex; flex-direction: row; align-items: center; gap: 8px; }
-    .brand-logo { display: block; flex-shrink: 0; }
+    .school-placeholder { font-weight: 700; color: ${accent}; font-size: 14px; }
+    /* The logo, centred on its own line with space under it — as in the Word header. */
+    .brand-top { display: flex; justify-content: center; margin-bottom: 16px; }
+    .brand-top svg { display: block; }
     .doc-title { font-size: 23px; font-weight: 700; color: #111827; margin-bottom: 6px; line-height: 1.35; }
     .doc-meta { font-size: 12px; color: #6b7280; margin-bottom: 20px; }
     /* Sections */
@@ -304,9 +306,10 @@ function htmlBase(
 </head>
 <body>
   <div class="page">
+  <div class="brand-top">${brandLockupSvg(PDF_LOCKUP_WIDTH)}</div>
   <div class="school-header">
     <div>
-      <div class="school-placeholder"><span class="brand-logo">${brandLockupSvg(78)}</span><span>${isRTL ? 'مساعد التدريس الذكي' : 'AI Teaching Assistant'}</span></div>
+      <div class="school-placeholder">${isRTL ? 'مساعد التدريس الذكي' : 'AI Teaching Assistant'}</div>
       <div class="school-name school-fill"><span>${isRTL ? 'المدرسة:' : 'School:'}</span><span class="exam-blank"></span></div>
     </div>
     <div class="school-name">${new Date().toLocaleDateString(dateLocale(isRTL ? 'ar' : 'en'))}</div>

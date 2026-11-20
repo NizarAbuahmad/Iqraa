@@ -48,6 +48,18 @@ fixes are kept. What this pass adds:
 - «الأشكال المستوية» asks about sides and vertices, which is also the next lesson's content. Left as it is.
 
 No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+## Printed page (PDF): the logo is centred above the masthead — 2026-11-20
+
+Follow-up to «Word exports: the logo is centred, with space under it». On the printed page the logo sat inside
+the masthead band, at its start edge, beside «مساعد التدريس الذكي». It now has its own line above the band
+(`.brand-top` in the page shell, `exportHtml.ts`): centred, 104px wide (`PDF_LOCKUP_WIDTH`), with 16px under it.
+The band keeps the tagline, the school field and the date. This is the shell every printed paper shares (worksheet,
+quiz and the others built on it).
+
+Verified: `brandLockup.test.ts` checks the lockup is in its own `brand-top` block, centred with space under it, and
+above the masthead. The worksheet (Arabic, colour and ink-saver) and quiz (English) pages were rendered in
+Chromium and looked at. **Not changed:** in the ink-saver style the logo stays in colour.
+
 ## Chat: a material on a topic no lesson is about goes to the live model — 2026-11-20
 
 **What happened.** On app.iqrra.com «نشاط صفي لو كنت وزير تعليم ليوم واحد» answered «سؤالك قد يخص أكثر من
