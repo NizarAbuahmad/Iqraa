@@ -8,6 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useEnglishRefresh } from '@/hooks/useEnglishRefresh';
 import { getT } from '@/services/i18n';
+import type { QuizCopy } from '@/services/quizExport';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
@@ -313,6 +314,15 @@ export default function WorksheetScreen() {
   const [saveLabel, setSaveLabel] = useState<'save' | 'saved' | 'updated'>('save');
   const [showExport, setShowExport] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
+  /**
+   * With or without the answer key — picked in the export menu, not by the
+   * screen's own toggle, so a teacher who hid the answers to project the
+   * paper can still export the key at the bottom of the file. Each opening
+   * of the menu starts from what the screen shows.
+   */
+  const [exportCopy, setExportCopy] = useState<QuizCopy>('student');
+  const openExport = () => { setExportCopy(showAnswers ? 'teacher' : 'student'); setShowExport(true); };
+  const exportWithKey = exportCopy === 'teacher';
   const [printStyle, setPrintStyle] = usePrintStyle();
   /** The question whose figure picker is open, by section and position. */
   const [figurePickFor, setFigurePickFor] = useState<{ si: number; qi: number } | null>(null);
@@ -769,9 +779,9 @@ export default function WorksheetScreen() {
     lang: outLang,
     getTitle: getExportTitle,
     getMeta: getExportMeta,
-    formatText: (ws, title, meta, isAr) => formatWorksheetText(ws, title, meta, isAr, showAnswers),
-    buildHTML: (ws, title, meta, isAr, figures) => buildWorksheetHTML(ws, title, meta, isAr, figures, showAnswers, printStyle),
-    buildSlidesHTML: (ws, title, meta, isAr, figures) => buildWorksheetSlidesHTML(ws, title, meta, isAr, figures, showAnswers),
+    formatText: (ws, title, meta, isAr) => formatWorksheetText(ws, title, meta, isAr, exportWithKey),
+    buildHTML: (ws, title, meta, isAr, figures) => buildWorksheetHTML(ws, title, meta, isAr, figures, exportWithKey, printStyle),
+    buildSlidesHTML: (ws, title, meta, isAr, figures) => buildWorksheetSlidesHTML(ws, title, meta, isAr, figures, exportWithKey),
     onError: key => showToast(t(key)),
     onCopied: key => showToast(t(key)),
   });
@@ -1397,7 +1407,7 @@ export default function WorksheetScreen() {
           saveState={saveLabel}
           onSave={handleSave}
           favorite={{ favorited, onToggle: handleToggleFavorite }}
-          onExport={() => setShowExport(true)}
+          onExport={openExport}
           onRegenerate={() => generate({ regenerate: true })}
           variantId={pooledVariantId(result)}
           materialType="worksheet"
@@ -1411,7 +1421,7 @@ export default function WorksheetScreen() {
     </ScrollView>
     {isDesktop ? null : action(true)}
     {result && !loading && (
-      <GeneratorSaveBar accent={accentInk} savedId={savedId} saveState={saveLabel} onSave={handleSave} onExport={() => setShowExport(true)} />
+      <GeneratorSaveBar accent={accentInk} savedId={savedId} saveState={saveLabel} onSave={handleSave} onExport={openExport} />
     )}
 
     {result ? (
@@ -1449,7 +1459,7 @@ export default function WorksheetScreen() {
       onPDF={handlePDF}
       onWord={handleWord}
       onSlides={handleSlides}
-      note={t(showAnswers ? 'exportTeacherCopyNote' : 'exportStudentCopyNote')}
+      copyChoice={{ value: exportCopy, onChange: setExportCopy }}
       printStyle={{ value: printStyle, onChange: setPrintStyle }}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
