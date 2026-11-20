@@ -28,6 +28,15 @@ export function resolveArtifactScope(
   lesson: KBLesson | null,
   scope: ArtifactScope | null | undefined,
   lang: 'ar' | 'en',
+  opts: {
+    /**
+     * A topic the teacher typed that no lesson grounds. With no subject known
+     * it is labelled «عام», not maths: a maths label makes the generators write
+     * maths (`isMathContext` reads the name), and «لو كنت وزير التربية ليوم
+     * واحد» is not a maths activity.
+     */
+    freeTopic?: boolean;
+  } = {},
 ): { subject: string; grade: string } {
   const isAr = lang === 'ar';
   if (lesson) {
@@ -39,7 +48,11 @@ export function resolveArtifactScope(
   const subject = scope?.subjectId ? SUBJECTS.find(s => s.id === scope.subjectId) : undefined;
   const grade = scope?.gradeId ? GRADES.find(g => g.id === scope.gradeId) : undefined;
   return {
-    subject: subject ? (isAr ? subject.nameAr : subject.name) : (isAr ? 'الرياضيات' : 'Mathematics'),
+    subject: subject
+      ? (isAr ? subject.nameAr : subject.name)
+      : opts.freeTopic
+        ? (isAr ? 'عام' : 'General')
+        : (isAr ? 'الرياضيات' : 'Mathematics'),
     grade: grade ? (isAr ? grade.nameAr : grade.name) : (isAr ? 'الصف العاشر' : 'Grade 10'),
   };
 }

@@ -10,6 +10,91 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat builds material on a topic the curriculum does not have — 2026-11-20
+
+Reproduced on app.iqrra.com (live AI on) the same day: a teacher asking the chat for an activity on a
+topic that is no lesson never got one. «نشاط صفي 15 دقيقة للصف السادس: لو كنت وزير التربية ليوم
+واحد» is an `artifact` ask (the word «نشاط»), grade 6, no subject. The whole-KB search ranked grade 10
+English «يوم في الفندق» (24), grade 4 English (21) and grade 10 civics (19) on the words «يوم» and
+«التربية». The grade filter emptied `results`, but «which lesson?» (`shouldAskWhichLesson`) read the
+unfiltered `ranked` and offered those three. Tapping one re-sent the ask pinned to that lesson, the grade
+filter dropped the pinned lesson, and the reply was «حاضر — عن أي درس نجهّز هذه المادة؟», a loop. With a
+lesson already picked the dead end came at once. «نشاط صفي لو كنت وزير تعليم ليوم واحد» with a grade 8
+Arabic lesson picked asked «which subject?» with chemistry, vocational education and English.
+
+**With «Chat: a material on a topic no lesson is about goes to the live model» (below), merged first.**
+That change sends a free-topic ask to the live chat model when nothing is pinned and live AI is on
+(`freeTopicArtifactGoesLive`), and asks nothing there; it is kept as is and goes first. This one covers what it
+does not: a lesson picked on the card (hard context), demo mode, the «كما كتبته» chip, a refinement, and the
+picked grade (not only a named one) for the chips. Where both apply, the live route wins
+(`freeTopicAsk` is false when `freeTopicArtifact` is true).
+
+What changed (`app/(tabs)/iqra.tsx`, pure pieces in `services/kbSuggestion.ts` and the new
+`services/ai/chatArtifactRoute.ts`):
+
+- **Chips come from the ask's scope.** For an ask for material, «which subject?» and «which lesson?»
+  only offer lessons in the grade the ask is built in (the grade it names, else the picked lesson's: the
+  same rule the generator branch already used for `artGradeId`), in the subject a chip or the message
+  names, and that the teacher teaches (`lessonsInAskScope`, `rankedInAskScope`). Unlike
+  `lessonsTheTeacherTeaches`, nothing taught means nothing offered. «Which lesson?» is built from the
+  TOPIC's search in that scope (`artifactGuessRanked`), not the whole message's — the message carries
+  «ورقة عمل», which matches grade 10 English «طرق العمل» at 38 — and asks nothing when the whole-KB hit was
+  confident or the in-scope hit holds the topic.
+- **A pinned lesson survives the filters.** The grade and subject filters on `results` skip a lesson
+  pinned this turn (a chip or the sheet), as the comment above them always said they should. In the
+  generator branch the pinned lesson is the lesson; the topic search no longer swaps it for its own guess.
+- **No lesson in scope + a typed topic → build on the topic** (`isFreeTopicArtifactAsk`,
+  `freeArtifactTopic`): the same generators, `lesson: null`, the ask's grade and subject. With no subject
+  known the request says «عام» / "General", not the maths default (`resolveArtifactScope`'s new
+  `freeTopic`), because generators branch on the subject name. The lead-in says «لم أجد هذا الموضوع درسًا
+  في المنهاج، فالمادة عامة…» (`chatArtifactLeadIn`), and the generator context carries the
+  «غير موجود في المنهاج» note. Chat sends that note itself (`noLesson`, `ungroundedGeneratorNote`)
+  rather than re-grounding the topic's words, which found grade 2 Islamic «الصَّداقَة» for a grade 5
+  «الصداقة» worksheet and labelled it a lesson. The picked lesson's subject labels a free topic only
+  when that lesson is in the request's grade (`pickedSubjectInGrade`): a grade 10 maths card made a grade 6
+  activity «الرياضيات», and generators read the subject name. The guessed-lesson chips gain «على موضوعي كما
+  كتبته», so a guess is never the only way on.
+- **No silent grounding on common words.** The generator branch took the topic search's top hit at any
+  score ≥ 10. In one grade a sentence with no lesson in it clears that: grade 8 art lessons scored 13 on
+  «التربية» (every «التربية الفنية» lesson), grade 6 social studies 12. Now a non-confident top hit counts only
+  if every near rival is in its unit (`topHitHoldsTopic`; «الدائرة» still ties into its unit). An empty
+  in-grade search no longer falls back to the whole KB unless the message names a lesson whole
+  (`namedLessonBeatsGrade`), which had put the grade 6 ask on «يوم في الفندق». A whole-message search hit
+  is used only in scope and, when a topic was typed, only if the topic search finds it too
+  (`chooseArtifactLesson`): «اختبار عن الخلية» with grade 10 picked was going to be a maths quiz from
+  «الاقتران العكسي». `pendingHardPin` is pinned only if it is the lesson the material was built on.
+- **A refinement keeps the free topic.** The topic is remembered (`ChatSessionMemory.freeTopic`, cleared
+  by `pinLesson`), and «اجعله أقصر» rebuilds on it (`refinementFreeTopic`) instead of the card's lesson or
+  «أي درس؟».
+- **The length is honoured.** `durationFromAsk` (`examAsk.ts`) reads «15 دقيقة», «لمدة ٢٠ دقيقة»,
+  «ربع ساعة», "a 25-minute"; chat sent 45 every time. Minutes that are the lesson are neither
+  («الوقت لأقرب 5 دقائق», «تحويل 120 دقيقة إلى ساعات», "to the nearest 5 minutes"). `topicFromQuery` takes the length out of the
+  topic, and no longer drops a leading «لو» (only «لو سمحت»), which had made the topic «كنت وزير…».
+  «ممتع / تفاعلي / جماعي / فردي» are qualifiers, so «نشاط ممتع» names no topic and still asks for one.
+- **Grounding carries the id.** Chat's `buildRequest` passes `{ lessonId, scope }` to
+  `buildGeneratorContext` instead of re-grounding the topic string alone.
+- «ما الجديد»: `chat-free-topic-material` (teachers, `/iqra`).
+
+Verified: `services/__tests__/chatFreeTopic.test.ts` on the real KB (both reported asks: intent, grade,
+topic, length; the unscoped guess offers another grade and the scoped one does not; «محيط الدائرة» grade 10
+and «الماء» grade 4 ask nothing, «الكسور» grade 6 asks between grade 6 lessons; nothing to ask in grade 8 for
+the minister ask; the in-grade topic search in grades 6 and 8 grounds nothing; «الخلية» is not built on the
+maths hit; lesson-minutes are not a length; the subject and refinement rules); the full mobile suite;
+`pnpm run typecheck`. A code-review pass found the guess, re-grounding, subject, «الخلية», minutes and
+refinement problems in the first version of this change; each is now a test.
+
+**Known and left:** with nothing pinned, the reported grade 6 ask goes to the live model (the change below).
+In demo mode it still gets one question first — grade 6 has lexical near-misses (social studies 12,
+«التربية الإعلامية» 11 on «التربية») — but every chip is grade 6 and the last is «على موضوعي كما كتبته». The API's `groundingFor` (`artifacts/api-server/src/lib/grounding.ts`) still resolves a
+unit from the topic when no `unitId` is sent, for chat and the tool screens alike, so a free topic can
+still be handed book pages server-side; not changed here.
+
+**Not verified:** the screen itself. `iqra.tsx` has no renderer in the test suite, and this was not
+driven in a browser or against a live model. In particular: the live generator's output on a free topic
+labelled «عام», and what the offline (`DEMO_MODE`) mock activity looks like for one. `materialLang` still
+replaces the topic with the lesson title when an English lesson is the lesson; that now needs a lesson in
+scope or tapped. The infographic ask (`isInfographicAsk` branch) keeps the old score-≥10 gate and was not
+changed. A teaching question (not an ask for material) keeps its subject-ambiguity check as before.
 ## Share a saved material by link (`/m/CODE`) — 2026-11-20
 
 A teacher asked to send a generated lesson plan to a colleague on WhatsApp so the colleague opens it as it is,

@@ -39,6 +39,14 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
+    id: 'chat-free-topic-material',
+    date: '2026-11-20',
+    roles: ['teacher'],
+    titleKey: 'whatsNewChatFreeTopicTitle',
+    bodyKey: 'whatsNewChatFreeTopicBody',
+    route: '/iqra',
+  },
+  {
     id: 'material-share-link',
     date: '2026-11-20',
     roles: ['teacher'],
