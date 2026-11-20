@@ -26,8 +26,8 @@ This one is the app: a physics question's `visual` is now drawn on screen and in
 - **Print.** `paperVisualHTML` (`exportHtml.ts`) draws it in the quiz and worksheet paper (student and teacher copy)
   and in both slide decks. Ink style greys the drawing; large print widens it.
 - **Slides: one grouping rule, `drawingSlideGroups`.** A slide holds at most one shown drawing, and at most 3 questions
-  when it holds one. Quiz slides without drawings still group in threes and worksheet sections without drawings stay
-  on one slide, both byte for byte as before (the controller compared 16 cases). Continuation slides of a section say
+  when it holds one. Without drawings, quiz slides and worksheet sections group as before (the HTML is byte-identical
+  to the commit before the split, 16 cases; both decks gained only the `.q-vis` style). Continuation slides of a section say
   «(تابع)» / "(cont.)".
 - **Word and the text copies.** `quizDocx` and `exportText` (which also feed the chat bubble, the WhatsApp share and
   copy) print «(الرسم في نسخة PDF)» / "(The drawing is in the PDF.)" under a question whose drawing is shown.
@@ -43,16 +43,31 @@ This one is the app: a physics question's `visual` is now drawn on screen and in
 - **Screens.** A saved quiz and worksheet in `/workspace/view` at phone (390) and desktop (1366), light and dark,
   Arabic, plus English at phone width (throwaway Postgres, local API, web build). Drawings show; a question whose
   stem does not state the drawing's number shows none; dark mode reads; RTL alignment is right.
+- **The first pass had no vectors drawing.** The final review added one and found the Arabic PDF printed it
+  right-to-left: the inline svg inherits the page's `dir="rtl"`, so the start-anchored ticks read «2-» and the y labels
+  and «ص» sat on the axis (scenes were unaffected: centred labels, no negatives). Fixed at both layers: `dir="ltr"` on
+  the printed `<figure class="q-vis">` and `direction="ltr"` on `figureSvg`'s root svg (plane and scene). Once ltr held
+  it, «س» (start-anchored at w − 14) was cut at the right edge, so it is now end-anchored at w − 6, as `FigureView`
+  draws it on screen. Seen after the fix in Chromium, Arabic quiz PDF: «قوتان A = 3 N و B = 4 N» and a vector from
+  (0,0) to (−2,−1) — ticks read «-2», «-1», «ص» and the y ticks sit beside the axis, «س» whole.
+- **On screen, the same two vectors questions**, Arabic, phone (390), light, in `/workspace/view` and on the result
+  cards (the saved quiz and worksheet reopened through «عدّل», `/ai-tools/quiz|worksheet?savedId=…`): the result
+  cards draw every shown drawing, the hidden one stays hidden, ticks read «−٢» left to right, labels sit beside their
+  axis and vector. The screen never had the bug: the web app's document is `dir="ltr"` (RTL is laid out by
+  `row-reverse`, not inherited), so `PaperVisual` is unchanged. The drawing sits under the text column as before.
+  (Native RTL, where `I18nManager` flips the layout, was not seen — see below.)
 
 **Not verified.**
-- **The result cards in `quiz.tsx` and `worksheet.tsx` on screen.** They show only fresh generations, and no live
-  model has written a drawing (the OpenAI key is out of credit).
-- **Native devices.**
+- **The result cards after a live generation.** Only a saved material reopened there was seen; no live model has
+  written a drawing (the OpenAI key is out of credit).
+- **Native devices** (including whether native RTL mirrors a drawing's text).
 - **Small drawings on mostly empty slides** (60 mm cap): cosmetic.
+- **A label can touch a tick number** in a plane drawing (B beside the y tick «2»; «ص» over a tick near the top), on
+  paper and on screen, in both languages, as before the fix: cosmetic.
 
 **Known gaps (not in this PR).**
 - **Chat:** the bubble is text only and shows the note; its PDF export draws.
-- **Lesson-flow previews:** text only.
+- **Lesson flow** (its screen, the saved view and its PDF): text only, and no note.
 - **The in-app class-mode deck** (`classDeck.ts`): text only.
 - **Send to students:** `worksheetSendPayload` does not carry `visual`, so a sent worksheet's exam has no drawing.
 - **Games:** text only.
