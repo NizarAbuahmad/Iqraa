@@ -10,6 +10,54 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 5 review: seven maths lessons asked about their own objective — 2026-11-20
+
+The same per-lesson read as «Grade 2 review: fifteen maths lessons…» and «Grade 3 review: six maths lessons…»: ten sample
+questions from each of Grade 5's 52 maths lessons, read against the lesson's NCCD objective. Where a question looked wrong
+for its lesson, the Grade 5 student book's extracted text (`g5-math-s1/s2-student-book`) was the check. «Grade 5 audit…»,
+«Grade 5 maths…» and «Grade 5 review: the last three maths lessons…» had read pages, figures, contents and every key; none
+asked whether a question was about its lesson. Fixed (`lib/math-practice`):
+
+- **«مقارنة الأعداد وترتيبها» (S1 u1_l2, «ضمن الملايين»)** compared 4–6-digit numbers; the book compares 3456210 with
+  3759120. Grade 5 now draws 7 digits (8 from medium); the greatest/least number is made from seven digits.
+- **«قسمة الأعداد» (u2_l5)** asked «؟ ÷ 7 = 4» and «12 ÷ ؟ = 2», times-table facts. Every Grade 5 quotient is now at least
+  11, so the easiest question is a two-digit number by a one-digit one (the book's 85 ÷ 5). The remainder question stays.
+- **«الأعداد السالبة» (u1_l4, «أتعرف العدد السالب، وأعينه على خط الأعداد»)** asked «10 ___ 9» with no negative number, and
+  a third of it added integers («−12° ثم انخفضت 15°», Grade 6 work). `int_intro` now asks the book's things: a depth below
+  sea level or a temperature below zero as a number, the number some units left of zero, the number the same distance
+  from zero on the other side, which of four numbers is negative, and comparisons that always hold a negative number.
+- **«مقارنة الكسور والأعداد الكسرية»**, **«جمع الكسور»** and **«طرح الكسور»** (u4_l2–l4) never showed a mixed number,
+  though both objectives name them and the book adds «2 1/2 + 3 1/6 = 5 2/3» (S1 p. 87). A third of each paper is now
+  mixed numbers (`mixedAddSub`, `mixedCompare` in `elementary.ts`): sums and differences answered in simplest form,
+  subtraction with regrouping, the book's two gold rings and the trip there and back, a rope cut; comparing two with the
+  same whole, a mixed number against an improper fraction, ordering three.
+- **«أجزاء الألف» (S2 u6_l1)** and **«التحويل بين الكسور والأعداد العشرية» (u6_l2)** drew one pool (`frac_dec`), mostly
+  hundredths, so each asked the other's questions. «أجزاء الألف» has its own `thousandths_g5` (`topics.ts`): every number has
+  three decimal places — a digit's place value, the digit in a named place, expanded ↔ standard form, «65 جزءًا من ألف».
+  Grade 5's `frac_dec` now only converts, in four kinds: fraction → decimal, decimal → fraction, and two from the book
+  (S2 p. 11) so the lesson keeps three kinds or more (`mathLessonKinds.test.ts`): the numerator of the equivalent fraction
+  over 10, 100 or 1000, and a mixed number ↔ decimal («2 3/4» ↔ «2.75»). Grade 4's tenths and hundredths lessons are
+  unchanged.
+- **«ضرب الأعداد العشرية وقسمتها» (u6_l7)** is «في 10, 100, 1000 … على 10, 100, 1000» (S2 p. 29); it asked «9.1 × 0.6» and
+  «9.6 ÷ 0.8», Grade 6's. Grade 5 now multiplies and divides by 10, 100 and 1000 only (`decPowerOfTen`): the product or
+  quotient, the missing power of ten, the price of 100 pens, the price of one of 100 notebooks. At most four decimal places.
+- **«الزمن» (u9_l3, vocabulary «توقيت 24 ساعة»)** drew only Grade 4's minutes within a morning. The book converts
+  «11:51 a.m.» and «21:50», times «10:20 p.m. حتى 12:07 a.m.» and writes «142 h» as days and hours (pp. 108–113). Grade 5
+  now asks those (`time24`, `geometry.ts`) for 60% of its questions; Grade 4's «الزمن» is unchanged.
+
+**Verified.** `grade5Objectives.test.ts` (10, written first and seen failing 9 of 10) routes each title and recomputes
+every key from its printed stem by code that shares nothing with the generators: digits sorted, quotients multiplied
+back, mixed numbers read and added, places counted, clocks converted, days times 24. It also checks the bounds (no number
+below a million, no quotient under 11, a negative in every negative-numbers question, no conversion in «أجزاء الألف», only
+10/100/1000) and the counted nouns («907 دنانير», «85 ساعةً», «3 أيام و 13 ساعةً»). Eight planted bugs, one per fix, each
+failed it. `elementary.test.ts`, `routing.test.ts` and `geometry.test.ts` now read mixed numbers and the new stems; the
+older suite caught a «3 1/1» option and a six-place decimal on the way, both fixed. Ten sample questions from each of the
+ten changed lessons read by hand, keys right. math-practice 1434 pass; monorepo typecheck; the PR body has the rest of the
+CI set.
+
+**Not done.** Live AI was not run. Everything the audit left for the PDFs. No «ما الجديد» entry: this changes which
+questions an offline paper draws, not what a teacher can do.
+
 ## Grade 2 review, the Grade 1 way: plans, activities, quick checks and live prompts for seven-year-olds — 2026-11-15
 
 The Grade 1 review (below, «Grade 1 review: coverage, generated results, book images — 2026-11-13») repeated for Grade 2

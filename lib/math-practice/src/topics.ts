@@ -1034,30 +1034,49 @@ const orderOps: Topic = {
 
 const span = (diff: DiffTier, grade: number) => (diff === 'easy' ? 9 : diff === 'medium' ? 15 : grade >= 7 ? 40 : 25);
 
+/** «5 وحدات», «12 وحدةً»; one and two in their own words. */
+const unitsAr = (n: number) => (n === 1 ? 'وحدة واحدة' : n === 2 ? 'وحدتين' : `${n} ${tamyiz(n, 'وحدات', 'وحدةً', 'وحدة')}`);
+/**
+ * Grade 5 «الأعداد السالبة» (S1 u1_l4, pp. 20–23): «أتعرف العدد السالب، وأعينه على
+ * خط الأعداد». The book writes a depth below sea level and a temperature below zero
+ * as negative numbers, places them on the number line, and asks which number is the
+ * same distance from zero on the other side. Until 2026-11-20 a third of these
+ * questions added integers («كانت درجة الحرارة −12° ثم انخفضت 15°», Grade 6 work)
+ * and a comparison could hold no negative number at all («10 ___ 9»).
+ */
 const intIntro: Topic = {
   id: 'int_intro', match: /الاعداد السالبه/, grades: [5, 5],
   make({ rng, diff }) {
     const m = span(diff, 5);
-    const k = int(rng, 0, 2);
-    if (k === 0) {
-      const a = int(rng, 1, m);
+    const a = int(rng, 3, Math.max(4, m));
+    const k = int(rng, 0, 4);
+    if (k === 0) { // a situation written as a negative number
       const ans = signed(-a);
-      return { eq: `${a}`, answer: ans, wrongs: wrongsFrom(ans, [String(a), `${a + 1}`, signed(-(a + 1))]), ar: `ما العدد المقابل للعدد ${a}؟`, en: `What is the opposite of ${a}?` };
+      const wrongs = wrongsFrom(ans, [String(a), signed(-(a + 1)), signed(-(a - 1)), '0']);
+      return rng() < 0.5
+        ? { eq: `depth ${a}`, answer: ans, wrongs, ar: `تقع غواصة على عمق ${a} م تحت مستوى سطح البحر. ما العدد الذي يمثّل موقعها بالنسبة إلى مستوى سطح البحر؟`, en: `A submarine is ${a} m below sea level. Which number describes its position relative to sea level?` }
+        : { eq: `cold ${a}`, answer: ans, wrongs, ar: `سُجّلت درجة الحرارة في إحدى المدن ${a}° تحت الصفر. ما العدد الذي يمثّل درجة الحرارة؟`, en: `A city recorded a temperature ${a}° below zero. Which number describes the temperature?` };
     }
-    if (k === 1) {
-      const t = nz(rng, m); const up = int(rng, 1, m) * (rng() < 0.5 ? 1 : -1);
-      const ans = signed(t + up);
-      return {
-        eq: `${signed(t)} ${up >= 0 ? '+' : '−'} ${Math.abs(up)}`, answer: ans,
-        wrongs: numWrongs(t + up, [t - up, -(t + up), Math.abs(t) + Math.abs(up)], signed),
-        ar: `كانت درجة الحرارة ${signed(t)}° ثم ${up >= 0 ? 'ارتفعت' : 'انخفضت'} ${Math.abs(up)}°. ما درجة الحرارة الآن؟`,
-        en: `The temperature was ${signed(t)}° and then ${up >= 0 ? 'rose' : 'fell'} by ${Math.abs(up)}°. What is it now?`,
-      };
+    if (k === 1) { // a point on the number line
+      const ans = signed(-a);
+      return { eq: `left ${a}`, answer: ans, wrongs: wrongsFrom(ans, [String(a), signed(-(a + 1)), signed(-(a - 1))]), ar: `على خط الأعداد، ما العدد الذي يقع على بُعد ${unitsAr(a)} إلى يسار الصفر؟`, en: `On the number line, which number is ${a} units to the left of zero?` };
     }
-    const a = nz(rng, m); let b = nz(rng, m);
-    if (a === b) b = -b;
-    const ans = a < b ? '<' : '>';
-    return { eq: `${signed(a)} ___ ${signed(b)}`, answer: ans, wrongs: ['>', '<', '='].filter(s => s !== ans), ar: `ضع الإشارة المناسبة (> أو < أو =):\n${signed(a)} ___ ${signed(b)}`, en: `Write the correct sign (>, < or =):\n${signed(a)} ___ ${signed(b)}` };
+    if (k === 2) { // the same distance from zero, on the other side
+      const s = rng() < 0.5 ? -a : a;
+      const ans = signed(-s);
+      return { eq: `mirror ${signed(s)}`, answer: ans, wrongs: wrongsFrom(ans, [signed(s), '0', signed(-s + (s > 0 ? -1 : 1))]), ar: `يقع العدد ${signed(s)} على خط الأعداد على بُعد ${unitsAr(a)} من الصفر. ما العدد الآخر الذي يقع على البُعد نفسه من الصفر؟`, en: `${signed(s)} is ${a} units from zero on the number line. Which other number is the same distance from zero?` };
+    }
+    if (k === 3) { // which of four numbers is negative
+      const b = int(rng, 1, m);
+      return { eq: `negative ${a}`, answer: signed(-a), wrongs: [String(a), '0', String(b === a ? b + 1 : b)], ar: `أيّ الأعداد الآتية عدد سالب؟`, en: 'Which of these numbers is negative?' };
+    }
+    // compare: a negative number with a positive one or zero, and (medium, hard) with another negative, on the number line
+    const x = -a;
+    let y = diff === 'easy' || rng() < 0.5 ? (rng() < 0.25 ? 0 : int(rng, 1, m)) : -int(rng, 1, m);
+    if (y === x) y = x - 1;
+    const [l, r] = rng() < 0.5 ? [x, y] : [y, x];
+    const ans = l < r ? '<' : '>';
+    return { eq: `${signed(l)} ___ ${signed(r)}`, answer: ans, wrongs: ['>', '<', '='].filter(s => s !== ans), ar: `ضع الإشارة المناسبة (> أو < أو =):\n${signed(l)} ___ ${signed(r)}`, en: `Write the correct sign (>, < or =):\n${signed(l)} ___ ${signed(r)}` };
   },
 };
 
@@ -1436,7 +1455,35 @@ function expanded(rng: Rng, places: number, whole: number) {
 const fracDec: Topic = {
   id: 'frac_dec', match: /التحويل بين الكسور والاعداد العشريه|اجزاء (?:العشره|المئه|الالف)|العدد النسبي$|كتابه العدد النسبي بالصوره العشريه/, grades: [4, 7],
   make({ rng, diff, grade }) {
-    const kind = pick(rng, grade >= 7 ? [0, 1, 4, 5] : [0, 1, 2, 3]);
+    // Grade 5's place-value lesson («أجزاء الألف») has its own generator (`thousandths_g5`), so here Grade 5 is
+    // «التحويل بين الكسور والأعداد العشرية» and converts (review, 2026-11-20)
+    const kind = pick(rng, grade >= 7 ? [0, 1, 4, 5] : grade === 5 ? [0, 1, 6, 7] : [0, 1, 2, 3]);
+    if (kind === 6) {
+      // the book's method (S2 p. 11): an equivalent fraction over 10, 100 or 1000, then the decimal
+      const [d, to] = pick(rng, [[2, 10], [5, 10], [4, 100], [20, 100], [25, 100], [50, 100], [8, 1000], [40, 1000], [125, 1000]] as Array<[number, number]>);
+      let n = int(rng, 1, d - 1);
+      while (gcd(n, d) !== 1) n = int(rng, 1, d - 1);
+      const ans = String((n * to) / d);
+      return {
+        eq: `${n}/${d} = ?/${to}`, answer: ans,
+        wrongs: wrongsFrom(ans, [String(n * to), String(to / d), String(n + to - d)].filter(w => w !== ans && Number(w) > 0), j => String((n * to) / d + Math.abs(j))),
+        ar: `لكتابة الكسر ${n}/${d} على صورة عدد عشري، نكتبه كسرًا مكافئًا مقامه ${to}. ما بسط هذا الكسر؟`,
+        en: `To write ${n}/${d} as a decimal, write it as an equivalent fraction over ${to}. What is its numerator?`,
+      };
+    }
+    if (kind === 7) {
+      // a mixed number and its decimal, either way
+      const [d, places] = pick(rng, TERMINATING.slice(0, 8));
+      let n = int(rng, 1, d - 1);
+      while (gcd(n, d) !== 1) n = int(rng, 1, d - 1);
+      const w = int(rng, 1, 9);
+      const dec = fmtDec(w * 10 ** places + (n * 10 ** places) / d, places);
+      const mx = `${w} ${n}/${d}`;
+      if (rng() < 0.5) {
+        return { eq: mx, answer: dec, wrongs: wrongsFrom(dec, [`${w}.${n}${d}`, `${w}.${n}`, fmtDec(w * 10 ** places + (d * 10 ** places) / n, places)].filter(x => x !== dec && !/NaN/.test(x)), j => fmtDec(w * 10 ** places + (n * 10 ** places) / d + Math.abs(j) * 10 ** places, places)), ar: `اكتب العدد الكسري ${mx} على صورة عدد عشري.`, en: `Write the mixed number ${mx} as a decimal.` };
+      }
+      return { eq: dec, answer: mx, wrongs: wrongsFrom(mx, [`${w} ${n}/${d * 10}`, `${w + 1} ${n}/${d}`, `${w} ${d - n}/${d}`].filter(x => x !== mx), j => `${w + 1 + Math.abs(j)} ${n}/${d}`), ar: `اكتب العدد العشري ${dec} على صورة عدد كسري في أبسط صورة.`, en: `Write ${dec} as a mixed number in simplest form.` };
+    }
     if (kind === 2) {
       const places = grade <= 4 ? pick(rng, diff === 'easy' ? [1] : [1, 2]) : pick(rng, diff === 'easy' ? [1, 2] : [2, 3]);
       const e = expanded(rng, places, int(rng, 0, diff === 'hard' ? 99 : 9));
@@ -1517,6 +1564,57 @@ const fracDec: Topic = {
       wrongs: wrongsFrom(ans, [sfrac(neg ? -d : d, n), sfrac(neg ? -(n + 1) : n + 1, d), sfrac(neg ? -n : n, d + 1)].filter(w => w !== ans), j => sfrac(neg ? -(n + Math.abs(j) + 1) : n + Math.abs(j) + 1, d)),
       ar: `اكتب العدد العشري ${dec} على صورة كسر في أبسط صورة.`, en: `Write the decimal ${dec} as a fraction in simplest form.`,
     };
+  },
+};
+
+/**
+ * Grade 5 «أجزاء الألف» (S2 u6_l1, p. 8): «أحدد القيمة المنزلية لرقم في عدد عشري ضمن الأجزاء من ألف» and «أكتب
+ * الكسر العشري بالصيغ: القياسية، واللفظية، والتحليلية». It shared `frac_dec` with the next lesson, so a paper was
+ * mostly conversions and hundredths (review, 2026-11-20). Every number here has three decimal places.
+ */
+const THOUSANDTHS_PLACES = ['الأجزاء من عشرة', 'الأجزاء من مئة', 'الأجزاء من ألف'];
+const thousandths: Topic = {
+  id: 'thousandths_g5', match: /^اجزاء الالف$/, grades: [5, 5],
+  make({ rng, diff }) {
+    const whole = int(rng, 0, diff === 'hard' ? 99 : 9);
+    // three different nonzero digits after the point, so «the digit 7» names one place
+    const ds: number[] = [];
+    while (ds.length < 3) { const x = int(rng, 1, 9); if (!ds.includes(x)) ds.push(x); }
+    const raw = whole * 1000 + ds[0]! * 100 + ds[1]! * 10 + ds[2]!;
+    const s = fmtDec(raw, 3);
+    const k = pick(rng, [0, 1, 2, 3, 4]);
+    if (k === 0) {
+      const pos = int(rng, 0, 2), digit = ds[pos]!;
+      if (String(whole).includes(String(digit))) return thousandths.make({ rng, diff, grade: 5 });
+      const ans = fmtDec(digit, pos + 1);
+      return { eq: `pv ${s} ${digit}`, answer: ans, wrongs: wrongsFrom(ans, [String(digit), fmtDec(digit, pos + 2), pos > 0 ? fmtDec(digit, pos) : String(digit * 10)], j => fmtDec(digit, pos + 2 + Math.abs(j))), ar: `ما القيمة المنزلية للرقم ${digit} في العدد ${s}؟`, en: `What is the place value of the digit ${digit} in ${s}?` };
+    }
+    if (k === 1) {
+      const pos = int(rng, 0, 2);
+      const ans = String(ds[pos]);
+      return { eq: `digit ${s} ${pos}`, answer: ans, wrongs: wrongsFrom(ans, ds.filter((_, i) => i !== pos).map(String).concat(String(whole % 10 || 0)), j => String((ds[pos]! + Math.abs(j)) % 10)), ar: `ما الرقم في منزلة ${THOUSANDTHS_PLACES[pos]} في العدد ${s}؟`, en: `Which digit is in the ${['tenths', 'hundredths', 'thousandths'][pos]} place of ${s}?` };
+    }
+    const terms = [...(whole ? [String(whole)] : []), ...ds.map((x, i) => fmtDec(x, i + 1))];
+    if (k === 2) {
+      const swapped = fmtDec(whole * 1000 + ds[2]! * 100 + ds[1]! * 10 + ds[0]!, 3);
+      return { eq: terms.join(' + '), answer: s, wrongs: wrongsFrom(s, [swapped, fmtDec(raw, 2), fmtDec(raw * 10, 3)], j => fmtDec(raw + Math.abs(j) * 100, 3)), ar: `اكتب العدد الآتي بالصيغة القياسية: ${terms.join(' + ')}`, en: `Write in standard form: ${terms.join(' + ')}` };
+    }
+    if (k === 3) {
+      const ans = terms.join(' + ');
+      const w = whole ? [String(whole)] : [];
+      // each wrong option adds up to another number: a place shifted, or two digits swapped
+      const cands = [
+        [...w, fmtDec(ds[0]!, 1), fmtDec(ds[1]!, 1), fmtDec(ds[2]!, 1)],
+        [...w, fmtDec(ds[0]!, 1), fmtDec(ds[1]!, 2), fmtDec(ds[2]!, 2)],
+        [...w, fmtDec(ds[0]!, 2), fmtDec(ds[1]!, 3), fmtDec(ds[2]!, 4)],
+        [...w, fmtDec(ds[1]!, 1), fmtDec(ds[0]!, 2), fmtDec(ds[2]!, 3)],
+      ].map(t => t.join(' + '));
+      return { eq: `expand ${s}`, answer: ans, wrongs: wrongsFrom(ans, cands, () => ''), ar: `اكتب العدد ${s} بالصيغة التحليلية.`, en: `Write ${s} in expanded form.` };
+    }
+    let n = int(rng, 11, 99);
+    if (n % 10 === 0) n += 1; // «20 جزءًا من ألف» is 0.02: a thousandth is the point of the lesson
+    const ans = fmtDec(n, 3);
+    return { eq: `${n}/1000`, answer: ans, wrongs: wrongsFrom(ans, [fmtDec(n, 2), fmtDec(n, 1), fmtDec(n * 10 + (n % 10), 4)], j => fmtDec(n + Math.abs(j), 2)), ar: `اكتب بالصيغة القياسية: ${n} جزءًا من ألف.`, en: `Write in standard form: ${n} thousandths.` };
   },
 };
 
@@ -2659,7 +2757,7 @@ export const TOPICS: readonly Topic[] = [
   intOp('int_add', /جمع الاعداد الصحيحه/, '+'), intOp('int_sub', /طرح الاعداد الصحيحه/, '−'), intOp('int_muldiv', /ضرب الاعداد الصحيحه/, '×÷'),
   equivFrac,
   mixedOp('mixed_addsub', /(?:جمع|طرح).*الاعداد الكسريه/, ['+', '−']), mixedOp('mixed_mul', /ضرب الاعداد الكسريه/, ['×']), mixedOp('mixed_div', /قسمه الاعداد الكسريه/, ['÷']),
-  mixedImproper, fracDec, decPlace, pctConv, pctOf, ratioEquiv, ratioSimplest,
+  mixedImproper, thousandths, fracDec, decPlace, pctConv, pctOf, ratioEquiv, ratioSimplest,
   ratCompare, ratOp('rat_addsub', /جمع الاعداد النسبيه/, ['+', '−']), ratOp('rat_muldiv', /ضرب الاعداد النسبيه/, ['×', '÷']),
   repeating, expLaws,
   decMeasure, simplerProblem, multiStep, vennPlan, hindiNumerals, guessCheck, fourSteps, fracDiv,
