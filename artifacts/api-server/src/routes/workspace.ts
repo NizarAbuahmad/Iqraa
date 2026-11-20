@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { savedMaterials } from "@workspace/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import {
   authMiddleware,
   requireRole,
@@ -12,6 +12,9 @@ import { logger } from "../lib/logger.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { pickDefined } from "../lib/pickDefined.js";
 import { resolveClassGroupId } from "../lib/classOwnership.js";
+import { generateMaterialShareCode } from "../lib/materialShare.ts";
+import { isUniqueViolation } from "../lib/pgErrors.ts";
+import { isUuid } from "../modules/homework/rules.ts";
 
 const router = Router();
 
@@ -326,7 +329,90 @@ router.post("/items/:id/duplicate", async (req: AuthenticatedRequest, res) => {
   }
 });
 
-function toClientItem(item: typeof savedMaterials.$inferSelect) {
+/**
+ * POST /workspace/items/:id/share — the material's share link code, made on the
+ * first call and the same on every call after (spec
+ * docs/superpowers/specs/2026-11-20-material-share-link-design.md). Owner only;
+ * a device-only id (`ws_…`) or another teacher's id is a 404.
+ */
+router.post("/items/:id/share", async (req: AuthenticatedRequest, res) => {
+  const itemId = req.params["id"];
+  if (!isUuid(itemId)) {
+    res.status(404).json({ error: "Item not found" });
+    return;
+  }
+  const mine = and(eq(savedMaterials.id, itemId), eq(savedMaterials.userId, req.user!.id));
+  try {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const [item] = await db
+        .select({ shareCode: savedMaterials.shareCode, type: savedMaterials.type })
+        .from(savedMaterials)
+        .where(mine)
+        .limit(1);
+      if (!item) {
+        res.status(404).json({ error: "Item not found" });
+        return;
+      }
+      // A whiteboard is not a paper: the shared page has no view for it.
+      if (item.type === "board") {
+        res.status(400).json({ code: "not_shareable", error: "This material cannot be shared by link" });
+        return;
+      }
+      if (item.shareCode) {
+        res.json({ shareCode: item.shareCode });
+        return;
+      }
+      try {
+        // `share_code IS NULL` in the WHERE: two taps at once must not each set
+        // a different code, the second overwriting the link the first sent.
+        // The loser updates nothing and reads the winner's code next time round.
+        const [set] = await db
+          .update(savedMaterials)
+          .set({ shareCode: generateMaterialShareCode(), sharedAt: new Date() })
+          .where(and(mine, isNull(savedMaterials.shareCode)))
+          .returning({ shareCode: savedMaterials.shareCode });
+        if (set?.shareCode) {
+          res.json({ shareCode: set.shareCode });
+          return;
+        }
+      } catch (err) {
+        // Another material already holds this code: draw again.
+        if (!isUniqueViolation(err)) throw err;
+      }
+    }
+    res.status(500).json({ error: "Could not make a share link" });
+  } catch (err) {
+    failWorkspace(res, err, "share workspace item", "Could not make a share link");
+  }
+});
+
+/**
+ * DELETE /workspace/items/:id/share — stops the link. The code is cleared, so a
+ * later share draws a new one and a forwarded old link stays dead.
+ */
+router.delete("/items/:id/share", async (req: AuthenticatedRequest, res) => {
+  const itemId = req.params["id"];
+  if (!isUuid(itemId)) {
+    res.status(404).json({ error: "Item not found" });
+    return;
+  }
+  try {
+    const [item] = await db
+      .update(savedMaterials)
+      .set({ shareCode: null, sharedAt: null })
+      .where(and(eq(savedMaterials.id, itemId), eq(savedMaterials.userId, req.user!.id)))
+      .returning({ id: savedMaterials.id });
+    if (!item) {
+      res.status(404).json({ error: "Item not found" });
+      return;
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    failWorkspace(res, err, "stop sharing workspace item", "Could not stop sharing");
+  }
+});
+
+export function toClientItem(item: typeof savedMaterials.$inferSelect) {
   return {
     id: item.id,
     type: item.type,
@@ -339,6 +425,7 @@ function toClientItem(item: typeof savedMaterials.$inferSelect) {
     formState: typeof item.formState === "object" ? item.formState : {},
     isFavorite: item.isFavorite,
     classGroupId: item.classGroupId,
+    shareCode: item.shareCode,
     savedAt: item.updatedAt.toISOString(),
     createdAt: item.createdAt.toISOString(),
   };

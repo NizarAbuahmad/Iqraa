@@ -62,6 +62,8 @@ const TOP: Record<string, UsageArea> = {
   'calendar': 'schedule',
   'teaching-plans': 'teaching-plans',
   'workspace': 'workspace',
+  // A material opened from its share link (app/m/[code].tsx) is the same screen as ملفاتي's.
+  'm': 'workspace',
   'messaging': 'messaging',
   'school': 'school',
   'notifications': 'notifications',

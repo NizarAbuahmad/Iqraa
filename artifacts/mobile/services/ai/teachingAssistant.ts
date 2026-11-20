@@ -108,6 +108,12 @@ export type ChatSessionMemory = {
   prepCompleted: PrepStepId[];
   /** Most recently completed step — drives the next recommendation. */
   lastCompletedPrepStep: PrepStepId | null;
+  /**
+   * The topic the last material was built on when no lesson grounded it
+   * («لو كنت وزير التربية ليوم واحد»), so «اجعله أقصر» changes that material and
+   * not the lesson on the card. Cleared when a lesson is pinned (`pinLesson`).
+   */
+  freeTopic?: string | null;
 };
 
 export type TeachingAssistantInput = {

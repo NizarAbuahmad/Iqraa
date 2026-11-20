@@ -75,6 +75,12 @@ export interface AIRequest {
    */
   bookFigureCount?: number;
   /**
+   * `'none'`: the app found no lesson for this request in its grade and subject,
+   * so the API must not attach book pages by the topic's title (`noLessonField`
+   * in `services/kbContext.ts`). Absent: the API grounds as before.
+   */
+  grounding?: 'none';
+  /**
    * Who wrote `additionalContext`.
    *
    * `'curriculum'` — the app derived it from the KB for this lesson. It is the
