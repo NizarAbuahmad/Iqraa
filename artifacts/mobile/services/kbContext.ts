@@ -31,6 +31,7 @@ import {
 import { figuresForLesson } from './bookFigures.ts';
 import { buildSupportResourcesContext } from './mathSupportResources.ts';
 import { isNccdUnitId } from '@workspace/curriculum';
+import { rankedInAskScope, topHitHoldsTopic, type AskScope } from './kbSuggestion.ts';
 
 // ─── Generator KB context ────────────────────────────────────────────────────
 
@@ -243,6 +244,17 @@ export function sourceCitationLine(
 }
 
 /**
+ * What a generator is told when no curriculum lesson grounds its topic. Also
+ * sent as-is when the caller already decided there is no lesson (chat's free
+ * topic): re-grounding the topic there could attach another grade's lesson.
+ */
+export function ungroundedGeneratorNote(lang: 'ar' | 'en'): string {
+  return lang === 'ar'
+    ? 'تنبيه: الموضوع غير موجود في المنهاج المتاح حالياً. أنشئ خطة عامة دون الادعاء أنها مبنية على نتاجات درس محدد من الكتاب.'
+    : 'NOTE: topic not found in the available curriculum KB. Generate a generic plan; do not claim textbook grounding.';
+}
+
+/**
  * Resolve whether a topic is curriculum-grounded for generation.
  * Weak fuzzy hits are rejected — never silently substitute an unrelated lesson.
  */
@@ -255,15 +267,12 @@ export function resolveGeneratorGrounding(
     (options?.lessonId ? getKbLessonById(options.lessonId) : undefined)
     ?? resolveGroundedKbLesson(topic, lang, options?.scope);
   if (!lesson) {
-    const isAr = lang === 'ar';
     return {
       grounded: false,
       lesson: null,
       score: 0,
       context: '',
-      ungroundedNote: isAr
-        ? 'تنبيه: الموضوع غير موجود في المنهاج المتاح حالياً. أنشئ خطة عامة دون الادعاء أنها مبنية على نتاجات درس محدد من الكتاب.'
-        : 'NOTE: topic not found in the available curriculum KB. Generate a generic plan; do not claim textbook grounding.',
+      ungroundedNote: ungroundedGeneratorNote(lang),
     };
   }
 
@@ -379,13 +388,31 @@ export function groundingRequestFields(grounding: GeneratorGrounding): {
   unitId: string | undefined;
   lessonId: string | undefined;
   bookFigureCount: number;
+  grounding?: 'none';
 } {
   return {
     additionalContext: grounding.grounded ? grounding.context : grounding.ungroundedNote,
     unitId: nccdUnitId(grounding.lesson?.unitId),
     lessonId: grounding.lesson?.id,
     bookFigureCount: figureCountForLesson(grounding.lesson?.id),
+    ...noLessonField(grounding.grounded),
   };
+}
+
+/**
+ * `{ grounding: 'none' }` when no lesson grounds a request, else nothing.
+ *
+ * The API attaches book pages by matching the topic's title across the whole
+ * catalog when a request carries no unit (`groundingFor` in
+ * `artifacts/api-server/src/lib/grounding.ts`). This app's own search is scoped
+ * to the picked grade and subject; when it finds nothing, the context it sends
+ * says «الموضوع غير موجود في المنهاج», and the server's unscoped match then
+ * appended another grade's book to the same prompt («الصداقة» for grade 5 got
+ * grade 2 Islamic pages). The field tells the server not to. A grounded
+ * request's body is unchanged, so no pooled key moves for it.
+ */
+export function noLessonField(grounded: boolean): { grounding?: 'none' } {
+  return grounded ? {} : { grounding: 'none' };
 }
 
 /**
@@ -732,4 +759,43 @@ export function buildResponse(
   });
   const fallback = summaryLines.join('\n\n---\n\n');
   return supportBlock ? `${fallback}\n\n${supportBlock}` : fallback;
+}
+
+/**
+ * The ranked list «أي درس تقصد؟» may offer, for an ask for material.
+ *
+ * Empty — no question — when the whole-KB search was already confident (the
+ * artifact branch's own topic search then decides, as it did before scoping),
+ * or when the in-scope hit holds the topic (it grounds without asking).
+ *
+ * With a grade or subject known it is the TOPIC's search in that scope, not
+ * the whole message's: the message carries «ورقة عمل», which matches grade 10
+ * English «طرق العمل» at 38, and filtering the whole-message list to the scope
+ * turned «ورقة عمل عن محيط الدائرة للصف العاشر» — no question before — into
+ * «which lesson?» with that English lesson first. With nothing known it is the
+ * whole-message list, as before, less what the teacher does not teach.
+ */
+export function artifactGuessRanked(args: {
+  query: string;
+  /** The topic the ask names (`topicFromQuery`), '' when none. */
+  topic: string;
+  lang: 'ar' | 'en';
+  /** The whole-KB search for the message. */
+  ranked: KBScoredLesson[];
+  confidentHit: boolean;
+  scope: AskScope;
+  teaches: (subjectId: string, gradeId: string) => boolean;
+}): KBScoredLesson[] {
+  if (args.confidentHit) return [];
+  const bookOf = (l: KBLesson) => getBookForLesson(l);
+  const scoped = !!(args.scope.gradeId || args.scope.subjectId);
+  const pool = scoped
+    ? searchKBRanked(
+      args.topic.length >= 3 ? args.topic : args.query,
+      args.lang,
+      args.scope.gradeId ? { gradeId: args.scope.gradeId } : undefined,
+    )
+    : args.ranked;
+  const inScope = rankedInAskScope(pool, args.scope, bookOf, args.teaches);
+  return topHitHoldsTopic(inScope, l => l.unitId) ? [] : inScope;
 }

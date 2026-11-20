@@ -493,6 +493,8 @@ export function pinLesson(
     activeTopicEn: lesson.titleEn,
     lessonPin: strength,
     prepLessonId: memory.prepLessonId ?? lesson.id,
+    // A lesson is the context now, not the last free topic.
+    freeTopic: null,
   };
 }
 
