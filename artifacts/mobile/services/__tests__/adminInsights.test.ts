@@ -84,11 +84,17 @@ describe('admin insights role filter', () => {
 
   it('says who is left out, with Arabic number agreement, and nothing when nobody is', () => {
     assert.equal(excludedNote({ admins: 0, flagged: 0 }, true), '');
-    assert.equal(excludedNote({ admins: 1, flagged: 0 }, true), 'لا يُحتسب: حساب إدارة واحد.');
-    assert.equal(excludedNote({ admins: 2, flagged: 1 }, true), 'لا يُحتسب: حسابا إدارة وحساب داخلي واحد.');
-    assert.equal(excludedNote({ admins: 1, flagged: 2 }, true), 'لا يُحتسب: حساب إدارة واحد وحسابان داخليان.');
-    assert.equal(excludedNote({ admins: 0, flagged: 5 }, true), 'لا يُحتسب: 5 حسابات داخلية.');
-    assert.equal(excludedNote({ admins: 0, flagged: 12 }, true), 'لا يُحتسب: 12 حسابًا داخليًا.');
-    assert.equal(excludedNote({ admins: 1, flagged: 3 }, false), 'Not counted: 1 admin account and 3 internal accounts.');
+    const head = 'مستثنى من كل الأرقام: ';
+    assert.equal(excludedNote({ admins: 1, flagged: 0 }, true), `${head}حساب لإدارة النظام.`);
+    assert.equal(excludedNote({ admins: 2, flagged: 1 }, true), `${head}حسابان لإدارة النظام وحساب داخلي واحد.`);
+    assert.equal(excludedNote({ admins: 1, flagged: 2 }, true), `${head}حساب لإدارة النظام وحسابان داخليان.`);
+    assert.equal(excludedNote({ admins: 0, flagged: 5 }, true), `${head}5 حسابات داخلية.`);
+    assert.equal(excludedNote({ admins: 0, flagged: 12 }, true), `${head}12 حسابًا داخليًا.`);
+    assert.equal(excludedNote({ admins: 0, flagged: 100 }, true), `${head}100 حساب داخلي.`);
+    assert.equal(excludedNote({ admins: 0, flagged: 103 }, true), `${head}103 حسابات داخلية.`);
+    assert.equal(
+      excludedNote({ admins: 1, flagged: 3 }, false),
+      'Left out of every number: 1 system admin account and 3 internal accounts.',
+    );
   });
 });

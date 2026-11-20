@@ -325,4 +325,36 @@ describeDb("GET /admin/insights — role filter and internal accounts", () => {
     const { rows } = await db.pool.query(`SELECT insights_excluded_at FROM users WHERE id = $1`, [stu]);
     assert.equal(rows[0].insights_excluded_at, null);
   });
+
+  it("can clear the mark of a test teacher who switched to a family role", async () => {
+    const path = `/admin/insights/users/${tess}/internal`;
+    assert.equal((await call(server, "PUT", path, adminId, { internal: true })).status, 200);
+    await db.pool.query(`UPDATE users SET role = 'parent' WHERE id = $1`, [tess]);
+    try {
+      // Marking a parent is refused; clearing is not, or the mark would be stuck.
+      assert.equal((await call(server, "PUT", path, adminId, { internal: true })).status, 404);
+      const clear = await call(server, "PUT", path, adminId, { internal: false });
+      assert.equal(clear.status, 200, clear.text);
+      const { rows } = await db.pool.query(`SELECT insights_excluded_at FROM users WHERE id = $1`, [tess]);
+      assert.equal(rows[0].insights_excluded_at, null);
+    } finally {
+      await db.pool.query(`UPDATE users SET role = 'teacher' WHERE id = $1`, [tess]);
+    }
+  });
+
+  it("leaves a marked account out of the sign-up cohorts too", async () => {
+    const cohortSize = async (query: string) => (await insights(query)).retention.cohorts.at(-1).size as number;
+    const newbie = (
+      await db.pool.query<{ id: string }>(
+        `INSERT INTO users (first_name, last_name, role, email, email_verified, created_at)
+         VALUES ('Newbie', 'Test', 'teacher', 'newbie@example.test', true, $1) RETURNING id`,
+        [noon(0)],
+      )
+    ).rows[0]!.id;
+    assert.equal(await cohortSize(""), 1);
+    assert.equal(await cohortSize("&role=teacher"), 1);
+    assert.equal(await cohortSize("&role=student"), 0);
+    assert.equal((await call(server, "PUT", `/admin/insights/users/${newbie}/internal`, adminId, { internal: true })).status, 200);
+    assert.equal(await cohortSize(""), 0);
+  });
 });

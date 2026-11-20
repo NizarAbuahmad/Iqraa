@@ -36,26 +36,38 @@ export function showsTeacherSections(role: InsightsRole): boolean {
 }
 
 /**
- * The line under the filters saying who is left out, or '' when nobody is.
- * «استُثني حساب إدارة واحد و٣ حسابات داخلية».
+ * The line under the filters saying who is left out of every number, whatever the role filter,
+ * or '' when nobody is: «مستثنى من كل الأرقام: حساب لإدارة النظام و5 حسابات داخلية.»
  */
 export function excludedNote(excluded: { admins: number; flagged: number }, ar: boolean): string {
   const { admins, flagged } = excluded;
   if (admins + flagged === 0) return '';
   if (!ar) {
     const parts = [
-      admins ? `${admins} admin account${admins === 1 ? '' : 's'}` : '',
+      admins ? `${admins} system admin account${admins === 1 ? '' : 's'}` : '',
       flagged ? `${flagged} internal account${flagged === 1 ? '' : 's'}` : '',
     ].filter(Boolean);
-    return `Not counted: ${parts.join(' and ')}.`;
+    return `Left out of every number: ${parts.join(' and ')}.`;
   }
-  const count = (n: number, one: string, two: string, few: string, many: string) =>
-    n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${few}` : `${n} ${many}`;
+  // Arabic counted-noun agreement by the last two digits: 3–10 plural, 11–99 accusative
+  // singular, a round hundred (100, 200, 101…) genitive singular.
+  const count = (n: number, one: string, two: string, few: string, acc: string, gen: string) => {
+    if (n === 1) return one;
+    if (n === 2) return two;
+    const r = n % 100;
+    if (r >= 3 && r <= 10) return `${n} ${few}`;
+    if (r >= 11) return `${n} ${acc}`;
+    return `${n} ${gen}`;
+  };
   const parts = [
-    admins ? count(admins, 'حساب إدارة واحد', 'حسابا إدارة', 'حسابات إدارة', 'حساب إدارة') : '',
-    flagged ? count(flagged, 'حساب داخلي واحد', 'حسابان داخليان', 'حسابات داخلية', 'حسابًا داخليًا') : '',
+    admins
+      ? count(admins, 'حساب لإدارة النظام', 'حسابان لإدارة النظام', 'حسابات لإدارة النظام', 'حسابًا لإدارة النظام', 'حساب لإدارة النظام')
+      : '',
+    flagged
+      ? count(flagged, 'حساب داخلي واحد', 'حسابان داخليان', 'حسابات داخلية', 'حسابًا داخليًا', 'حساب داخلي')
+      : '',
   ].filter(Boolean);
-  return `لا يُحتسب: ${parts.join(' و')}.`;
+  return `مستثنى من كل الأرقام: ${parts.join(' و')}.`;
 }
 
 export interface BreakdownRow { key: string; count: number | null }

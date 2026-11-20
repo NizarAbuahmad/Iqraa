@@ -476,8 +476,9 @@ router.get("/admin/insights/users/:id", authMiddleware, requireRole("system_admi
 
 /**
  * Mark a team or test account as internal (left out of the insights page), or clear the mark.
- * Teacher-side accounts only, as the per-user page: a student or parent has no page to mark from,
- * and answers 404 like an unknown id. A system admin is left out whatever the mark says.
+ * Marking is for teacher-side accounts only, as the per-user page: a student or parent has no
+ * page to mark from, and answers 404 like an unknown id. Clearing works on any account. A system
+ * admin is left out whatever the mark says.
  */
 router.put("/admin/insights/users/:id/internal", authMiddleware, requireRole("system_admin"), async (req: AuthenticatedRequest, res) => {
   const id = String(req.params["id"] ?? "");
@@ -492,10 +493,12 @@ router.put("/admin/insights/users/:id/internal", authMiddleware, requireRole("sy
   }
   try {
     const roles = sql.join(NAMED_ROLES.map((r) => sql`${r}`), sql`, `);
+    // Marking needs a teacher-side account; clearing works on any role, so a test teacher who
+    // was marked and then switched to parent or student (lib/roleSwitch.ts) is not stuck marked.
     const [row] = await rowsOf<{ id: string }>(sql`
       update users
       set insights_excluded_at = ${internal ? sql`coalesce(insights_excluded_at, now())` : sql`null`}
-      where id = ${id} and role in (${roles})
+      where id = ${id} ${internal ? sql`and role in (${roles})` : sql``}
       returning id`);
     if (!row) {
       res.status(404).json({ error: "User not found" });

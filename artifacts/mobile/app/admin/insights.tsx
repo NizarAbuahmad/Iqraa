@@ -72,12 +72,16 @@ export default function AdminInsightsScreen() {
 
   useEffect(() => {
     if (!isAdmin) return;
+    // Chips tapped quickly: an earlier request can answer last. Only the latest one may land,
+    // or the page shows another filter's numbers under the selected chip.
+    let current = true;
     setLoading(true);
     setError('');
     apiJson<Insights>(`/admin/insights?days=${days}&role=${role}`)
-      .then(setData)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
-      .finally(() => setLoading(false));
+      .then(d => { if (current) setData(d); })
+      .catch((e: unknown) => { if (current) setError(e instanceof Error ? e.message : String(e)); })
+      .finally(() => { if (current) setLoading(false); });
+    return () => { current = false; };
   }, [isAdmin, days, role]);
 
   if (authLoading) {
@@ -234,7 +238,8 @@ export default function AdminInsightsScreen() {
               />
 
               {/* ─── Frequent users (teacher accounts only, so not on a student/parent filter) ── */}
-              {showsTeacherSections(role) && <>
+              {/* `data.role`, not the chip: the sections follow the numbers on screen. */}
+              {showsTeacherSections(data.role) && <>
               <SectionTitle text={ar ? 'المستخدمون الأكثر نشاطًا' : 'Most frequent users'} isRTL={isRTL} colors={colors} />
               {note(
                 ar
@@ -305,7 +310,7 @@ export default function AdminInsightsScreen() {
               {breakdownTable(ar ? 'الصفوف التي يحفظون منها (أشخاص)' : 'Grades they save from (people)', data.likes.grades, k => k)}
 
               {/* ─── Who the teachers are (teacher accounts whatever the period) ─────────── */}
-              {showsTeacherSections(role) && <>
+              {showsTeacherSections(data.role) && <>
               <SectionTitle text={ar ? `من هم المعلّمون (${data.teachers.total})` : `Who the teachers are (${data.teachers.total})`} isRTL={isRTL} colors={colors} />
               {note(ar ? 'الجنس والعمر والمحافظة والخبرة أسئلة اختيارية في «عنك»؛ الأرقام لكل المعلّمين لا للفترة فقط.' : 'Gender, age, governorate and experience are optional «About you» answers; counts are all teachers, not just this period.')}
               {breakdownTable(ar ? 'المواد التي يدرّسونها' : 'Subjects they teach', data.teachers.subjects, k => subjectName(k, ar), data.teachers.total)}
