@@ -34,8 +34,8 @@ const stem = (i: ConcreteItem) => i.promptAr ?? i.wordAr ?? '';
 // The titles as each grade's catalog prints them.
 const COMPARE: Record<number, string> = { 1: 'مُقارَنَةُ الْأَعْدادِ', 2: 'مُقارَنَةُ الْأَعْدادِ', 3: 'مُقارَنَةُ الأَعْدادِ' };
 const ORDER: Record<number, string> = { 1: 'تَرْتيبُ الْأَعْدادِ', 2: 'تَرْتيبُ الْأَعْدادِ', 3: 'تَرْتيبُ الأَعْدادِ' };
-/** The numbers a grade's lessons name: G1 «ضمن منزلتين», G2 «ضمن 3 منازل», G3 «ضمن الألوف». */
-const RANGE: Record<number, [number, number]> = { 1: [10, 99], 2: [100, 999], 3: [100, 9999] };
+/** The numbers a grade's lessons name: G1 «ضمن منزلتين», G2 «ضمن 3 منازل», G3 «ضمن 4 منازل». */
+const RANGE: Record<number, [number, number]> = { 1: [10, 99], 2: [100, 999], 3: [1000, 9999] };
 
 function draws(title: string, grade: number, n = 240): ConcreteItem[] {
   return Array.from({ length: n }, (_, i) => makeElementaryItem(title, grade, TIERS[i % 3]!, new Set(), seeded(i * 7919 + grade)));

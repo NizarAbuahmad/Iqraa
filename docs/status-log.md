@@ -26,9 +26,9 @@ asked «ضع الإشارة المناسبة». Grades 1 and 2 have the same two
   (the other three numbers are the wrong options), or the greatest or least number made from given digits. Grade 1's
   numbers have two places, so its version picks two of three digits («ما أكبر عدد من منزلتين يمكن تكوينه من
   الأرقام 2، 1، 5…» is 52).
-- **Grade 3's range.** Both lessons said «ضمن الألوف» and drew from 0, so an easy paper could compare 23 and 47.
-  They now draw from 100 at easy and from 1000 at medium and hard (`compareRange`). Grades 1 (10–99, by tier) and
-  2 (100–999) are unchanged.
+- **Grade 3's range.** Both lessons say «ضمن 4 منازل» and drew from 0, so a paper could compare 91 and 392. They
+  now draw from 1000 to 9999 at every tier (`compareRange`), the same range as the Grade 3 second pass
+  (NizarAbuahmad/Iqraa#1505) sets for the mixed op. Grades 1 (10–99, by tier) and 2 (100–999) are unchanged.
 
 Verified: `compareOrder.test.ts` (new) draws 240 items per lesson for Grades 1–3. It checks the routing, including
 the combined titles. It checks that a compare paper never orders and an order paper never asks a sign or the greatest

@@ -655,11 +655,12 @@ function twoPlaceDigitsItem(base: Base, rng: Rng): ConcreteItem {
     `What is the ${big ? 'greatest' : 'least'} two-digit number you can make from the digits ${listEn(digits)}, using each digit at most once?`);
 }
 
-/** The numbers a Grade 1–3 compare or order lesson names: G1 «ضمن منزلتين», G2 «ضمن 3 منازل», G3 «ضمن الألوف». */
+/** The numbers a Grade 1–3 compare or order lesson names: G1 «ضمن منزلتين», G2 «ضمن 3 منازل», G3 «ضمن 4 منازل». */
 function compareRange(grade: number, diff: DiffTier, max: number): [number, number] {
   if (grade === 1) return [10, G1_COMPARE_MAX[diff]];
   if (grade === 2) return [100, 999];
-  if (grade === 3) return [diff === 'easy' ? 100 : 1000, max];
+  // Grade 3 (u1_l3, u1_l4) showed 91 and 392 when it drew from 0 (2026-11-20).
+  if (grade === 3) return [1000, 9999];
   return [0, max];
 }
 
