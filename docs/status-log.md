@@ -50,6 +50,49 @@ real phone. Known limits: a board opened from the Tools tab or Today is saved wi
 `grade` (only the presentation passes them); `whiteboard_drawn` and `class_pen_used` say that the pen was
 used, not how much; an event fires only where `EXPO_PUBLIC_POSTHOG_API_KEY` is set.
 
+## Grade 3 second pass: skip counting by 10s, 100s and 1000s, four-digit comparing, like fractions, conversions within 9999 — 2026-11-20
+
+This is a second read of Grade 3 maths, on top of «Grade 3 review: six maths lessons asked about their own objective»,
+«Grade 3 maths: offline questions for the four lessons that had none» and «Grade 3 audit…». The generators were run over
+all 254 Grade 3 lessons; each grounds by its own id, and all 70 maths lessons fill a ten-question quiz. Every question of
+every maths quiz was read against its lesson's objective. Every key was right. (The audit script's «wrong key» flags are
+its own: it reads only three-digit numbers and misreads «ولُوّن 3 منها».) Six things did not fit the lesson:
+
+- **«العد القفزي» skipped by 3, 4, 6, 7, 8, 9, 25 and 50**, always from a multiple of the step. The objective is «العدّ
+  قفزيًّا بالعشرات والمئات والألوف تصاعديًّا وتنازليًّا». It now skips by 10, 100 or 1000, from any number within the
+  thousands («3921، 4921، 5921، ___»), and no option passes 9999.
+- **«مقارنة الأعداد» and «ترتيب الأعداد» showed 91, 392 and 732**, while both objectives say «4 منازل». At Grade 3 the
+  `compare` op now draws 1000–9999, as Grade 2's draws 100–999.
+- **«مقارنة الكسور» and «ترتيب الكسور» compared unlike fractions** («6/7 ___ 5/8», «4/5 ___ 5/6»), which takes a common
+  denominator. The objectives compare «باستعمال النماذج وخط الأعداد». At Grade 3 the sign item now uses one denominator or
+  one numerator, and every fraction is proper. Grades 4 and up still cross-multiply.
+- **The four conversion lessons went past the thousands:** «حوّل 18000 م إلى كم», «حوّل 21 لترًا إلى مل», and options such as
+  4860000 (a product of the two numbers). `convertGen` (Grade 3 only) now caps every amount and option at 9999. The
+  compound and story helpers take that cap as an optional argument, so Grades 4–5 are unchanged.
+- **«الضرب في 6 و9» and «الضرب في 7 و8» only drilled 6 and 7.** `lessonTable` read the first number. The new `lessonTables`
+  reads both, and each item draws one of them.
+- **«ما 1/6 العدد 30»** now reads «ما 1/6 من العدد 30» (and «… نجد بها 1/6 من العدد 78»).
+
+**Mental adding of thousands went past 9999 too.** «9000 + 3000 = ___» (12000) and options such as 80000 for «3000 + 5000».
+«Grade 2 second pass…» (below) capped most of those options; this change caps the plain-sum kind at Grade 3 as well, and
+draws no two thousands that sum past 9000.
+
+**Verified:**
+- `grade3SecondPass.test.ts` (8 tests) was written first. Six of its eight failed before the fix; the other two pin
+  Grades 1 and 5 as they were. The «6 و9» test first passed for the wrong reason (9 also appears as the other factor), so it now
+  reads the repeated-addition kind, which always adds the lesson's own table.
+- Sampled items were read by hand. That caught a slip in this change: the same-denominator branch kept the old
+  numerator («1/2 ___ 3/2», «4/5 ___ 5/5»). It is fixed, and the test now fails an improper fraction.
+- `lib/math-practice`, the full mobile suite and `pnpm run typecheck` pass (counts in the PR). Rerunning the Grade 3 audit
+  found nothing past 9999 and no improper fraction in the fraction lessons; all 70 maths lessons still fill ten questions.
+
+**Not done:**
+- There is no Grade 3 book text, so the objectives were the reference, as in the earlier reviews.
+- «الفترات الزمنية (2)» (across the day) still includes some intervals inside one hour, which is the previous lesson's
+  content. Left as it is.
+
+No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+
 ## Grade 1 review: the last three thin maths lessons fill a quiz, two shapes named in their own question, no elapsed time — 2026-11-20
 
 The same per-lesson read as «Grade 2 review: fifteen maths lessons…» and «Grade 3 review: six maths lessons…» (below),
