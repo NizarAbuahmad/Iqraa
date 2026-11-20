@@ -1533,31 +1533,35 @@ const bigAmount = (set: string, n: number) => (set === 'volume' ? `${n} ${tamyiz
 const bigTarget = (set: string) => (set === 'volume' ? 'لترات' : UNIT_WORDS[set]!.big);
 const bigMin = (set: string, min: number) => (set === 'volume' ? Math.max(3, min) : min);
 /** «كم غرامًا في 3 كغ و 250 غ؟» — a compound measure written in the small unit. */
-const unitCompound = (rng: Rng, diff: D, set: string): Draft => {
+/** `cap` keeps a lesson inside its grade's numbers (Grade 3 stays within 9999), options included. */
+const unitCompound = (rng: Rng, diff: D, set: string, cap = Infinity): Draft => {
   const [, , bigEn, smallEn, f] = UNIT_SETS[set]!, w = UNIT_WORDS[set]!;
-  const a = int(rng, bigMin(set, 1), span(diff, 5, 9, 15)), b = f === 100 ? int(rng, 1, 99) : 10 * int(rng, 1, 99);
-  return { eq: `${a}, ${b}`, answer: String(a * f + b), wrongs: pos(a * f + b, [a + b, a * f * b, a * 10 + b, (a * f + b) * 10, a * f - b]), ar: `كم ${w.acc} في ${bigAmount(set, a)} و ${b} ${w.small}؟`, en: `How many ${smallEn} are in ${a} ${bigEn} ${b} ${smallEn}?` };
+  const a = int(rng, bigMin(set, 1), Math.min(span(diff, 5, 9, 15), Math.floor((cap - 990) / f))), b = f === 100 ? int(rng, 1, 99) : 10 * int(rng, 1, 99);
+  return { eq: `${a}, ${b}`, answer: String(a * f + b), wrongs: pos(a * f + b, [a + b, a * f * b, a * 10 + b, (a * f + b) * 10, a * f - b, (a + 1) * f + b].filter(c => c <= cap)), ar: `كم ${w.acc} في ${bigAmount(set, a)} و ${b} ${w.small}؟`, en: `How many ${smallEn} are in ${a} ${bigEn} ${b} ${smallEn}?` };
 };
 /** A whole number of the big unit, less a part in the small unit: convert, then subtract. */
-const unitStory = (rng: Rng, diff: D, set: string): Draft => {
+const unitStory = (rng: Rng, diff: D, set: string, cap = Infinity): Draft => {
   const f = UNIT_SETS[set]![4];
-  const n = int(rng, bigMin(set, 2), span(diff, 5, 9, 15)), p = f === 100 ? 10 * int(rng, 1, 9) : 50 * int(rng, 1, 19);
+  const n = int(rng, bigMin(set, 2), Math.min(span(diff, 5, 9, 15), Math.floor((cap - f) / f))), p = f === 100 ? 10 * int(rng, 1, 9) : 50 * int(rng, 1, 19);
   const left = n * f - p;
   const [ar, en] = UNIT_WORDS[set]!.story(n, p);
-  return { eq: `left ${n}, ${p}`, answer: String(left), wrongs: pos(left, [n * f + p, n * f, n * f - 10 * p, (n - 1) * f, left + f / 10]), ar, en };
+  return { eq: `left ${n}, ${p}`, answer: String(left), wrongs: pos(left, [n * f + p, n * f, n * f - 10 * p, (n - 1) * f, left + f / 10].filter(c => c <= cap)), ar, en };
 };
+// Grade 3 (its only grade) works «ضمن الألوف»: it converted 18 km and offered 4860000 (2026-11-20).
+const G3_CAP = 9999;
 const convertGen = (id: string, match: RegExp, sets: string[], grades: [number, number]) => T(id, match, grades, ({ rng, diff }) => {
   const set = pick(rng, sets);
   const [, , bigEn, smallEn, f] = UNIT_SETS[set]!;
+  const fit = (cands: number[]) => cands.filter(c => c <= G3_CAP);
   // 0 big → small, 1 small → big; 2 a compound measure in the small unit, 3 what is left (real life).
   const k = pick(rng, [0, 1, 2, 3]);
-  if (k === 2) return unitCompound(rng, diff, set);
-  if (k === 3) return unitStory(rng, diff, set);
-  const n = int(rng, bigMin(set, 2), span(diff, 9, 25, 90));
-  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, [n * f * 10, (n * f) / 10, n + f, n * f / 100 | 0, n * 10]), ar: `حوّل ${bigAmount(set, n)} إلى ${UNIT_WORDS[set]!.small}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
-  const q = int(rng, 2, span(diff, 9, 25, 60));
+  if (k === 2) return unitCompound(rng, diff, set, G3_CAP);
+  if (k === 3) return unitStory(rng, diff, set, G3_CAP);
+  const n = int(rng, bigMin(set, 2), Math.min(span(diff, 9, 25, 90), Math.floor(G3_CAP / f)));
+  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, fit([n * f * 10, (n * f) / 10, n + f, n * f / 100 | 0, n * 10, (n - 1) * f])), ar: `حوّل ${bigAmount(set, n)} إلى ${UNIT_WORDS[set]!.small}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
+  const q = int(rng, 2, Math.min(span(diff, 9, 25, 60), Math.floor(G3_CAP / f)));
   const small = q * f;
-  return { eq: `${small}`, answer: String(q), wrongs: pos(q, [q * 10, small / 10, q * 100, q + 1, small]), ar: `حوّل ${small} ${UNIT_WORDS[set]!.small} إلى ${bigTarget(set)}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
+  return { eq: `${small}`, answer: String(q), wrongs: pos(q, fit([q * 10, small / 10, q * 100, q + 1, small])), ar: `حوّل ${small} ${UNIT_WORDS[set]!.small} إلى ${bigTarget(set)}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
 });
 
 /** The lesson names the quantity — length, mass or capacity — and only that quantity's units appear. */

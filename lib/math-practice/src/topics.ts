@@ -2463,11 +2463,11 @@ const fracDiv: Topic = {
       return {
         eq: `${N} ÷ ${d}`, answer: `${N} ÷ ${d}`,
         wrongs: [`${N} × ${d}`, `${d} ÷ ${N}`, d === 2 ? `${N} − ${d}` : `${N} ÷ 2`],
-        ar: `ما جملة القسمة التي نجد بها 1/${d} العدد ${N}؟`, en: `Which division finds 1/${d} of ${N}?`,
+        ar: `ما جملة القسمة التي نجد بها 1/${d} من العدد ${N}؟`, en: `Which division finds 1/${d} of ${N}?`,
       };
     }
     const wrongs = posWrongs(q, [N * d, N - d, d], 1);
-    if (k === 0) return { eq: `${N} ÷ ${d}`, answer: String(q), wrongs, ar: `ما 1/${d} العدد ${N}؟`, en: `What is 1/${d} of ${N}?` };
+    if (k === 0) return { eq: `${N} ÷ ${d}`, answer: String(q), wrongs, ar: `ما 1/${d} من العدد ${N}؟`, en: `What is 1/${d} of ${N}?` };
     return {
       eq: `${N} ÷ ${d}`, answer: String(q), wrongs,
       ar: `لدى سلمى ${counted(N, 'أقلام', 'قلمًا', 'قلم')}، أعطت 1/${d} منها لأخيها. كم قلمًا أعطته؟`,
