@@ -268,15 +268,18 @@ const countUpDown = T('count_up_down', /^العد تصاعديا وتنازلي�
 });
 
 const skipCount = (id: string, match: RegExp, grades: [number, number], steps: (g: number) => number[], top: (g: number) => number) => T(id, match, grades, ({ rng, grade }) => {
-  const s = pick(rng, steps(grade)), start = s * int(rng, 0, Math.max(5, Math.floor(top(grade) / s / 3)));
+  // Grade 3 counts «بالعشرات والمئات والألوف» from any number within the thousands
+  // («3427، 3437، 3447»); it used to skip by 3, 7 or 25 from a multiple (2026-11-20).
+  const s = pick(rng, steps(grade));
+  const start = grade === 3 ? int(rng, 100, 9999 - 5 * s) : s * int(rng, 0, Math.max(5, Math.floor(top(grade) / s / 3)));
   const seq = [0, 1, 2, 3, 4].map(i => start + i * s);
   const k = pick(rng, [0, 1, 2, 3]);
-  if (k === 2) return { eq: seq.slice(0, 4).join(', '), answer: String(s), wrongs: ints(s, [s * 2, s + 1, s * 10, s - 1, s + 2]), ar: `ما مقدار القفزة في العدّ: ${seq.slice(0, 4).join('، ')}؟`, en: `What is the size of each jump in the count ${seq.slice(0, 4).join(', ')}?` };
+  if (k === 2) return { eq: seq.slice(0, 4).join(', '), answer: String(s), wrongs: ints(s, [s * 2, s + 1, s * 10, s - 1, s + 2, s / 10].filter(v => Number.isInteger(v) && v <= 9999)), ar: `ما مقدار القفزة في العدّ: ${seq.slice(0, 4).join('، ')}؟`, en: `What is the size of each jump in the count ${seq.slice(0, 4).join(', ')}?` };
   if (k === 3) {
     // jumps along a number line, inside the numbers the grade works with
     const limit = grade === 1 ? 100 : grade === 2 ? 999 : 9999, j = int(rng, 3, 5);
     const a = start + j * s <= limit ? start : 0, r = a + j * s;
-    return { eq: `${a}, ${s}, ${j}`, answer: String(r), wrongs: ints(r, [r + s, r - s, a + j, a + s]), ar: `ابدأ من ${a} على خط الأعداد واقفز ${j} قفزات، طول كل قفزة ${s}. عند أي عدد تصل؟`, en: `Start at ${a} on a number line and take ${j} jumps of ${s}. Which number do you reach?` };
+    return { eq: `${a}, ${s}, ${j}`, answer: String(r), wrongs: ints(r, [r + s, r - s, a + j, a + s, r - 2 * s].filter(v => v >= 0 && v <= limit)), ar: `ابدأ من ${a} على خط الأعداد واقفز ${j} قفزات، طول كل قفزة ${s}. عند أي عدد تصل؟`, en: `Start at ${a} on a number line and take ${j} jumps of ${s}. Which number do you reach?` };
   }
   const down = k === 1, order = down ? seq.slice().reverse() : seq;
   const hole = int(rng, 3, 4);
@@ -1772,7 +1775,7 @@ export const EARLY_TOPICS: readonly Topic[] = [
   hundreds('hundreds_a', /^المئات$/), hundreds('hundreds_b', /^الاعداد ضمن ثلاث منازل$/), readWrite, thousands,
   evenOdd('even_odd_g1', /^الاعداد الزوجيه والاعداد الفرديه$/, 1), evenOdd('even_odd_g2', /^الاعداد الزوجيه والاعداد الفرديه$/, 2),
   numberChart, countUpDown,
-  skipCount('skip_g1', /^العد القفزي$/, [1, 1], () => [2, 5, 10], () => 60), skipCount('skip_g3', /^العد القفزي$/, [3, 3], () => [3, 4, 6, 7, 8, 9, 10, 25, 50, 100, 1000], () => 400),
+  skipCount('skip_g1', /^العد القفزي$/, [1, 1], () => [2, 5, 10], () => 60), skipCount('skip_g3', /^العد القفزي$/, [3, 3], () => [10, 100, 1000], () => 9999),
   skipCount('skip_g2', /^العد بالواحدات والعشرات والمئات$/, [2, 2], () => [1, 10, 100], () => 600),
   beforeAfter('before_after_g1', /^العدد السابق والعدد التالي$/, 1), beforeAfter('before_after_g2', /^العدد السابق والعدد التالي$/, 2),
   nearestTen, numberLineAdd('line_add', /^الجمع باستعمال خط الاعداد$/, true), numberLineAdd('line_sub', /^الطرح باستعمال خط الاعداد$/, false),
