@@ -211,6 +211,13 @@
       "when": 1795161338510,
       "tag": "0029_salty_shriek",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795167609292,
+      "tag": "0030_glossy_carnage",
+      "breakpoints": true
     }
   ]
 }
