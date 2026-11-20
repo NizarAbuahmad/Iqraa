@@ -390,7 +390,8 @@ describe('Grade 1 second pass (review, 2026-11-15)', () => {
   });
 
   it('the thin number lessons hold at least ten different questions', () => {
-    for (const id of ['count_45', 'count_910', 'count_123', 'count_678', 'solid_names']) {
+    // «الأشكال المستوية», «أضلاع الأشكال المستوية ورؤوسها» and «الربع» held 8 until 2026-11-20 (Grade 1 review)
+    for (const id of ['count_45', 'count_910', 'count_123', 'count_678', 'solid_names', 'plane_shapes', 'plane_sides_g1', 'quarter', 'half']) {
       const stems = new Set(g1Draws(id, 600).map(i => i.promptAr));
       assert.ok(stems.size >= 10, `${id}: ${stems.size} stems`);
     }
