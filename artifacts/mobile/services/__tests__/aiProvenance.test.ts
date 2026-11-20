@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   aiErrorMessageKey,
+  aiFallbackNotice,
   aiSourceBadgeState,
+  type AiGenerationRecord,
   describeAiError,
   generateWithProvenance,
   isAbortError,
@@ -417,4 +419,40 @@ test('startClassFailure keeps the generic retry message for everything else', ()
   for (const e of [new Error('boom'), { code: 'generation_in_flight' }, { code: 'no_question_bank' }, null, undefined]) {
     assert.deepEqual(startClassFailure(e), { key: 'startClassFailed', note: false });
   }
+});
+
+// ─── aiFallbackNotice ────────────────────────────────────────────────────────
+//
+// 2026-11-20: a Grade 6 teacher's «نشاط صفي» came back from the offline
+// blueprint because the live call failed, and the only sign was the header
+// pill «تعذّر الاتصال · محتوى تجريبي». The notice says it on the result itself,
+// and it decides "fallback" through `aiSourceBadgeState`, so the pill and the
+// notice can never disagree.
+
+const rec = (over: Partial<AiGenerationRecord>): AiGenerationRecord => ({
+  kind: 'activity', source: 'mock', reason: 'fallback', error: 'HTTP 502', at: AT, ...over,
+});
+
+test('aiFallbackNotice: a live call that fell back to sample content is announced', () => {
+  const n = aiFallbackNotice(false, rec({}), 'activity');
+  assert.deepEqual(n, {
+    titleKey: 'aiFallbackNoticeTitle', bodyKey: 'aiFallbackNoticeBody', retryKey: 'aiFallbackRetry', detail: 'HTTP 502',
+  });
+});
+
+test('aiFallbackNotice: nothing when the badge would not warn', () => {
+  assert.equal(aiFallbackNotice(false, rec({ source: 'live', reason: 'live', error: undefined }), 'activity'), null);
+  assert.equal(aiFallbackNotice(false, rec({ source: 'live', reason: 'saved-copy', error: undefined }), 'activity'), null);
+  // Demo mode is the intended state, not a failure: the badge already says so.
+  assert.equal(aiFallbackNotice(true, rec({ source: 'mock', reason: 'demo-mode', error: undefined }), 'activity'), null);
+  assert.equal(aiFallbackNotice(true, rec({}), 'activity'), null);
+  assert.equal(aiFallbackNotice(false, null, 'activity'), null);
+});
+
+test('aiFallbackNotice: a strict failure produced no content, so there is no result to annotate', () => {
+  assert.equal(aiFallbackNotice(false, rec({ source: 'none', reason: 'failed' }), 'activity'), null);
+});
+
+test("aiFallbackNotice: another generator's fallback is not this result's", () => {
+  assert.equal(aiFallbackNotice(false, rec({ kind: 'chat' }), 'activity'), null);
 });

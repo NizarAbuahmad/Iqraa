@@ -822,8 +822,10 @@ const ACTIVITY_FORMAT_RULES_AR: Record<string, string> = {
 مواد النشاط أدوات فردية (دفتر، بطاقة مثال محلول، ورقة عمل) لا مواد جماعية.`,
   group: `هذا نشاط تعلّم تعاوني بنية جيقسو حقيقية. يجب أن يتضمن: مجموعات أساسية من 4 يأخذ كل فرد فيها مهمة **مختلفة** عن زملائه (اذكر المهام الأربع صراحة)، ثم مجموعات خبراء يجتمع فيها أصحاب المهمة نفسها، ثم عودة كل خبير ليعلّم جزءه، ثم مساءلة فردية عشوائية يُسحب فيها رقم فيعرض صاحبه إجابة مجموعته كاملة.
 اشترط أن إجابة المجموعة لا تكتمل بغياب أي جزء — هذا هو الاعتماد المتبادل، وبدونه يعمل طالب واحد ويشاهد ثلاثة.`,
-  discussion: `هذا نقاش صفّي، وليس عملًا في مجموعات. يجب أن يتضمن: ادعاءً واحدًا قابلًا للجدل مصاغًا كجملة تقريرية (خطأ شائع معقول، لا عبارة صحيحة يتفق عليها الجميع)، تصويتًا أوليًا، دقيقتَي تفكير فردي صامت يكتب فيهما الطالب موقفه وسببًا واحدًا، مرحلة ثنائية يعيد فيها كل طالب صياغة سبب زميله قبل الرد، نقاشًا صفّيًا تديره بعبارات إدارة الحوار (من يعيد صياغة ما قاله زميله؟ ما دليلك؟ متى يفشل هذا الادعاء؟)، ثم تصويتًا ثانيًا يُقارن بالأول.
-ممنوع: أوراق العمل، الأدوار داخل المجموعة، العروض. لا تكشف الحكم على الادعاء قبل الخطوة الأخيرة.`,
+  discussion: `هذا نقاش صفّي، وليس عملًا في مجموعات. يجب أن يتضمن: ادعاءً واحدًا قابلًا للجدل مصاغًا كجملة تقريرية (خطأ شائع معقول، لا عبارة صحيحة يتفق عليها الجميع)، تصويتًا أوليًا، تفكيرًا فرديًا صامتًا يكتب فيه الطالب موقفه وسببًا واحدًا، مرحلة ثنائية يعيد فيها كل طالب صياغة سبب زميله قبل الرد، نقاشًا صفّيًا تديره بعبارات إدارة الحوار (من يعيد صياغة ما قاله زميله؟ ما دليلك؟ متى يفشل هذا الادعاء؟)، ثم تصويتًا ثانيًا يُقارن بالأول.
+إن كتب المعلم في هدف النشاط سؤالًا، فهو سؤال النقاش: اعرضه بنصّه في الخطوة الأولى بدل الادعاء، ولأن السؤال المفتوح يُجاب ولا يُصوَّت عليه، استبدل التصويتين بإجابة أولى يكتبها كل طالب وعودة إليها في الخطوة الأخيرة (بقيت عليها / غيّرتها / أضفت إليها، ولماذا).
+إن كان الصف من الثاني إلى السادس: اكتب الادعاء وحسمه بجمل قصيرة ومواقف يعرفها الطالب، وتجنّب عبارات مجرّدة مثل «دون استثناء» و«الشرط المفقود»؛ يُحسم الادعاء بجملة بسيطة ومثال يصحّ فيه ومثال لا يصحّ فيه.
+ممنوع: أوراق العمل، الأدوار داخل المجموعة، العروض. لا تكشف الحكم على الادعاء قبل الخطوة الأخيرة. اكتب الادعاء مرة واحدة بين علامتي تنصيص، لا داخل علامتين مضاعفتين.`,
   "hands-on": `هذا نشاط تطبيقي عملي بمواد ملموسة. يجب أن يُنتج الطلبة شيئًا ماديًا يناسب المادة: في الرياضيات شكلًا يُقاس أو بطاقات تمثّل المسألة، وفي العلوم (الكيمياء والفيزياء والأحياء) نموذجًا مبنيًا من كرات وعيدان أو صلصال، وفي اللغات والمواد الاجتماعية بطاقات من مفاهيم الدرس تُرتَّب أو تُطابَق على لوح. يجب أن يتضمن خطوة يقارن فيها الطلبة ما أنتجوه بما تنص عليه القاعدة أو الصيغة أو **صفحة الكتاب**، ويفسّرون أي فرق أو اختلاف.
 قائمة المواد يجب أن تكون أدوات حقيقية تناسب المادة (ورق مقوّى، مقص، كرات وعيدان، صلصال، بطاقات، شريط لاصق، صفحة الكتاب…) لا «أوراق عمل مطبوعة» فقط. لا تشترط المسطرة أو المنقلة إلا إذا كان الدرس يتضمن قياسًا. نشاط يُحلّ كله على الورق ليس نشاطًا تطبيقيًا.`,
   game: `هذه لعبة تعليمية تنافسية، ولا تكفي تسميتها لعبة. يجب أن تتضمن صراحةً: قواعد مكتوبة تُعلن قبل البدء، فرقًا مسمّاة، جولتين على الأقل بنظام نقاط مختلف بينهما (الثانية بمخاطرة/رهان يعلنه الفريق قبل رؤية السؤال)، لوحة نتائج محدَّثة أمام الجميع، مؤقتًا لكل سؤال، وشرط فوز واضح.
@@ -838,8 +840,10 @@ Strictly forbidden: groups, role assignment, presentations, any phrase like "div
 Materials must be individual tools (notebook, worked-example card, worksheet), not group supplies.`,
   group: `This is a cooperative activity with a real JIGSAW structure. It must contain: home groups of 4 where each member takes a **different** task from their teammates (state all four tasks explicitly); expert groups where students holding the same task meet; a return where each expert teaches their part; and random individual accountability where a drawn number decides who reports the group's whole answer.
 Require that the group answer cannot be completed if any part is missing — that interdependence is the point; without it one student works and three watch.`,
-  discussion: `This is a whole-class DISCUSSION, not group work. It must contain: one contestable claim written as an assertion (a plausible misconception, not a true statement everyone agrees with); an initial vote; two minutes of silent individual thinking where each student writes a position plus one reason; a paired stage where each student restates their partner's reason before responding; a whole-class discussion run with talk moves (who can restate that? what is your evidence? when does this claim fail?); and a second vote compared with the first.
-Forbidden: worksheets, in-group roles, presentations. Do not settle the claim before the final step.`,
+  discussion: `This is a whole-class DISCUSSION, not group work. It must contain: one contestable claim written as an assertion (a plausible misconception, not a true statement everyone agrees with); an initial vote; silent individual thinking where each student writes a position plus one reason; a paired stage where each student restates their partner's reason before responding; a whole-class discussion run with talk moves (who can restate that? what is your evidence? when does this claim fail?); and a second vote compared with the first.
+If the teacher's objective contains a question, that is the discussion question: post it word for word in the first step instead of a claim, and since an open question is answered rather than voted on, replace the two votes with a first answer each student writes and a return to it in the final step (kept it / changed it / added to it, and why).
+For Grades 2 to 6: write the claim and its resolution in short sentences about situations the students know, and avoid abstract phrasing such as "without exception" or "the missing condition"; settle it with one plain sentence, one example where it holds and one where it does not.
+Forbidden: worksheets, in-group roles, presentations. Do not settle the claim before the final step. Quote the claim once, never inside doubled quotation marks.`,
   "hands-on": `This is a HANDS-ON activity with physical materials. Students must produce something physical that suits the subject: in maths a figure to measure, or cards that represent the problem; in the sciences (chemistry, physics, biology) a model built from balls and sticks or clay; in languages and the humanities, cards made from the lesson's concepts, sorted or matched on a board. It must contain a step where students compare what they produced with what the rule, formula or **textbook page** says, and account for any gap or difference.
 The materials list must be real equipment that suits the subject (card stock, scissors, balls and sticks, clay, cards, adhesive tape, the textbook page…), not just "printed worksheets". Do not require a ruler or protractor unless the lesson involves measuring. An activity done entirely on paper is not hands-on.`,
   game: `This is a competitive learning GAME — calling it a game is not enough. It must explicitly contain: written rules announced before play; named teams; at least two rounds scored differently (the second with a wager the team declares before seeing the question); a scoreboard updated in full view; a timer per question; and a clear win condition.
@@ -871,6 +875,7 @@ ${rule}${revisionClauseAr(b, "activity")}${firstGradeClauseAr(b, "activity")}
 
 قواعد عامة:
 - مجموع durationMin لكل الخطوات يجب أن يساوي ${dur} بالضبط.
+- كل مدة تذكرها داخل وصف خطوة («دقيقتان صمتًا»، «90 ثانية لكل فرد»، «آخر 5 دقائق») يجب أن تتّسق مع durationMin لتلك الخطوة: لا تكتب «دقيقتان» لخطوة مدتها 5 دقائق.
 - اكتب خطوات يستطيع المعلم تنفيذها كما هي: ماذا يقول، ماذا يوزّع، كم دقيقة، وماذا يفعل الطلبة.
 - يجب أن تعكس المواد والنصائح والتقييم هذا النوع تحديدًا؛ لا تكتب نصائح عن المجموعات في نشاط فردي.
 
@@ -905,6 +910,7 @@ ${rule}${revisionClauseEn(b, "activity")}${firstGradeClauseEn(b, "activity")}
 
 General rules:
 - The durationMin values must sum to exactly ${dur}.
+- Any length you write inside a step ("two minutes of silence", "90 seconds each", "the last 5 minutes") must agree with that step's durationMin: never write "two minutes" in a step that lasts 5.
 - Write steps a teacher can run as written: what they say, what they hand out, how long, what students do.
 - Materials, tips and assessment must reflect THIS format; never give group advice in an individual activity.
 

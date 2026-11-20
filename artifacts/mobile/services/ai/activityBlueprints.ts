@@ -79,6 +79,19 @@ export interface ActivityBlueprintContext {
   variant?: number;
   /** Total minutes the steps must sum to exactly. */
   duration: number;
+  /**
+   * What the teacher typed as the activity's objective. The caller already
+   * shows it as the activity's objective; the discussion also reads it, because
+   * a teacher who types a question there has written the discussion question
+   * (see `teacherQuestion`). It was not passed at all before 2026-11-20, so a
+   * typed question never reached an offline discussion.
+   */
+  objective?: string;
+  /**
+   * The lesson's grade, 1–12, when known. Grades 2–6 get plainer discussion
+   * wording (`isYoung`); Grade 1 has its own builder (`activityFirstGrade.ts`).
+   */
+  grade?: number;
 }
 
 export interface ActivityBlueprint {
@@ -128,6 +141,84 @@ export function distributeMinutes(total: number, weights: number[]): number[] {
     out[longest] -= 1; drift += 1;
   }
   return out;
+}
+
+/**
+ * A step's length in Arabic words. `gen` is the form after a noun such as
+ * «آخر» («آخر دقيقتين», not «آخر دقيقتان»).
+ *
+ * Steps used to state a fixed length («دقيقتان صمتًا تامًا») on a step that
+ * `distributeMinutes` had given 5 minutes, so the card and the text disagreed.
+ * A length written inside a step comes from that step's minutes now.
+ */
+export function minutesAr(n: number, form: 'nom' | 'gen' = 'nom'): string {
+  if (n === 1) return 'دقيقة واحدة';
+  if (n === 2) return form === 'gen' ? 'دقيقتين' : 'دقيقتان';
+  return n <= 10 ? `${n} دقائق` : `${n} دقيقة`;
+}
+
+export function minutesEn(n: number): string {
+  if (n === 1) return 'one minute';
+  if (n === 2) return 'two minutes';
+  return `${n} minutes`;
+}
+
+const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/**
+ * How a discussion step of `total` minutes splits between pairs and the whole
+ * class: about a quarter in pairs (1–5 minutes), the rest as a class. The two
+ * always add up to the step.
+ */
+function pairsThenClass(total: number): { pairs: number; whole: number } {
+  const pairs = Math.max(1, Math.min(5, Math.round(total / 4), total));
+  return { pairs, whole: total - pairs };
+}
+
+/** Grades 2–6: the discussion is worded plainly (Grade 1 has its own builder). */
+const YOUNG_MAX_GRADE = 6;
+function isYoung(ctx: ActivityBlueprintContext): boolean {
+  return typeof ctx.grade === 'number' && ctx.grade >= 2 && ctx.grade <= YOUNG_MAX_GRADE;
+}
+
+const ORDINAL_GRADES_AR = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر'];
+
+/**
+ * The lesson's grade as a number: from the book (`grade-6`) when the lesson
+ * resolved to one, else from the request's grade name («الصف السادس»,
+ * "Grade 6"). Null when neither says.
+ */
+export function activityGradeNumber(bookGradeId?: string | null, gradeName?: string | null): number | null {
+  const fromBook = Number(bookGradeId?.match(/^grade-(\d+)$/)?.[1]);
+  if (fromBook) return fromBook;
+  const name = (gradeName ?? '').trim();
+  const digits = Number(name.match(/\d{1,2}/)?.[0]);
+  if (digits) return digits;
+  // Longest first, so «الحادي عشر» could never read as «الأول» if it is added.
+  for (let i = ORDINAL_GRADES_AR.length - 1; i >= 0; i--) {
+    if (new RegExp(`الصف\\s+${ORDINAL_GRADES_AR[i]}(?:\\s|$)`).test(name)) return i + 1;
+  }
+  return null;
+}
+
+/**
+ * The question a teacher wrote into the objective, if there is one.
+ *
+ * «يعبّر الطالب عن رأيه بحرية واحترام: لو كنت وزير التربية ليوم واحد، شو أول
+ * إشي بتغيّره ولماذا؟» is an objective with the discussion question already in
+ * it. The question runs from the start of the sentence that holds the first
+ * question mark to the last question mark, so «ما رأيك؟ ولماذا؟» stays whole
+ * and the lead-in before a colon is left out.
+ */
+export function teacherQuestion(objective?: string): string | null {
+  const text = (objective ?? '').trim();
+  const first = text.search(/[؟?]/);
+  if (first < 0) return null;
+  const end = Math.max(text.lastIndexOf('؟'), text.lastIndexOf('?')) + 1;
+  const before = text.slice(0, first);
+  const start = Math.max(...[':', '：', '\n', '.', '!'].map(b => before.lastIndexOf(b))) + 1;
+  const q = text.slice(start, end).trim().replace(/^[«“"']+|[»”"']+$/g, '').trim();
+  return q.length >= 6 ? q : null;
 }
 
 function steps(
@@ -241,21 +332,50 @@ function contestableClaim(ctx: ActivityBlueprintContext): string {
         : `“The answer to: ${first.text} is ${wrong}.” — Do you agree?`;
     }
   }
+  const young = isYoung(ctx);
   const rule = rules(ctx, 1)[0];
   if (rule) {
-    const askAr = [
-      'هل تنطبق هذه القاعدة دائمًا، أم لها شروط؟',
-      'في أي حالة قد تفشل هذه القاعدة؟',
-      'هل يكفي أن نحفظ هذه القاعدة لنطبّقها صحيحًا؟',
-    ];
-    const askEn = [
-      'Does this always hold, or does it have conditions?',
-      'In what case might this rule fail?',
-      'Is memorising this rule enough to apply it correctly?',
-    ];
+    const askAr = young
+      ? [
+          'هل يصحّ هذا في كل مرة؟ أعطِ مثالًا.',
+          'هل تعرف مثالًا لا يصحّ فيه هذا؟',
+          'هل يكفي أن نحفظ هذه الجملة حتى نعرف كيف نستعملها؟',
+        ]
+      : [
+          'هل تنطبق هذه القاعدة دائمًا، أم لها شروط؟',
+          'في أي حالة قد تفشل هذه القاعدة؟',
+          'هل يكفي أن نحفظ هذه القاعدة لنطبّقها صحيحًا؟',
+        ];
+    const askEn = young
+      ? [
+          'Is this true every time? Give an example.',
+          'Can you think of an example where this is not true?',
+          'Is learning this sentence by heart enough to know how to use it?',
+        ]
+      : [
+          'Does this always hold, or does it have conditions?',
+          'In what case might this rule fail?',
+          'Is memorising this rule enough to apply it correctly?',
+        ];
     return ar ? `«${rule}» — ${pick(ctx, askAr)}` : `“${rule}” — ${pick(ctx, askEn)}`;
   }
   const concept = concepts(ctx, 1)[0] ?? ctx.topic;
+  // Grades 2–6: a plain sentence about a situation a child knows, not a claim
+  // about applying an idea «دون استثناء» — which a Grade 6 class met on
+  // 2026-11-20 about «حرية التعبير».
+  if (young) {
+    return ar
+      ? pick(ctx, [
+          `«نستطيع أن نطبّق ${concept} في كل موقف، وفي كل مرة.» — هل توافق؟ ولماذا؟`,
+          `«يكفي أن أحفظ كلمات درس ${concept} حتى أفهمه.» — هل توافق؟ ولماذا؟`,
+          `«مثال واحد على ${concept} يكفي لأفهم الدرس كله.» — هل توافق؟ ولماذا؟`,
+        ])
+      : pick(ctx, [
+          `“We can use ${concept} in every situation, every time.” — Do you agree? Why?`,
+          `“Learning the words of the ${concept} lesson by heart is enough to understand it.” — Do you agree? Why?`,
+          `“One example of ${concept} is enough to understand the whole lesson.” — Do you agree? Why?`,
+        ]);
+  }
   const claimsAr = [
     `«يمكن تطبيق ${concept} في كل الحالات دون استثناء.» — هل توافق؟`,
     `«يكفي أن أحفظ ${concept} حتى أتقنه، ولا حاجة لفهم سببه.» — هل توافق؟`,
@@ -572,9 +692,103 @@ function groupAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
   };
 }
 
+/** The discussion's think-alone step, worded from the minutes it was given. */
+function thinkAloneAr(m: number, answer: string): string {
+  const extra = m > 2 ? ' ومن ينتهي قبل الوقت يضيف مثالًا واحدًا يسند سببه، أو حالة قد تُضعفه.' : '';
+  return `${minutesAr(m)} صمتًا تامًا. يكتب كل طالب على ورقته: ${answer} + **سبب واحد**. لا يتكلم أحد بعد — من يتكلم مبكرًا يسرق تفكير من حوله.${extra}`;
+}
+
+function thinkAloneEn(m: number, answer: string): string {
+  const extra = m > 2 ? ' Anyone who finishes early adds one example that backs their reason, or one case that might weaken it.' : '';
+  return `${capFirst(minutesEn(m))} of complete silence. Each student writes on their slip: ${answer} plus **one reason**. Nobody speaks yet — early talkers steal the thinking of everyone around them.${extra}`;
+}
+
+/** The pairs-then-class step, its two lengths adding up to the step's minutes. */
+function pairsThenClassAr(m: number, moves: string[], record: string): string {
+  const { pairs, whole } = pairsThenClass(m);
+  const cls = whole > 0 ? `ثم نقاش صفّي (${minutesAr(whole)}) تديره بهذه العبارات — لا بالتصحيح:` : 'ثم سؤال واحد للصف، بهذه العبارات — لا بالتصحيح:';
+  return `ثنائيات أولًا (${minutesAr(pairs)}): كل طالب يعرض سببه، ثم يعيد صياغة سبب زميله قبل الردّ عليه.\n${cls}\n${moves.map(q => `• «${q}»`).join('\n')}\n${record}`;
+}
+
+function pairsThenClassEn(m: number, moves: string[], record: string): string {
+  const { pairs, whole } = pairsThenClass(m);
+  const cls = whole > 0 ? `Then whole-class discussion (${minutesEn(whole)}), run with these moves — not with corrections:` : 'Then one question to the class, with these moves — not with corrections:';
+  return `Pairs first (${minutesEn(pairs)}): each states their reason, then restates their partner’s reason before responding to it.\n${cls}\n${moves.map(q => `• “${q}”`).join('\n')}\n${record}`;
+}
+
+/**
+ * A discussion about the teacher's own question. An open question («لو كنت
+ * وزير التربية…») is answered, not agreed with, so there is no vote: each
+ * student writes a first answer, and the close is coming back to it.
+ */
+function questionDiscussionAr(ctx: ActivityBlueprintContext, question: string, mins: number[]): ActivityBlueprint {
+  return {
+    titleSuffix: 'نقاش صفّي',
+    groupSize: 'الصف كامل، مع مرحلة ثنائية',
+    objective: `أن يجيب الطالب عن سؤال مفتوح حول ${ctx.topic} بإجابة مبرّرة، وأن يراجعها بعد سماع زملائه`,
+    materials: [
+      'سؤال النقاش مكتوبًا على السبورة',
+      'ورقة صغيرة لكل طالب لتدوين إجابته وسببها',
+      'سبورة لتسجيل الإجابات المختلفة',
+    ],
+    steps: steps([
+      ['اعرض السؤال', `اكتب سؤال النقاش على السبورة واتركه ظاهرًا طوال الحصة:\n«${question}»\nاقرأه بصوت عالٍ مرة واحدة، ثم يكتب كل طالب أول إجابة تخطر له في سطر واحد، دون كلام. لا تعلّق ولا تعطِ مثالًا من عندك.`],
+      ['فكّر بمفردك', thinkAloneAr(mins[1]!, 'إجابتي')],
+      ['ناقش: ثنائي ثم الصف', pairsThenClassAr(mins[2]!, [
+        'من يستطيع إعادة صياغة ما قاله زميله بكلماته؟',
+        'لماذا اخترت هذا؟ ما الذي يجعله مهمًا؟',
+        'من يرى الأمر بطريقة مختلفة؟',
+        'من غيّر إجابته أو أضاف إليها؟ ما الذي غيّرها؟',
+      ], 'سجّل الإجابات المختلفة على السبورة دون أن تحكم أيها أفضل.')],
+      ['ارجعوا إلى السؤال واختموا', 'يعود كل طالب إلى ورقته ويكتب تحت إجابته الأولى: «بقيت على إجابتي / غيّرتها / أضفت إليها، لأن…». اطلب من ثلاثة طلبة أن يقرؤوا ما كتبوا، ثم لخّص الإجابات المختلفة على السبورة واربطها بهدف الدرس.'],
+    ], mins),
+    teacherTips: [
+      'السؤال مفتوح ولا جواب واحدًا صحيحًا له: قيمة النقاش في السبب لا في الإجابة — اسأل «لماذا؟» بعد كل إجابة.',
+      'اتفقوا قبل البدء على قاعدة واحدة: نناقش الفكرة لا صاحبها. وذكّر بها إن احتدّ الكلام.',
+      'انتظر 5 ثوانٍ كاملة بعد كل سؤال قبل أن تنادي على أحد؛ هذه الثواني هي ما يُدخل الطلبة الأبطأ إلى النقاش.',
+    ],
+    differentiation: 'للمتردّدين في الكلام: امنحهم صيغة جاهزة على بطاقة («أختار… لأن…» / «أتفق مع زميلي، وأضيف…» / «أرى الأمر بطريقة مختلفة لأن…»). للمتقدمين: اطلب منهم أن يكتبوا ما قد يقوله شخص يرى عكس رأيهم، ثم يردّوا عليه باحترام.',
+    assessment: 'جودة التبرير هي المقياس: اجمع الأوراق وصنّفها إلى (سبب مع مثال / سبب بلا مثال / إجابة بلا سبب). وما كتبه الطالب تحت إجابته الأولى يبيّن ما أضافه النقاش إلى تفكيره.',
+  };
+}
+
+function questionDiscussionEn(ctx: ActivityBlueprintContext, question: string, mins: number[]): ActivityBlueprint {
+  return {
+    titleSuffix: 'Class Discussion',
+    groupSize: 'Whole class, with a paired stage',
+    objective: `Students give a justified answer to an open question about ${ctx.topic}, then revisit it after hearing their classmates`,
+    materials: [
+      'The discussion question written on the board',
+      'A slip per student for their answer and reason',
+      'Board space to record the different answers',
+    ],
+    steps: steps([
+      ['Post the question', `Write the discussion question on the board and leave it up for the whole lesson:\n“${question}”\nRead it aloud once, then each student writes the first answer that comes to mind in one line, without talking. Do not comment or offer an example of your own.`],
+      ['Think alone', thinkAloneEn(mins[1]!, 'my answer')],
+      ['Discuss: pairs, then class', pairsThenClassEn(mins[2]!, [
+        'Who can put what your classmate just said in their own words?',
+        'Why did you choose that? What makes it matter?',
+        'Who sees it differently?',
+        'Who changed or added to their answer? What changed it?',
+      ], 'Record the different answers on the board without ruling on which is best.')],
+      ['Return to the question and close', 'Each student goes back to their slip and writes under their first answer: “I kept my answer / changed it / added to it, because…”. Ask three students to read theirs, then summarise the range of answers on the board and link it to the lesson’s objective.'],
+    ], mins),
+    teacherTips: [
+      'The question is open and has no single right answer: the value is in the reason, not the answer — ask “why?” after every answer.',
+      'Agree one rule before starting: we discuss the idea, not the person. Return to it if things get heated.',
+      'Wait a full 5 seconds after each question before calling on anyone; those seconds are what bring slower processors into the discussion.',
+    ],
+    differentiation: 'For reluctant talkers: hand them sentence stems on a card (“I choose… because…” / “I agree with my partner and would add…” / “I see it differently because…”). Stretch: have them write what someone with the opposite view might say, then answer it respectfully.',
+    assessment: 'The quality of justification is the measure: collect the slips and sort them into (reason with an example / reason without an example / answer with no reason). What a student wrote under their first answer shows what the discussion added to their thinking.',
+  };
+}
+
 function discussionAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
-  const claim = contestableClaim(ctx);
   const mins = distributeMinutes(ctx.duration, [1, 1.2, 3.4, 1.4]);
+  const question = teacherQuestion(ctx.objective);
+  if (question) return questionDiscussionAr(ctx, question, mins);
+  const claim = contestableClaim(ctx);
+  const young = isYoung(ctx);
   return {
     titleSuffix: 'نقاش صفّي',
     groupSize: 'الصف كامل، مع مرحلة ثنائية',
@@ -586,10 +800,19 @@ function discussionAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
       'ورقة صغيرة لتدوين التبرير',
     ],
     steps: steps([
-      ['اعرض الادعاء وصوّتوا', `اكتب هذا الادعاء على السبورة واتركه ظاهرًا طوال الحصة:\n«${claim}»\nتصويت أول برفع البطاقات — سجّل العدد في زاوية السبورة. لا تعلّق ولا تلمّح إلى الإجابة.`],
-      ['فكّر بمفردك', 'دقيقتان صمتًا تامًا. يكتب كل طالب على ورقته: موقفي (أوافق / لا أوافق) + **سبب واحد**. لا يتكلم أحد بعد — من يتكلم مبكرًا يسرق تفكير من حوله.'],
-      ['ناقش: ثنائي ثم الصف', `ثنائيات أولًا (دقيقتان): كل طالب يعرض سببه، ثم يعيد صياغة سبب زميله قبل الردّ عليه.\nثم نقاش صفّي تديره بهذه العبارات — لا بالتصحيح:\n• «من يستطيع إعادة صياغة ما قاله زميله بكلماته؟»\n• «ما الدليل الذي يسند رأيك؟»\n• «هل توجد حالة واحدة يفشل فيها هذا الادعاء؟»\n• «من غيّر رأيه؟ ما الذي غيّره؟»\nسجّل الحجج في عمودين على السبورة دون أن تحكم أيها الصحيح.`],
-      ['أعيدوا التصويت واحسموا', 'تصويت ثانٍ بالبطاقات. قارنه بالعدد الأول واجعل التحوّل مرئيًا للصف. عندها فقط احسم الادعاء بدقة، مع تسمية الشرط الذي كان مفقودًا فيه.'],
+      // `claim` arrives already quoted («…» — هل توافق؟); wrapping it again
+      // printed ««…» — هل توافق؟» on the board.
+      ['اعرض الادعاء وصوّتوا', `اكتب هذا الادعاء على السبورة واتركه ظاهرًا طوال الحصة:\n${claim}\nتصويت أول برفع البطاقات — سجّل العدد في زاوية السبورة. لا تعلّق ولا تلمّح إلى الإجابة.`],
+      ['فكّر بمفردك', thinkAloneAr(mins[1]!, 'موقفي (أوافق / لا أوافق)')],
+      ['ناقش: ثنائي ثم الصف', pairsThenClassAr(mins[2]!, [
+        'من يستطيع إعادة صياغة ما قاله زميله بكلماته؟',
+        'ما الدليل الذي يسند رأيك؟',
+        young ? 'هل تعرف مثالًا لا يصحّ فيه هذا الكلام؟' : 'هل توجد حالة واحدة يفشل فيها هذا الادعاء؟',
+        'من غيّر رأيه؟ ما الذي غيّره؟',
+      ], 'سجّل الحجج في عمودين على السبورة دون أن تحكم أيها الصحيح.')],
+      ['أعيدوا التصويت واحسموا', young
+        ? 'تصويت ثانٍ بالبطاقات. قارنه بالعدد الأول واسأل: «من غيّر رأيه؟ ولماذا؟». ثم قل الجواب الصحيح بجملة قصيرة، مع مثال واحد يصحّ فيه الادعاء ومثال واحد لا يصحّ فيه.'
+        : 'تصويت ثانٍ بالبطاقات. قارنه بالعدد الأول واجعل التحوّل مرئيًا للصف. عندها فقط احسم الادعاء بدقة، مع تسمية الشرط الذي كان مفقودًا فيه.'],
     ], mins),
     teacherTips: [
       'الادعاء مصمَّم ليكون معقولًا وخاطئًا جزئيًا — لو اتفق الصف كله من أول تصويت فقد سقط النشاط؛ عدّل الادعاء ليصبح أكثر إغراءً.',
@@ -676,7 +899,8 @@ function gameAr(ctx: ActivityBlueprintContext): ActivityBlueprint {
       'الرهان في الجولة الثانية ليس زينة: هو ما يجعل الفريق يقيس ثقته بمعرفته، وهو المعلومة الأهم لك.',
       'أعلن قاعدة «اللوح المرفوع بلا توقيع الجميع لا يُحتسب» من البداية، وإلا تحوّلت اللعبة إلى أسرع فرد في كل فريق.',
       'أوقف اللعب فور بدء الجدل حول النقاط: لوحة نتائج ظاهرة ومحدَّثة بعد كل سؤال تمنع هذا كليًا.',
-      'اترك آخر 5 دقائق للمراجعة مهما تأخّر الوقت — بدونها تبقى المتعة وتضيع الفائدة.',
+      // The review step's own length — it was «آخر 5 دقائق» whatever the step got.
+      `اترك آخر ${minutesAr(mins[3]!, 'gen')} للمراجعة مهما تأخّر الوقت — بدونها تبقى المتعة وتضيع الفائدة.`,
     ],
     differentiation: 'وزّع الفرق بحيث يضم كل فريق مستويات مختلفة. للمتعثرين: امنحهم دور «حارس اللوح» المسؤول عن كتابة الإجابة المتفق عليها بوضوح — دور حقيقي بلا ضغط الاستدعاء. للمتقدمين: اجعلهم «فريق التحكيم» في السؤال الأخير يحكمون على صحة الإجابات ويبرّرون حكمهم.',
     assessment: 'لوحة النتائج نفسها هي التقييم التكويني: السؤال الذي أسقط أكثر الفرق هو الذي يحتاج إعادة شرح، ومقدار الرهان يكشف من يعرف أنه يعرف ومن يخمّن بثقة. صوّر اللوحة قبل مسحها.',
@@ -774,8 +998,11 @@ function groupEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
 }
 
 function discussionEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
-  const claim = contestableClaim(ctx);
   const mins = distributeMinutes(ctx.duration, [1, 1.2, 3.4, 1.4]);
+  const question = teacherQuestion(ctx.objective);
+  if (question) return questionDiscussionEn(ctx, question, mins);
+  const claim = contestableClaim(ctx);
+  const young = isYoung(ctx);
   return {
     titleSuffix: 'Class Discussion',
     groupSize: 'Whole class, with a paired stage',
@@ -787,10 +1014,18 @@ function discussionEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
       'Slip for writing the justification',
     ],
     steps: steps([
-      ['Post the claim and vote', `Write this claim on the board and leave it visible for the whole lesson:\n“${claim}”\nFirst vote by raised cards — record the count in the corner of the board. Do not comment or hint at the answer.`],
-      ['Think alone', 'Two minutes of complete silence. Each student writes on their slip: my position (agree / disagree) plus **one reason**. Nobody speaks yet — early talkers steal the thinking of everyone around them.'],
-      ['Discuss: pairs, then class', `Pairs first (two minutes): each states their reason, then restates their partner’s reason before responding to it.\nThen whole-class discussion, run with these moves — not with corrections:\n• “Who can put what your classmate just said in their own words?”\n• “What evidence supports that?”\n• “Is there a single case where this claim fails?”\n• “Who changed their mind? What changed it?”\nRecord arguments in two columns without ruling on which is right.`],
-      ['Re-vote and settle it', 'Second vote by cards. Compare it with the first count and make the shift visible to the class. Only now settle the claim precisely, naming the condition it was missing.'],
+      // `claim` arrives already quoted; see discussionAr.
+      ['Post the claim and vote', `Write this claim on the board and leave it visible for the whole lesson:\n${claim}\nFirst vote by raised cards — record the count in the corner of the board. Do not comment or hint at the answer.`],
+      ['Think alone', thinkAloneEn(mins[1]!, 'my position (agree / disagree)')],
+      ['Discuss: pairs, then class', pairsThenClassEn(mins[2]!, [
+        'Who can put what your classmate just said in their own words?',
+        'What evidence supports that?',
+        young ? 'Can you think of an example where this is not true?' : 'Is there a single case where this claim fails?',
+        'Who changed their mind? What changed it?',
+      ], 'Record arguments in two columns without ruling on which is right.')],
+      ['Re-vote and settle it', young
+        ? 'Second vote by cards. Compare it with the first count and ask: “Who changed their mind, and why?” Then give the right answer in one short sentence, with one example where the claim is true and one where it is not.'
+        : 'Second vote by cards. Compare it with the first count and make the shift visible to the class. Only now settle the claim precisely, naming the condition it was missing.'],
     ], mins),
     teacherTips: [
       'The claim is built to be plausible and partly wrong — if the class agrees unanimously on the first vote the activity has failed; make the claim more tempting.',
@@ -851,7 +1086,7 @@ function gameEn(ctx: ActivityBlueprintContext): ActivityBlueprint {
       'The round-2 wager is not decoration: it forces a team to measure its confidence against its knowledge, and that is the most useful signal you get.',
       'Announce the “a raised board without every signature does not count” rule from the outset, or the game becomes the fastest individual on each team.',
       'Stop play the moment an argument about points starts: a visible scoreboard updated after every question prevents this entirely.',
-      'Protect the last 5 minutes for the review however late you are running — without it the fun stays and the learning does not.',
+      `Protect the last ${minutesEn(mins[3]!)} for the review however late you are running — without it the fun stays and the learning does not.`,
     ],
     differentiation: 'Build mixed-ability teams. Support: give them the “board keeper” role, responsible for writing the agreed answer legibly — a real job without the pressure of recall. Stretch: make them the “adjudication team” on the final question, ruling on whether answers are correct and justifying the ruling.',
     assessment: 'The scoreboard is the formative assessment: the question that took down the most teams is the one to re-teach, and wager size reveals who knows that they know versus who guesses confidently. Photograph the board before wiping it.',

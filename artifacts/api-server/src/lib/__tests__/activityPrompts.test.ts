@@ -126,3 +126,36 @@ describe("each format's clause names what that format requires", () => {
     assert.match(activityPromptEn({ ...baseBody, activityVariant: "warmup" }), /Forbidden: teaching the new content/);
   });
 });
+
+/**
+ * The offline discussion was fixed on 2026-11-20 after a Grade 6 teacher was
+ * served it (see `activityDiscussionFit.test.ts` in the mobile app). The live
+ * clause moves with it: a question typed as the objective is the discussion's
+ * question, a length written inside a step agrees with that step's minutes,
+ * and Grades 2–6 get plain wording.
+ */
+describe("activity prompts stay in step with the offline discussion", () => {
+  const discussion = { ...baseBody, activityType: "discussion" };
+
+  it("a question in the objective becomes the discussion question", () => {
+    assert.match(activityPromptAr(discussion), /إن كتب المعلم في هدف النشاط سؤالًا/);
+    assert.match(activityPromptEn(discussion), /If the teacher's objective contains a question/);
+  });
+
+  it("no fixed two-minute think step that can contradict the step's minutes", () => {
+    assert.doesNotMatch(activityPromptAr(discussion), /دقيقتَي تفكير/);
+    assert.doesNotMatch(activityPromptEn(discussion), /two minutes of silent/i);
+  });
+
+  for (const type of FORMATS) {
+    it(`${type}: a length written in a step must match its durationMin`, () => {
+      assert.match(activityPromptAr({ ...baseBody, activityType: type }), /كل مدة تذكرها داخل وصف خطوة/);
+      assert.match(activityPromptEn({ ...baseBody, activityType: type }), /Any length you write inside a step/);
+    });
+  }
+
+  it("Grades 2–6 get plain wording for the claim and the close", () => {
+    assert.match(activityPromptAr(discussion), /من الثاني إلى السادس/);
+    assert.match(activityPromptEn(discussion), /Grades 2 to 6/);
+  });
+});

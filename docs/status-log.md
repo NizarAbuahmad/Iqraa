@@ -10,6 +10,61 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Offline «نشاط صفي»: the discussion fits its request, and a fallback says so on the result — 2026-11-20
+
+Reported from production: a teacher asked for a Grade 6 social-studies discussion («حُرِّيَّةُ التَّعْبيرِ»,
+`kbl-g6-social-s1-nccd-u5_l1`, 30 minutes) with the objective «يعبّر الطالب عن رأيه بحرية واحترام: لو كنت وزير
+التربية ليوم واحد، شو أول إشي بتغيّره ولماذا؟». The live call failed (badge «تعذّر الاتصال · محتوى تجريبي») and the
+offline blueprint stood in. Reproduced exactly with `buildOfflineActivity`: steps `[4, 5, 15, 6]` and the board text
+««يمكن تطبيق حُرِّيَّةُ التَّعْبيرِ في كل الحالات دون استثناء.» — هل توافق؟».
+
+- **Quoted once** (`activityBlueprints.ts`). `contestableClaim` already returns `«…» — هل توافق؟`; the
+  discussion's first step wrapped it again. Same for English (“…”).
+- **A step states the minutes it has.** «فكّر بمفردك» hard-coded «دقيقتان» on a step given 5, the pairs stage
+  «(دقيقتان)» whatever its step got, and the game's tip said «آخر 5 دقائق» for a review step of 3 (at 20 min) or
+  8 (at 60). All three are worded from the step's minutes now (`minutesAr`/`minutesEn`, `pairsThenClass`: about a
+  quarter in pairs, 1–5 minutes, the rest as a class; the two add up to the step). The jigsaw's «90 ثانية لكل فرد»
+  fits its step at every offered length (20–60) and is pinned, not changed. Individual, hands-on and warm-up state
+  no step lengths.
+- **The teacher's objective reaches the discussion.** `ActivityBlueprintContext` gains `objective`. When it holds a
+  question (`teacherQuestion`: from the sentence with the first ؟/? to the last, after any «:» lead-in), the
+  discussion is about that question: it is posted word for word, and since an open question is answered rather than
+  voted on, the agree/disagree cards and the two votes give way to a written first answer and a return to it at the
+  close (`questionDiscussionAr/En`). Without a question the claim-and-vote format is unchanged. Every format already
+  showed a typed objective as the activity's `objective` (`buildOfflineActivity`); now pinned.
+- **Grades 2–6 get plain wording** (`grade` on the context, from the book's `gradeId`, else the request's grade name —
+  `activityGradeNumber`). The concept claims (no «دون استثناء»), the rule question, one talk move and the close
+  («قل الجواب الصحيح بجملة قصيرة، مع مثال يصحّ فيه الادعاء ومثال لا يصحّ فيه» instead of «احسم الادعاء بدقة، مع
+  تسمية الشرط الذي كان مفقودًا فيه»). Grade 1 keeps its own builder; Grades 7+ are unchanged.
+- **Live prompt in step** (`prompts.ts`): the discussion clause drops the fixed «دقيقتَي تفكير», says a question in
+  the objective is the discussion question (with the same no-vote structure), asks Grades 2–6 for plain wording and
+  forbids doubled quotation marks; both languages' general rules add that any length written inside a step must agree
+  with its `durationMin`. `PROMPT_VERSION` was **not** bumped: requests with a typed objective are
+  `contextSource: 'teacher'` and never pooled, so pooled discussions are only the no-objective ones — a pooled Grade
+  2–6 discussion may still carry the abstract wording until the pool turns over. Bumping the activity kind restarts
+  its pool (more live spend); the owner's call.
+- **A fallback is said on the result.** `aiFallbackNotice` (`aiProvenance.ts`) decides through `aiSourceBadgeState`,
+  so the pill and the notice cannot disagree, and adds: the record is this generator's and produced content (`mock`;
+  a strict failure has no result to annotate). The activity screen captures the record when the result arrives (a
+  later chat reply cannot clear it), shows `AiFallbackNotice` above the result («هذا محتوى تجريبي، لم يكتبه الذكاء
+  الاصطناعي…» and «أعد المحاولة», which re-runs the same request), and hides «النشاط جاهز» with its tick under it.
+  **Only the activity screen** has it; the quiz, worksheet, lesson plan and slides screens could take the same
+  component.
+- **No «ما الجديد» entry:** the content changes are fixes to what the offline path serves, and the notice appears
+  only when live generation has failed — announcing it would announce a failure mode.
+
+**Why `/generate/activity` failed was not found.** This session has no GCP credentials, so Cloud Run logs were not
+read. The window is 2026-11-20 about 08:35 UTC (11:35 Amman). One lead from the code, not confirmed: the activity
+call runs on the 45 s default client timeout, while lesson plans, worksheets, quizzes and prompt slides get 90 s
+(`DOCUMENT_TIMEOUT_MS`, `RemoteAIService.ts`); a slow model answer would fall back with a timeout and no server error.
+
+Verified: typecheck; mobile tests (`activityDiscussionFit.test.ts`, new: no doubled quotes in any format, version or
+language; stated minutes equal the step's for discussion and game at 20/30/45/60; jigsaw turns fit; the question
+reaches the discussion in Arabic and English; Grade 6 vs Grade 10 wording; the two helpers; plus `aiFallbackNotice`
+cases in `aiProvenance.test.ts`); `activityBlueprints.test.ts` and the other activity suites unchanged and passing;
+api-server build + tests (2991 pass, with new cases in `activityPrompts.test.ts`). **Not verified:** the notice in a
+browser or on a phone (no app run in this session), and the live prompt against a model.
+
 ## Per-account AI limit, set by a system admin — 2026-11-19
 
 The owner asked to raise one teacher's monthly AI limit to $15. There was no way to: the per-user cap is one env

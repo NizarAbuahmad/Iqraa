@@ -31,7 +31,9 @@ import {
   type ActivityTypeId } from '@/constants/activityType';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
-import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, aiFallbackNotice, getLastGeneration, isAbortError, type AiGenerationRecord } from '@/services/ai/aiProvenance';
+import { DEMO_MODE } from '@/services/ai/demoMode';
+import { AiFallbackNotice } from '@/components/ui/AiFallbackNotice';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
@@ -168,6 +170,12 @@ export default function ActivityScreen() {
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<ActivityOutput | null>(null);
   /**
+   * Where the activity on screen came from, captured when it arrived — not
+   * read live, so a later chat reply cannot clear the fallback notice. Null for
+   * a reopened material (nothing is known about how it was made then).
+   */
+  const [resultRecord, setResultRecord] = useState<AiGenerationRecord | null>(null);
+  /**
    * The scope the activity on screen was generated under — pickers, topic
    * and the grounded lesson, frozen at generation time (or re-derived from
    * the saved form state on reopen). Save and export read this, never the
@@ -278,7 +286,7 @@ export default function ActivityScreen() {
     // up front and never restored, so a failed regenerate threw away the
     // unsaved activity the teacher was looking at. The frozen scope goes back
     // with it, so Save and the notice describe the restored activity.
-    const held = { result, generated, builtWith, wideFrozen };
+    const held = { result, generated, builtWith, wideFrozen, resultRecord };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
@@ -339,6 +347,8 @@ export default function ActivityScreen() {
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setWideFrozen(wide ? wideScope.scopeSel : null);
       setBuiltWith({ activityTypeIdx, durationIdx, objective });
+      // Recorded by `generateWithProvenance` before it returned this activity.
+      setResultRecord(getLastGeneration());
       setResult(out);
       // A regenerated activity is a new copy: leave the saved one alone, and
       // let «حفظ» create it. The star belonged to the saved material.
@@ -352,6 +362,7 @@ export default function ActivityScreen() {
       else setError(aiErrorText(e, t));
       if (held.result) {
         setResult(held.result);
+        setResultRecord(held.resultRecord);
         setGenerated(held.generated);
         setBuiltWith(held.builtWith);
         setWideFrozen(held.wideFrozen);
@@ -476,6 +487,7 @@ export default function ActivityScreen() {
   // What the button will make, said before it is pressed (docked bar on a phone, preview on desktop).
   const typeLabel = activityTypeLabels[activityTypeIdx]!;
   const summary = summaryLine({ minutes: DURATION_VALUES[durationIdx], level: typeLabel }, uiLang);
+  const fallbackNotice = aiFallbackNotice(DEMO_MODE, resultRecord, 'activity');
   const sections = activitySections();
   const preview = previewRows(sections, sections.length, sections.length);
   // The section titles are the activity's own headings, so they are in the language it will be written
@@ -667,7 +679,14 @@ export default function ActivityScreen() {
         </View>
       )}
 
-      {result && <ActivityResult activity={result} colors={colors} isRTL={outLang === 'ar'} t={getT(outLang)} />}
+      {result && fallbackNotice && (
+        <View style={{ marginHorizontal: 20 }}>
+          <AiFallbackNotice notice={fallbackNotice} onRetry={() => generate()} disabled={loading} />
+        </View>
+      )}
+
+      {/* «النشاط جاهز» with a tick would contradict the notice above it. */}
+      {result && <ActivityResult activity={result} colors={colors} isRTL={outLang === 'ar'} t={getT(outLang)} ready={!fallbackNotice} />}
 
       {result && !loading && (
         <GeneratorResultActions
@@ -712,11 +731,13 @@ export default function ActivityScreen() {
   );
 }
 
-function ActivityResult({ activity, colors, isRTL, t }: {
+function ActivityResult({ activity, colors, isRTL, t, ready = true }: {
   activity: ActivityOutput;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   t: (k: any, ...a: any[]) => string;
+  /** False under the fallback notice: no «ready» tick on sample content. */
+  ready?: boolean;
 }) {
   // Text, icons and outlines on a card are the ink; the tints behind them are the concept colour itself.
   const ink = readableOn(ACCENT, colors.card);
@@ -725,12 +746,14 @@ function ActivityResult({ activity, colors, isRTL, t }: {
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
       {/* Success banner */}
-      <View style={[styles.resultHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Ionicons name="checkmark-circle" size={20} color={bannerInk} />
-        <Text style={[styles.resultHeaderText, { color: bannerInk, fontFamily: 'ReadexPro_600SemiBold' }]}>
-          {t('activityReady')}
-        </Text>
-      </View>
+      {ready && (
+        <View style={[styles.resultHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name="checkmark-circle" size={20} color={bannerInk} />
+          <Text style={[styles.resultHeaderText, { color: bannerInk, fontFamily: 'ReadexPro_600SemiBold' }]}>
+            {t('activityReady')}
+          </Text>
+        </View>
+      )}
 
       {/* Meta row */}
       <View style={[styles.metaRow, { flexDirection: isRTL ? 'row-reverse' : 'row', borderColor: colors.border, backgroundColor: colors.card, borderRadius: colors.radius }]}>

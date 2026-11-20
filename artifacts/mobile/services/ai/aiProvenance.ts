@@ -367,3 +367,43 @@ export function aiSourceBadgeState(
   }
   return { labelKey: 'aiLiveBadge', icon: 'sparkles-outline', tone: 'quiet' };
 }
+
+/** What the notice on a fallback result says — i18n keys, plus the failure text. */
+export interface AiFallbackNotice {
+  titleKey: 'aiFallbackNoticeTitle';
+  bodyKey: 'aiFallbackNoticeBody';
+  retryKey: 'aiFallbackRetry';
+  /** The failure text, for the accessibility label. Never in the visible text. */
+  detail?: string;
+}
+
+/**
+ * Whether a result on screen should carry the «sample content» notice.
+ *
+ * The header badge alone was not enough: on 2026-11-20 a teacher read a whole
+ * offline activity (a discussion for Grade 6) as the model's answer, with only
+ * «تعذّر الاتصال · محتوى تجريبي» in small type above it. The notice goes on the
+ * result itself and offers to try again.
+ *
+ * "Is this a fallback" is decided by `aiSourceBadgeState`, never re-derived,
+ * so the pill and the notice can not disagree. On top of that: the record must
+ * be this generator's (`kind`), and must have produced content (`mock`) — a
+ * strict failure has no result to annotate, the screen shows its error.
+ * Screens pass the record they captured when the result arrived, not the live
+ * last record, so a chat reply generated meanwhile cannot clear the notice.
+ */
+export function aiFallbackNotice(
+  demoMode: boolean,
+  record: AiGenerationRecord | null,
+  kind: AiGenerationKind,
+): AiFallbackNotice | null {
+  if (!record || record.kind !== kind || record.source !== 'mock') return null;
+  const badge = aiSourceBadgeState(demoMode, record);
+  if (badge?.labelKey !== 'aiFallbackBadge') return null;
+  return {
+    titleKey: 'aiFallbackNoticeTitle',
+    bodyKey: 'aiFallbackNoticeBody',
+    retryKey: 'aiFallbackRetry',
+    ...(badge.detail ? { detail: badge.detail } : {}),
+  };
+}
