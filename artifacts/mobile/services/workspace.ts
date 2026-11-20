@@ -45,6 +45,11 @@ export interface SavedMaterial {
    * Set from the class screen, not at save time — see `app/classes/[id]/index.tsx`.
    */
   classGroupId?: string | null;
+  /**
+   * The share link's code while the owner shares it (`/m/CODE`), else null or
+   * absent (absent on a device-only save). See services/materialShareApi.ts.
+   */
+  shareCode?: string | null;
 }
 
 const LOCAL_KEY = '@iqra_workspace_v1';

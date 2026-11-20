@@ -12,7 +12,9 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { SavedMaterial, getItem } from '@/services/workspace';
 import { getHomeworkMaterial } from '@/services/homeworkApi';
-import { useAuth } from '@/context/AuthContext';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
+import { getSharedMaterial, saveSharedMaterial, stopSharingMaterial } from '@/services/materialShareApi';
+import { shareMaterialLink } from '@/services/materialShareAction';
 import { useFavorite } from '@/hooks/useFavorite';
 import {
   ActivityOutput, ActivityStep, ClassroomActivity, LessonFlowOutput, LessonPlanOutput,
@@ -68,10 +70,21 @@ export default function WorkspaceViewScreen() {
   // teacher attached to a homework: read-only too, and the server has already
   // taken the answers out, so nothing here offers a teacher's copy or a teacher
   // tool (send, present) — the only route a family may reach under /workspace.
-  const { id, premade, hw, material } = useLocalSearchParams<{ id?: string; premade?: string; hw?: string; material?: string }>();
+  // `code` is a teacher's material opened from its share link, /m/CODE
+  // (app/m/[code].tsx renders this screen): read-only for everyone, and the
+  // server sends the answers only to a teacher, who may save a copy. Like a
+  // family's copy, it offers none of the owner's tools.
+  const { id, premade, hw, material, code } = useLocalSearchParams<{ id?: string; premade?: string; hw?: string; material?: string; code?: string }>();
   const family = !!(hw && material);
-  const readOnly = !!premade || family;
+  const shared = !!code;
+  const guest = family || shared;
+  const readOnly = !!premade || guest;
   const { user } = useAuth();
+  const isTeacher = isTeacherRole(user?.role);
+  const [sharedFull, setSharedFull] = useState(false);
+  const [sharedDead, setSharedDead] = useState(false);
+  const [savingCopy, setSavingCopy] = useState(false);
+  const [shareCode, setShareCode] = useState<string | null>(null);
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const [item, setItem] = useState<SavedMaterial | null>(null);
@@ -109,6 +122,15 @@ export default function WorkspaceViewScreen() {
         formState: {},
       } : null);
       setLoading(false);
+    } else if (code) {
+      getSharedMaterial(code, isTeacher)
+        .catch(() => null)
+        .then(view => {
+          setItem(view?.material ?? null);
+          setSharedFull(view?.full ?? false);
+          setSharedDead(!view);
+          setLoading(false);
+        });
     } else if (hw && material) {
       getHomeworkMaterial(hw, material, user?.role === 'parent' ? 'parent' : 'student')
         .catch(() => null)
@@ -134,10 +156,11 @@ export default function WorkspaceViewScreen() {
         }
         setItem(m);
         setFavorited(m?.isFavorite ?? false);
+        setShareCode(m?.shareCode ?? null);
         setLoading(false);
       });
     }
-  }, [id, premade, hw, material, lang]);
+  }, [id, premade, hw, material, code, lang, isTeacher]);
 
   if (loading) {
     return (
@@ -151,8 +174,8 @@ export default function WorkspaceViewScreen() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background, gap: 12 }}>
         <Ionicons name="alert-circle-outline" size={48} color={colors.mutedForeground} />
-        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24 }}>
-          {t('noContentAvailable')}
+        <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center', paddingHorizontal: 24 }}>
+          {t(sharedDead ? 'sharedLinkDead' : 'noContentAvailable')}
         </Text>
         <Pressable accessibilityRole="button" onPress={() => goBack()} hitSlop={10} style={{ padding: 12 }}>
           <Text style={{ color: colors.primary, fontFamily: 'ReadexPro_500Medium' }}>{t('back')}</Text>
@@ -240,6 +263,41 @@ export default function WorkspaceViewScreen() {
     const key = shareToastKey(await shareAsText(getPlainText(), item.title));
     if (key) showToast(t(key));
   };
+  // The owner's own material shares a link a colleague opens as is; a copy that
+  // is not this teacher's (a family's, a ready-made sheet, a shared one) can
+  // only be shared as text.
+  const canShareLink = !readOnly;
+  const handleShareLink = async () => {
+    setShowExport(false);
+    const key = await shareMaterialLink(item.id, item.title, isAr);
+    if (key === 'shareLinkCopied' || key === 'shareLinkAlsoCopied' || key === null) {
+      // The server made (or kept) the code; read it back so the «مُشارَك برابط» row shows.
+      getItem(item.id).then(m => setShareCode(m?.shareCode ?? null)).catch(() => {});
+    }
+    if (key) showToast(t(key));
+  };
+  const handleStopSharing = async () => {
+    try {
+      await stopSharingMaterial(item.id);
+      setShareCode(null);
+      showToast(t('sharingStopped'));
+    } catch {
+      showToast(t('error'));
+    }
+  };
+  const handleSaveCopy = async () => {
+    if (!code || savingCopy) return;
+    setSavingCopy(true);
+    try {
+      const newId = await saveSharedMaterial(code);
+      showToast(t('sharedSaved'));
+      router.replace({ pathname: '/workspace/view', params: { id: newId } } as any);
+    } catch {
+      showToast(t('error'));
+    } finally {
+      setSavingCopy(false);
+    }
+  };
   const handleCopy = async () => { await copyToClipboard(getPlainText()); showToast(t('copiedToClipboard')); };
   const handlePDF = async () => {
     setLoadingPDF(true);
@@ -264,7 +322,8 @@ export default function WorkspaceViewScreen() {
 
   const exportLabels = {
     title: t('exportTitle'),
-    shareLabel: t('exportShare'), shareSub: t('exportShareSub'),
+    shareLabel: t(canShareLink ? 'exportShare' : 'exportShareText'),
+    shareSub: t(canShareLink ? 'exportShareSub' : 'exportShareTextSub'),
     copyLabel: t('exportCopy'), copySub: t('exportCopySub'),
     pdfLabel: t('exportPDF'), pdfSub: t('exportPDFSub'),
     wordLabel: t('exportWord'), wordSub: t('exportWordSub'),
@@ -327,7 +386,7 @@ export default function WorkspaceViewScreen() {
           <Ionicons name="share-outline" size={16} color={colors.mutedForeground} />
           <Text style={[{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }]}>{t('exportBtn')}</Text>
         </Pressable>
-        {kind === 'worksheet' && content && !family && (
+        {kind === 'worksheet' && content && !guest && (
           <Pressable
             onPress={() => setShowSend(true)}
             style={[styles.actionBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -340,7 +399,7 @@ export default function WorkspaceViewScreen() {
         )}
         {/* A saved deck's whole point is being projected again — the workspace
             is where a teacher returns to it the morning of the lesson. */}
-        {(kind === 'slides' || kind === 'prompt-slides') && content && !family && (
+        {(kind === 'slides' || kind === 'prompt-slides') && content && !guest && (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -357,7 +416,7 @@ export default function WorkspaceViewScreen() {
         )}
         {/* Not for a revision flow: this hands the label to the classroom builder as a
             bare topic, which would ground it to one lesson (possibly another grade's). */}
-        {kind === 'flow' && content && !wideMaterial && !family && (
+        {kind === 'flow' && content && !wideMaterial && !guest && (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -376,6 +435,52 @@ export default function WorkspaceViewScreen() {
           </Pressable>
         )}
       </View>
+
+      {/* The owner's material while its link is live: say so, and offer to stop it. */}
+      {!readOnly && shareCode ? (
+        <View style={[styles.shareBar, { backgroundColor: colors.muted, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name="link-outline" size={16} color={readableOn(accent, colors.muted)} />
+          <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
+            {t('sharedByLink')}
+          </Text>
+          <Pressable accessibilityRole="button" onPress={handleStopSharing} hitSlop={10} style={styles.shareBarBtn}>
+            <Text style={{ color: palette.destructive, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('stopSharing')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {/* Opened from a share link: a teacher may keep a copy; anyone else is told
+          where the answers are and how to get them. */}
+      {shared ? (
+        <View style={[styles.sharedNote, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}>
+            {t(sharedFull ? 'sharedTeacherNote' : 'sharedStudentCopyNote')}
+          </Text>
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, flexWrap: 'wrap' }}>
+            {sharedFull ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={handleSaveCopy}
+                disabled={savingCopy}
+                style={[styles.sharedBtn, { backgroundColor: colors.primary, opacity: savingCopy ? 0.6 : 1 }]}
+              >
+                {savingCopy ? <ActivityIndicator size="small" color={colors.primaryForeground} /> : (
+                  <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('sharedSaveCopy')}</Text>
+                )}
+              </Pressable>
+            ) : !user ? (
+              <>
+                <Pressable accessibilityRole="button" onPress={() => router.push('/(auth)/register' as any)} style={[styles.sharedBtn, { backgroundColor: colors.primary }]}>
+                  <Text style={{ color: colors.primaryForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>{t('sharedSignUp')}</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" onPress={() => router.push('/(auth)/login' as any)} style={[styles.sharedBtn, { borderWidth: 1, borderColor: colors.border }]}>
+                  <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_500Medium', fontSize: 14 }}>{t('sharedSignIn')}</Text>
+                </Pressable>
+              </>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
 
       {/* Content */}
       <View style={{ padding: 20 }}>
@@ -444,11 +549,13 @@ export default function WorkspaceViewScreen() {
     <ExportMenu
       visible={showExport}
       onClose={() => setShowExport(false)}
-      onShare={handleShareText}
+      onShare={canShareLink ? handleShareLink : handleShareText}
       onCopy={handleCopy}
       onPDF={handlePDF}
       onWord={handleWord}
-      copyChoice={(kind === 'quiz' || kind === 'worksheet') && content && !family ? { value: docCopy, onChange: setDocCopy } : undefined}
+      // A shared copy without answers has no teacher's copy to offer; a teacher's
+      // full view of a shared material does.
+      copyChoice={(kind === 'quiz' || kind === 'worksheet') && content && !family && (!shared || sharedFull) ? { value: docCopy, onChange: setDocCopy } : undefined}
       printStyle={(kind === 'quiz' || kind === 'worksheet') && content ? { value: printStyle, onChange: setPrintStyle } : undefined}
       isRTL={isRTL}
       loadingPDF={loadingPDF}
@@ -1016,5 +1123,9 @@ const styles = StyleSheet.create({
   metaRow: { gap: 10, flexWrap: 'wrap' },
   metaPill: { fontSize: 15, lineHeight: 24, opacity: 0.9 },
   actionBar: { flexDirection: 'row', padding: 12, paddingHorizontal: 20, borderBottomWidth: 1, gap: 16 },
+  shareBar: { alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 10 },
+  shareBarBtn: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
+  sharedNote: { margin: 20, marginBottom: 0, padding: 16, borderRadius: 12, borderWidth: 1, gap: 12 },
+  sharedBtn: { minHeight: 44, paddingHorizontal: 18, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   actionBtn: { alignItems: 'center', gap: 6, paddingVertical: 4 },
 });
