@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Exam builder: «الكتاب كاملًا (كل الدروس)» — a whole vocational English track in one tap — 2026-11-20
+
+Follow-up to «المسار كاملًا» below. That one changed `TopicSelector`, which the exam builder (`app/evaluations/new.tsx`) does not use: there a teacher picks a catalog book and ticks lessons. Each Grade 10 vocational English track is already its own catalog book there: `book-english-10-commerce`, `-agriculture`, `-hospitality` and `-industry`, with 30–31 objectives each. So an exam on the whole track was possible, but only by ticking every lesson one by one.
+
+**What changed:** a «الكتاب كاملًا (كل الدروس)» row heads the lesson list whenever a book has more than one lesson. It ticks every objective of the book; tapped again with everything ticked, it clears them. It works on every book, not only the tracks.
+- The logic is `toggleEverything` / `isEverythingSelected` in `services/objectiveLessons.ts`.
+- The server needed no change. `POST /evaluations` already takes any number of objectives, provided they all belong to the chosen book (`objectivesAreWithinBook`).
+- The track's «ما الجديد» entry (`g10-english-whole-track`, not shipped yet) now also tells teachers how to do it for an exam. Its date moved to 2026-11-20.
+
+**Test:** `evaluationWholeBook.test.ts`, which failed before the helpers existed.
+- For each of the four track books, select-all ticks all of its objectives, and `objectivesAreWithinBook` accepts the ids.
+- The toggle clears a full selection and fills a partial one.
+- A book with nothing to pick is never "everything".
+
+**Verified:**
+- mobile: full suite, on the head merged with main.
+- `pnpm run typecheck`.
+
+**Not verified:**
+- The screen was not opened in a browser.
+- A live exam generated from a whole track (30 objectives).
+
+**Known limit, not new:** the paper scan (`/evaluations/scan`) refuses more than 100 objectives (`MAX_SETUP_OBJECTIVES`). Three Islamic-education books have more: Grade 10 S2 (116), Grade 10 S1 (105) and Grade 7 S1 (102). On those, «الكتاب كاملًا» followed by a scan fails with the generic scan error. So does ticking every lesson by hand today.
+
 ## Grade 10 vocational English: «المسار كاملًا» picks a whole track — 2026-11-17
 
 Follow-up to the track grouping in this PR. The four Grade 10 vocational English books (commerce, agriculture, hospitality, industrial) were kept out of «الكتاب كاملًا» and «الفصل الأول كاملًا» and listed under their own headings, but a teacher could only pick their units one at a time. Each track's heading now starts with «المسار كاملًا: القطاع التجاري» (and so on). It covers that track's units and nothing else.

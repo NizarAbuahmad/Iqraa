@@ -40,7 +40,7 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
     id: 'g10-english-whole-track',
-    date: '2026-11-17',
+    date: '2026-11-20',
     roles: ['teacher'],
     titleKey: 'whatsNewG10EnglishTrackTitle',
     bodyKey: 'whatsNewG10EnglishTrackBody',
