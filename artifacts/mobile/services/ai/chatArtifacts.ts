@@ -13,7 +13,7 @@ import type {
 } from '@/services/ai/AIService';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import type { SessionArtifact } from '@/services/ai/teachingAssistant';
-import { buildGeneratorContext, nccdUnitId, resolveGeneratorGrounding, ungroundedGeneratorNote } from '@/services/kbContext';
+import { nccdUnitId, noLessonField, resolveGeneratorGrounding, ungroundedGeneratorNote } from '@/services/kbContext';
 import { getBookForLesson, type KBLesson } from '@/services/knowledgeBase';
 import { contentLang } from '@/services/contentLanguage';
 import {
@@ -122,6 +122,7 @@ function buildRequest(
   // for a chemistry teacher's upload. See `resolveArtifactScope`. A topic no
   // lesson grounds is labelled «عام» rather than maths when no subject is known.
   const freeTopic = !lesson && !documentContext?.trim();
+  const grounding = noLesson ? null : resolveGeneratorGrounding(topic, lang, groundingOptions(lesson, scope));
   const { subject, grade } = resolveArtifactScope(lesson, scope, lang, { freeTopic });
 
   return {
@@ -154,12 +155,15 @@ function buildRequest(
     // 2 Islamic «الصَّداقَة» for a grade 5 worksheet.
     additionalContext: [
       documentContext?.trim(),
-      noLesson ? ungroundedGeneratorNote(lang) : buildGeneratorContext(topic, lang, groundingOptions(lesson, scope)),
+      grounding ? (grounding.grounded ? grounding.context : grounding.ungroundedNote) : ungroundedGeneratorNote(lang),
     ]
       .filter(Boolean)
       .join('\n\n') || undefined,
     unitId: nccdUnitId(lesson?.unitId),
     lessonId: lesson?.id,
+    // No lesson grounds it — chat found none, or the topic grounds on none in
+    // this scope: the API must not find one by the topic's title.
+    ...noLessonField(grounding?.grounded ?? false),
     // The one generation path that can carry a teacher's own document. When it
     // does, the artifact is derived from their material and must never be
     // pooled for anyone else; with no attachment it is the lesson like every

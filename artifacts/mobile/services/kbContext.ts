@@ -367,13 +367,31 @@ export function groundingRequestFields(grounding: GeneratorGrounding): {
   unitId: string | undefined;
   lessonId: string | undefined;
   bookFigureCount: number;
+  grounding?: 'none';
 } {
   return {
     additionalContext: grounding.grounded ? grounding.context : grounding.ungroundedNote,
     unitId: nccdUnitId(grounding.lesson?.unitId),
     lessonId: grounding.lesson?.id,
     bookFigureCount: figureCountForLesson(grounding.lesson?.id),
+    ...noLessonField(grounding.grounded),
   };
+}
+
+/**
+ * `{ grounding: 'none' }` when no lesson grounds a request, else nothing.
+ *
+ * The API attaches book pages by matching the topic's title across the whole
+ * catalog when a request carries no unit (`groundingFor` in
+ * `artifacts/api-server/src/lib/grounding.ts`). This app's own search is scoped
+ * to the picked grade and subject; when it finds nothing, the context it sends
+ * says «الموضوع غير موجود في المنهاج», and the server's unscoped match then
+ * appended another grade's book to the same prompt («الصداقة» for grade 5 got
+ * grade 2 Islamic pages). The field tells the server not to. A grounded
+ * request's body is unchanged, so no pooled key moves for it.
+ */
+export function noLessonField(grounded: boolean): { grounding?: 'none' } {
+  return grounded ? {} : { grounding: 'none' };
 }
 
 /**
