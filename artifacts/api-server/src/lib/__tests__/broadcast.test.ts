@@ -11,7 +11,7 @@ import { sendBroadcast, setSuppressionCheck } from "../email.ts";
 
 const realFetch = globalThis.fetch;
 const realKey = process.env.RESEND_API_KEY;
-const unsub = (id: string) => `https://api.test/unsub?id=${id}`;
+const unsub = (r: { id: string }) => `https://api.test/unsub?id=${r.id}`;
 const people = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `id-${i}`, email: `p${i}@school.jo` }));
 
 beforeEach(() => {
@@ -20,11 +20,53 @@ beforeEach(() => {
 afterEach(() => {
   setSuppressionCheck(null);
   globalThis.fetch = realFetch;
+  delete process.env.RESEND_API_URL;
   if (realKey === undefined) delete process.env.RESEND_API_KEY;
   else process.env.RESEND_API_KEY = realKey;
 });
 
 describe("sendBroadcast", () => {
+  it("hands the whole recipient to the link builder and prints the footer it was given", async () => {
+    let batch: { html: string; headers: Record<string, string> }[] = [];
+    globalThis.fetch = (async (_u: unknown, init?: RequestInit) => {
+      batch = JSON.parse(String(init?.body));
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+
+    await sendBroadcast(
+      [{ id: "u1", email: "t@school.jo" }],
+      "Hello",
+      "<p>x</p>",
+      r => `https://api.test/u?e=${encodeURIComponent(r.email)}`,
+      { ar: "سطر المعلّم", en: "Teacher line" },
+    );
+    assert.match(batch[0]!.html, /سطر المعلّم/);
+    assert.match(batch[0]!.html, /Teacher line/);
+    assert.doesNotMatch(batch[0]!.html, /iqrra\.com\./, "the waitlist sentence is gone");
+    assert.equal(batch[0]!.headers["List-Unsubscribe"], "<https://api.test/u?e=t%40school.jo>");
+  });
+
+  it("keeps the waitlist sentence when no footer is given", async () => {
+    let html = "";
+    globalThis.fetch = (async (_u: unknown, init?: RequestInit) => {
+      html = JSON.parse(String(init?.body))[0].html;
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    await sendBroadcast(people(1), "s", "<p>x</p>", unsub);
+    assert.match(html, /You received this because you signed up for Iqrra at iqrra\.com\./);
+  });
+
+  it("calls RESEND_API_URL when it is set", async () => {
+    let url = "";
+    globalThis.fetch = (async (u: unknown) => {
+      url = String(u);
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    process.env.RESEND_API_URL = "http://127.0.0.1:9/";
+    await sendBroadcast(people(1), "s", "<p>x</p>", unsub);
+    assert.equal(url, "http://127.0.0.1:9/emails/batch");
+  });
+
   it("gives each recipient their own unsubscribe link, in the footer and the headers", async () => {
     let url = "";
     let batch: { to: string; subject: string; html: string; headers: Record<string, string> }[] = [];

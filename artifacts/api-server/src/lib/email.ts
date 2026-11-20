@@ -387,11 +387,22 @@ export function appInviteBodyHtml(link: string): string {
 const BATCH_SIZE = 100;
 const BATCH_PAUSE_MS = 600;
 
+export type BroadcastRecipient = { id: string; email: string };
+/** The "why you got this" sentence under a broadcast. Trusted text written in code, never user input. */
+export type BroadcastFooter = { ar: string; en: string };
+const WAITLIST_FOOTER: BroadcastFooter = {
+  ar: "تلقّيت هذه الرسالة لأنك سجّلت اهتمامك بتطبيق إقرأ على iqrra.com.",
+  en: "You received this because you signed up for Iqrra at iqrra.com.",
+};
+/** Resend's origin. Overridden only by tests, which point it at a local stub (test-support/resendStub.ts). */
+const resendBase = () => (process.env.RESEND_API_URL || "https://api.resend.com").replace(/\/+$/, "");
+
 export async function sendBroadcast(
-  recipients: readonly { id: string; email: string }[],
+  recipients: readonly BroadcastRecipient[],
   subject: string,
   bodyHtml: string,
-  unsubscribeUrl: (id: string) => string,
+  unsubscribeUrl: (r: BroadcastRecipient) => string,
+  footer: BroadcastFooter = WAITLIST_FOOTER,
 ): Promise<{ sent: string[]; failed: string[]; skipped: string[] }> {
   const out = { sent: [] as string[], failed: [] as string[], skipped: [] as string[] };
   const apiKey = process.env.RESEND_API_KEY;
@@ -417,12 +428,12 @@ export async function sendBroadcast(
     const chunk = recipients.slice(i, i + BATCH_SIZE);
     if (i > 0) await new Promise(r => setTimeout(r, BATCH_PAUSE_MS));
     try {
-      const res = await fetch("https://api.resend.com/emails/batch", {
+      const res = await fetch(`${resendBase()}/emails/batch`, {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify(
           chunk.map(r => {
-            const url = unsubscribeUrl(r.id);
+            const url = unsubscribeUrl(r);
             return {
               from,
               to: r.email,
@@ -430,8 +441,8 @@ export async function sendBroadcast(
               html: renderEmailShell(
                 bodyHtml,
                 `<div style="font-size:12px;color:#94A3B8;line-height:1.7;">
-                  <div dir="rtl">تلقّيت هذه الرسالة لأنك سجّلت اهتمامك بتطبيق إقرأ على iqrra.com. <a href="${url}" style="color:#94A3B8;">إلغاء الاشتراك</a></div>
-                  <div dir="ltr">You received this because you signed up for Iqrra at iqrra.com. <a href="${url}" style="color:#94A3B8;">Unsubscribe</a></div>
+                  <div dir="rtl">${footer.ar} <a href="${url}" style="color:#94A3B8;">إلغاء الاشتراك</a></div>
+                  <div dir="ltr">${footer.en} <a href="${url}" style="color:#94A3B8;">Unsubscribe</a></div>
                 </div>`,
               ),
               headers: { "List-Unsubscribe": `<${url}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },

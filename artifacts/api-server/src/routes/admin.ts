@@ -941,7 +941,7 @@ router.post("/admin/broadcasts", authMiddleware, requireRole("system_admin"), br
         res.status(400).json({ error: "no-email" });
         return;
       }
-      const test = await sendBroadcast([{ id: me.id, email: me.email }], `[تجريبي] ${subject}`, html, unsubscribeUrl);
+      const test = await sendBroadcast([{ id: me.id, email: me.email }], `[تجريبي] ${subject}`, html, (r) => unsubscribeUrl(r.id));
       if (test.failed.length > 0) {
         res.status(502).json({ error: "send" });
         return;
@@ -975,7 +975,7 @@ router.post("/admin/broadcasts", authMiddleware, requireRole("system_admin"), br
       return;
     }
 
-    const result = await sendBroadcast(recipients, subject, html, unsubscribeUrl);
+    const result = await sendBroadcast(recipients, subject, html, (r) => unsubscribeUrl(r.id));
     await stampSent(result.sent, purpose).catch((err) => logger.error({ err }, "broadcast sent but not recorded"));
     logger.info(
       { by: req.user!.id, purpose, sent: result.sent.length, failed: result.failed.length, skipped: result.skipped.length },
