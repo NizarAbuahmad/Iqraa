@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   aiErrorMessageKey,
   aiSourceBadgeState,
+  chatFailureMessageKey,
   describeAiError,
   generateWithProvenance,
   isAbortError,
@@ -458,4 +459,26 @@ test('resultFallbackNotice stays hidden for live, saved, failed and cancelled re
 
 test('resultFallbackNotice stays hidden before anything was generated', () => {
   assert.equal(resultFallbackNotice(false, null, ['activity']), null);
+});
+
+// 2026-11-20: OpenAI refused every call (the server answered 500 in under two
+// seconds) and chat told a teacher on a working connection «تحقق من الإنترنت».
+// The network sentence is for a request that never got an answer.
+test('chatFailureMessageKey blames the network only when the server never answered', () => {
+  // fetch rejects with a bare TypeError when the device is offline
+  assert.equal(chatFailureMessageKey(new TypeError('Network request failed')), 'iqraOfflineFallback');
+  // the 45 s idle timer gave up before a byte arrived
+  const timeout = Object.assign(new Error('Chat stream idle for 45000ms'), { name: 'TimeoutError' });
+  assert.equal(chatFailureMessageKey(timeout), 'iqraOfflineFallback');
+  assert.equal(chatFailureMessageKey(undefined), 'iqraOfflineFallback');
+});
+
+test('chatFailureMessageKey says the assistant is unavailable when the server answered with a failure', () => {
+  const answered = (status: number, code?: string) =>
+    Object.assign(new Error('AI service error. Please try again.'), { status, code });
+  assert.equal(chatFailureMessageKey(answered(500)), 'iqraAssistantUnavailable');
+  assert.equal(chatFailureMessageKey(answered(502)), 'iqraAssistantUnavailable');
+  // the stream opened (200) and the model failed mid-way, or it just stopped
+  assert.equal(chatFailureMessageKey(answered(200, 'stream_failed')), 'iqraAssistantUnavailable');
+  assert.equal(chatFailureMessageKey(answered(200, 'stream_incomplete')), 'iqraAssistantUnavailable');
 });

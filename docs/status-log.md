@@ -10,6 +10,29 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Chat stops telling a teacher to check their internet when the AI is what failed — 2026-11-20
+
+A teacher on a working connection asked chat «اريد نشاط عن يوم الطفل» and got «تعذّر الاتصال الآن. تحقق من
+الإنترنت ثم أعد المحاولة.» The API was up (`/api/healthz` ok, on `08a37e9`); the public site assistant, which
+uses the same OpenAI account, answered `reason: "error"` in 1.8 s with live mode, the budget and the daily cap
+all open — so the provider itself was refusing calls. The ask is a free topic, so it goes to `/chat`
+(`freeTopicArtifactGoesLive`); the call failed, the offline assistant had no lesson to answer from, and its
+empty text fell back to `iqraOfflineFallback`, which blames the network for every non-cap failure.
+
+- **App:** `chatFailureMessageKey(err)` (`services/ai/aiProvenance.ts`) keeps «تحقق من الإنترنت» for a request
+  that never got an answer (no HTTP status: offline, DNS, the 45 s idle timeout) and gives the new
+  `iqraAssistantUnavailable` («المساعد غير متاح الآن. حاول مرة أخرى بعد قليل.») once the server answered — a
+  500, or a stream that opened and then failed or broke off (`stream_failed`, `stream_incomplete`). Used in
+  the `/chat` catch in `app/(tabs)/iqra.tsx`.
+- **Not changed:** the demo-mode branch's use of `iqraOfflineFallback` (no network call happens there, but
+  demo mode is not shipped); the artifact-generation catch, which already says `iqraChatError`.
+- **Not fixed here, and not fixable in code:** the provider refusal itself. Its exact error is in the Cloud
+  Run logs (`"site-ask failed"` / `"chat error"`); the account's billing and key are on platform.openai.com.
+
+Verified: `aiProvenance.test.ts` (offline TypeError, idle timeout and no error → network sentence; 500, 502,
+200 + `stream_failed` / `stream_incomplete` → unavailable), failing before the change and passing after;
+`i18n.test.ts`; `pnpm run typecheck`; mobile `pnpm test` (9,452 tests, 0 fail). Not verified on a device.
+
 ## The API no longer attaches a book to a topic the app found no lesson for — 2026-11-20
 
 The follow-up named in «Chat builds material on a topic the curriculum does not have». When a generation
