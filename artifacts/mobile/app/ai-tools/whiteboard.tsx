@@ -23,6 +23,15 @@ import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
 import { isAbortError } from '@/services/ai/aiProvenance';
 import { solveErrorKey } from '@/services/solve';
 import {
+  firstInk,
+  trackWhiteboardDrawn,
+  trackWhiteboardExported,
+  trackWhiteboardOpened,
+  trackWhiteboardSaved,
+  trackWhiteboardSolved,
+  whiteboardSource,
+} from '@/services/classUsage';
+import {
   BOARD_DEFAULT_WIDTH,
   EMPTY_DOC,
   MAX_PAGES,
@@ -75,7 +84,11 @@ type Saved = { id: string; title: string; json: string };
 export default function WhiteboardScreen() {
   const { t, isRTL, lang } = useLanguage();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ savedId?: string; topic?: string; subject?: string; grade?: string }>();
+  const params = useLocalSearchParams<{ savedId?: string; topic?: string; subject?: string; grade?: string; from?: string }>();
+  // How the board was reached, fixed at the first render: the usage events below report it.
+  const source = useRef(whiteboardSource(params)).current;
+  const drawnReported = useRef(false);
+  useEffect(() => { trackWhiteboardOpened(source); }, [source]);
   const [doc, setDoc] = useState<BoardDoc>(EMPTY_DOC);
   const [color, setColor] = useState(PEN_COLORS[0]!);
   const [width, setWidth] = useState(BOARD_DEFAULT_WIDTH);
@@ -279,9 +292,13 @@ export default function WhiteboardScreen() {
       revealRef.current.set(solved, 0);
       setDoc(d => updateCurrent(d, p => withSolution(p, solved)));
       setAskSolve(false);
+      trackWhiteboardSolved(true);
     } catch (e) {
       // Cancel is not an error to explain.
-      if (!isAbortError(e)) setSolveError(t(solveErrorKey(e)));
+      if (!isAbortError(e)) {
+        setSolveError(t(solveErrorKey(e)));
+        trackWhiteboardSolved(false);
+      }
     } finally {
       solveAbort.current = null;
       setSolveBusy(false);
@@ -362,6 +379,7 @@ export default function WhiteboardScreen() {
     setSaveBusy(true);
     try {
       let id = savedRef.current?.id ?? null;
+      const first = !id;
       // `updateItem` answers false when the material is gone (deleted from
       // «موادي» while the board was open): fall through to creating a new one,
       // which is what pressing Save meant. It is given only what changed, so a
@@ -385,6 +403,7 @@ export default function WhiteboardScreen() {
       // `r.json` is the snapshot that was written: ink added while the request
       // was in flight leaves the board dirty, as it should.
       setSaved({ id, title, json: r.json });
+      trackWhiteboardSaved({ pages: docRef.current.pages.length, first, withSolution: version === BOARD_FILE_VERSION });
     } catch {
       // `saveItem`'s device-storage fallback can throw (quota); nothing was kept.
       showToast(t('boardSaveFailed'));
@@ -421,6 +440,7 @@ export default function WhiteboardScreen() {
     setExportBusy(true);
     try {
       await exportAsPDF(html, exportFilename(title, '', 'whiteboard'));
+      trackWhiteboardExported(docRef.current.pages.length);
     } catch {
       showToast(t('boardExportFailed'));
     } finally {
@@ -457,7 +477,13 @@ export default function WhiteboardScreen() {
           strokeScale={stage.scale > 0 ? stage.scale : 1}
           erase={erase}
           active={!loading}
-          onChange={next => setDoc(d => updateCurrent(d, p => ({ ...p, board: commitStrokes(p.board, next) })))}
+          onChange={next => {
+            if (firstInk(drawnReported.current, next.length > 0)) {
+              drawnReported.current = true;
+              trackWhiteboardDrawn(source);
+            }
+            setDoc(d => updateCurrent(d, p => ({ ...p, board: commitStrokes(p.board, next) })));
+          }}
         />
         {loading && (
           <View pointerEvents="none" style={styles.loading}>

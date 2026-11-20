@@ -39,7 +39,7 @@ import {
 
 const OFFERED_TOOLS = [
   'slides', 'lesson-plan',                                                // before
-  'worksheet', 'classroom', 'game', 'activity', 'games',                   // during
+  'worksheet', 'whiteboard', 'classroom', 'game', 'activity', 'games',     // during
   'quiz', 'evaluations', 'parent-msg',                                    // after
 ];
 
