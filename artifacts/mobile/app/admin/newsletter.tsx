@@ -81,13 +81,13 @@ export default function AdminNewsletterScreen() {
     setSubject(draft.subject);
     setBody(draft.body);
     setTested(null);
-    setNote(ar ? `مسودة من ${draft.count} خبرًا. عدّلها ثم أرسل نسخة لنفسك.` : `Draft with ${draft.count} notes. Edit it, then send yourself a copy.`);
+    setNote(ar ? `مسودة فيها ${draft.count} من الأخبار. عدّلها ثم أرسل نسخة لنفسك.` : `Notes in this draft: ${draft.count}. Edit it, then send yourself a copy.`);
   };
 
   const failed = (e: unknown): string => {
     const code = e instanceof ApiError ? e.message : '';
     if (code === 'not-tested') return ar ? 'النص تغيّر بعد النسخة التجريبية. أرسل نسخة تجريبية جديدة أولًا.' : 'The text changed after the test copy. Send a new test first.';
-    if (code === 'test-expired') return ar ? 'مضى أكثر من ٢٤ ساعة على النسخة التجريبية. أرسل نسخة جديدة أولًا.' : 'The test copy is more than 24 hours old. Send a new one first.';
+    if (code === 'test-expired') return ar ? 'مضى أكثر من 24 ساعة على النسخة التجريبية. أرسل نسخة جديدة أولًا.' : 'The test copy is more than 24 hours old. Send a new one first.';
     if (code === 'sending') return ar ? 'هذا العدد قيد الإرسال الآن. انتظر قليلًا.' : 'This issue is being sent right now. Wait a moment.';
     if (code === 'unsubscribed') return ar ? 'بريدك في قائمة إلغاء الاشتراك، فلا تصلك النسخة التجريبية.' : 'Your own address is unsubscribed, so the test copy cannot reach you.';
     return ar ? 'تعذّر الإرسال' : 'Could not send';
@@ -116,8 +116,8 @@ export default function AdminNewsletterScreen() {
     const ok = await confirm({
       title: ar ? 'إرسال العدد إلى المعلّمين؟' : 'Send this issue to teachers?',
       message: ar
-        ? `سيُرسل إلى ${summary.eligible} معلّمًا. لا يمكن التراجع عن الإرسال.`
-        : `This goes to ${summary.eligible} teachers and can't be undone.`,
+        ? `سيُرسل إلى ما لا يزيد على ${summary.eligible} من المعلّمين، ومن وصله هذا العدد من قبل لا يُرسل إليه مرة أخرى. لا يمكن التراجع عن الإرسال.`
+        : `This goes to at most ${summary.eligible} teachers; anyone who already received this issue is skipped. It can't be undone.`,
       confirmLabel: ar ? 'أرسل' : 'Send',
       cancelLabel: ar ? 'إلغاء' : 'Cancel',
     });
@@ -130,9 +130,9 @@ export default function AdminNewsletterScreen() {
         body: JSON.stringify({ issueId: tested.issueId, subject, body }),
         timeoutMs: 180_000,
       });
-      const skipped = r.skipped ? (ar ? ` · أُلغي اشتراك ${r.skipped}` : ` · unsubscribed ${r.skipped}`) : '';
+      const skipped = r.skipped ? (ar ? ` · ألغوا الاشتراك: ${r.skipped}` : ` · Unsubscribed: ${r.skipped}`) : '';
       const retry = r.failed > 0 ? (ar ? ' · اضغط الإرسال مرة أخرى ليصل إلى من لم يصلهم فقط' : ' · press send again to reach only those who were missed') : '';
-      setNote((ar ? `أُرسلت ${r.sent} · فشلت ${r.failed}` : `Sent ${r.sent} · failed ${r.failed}`) + skipped + retry);
+      setNote((ar ? `وصلت: ${r.sent} · تعذّرت: ${r.failed}` : `Sent: ${r.sent} · Failed: ${r.failed}`) + skipped + retry);
     } catch (e: unknown) {
       setNote(failed(e));
     } finally {
@@ -173,12 +173,12 @@ export default function AdminNewsletterScreen() {
               {summary === null
                 ? (loadError ? (ar ? 'تعذّر التحميل' : 'Could not load') : '…')
                 : ar
-                  ? `${summary.eligible} معلّمًا يستلمون العدد · ${summary.unsubscribed} ألغوا الاشتراك`
-                  : `${summary.eligible} teachers would receive it · ${summary.unsubscribed} unsubscribed`}
+                  ? `عدد المعلّمين المستلمين: ${summary.eligible} · ألغوا الاشتراك: ${summary.unsubscribed}`
+                  : `Teachers who would receive it: ${summary.eligible} · Unsubscribed: ${summary.unsubscribed}`}
             </Text>
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
               {summary?.lastSentAt
-                ? (ar ? `آخر عدد: ${new Date(summary.lastSentAt).toLocaleDateString()}` : `Last issue: ${new Date(summary.lastSentAt).toLocaleDateString()}`)
+                ? (ar ? `آخر عدد: ${ammanToday(new Date(summary.lastSentAt))}` : `Last issue: ${ammanToday(new Date(summary.lastSentAt))}`)
                 : (ar ? 'لم يُرسل أي عدد بعد.' : 'No issue has been sent yet.')}
             </Text>
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
@@ -234,7 +234,7 @@ export default function AdminNewsletterScreen() {
                 style={[styles.chip, { borderRadius: colors.radius, backgroundColor: ACCENT, borderColor: ACCENT, opacity: canSend ? 1 : 0.5 }]}
               >
                 <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
-                  {busy === 'send' ? '…' : ar ? `أرسل إلى ${summary?.eligible ?? 0} معلّمًا` : `Send to ${summary?.eligible ?? 0} teachers`}
+                  {busy === 'send' ? '…' : ar ? `أرسل إلى المعلّمين (${summary?.eligible ?? 0})` : `Send to teachers (${summary?.eligible ?? 0})`}
                 </Text>
               </Pressable>
             </View>
