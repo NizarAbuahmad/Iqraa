@@ -58,6 +58,10 @@ import {
   type NccdKbLesson,
 } from '@workspace/curriculum/catalogs/g10MathSem1';
 import { buildNccdSem2Catalog } from '@workspace/curriculum/catalogs/g10MathSem2';
+import { getVisibleGrades } from '@workspace/curriculum';
+import { getLessonById, getLessonsForUnit, getUnitsForSubjectGrade } from '../services/knowledgeBase.ts';
+import { unanswerableQuestions } from '../services/premadeSheetGate.ts';
+import { mathBankCovers } from '@workspace/math-practice';
 import type {
   KeyVerification,
   PremadeLevel,
@@ -81,7 +85,18 @@ const LEVELS: readonly PremadeLevel[] = ['easy', 'medium', 'hard'];
  * chemistry title. An unknown subject is refused rather than guessed.
  */
 const SUBJECT_NAME_AR: Record<string, string> = { mathematics: 'الرياضيات' };
-const GRADE_NAME_AR: Record<string, string> = { 'grade-10': 'الصف العاشر' };
+
+/**
+ * Grades this script builds for. Grade 10 enumerates its NCCD catalogs; Grades
+ * 1–9 take their lessons from the knowledge base, which is where the offline
+ * maths bank looks them up too (`mathBankCovers` covers all 450 on 2026-11-20).
+ * The grade's NAME is what the generator is handed, read from the catalog
+ * rather than typed here, so «الصف الأول» cannot drift from the app's own.
+ */
+const BUILDABLE_GRADES = new Set(Array.from({ length: 10 }, (_, i) => `grade-${i + 1}`));
+function gradeNameAr(gradeId: string): string | undefined {
+  return getVisibleGrades().find(grade => grade.id === gradeId)?.nameAr;
+}
 
 /**
  * Lessons held back because `detectMathFamily` picks the wrong branch of maths
@@ -202,17 +217,34 @@ function parseArgs(argv: string[]): Args {
  * `order === 0`: labs are ordered where the book prints them (S2 `u8_lab` is
  * second in its unit), and «حل معادلات خاصة» (S1 `u1_l5`) now opens unit 1.
  */
-function lessonsFor(gradeId: string, subjectId: string): NccdKbLesson[] {
-  if (!SUBJECT_NAME_AR[subjectId] || !GRADE_NAME_AR[gradeId]) {
+type SheetLesson = Pick<NccdKbLesson, 'id' | 'unitId' | 'titleAr' | 'titleEn'>;
+
+function lessonsFor(gradeId: string, subjectId: string): SheetLesson[] {
+  if (!SUBJECT_NAME_AR[subjectId] || !BUILDABLE_GRADES.has(gradeId) || !gradeNameAr(gradeId)) {
     fail(
-      `only grade-10 mathematics is published today (asked for ${gradeId}/${subjectId}). ` +
-        'Chemistry needs its question bank first.',
+      `only mathematics, grades 1–10, is built today (asked for ${gradeId}/${subjectId}). ` +
+        'Another subject needs a question bank first: the offline generator has templates, not questions, for it.',
     );
   }
-  return [...buildNccdSem1Catalog().lessons, ...buildNccdSem2Catalog().lessons].filter(
-    lesson => !lesson.id.endsWith('_lab'),
-  );
+  const lessons: SheetLesson[] =
+    gradeId === 'grade-10'
+      ? [...buildNccdSem1Catalog().lessons, ...buildNccdSem2Catalog().lessons]
+      : getUnitsForSubjectGrade(subjectId, gradeId).flatMap(unit => getLessonsForUnit(unit.id));
+  const level = Number(gradeId.replace('grade-', ''));
+  return lessons.filter(lesson => {
+    if (lesson.id.endsWith('_lab')) return false;
+    // A lesson the bank has nothing about would be served the generic
+    // fallback, which is a sheet about some other piece of maths.
+    if (level <= 9 && !mathBankCovers(lesson.titleAr, getLessonById(lesson.id) as never, level)) {
+      console.log(`  skipped ${lesson.id} — the maths bank has no items about «${lesson.titleAr}»`);
+      return false;
+    }
+    return true;
+  });
 }
+
+/** Draws per lesson before a sheet that keeps failing the gate is refused. */
+const MAX_DRAWS = 8;
 
 /** Fail closed: a malformed sheet must never reach the manifest. */
 function problemsWith(id: string, content: WorksheetOutput): string[] {
@@ -310,22 +342,38 @@ async function main(): Promise<void> {
     const id = `pw-${lesson.id}-${args.level}`;
     const position = `[${index + 1}/${lessons.length}]`;
     try {
-      const content = await service.generateWorksheet({
-        grade: GRADE_NAME_AR[args.gradeId]!,
-        subject: SUBJECT_NAME_AR[args.subjectId]!,
-        topic: lesson.titleAr,
-        // The id, not just the title. Four of these 33 titles exist verbatim
-        // elsewhere in the curriculum — «جمع المتجهات وطرحها» is also a Grade
-        // 10 physics lesson — so grounding by title alone built maths sheets
-        // from another grade's or another subject's key terms.
-        lessonId: lesson.id,
-        unitId: lesson.unitId,
-        language: 'arabic',
-        difficulty: args.level,
-        numQuestions: NUM_QUESTIONS,
-        questionTypes: QUESTION_TYPES,
-        contextSource: 'curriculum',
-      } as never);
+      const draw = () =>
+        service.generateWorksheet({
+          grade: gradeNameAr(args.gradeId)!,
+          subject: SUBJECT_NAME_AR[args.subjectId]!,
+          topic: lesson.titleAr,
+          // The id, not just the title. Four of the 33 Grade 10 titles exist
+          // verbatim elsewhere in the curriculum — «جمع المتجهات وطرحها» is
+          // also a Grade 10 physics lesson — so grounding by title alone built
+          // maths sheets from another grade's or another subject's key terms.
+          lessonId: lesson.id,
+          unitId: lesson.unitId,
+          language: 'arabic',
+          difficulty: args.level,
+          numQuestions: NUM_QUESTIONS,
+          questionTypes: QUESTION_TYPES,
+          contextSource: 'curriculum',
+        } as never);
+
+      // Draw again while a question cannot be answered from the page
+      // (`premadeSheetGate.ts`); refuse the lesson if it never comes clean.
+      let content = await draw();
+      let draws = 1;
+      while (unanswerableQuestions(content).length && draws < MAX_DRAWS) {
+        content = await draw();
+        draws += 1;
+      }
+      const unanswerable = unanswerableQuestions(content);
+      if (unanswerable.length) {
+        problems.push(`${id}: ${MAX_DRAWS} draws, still unanswerable: ${unanswerable.join(' | ')}`);
+        console.log(`${position} ${id}  REFUSED — unanswerable from the page after ${MAX_DRAWS} draws`);
+        continue;
+      }
 
       const sheetProblems = problemsWith(id, content);
       if (sheetProblems.length) {

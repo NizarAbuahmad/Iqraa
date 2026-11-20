@@ -10,6 +10,47 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-20
+
+Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured
+2026-11-20, staff uploads aside). This fills the maths shelves.
+
+**What changed.**
+- **447 ready-made sheets**, one per maths lesson, grades 1–9 (`lib/curriculum/src/data/premade_worksheets.json`,
+  475 sheets with Grade 10's 28). `scripts/build-premade-sheets.ts` now takes `--grade grade-1`…`grade-10`: Grades
+  1–9 read their lessons from the knowledge base, grade names come from the catalog, `_lab` lessons and lessons the
+  bank does not cover (`mathBankCovers`; none today) are skipped. Same generator as Grade 10 (`MockAIService`,
+  medium, 10 questions), keys recorded `'bank'`. Grade 9 has 29 sheets for 32 lessons: the 3 others are GeoGebra
+  labs.
+- **A «which one» item kept its choices only in a multiple-choice slot.** A worksheet files bank items as short
+  answer at random, and `formatItem` dropped the options there, so «أيّ وحدة أنسب لقياس طول الكتاب؟» printed
+  keyed «مشبك الورق» with nothing to pick from. Nine templates across grades 1, 5, 6, 8 and 9 did it. `formatItem`
+  now keeps a pick's options in every slot (`lib/math-practice/src/picks.ts`: «أيّ» in front of what it points at,
+  or «أنسب», and the key not in the text). This also changes teachers' own offline worksheets. **Not fixed:** the
+  offline quiz's short-answer and fill-in makers (`makeQuizSA_*`, `makeQuizFB_*` in `generators.ts`) still drop
+  options, as they did before.
+- **A build gate** (`services/premadeSheetGate.ts`, the same rule) re-draws a sheet with an unanswerable pick, up to
+  8 times, then refuses the lesson. On the final build it refused nothing. A first, broader rule ("mentions «الآتي»
+  or «هذه»") refused good sheets such as «ما العدد التالي للعدد 49؟»; the tests pin those as passing.
+- «ما الجديد» entry `library-maths-sheets-g1-9` for teachers.
+
+**Verified.** `picksShowChoices.test.ts` sweeps every template in `TOPICS` at every tier into every typed slot, Arabic
+and English; `premadeSheetGate.test.ts`; `premadeSheets.test.ts` now asserts every grade 1–9 has ≥ 25 maths sheets,
+each filed under a KB lesson with that lesson's title, and that every one of the 475 sheets passes the gate with a
+key per question. `pnpm run typecheck`; math-practice 1,433 pass; api-server 2,999 pass; curriculum 930 of 931 —
+`r2.test.ts` fails identically on untouched `main` in this environment (it asserts R2 is *not* configured).
+
+**Not verified yet.** Each sheet's answer keys read by hand: an independent review of all 4,464 keys is in progress
+and this PR stays a draft until it is folded in.
+
+**Not done.**
+- **Other subjects, grades 1–8.** The only built-in source is the QR codes printed in the books
+  (`scripts/scan_book_qr.py --fetch`), and `nccd.gov.jo` resets connections from this cloud environment (checked
+  2026-11-20). It needs a machine in Jordan. The offline generator has templates, not questions, for non-maths
+  subjects, so it cannot fill them honestly.
+- Bundle size: the manifest is now ~2.5× its Grade 10 size and is imported statically. The web entry bundle was
+  ~21 MB before this; splitting the manifest per grade is a follow-up.
+
 ## OpenAI credit ran out; the app-wide AI cap is now $100 — 2026-11-20
 
 **What happened.** On 2026-11-20 every Activity-tool request on app.iqrra.com came back as the offline template,

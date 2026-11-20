@@ -39,6 +39,14 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
+    id: 'library-maths-sheets-g1-9',
+    date: '2026-11-20',
+    roles: ['teacher'],
+    titleKey: 'whatsNewLibraryMathsSheetsTitle',
+    bodyKey: 'whatsNewLibraryMathsSheetsBody',
+    route: '/curriculum/resources',
+  },
+  {
     id: 'chat-free-topic-material',
     date: '2026-11-20',
     roles: ['teacher'],
