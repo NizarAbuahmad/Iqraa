@@ -7,8 +7,14 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildActivityRequest, buildLessonPlanRequest } from '../generatorRequests.ts';
-import { resolveGeneratorGrounding } from '../kbContext.ts';
+import {
+  buildActivityRequest,
+  buildLessonPlanRequest,
+  buildLessonTeachingRequest,
+  buildWorksheetRequest,
+  scopeRequestFields,
+} from '../generatorRequests.ts';
+import { groundingRequestFields, noLessonField, resolveGeneratorGrounding } from '../kbContext.ts';
 import { getLessonById } from '../knowledgeBase.ts';
 
 const LESSON = getLessonById('kbl-math-s1-nccd-u1_l1')!;
@@ -87,5 +93,60 @@ describe('buildLessonPlanRequest', () => {
         assert.equal(req.ministryRoles, true, `${teachingStyle}/${lang}`);
       }
     }
+  });
+});
+
+describe('a request no lesson grounds tells the API so', () => {
+  // The API matches a topic's title across the whole catalog when a request
+  // carries no unit, and attached another grade's book to a prompt this app
+  // had labelled «الموضوع غير موجود في المنهاج». `grounding: 'none'` stops it;
+  // a grounded body must stay exactly as it was, or its pooled key moves.
+  const free = resolveGeneratorGrounding('لو كنت وزير التربية ليوم واحد', 'ar', { scope: { gradeId: 'grade-6' } });
+  const grounded = resolveGeneratorGrounding(form.topic, 'ar');
+
+  it('the free topic is ungrounded and the lesson is grounded (precondition)', () => {
+    assert.equal(free.grounded, false);
+    assert.equal(grounded.grounded, true);
+  });
+
+  it('every builder adds it when ungrounded, and only then', () => {
+    const planForm = {
+      gradeName: 'الصف العاشر', subjectName: 'Mathematics', topic: form.topic, lang: 'ar' as const,
+      durationMinutes: 45, teachingStyle: 'direct' as const, objectives: '', adaptations: '',
+      priorTopicsNotes: '', includePriorReview: false,
+    };
+    const worksheetForm = {
+      gradeName: 'الصف العاشر', subjectName: 'Mathematics', topic: form.topic, lang: 'ar' as const,
+      difficulty: 'medium' as const, numQuestions: 8, questionTypes: ['multiple_choice' as const], includePriorReview: false,
+    };
+    const builders: [string, (g: typeof free) => { grounding?: string }][] = [
+      ['activity', g => buildActivityRequest(form, g)],
+      ['lesson plan', g => buildLessonPlanRequest(planForm, g)],
+      ['worksheet', g => buildWorksheetRequest(worksheetForm, g)],
+      ['lesson teaching', g => buildLessonTeachingRequest({ gradeName: 'الصف العاشر', subjectName: 'Mathematics', topic: form.topic, lang: 'ar' }, g)],
+      ['groundingRequestFields', g => groundingRequestFields(g)],
+    ];
+    for (const [name, build] of builders) {
+      assert.equal(build(free).grounding, 'none', `${name}: ungrounded`);
+      assert.ok(!('grounding' in build(grounded)), `${name}: a grounded body gained the field`);
+    }
+  });
+
+  it('a wide scope with no lessons says so; one with lessons does not', () => {
+    const none = scopeRequestFields({
+      kind: 'semester', scopeKey: 'k', grounded: false, lessons: [], context: '', unitIds: [],
+      truncated: false, ungroundedNote: 'تنبيه',
+    } as unknown as Parameters<typeof scopeRequestFields>[0]);
+    assert.equal(none.grounding, 'none');
+    const some = scopeRequestFields({
+      kind: 'semester', scopeKey: 'k', grounded: true, lessons: [], context: 'سياق', unitIds: ['u'],
+      truncated: false, ungroundedNote: '',
+    } as unknown as Parameters<typeof scopeRequestFields>[0]);
+    assert.ok(!('grounding' in some));
+  });
+
+  it('noLessonField is the one switch', () => {
+    assert.deepEqual(noLessonField(false), { grounding: 'none' });
+    assert.deepEqual(noLessonField(true), {});
   });
 });
