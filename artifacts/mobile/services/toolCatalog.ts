@@ -119,6 +119,18 @@ const CLASSROOM_HUB: ToolDef = {
   route: '/ai-tools/classroom',
 };
 
+// The board used to open only from inside a running presentation or from a saved
+// board in «ملفاتي», so a teacher who wanted to write had to build slides first.
+// Second in the section on purpose: Today's quick tools are the first four
+// catalog tools with no prep-board row, which puts the board there too.
+const WHITEBOARD: ToolDef = {
+  id: 'whiteboard',
+  titleKey: 'whiteboardTool',
+  descKey: 'toolWhiteboardDesc',
+  ...look('whiteboard'),
+  route: '/ai-tools/whiteboard',
+};
+
 const DURING_CLASS_ALL: ToolDef[] = [
   {
     id: 'worksheet',
@@ -127,6 +139,7 @@ const DURING_CLASS_ALL: ToolDef[] = [
     ...look('worksheet'),
     route: '/ai-tools/worksheet',
   },
+  WHITEBOARD,
   CLASSROOM_HUB,
   {
     id: 'game',

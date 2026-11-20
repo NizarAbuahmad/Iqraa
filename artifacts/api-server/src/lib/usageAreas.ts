@@ -38,6 +38,8 @@ export const USAGE_AREAS = [
   "profile",
   "admin",
   "other",
+  // Split out of the classroom area on 2026-11-20; earlier minutes stay under that one.
+  "whiteboard",
 ] as const;
 
 export type UsageArea = (typeof USAGE_AREAS)[number];
