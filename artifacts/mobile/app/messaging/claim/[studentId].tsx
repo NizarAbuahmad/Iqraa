@@ -147,7 +147,7 @@ export default function ClaimCodeScreen() {
       lang === 'ar',
     );
     const outcome = await shareAsText(message, t('messagingClaimCodeTitle'));
-    setToast(outcome === 'shared' ? t('messagingCodeShared') : t('copiedToClipboard'));
+    setToast(outcome !== 'copied' ? t('messagingCodeShared') : t('copiedToClipboard'));
   };
 
   const onUnlink = async (guardian: Guardian) => {
