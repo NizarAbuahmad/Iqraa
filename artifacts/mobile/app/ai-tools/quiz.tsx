@@ -29,7 +29,9 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorText, getLastGeneration, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, aiFallbackNotice, isAbortError, provenanceOf, type AiGenerationRecord } from '@/services/ai/aiProvenance';
+import { DEMO_MODE } from '@/services/ai/demoMode';
+import { AiFallbackNotice } from '@/components/ui/AiFallbackNotice';
 import { CoverageNotice } from '@/components/ui/CoverageNotice';
 import { useWideScope } from '@/hooks/useWideScope';
 import { DISTRIBUTIONS, type CoverageLesson, type Distribution } from '@/services/coveragePlan';
@@ -223,6 +225,13 @@ export default function QuizScreen() {
   useAbortOnUnmount(abortRef);
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<QuizOutput | null>(null);
+  /**
+   * The record of the call that made the paper on screen (`provenanceOf`), kept
+   * apart from `result` because an edit replaces that object. Null for a
+   * reopened material: nothing is known about how it was made.
+   */
+  const [resultRecord, setResultRecord] = useState<AiGenerationRecord | null>(null);
+  const fallbackNotice = aiFallbackNotice(DEMO_MODE, resultRecord, 'quiz');
   /** null = not checked yet (or the check failed); [] onwards = per question. */
   const [outcomes, setOutcomes] = useState<(VerifyOutcome | undefined)[] | null>(null);
   /**
@@ -275,6 +284,7 @@ export default function QuizScreen() {
     if (params.savedId) {
       getItem(params.savedId).then(item => {
         if (item) {
+          setResultRecord(null);
           try { setResult(JSON.parse(item.content) as QuizOutput); } catch { /* noop */ }
           setFavorited(item.isFavorite);
         }
@@ -424,7 +434,7 @@ export default function QuizScreen() {
     // badges and edits, and the scope it was generated under. It used to be
     // cleared up front and never restored, so Cancel on a regenerate threw
     // away the unsaved quiz the teacher was looking at.
-    const held = { result, outcomes, editedQuestions, showAnswers, generated, wideFrozen, coverageInfo };
+    const held = { result, outcomes, editedQuestions, showAnswers, generated, wideFrozen, coverageInfo, resultRecord };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // paper — the KB serves that lesson's own content while the header claims
@@ -489,10 +499,14 @@ export default function QuizScreen() {
       // leaving it there prints "أ. أ) الوقت" on the paper — so it is dropped
       // on the way in, before this ever reaches the editor or the exporter.
       const normalized = { ...out, questions: out.questions.map(normalizeQuestionOptions) };
+      // Read off `out`, not `normalized`: the copy carries no record. This
+      // call's own record — `getLastGeneration()` could be another call's.
+      const record = provenanceOf(out);
+      setResultRecord(record);
       setResult(normalized);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setWideFrozen(wide ? { sel: wideScope.scopeSel!, distribution: wideScope.distribution } : null);
-      setCoverageInfo(wide ? { lessons: wide.lessons, modelReported: getLastGeneration()?.source === 'live' } : null);
+      setCoverageInfo(wide ? { lessons: wide.lessons, modelReported: record?.source === 'live' } : null);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
 
       verifyKeys(normalized);
@@ -514,6 +528,7 @@ export default function QuizScreen() {
         setGenerated(held.generated);
         setWideFrozen(held.wideFrozen);
         setCoverageInfo(held.coverageInfo);
+        setResultRecord(held.resultRecord);
         if (held.outcomes) verifyRef.current.begin(held.result);
       }
     } finally {
@@ -816,6 +831,7 @@ export default function QuizScreen() {
 
       {result && (
         <View style={{ paddingHorizontal: 20 }}>
+          <AiFallbackNotice notice={fallbackNotice} onRetry={() => generate()} disabled={loading} />
           <View style={[styles.quizHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '40', borderRadius: colors.radius }]}>
             <Text style={[styles.quizTitle, { color: colors.foreground, fontFamily: 'ReadexPro_700Bold', textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>
             <View style={[styles.quizMeta, { flexDirection: outRTL ? 'row-reverse' : 'row' }]}>

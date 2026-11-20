@@ -246,6 +246,30 @@ export function aiErrorText(
 }
 
 /**
+ * Which generation produced each output object. A WeakMap, so it holds
+ * nothing alive: an output the screen drops is forgotten with it.
+ */
+const recordsByOutput = new WeakMap<object, AiGenerationRecord>();
+
+function remember<T>(out: T, record: AiGenerationRecord): T {
+  if (out && typeof out === 'object') recordsByOutput.set(out as object, record);
+  return out;
+}
+
+/**
+ * The record of the call that produced this output, or null for an object no
+ * generator returned (a reopened material, an edited copy).
+ *
+ * Read it from the object `generateWithProvenance` returned, before any copy:
+ * `{ ...out }` is a new object with no record. Unlike `getLastGeneration()`,
+ * this is right when several generations run at once — the worksheet's
+ * three-level mode runs three.
+ */
+export function provenanceOf(out: unknown): AiGenerationRecord | null {
+  return out && typeof out === 'object' ? recordsByOutput.get(out as object) ?? null : null;
+}
+
+/**
  * Run a generator and record which of the two paths produced the answer.
  *
  * Lives here rather than in `RemoteAIService` so the fallback policy can be
@@ -263,8 +287,8 @@ export async function generateWithProvenance<T>(
   const now = opts.now ?? Date.now;
 
   if (demoMode) {
-    recordGeneration({ kind, source: 'mock', reason: 'demo-mode', at: now() });
-    return mock();
+    const record = recordGeneration({ kind, source: 'mock', reason: 'demo-mode', at: now() });
+    return remember(await mock(), record);
   }
 
   try {
@@ -274,13 +298,13 @@ export async function generateWithProvenance<T>(
     // log already renders on every generator screen, for the neighbouring
     // problem of mock content being indistinguishable from real content. A
     // month-old variant presented as newly generated is the same problem.
-    recordGeneration({
+    const record = recordGeneration({
       kind,
       source: 'live',
       reason: servedReasonOf(out) ? 'saved-copy' : 'live',
       at: now(),
     });
-    return out;
+    return remember(out, record);
   } catch (e) {
     const error = describeAiError(e);
     // A cancel is not a failure to paper over. Falling back here would answer
@@ -311,9 +335,9 @@ export async function generateWithProvenance<T>(
       throw e;
     }
     console.warn(`[RemoteAIService] ${kind} fallback:`, e);
-    recordGeneration({ kind, source: 'mock', reason: 'fallback', error, at: now() });
+    const record = recordGeneration({ kind, source: 'mock', reason: 'fallback', error, at: now() });
     try {
-      return await mock();
+      return remember(await mock(), record);
     } catch (mockError) {
       // The offline generator has no bank for this lesson. Saying so alone
       // blames the demo; keep the real reason the live call failed.

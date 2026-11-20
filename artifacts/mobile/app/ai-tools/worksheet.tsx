@@ -37,7 +37,9 @@ import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorText, getLastGeneration, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, aiFallbackNotice, isAbortError, provenanceOf, type AiGenerationRecord } from '@/services/ai/aiProvenance';
+import { DEMO_MODE } from '@/services/ai/demoMode';
+import { AiFallbackNotice } from '@/components/ui/AiFallbackNotice';
 import { CoverageNotice } from '@/components/ui/CoverageNotice';
 import { useWideScope } from '@/hooks/useWideScope';
 import { DISTRIBUTIONS, type CoverageLesson, type Distribution } from '@/services/coveragePlan';
@@ -137,6 +139,8 @@ type LevelEntry = {
   savedId?: string;
   /** Flat question positions the teacher has hand-edited on this level's paper. */
   editedFlatIndexes: Set<number>;
+  /** The call that made this level's paper — the three run at once, and one can fall back alone. */
+  record?: AiGenerationRecord | null;
 };
 
 export default function WorksheetScreen() {
@@ -251,6 +255,13 @@ export default function WorksheetScreen() {
   useAbortOnUnmount(abortRef);
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<WorksheetOutput | null>(null);
+  /**
+   * The record of the call that made the paper on screen (`provenanceOf`), kept
+   * apart from `result` because an edit replaces that object. Null for a
+   * reopened material: nothing is known about how it was made.
+   */
+  const [resultRecord, setResultRecord] = useState<AiGenerationRecord | null>(null);
+  const fallbackNotice = aiFallbackNotice(DEMO_MODE, resultRecord, isHomework ? 'homework' : 'worksheet');
   /** null = not checked yet (or the check failed); [] onwards = per question. */
   const [outcomes, setOutcomes] = useState<(VerifyOutcome | undefined)[] | null>(null);
   /**
@@ -343,6 +354,7 @@ export default function WorksheetScreen() {
     if (params.savedId) {
       getItem(params.savedId).then(item => {
         if (item) {
+          setResultRecord(null);
           try { setResult(JSON.parse(item.content) as WorksheetOutput); } catch { /* noop */ }
           setFavorited(item.isFavorite);
         }
@@ -434,12 +446,13 @@ export default function WorksheetScreen() {
   const showLevel = (i: number) => {
     if (!levels || !result || i === diffIdx) return;
     const cur = LEVELS[diffIdx]!;
-    const next: Partial<Record<Level, LevelEntry>> = { ...levels, [cur]: { result, outcomes, savedId, editedFlatIndexes } };
+    const next: Partial<Record<Level, LevelEntry>> = { ...levels, [cur]: { result, outcomes, savedId, editedFlatIndexes, record: resultRecord } };
     const entry = next[LEVELS[i]!];
     if (!entry) return;
     setLevels(next);
     setDiffIdx(i);
     setResult(entry.result);
+    setResultRecord(entry.record ?? null);
     setSavedId(entry.savedId);
     setEditedFlatIndexes(entry.editedFlatIndexes);
     // null = never checked, or the check failed — ask again rather than show nothing.
@@ -470,7 +483,7 @@ export default function WorksheetScreen() {
     // badges, edits and levels, and the scope it was generated under. It
     // used to be cleared up front and never restored, so Cancel on a
     // regenerate threw away the unsaved paper the teacher was looking at.
-    const held = { result, outcomes, editedFlatIndexes, levels, savedId, generated, wideFrozen, coverageInfo };
+    const held = { result, outcomes, editedFlatIndexes, levels, savedId, generated, wideFrozen, coverageInfo, resultRecord };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // paper — the KB serves that lesson's own content while the header claims
@@ -539,7 +552,7 @@ export default function WorksheetScreen() {
         if (aborted) throw aborted.reason;
         const entries: Partial<Record<Level, LevelEntry>> = {};
         settled.forEach((s, i) => {
-          if (s.status === 'fulfilled') entries[LEVELS[i]!] = { result: s.value, outcomes: null, editedFlatIndexes: new Set<number>() };
+          if (s.status === 'fulfilled') entries[LEVELS[i]!] = { result: s.value, outcomes: null, editedFlatIndexes: new Set<number>(), record: provenanceOf(s.value) };
         });
         const first = LEVELS.find(d => entries[d]);
         if (!first) throw (settled[0] as PromiseRejectedResult).reason;
@@ -554,7 +567,10 @@ export default function WorksheetScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setWideFrozen(wide ? { sel: wideScope.scopeSel!, distribution: wideScope.distribution } : null);
-      setCoverageInfo(wide ? { lessons: wide.lessons, modelReported: getLastGeneration()?.source === 'live' } : null);
+      setCoverageInfo(wide ? { lessons: wide.lessons, modelReported: provenanceOf(out)?.source === 'live' } : null);
+      // This paper's own record — with three levels, `getLastGeneration()`
+      // could be another level's.
+      setResultRecord(provenanceOf(out));
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
       verifyKeys(out);
@@ -577,6 +593,7 @@ export default function WorksheetScreen() {
         setGenerated(held.generated);
         setWideFrozen(held.wideFrozen);
         setCoverageInfo(held.coverageInfo);
+        setResultRecord(held.resultRecord);
         if (held.outcomes) verifyRef.current.begin(held.result);
       }
     } finally {
@@ -1067,6 +1084,9 @@ export default function WorksheetScreen() {
               })}
             </View>
           ) : null}
+          {/* Under the level tabs: in three-level mode each level has its own. */}
+          {/* A retry in three-level mode asks for the three again, not one paper. */}
+          <AiFallbackNotice notice={fallbackNotice} onRetry={() => generate(levels ? { levels: true } : undefined)} disabled={loading} />
           <View style={[styles.successBanner, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: outRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="document-text" size={20} color={bannerInk} />
             <Text style={[{ color: bannerInk, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, flex: 1, textAlign: outRTL ? 'right' : 'left' }]}>{result.title}</Text>

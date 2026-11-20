@@ -53,8 +53,15 @@ offline blueprint stood in. Reproduced exactly with `buildOfflineActivity`: step
   saved material is reopened, shows `AiFallbackNotice` above the result («هذا محتوى تجريبي، لم يكتبه الذكاء
   الاصطناعي…» and «أعد المحاولة», which runs the generator again with the form as it now stands — if the teacher
   changed it after the fallback, that is what is asked for), and hides «النشاط جاهز» with its tick under it.
-  **Only the activity screen** has it; the quiz, worksheet, lesson plan and slides screens could take the same
-  component.
+  **The quiz and the worksheet/homework screens have it too** (`kind` `quiz`, and `homework` or `worksheet` by the
+  screen's mode). They read the record off the returned object: `generateWithProvenance` now tags each output with
+  the record of the call that made it (`provenanceOf`, a WeakMap), because the worksheet's three-level mode runs three
+  generations at once and one can fall back alone — each level keeps its own record and the notice follows the level
+  tab. The quiz reads it before `normalizeQuestionOptions` copies the paper. Both screens' «covers N lessons» notice
+  (`coverageInfo.modelReported`) used `getLastGeneration()` and now uses the same record. On the worksheet, a retry
+  in three-level mode asks for the three again. `fallbackNoticeScreens.test.ts` pins, for all three screens: the
+  notice is mounted for the screen's kind, no `getLastGeneration()` call, and a reopened material carries no record.
+  The lesson plan and slides screens do not have it yet.
 - **No «ما الجديد» entry:** the content changes are fixes to what the offline path serves, and the notice appears
   only when live generation has failed — announcing it would announce a failure mode.
 
@@ -66,7 +73,7 @@ call runs on the 45 s default client timeout, while lesson plans, worksheets, qu
 Verified: typecheck; mobile tests (`activityDiscussionFit.test.ts`, new: no doubled quotes in any format, version or
 language; stated minutes equal the step's for discussion and game at 20/30/45/60; jigsaw turns fit; the question
 reaches the discussion in Arabic and English; Grade 6 vs Grade 10 wording; the two helpers; plus `aiFallbackNotice`
-cases in `aiProvenance.test.ts`); `activityBlueprints.test.ts` and the other activity suites unchanged and passing;
+cases in `aiProvenance.test.ts`, with `provenanceOf` over three parallel calls, and `fallbackNoticeScreens.test.ts`); `activityBlueprints.test.ts` and the other activity suites unchanged and passing;
 api-server build + tests (2991 pass, with new cases in `activityPrompts.test.ts`). A review of the first version
 found, and this fixes with a test each: any «؟» made a factual question an "open" one; the question was cut inside
 «1.5» / «3:4» and not at «؛» or a dash; «الصف الثاني عشر» read as Grade 2 (`activityGradeNumber`); the screen could

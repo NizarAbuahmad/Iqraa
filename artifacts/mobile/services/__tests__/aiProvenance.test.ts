@@ -4,6 +4,7 @@ import {
   aiErrorMessageKey,
   aiFallbackNotice,
   generationSince,
+  provenanceOf,
   aiSourceBadgeState,
   type AiGenerationRecord,
   describeAiError,
@@ -474,4 +475,30 @@ test('generationSince: the newest record of this kind since the call started', (
 
 test('generationSince: null when this call recorded nothing', () => {
   assert.equal(generationSince([rec({ at: AT - 10 })], 'activity', AT), null);
+});
+
+// ─── provenanceOf ────────────────────────────────────────────────────────────
+// The worksheet's three-level mode runs three generations at once, so "the
+// newest record since the call started" cannot say which record is which
+// paper's. Each output carries its own.
+
+test('provenanceOf: each output knows the record of the call that made it', async () => {
+  fresh();
+  const failing = () => Promise.reject(new Error('HTTP 502'));
+  const [a, b, c] = await Promise.all([
+    generateWithProvenance('worksheet', failing, async () => ({ level: 'easy' }), { demoMode: false, strict: false, now: clock }),
+    generateWithProvenance('worksheet', async () => ({ level: 'medium' }), async () => ({ level: 'x' }), { demoMode: false, strict: false, now: clock }),
+    generateWithProvenance('worksheet', failing, async () => ({ level: 'hard' }), { demoMode: false, strict: false, now: clock }),
+  ]);
+  assert.equal(provenanceOf(a)?.reason, 'fallback');
+  assert.equal(provenanceOf(b)?.reason, 'live');
+  assert.equal(provenanceOf(c)?.reason, 'fallback');
+});
+
+test('provenanceOf: demo mode, and an object no generator made', async () => {
+  fresh();
+  const out = await generateWithProvenance('quiz', async () => ({}), async () => ({ demo: true }), { demoMode: true, now: clock });
+  assert.equal(provenanceOf(out)?.reason, 'demo-mode');
+  assert.equal(provenanceOf({}), null);
+  assert.equal(provenanceOf(null), null);
 });
