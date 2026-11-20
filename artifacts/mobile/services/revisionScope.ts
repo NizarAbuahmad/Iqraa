@@ -147,6 +147,7 @@ export function splitShown(unit: RevisionUnit, shownPerUnit: number): { shown: R
 
 /**
  * The selection a request's id-only `scope.scopeKey` names (`book:g:s`,
+ * `book:g:s:<track book id>`,
  * `sem:g:s:n`, `unit:<id>`, `lesson:<id>`), rebuilt from the KB. Null for a key
  * it cannot read, or one that no longer covers any lesson.
  */
@@ -154,6 +155,9 @@ export function scopeFromKey(scopeKey: string): ScopeSelection | null {
   const [kind, ...rest] = scopeKey.split(':');
   if (kind === 'book' && rest.length === 2) {
     return parseScope({ kind: 'book', gradeId: rest[0], subjectId: rest[1] });
+  }
+  if (kind === 'book' && rest.length === 3) {
+    return parseScope({ kind: 'book', gradeId: rest[0], subjectId: rest[1], bookId: rest[2] });
   }
   if (kind === 'sem' && rest.length === 3) {
     return parseScope({ kind: 'semester', gradeId: rest[0], subjectId: rest[1], semester: Number(rest[2]) });
@@ -174,8 +178,11 @@ export function scopeFromKey(scopeKey: string): ScopeSelection | null {
 export function revisionPhrase(sel: ScopeSelection, lang: 'ar' | 'en'): string {
   const isAr = lang === 'ar';
   switch (sel.kind) {
-    case 'book':
+    case 'book': {
+      const track = sel.bookId ? KB_BOOKS.find(b => b.id === sel.bookId)?.track : undefined;
+      if (track) return isAr ? `موضوعات مسار ${track.titleAr}` : `${track.titleEn} topics`;
       return isAr ? 'موضوعات الكتاب كله' : 'whole-book topics';
+    }
     case 'semester':
       if (isAr) return sel.semester === 2 ? 'موضوعات الفصل الثاني' : 'موضوعات الفصل الأول';
       return `Semester ${sel.semester === 2 ? 2 : 1} topics`;
