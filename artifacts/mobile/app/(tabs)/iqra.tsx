@@ -83,7 +83,7 @@ import {
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
-import { aiErrorText, isCapError, startClassFailure } from '@/services/ai/aiProvenance';
+import { aiErrorText, chatFailureMessageKey, isCapError, startClassFailure } from '@/services/ai/aiProvenance';
 import { shouldSendOnEnter } from '@/services/composerKeys';
 import type { ArtifactScope } from '@/services/ai/artifactScope';
 import {
@@ -3102,7 +3102,7 @@ export default function IqraScreen() {
             responseText = aiErrorText(remoteErr, t);
           } else {
             const ta = runTeachingAssistant();
-            responseText = ta.text || t('iqraOfflineFallback');
+            responseText = ta.text || t(chatFailureMessageKey(remoteErr));
             teachingActions = ta.actions;
             if (ta.activeLesson) {
               lessonTopic = lang === 'ar' ? ta.activeLesson.titleAr : ta.activeLesson.titleEn;

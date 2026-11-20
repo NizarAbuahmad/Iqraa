@@ -201,6 +201,24 @@ export function aiErrorMessageKey(
 }
 
 /**
+ * What chat says when the live reply failed and the offline assistant had
+ * nothing to answer with.
+ *
+ * «تحقق من الإنترنت» only when the request never got an answer (offline, DNS,
+ * the idle timeout): no HTTP status. Once the server answered — a 500 because
+ * the AI provider refused, or a stream that broke off — the teacher's
+ * connection is fine, and telling them to check it sends them after the wrong
+ * thing (2026-11-20: OpenAI refused every call and chat blamed the network).
+ * Duck-typed on `status` for the same reason as `isCapError`.
+ */
+export function chatFailureMessageKey(e: unknown): 'iqraOfflineFallback' | 'iqraAssistantUnavailable' {
+  if (e && typeof e === 'object' && typeof (e as { status?: unknown }).status === 'number') {
+    return 'iqraAssistantUnavailable';
+  }
+  return 'iqraOfflineFallback';
+}
+
+/**
  * What «ابدأ الحصة الآن» tells the teacher when building the deck threw.
  *
  * A spent allowance or a switched-off service is a state, not a fault: «try
