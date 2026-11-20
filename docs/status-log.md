@@ -10,7 +10,7 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Exports carry the Iqrra logo; worksheet export picks with/without answers — 2026-11-20
+## Exports carry the Iqrra logo; worksheet and quiz exports pick with/without answers — 2026-11-20
 
 A teacher exported a worksheet to Word and found no logo and no answers. Two separate causes:
 
@@ -25,19 +25,22 @@ A teacher exported a worksheet to Word and found no logo and no answers. Two sep
   (`quizDocx.ts`), and in the `school-header` of the printed-page shell (`exportHtml.ts`) next to «مساعد التدريس
   الذكي». **The Ministry lesson-plan form is left alone**: it is the Ministry's form, not ours. The English footer
   there also said "Iqra"; it says "Iqrra" now.
-- **Answers only if the screen showed them.** The worksheet screen exported the key exactly when its on-screen
-  «إظهار الإجابات» toggle was on, and the export menu could only *say* which copy you would get. The menu now
+- **Answers only if the screen showed them.** The worksheet and quiz screens exported the key exactly when their
+  on-screen «إظهار الإجابات» toggle was on, and the export menu could only *say* which copy you would get. The menu now
   offers the same «نسخة الطالب / نسخة المعلم» choice موادي and the chat already had (`copyChoice`), starting from
   the toggle each time it opens. All formats (share text, PDF, Word, slides) follow it. The key was already
-  written at the bottom of the text/Word file; nothing about its placement changed.
+  written at the end of the file (the quiz's Word paper puts it on a page of its own after the questions);
+  nothing about its placement changed. The menu's old note («أظهر الإجابات لتصدير نسخة المعلم») is gone with
+  its two strings (`exportStudentCopyNote` / `exportTeacherCopyNote`), as no screen uses it now.
 
 Verified: `brandLockup.test.ts` (PNG in `word/media` and placed by a `<w:drawing>` in a header, for the text
 export in both languages, the worksheet's both copies and the quiz paper; the lockup SVG in the PDF; the worksheet
-screen wires `copyChoice` and its export block no longer reads `showAnswers`). The teacher-copy `.docx` was
+and quiz screens wire `copyChoice`, start it from the toggle, and their export blocks no longer read
+`showAnswers`; the quiz Word paper's key is present only in the teacher copy, after the questions). The teacher-copy `.docx` was
 converted with LibreOffice and looked at: logo top-right, key at the end. The worksheet PDF header was looked at
 in Chromium. `exportHtml.test.ts`'s "no curve on the student copy" check now removes the logo before looking for
 `<path>`. **Not verified:** the Word file opened in Microsoft Word itself, and the export on a native Android
-build. **Not changed:** the quiz screen still exports by its on-screen toggle (it says which copy in a note).
+build.
 
 ## Admin user insights — time spent, optional teacher profile, insights page — 2026-11-19
 

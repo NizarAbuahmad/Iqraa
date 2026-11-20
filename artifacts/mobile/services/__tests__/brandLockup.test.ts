@@ -20,7 +20,7 @@ import { buildQuizDocx } from '../quizDocx.ts';
 import { buildWorksheetHTML } from '../exportHtml.ts';
 import { worksheetExports } from '../worksheetExport.ts';
 import type { QuizOutput, WorksheetOutput } from '../ai/AIService.ts';
-import { zipEntryNames, zipEntryOf } from './docxXml.ts';
+import { documentXmlOf, zipEntryNames, zipEntryOf } from './docxXml.ts';
 
 const ws = {
   title: 't',
@@ -71,7 +71,7 @@ describe('Word exports carry the logo', () => {
   });
 
   it('the quiz\'s laid-out Word paper', async () => {
-    const quiz = { title: 'q', questions: [{ type: 'short_answer', question: 'س؟', correctAnswer: 'ج', points: 1 }] } as unknown as QuizOutput;
+    const quiz = { title: 'q', duration: 10, totalPoints: 1, questions: [{ id: 'a', type: 'short_answer', text: 'س؟', correctAnswer: 'ج', points: 1, explanation: '' }] } as unknown as QuizOutput;
     const { media, headers } = await logoOf(buildQuizDocx(quiz, 'اختبار', meta, true, false, docx));
     assert.equal(media.length, 1);
     assert.ok(headers.some(h => h.includes('<w:drawing>')));
@@ -85,18 +85,35 @@ describe('the printed page carries the logo', () => {
   });
 });
 
-describe('worksheet screen: with or without answers is picked at export', () => {
-  const src = readFileSync(join(import.meta.dirname, '..', '..', 'app', 'ai-tools', 'worksheet.tsx'), 'utf8');
-  it('offers the copy choice in the export menu', () => {
-    assert.match(src, /copyChoice=\{\{ value: exportCopy, onChange: setExportCopy \}\}/);
+for (const screen of ['quiz', 'worksheet'] as const) {
+  describe(`${screen} screen: with or without answers is picked at export`, () => {
+    const src = readFileSync(join(import.meta.dirname, '..', '..', 'app', 'ai-tools', `${screen}.tsx`), 'utf8');
+    it('offers the copy choice in the export menu, starting from the screen', () => {
+      assert.match(src, /copyChoice=\{\{ value: exportCopy, onChange: setExportCopy \}\}/);
+      assert.match(src, /setExportCopy\(showAnswers \? 'teacher' : 'student'\)/);
+      assert.doesNotMatch(src, /onExport=\{\(\) => setShowExport\(true\)\}/);
+    });
+    it('every format follows that choice, not the on-screen toggle', () => {
+      const start = src.indexOf('useGeneratorExport({');
+      const block = src.slice(start, src.indexOf('onError: key =>', start));
+      assert.ok(start > 0 && block.length > 0);
+      assert.doesNotMatch(block, /showAnswers/);
+      assert.equal((block.match(/exportWithKey/g) ?? []).length, screen === 'quiz' ? 4 : 3);
+    });
   });
-  it('exports follow that choice, not the on-screen toggle', () => {
-    const exportBlock = src.slice(src.indexOf('useGeneratorExport({'), src.indexOf('onError: key =>', src.indexOf('useGeneratorExport({')));
-    assert.ok(exportBlock.length > 0);
-    assert.doesNotMatch(exportBlock, /showAnswers/);
-    assert.equal((exportBlock.match(/exportWithKey/g) ?? []).length, 3);
+}
+
+describe('where the key goes', () => {
+  it('quiz Word paper: the teacher copy ends with the key, the student copy has none', async () => {
+    const quiz = { title: 'q', duration: 10, totalPoints: 1, questions: [{ id: 'a', type: 'short_answer', text: 'سؤال الاختبار؟', correctAnswer: 'جواب سري', points: 1, explanation: '' }] } as unknown as QuizOutput;
+    const xml = async (withKey: boolean) => documentXmlOf(await docx.Packer.toBuffer(buildQuizDocx(quiz, 'اختبار', meta, true, withKey, docx)));
+    const teacher = await xml(true);
+    assert.ok(teacher.lastIndexOf('جواب سري') > teacher.indexOf('مفتاح الإجابات'));
+    assert.ok(teacher.indexOf('سؤال الاختبار؟') > 0, 'the question is on the paper');
+    assert.ok(teacher.indexOf('مفتاح الإجابات') > teacher.indexOf('سؤال الاختبار؟'));
+    assert.ok(!(await xml(false)).includes('جواب سري'));
   });
-  it('the key sits at the bottom of the teacher copy, and nowhere in the student copy', () => {
+  it('worksheet: the key sits at the bottom of the teacher copy, and nowhere in the student copy', () => {
     const teacher = worksheetExports(ws, 'ورقة', meta, true, 'teacher').text;
     const student = worksheetExports(ws, 'ورقة', meta, true, 'student').text;
     assert.ok(teacher.indexOf('مفتاح الإجابات') > teacher.indexOf('س؟'));
