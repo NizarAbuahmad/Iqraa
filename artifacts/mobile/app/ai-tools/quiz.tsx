@@ -45,6 +45,7 @@ import { readIndexParam } from '@/services/materialParams';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { BookFiguresPanel } from '@/components/ui/BookFiguresPanel';
 import { EditableText } from '@/components/ui/Editable';
+import { PaperVisual } from '@/components/ui/PaperVisual';
 import { confirm } from '@/services/confirm';
 import {
   applyOptionEdit,
@@ -942,6 +943,7 @@ export default function QuizScreen() {
                     edited={editedQuestions.has(q.id)}
                   />
                 </View>
+                <PaperVisual question={q} lang={outLang} />
 
                 {q.options?.map((opt, oi) => {
                   const marker = optionMarkerState(showAnswers, opt, q.correctAnswer);
