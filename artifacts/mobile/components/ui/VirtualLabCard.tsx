@@ -13,6 +13,7 @@ import { trackEvent } from '@/services/analytics';
 import { resolveLessonPrepContext } from '@/services/lessonPrep';
 import { saveItem } from '@/services/workspace';
 import { copyToClipboard, exportAsPDF, exportBuiltWord, shareAsText } from '@/services/share';
+import { shareToastKey } from '@/services/shareText';
 import { exportFilename } from '@/services/exportFilename';
 import type { QuizCopy } from '@/services/quizExport';
 import { worksheetExports } from '@/services/worksheetExport';
@@ -94,7 +95,10 @@ export function VirtualLabCard({ lessonId, accent }: Props) {
     try { await exportBuiltWord(docs().word, exportFilename(ws!.title)); }
     catch { showToast(t('error')); } finally { setLoadingWord(false); }
   };
-  const handleShare = async () => { await shareAsText(docs().text, ws!.title); };
+  const handleShare = async () => {
+    const key = shareToastKey(await shareAsText(docs().text, ws!.title));
+    if (key) showToast(t(key));
+  };
   const handleCopy = async () => { await copyToClipboard(docs().text); showToast(t('copiedToClipboard')); };
   const handleSave = async () => {
     if (savingRef.current) return;
