@@ -235,6 +235,18 @@ function unlikePair(rng: Rng): [number, number, number, number] {
  * The times table a lesson is about — «الضرب في 2», «القسمة على 5»,
  * "multiplying by 3" — or null. Such a lesson drills that table only.
  */
+export function lessonTables(blob: string): number[] | null {
+  // «الضرب في 6 و9»: both tables (only the first was ever drilled; 2026-11-20)
+  const t = blob.replace(TASHKEEL, '');
+  const m = t.match(/(?:ضرب|قسمة)\s*(?:في|على)\s*(\d{1,2})\s*و\s*(\d{1,2})/);
+  if (m) {
+    const ns = [Number(m[1]), Number(m[2])].filter(n => n >= 2 && n <= 12);
+    if (ns.length) return ns;
+  }
+  const one = lessonTable(blob);
+  return one === null ? null : [one];
+}
+
 export function lessonTable(blob: string): number | null {
   const t = blob.replace(TASHKEEL, '');
   const m = t.match(/(?:ضرب|قسمة)\s*(?:في|على)\s*(\d{1,2})/) ?? t.match(/(?:multipl\w*|divid\w*)\s*by\s*(\d{1,2})/i);
@@ -1346,11 +1358,16 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
     }
     case 'frac_compare': {
       if (int(rng, 0, 2) > 0) return fracCompareKinds(base, grade, rng);
-      // Different denominators, compared by cross-multiplying.
+      // Different denominators, compared by cross-multiplying — from Grade 4. Grade 3 compares
+      // «باستعمال النماذج وخط الأعداد»: one denominator, or one numerator (it asked 6/7 against 5/8).
       let [n1, d1, n2, d2] = [0, 0, 0, 0];
       do {
         d1 = int(rng, 2, 12); d2 = int(rng, 2, 12);
         n1 = int(rng, 1, d1 - 1); n2 = int(rng, 1, d2 - 1);
+        if (grade <= 3) {
+          if (rng() < 0.5) { d2 = d1; n2 = int(rng, 1, d1 - 1); } // same denominator, both proper
+          else { const n = int(rng, 1, Math.min(d1, d2) - 1); n1 = n; n2 = n; }
+        }
       } while (d1 === d2 && n1 === n2);
       const l = n1 * d2;
       const r = n2 * d1;
@@ -1411,7 +1428,7 @@ export function makeElementaryItem(
 ): ConcreteItem {
   const g = Math.min(6, Math.max(1, Math.round(grade)));
   const named = elementaryOpsForTitle(blob);
-  const table = lessonTable(blob);
+  const tables = lessonTables(blob);
   const pool = named.length > 0 ? named : DEFAULT_OPS[g]!;
   const served = servedFrames(used);
   let item: ConcreteItem | null = null;
@@ -1427,6 +1444,7 @@ export function makeElementaryItem(
     const op = pool[int(rng, 0, pool.length - 1)]!;
     // The id's last digit decides a true/false item's claim (see
     // `formatItem`); a fixed suffix made every one of them «صح».
+    const table = tables ? tables[int(rng, 0, tables.length - 1)]! : null;
     item = build(op, g, diff, rng, `arith-${g}-${op}-${used.size}-${attempt}-${int(rng, 0, 9)}`, table);
     if (used.has(`stem:${item.eq}`)) continue;
     fresh += 1;
