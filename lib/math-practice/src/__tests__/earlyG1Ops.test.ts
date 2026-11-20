@@ -368,6 +368,8 @@ describe('Grade 1 second pass (review, 2026-11-15)', () => {
           const item = makeElementaryItem(title, 1, diff, new Set(), seeded(i * 31 + 7));
           const ns = nums(item.promptAr ?? item.eq);
           for (const n of ns) assert.ok(n <= 99, `${title} ${diff}: past 99: ${item.promptAr}`);
+          // «ما أكبر عدد من منزلتين يمكن تكوينه من الأرقام 3، 7، 5…» shows digits and asks for a two-place number.
+          if (/من منزلتين يمكن تكوينه/.test(item.promptAr ?? '')) { assert.ok(Number(item.answer) >= 10 && Number(item.answer) <= 99, item.promptAr); twoDigit += 1; continue; }
           if (ns.filter(n => n >= 10).length >= 2) twoDigit += 1;
         }
         assert.ok(twoDigit >= 45, `${title} ${diff}: only ${twoDigit} of 60 compare two-digit numbers`);

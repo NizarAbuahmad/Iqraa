@@ -10,6 +10,40 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grades 1–3: «مقارنة الأعداد» and «ترتيب الأعداد» ask their own skill — 2026-11-20
+
+The Grade 3 review found the two lessons drew the same mix: both titles routed to the one `compare` op in
+`lib/math-practice/src/elementary.ts`, so a comparing paper asked «رتّب الأعداد الآتية…» and an ordering paper
+asked «ضع الإشارة المناسبة». Grades 1 and 2 have the same two lessons with the same titles and had the same fault.
+
+- **Routing.** A title naming only comparing goes to the new `compare_only` op, one naming only ordering to
+  `order_only`. A title naming both («مقارنة الأعداد وترتيبها», Grades 4–5, and Grade 7's rational numbers) keeps
+  the mixed `compare` op, unchanged.
+- **`compare_only`** asks for the sign between two numbers (about 40%), the greatest or least of four (30%), or
+  «أيّ الأعداد الآتية أكبر/أصغر من N؟», where exactly one of four is past the bound and the bound itself is one of
+  the distractors (30%).
+- **`order_only`** asks to order three numbers (four at hard), «رتّب… ثم اكتب العدد الذي يأتي ثانيًا/ثالثًا»
+  (the other three numbers are the wrong options), or the greatest or least number made from given digits. Grade 1's
+  numbers have two places, so its version picks two of three digits («ما أكبر عدد من منزلتين يمكن تكوينه من
+  الأرقام 2، 1، 5…» is 52).
+- **Grade 3's range.** Both lessons said «ضمن الألوف» and drew from 0, so an easy paper could compare 23 and 47.
+  They now draw from 100 at easy and from 1000 at medium and hard (`compareRange`). Grades 1 (10–99, by tier) and
+  2 (100–999) are unchanged.
+
+Verified: `compareOrder.test.ts` (new) draws 240 items per lesson for Grades 1–3. It checks the routing, including
+the combined titles. It checks that a compare paper never orders and an order paper never asks a sign or the greatest
+of a list, and that all three kinds appear in each. Every key is recomputed from the stem, the numbers stay in the
+grade's range, and there are three distinct wrong options (two for a sign). `elementary.test.ts`'s
+key-from-the-stem solver learned the new stems and now covers both lessons at Grades 1 and 3, plus the combined
+title at Grade 4. `earlyG1Ops.test.ts`'s two-place check counts the digits item by its two-place answer. I read 42
+sampled questions across the six lessons and checked each key by hand. math-practice suite, monorepo typecheck,
+mobile suite, api-server build and tests.
+
+**Not done.** The drawn shares are uneven: Grades 1–4 choose among drawn items by difficulty
+(`earlyDifficulty.ts`), so Grade 3's digits question is about 1 in 11 of an order paper rather than 3 in 10. The
+live model path is untouched; this is the offline generator only. No «ما الجديد» entry: it changes the questions a
+generator draws, not anything a teacher operates.
+
 ## Exports carry the Iqrra logo; worksheet and quiz exports pick with/without answers — 2026-11-20
 
 A teacher exported a worksheet to Word and found no logo and no answers. Two separate causes:
