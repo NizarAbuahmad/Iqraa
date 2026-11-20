@@ -48,6 +48,18 @@ fixes are kept. What this pass adds:
 - «الأشكال المستوية» asks about sides and vertices, which is also the next lesson's content. Left as it is.
 
 No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+## Word exports: the logo is centred, with space under it — 2026-11-20
+
+Follow-up to «Exports carry the Iqrra logo; worksheet and quiz exports pick with/without answers». In Word the
+logo sat at the right edge of the header, against the title. `wordLockupHeader` (`services/brandLockup.ts`) now
+centres its paragraph and puts 12pt (`WORD_LOCKUP_SPACE_AFTER`, 240 twips) after it. The header grows past the
+top margin, so Word pushes the page body down by that much. This applies to every Word export that carries the
+header (the plain-text builder and the quiz paper). The printed page (PDF) header is unchanged.
+
+Verified: `brandLockup.test.ts` checks the header paragraph is `<w:jc w:val="center"/>` with
+`<w:spacing w:after="240"`; a worksheet `.docx` converted with LibreOffice shows the logo centred with a gap
+before the title. Not verified in Microsoft Word itself.
+
 ## Exports carry the Iqrra logo; worksheet and quiz exports pick with/without answers — 2026-11-20
 
 A teacher exported a worksheet to Word and found no logo and no answers. Two separate causes:
