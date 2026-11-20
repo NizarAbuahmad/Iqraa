@@ -148,6 +148,31 @@ export async function readUserPeriodSpendUsd(userId: string): Promise<number | n
   }
 }
 
+/**
+ * This account's own monthly allowance (`users.ai_budget_usd`) and the last day
+ * it applies (`users.ai_budget_until`), as stored. Null means "use the role
+ * default" — including when the row cannot be read, so a database blip falls
+ * back to the default cap rather than to no cap. Whether it is still in force
+ * is decided by `pickUserBudgetLimitUsd` (aiBudget.ts).
+ */
+export async function readUserBudgetOverride(
+  userId: string,
+): Promise<{ usd: number | null; until: string | null } | null> {
+  try {
+    const { db, users } = await import("@workspace/db");
+    const { eq } = await import("drizzle-orm");
+    const [row] = await db
+      .select({ usd: users.aiBudgetUsd, until: users.aiBudgetUntil })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    return row ? { usd: row.usd ?? null, until: row.until ?? null } : null;
+  } catch (err) {
+    note(err, "read");
+    return null;
+  }
+}
+
 export async function readPeriodSpendUsd(): Promise<number | null> {
   try {
     const { db, aiGenerations } = await import("@workspace/db");

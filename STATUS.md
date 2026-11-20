@@ -43,7 +43,8 @@ Checked 2026-10-22:
   for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
   worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
   the secret and the switch are Nizar's — «Claude writes the documents» in the log); budgets `AI_BUDGET_USD=50`, per user `1`, per
-  student `0.20`; `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
+  student `0.20` (a system admin can give one account its own limit on the admin Users screen —
+  `users.ai_budget_usd`, optionally ending after `ai_budget_until`; deploys do not reset it); `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».
 - **Mobile:** `app.json` version `1.6.0` once the screen-recording PR merges (bumped 2026-10-29 for
@@ -113,7 +114,7 @@ Checked 2026-10-22:
   running, and whether masking hides their photos is unverified, like every other screen. The
   teacher's screens are reached from the tracked class page, so on the web a Contentsquare
   recording is usually already running when they open and only the body-level mask protects the
-  photos; Android replay has `maskAllImages` true. The policy (`LEGAL_VERSION` 2026-10-31.d now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
+  photos; Android replay has `maskAllImages` true. The policy (`LEGAL_VERSION` 2026-11-19 now; its recording text dates from 2026-10-30, its «time in the app» and optional-teacher-details lines from 2026-11-19, «Admin user insights» in the log) was written by a model and **not reviewed by a
   lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
   and the Contentsquare plan shows a 200K sessions a month cap.
   Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.

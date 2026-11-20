@@ -47,6 +47,10 @@ type UserRow = {
   suspendedReason: string;
   schoolName: string | null;
   monthSpendUsd: number;
+  /** This account's own monthly AI allowance; null = the role default. */
+  aiBudgetUsd: number | null;
+  /** Last Amman day (YYYY-MM-DD) that limit applies; null = no end date. */
+  aiBudgetUntil: string | null;
 };
 
 /** [value, Arabic, English] for each chip row. */
@@ -97,6 +101,8 @@ export default function AdminUsersScreen() {
   const ar = lang === 'ar';
   const { user, isLoading: authLoading } = useAuth();
   const isAdmin = !!user && ADMIN_ROLES.includes(user.role);
+  // Only a system_admin may change how much one account may spend (the API agrees).
+  const canSetBudget = user?.role === 'system_admin';
 
   const [q, setQ] = useState('');
   const [onlySuspended, setOnlySuspended] = useState(false);
@@ -116,6 +122,7 @@ export default function AdminUsersScreen() {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [blocking, setBlocking] = useState<{ id: string; reason: string } | null>(null);
+  const [budgetEdit, setBudgetEdit] = useState<{ id: string; value: string; until: string } | null>(null);
   const load = useCallback(async (offset: number) => {
     const query = usersListQuery({ q, onlySuspended, range, channel, cohort, offset });
     const res = await apiJson<{ items: UserRow[]; total: number }>(`/admin/users?${query}`);
@@ -170,6 +177,11 @@ export default function AdminUsersScreen() {
       cancelLabel: ar ? 'إلغاء' : 'Cancel',
     });
     if (ok) await run(u.id, () => apiJson(`/moderation/users/${u.id}/unsuspend`, { method: 'POST' }));
+  };
+
+  const saveBudget = async (u: UserRow, usd: number | null, until: string | null = null) => {
+    setBudgetEdit(null);
+    await run(u.id, () => apiJson(`/admin/users/${u.id}/ai-budget`, { method: 'PUT', body: JSON.stringify({ usd, until }) }));
   };
 
   if (authLoading) {
@@ -258,6 +270,9 @@ export default function AdminUsersScreen() {
                     </Text>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                       {ar ? 'انضم' : 'Joined'} {date(u.createdAt)} · {ar ? 'آخر دخول' : 'Last login'} {date(u.lastLogin)} · AI ${u.monthSpendUsd.toFixed(3)}
+                      {u.aiBudgetUsd != null
+                        ? ` / $${u.aiBudgetUsd} ${ar ? '(حد خاص' : '(own limit'}${u.aiBudgetUntil ? (ar ? ` حتى ${u.aiBudgetUntil}` : ` until ${u.aiBudgetUntil}`) : ''})`
+                        : ''}
                     </Text>
                     <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18 }}>
@@ -291,6 +306,64 @@ export default function AdminUsersScreen() {
                     </Pressable>
                   )}
                 </View>
+                {canSetBudget && busyId !== u.id && budgetEdit?.id !== u.id && (
+                  <Pressable
+                    onPress={() => setBudgetEdit({ id: u.id, value: u.aiBudgetUsd != null ? String(u.aiBudgetUsd) : '', until: u.aiBudgetUntil ?? '' })}
+                    style={[styles.chip, { alignSelf: isRTL ? 'flex-end' : 'flex-start', borderRadius: colors.radius, borderColor: ACCENT }]}
+                  >
+                    <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{ar ? 'حد الذكاء الاصطناعي الشهري' : 'Monthly AI limit'}</Text>
+                  </Pressable>
+                )}
+                {budgetEdit?.id === u.id && (() => {
+                  const usd = Number(budgetEdit.value);
+                  const until = budgetEdit.until.trim();
+                  // The server checks the date is real and not past; this only catches the shape.
+                  const untilOk = until === '' || /^\d{4}-\d{2}-\d{2}$/.test(until);
+                  const valid = budgetEdit.value.trim() !== '' && Number.isFinite(usd) && usd > 0 && usd <= 100 && untilOk;
+                  return (
+                    <View style={{ gap: 8 }}>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                        {ar ? 'الحد الشهري لهذا الحساب بالدولار (حتى 100). «الافتراضي» يعيده إلى حد دوره.' : "This account's monthly limit in USD (up to 100). Default returns it to its role's limit."}
+                      </Text>
+                      <TextInput
+                        value={budgetEdit.value}
+                        onChangeText={value => setBudgetEdit({ ...budgetEdit, value })}
+                        keyboardType="decimal-pad"
+                        placeholder="15"
+                        placeholderTextColor={colors.mutedForeground}
+                        style={[styles.input, { borderColor: colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: align }]}
+                      />
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                        {ar ? 'ينتهي بعد يوم (اختياري، YYYY-MM-DD) — بعده يعود الحد الافتراضي وحده:' : 'Ends after (optional, YYYY-MM-DD) — then the default returns by itself:'}
+                      </Text>
+                      <TextInput
+                        value={budgetEdit.until}
+                        onChangeText={until => setBudgetEdit({ ...budgetEdit, until })}
+                        placeholder="2026-12-31"
+                        placeholderTextColor={colors.mutedForeground}
+                        autoCapitalize="none"
+                        style={[styles.input, { borderColor: untilOk ? colors.border : colors.destructive, borderRadius: colors.radius, color: colors.foreground, textAlign: align }]}
+                      />
+                      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                        <Pressable
+                          disabled={!valid}
+                          onPress={() => saveBudget(u, usd, until || null)}
+                          style={[styles.chip, { borderRadius: colors.radius, backgroundColor: ACCENT, borderColor: ACCENT, opacity: valid ? 1 : 0.5 }]}
+                        >
+                          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{ar ? 'حفظ' : 'Save'}</Text>
+                        </Pressable>
+                        {u.aiBudgetUsd != null && (
+                          <Pressable onPress={() => saveBudget(u, null)} style={[styles.chip, { borderRadius: colors.radius, borderColor: ACCENT }]}>
+                            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{ar ? 'الافتراضي' : 'Default'}</Text>
+                          </Pressable>
+                        )}
+                        <Pressable onPress={() => setBudgetEdit(null)} style={[styles.chip, { borderRadius: colors.radius, borderColor: colors.border }]}>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{ar ? 'إلغاء' : 'Cancel'}</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  );
+                })()}
                 {blocking?.id === u.id && (
                   <View style={{ gap: 8 }}>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>

@@ -58,3 +58,6 @@ export * from "./adminMetrics";
 
 // Addresses that unsubscribed from our email — see emailSuppressions.ts
 export * from "./emailSuppressions";
+
+// Minutes per app area per day, for the admin insights page — see usage.ts
+export * from "./usage";
