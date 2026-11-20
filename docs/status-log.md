@@ -121,6 +121,148 @@ link in it, and only then send.
 No «ما الجديد» entry: only a system admin can see the screen. The migration only creates tables, so no
 `destructive-migration` line is needed.
 
+## The whiteboard has a card of its own, and the in-class tools report what is done in them — 2026-11-20
+
+The admin insights showed teachers spending time in «وضع الصف والسبورة» and nothing else about it: one
+usage area covered the whiteboard, the classroom hub, the presentation player and the book-page view, and
+only two actions in them were events (`game_started`, `game_finished`). The whiteboard itself could be
+opened only from inside a running presentation or from a saved board in «ملفاتي».
+
+- **A Tools-tab card.** `whiteboard` is a tool in `services/toolCatalog.ts` (second in «أثناء الحصة»), so it
+  is on the Tools tab and, being one of the first four tools with no prep-board row, in Today's «أدوات سريعة
+  لهذا الدرس» on phone and desktop. From Today it opens with the lesson's `topic`, which names the board
+  «السبورة — <الدرس>». A «ما الجديد» entry (`whiteboard-in-tools`, teachers) names the tool, so the card wears
+  «جديد». `howWhiteboard` in the help now gives the direct way in first.
+- **A concept.** `CONCEPTS.whiteboard` is the easel in slate `#475569`, the look a saved board already had;
+  `MATERIAL_CONCEPT.board` now reads it, so every saved-material kind is a concept. The Library's `document`
+  shelf was the same slate and moved to warm grey `#57534E` (a shelf with a colour of its own may not twin a
+  concept).
+- **Usage area.** `whiteboard` is appended to `USAGE_AREAS` in the app and the API; `/ai-tools/whiteboard`
+  beats under it. `classroom` is not renamed: its minutes before this day include the whiteboard's, and the
+  admin label is now «وضع الصف» beside «السبورة». An app updated before the API deploys would have its
+  whiteboard minutes stored as `other`; `deploy.yml` ships the API first.
+- **Events** (`services/classUsage.ts`, PostHog, counts and choices only, never a title, lesson or problem):
+  `whiteboard_opened {source: saved | presentation | menu}`, `whiteboard_drawn` (first stroke of a visit),
+  `whiteboard_solved {ok}`, `whiteboard_saved {pages, first, withSolution}`, `whiteboard_exported {pages}`,
+  `classroom_activity_started {format, duration, group, setup}`, `class_pen_used {surface: slides |
+  book_page}` (first stroke of a visit). Today's quick tools now send `tool_opened {source: 'today'}`, which
+  they never did for any tool.
+
+Verified: `classUsage.test.ts` (the names are pinned, each screen calls its events, no whiteboard event
+carries a title or topic); `usageAreas.test.ts`, `toolCatalog.test.ts`, `iconSystem.test.ts`,
+`whatsNew.test.ts`; mobile `pnpm test` (9,449 pass, 0 fail); api-server `pnpm build` + `pnpm test` (2,999
+pass); `pnpm run typecheck`. In Chromium against a local API and Postgres, with a new teacher account: the
+card on the Tools tab (desktop and 390 px, light and dark, Arabic and English), the card in Today's quick
+tools at 390 px dark, opening the board from both, and a stroke drawn with the mouse.
+
+Not verified: that the events arrive in PostHog (the local build has no key, so every call is a no-op);
+the admin insights page showing the new area (no minutes were recorded locally); Android, and touch on a
+real phone. Known limits: a board opened from the Tools tab or Today is saved with an empty `subject` and
+`grade` (only the presentation passes them); `whiteboard_drawn` and `class_pen_used` say that the pen was
+used, not how much; an event fires only where `EXPO_PUBLIC_POSTHOG_API_KEY` is set.
+
+## Grade 3 second pass: skip counting by 10s, 100s and 1000s, four-digit comparing, like fractions, conversions within 9999 — 2026-11-20
+
+This is a second read of Grade 3 maths, on top of «Grade 3 review: six maths lessons asked about their own objective»,
+«Grade 3 maths: offline questions for the four lessons that had none» and «Grade 3 audit…». The generators were run over
+all 254 Grade 3 lessons; each grounds by its own id, and all 70 maths lessons fill a ten-question quiz. Every question of
+every maths quiz was read against its lesson's objective. Every key was right. (The audit script's «wrong key» flags are
+its own: it reads only three-digit numbers and misreads «ولُوّن 3 منها».) Six things did not fit the lesson:
+
+- **«العد القفزي» skipped by 3, 4, 6, 7, 8, 9, 25 and 50**, always from a multiple of the step. The objective is «العدّ
+  قفزيًّا بالعشرات والمئات والألوف تصاعديًّا وتنازليًّا». It now skips by 10, 100 or 1000, from any number within the
+  thousands («3921، 4921، 5921، ___»), and no option passes 9999.
+- **«مقارنة الأعداد» and «ترتيب الأعداد» showed 91, 392 and 732**, while both objectives say «4 منازل». At Grade 3 the
+  `compare` op now draws 1000–9999, as Grade 2's draws 100–999.
+- **«مقارنة الكسور» and «ترتيب الكسور» compared unlike fractions** («6/7 ___ 5/8», «4/5 ___ 5/6»), which takes a common
+  denominator. The objectives compare «باستعمال النماذج وخط الأعداد». At Grade 3 the sign item now uses one denominator or
+  one numerator, and every fraction is proper. Grades 4 and up still cross-multiply.
+- **The four conversion lessons went past the thousands:** «حوّل 18000 م إلى كم», «حوّل 21 لترًا إلى مل», and options such as
+  4860000 (a product of the two numbers). `convertGen` (Grade 3 only) now caps every amount and option at 9999. The
+  compound and story helpers take that cap as an optional argument, so Grades 4–5 are unchanged.
+- **«الضرب في 6 و9» and «الضرب في 7 و8» only drilled 6 and 7.** `lessonTable` read the first number. The new `lessonTables`
+  reads both, and each item draws one of them.
+- **«ما 1/6 العدد 30»** now reads «ما 1/6 من العدد 30» (and «… نجد بها 1/6 من العدد 78»).
+
+**Mental adding of thousands went past 9999 too.** «9000 + 3000 = ___» (12000) and options such as 80000 for «3000 + 5000».
+«Grade 2 second pass…» (below) capped most of those options; this change caps the plain-sum kind at Grade 3 as well, and
+draws no two thousands that sum past 9000.
+
+**Verified:**
+- `grade3SecondPass.test.ts` (8 tests) was written first. Six of its eight failed before the fix; the other two pin
+  Grades 1 and 5 as they were. The «6 و9» test first passed for the wrong reason (9 also appears as the other factor), so it now
+  reads the repeated-addition kind, which always adds the lesson's own table.
+- Sampled items were read by hand. That caught a slip in this change: the same-denominator branch kept the old
+  numerator («1/2 ___ 3/2», «4/5 ___ 5/5»). It is fixed, and the test now fails an improper fraction.
+- `lib/math-practice`, the full mobile suite and `pnpm run typecheck` pass (counts in the PR). Rerunning the Grade 3 audit
+  found nothing past 9999 and no improper fraction in the fraction lessons; all 70 maths lessons still fill ten questions.
+
+**Not done:**
+- There is no Grade 3 book text, so the objectives were the reference, as in the earlier reviews.
+- «الفترات الزمنية (2)» (across the day) still includes some intervals inside one hour, which is the previous lesson's
+  content. Left as it is.
+
+No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+
+## Grade 1 review: the last three thin maths lessons fill a quiz, two shapes named in their own question, no elapsed time — 2026-11-20
+
+The same per-lesson read as «Grade 2 review: fifteen maths lessons…» and «Grade 3 review: six maths lessons…» (below),
+on top of «Grade 1 second pass…», which had already read every Grade 1 maths quiz against its objectives. A sweep of all 279
+Grade 1 lessons through the offline plan, quiz, worksheet and activity: every lesson grounds by id, plans and activities
+generate for all, and 63 of 66 maths lessons gave a full paper. What was left (`lib/math-practice/src/early.ts`):
+
+- **The three lessons the second pass left at 8 questions now fill ten.**
+  - «الأشكال المستوية» names shapes from things around a child. Two of those things gave the answer away: «قطعة الجبنة
+    المثلثة» and «بلاطة الأرض المربعة» carry their shape's name, as «كرة القدم» once did for the solids. They are gone,
+    and 11 things now have one shape each, none named after it: a door, a board and a notebook; a clock, a wheel and a
+    plate; a slice of pizza, a coat hanger and a warning road sign; a chessboard and a face of a dice.
+  - «أضلاع الأشكال المستوية ورؤوسها» adds the sides of two shapes together, which of two shapes has more sides, and which
+    shape has four sides of equal length.
+  - «الربع» (and «النصف») add what each of the equal parts is called, how many are left when one is eaten, and (the
+    quarter only) how many quarters make a half.
+- **«الوقت بنصف الساعة» asked «ما الوقت بعد نصف ساعة؟»**, elapsed time, which is Grade 3's «الفترات الزمنية». It now asks
+  which two numbers the hour hand is between at half past.
+- **«الجمع الذهني»** — «عدد من منزلتين مع عدد من منزلة واحدة» — could ask «8 + 9 (أضف 10 ثم انقص 1)»; the number that 9 is
+  added to now has two digits.
+
+**Verified.**
+- `early.test.ts` and `earlyG1Ops.test.ts` recompute the new kinds and fail a thing that carries its shape's name.
+  `earlyG1Ops.test.ts` also checks that the three lessons and «النصف» hold ten different questions.
+- Six planted bugs, one per fix, each failed a test.
+- All 66 Grade 1 maths lessons give a full ten-question quiz and worksheet. The new questions were read by hand and every key
+  is right.
+- math-practice passes; the PR body has the rest of the CI set.
+
+**Not done.** Grade 1 has no extracted book text, so as before the objectives were the reference. The non-maths subjects
+have no offline question bank, by design. Everything the audit left for the page images.
+
+## OpenAI credit ran out; the app-wide AI cap is now $100 — 2026-11-20
+
+**What happened.** On 2026-11-20 every Activity-tool request on app.iqrra.com came back as the offline template,
+under «تعذّر الاتصال · محتوى تجريبي». Neither «A fallback result says so on the result…» nor the 90 s activity
+timeout changed that. Checked by command from the session after the API host was added to the session's network:
+- `GET /api/healthz/ai-budget` read `liveMode: true`, `spentUsd: 48.6606`, `limitUsd: 50`. The app's own cap was not
+  reached.
+- `POST /api/site/ask` with a non-curated question read `{"answered":false,"reason":"error"}`. That reason is
+  returned only when the OpenAI call itself throws, so the failure was not specific to the Activity tool.
+
+The owner found the OpenAI account's credit balance used up and added credit. The same `/api/site/ask` question
+then answered with `"source":"ai"`, and an activity made on app.iqrra.com came back written by the model.
+
+**What changed (config, no code).**
+- `AI_BUDGET_USD` 50 → **100**, set by the owner with `gcloud run services update --update-env-vars`. It made
+  revision `iqraa-api-00551-pzt`, read back as `limitUsd: 100`. It lives on the service, not in `deploy.yml`, so
+  deploys keep it.
+- Two of the owner's accounts got a $20 monthly limit with no end date, on the admin Users screen.
+
+**The lesson.** The app's caps track estimated spend; they do not hold money. When the provider's balance runs out,
+every live call fails, and because generators fall back to sample content, the app keeps looking like it works. The
+new on-result notice now says so. Turning on the OpenAI account's auto-recharge, or a balance alert, is the guard;
+the app cannot see the provider's balance.
+
+**Not verified.** The exact OpenAI error text (no logs were read). The provider balance itself was checked by the
+owner, not from the session.
+
 ## The API no longer attaches a book to a topic the app found no lesson for — 2026-11-20
 
 The follow-up named in «Chat builds material on a topic the curriculum does not have». When a generation
