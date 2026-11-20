@@ -6,14 +6,17 @@ import { users } from "./users";
  *
  * `newsletter_issues` — one row per issue. A row is written when a system admin sends
  * themselves a test copy (`tested_at`, with a hash of the subject and body); the send route
- * accepts only text whose hash matches a test less than 24 hours old. `sent_at` is null
- * until the first teacher has been mailed; at most one row is unsent, because a new test
- * replaces it. `sending_at` is a short claim taken while a send runs, so two requests for
- * one issue cannot both mail everyone.
+ * accepts only text whose hash matches a test less than 24 hours old, and only from the admin
+ * who received that test (`created_by`). Re-testing the identical text updates the row that
+ * already has its hash (`tested_at`, `created_by`) instead of adding one, so its recorded
+ * recipients stay recorded. `sent_at` is null until the first teacher has been mailed; a new
+ * test of other text deletes the unsent rows that have no recipients. `sending_at` is a short
+ * claim taken while a send runs, so two requests for one issue cannot both mail everyone.
  *
- * `newsletter_sends` — who was handed to the mail provider for an issue. The primary key
- * is what makes a second delivery of one issue to one teacher impossible, and a retry
- * after a failed batch reaches only those with no row.
+ * `newsletter_sends` — who was handed to the mail provider for an issue, written before the
+ * batch goes out. The primary key decides who a send mails: a run mails only the teachers
+ * whose row its own insert wrote, so even two overlapping runs cannot both mail one teacher,
+ * and a retry after a failed batch reaches only those with no row.
  *
  * Owner connection only: RLS on, no policy and no grant to the app role, like
  * `email_suppressions`. Only api-server routes/adminNewsletter.ts reads or writes them.

@@ -6,7 +6,9 @@
  * exact text was test-sent first, and not after 24 hours; a test reaches the admin alone;
  * a send reaches verified, unsuspended teachers and school admins who have not unsubscribed,
  * and nobody else; a second send of one issue mails nobody again; and a refused batch leaves
- * its teachers eligible for the retry.
+ * its teachers eligible for the retry. Re-testing identical text after a send resumes that
+ * issue; only the admin who got the test copy may send; and a run mails only the teachers
+ * whose record its own insert wrote.
  */
 import { after, before, it } from "node:test";
 import assert from "node:assert/strict";
@@ -250,5 +252,106 @@ describeDb("teacher newsletter", () => {
     const rows = await db.pool.query(`SELECT 1 FROM newsletter_issues WHERE id = $1`, [issueId]);
     assert.equal(rows.rowCount, 1);
     assert.equal(await sendsOf(issueId), mailed);
+  });
+
+  // Each case below has admins of its own: every admin may make 20 limited POSTs an hour.
+  const testAs = (who: string, body: string) => call(server, "POST", "/admin/newsletter/test", who, { subject: SUBJECT, body });
+  const sendAs = (who: string, issueId: string, body: string) =>
+    call(server, "POST", "/admin/newsletter/send", who, { issueId, subject: SUBJECT, body });
+
+  it("re-testing the identical text after a send resumes that issue, and mails no teacher twice", async () => {
+    const admin3 = await addUser("Admin3", "system_admin");
+    const body = `${BODY}\n\nResumed issue`;
+    const tested = await testAs(admin3, body);
+    assert.equal(tested.status, 200, tested.text);
+    const issueId: string = tested.json.issueId;
+    const first = await sendAs(admin3, issueId, body);
+    assert.equal(first.status, 200, first.text);
+    assert.equal(first.json.sent, 2);
+
+    await db.pool.query(`UPDATE newsletter_issues SET tested_at = now() - interval '25 hours' WHERE id = $1`, [issueId]);
+    const expired = await sendAs(admin3, issueId, body);
+    assert.equal(expired.status, 409);
+    assert.equal(expired.json.error, "test-expired");
+
+    stub.clear();
+    const again = await testAs(admin3, body);
+    assert.equal(again.status, 200, again.text);
+    assert.equal(again.json.issueId, issueId, "the same issue, not a new one");
+    const resumed = await sendAs(admin3, issueId, body);
+    assert.equal(resumed.status, 200, resumed.text);
+    assert.equal(resumed.json.sent, 0);
+    assert.deepEqual(recipients(), [mail("Admin3")], "only the test copy; no teacher mailed again");
+  });
+
+  it("only the admin who received the test copy may send it", async () => {
+    const a = await addUser("Admin4", "system_admin");
+    const b = await addUser("Admin5", "system_admin");
+    const body = `${BODY}\n\nWho tested it`;
+    const tested = await testAs(a, body);
+    assert.equal(tested.status, 200, tested.text);
+    const issueId: string = tested.json.issueId;
+
+    stub.clear();
+    const notMine = await sendAs(b, issueId, body);
+    assert.equal(notMine.status, 409);
+    assert.equal(notMine.json.error, "not-tested");
+    assert.equal(stub.mails().length, 0);
+
+    const mine = await sendAs(a, issueId, body);
+    assert.equal(mine.status, 200, mine.text);
+    assert.equal(mine.json.sent, 2);
+
+    // B tests the identical text: the issue becomes B's, and B may send it, to nobody new.
+    const bTested = await testAs(b, body);
+    assert.equal(bTested.status, 200, bTested.text);
+    assert.equal(bTested.json.issueId, issueId);
+    const bSend = await sendAs(b, issueId, body);
+    assert.equal(bSend.status, 200, bSend.text);
+    assert.equal(bSend.json.sent, 0);
+    assert.deepEqual(recipients(), [mail("Admin5"), mail("Ayla"), mail("Principal")]);
+  });
+
+  it("a teacher already recorded for the issue is not mailed", async () => {
+    const admin6 = await addUser("Admin6", "system_admin");
+    const body = `${BODY}\n\nAlready recorded`;
+    const tested = await testAs(admin6, body);
+    assert.equal(tested.status, 200, tested.text);
+    const issueId: string = tested.json.issueId;
+    await db.pool.query(`INSERT INTO newsletter_sends (issue_id, user_id) VALUES ($1, $2)`, [issueId, ayla]);
+    stub.clear();
+    const res = await sendAs(admin6, issueId, body);
+    assert.equal(res.status, 200, res.text);
+    assert.equal(res.json.sent, 1);
+    assert.deepEqual(recipients(), [mail("Principal")]);
+  });
+
+  it("a row another run writes between this run's read and its write is not mailed by this run", async () => {
+    const admin7 = await addUser("Admin7", "system_admin");
+    const body = `${BODY}\n\nOverlapping runs`;
+    const tested = await testAs(admin7, body);
+    assert.equal(tested.status, 200, tested.text);
+    const issueId: string = tested.json.issueId;
+    // Stands in for an overlapping run: Ayla's row lands just before this run's write-ahead insert.
+    await db.pool.query(`
+      CREATE FUNCTION newsletter_overlap() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN
+        IF pg_trigger_depth() = 1 THEN
+          INSERT INTO newsletter_sends (issue_id, user_id) VALUES ('${issueId}', '${ayla}') ON CONFLICT DO NOTHING;
+        END IF;
+        RETURN NULL;
+      END $$;
+      CREATE TRIGGER newsletter_overlap BEFORE INSERT ON newsletter_sends
+        FOR EACH STATEMENT EXECUTE FUNCTION newsletter_overlap();`);
+    try {
+      stub.clear();
+      const res = await sendAs(admin7, issueId, body);
+      assert.equal(res.status, 200, res.text);
+      assert.equal(res.json.sent, 1);
+      assert.deepEqual(recipients(), [mail("Principal")]);
+      assert.equal(await sendsOf(issueId), 2, "Ayla's row (the other run's) stays");
+    } finally {
+      await db.pool.query(`DROP TRIGGER newsletter_overlap ON newsletter_sends; DROP FUNCTION newsletter_overlap();`);
+    }
   });
 });

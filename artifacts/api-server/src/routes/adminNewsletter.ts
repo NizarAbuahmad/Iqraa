@@ -22,11 +22,14 @@
  *
  * Who is mailed is recorded BEFORE each batch is handed to the provider (and taken back for the
  * ones the provider did not accept), so a crash can make a teacher miss an issue but never get it
- * twice. A retry skips everyone recorded, by user id and by address.
+ * twice. A retry skips everyone recorded, by user id and by address, and a run mails only the
+ * teachers whose record its own insert wrote. Re-testing the identical text resumes the issue
+ * that already has it (an edited text, even by one character, is a new issue). Only the admin
+ * who received the test copy may send it.
  */
 import { Router } from "express";
 import { newsletterIssues, newsletterSends, systemDb as db, users } from "@workspace/db";
-import { and, desc, eq, gte, inArray, notExists, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, ne, notExists, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { UUID } from "../lib/adminMetrics.js";
 import { sendBroadcast } from "../lib/email.js";
@@ -127,11 +130,22 @@ router.post("/admin/newsletter/test", authMiddleware, requireRole("system_admin"
       res.status(out.skipped.length > 0 ? 409 : 502).json({ error: out.skipped.length > 0 ? "unsubscribed" : "send" });
       return;
     }
+    const contentHash = newsletterHash(parsed.subject, parsed.text);
+    // The identical text was tested before (perhaps sent in part, then its test expired): resume
+    // THAT issue, so its recorded recipients are skipped. A new row would mail them all again.
+    // The issue becomes the caller's, since only the admin who got the test copy may send it.
+    const [same] = await db
+      .select({ id: newsletterIssues.id })
+      .from(newsletterIssues)
+      .where(eq(newsletterIssues.contentHash, contentHash))
+      .orderBy(desc(newsletterIssues.testedAt))
+      .limit(1);
     // One unsent issue at a time: this test replaces the last one, whose id then no longer sends.
     await db
       .delete(newsletterIssues)
       .where(
         and(
+          ...(same ? [ne(newsletterIssues.id, same.id)] : []),
           isNull(newsletterIssues.sentAt),
           // An issue with recipients is the record of who was mailed, whatever its sent_at
           // (the stamp can fail to land after the provider took the mail), and the cascade
@@ -140,9 +154,14 @@ router.post("/admin/newsletter/test", authMiddleware, requireRole("system_admin"
           or(isNull(newsletterIssues.sendingAt), lt(newsletterIssues.sendingAt, sql`now() - make_interval(mins => ${SENDING_CLAIM_MINUTES})`)),
         ),
       );
+    if (same) {
+      await db.update(newsletterIssues).set({ testedAt: sql`now()`, createdBy: me.id }).where(eq(newsletterIssues.id, same.id));
+      res.json({ issueId: same.id, sentTo: me.email });
+      return;
+    }
     const [issue] = await db
       .insert(newsletterIssues)
-      .values({ subject: parsed.subject, body: parsed.text, contentHash: newsletterHash(parsed.subject, parsed.text), createdBy: me.id })
+      .values({ subject: parsed.subject, body: parsed.text, contentHash, createdBy: me.id })
       .returning({ id: newsletterIssues.id });
     res.json({ issueId: issue!.id, sentTo: me.email });
   } catch (err) {
@@ -167,6 +186,12 @@ router.post("/admin/newsletter/send", authMiddleware, requireRole("system_admin"
     const decision = sendDecision(issue, parsed.subject, parsed.text);
     if (decision !== "ok") {
       res.status(409).json({ error: decision });
+      return;
+    }
+    // Only the admin who received the test copy may send it: another admin has not read this
+    // text in their own inbox. Re-testing the identical text makes the issue theirs.
+    if (issue!.createdBy !== req.user!.id) {
+      res.status(409).json({ error: "not-tested" });
       return;
     }
 
@@ -203,19 +228,30 @@ router.post("/admin/newsletter/send", authMiddleware, requireRole("system_admin"
       let failed = 0;
       let skipped = 0;
       for (let at = 0; at < recipients.length; at += CHUNK) {
-        const chunk = recipients.slice(at, at + CHUNK);
+        const slice = recipients.slice(at, at + CHUNK);
         if (at > 0) await sleep(CHUNK_PAUSE_MS);
         await db.update(newsletterIssues).set({ sendingAt: sql`now()` }).where(eq(newsletterIssues.id, issueId));
+        let mine: Set<string>;
         try {
           // Write ahead: if we die after the provider took the mail, nobody is mailed twice.
-          await db.insert(newsletterSends).values(chunk.map((r) => ({ issueId, userId: r.id }))).onConflictDoNothing();
+          const inserted = await db
+            .insert(newsletterSends)
+            .values(slice.map((r) => ({ issueId, userId: r.id })))
+            .onConflictDoNothing()
+            .returning({ userId: newsletterSends.userId });
+          mine = new Set(inserted.map((r) => r.userId));
         } catch (err) {
-          logger.error({ err, issueId, chunk: chunk.length }, "newsletter write-ahead failed — chunk not sent, stopping");
+          logger.error({ err, issueId, chunk: slice.length }, "newsletter write-ahead failed — chunk not sent, stopping");
           failed += recipients.length - at;
           break;
         }
+        // The primary key decides: a row that already existed belongs to another run (one that
+        // took a stale claim while this one stalled), which mails that teacher. Not mailed, not counted.
+        const chunk = slice.filter((r) => mine.has(r.id));
+        if (chunk.length === 0) continue;
         const out = await sendBroadcast(chunk, parsed.subject, html, teacherUnsubscribeUrl, TEACHER_FOOTER);
         const accepted = new Set(out.sent.map((e) => e.toLowerCase()));
+        // Only this request's own rows are taken back.
         const notSent = chunk.filter((r) => !accepted.has(r.email.toLowerCase())).map((r) => r.id);
         if (notSent.length > 0) {
           try {
