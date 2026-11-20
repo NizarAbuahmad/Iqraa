@@ -177,6 +177,16 @@ describe('algebra generators: answers', () => {
       assert.match(item.eq, /^x² [+−] \d*x [+−] \d+$/, item.eq);
       assert.ok(!item.wrongs.some(w => /[+−] 0\)/.test(w)), item.wrongs.join(' | '));
     }
+    // A special product is factored completely: no bracket keeps a common
+    // factor. At the hard tier `m` and `a` were drawn apart, so m = a = 3 keyed
+    // «9x² + 18x + 9» as «(3x + 3)²», not 9(x + 1)² (hand review, 2026-11-20).
+    for (const item of draws('factor_special', 600).filter(i => /^حلّل/.test(stem(i)))) {
+      for (const [, k, c] of item.answer.matchAll(/\((\d*)x [+−] (\d+)\)/g)) {
+        const kk = Number(k || 1), cc = Number(c);
+        const g = [kk, cc].reduce((x, y) => { while (y) [x, y] = [y, x % y]; return x; });
+        assert.equal(g, 1, `${item.eq} → ${item.answer}: a bracket still has a common factor`);
+      }
+    }
     // the GCF really is the greatest
     for (const item of draws('factor_gcf').filter(factoring)) {
       const g = Number(item.answer.match(/^(\d+)/)![1]);

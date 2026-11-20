@@ -16,12 +16,14 @@ Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grad
 2026-11-20, staff uploads aside). This fills the maths shelves.
 
 **What changed.**
-- **447 ready-made sheets**, one per maths lesson, grades 1–9 (`lib/curriculum/src/data/premade_worksheets.json`,
-  475 sheets with Grade 10's 28). `scripts/build-premade-sheets.ts` now takes `--grade grade-1`…`grade-10`: Grades
+- **432 ready-made sheets**, one per maths lesson in grades 1–9 less the 15 held back below
+  (`lib/curriculum/src/data/premade_worksheets.json`, 460 with Grade 10's 28). `scripts/build-premade-sheets.ts` now takes `--grade grade-1`…`grade-10`: Grades
   1–9 read their lessons from the knowledge base, grade names come from the catalog, `_lab` lessons and lessons the
   bank does not cover (`mathBankCovers`; none today) are skipped. Same generator as Grade 10 (`MockAIService`,
-  medium, 10 questions), keys recorded `'bank'`. Grade 9 has 29 sheets for 32 lessons: the 3 others are GeoGebra
-  labs.
+  medium, 10 questions), keys recorded `'bank'`. The 3 Grade 9 GeoGebra labs get none.
+- **The build is reproducible.** It claimed to be deterministic and was not: the generator draws with `Math.random`, so
+  a rebuild changed every number on every sheet, and a sheet read by hand was not the sheet that shipped. Each draw is
+  now seeded by sheet id and draw number (`seedFor`); a lesson built alone or among 30 others comes out identical.
 - **A «which one» item kept its choices only in a multiple-choice slot.** A worksheet files bank items as short
   answer at random, and `formatItem` dropped the options there, so «أيّ وحدة أنسب لقياس طول الكتاب؟» printed
   keyed «مشبك الورق» with nothing to pick from. Nine templates across grades 1, 5, 6, 8 and 9 did it. `formatItem`
@@ -40,8 +42,25 @@ each filed under a KB lesson with that lesson's title, and that every one of the
 key per question. `pnpm run typecheck`; math-practice 1,433 pass; api-server 2,999 pass; curriculum 930 of 931 —
 `r2.test.ts` fails identically on untouched `main` in this environment (it asserts R2 is *not* configured).
 
-**Not verified yet.** Each sheet's answer keys read by hand: an independent review of all 4,464 keys is in progress
-and this PR stays a draft until it is folded in.
+**Hand review.** Three independent reviewers worked every one of the 4,464 questions (grades 1–3, 4–6, 7–9). No key
+was arithmetically wrong. What it found, and what was done:
+- **One incomplete key:** Grade 8 «حلّل: 9x² + 18x + 9» keyed «(3x + 3)²». At the hard tier `factor_special` drew
+  `m` and `a` apart, so m = a = 3 left a common factor (also «9x² − 36 → (3x − 6)(3x + 6)»). `a` is now coprime to
+  `m`; `algebra.test.ts` asserts no bracket keeps a common factor.
+- **Unanswerable picks the first rule missed:** «أيّ البيانات العددية الآتية…» (two words before «الآتية») and
+  «في أيّ مجموعة / صندوق نضع…» (groups never shown). `picks.ts` now covers both, so they keep their options.
+- **15 sheets held back** (`HELD_BACK` in the build script, with the evidence per lesson): the lesson's skill is
+  missing or 3+ of 10 questions are another lesson's or grade's — e.g. «الضرب في 6 و9» with no ×9, «القسمة مع وجود
+  أصفار في الناتج» with no zero in any quotient, thousandths in Grade 4, «تمييز متوازي الأضلاع» asking what one
+  condition makes a parallelogram. Each is a bank generator to fix, then a re-run with `--only`.
+- **Kept, keys correct, to fix in the bank later:** «أجب بعدد كسري» where the answer is not a mixed number (g6
+  u2_l2–l4); least common denominator of unsimplified fractions (g6 u2_l1); «قدّر ناتج 18 ÷ 2» where the fact is
+  exact (g3 u8_l2); «أقل عدد من الكرات يجب إخراجه» read as drawing blind (g3 u12_l5, g4 u10_l4); a missing leading
+  digit that cannot change divisibility by 4 (g5 u3_l1); «مستطيل» for squares; «قطعة بيتزا» for a whole pizza;
+  combinations in Grade 8 «عدّ النواتج» (check the book); open questions with one keyed form («الحادية عشرة إلا
+  ثلثًا», «في الظهر»).
+- **Not checked:** coordinates written «(8 ، 4)» with Latin digits in an RTL line may render reversed (g5 u5_l2,
+  u8_l6, g6 u4_l1–l3) — look at one printed sheet.
 
 **Not done.**
 - **Other subjects, grades 1–8.** The only built-in source is the QR codes printed in the books

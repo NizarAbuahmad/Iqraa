@@ -36,6 +36,17 @@ describe('isUnlistedPick', () => {
     assert.equal(isUnlistedPick('Which of these is a statistical question?', 'How old are you?'), true);
   });
 
+  it('found by the hand review of the built sheets (2026-11-20)', () => {
+    // Two words between «أيّ» and what it points at.
+    assert.equal(isUnlistedPick('أيّ البيانات العددية الآتية بيانات منفصلة؟', 'عدد الأهداف في كل مباراة'), true);
+    // Groups or boxes the question names but never shows.
+    assert.equal(isUnlistedPick('في أيّ مجموعة نضع «برتقالة»؟', 'الفواكه'), true);
+    assert.equal(
+      isUnlistedPick('رتّبت المعلمة الأشكال في صناديق حسب الشكل واللون. في أيّ صندوق نضع «دائرة زرقاء»؟', 'صندوق «دائرة زرقاء»'),
+      true,
+    );
+  });
+
   it('a pick that lists its choices, harakat and guillemets aside', () => {
     assert.equal(isUnlistedPick('أي الأعداد الآتية فردي: 88، 26، 81، 54؟', '81'), false);
     assert.equal(isUnlistedPick('أي مقاييس النزعة المركزية أنسب: الوسط الحسابي، أم الوسيط؟', 'الوسيط'), false);

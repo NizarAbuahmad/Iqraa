@@ -13,16 +13,21 @@
  * (`artifacts/mobile/services/premadeSheetGate.ts`) uses it to refuse a sheet.
  * One rule, so the two cannot drift.
  *
- * A pick is «أيّ» directly in front of what it points at («أي هذه الأشياء»,
- * «أيّ الأسئلة الآتية», one word between at most), or a «أنسب» question, or
- * the English «which of these / the following» or «best». It is unlisted when
+ * A pick is «أيّ» in front of what it points at («أي هذه الأشياء»,
+ * «أيّ الأسئلة الآتية», two words between at most), or a «أنسب» question, or
+ * «في أيّ مجموعة / صندوق» (groups the question names), or the English «which
+ * of these / the following» or «best». It is unlisted when
  * its answer is not in its own text: «أي الأعداد الآتية فردي: 88، 26، 81، 54؟»
  * lists its choices and is fine. Merely mentioning «الآتي», «هذه» or «التالي»
  * is not a pick («ما العدد التالي للعدد 49؟», «رتّب الأعداد الآتية»), and neither is
  * a worked «أيّ» («أي عدد نضيفه إلى 243 لنحصل على 283؟»).
  */
 
-const PICK_AR = /(أيّ|أي|أيهما|أيّهما|أيها|أيّها)\s+(\S+\s+)?(هذه|الآتية|الآتي|التالية|التالي)|أنسب/;
+// Up to two words between «أيّ» and the pointer («أيّ البيانات العددية الآتية»),
+// and a group or box the question names but does not list («في أيّ مجموعة نضع
+// «برتقالة»؟») — both found by the hand review of the built sheets, 2026-11-20.
+const PICK_AR =
+  /(أيّ|أي|أيهما|أيّهما|أيها|أيّها)\s+(\S+\s+){0,2}(هذه|الآتية|الآتي|التالية|التالي)|أنسب|(في|إلى)\s+(أيّ|أي)\s+(مجموعة|صندوق|فئة)/;
 const PICK_EN = /\bwhich (of )?(these|the following)\b|\bbest\b/i;
 
 /** Harakat, tatweel, guillemets and spaces do not decide whether an answer is on the page. */
