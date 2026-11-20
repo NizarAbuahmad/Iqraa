@@ -5,6 +5,12 @@
  *                                              churned users, weekly cohorts, the most frequent
  *                                              users, what they like, who the teachers are.
  *   GET /admin/insights/users/:id?days=…      — one person's activity and details.
+ *   PUT /admin/insights/users/:id/internal    — mark a team / test teacher account as internal
+ *                                              ({ internal: boolean }), or clear the mark.
+ *
+ * Who is counted: `?role=all|teacher|student|parent` (lib/insights.ts `rolesOf`), and never a
+ * `system_admin` or an account marked internal (`users.insights_excluded_at`) — the team's own
+ * use otherwise dominates a page this small. Every user-keyed query goes through `counted`.
  *
  * System admin only: it spans every school and names individuals. Reads through `systemDb`
  * (listed in lib/__tests__/systemDbFiles.test.ts) because it reads every user's rows.
@@ -23,7 +29,7 @@
 import { Router } from "express";
 import { systemDb as db } from "@workspace/db";
 import { sql, type SQL } from "drizzle-orm";
-import { authMiddleware, requireRole, TEACHER_ROLES } from "../middlewares/auth.js";
+import { authMiddleware, requireRole, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
 import { UUID } from "../lib/adminMetrics.js";
 import { AMMAN_OFFSET_HOURS, addDays, ammanDay, ammanDayStart } from "../lib/dailyActivity.js";
@@ -33,8 +39,11 @@ import {
   buildCohorts,
   multiValueBreakdown,
   parseInsightsDays,
+  parseInsightsRole,
+  rolesOf,
   summarizeActivity,
   weekStartOf,
+  type InsightsRole,
 } from "../lib/insights.js";
 
 const router = Router();
@@ -43,6 +52,18 @@ const TOP_USERS = 50;
 /** Who may be named on the page: teacher accounts (TEACHER_ROLES), never a student or parent. */
 const NAMED_ROLES = TEACHER_ROLES;
 const COHORT_WEEKS = 8;
+
+/**
+ * `col` (a user id) is someone the page counts: one of the filter's roles — never `system_admin`
+ * — and not marked internal. A role list from `rolesOf`, never from the request.
+ */
+function counted(col: SQL, role: InsightsRole): SQL {
+  const roles = sql.join(rolesOf(role).map((r) => sql`${r}`), sql`, `);
+  return sql`${col} in (select id from users where role in (${roles}) and insights_excluded_at is null)`;
+}
+
+/** A teacher account that is not marked internal — the «who the teachers are» population. */
+const REAL_TEACHER = sql`role = 'teacher' and insights_excluded_at is null`;
 
 /** A timestamp column as its Amman calendar day. */
 const local = (col: SQL) => sql`((${col} at time zone 'UTC') + make_interval(hours => ${AMMAN_OFFSET_HOURS}))::date`;
@@ -85,6 +106,13 @@ router.get("/admin/insights", authMiddleware, requireRole("system_admin"), async
     return;
   }
   const { days } = parsed;
+  const parsedRole = parseInsightsRole(req.query["role"]);
+  if ("error" in parsedRole) {
+    res.status(400).json({ error: parsedRole.error });
+    return;
+  }
+  const { role } = parsedRole;
+  const who = (col: SQL) => counted(col, role);
   try {
     const endDay = ammanDay(new Date());
     const sinceDay = addDays(endDay, -(days - 1));
@@ -118,80 +146,92 @@ router.get("/admin/insights", authMiddleware, requireRole("system_admin"), async
       yearsRows,
       teachSubjectRows,
       teachGradeRows,
+      excludedRows,
     ] = await Promise.all([
       rowsOf<{ area: string; minutes: number; users: number }>(sql`
         select area, sum(minutes)::int as minutes, count(distinct user_id)::int as users
-        from usage_minutes where day >= ${sinceDay}::date group by area order by 2 desc`),
+        from usage_minutes where day >= ${sinceDay}::date and ${who(sql`user_id`)}
+        group by area order by 2 desc`),
       rowsOf<{ day: string; minutes: number }>(sql`
         select to_char(day, 'YYYY-MM-DD') as day, sum(minutes)::int as minutes
-        from usage_minutes where day >= ${sinceDay}::date group by day`),
+        from usage_minutes where day >= ${sinceDay}::date and ${who(sql`user_id`)} group by day`),
       rowsOf<{ platform: string; minutes: number }>(sql`
         select platform, sum(minutes)::int as minutes
-        from usage_minutes where day >= ${sinceDay}::date group by platform order by 2 desc`),
+        from usage_minutes where day >= ${sinceDay}::date and ${who(sql`user_id`)}
+        group by platform order by 2 desc`),
       rowsOf<{ minutes: number; user_days: number }>(sql`
         select coalesce(sum(minutes), 0)::int as minutes, count(distinct (user_id, day))::int as user_days
-        from usage_minutes where day >= ${sinceDay}::date`),
+        from usage_minutes where day >= ${sinceDay}::date and ${who(sql`user_id`)}`),
+      // When the heartbeat shipped — a fact about the app, so not filtered by who.
       rowsOf<{ day: string | null }>(sql`select to_char(min(day), 'YYYY-MM-DD') as day from usage_minutes`),
       rowsOf<{ kind: string; count: number; users: number }>(sql`
         select kind, count(*)::int as count, count(distinct user_id)::int as users
-        from ai_generations where created_at >= ${since} and user_id is not null
+        from ai_generations where created_at >= ${since} and user_id is not null and ${who(sql`user_id`)}
         group by kind order by 2 desc`),
       rowsOf<{ type: string; count: number; users: number }>(sql`
         select type, count(*)::int as count, count(distinct user_id)::int as users
-        from saved_materials where created_at >= ${since} group by type order by 2 desc`),
+        from saved_materials where created_at >= ${since} and ${who(sql`user_id`)}
+        group by type order by 2 desc`),
       rowsOf<{ evaluations: number; homework: number; chat_messages: number }>(sql`
         select
-          (select count(*) from evaluations where created_at >= ${since})::int as evaluations,
-          (select count(*) from homework where created_at >= ${since})::int as homework,
-          (select count(*) from chat_messages where created_at >= ${since})::int as chat_messages`),
+          (select count(*) from evaluations where created_at >= ${since} and ${who(sql`teacher_id`)})::int as evaluations,
+          (select count(*) from homework where created_at >= ${since} and ${who(sql`teacher_id`)})::int as homework,
+          (select count(*) from chat_messages where created_at >= ${since} and ${who(sql`sender_id`)})::int as chat_messages`),
       rowsOf<{ user_id: string; day: string }>(sql`
         select a.user_id, to_char(a.day, 'YYYY-MM-DD') as day
-        from (${activitySql(lookbackDay)}) a where a.user_id is not null`),
+        from (${activitySql(lookbackDay)}) a where a.user_id is not null and ${who(sql`a.user_id`)}`),
       rowsOf<{ id: string; week: string }>(sql`
         select id, to_char(${local(sql`created_at`)}, 'YYYY-MM-DD') as week
-        from users where created_at >= ${ammanDayStart(firstCohortWeek)}`),
+        from users where created_at >= ${ammanDayStart(firstCohortWeek)} and ${who(sql`id`)}`),
       rowsOf<{ user_id: string; minutes: number; last_beat: string }>(sql`
         select user_id, sum(minutes)::int as minutes, max(last_beat_at) as last_beat
-        from usage_minutes where day >= ${sinceDay}::date group by user_id`),
+        from usage_minutes where day >= ${sinceDay}::date and ${who(sql`user_id`)} group by user_id`),
       rowsOf<{ user_id: string; area: string; minutes: number }>(sql`
         select user_id, area, sum(minutes)::int as minutes
-        from usage_minutes where day >= ${sinceDay}::date group by user_id, area`),
+        from usage_minutes where day >= ${sinceDay}::date and ${who(sql`user_id`)} group by user_id, area`),
       rowsOf<{ user_id: string; count: number }>(sql`
         select user_id, count(*)::int as count from ai_generations
-        where created_at >= ${since} and user_id is not null group by user_id`),
+        where created_at >= ${since} and user_id is not null and ${who(sql`user_id`)} group by user_id`),
       rowsOf<{ key: string; up: number; down: number }>(sql`
         select coalesce(nullif(tool_id, ''), material_type) as key,
                (count(*) filter (where rating = 'up'))::int as up,
                (count(*) filter (where rating = 'down'))::int as down
-        from feedback where created_at >= ${since} and rating in ('up', 'down')
+        from feedback where created_at >= ${since} and rating in ('up', 'down') and ${who(sql`user_id`)}
         group by 1 order by (count(*)) desc`),
       rowsOf<{ type: string; count: number }>(sql`
-        select type, count(*)::int as count from saved_materials where is_favorite group by type order by 2 desc`),
+        select type, count(*)::int as count from saved_materials where is_favorite and ${who(sql`user_id`)}
+        group by type order by 2 desc`),
       rowsOf<{ key: string; count: number }>(sql`
         select nullif(subject, '') as key, count(distinct user_id)::int as count
-        from saved_materials where created_at >= ${since} group by 1`),
+        from saved_materials where created_at >= ${since} and ${who(sql`user_id`)} group by 1`),
       rowsOf<{ key: string; count: number }>(sql`
         select nullif(grade, '') as key, count(distinct user_id)::int as count
-        from saved_materials where created_at >= ${since} group by 1`),
+        from saved_materials where created_at >= ${since} and ${who(sql`user_id`)} group by 1`),
+      // «Who the teachers are» is about teacher accounts whatever the role filter, but never an
+      // account marked internal (the team's own test teachers would skew a small breakdown).
       rowsOf<{ count: number; with_subjects: number; with_grades: number }>(sql`
         select count(*)::int as count,
                (count(*) filter (where jsonb_array_length(subject_ids) > 0))::int as with_subjects,
                (count(*) filter (where jsonb_array_length(grade_ids) > 0))::int as with_grades
-        from users where role = 'teacher'`),
+        from users where ${REAL_TEACHER}`),
       rowsOf<{ key: string | null; count: number }>(sql`
-        select gender as key, count(*)::int as count from users where role = 'teacher' group by 1`),
+        select gender as key, count(*)::int as count from users where ${REAL_TEACHER} group by 1`),
       rowsOf<{ key: string | null; count: number }>(sql`
-        select age_range as key, count(*)::int as count from users where role = 'teacher' group by 1`),
+        select age_range as key, count(*)::int as count from users where ${REAL_TEACHER} group by 1`),
       rowsOf<{ key: string | null; count: number }>(sql`
-        select governorate as key, count(*)::int as count from users where role = 'teacher' group by 1`),
+        select governorate as key, count(*)::int as count from users where ${REAL_TEACHER} group by 1`),
       rowsOf<{ key: string | null; count: number }>(sql`
-        select years_teaching as key, count(*)::int as count from users where role = 'teacher' group by 1`),
+        select years_teaching as key, count(*)::int as count from users where ${REAL_TEACHER} group by 1`),
       rowsOf<{ key: string; count: number }>(sql`
         select s as key, count(*)::int as count
-        from users, jsonb_array_elements_text(subject_ids) s where role = 'teacher' group by 1`),
+        from users, jsonb_array_elements_text(subject_ids) s where ${REAL_TEACHER} group by 1`),
       rowsOf<{ key: string; count: number }>(sql`
         select g as key, count(*)::int as count
-        from users, jsonb_array_elements_text(grade_ids) g where role = 'teacher' group by 1`),
+        from users, jsonb_array_elements_text(grade_ids) g where ${REAL_TEACHER} group by 1`),
+      rowsOf<{ admins: number; flagged: number }>(sql`
+        select (count(*) filter (where role = 'system_admin'))::int as admins,
+               (count(*) filter (where role <> 'system_admin' and insights_excluded_at is not null))::int as flagged
+        from users`),
     ]);
 
     // ─── activity: active / returning / churned, cohorts ───────────────────
@@ -275,7 +315,11 @@ router.get("/admin/insights", authMiddleware, requireRole("system_admin"), async
     res.json({
       timezone: "Asia/Amman",
       days,
+      role,
       since: sinceDay,
+      // Left out of every count above, whatever the role filter: the team's admin accounts, and
+      // accounts an admin marked internal.
+      excluded: { admins: excludedRows[0]?.admins ?? 0, flagged: excludedRows[0]?.flagged ?? 0 },
       trackingSince: trackingSince[0]?.day ?? null,
       time: {
         totalMinutes: total.minutes,
@@ -348,11 +392,13 @@ router.get("/admin/insights/users/:id", authMiddleware, requireRole("system_admi
       governorate: string | null;
       years_teaching: string | null;
       signup_platform: string | null;
+      insights_excluded_at: string | null;
       created_at: string;
       last_login: string | null;
     }>(sql`
       select u.id, u.first_name, u.last_name, u.email, u.role, s.name as school, u.grade_ids, u.subject_ids,
-             u.gender, u.age_range, u.governorate, u.years_teaching, u.signup_platform, u.created_at, u.last_login
+             u.gender, u.age_range, u.governorate, u.years_teaching, u.signup_platform, u.insights_excluded_at,
+             u.created_at, u.last_login
       from users u left join schools s on s.id = u.school_id where u.id = ${id}`);
     // A student or parent (possibly a minor) has no per-person page: same answer as no such user.
     if (!person || !NAMED_ROLES.includes(person.role)) {
@@ -404,6 +450,8 @@ router.get("/admin/insights/users/:id", authMiddleware, requireRole("system_admi
           yearsTeaching: person.years_teaching,
         },
         signupPlatform: person.signup_platform,
+        // Left out of the insights page: marked internal, or a system admin (always left out).
+        internal: person.insights_excluded_at !== null || person.role === "system_admin",
         createdAt: person.created_at,
         lastSeen: seen.length ? new Date(Math.max(...seen)).toISOString() : null,
       },
@@ -423,6 +471,42 @@ router.get("/admin/insights/users/:id", authMiddleware, requireRole("system_admi
   } catch (err) {
     logger.error({ err }, "admin insights user failed");
     res.status(500).json({ error: "Failed to load this user's insights" });
+  }
+});
+
+/**
+ * Mark a team or test account as internal (left out of the insights page), or clear the mark.
+ * Teacher-side accounts only, as the per-user page: a student or parent has no page to mark from,
+ * and answers 404 like an unknown id. A system admin is left out whatever the mark says.
+ */
+router.put("/admin/insights/users/:id/internal", authMiddleware, requireRole("system_admin"), async (req: AuthenticatedRequest, res) => {
+  const id = String(req.params["id"] ?? "");
+  if (!UUID.test(id)) {
+    res.status(400).json({ error: "Invalid user id" });
+    return;
+  }
+  const internal = (req.body as { internal?: unknown } | undefined)?.internal;
+  if (typeof internal !== "boolean") {
+    res.status(400).json({ error: "internal must be true or false" });
+    return;
+  }
+  try {
+    const roles = sql.join(NAMED_ROLES.map((r) => sql`${r}`), sql`, `);
+    const [row] = await rowsOf<{ id: string }>(sql`
+      update users
+      set insights_excluded_at = ${internal ? sql`coalesce(insights_excluded_at, now())` : sql`null`}
+      where id = ${id} and role in (${roles})
+      returning id`);
+    if (!row) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    // ponytail: no audit table (as routes/admin.ts), so this log line is the audit trail.
+    logger.info({ actorId: req.user!.id, targetId: id, internal }, "admin changed insights internal mark");
+    res.json({ id, internal });
+  } catch (err) {
+    logger.error({ err }, "admin insights internal mark failed");
+    res.status(500).json({ error: "Failed to change the internal mark" });
   }
 });
 

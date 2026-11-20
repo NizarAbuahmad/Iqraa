@@ -29,9 +29,13 @@ import { teacherProfileLabel } from '@/services/teacherProfile';
 import { isolateLtr } from '@/services/growthMetrics';
 import {
   INSIGHTS_DAYS,
+  INSIGHTS_ROLES,
   arDays,
   areaLabel,
+  excludedNote,
   periodLabel,
+  roleFilterLabel,
+  showsTeacherSections,
   breakdownCell,
   cohortCell,
   formatMinutes,
@@ -40,6 +44,7 @@ import {
   type Breakdown,
   type Insights,
   type InsightsDays,
+  type InsightsRole,
 } from '@/services/adminInsights';
 
 const subjectName = (id: string, ar: boolean) => {
@@ -60,6 +65,7 @@ export default function AdminInsightsScreen() {
   const isAdmin = user?.role === 'system_admin';
 
   const [days, setDays] = useState<InsightsDays>(30);
+  const [role, setRole] = useState<InsightsRole>('all');
   const [data, setData] = useState<Insights | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -68,11 +74,11 @@ export default function AdminInsightsScreen() {
     if (!isAdmin) return;
     setLoading(true);
     setError('');
-    apiJson<Insights>(`/admin/insights?days=${days}`)
+    apiJson<Insights>(`/admin/insights?days=${days}&role=${role}`)
       .then(setData)
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
-  }, [isAdmin, days]);
+  }, [isAdmin, days, role]);
 
   if (authLoading) {
     return <View style={[styles.center, { backgroundColor: colors.background }]}><ActivityIndicator color={ACCENT} /></View>;
@@ -133,13 +139,19 @@ export default function AdminInsightsScreen() {
               <FilterChip key={d} label={periodLabel(d, ar)} active={days === d} onPress={() => setDays(d)} colors={colors} />
             ))}
           </View>
+          <View style={{ flexDirection: row, flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+            {INSIGHTS_ROLES.map(r => (
+              <FilterChip key={r} label={roleFilterLabel(r, ar)} active={role === r} onPress={() => setRole(r)} colors={colors} />
+            ))}
+          </View>
+          {!!data && !!excludedNote(data.excluded, ar) && note(excludedNote(data.excluded, ar))}
           {!!error && <Text style={{ color: colors.destructive, fontFamily: 'Almarai_400Regular', textAlign: align }}>{error}</Text>}
           {loading || !data ? <ActivityIndicator color={ACCENT} style={{ marginTop: 20 }} /> : (
             <>
               <View style={{ flexDirection: row, flexWrap: 'wrap', gap: 10 }}>
                 <StatCard label={ar ? 'نشطون في الفترة' : 'Active in period'} value={data.retention.active} colors={colors} />
                 <StatCard label={ar ? 'عائدون (يومان أو أكثر)' : 'Returning (2+ days)'} value={data.retention.returning} colors={colors} />
-                <StatCard label={ar ? 'انقطعوا (لا نشاط منذ ١٤ يومًا)' : 'Lapsed (none in 14 days)'} value={data.retention.churned} colors={colors} />
+                <StatCard label={ar ? 'انقطعوا (لا نشاط منذ ١٤ يومًا، أيًّا كانت الفترة)' : 'Lapsed (none in 14 days, any period)'} value={data.retention.churned} colors={colors} />
                 <StatCard label={ar ? 'إجمالي وقت الاستخدام' : 'Total time in app'} value={formatMinutes(data.time.totalMinutes, ar)} colors={colors} />
                 <StatCard label={ar ? 'متوسط الدقائق في يوم النشاط' : 'Avg minutes per active day'} value={data.time.avgMinutesPerActiveDay} colors={colors} />
               </View>
@@ -221,7 +233,8 @@ export default function AdminInsightsScreen() {
                 colors={colors}
               />
 
-              {/* ─── Frequent users ──────────────────────────────────────── */}
+              {/* ─── Frequent users (teacher accounts only, so not on a student/parent filter) ── */}
+              {showsTeacherSections(role) && <>
               <SectionTitle text={ar ? 'المستخدمون الأكثر نشاطًا' : 'Most frequent users'} isRTL={isRTL} colors={colors} />
               {note(
                 ar
@@ -270,6 +283,7 @@ export default function AdminInsightsScreen() {
                   </Pressable>
                 );
               })}
+              </>}
 
               {/* ─── What they like ──────────────────────────────────────── */}
               <SectionTitle text={ar ? 'ما الذي يعجبهم' : 'What they like'} isRTL={isRTL} colors={colors} />
@@ -290,7 +304,8 @@ export default function AdminInsightsScreen() {
               {breakdownTable(ar ? 'المواد التي يحفظون منها (أشخاص)' : 'Subjects they save from (people)', data.likes.subjects, k => k)}
               {breakdownTable(ar ? 'الصفوف التي يحفظون منها (أشخاص)' : 'Grades they save from (people)', data.likes.grades, k => k)}
 
-              {/* ─── Who the teachers are ────────────────────────────────── */}
+              {/* ─── Who the teachers are (teacher accounts whatever the period) ─────────── */}
+              {showsTeacherSections(role) && <>
               <SectionTitle text={ar ? `من هم المعلّمون (${data.teachers.total})` : `Who the teachers are (${data.teachers.total})`} isRTL={isRTL} colors={colors} />
               {note(ar ? 'الجنس والعمر والمحافظة والخبرة أسئلة اختيارية في «عنك»؛ الأرقام لكل المعلّمين لا للفترة فقط.' : 'Gender, age, governorate and experience are optional «About you» answers; counts are all teachers, not just this period.')}
               {breakdownTable(ar ? 'المواد التي يدرّسونها' : 'Subjects they teach', data.teachers.subjects, k => subjectName(k, ar), data.teachers.total)}
@@ -299,6 +314,7 @@ export default function AdminInsightsScreen() {
               {breakdownTable(ar ? 'العمر' : 'Age', data.teachers.ageRange, k => teacherProfileLabel(k, ar ? 'ar' : 'en'), data.teachers.total)}
               {breakdownTable(ar ? 'المحافظة' : 'Governorate', data.teachers.governorate, k => teacherProfileLabel(k, ar ? 'ar' : 'en'), data.teachers.total)}
               {breakdownTable(ar ? 'سنوات الخبرة' : 'Years teaching', data.teachers.yearsTeaching, k => teacherProfileLabel(k, ar ? 'ar' : 'en'), data.teachers.total)}
+              </>}
             </>
           )}
         </View>

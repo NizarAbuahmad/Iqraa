@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "insights_excluded_at" timestamp with time zone;

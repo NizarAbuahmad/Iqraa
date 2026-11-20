@@ -12,13 +12,62 @@ import type { TeacherProfile } from './teacherProfile.ts';
 export type InsightsDays = 7 | 30 | 90;
 export const INSIGHTS_DAYS: readonly InsightsDays[] = [7, 30, 90];
 
+/**
+ * The page's role filter (`?role=`, api-server lib/insights.ts `INSIGHTS_ROLES`). A school admin
+ * counts as a teacher; a system admin and an account marked internal are never counted.
+ */
+export type InsightsRole = 'all' | 'teacher' | 'student' | 'parent';
+export const INSIGHTS_ROLES: readonly InsightsRole[] = ['all', 'teacher', 'student', 'parent'];
+
+const ROLE_FILTER_NAMES: Record<InsightsRole, [string, string]> = {
+  all: ['الكل', 'Everyone'],
+  teacher: ['معلّمون', 'Teachers'],
+  student: ['طلاب', 'Students'],
+  parent: ['أولياء أمور', 'Parents'],
+};
+
+export function roleFilterLabel(role: InsightsRole, ar: boolean): string {
+  return ROLE_FILTER_NAMES[role][ar ? 0 : 1];
+}
+
+/** The «who the teachers are» section describes teacher accounts, so it only fits these filters. */
+export function showsTeacherSections(role: InsightsRole): boolean {
+  return role === 'all' || role === 'teacher';
+}
+
+/**
+ * The line under the filters saying who is left out, or '' when nobody is.
+ * «استُثني حساب إدارة واحد و٣ حسابات داخلية».
+ */
+export function excludedNote(excluded: { admins: number; flagged: number }, ar: boolean): string {
+  const { admins, flagged } = excluded;
+  if (admins + flagged === 0) return '';
+  if (!ar) {
+    const parts = [
+      admins ? `${admins} admin account${admins === 1 ? '' : 's'}` : '',
+      flagged ? `${flagged} internal account${flagged === 1 ? '' : 's'}` : '',
+    ].filter(Boolean);
+    return `Not counted: ${parts.join(' and ')}.`;
+  }
+  const count = (n: number, one: string, two: string, few: string, many: string) =>
+    n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${few}` : `${n} ${many}`;
+  const parts = [
+    admins ? count(admins, 'حساب إدارة واحد', 'حسابا إدارة', 'حسابات إدارة', 'حساب إدارة') : '',
+    flagged ? count(flagged, 'حساب داخلي واحد', 'حسابان داخليان', 'حسابات داخلية', 'حسابًا داخليًا') : '',
+  ].filter(Boolean);
+  return `لا يُحتسب: ${parts.join(' و')}.`;
+}
+
 export interface BreakdownRow { key: string; count: number | null }
 /** Both totals are null when any cell is hidden, so a hidden cell cannot be subtracted out. */
 export interface Breakdown { answered: number | null; unanswered: number | null; rows: BreakdownRow[] }
 
 export interface Insights {
   days: number;
+  role: InsightsRole;
   since: string;
+  /** Left out of every count, whatever the role filter. */
+  excluded: { admins: number; flagged: number };
   trackingSince: string | null;
   time: {
     totalMinutes: number;
@@ -83,6 +132,8 @@ export interface UserInsights {
     subjectIds: string[];
     teacherProfile: TeacherProfile;
     signupPlatform: string | null;
+    /** Left out of the insights page: marked internal, or a system admin. */
+    internal: boolean;
     createdAt: string;
     lastSeen: string | null;
   };

@@ -7,7 +7,20 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { USAGE_AREAS } from '../usageAreas.ts';
-import { ammanDayOf, arDays, areaLabel, breakdownCell, cohortCell, formatMinutes, periodLabel, share } from '../adminInsights.ts';
+import {
+  INSIGHTS_ROLES,
+  ammanDayOf,
+  arDays,
+  areaLabel,
+  breakdownCell,
+  cohortCell,
+  excludedNote,
+  formatMinutes,
+  periodLabel,
+  roleFilterLabel,
+  share,
+  showsTeacherSections,
+} from '../adminInsights.ts';
 
 describe('admin insights formatting', () => {
   it('writes minutes as hours and minutes', () => {
@@ -55,5 +68,27 @@ describe('admin insights formatting', () => {
       assert.notEqual(areaLabel(a, false), a, `${a} has no English name`);
     }
     assert.equal(areaLabel('something-new', false), 'something-new');
+  });
+});
+
+describe('admin insights role filter', () => {
+  it('names every role filter in both languages, «الكل» first', () => {
+    assert.equal(INSIGHTS_ROLES[0], 'all');
+    assert.deepEqual(INSIGHTS_ROLES.map(r => roleFilterLabel(r, true)), ['الكل', 'معلّمون', 'طلاب', 'أولياء أمور']);
+    for (const r of INSIGHTS_ROLES) assert.ok(roleFilterLabel(r, false).length > 0);
+  });
+
+  it('shows the teacher-only sections on «all» and «teachers» only', () => {
+    assert.deepEqual(INSIGHTS_ROLES.filter(showsTeacherSections), ['all', 'teacher']);
+  });
+
+  it('says who is left out, with Arabic number agreement, and nothing when nobody is', () => {
+    assert.equal(excludedNote({ admins: 0, flagged: 0 }, true), '');
+    assert.equal(excludedNote({ admins: 1, flagged: 0 }, true), 'لا يُحتسب: حساب إدارة واحد.');
+    assert.equal(excludedNote({ admins: 2, flagged: 1 }, true), 'لا يُحتسب: حسابا إدارة وحساب داخلي واحد.');
+    assert.equal(excludedNote({ admins: 1, flagged: 2 }, true), 'لا يُحتسب: حساب إدارة واحد وحسابان داخليان.');
+    assert.equal(excludedNote({ admins: 0, flagged: 5 }, true), 'لا يُحتسب: 5 حسابات داخلية.');
+    assert.equal(excludedNote({ admins: 0, flagged: 12 }, true), 'لا يُحتسب: 12 حسابًا داخليًا.');
+    assert.equal(excludedNote({ admins: 1, flagged: 3 }, false), 'Not counted: 1 admin account and 3 internal accounts.');
   });
 });

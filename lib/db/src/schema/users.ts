@@ -155,6 +155,12 @@ export const users = pgTable("users", {
   ageRange: text("age_range"), // '20-29' | '30-39' | '40-49' | '50+'
   governorate: text("governorate"), // one of Jordan's 12, by id
   yearsTeaching: text("years_teaching"), // '0-2' | '3-5' | '6-10' | '11+'
+  /**
+   * Set by a system admin on a team or test account (`PUT /admin/insights/users/:id/internal`)
+   * so the admin insights page leaves it out of every count. Null = a real user. A
+   * `system_admin` account is left out whatever this says. Affects nothing but that page.
+   */
+  insightsExcludedAt: timestamp("insights_excluded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastLogin: timestamp("last_login", { withTimezone: true }),
 }, t => [index("users_school_idx").on(t.schoolId)]);
