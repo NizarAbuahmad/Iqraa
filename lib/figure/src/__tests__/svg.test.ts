@@ -66,3 +66,18 @@ describe('figureSvg: scenes', () => {
     }
   });
 });
+
+describe('figureSvg: left-to-right inside a right-to-left page', () => {
+  // An Arabic page is `dir="rtl"`, and an inline svg inherits it: a
+  // `text-anchor="start"` tick then runs right-to-left («2-») and the y labels
+  // shift onto the axis. The drawing's own root says ltr, for every caller.
+  const rootOf = (svg: string) => svg.slice(0, svg.indexOf('>') + 1);
+  it('puts direction="ltr" on the root svg of a plane figure', () => {
+    const f = resolveFigure({ kind: 'vectors', vectors: [{ from: [0, 0], to: [-2, -1], label: 'A' }] })!;
+    for (const lang of ['ar', 'en'] as const) assert.ok(rootOf(figureSvg(f, { lang })).includes(' direction="ltr"'), lang);
+  });
+  it('puts direction="ltr" on the root svg of a scene', () => {
+    const w: SceneFigure = { kind: 'wave', cycles: 1, marks: ['crest', 'trough'] };
+    for (const lang of ['ar', 'en'] as const) assert.ok(rootOf(figureSvg(w, { lang })).includes(' direction="ltr"'), lang);
+  });
+});
