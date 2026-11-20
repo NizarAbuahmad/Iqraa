@@ -58,6 +58,7 @@ import { SendWorksheetSheet } from '@/components/ui/SendWorksheetSheet';
 import { Image } from 'expo-image';
 import { questionRefersToFigure } from '@/services/questionFigures';
 import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
+import { AiFallbackNotice } from '@/components/ui/AiFallbackNotice';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { buildWorksheetHTML, buildWorksheetSlidesHTML, formatWorksheetText } from '@/services/share';
 import { EditableText } from '@/components/ui/Editable';
@@ -1018,6 +1019,9 @@ export default function WorksheetScreen() {
       {/* Grounding status — never present ungrounded output as curriculum-backed */}
       {/* What the material is anchored to. Shown both ways: a teacher needs
           to know it IS tied to the lesson as much as when it isn't. */}
+      {/* Above everything else in the result: when it is the offline sample,
+          the teacher reads that before reading the content. */}
+      {result && !loading && <AiFallbackNotice kinds={['worksheet', 'homework']} onRetry={() => generate()} isRTL={isRTL} />}
       {result && curriculumGrounded !== null && (
         <View style={{ marginHorizontal: 20 }}>
           <GroundingNotice

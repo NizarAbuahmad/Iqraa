@@ -39,6 +39,7 @@ import { captureGenerationScope, materialScope, reopenedGenerationScope, savedId
 import { readIndexParam } from '@/services/materialParams';
 import { buildActivityRequest, type ActivityForm } from '@/services/generatorRequests';
 import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
+import { AiFallbackNotice } from '@/components/ui/AiFallbackNotice';
 import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { buildActivityHTML, buildActivitySlidesHTML, formatActivityText } from '@/services/share';
 import { ToolHeader } from '@/components/ui/ToolHeader';
@@ -648,6 +649,9 @@ export default function ActivityScreen() {
       {/* Result */}
       {/* What the material is anchored to. Shown both ways: a teacher needs to
           know it IS tied to the lesson as much as when it isn't. */}
+      {/* Above everything else in the result: when it is the offline sample,
+          the teacher reads that before reading the content. */}
+      {result && !loading && <AiFallbackNotice kinds={['activity']} onRetry={() => generate()} isRTL={isRTL} />}
       {result && curriculumGrounded !== null && (
         <View style={{ marginHorizontal: 20 }}>
           <GroundingNotice

@@ -60,7 +60,7 @@ import {
   lessonsTheTeacherTeaches,
   liveChatGrounding,
 } from '@/services/kbContext';
-import { KB_SUGGEST_SCORE, namedLessonBeatsGrade, shouldAskWhichLesson } from '@/services/kbSuggestion';
+import { KB_SUGGEST_SCORE, freeTopicArtifactGoesLive, namedLessonBeatsGrade, rankedInScope, shouldAskWhichLesson } from '@/services/kbSuggestion';
 import { Toast } from '@/components/ui/Toast';
 import { remoteAIService } from '@/services/ai/RemoteAIService';
 import { DEMO_MODE } from '@/services/ai/demoMode';
@@ -2456,7 +2456,12 @@ export default function IqraScreen() {
       // only answer from a lesson; in front of a model they turned «كيف أتعامل
       // مع طالب مشاغب؟» into a subject menu, because the keyword search had
       // matched an English, a maths and a physics lesson.
-      const liveTeaching = !DEMO_MODE && route.intent === 'teaching';
+      //
+      // A material on a topic no lesson is about («نشاط صفي للصف السادس: لو كنت
+      // وزير التربية ليوم واحد») goes to the model too: those stops sent it to
+      // wrong-grade and wrong-subject chips that led back to the same question
+      // (`freeTopicArtifactGoesLive`). Its weak keyword matches are dropped so
+      // nothing below builds a generator on them.
 
       // 1b. Ambiguity check — only when nothing is pinned (soft default does not count).
       // Also skipped when the teacher named any recognisable subject in their query;
@@ -2468,6 +2473,24 @@ export default function IqraScreen() {
         || teachingCtx
         || sessionMemory.lessonPin === 'hard',
       );
+      const softBareArtifact =
+        route.intent === 'artifact'
+        && isBareArtifactShortcut(q)
+        && sessionMemory.lessonPin === 'soft'
+        && !!sessionMemory.activeLessonId
+        && !confidentHit
+        && !hasDocsEarly;
+      const freeTopicArtifact = freeTopicArtifactGoesLive({
+        demoMode: DEMO_MODE,
+        intent: route.intent,
+        hasHardContext,
+        hasDocuments: hasDocsEarly,
+        isSoftBareArtifact: softBareArtifact,
+        confidentHit,
+        topic: topicFromQuery(q),
+      });
+      if (freeTopicArtifact) results = [];
+      const liveTeaching = !DEMO_MODE && (route.intent === 'teaching' || freeTopicArtifact);
       // A confident single-subject hit has already settled the subject: a weak
       // other-subject lesson further down `results` is not a second reading.
       if (!hasHardContext && !liveTeaching && !confidentHit && results.length > 0) {
@@ -2597,14 +2620,6 @@ export default function IqraScreen() {
         artifactFromQuery(q)
         ?? (route.intent === 'refinement' ? sessionMemory.lastGeneratedResource : null);
 
-      const softBareArtifact =
-        route.intent === 'artifact'
-        && isBareArtifactShortcut(q)
-        && sessionMemory.lessonPin === 'soft'
-        && !!sessionMemory.activeLessonId
-        && !confidentHit
-        && !hasDocs;
-
       // Guessed lesson → confirm before building on it.
       //
       // An artifact is where being wrong is expensive: a weak fuzzy match still
@@ -2617,13 +2632,21 @@ export default function IqraScreen() {
       // Deliberately not applied to teaching answers: there, a near-miss costs a
       // sentence the teacher can correct in the next turn, and the question
       // would cost more than the mistake.
-      const lessonGuess = shouldAskWhichLesson({
-        intent: route.intent,
-        hasHardContext,
-        hasDocuments: hasDocs,
-        isSoftBareArtifact: softBareArtifact,
-        ranked,
-      });
+      // The candidates keep to the grade and subject the teacher named, like
+      // `results` above: a chip outside them re-sent the ask pinned to a lesson
+      // the grade filter dropped again, a loop.
+      const lessonGuess = freeTopicArtifact
+        ? { ask: false as const }
+        : shouldAskWhichLesson({
+          intent: route.intent,
+          hasHardContext,
+          hasDocuments: hasDocs,
+          isSoftBareArtifact: softBareArtifact,
+          ranked: rankedInScope(ranked, l => getBookForLesson(l), {
+            gradeId: queryGradeId,
+            subjectId: scopeSubjectId ?? querySubjectId,
+          }),
+        });
       if (lessonGuess.ask) {
         const clarifyMsg: Message = {
           id: (Date.now() + 1).toString(),

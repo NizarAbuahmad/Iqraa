@@ -60,6 +60,7 @@ import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
+import { AiFallbackNotice } from '@/components/ui/AiFallbackNotice';
 import { buildQuizHTML, buildQuizSlidesHTML, formatQuizText } from '@/services/share';
 import { buildQuizDocx } from '@/services/quizDocx';
 import { ToolHeader } from '@/components/ui/ToolHeader';
@@ -798,6 +799,9 @@ export default function QuizScreen() {
       {/* Result */}
       {/* What the material is anchored to. Shown both ways: a teacher needs to
           know it IS tied to the lesson as much as when it isn't. */}
+      {/* Above everything else in the result: when it is the offline sample,
+          the teacher reads that before reading the content. */}
+      {result && !loading && <AiFallbackNotice kinds={['quiz']} onRetry={() => generate()} isRTL={isRTL} />}
       {result && curriculumGrounded !== null && (
         <View style={{ marginHorizontal: 20 }}>
           <GroundingNotice
