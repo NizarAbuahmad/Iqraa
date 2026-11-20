@@ -9,7 +9,8 @@
  * owner-only policy, the caller's identity would read nothing (CLAUDE.md).
  *
  * What leaves here is the paper only: never `formState` (a lesson plan's
- * `adaptations` can name a pupil), never the owner. The public read is the
+ * `adaptations` can name a pupil), never the owner, and the content with every
+ * word-for-word quote of the owner's notes removed (`redactOwnerNotes`). The public read is the
  * student copy (`studentCopy`); `full` keeps the answers, and the route serves
  * it to a teacher only. No generation code here.
  */
@@ -17,7 +18,7 @@ import { db, savedMaterials, systemDb, type SavedMaterial } from "@workspace/db"
 import { eq } from "drizzle-orm";
 
 import { studentCopy } from "../modules/homework/materialCopy.ts";
-import { copyableFormState, normalizeMaterialShareCode } from "./materialShare.ts";
+import { copyableFormState, normalizeMaterialShareCode, redactOwnerNotes } from "./materialShare.ts";
 
 export interface SharedMaterial {
   type: string;
@@ -41,7 +42,10 @@ async function rowByCode(rawCode: unknown): Promise<SavedMaterial | null> {
 export async function loadSharedMaterial(rawCode: unknown, { full }: { full: boolean }): Promise<SharedMaterial | null> {
   const m = await rowByCode(rawCode);
   if (!m) return null;
-  const content = parsed(m.content);
+  // The owner's notes come out first, for teacher and visitor alike: generation
+  // quotes them into the content (a lesson plan's `priorReview`), and they can
+  // name a pupil.
+  const content = redactOwnerNotes(parsed(m.content), m.formState);
   return {
     type: m.type,
     title: m.title,
@@ -73,7 +77,7 @@ export async function copySharedMaterial(rawCode: unknown, userId: string): Prom
       grade: m.grade,
       topic: m.topic,
       language: m.language,
-      content: m.content,
+      content: redactOwnerNotes(parsed(m.content), m.formState) as typeof m.content,
       formState: copyableFormState(m.formState),
       isFavorite: false,
       classGroupId: null,

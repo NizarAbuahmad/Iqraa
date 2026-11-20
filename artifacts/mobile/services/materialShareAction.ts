@@ -9,7 +9,18 @@ import { isLocalMaterialId, materialShareUrl, shareLinkMessage } from './materia
 import { shareMaterial } from './materialShareApi';
 import { shareAsText } from './share';
 
-export async function shareMaterialLink(id: string | null, title: string, isAr: boolean): Promise<TranslationKey | null> {
+export async function shareMaterialLink(
+  id: string | null,
+  title: string,
+  isAr: boolean,
+  /**
+   * Called once the link exists, before the share sheet opens. The sheet's
+   * promise settles only when it closes (on web, when the person picks or
+   * dismisses), so a screen that waits for it to show «مُشارَك برابط» shows
+   * nothing while the sheet is up.
+   */
+  onLinkReady?: (code: string) => void,
+): Promise<TranslationKey | null> {
   if (!id || isLocalMaterialId(id)) return 'shareLinkNeedsAccount';
   let code: string;
   try {
@@ -17,6 +28,7 @@ export async function shareMaterialLink(id: string | null, title: string, isAr: 
   } catch {
     return 'shareLinkFailed';
   }
+  onLinkReady?.(code);
   try {
     // Throws only when neither the sheet nor the clipboard worked.
     const how = await shareAsText(shareLinkMessage(title, materialShareUrl(code), isAr), title);

@@ -132,6 +132,38 @@ describeDb("saved materials shared by link, against a real database", () => {
     assert.equal((await open(second)).status, 200);
   });
 
+  it("keeps the owner's notes out of a shared lesson plan, though the plan quotes them", async () => {
+    // lpPriorReview writes the prior-topic notes into the plan word for word.
+    const plan = (
+      await db.pool.query<{ id: string }>(
+        `INSERT INTO saved_materials (user_id, type, title, content, form_state)
+         VALUES ($1, 'lesson', 'خطة الجيوب', $2::jsonb, $3::jsonb) RETURNING id`,
+        [
+          w.users.t1,
+          JSON.stringify({ title: "خطة الجيوب", priorReview: "سأراجع الزوايا. بحسب ملاحظات المعلم: سارة تحتاج خطًا أكبر", objectives: ["أن يطبّق القانون"] }),
+          JSON.stringify(FORM),
+        ],
+      )
+    ).rows[0].id;
+    const code = (await share(w.users.t1, plan)).json.shareCode;
+    for (const r of [await open(code), await open(code, w.users.t2, true)]) {
+      assert.equal(r.status, 200, r.text);
+      assert.doesNotMatch(r.text, /سارة/);
+      assert.match(JSON.parse(r.json.material.content).priorReview, /^سأراجع الزوايا\. بحسب ملاحظات المعلم: …$/);
+    }
+    const copy = await call(server, "POST", `/shared/${code}/save`, w.users.t2);
+    assert.doesNotMatch(copy.text, /سارة/);
+  });
+
+  it("refuses to share a whiteboard", async () => {
+    const board = (
+      await db.pool.query<{ id: string }>(`INSERT INTO saved_materials (user_id, type, title) VALUES ($1, 'board', 'لوح') RETURNING id`, [w.users.t1])
+    ).rows[0].id;
+    const r = await share(w.users.t1, board);
+    assert.equal(r.status, 400, r.text);
+    assert.equal(r.json.code, "not_shareable");
+  });
+
   it("is the same 404 for an unknown, malformed or deleted material's code, and for a bad id", async () => {
     const id = await material(w.users.t1);
     const code = (await share(w.users.t1, id)).json.shareCode;

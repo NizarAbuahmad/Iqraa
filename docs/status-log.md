@@ -30,6 +30,11 @@ expires, and the owner can stop it.
   owner. The copy's `formState` keeps only the pickers (`copyableFormState` in `lib/materialShare.ts`: primitives,
   ≤ 200 characters, minus `priorTopicsNotes`, `adaptations`, `objectives`, `objective`, `notes`,
   `additionalContext`). Reads are `systemDb` in `lib/sharedMaterial.ts`, pinned in `systemDbFiles.test.ts`.
+  **The content itself is redacted too** (`redactOwnerNotes`, found in review): a lesson plan quotes the teacher's
+  prior-topic notes word for word in `priorReview` («بحسب ملاحظات المعلم: …») and adaptations reach the plan
+  verbatim, and either can name a pupil — so every verbatim quote of `priorTopicsNotes`, `adaptations`, `notes`,
+  `additionalContext` (4+ characters) becomes «…» in the public read, the teacher's read and the copy. A note a
+  live model paraphrased instead is not caught. A whiteboard cannot be shared (400 `not_shareable`).
 - **App.** `app/m/[code].tsx` renders `workspace/view.tsx` in a new `code` mode: read-only, teacher tools hidden as
   in family mode; a teacher (who gets `/full`) sees «احفظ في ملفاتي», a visitor «سجّل كمعلم مجانًا» / «لديّ حساب». `/m`
   is in `PUBLIC_ROUTES`; `crashReportingCore` scrubs `/m/<code>` and `/shared/<code>`. The Share row of the quiz,
@@ -37,6 +42,10 @@ expires, and the owner can stop it.
   is what is on screen, then shares «<title> — <link>», which also copies it — `services/materialShareAction.ts`).
   Menus that still share text (lesson prep, virtual lab, Iqra tab, an exam result) say «مشاركة النص». A shared
   material shows «مُشارَك برابط» with «إيقاف المشاركة». «ما الجديد» entry `material-share-link`.
+  The shared page waits for auth before fetching and drops an overtaken reply, or on a cold load a teacher could get
+  the answerless copy. `apiToLocal` (services/workspace.ts) had to learn `shareCode` — it copies fields one by one,
+  and the e2e caught the bar never showing after a reload. `/m` maps to the `workspace` usage area. The visitor's
+  note does not mention answers; the only gate on the key is a teacher account, which anyone can register.
 - **Verified:** `sharedMaterial.db.test.ts` (6, real Postgres), `materialShare.test.ts`, mount order (public read
   not 401; `/full`, `/save` 401), mobile `materialShareLink.test.ts`; new e2e `e2e/tests/share-link.spec.ts`
   (owner shares → visitor sees the paper without the answer and the sign-up offer → teacher sees the answer, saves a

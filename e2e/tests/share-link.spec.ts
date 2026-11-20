@@ -27,6 +27,8 @@ const QUIZ = {
 };
 
 test("a shared quiz opens for a visitor without its answers, and for a teacher with them", async ({ browser }) => {
+  // Sign-up alone can take a minute (password hashing), and this walks four screens after it.
+  test.setTimeout(300_000);
   await resetRateLimits();
   const email = `e2e-share-${Date.now()}@example.com`;
 

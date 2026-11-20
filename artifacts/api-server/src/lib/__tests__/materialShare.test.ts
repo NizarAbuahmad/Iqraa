@@ -16,6 +16,7 @@ import {
   copyableFormState,
   generateMaterialShareCode,
   normalizeMaterialShareCode,
+  redactOwnerNotes,
 } from "../materialShare.ts";
 
 describe("material share codes", () => {
@@ -34,6 +35,36 @@ describe("material share codes", () => {
     for (const bad of ["K7QX4M", "K7QX4MPAA", "K7QX4MP0", "K7QX4MPI", "", null, undefined, 12345678, ["K7QX4MPA"]]) {
       assert.equal(normalizeMaterialShareCode(bad), null, String(bad));
     }
+  });
+});
+
+describe("redactOwnerNotes", () => {
+  // A lesson plan quotes the teacher's prior-topic notes word for word in
+  // `priorReview` («بحسب ملاحظات المعلم: …»), and adaptations reach the plan
+  // verbatim too — both can name a pupil, and a share link is public.
+  const form = { priorTopicsNotes: "سارة تحتاج مراجعة الزوايا", adaptations: "خط أكبر لعمر", objectives: "أن يطبّق القانون", topic: "قانون الجيوب" };
+
+  it("removes the owner's notes wherever the content quotes them, at any depth", () => {
+    const content = {
+      priorReview: "سأخصّص 5 دقائق. بحسب ملاحظات المعلم: سارة تحتاج مراجعة الزوايا",
+      differentiation: "للطلاب: خط أكبر لعمر، وبطاقات.",
+      sections: [{ text: "سارة تحتاج مراجعة الزوايا" }],
+      objectives: ["أن يطبّق القانون"],
+      topic: "قانون الجيوب",
+    };
+    const out = redactOwnerNotes(content, form) as typeof content;
+    assert.doesNotMatch(JSON.stringify(out), /سارة|عمر/);
+    assert.match(out.priorReview, /^سأخصّص 5 دقائق\. بحسب ملاحظات المعلم: …$/);
+    // Objectives and the topic are the lesson, not notes about pupils: kept.
+    assert.deepEqual(out.objectives, ["أن يطبّق القانون"]);
+    assert.equal(out.topic, "قانون الجيوب");
+  });
+
+  it("leaves content alone when there are no notes, or only trivial ones", () => {
+    const content = { a: "نص", b: ["x", 2, null] };
+    assert.deepEqual(redactOwnerNotes(content, {}), content);
+    assert.deepEqual(redactOwnerNotes(content, { priorTopicsNotes: "  ", adaptations: "x" }), content);
+    assert.deepEqual(redactOwnerNotes(content, null), content);
   });
 });
 

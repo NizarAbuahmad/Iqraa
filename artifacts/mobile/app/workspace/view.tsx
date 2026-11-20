@@ -56,6 +56,7 @@ import { quizExports, type QuizCopy } from '@/services/quizExport';
 import { worksheetExports } from '@/services/worksheetExport';
 import { goBack } from '@/services/navigation';
 import { palette } from '@/constants/colors';
+import { RADIUS, SPACE } from '@/constants/theme';
 import { allPremade } from '@workspace/curriculum/premade';
 import { GRADES, SUBJECTS } from '@workspace/curriculum';
 import { BackButton } from '@/components/ui/BackButton';
@@ -79,7 +80,7 @@ export default function WorkspaceViewScreen() {
   const shared = !!code;
   const guest = family || shared;
   const readOnly = !!premade || guest;
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const isTeacher = isTeacherRole(user?.role);
   const [sharedFull, setSharedFull] = useState(false);
   const [sharedDead, setSharedDead] = useState(false);
@@ -123,14 +124,22 @@ export default function WorkspaceViewScreen() {
       } : null);
       setLoading(false);
     } else if (code) {
+      // Wait for the session: on a cold load the screen mounts before auth has
+      // read it, and asking now would fetch the public copy for a teacher.
+      if (authLoading) return;
+      // And drop a reply that a later run has overtaken, or an answerless copy
+      // landing late could replace the teacher's full one.
+      let live = true;
       getSharedMaterial(code, isTeacher)
         .catch(() => null)
         .then(view => {
+          if (!live) return;
           setItem(view?.material ?? null);
           setSharedFull(view?.full ?? false);
           setSharedDead(!view);
           setLoading(false);
         });
+      return () => { live = false; };
     } else if (hw && material) {
       getHomeworkMaterial(hw, material, user?.role === 'parent' ? 'parent' : 'student')
         .catch(() => null)
@@ -160,7 +169,7 @@ export default function WorkspaceViewScreen() {
         setLoading(false);
       });
     }
-  }, [id, premade, hw, material, code, lang, isTeacher]);
+  }, [id, premade, hw, material, code, lang, isTeacher, authLoading]);
 
   if (loading) {
     return (
@@ -269,11 +278,9 @@ export default function WorkspaceViewScreen() {
   const canShareLink = !readOnly;
   const handleShareLink = async () => {
     setShowExport(false);
-    const key = await shareMaterialLink(item.id, item.title, isAr);
-    // Read the share state back, whatever the sheet did: the server may have made
-    // the code even if the clipboard then refused, and the «مُشارَك برابط» row
-    // (with its stop) must show whenever a link exists.
-    getItem(item.id).then(m => setShareCode(m?.shareCode ?? null)).catch(() => {});
+    // The «مُشارَك برابط» row (with its stop) shows as soon as the link exists,
+    // not when the share sheet closes.
+    const key = await shareMaterialLink(item.id, item.title, isAr, setShareCode);
     if (key) showToast(t(key));
   };
   const handleStopSharing = async () => {
@@ -456,7 +463,7 @@ export default function WorkspaceViewScreen() {
           <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' }}>
             {t(sharedFull ? 'sharedTeacherNote' : 'sharedStudentCopyNote')}
           </Text>
-          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 10, flexWrap: 'wrap' }}>
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: SPACE.sm, flexWrap: 'wrap' }}>
             {sharedFull ? (
               <Pressable
                 accessibilityRole="button"
@@ -1123,9 +1130,9 @@ const styles = StyleSheet.create({
   metaRow: { gap: 10, flexWrap: 'wrap' },
   metaPill: { fontSize: 15, lineHeight: 24, opacity: 0.9 },
   actionBar: { flexDirection: 'row', padding: 12, paddingHorizontal: 20, borderBottomWidth: 1, gap: 16 },
-  shareBar: { alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 10 },
-  shareBarBtn: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
-  sharedNote: { margin: 20, marginBottom: 0, padding: 16, borderRadius: 12, borderWidth: 1, gap: 12 },
-  sharedBtn: { minHeight: 44, paddingHorizontal: 18, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  shareBar: { alignItems: 'center', gap: SPACE.sm, paddingHorizontal: SPACE.xl, paddingVertical: SPACE.sm },
+  shareBarBtn: { minHeight: 44, justifyContent: 'center', paddingHorizontal: SPACE.xs },
+  sharedNote: { margin: SPACE.xl, marginBottom: 0, padding: SPACE.lg, borderRadius: RADIUS.md, borderWidth: 1, gap: SPACE.md },
+  sharedBtn: { minHeight: 44, paddingHorizontal: SPACE.lg, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   actionBtn: { alignItems: 'center', gap: 6, paddingVertical: 4 },
 });

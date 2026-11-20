@@ -115,6 +115,7 @@ type ApiItem = {
   formState: Record<string, any>;
   isFavorite: boolean;
   classGroupId?: string | null;
+  shareCode?: string | null;
   savedAt: string;
 };
 
@@ -122,6 +123,7 @@ function apiToLocal(item: ApiItem): SavedMaterial {
   return {
     id: item.id,
     classGroupId: item.classGroupId ?? null,
+    shareCode: item.shareCode ?? null,
     type: item.type as MaterialType,
     title: item.title,
     subject: item.subject,

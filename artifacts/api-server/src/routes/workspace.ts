@@ -345,12 +345,17 @@ router.post("/items/:id/share", async (req: AuthenticatedRequest, res) => {
   try {
     for (let attempt = 0; attempt < 5; attempt++) {
       const [item] = await db
-        .select({ shareCode: savedMaterials.shareCode })
+        .select({ shareCode: savedMaterials.shareCode, type: savedMaterials.type })
         .from(savedMaterials)
         .where(mine)
         .limit(1);
       if (!item) {
         res.status(404).json({ error: "Item not found" });
+        return;
+      }
+      // A whiteboard is not a paper: the shared page has no view for it.
+      if (item.type === "board") {
+        res.status(400).json({ code: "not_shareable", error: "This material cannot be shared by link" });
         return;
       }
       if (item.shareCode) {
