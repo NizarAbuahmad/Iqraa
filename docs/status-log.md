@@ -10,6 +10,60 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The fallback notice reads its own call, reaches Slides Maker, and the offline discussion asks only opinion questions — 2026-11-20
+
+A follow-up to «A fallback result says so on the result, and the offline discussion uses the teacher's question» (below).
+That change was written alongside another session's fix for the same report; this adds only what it lacked.
+
+- **The notice reads the record of its own call, never the last generation.** `AiFallbackNotice` read
+  `useLastGeneration()`. A fallback is recorded before the offline generator's 1–2 s delay, so a chat reply in that
+  window became "last" and hid the notice. The worksheet's three-level mode runs three generations at once, so the
+  last record could be another level's. `generateWithProvenance` now tags each output with its record (`provenanceOf`,
+  a WeakMap). A service that copies the output afterwards carries it (`carryProvenance`: `plainActivity` for the
+  activity, `applyClassroomSetup` for classroom activities). The component takes `records`, and each screen keeps its
+  result's record: set when the result arrives, restored with a held result, cleared when a saved material is reopened.
+  The quiz reads it before `normalizeQuestionOptions` copies the paper. Each worksheet level keeps its own, so the
+  notice follows the level tab, and a retry in three-level mode asks for the three again. The quiz and worksheet
+  «covers N lessons» notice (`coverageInfo.modelReported`) read `getLastGeneration()` too; it now uses the same record.
+  `useLastGeneration` is private to the badge again.
+- **Slides Maker has the notice.** One deck comes from the book, a lesson plan and formative checks. The plan
+  (`lesson-plan`) and the checks (`classroom-activity`) each fall back on their own, and either one shows it. The
+  explanation call (`lesson-teaching`) is strict and never falls back. **Prompt Slides has none, deliberately:**
+  `generatePromptSlides` is `strict: true` with no offline twin, so it shows an error, never sample content.
+- **Only a question of opinion or choice becomes the open discussion** (`teacherQuestion`). Before, any «؟» did, so
+  «ما قيمة س إذا كان 2س + 3 = 7؟» was posted as a question «with no single right answer». It now needs a cue such as
+  «لو», «برأيك» or «تفضّل» (English: "if you", "would you", "do you think"…), and a maths lesson never takes that
+  path. The cut is also fixed: a «.» or «:» only breaks before a space («1.5» and «3:4» stay whole), «؛» and dashes
+  break, and quotation marks are stripped only as a pair.
+- **The pairs stage and the game's review tip state their own minutes.** «ثنائيات أولًا (دقيقتان)» and «آخر 5 دقائق»
+  were fixed whatever the step got. The pairs stage takes about a quarter of its step (1–5 minutes), and the class
+  the rest; the two add up to the step. #1497 had fixed the think-alone step.
+- **Grades 2–6 get plain wording** (`grade` on the blueprint context, from the book's `gradeId`, else the grade name —
+  `activityGradeNumber`, where «الصف الثاني عشر» is 12, not 2). This covers the concept claims (no «دون استثناء»), the
+  rule question, one talk move and the close («قل الجواب الصحيح بجملة قصيرة، مع مثال يصحّ فيه الادعاء ومثال لا يصحّ
+  فيه»). Grade 1 keeps its own builder; Grades 7+ are unchanged.
+- **Live prompt in step** (`prompts.ts`):
+  - The discussion clause drops the fixed «دقيقتَي تفكير».
+  - Only an opinion or choice question replaces the claim; a question with one answer is settled at the close.
+  - Grades 2–6 are asked for plain wording.
+  - The claim is never wrapped in doubled quotation marks.
+  - Both languages' general rules add that a length written inside a step must agree with its `durationMin`.
+  - `PROMPT_VERSION` is not bumped. A typed objective is `contextSource: 'teacher'` and never pooled, so only pooled
+    discussions made without one can still carry the abstract Grade 2–6 wording. Bumping restarts the activity pool;
+    that is the owner's call.
+- **No «ما الجديد» entry:** it fixes the fallback path and its notice, which appear only when live generation fails.
+
+Verified: typecheck; mobile and api-server tests (counts in the PR).
+- New mobile tests: `activityDiscussionFit.test.ts`, `fallbackNoticeScreens.test.ts` (all five screens and the
+  component), and `provenanceOf`/`carryProvenance` cases in `aiProvenance.test.ts`. The last include three
+  overlapping worksheet calls, and a chat reply after a fallback that `getLastGeneration()` would have hidden.
+- New api-server tests: cases in `activityPrompts.test.ts`.
+- #1497's `discussionActivity.test.ts` passes unchanged.
+
+**Not verified:** the notice in a browser or on a phone, and the live prompt against a model. **Still not found:**
+why `/generate/activity` failed for the teacher. One lead, unconfirmed: the activity call uses the 45 s default client
+timeout, while lesson plans, worksheets, quizzes and prompt slides get 90 s (`DOCUMENT_TIMEOUT_MS`, `RemoteAIService.ts`).
+
 ## Share a saved material by link (`/m/CODE`) — 2026-11-20
 
 A teacher asked to send a generated lesson plan to a colleague on WhatsApp so the colleague opens it as it is,

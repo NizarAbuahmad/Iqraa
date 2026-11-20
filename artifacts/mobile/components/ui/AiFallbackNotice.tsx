@@ -9,31 +9,39 @@
  * the result, not the header, so this sits directly above it.
  *
  * When to show is decided by `resultFallbackNotice` (pure, tested); this file
- * only draws it.
+ * only draws it. It is given the records of the calls that made the result on
+ * screen — never the last generation, which can be another call's (a chat
+ * reply during the offline generator's delay; another worksheet level). The
+ * screen reads them with `provenanceOf` when the result arrives.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DEMO_MODE } from '@/services/ai/demoMode';
-import { type AiGenerationKind, resultFallbackNotice } from '@/services/ai/aiProvenance';
+import { type AiGenerationKind, type AiGenerationRecord, resultFallbackNotice } from '@/services/ai/aiProvenance';
 import { useLanguage } from '@/context/LanguageContext';
 import { useColors } from '@/hooks/useColors';
 import { Button } from '@/components/ui/Button';
-import { useLastGeneration } from '@/components/ui/AiSourceBadge';
 import { SPACE } from '@/constants/theme';
 
 type Props = {
   /** The generation kinds this screen makes. */
   kinds: readonly AiGenerationKind[];
+  /**
+   * The records of the calls the result on screen was built from (`provenanceOf`):
+   * one for most screens; a Slides Maker deck has its plan and its checks.
+   * Null entries are ignored — a reopened material has none.
+   */
+  records: readonly (AiGenerationRecord | null)[];
   onRetry: () => void;
   isRTL?: boolean;
 };
 
-export function AiFallbackNotice({ kinds, onRetry, isRTL }: Props) {
+export function AiFallbackNotice({ kinds, records, onRetry, isRTL }: Props) {
   const { t, isRTL: ctxRtl } = useLanguage();
   const colors = useColors();
   const rtl = isRTL ?? ctxRtl;
-  const notice = resultFallbackNotice(DEMO_MODE, useLastGeneration(), kinds);
+  const notice = records.map(r => resultFallbackNotice(DEMO_MODE, r, kinds)).find(n => n !== null) ?? null;
   if (!notice) return null;
 
   const align = rtl ? 'right' : 'left';

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   aiErrorMessageKey,
   aiSourceBadgeState,
+  carryProvenance,
+  provenanceOf,
   describeAiError,
   generateWithProvenance,
   isAbortError,
@@ -458,4 +460,49 @@ test('resultFallbackNotice stays hidden for live, saved, failed and cancelled re
 
 test('resultFallbackNotice stays hidden before anything was generated', () => {
   assert.equal(resultFallbackNotice(false, null, ['activity']), null);
+});
+
+// ─── provenanceOf / carryProvenance ──────────────────────────────────────────
+// The notice used to read the LAST generation, which can be another call's:
+// a fallback is recorded before the offline generator's 1–2 s delay, so a chat
+// reply in that window became "last" and hid it; and the worksheet's
+// three-level mode runs three generations at once, so the last one could be
+// another level's. Each output now carries the record of the call that made it.
+
+test('provenanceOf: each output knows the record of the call that made it', async () => {
+  resetGenerationLog();
+  const failing = () => Promise.reject(new Error('HTTP 502'));
+  const opts = { demoMode: false, strict: false, now: clock };
+  const [a, b, c] = await Promise.all([
+    generateWithProvenance('worksheet', failing, async () => ({ level: 'easy' }), opts),
+    generateWithProvenance('worksheet', async () => ({ level: 'medium' }), async () => ({ level: 'x' }), opts),
+    generateWithProvenance('worksheet', failing, async () => ({ level: 'hard' }), opts),
+  ]);
+  assert.equal(provenanceOf(a)?.reason, 'fallback');
+  assert.equal(provenanceOf(b)?.reason, 'live');
+  assert.equal(provenanceOf(c)?.reason, 'fallback');
+});
+
+test('provenanceOf: demo mode, and an object no generator made', async () => {
+  resetGenerationLog();
+  const out = await generateWithProvenance('quiz', async () => ({}), async () => ({ demo: true }), { demoMode: true, now: clock });
+  assert.equal(provenanceOf(out)?.reason, 'demo-mode');
+  assert.equal(provenanceOf({}), null);
+  assert.equal(provenanceOf(null), null);
+});
+
+test('carryProvenance: a copy made after the call keeps its record', async () => {
+  resetGenerationLog();
+  const out = await generateWithProvenance('activity', () => Promise.reject(new Error('HTTP 502')), async () => ({ a: 1 }), { demoMode: false, strict: false, now: clock });
+  const copy = carryProvenance(out, { ...out });
+  assert.equal(provenanceOf(copy)?.reason, 'fallback');
+  assert.equal(provenanceOf(carryProvenance({}, { b: 2 })), null);
+});
+
+test('resultFallbackNotice: a screen holding its own record is not fooled by a later call', async () => {
+  resetGenerationLog();
+  const mine = await generateWithProvenance('activity', () => Promise.reject(new Error('HTTP 502')), async () => ({ a: 1 }), { demoMode: false, strict: false, now: clock });
+  await generateWithProvenance('chat', async () => ({ reply: 'hi' }), async () => ({}), { demoMode: false, strict: false, now: clock });
+  assert.equal(resultFallbackNotice(false, getLastGeneration(), ['activity']), null, 'the last record is the chat reply');
+  assert.deepEqual(resultFallbackNotice(false, provenanceOf(mine), ['activity']), { error: 'HTTP 502' });
 });

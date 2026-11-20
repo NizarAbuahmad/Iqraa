@@ -28,7 +28,7 @@ import {
   type PracticeWQ,
 } from './mathPractice.ts';
 import { isChemContext, takeConcreteChem, takeConcreteChemBatch, takeSolvedChem, type SolvedItem } from './chemPractice.ts';
-import { buildActivityBlueprint, isActivityBlueprintId } from './activityBlueprints.ts';
+import { activityGradeNumber, buildActivityBlueprint, isActivityBlueprintId } from './activityBlueprints.ts';
 import { buildFirstGradeActivity, firstGradeCheckSlides } from './activityFirstGrade.ts';
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { revisionPlanFromRequest } from './lessonPlanRevision.ts';
@@ -1134,6 +1134,8 @@ export function buildOfflineActivity(req: AIRequest, variant = 0, probe?: Revisi
       // A revision's composite lesson sits in a real unit, so this is the scope's.
       subject: subjectForKind,
       objective: req.objectives,
+      // Grades 2–6 get plainer discussion wording (`isYoung`).
+      grade: activityGradeNumber(kb ? getBookForLesson(kb)?.gradeId : null, req.grade) ?? undefined,
     });
 
   const activity = plainActivity({
