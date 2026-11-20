@@ -58,6 +58,15 @@ test('a tracked item already done is not «due»; an untracked one is (its due d
   assert.equal(g.homework?.dueSoon, 1);
 });
 
+test('an untracked item the parent marked done is not «due» either (since 2026-11-20 a parent ticks those)', () => {
+  const g = childGlance({
+    homework: [hw({ id: 'parent-ticked', canTrack: false, done: true, state: 'done' }), hw({ id: 'open', canTrack: false })],
+    exams: null,
+    today: TODAY,
+  });
+  assert.equal(g.homework?.dueSoon, 1);
+});
+
 test('«متأخّر» counts exactly the rows that wear the red badge: tracked, not done, overdue', () => {
   const g = childGlance({
     homework: [

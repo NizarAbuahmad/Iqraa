@@ -40,7 +40,7 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
     id: 'teacher-class-parent-codes',
-    date: '2026-11-13',
+    date: '2026-11-20',
     roles: ['teacher'],
     titleKey: 'whatsNewParentCodesTitle',
     bodyKey: 'whatsNewParentCodesBody',
@@ -48,7 +48,7 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
   },
   {
     id: 'parent-school-first-projects',
-    date: '2026-11-13',
+    date: '2026-11-20',
     roles: ['parent'],
     titleKey: 'whatsNewParentSchoolTitle',
     bodyKey: 'whatsNewParentSchoolBody',

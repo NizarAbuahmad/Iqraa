@@ -142,6 +142,26 @@ export function showsSubmissionLink(hw: Pick<FamilyHomework, 'requiresSubmission
 }
 
 /**
+ * Whether a PARENT may tick this item for their child (since 2026-11-20): only when
+ * no row of the child in the item's class has a student account (`canTrack`
+ * false: nobody else can tick it) and it is not a project (done by handing it
+ * in). The server enforces the same rule (`setHomeworkDoneAsGuardian`): a child
+ * with an account ticks their own (409 `student_tracks`).
+ */
+export function parentMayTick(hw: Pick<FamilyHomework, 'canTrack' | 'requiresSubmission'>): boolean {
+  return !hw.canTrack && !hw.requiresSubmission;
+}
+
+/**
+ * Whether the family list can say anything about this item being done: a
+ * student's own (tracked) item, or one the parent ticks. An untracked project
+ * has nobody to tick or hand it in, so it shows only its date.
+ */
+export function hasDoneStatus(hw: Pick<FamilyHomework, 'canTrack' | 'requiresSubmission'>, isParent: boolean): boolean {
+  return hw.canTrack || (isParent && parentMayTick(hw));
+}
+
+/**
  * Whether a PARENT's row offers «اعرض المشروع»: the same rule as the student's
  * link, and only once the child has handed in. The parent's read never carries a
  * draft, so before a hand-in the link would open onto nothing.
@@ -593,9 +613,14 @@ export type HomeworkSection = { key: 'todo' | 'done' | 'all'; items: FamilyHomew
  * flat instead (`key: 'all'`, soonest due first, no heading). A mix keeps the
  * groups. `anyUntracked` says whether to explain why some rows have no status.
  */
-export function homeworkSections(items: FamilyHomework[]): { sections: HomeworkSection[]; anyUntracked: boolean } {
+export function homeworkSections(
+  items: FamilyHomework[],
+  isParent = false,
+): { sections: HomeworkSection[]; anyUntracked: boolean } {
   const anyUntracked = items.some(h => !h.canTrack);
-  if (items.length > 0 && items.every(h => !h.canTrack)) {
+  // Since 2026-11-20 a parent ticks an untracked item themself, so it is actionable
+  // for them: the flat list is kept only for items nobody at all can tick.
+  if (items.length > 0 && items.every(h => !hasDoneStatus(h, isParent))) {
     const all = [...items].sort((a, b) => (a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0));
     return { sections: [{ key: 'all', items: all }], anyUntracked };
   }

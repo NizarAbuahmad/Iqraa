@@ -386,6 +386,14 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
     assert.equal(classPost.status, 401, "minting a class's link codes must require a token");
   });
 
+  it("guards the parent's homework tick like the rest of /parent/homework", async () => {
+    const id = "00000000-0000-0000-0000-000000000000";
+    for (const method of ["PUT", "DELETE"]) {
+      const res = await fetch(`${base}/parent/homework/${id}/done?child=${id}`, { method });
+      assert.equal(res.status, 401, `${method} a parent's tick must require a token`);
+    }
+  });
+
   it("mounts the class-resource routes inside the roster's guarded prefix", async () => {
     // Like the claim-code routes: had these landed outside `router.use(["/classes",
     // "/students"], …)` they would answer 404 rather than 401, and a teacher's class

@@ -102,6 +102,19 @@ export async function setHomeworkDone(id: string, done: boolean): Promise<void> 
 }
 
 /**
+ * A parent ticks (or un-ticks) one homework for one child, by the child key the
+ * parent's list carries (`?child=`, not a body: some clients drop a DELETE's
+ * body). Allowed only for a child with no student account in that class
+ * (`parentMayTick`); 409 `student_tracks` otherwise, thrown as `HomeworkError`.
+ */
+export async function setChildHomeworkDone(id: string, childKey: string, done: boolean): Promise<void> {
+  const res = await apiFetch(`/parent/homework/${encodeURIComponent(id)}/done?child=${encodeURIComponent(childKey)}`, {
+    method: done ? 'PUT' : 'DELETE',
+  });
+  await readJson(res, 'Saving homework');
+}
+
+/**
  * A student's finished round of an attached game. The server keeps the best
  * round and counts attempts, and marks the homework done. A 404 (not attached
  * any more, or not this student's) throws `HomeworkError` like the other writes.

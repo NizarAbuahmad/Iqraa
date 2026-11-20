@@ -26,6 +26,8 @@ import {
   resultForGame,
   showsSubmissionLink,
   showsChildProjectLink,
+  parentMayTick,
+  hasDoneStatus,
   childProjectHref,
   homeworkSections,
   normalizeTeacherHomework,
@@ -721,6 +723,32 @@ test('the parent project link stays under /homework-project and round-trips its 
   const q = new URL(href, 'https://x.test').searchParams;
   assert.equal(q.get('child'), 'k/2');
   assert.equal(q.get('title'), 'مشروع الخلية & الأنسجة');
+});
+
+test('a parent may tick only an untracked, non-project item; a student-tracked one is the student\'s', () => {
+  assert.equal(parentMayTick({ canTrack: false, requiresSubmission: false }), true);
+  assert.equal(parentMayTick({ canTrack: true, requiresSubmission: false }), false, 'the child ticks their own');
+  assert.equal(parentMayTick({ canTrack: false, requiresSubmission: true }), false, 'a project is handed in, never ticked');
+});
+
+test('a done status exists for a tracked item, or for a parent on an item they tick', () => {
+  assert.equal(hasDoneStatus({ canTrack: true, requiresSubmission: false }, false), true);
+  assert.equal(hasDoneStatus({ canTrack: false, requiresSubmission: false }, true), true);
+  assert.equal(hasDoneStatus({ canTrack: false, requiresSubmission: false }, false), false);
+  assert.equal(hasDoneStatus({ canTrack: false, requiresSubmission: true }, true), false, 'nobody can tick an untracked project');
+});
+
+test('for a parent, untracked items are grouped into to-do and done (they tick them), not one flat list', () => {
+  const items = [
+    hw({ id: 'a', canTrack: false, dueDate: '2026-11-25' }),
+    hw({ id: 'b', canTrack: false, done: true, state: 'done', dueDate: '2026-11-21' }),
+  ];
+  assert.deepEqual(homeworkSections(items, true).sections.map(s => s.key), ['todo', 'done']);
+  // Nobody else can tick them, so with no parent the list stays flat.
+  assert.deepEqual(homeworkSections(items, false).sections.map(s => s.key), ['all']);
+  // An untracked project is ticked by nobody, parent included.
+  const projects = [hw({ id: 'p', canTrack: false, requiresSubmission: true })];
+  assert.deepEqual(homeworkSections(projects, true).sections.map(s => s.key), ['all']);
 });
 
 test('an untracked submission item is never ranked as overdue', () => {

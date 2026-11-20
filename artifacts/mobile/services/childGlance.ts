@@ -6,7 +6,8 @@
  * It must say nothing the rows below would not:
  * - «متأخّر» counts only items someone can tick (`canTrack`) that are not done and the server calls overdue — exactly
  *   the rows that wear the red badge. An untracked item is never called late.
- * - «مطلوب» is a calendar fact (a due day in the window), so an untracked item counts; a tracked one already done does not.
+ * - «مطلوب» is a calendar fact (a due day in the window), so an untracked item counts; one already marked done does
+ *   not, whoever marked it (the child, or since 2026-11-20 the parent for a child with no account).
  * - A list that has not loaded (or failed) is `null` here, and its lines are left out rather than shown as zero: «لا
  *   واجبات» while homework failed to load would be a claim the screen cannot back.
  *
@@ -35,7 +36,7 @@ export function childGlance(input: {
   const last = addDays(today, GLANCE_DAYS - 1);
   const homework = input.homework
     ? {
-        dueSoon: input.homework.filter(h => !(h.canTrack && h.done) && h.dueDate >= today && h.dueDate <= last).length,
+        dueSoon: input.homework.filter(h => !h.done && h.dueDate >= today && h.dueDate <= last).length,
         late: input.homework.filter(h => h.canTrack && !h.done && h.state === 'overdue').length,
       }
     : null;

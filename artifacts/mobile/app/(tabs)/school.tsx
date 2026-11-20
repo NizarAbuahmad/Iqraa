@@ -32,7 +32,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { getChildSchedules, getMySchedule } from '@/services/familyScheduleApi';
-import { getChildHomework, getMyHomework, setHomeworkDone } from '@/services/homeworkApi';
+import { getChildHomework, getMyHomework, setChildHomeworkDone, setHomeworkDone } from '@/services/homeworkApi';
 import { stateLabelKey } from '@/services/homeworkSubmission';
 import { submissionLook } from '@/services/homeworkProject';
 import { openResource } from '@/services/openResource';
@@ -47,6 +47,8 @@ import {
   homeworkSections,
   resourceKey,
   childProjectHref,
+  hasDoneStatus,
+  parentMayTick,
   resultForGame,
   showsChildProjectLink,
   showsSubmissionLink,
@@ -186,6 +188,9 @@ export default function SchoolScreen() {
       // A project homework is never ticked by hand: the server answers 409
       // `submission_required`, and ticks it itself when the project is handed in.
       if (item.requiresSubmission) return;
+      // A parent ticks only for a child with no student account in that class
+      // (`parentMayTick`); the server refuses the rest with 409 `student_tracks`.
+      if (isParent && !parentMayTick(item)) return;
       if (hwInFlight.current.has(item.id)) return;
       const next = !item.done;
       hwInFlight.current.add(item.id);
@@ -205,7 +210,10 @@ export default function SchoolScreen() {
         }));
       patch(items => applyDone(items, item.id, next));
       try {
-        await setHomeworkDone(item.id, next);
+        if (isParent) await setChildHomeworkDone(item.id, childKey, next);
+        else await setHomeworkDone(item.id, next);
+        // «أنجزت كل واجباتك» speaks to the student who did the work: a parent's tick never celebrates.
+        if (isParent) return;
         // Only a tick that the server accepted, and only once no other save is
         // still out (an optimistic tick may yet roll back). The last save to
         // finish judges the list as it stands now, so ticking the last two
@@ -226,7 +234,7 @@ export default function SchoolScreen() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t],
+    [t, isParent],
   );
 
   const child = children ? activeChild(children, selected) : null;
@@ -237,8 +245,10 @@ export default function SchoolScreen() {
   const pickerKids: readonly { key: string; displayName: string }[] = children ?? homework ?? exams ?? [];
   const hwChild = homework ? (homework.find(c => c.key === selected) ?? homework[0] ?? null) : null;
   // Whether an item can be ticked is the ITEM's flag (ticking is per class), not the child's.
-  const hw = homeworkSections(hwChild?.homework ?? []);
-  const untrackedKind = untrackedMode(hwChild?.homework ?? []);
+  const hw = homeworkSections(hwChild?.homework ?? [], isParent);
+  // The note tells a parent they tick these themselves, so it counts only items they can tick: an untracked project
+  // is handed in, never ticked, by anyone.
+  const untrackedKind = untrackedMode((hwChild?.homework ?? []).filter(h => !h.requiresSubmission));
   const hwEmpty = homework !== null && !hwError && hw.sections.length === 0;
   const hwToday = ammanToday();
   // Same child as the picker shows, whichever list decided it.
@@ -732,7 +742,10 @@ function HomeworkRow({
         : badge.kind === 'tomorrow'
           ? t('hwDueTomorrow')
           : t('hwDueOn', formatDueDate(item.dueDate));
-  const done = item.done && !untracked;
+  // A parent ticks an untracked, non-project item themself (since 2026-11-20): its done mark is theirs to set and
+  // show. It still never reads «متأخّر»: a family that does not use the tick would see every item called late.
+  const parentTicks = isParent && parentMayTick(item);
+  const done = item.done && hasDoneStatus(item, isParent);
   const meta = [item.className, item.teacherName].filter(Boolean).join(' · ');
   const hasInstructions = item.instructions.trim() !== '';
   // A project homework has no tick: the hand-in screen ticks it. Its state is a
@@ -756,7 +769,7 @@ function HomeworkRow({
         { backgroundColor: colors.card, borderColor: item.state === 'overdue' && !untracked ? colors.destructive + '55' : colors.border, borderRadius: colors.radius, flexDirection: rowDir },
       ]}
     >
-      {untracked ? null : isParent || isSubmission ? (
+      {!hasDoneStatus(item, isParent) ? null : (isParent && !parentTicks) || isSubmission ? (
         <View
           accessible
           accessibilityRole="image"

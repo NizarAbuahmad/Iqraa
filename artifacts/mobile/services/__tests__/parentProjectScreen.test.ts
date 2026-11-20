@@ -102,6 +102,25 @@ describe('«المدرسة»: the parent’s way in', () => {
   });
 });
 
+describe('«المدرسة»: a parent ticks for a child with no student account (since 2026-11-20)', () => {
+  it('sends the parent\'s tick through the parent route, with the child\'s key', () => {
+    assert.match(school, /if \(isParent\) await setChildHomeworkDone\(item\.id, childKey, next\);/);
+    assert.match(school, /else await setHomeworkDone\(item\.id, next\);/);
+  });
+
+  it('offers the tick only where the tested rule allows it, and refuses the rest before any request', () => {
+    assert.match(school, /if \(isParent && !parentMayTick\(item\)\) return;/);
+    assert.match(school, /const parentTicks = isParent && parentMayTick\(item\);/);
+  });
+
+  it('never celebrates a parent\'s tick: «أنجزت كل واجباتك» speaks to the student', () => {
+    const at = school.indexOf('if (isParent) await setChildHomeworkDone');
+    const celebrate = school.indexOf('setCelebrateHw(true)', at);
+    const guard = school.indexOf('if (isParent) return;', at);
+    assert.ok(at >= 0 && guard > at && guard < celebrate, 'the parent returns before the celebration');
+  });
+});
+
 describe('a parent lands on «المدرسة»', () => {
   it('the landing redirect uses the tour’s home href, so the two cannot drift', () => {
     assert.match(index, /homeHrefFor\(role\)/);

@@ -10,11 +10,39 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Parents: «المدرسة» first, a quick look at each child, a read-only view of a handed-in project, and every parent code of a class in one place — 2026-11-13
+## Parents: «المدرسة» first, a quick look at each child, a read-only view of a handed-in project, every parent code of a class in one place, and a parent's tick for a child with no account — 2026-11-20
 
-Four changes from a review of the parent side.
+Five changes from a review of the parent side (the first four written 2026-11-13, the fifth 2026-11-20).
 
 **What changed.**
+- **A parent ticks homework for a child with no student account** (the owner's call, 2026-11-20). Until now an item
+  whose class held no student account for the child could be ticked by nobody, so it showed only its date; a young
+  child is often in exactly that position, and the parent is the one checking. New `PUT/DELETE
+  /parent/homework/:id/done?child=<key>` (`setHomeworkDoneAsGuardian` in `lib/homeworkDone.ts`) writes the same
+  completion row the student would, for that child's rows in the homework's class only. Refused with 409
+  `student_tracks` when any of those rows has a student account (the child ticks their own, and a parent cannot
+  overwrite it), with 409 `submission_required` for a project, and with one 404 for another family's child, a child
+  outside the class, or a missing key. The child key is in the query because some clients drop a DELETE's body. On
+  «المدرسة» (`parentMayTick`, `hasDoneStatus` in `services/homework.ts`) the parent's row then has a checkbox; the item
+  still never reads «متأخّر» (a family that does not use the tick would see everything called late); the to-do and done
+  groups now apply to those items too; the note under «الواجبات» says to tick them; a parent's tick never celebrates
+  («أنجزت كل واجباتك» speaks to the student); the glance card stops counting an item the parent marked done as «مطلوب».
+  The teacher's done count includes a parent's tick (it counts completion rows), and nothing records who ticked: the
+  teacher sees only the count. The day-before reminder already skips an item with any completion, so a parent's tick
+  silences it with no change there.
+  **A row-level-security hole found on the way, and fixed.** Whether a child has a student account is the child's own
+  `self` link, and `roster_links_select` lets a guardian read only their own links. `studentIdsWithSelfAccount` read on
+  the parent's connection, so with `RLS_ENFORCE` on, every child read as having no account: the parent's list lost
+  every `canTrack`, and the new tick would have been let through for a child who ticks their own. It now reads on
+  `systemDb` (`lib/familyAccess.ts` was already pinned; its entry in `systemDbFiles.test.ts` says why). `rlsDiff.test.ts`
+  now reads `/parent/homework` and `/student/homework` and runs both parent ticks, and counts completions left behind.
+  Verified: `parentHomeworkDone.db.test.ts` (7 cases) and the full API suite against a local Postgres (3,589 tests;
+  the one failure on the first run was `systemDbFiles.test.ts` matching the word in a comment, reworded); the RLS
+  suites against a freshly migrated database, 76 of 76. Mutations: putting the account check back on the parent's
+  connection fails the RLS read diff (`canTrack` true off, false on) and the write diff (409 off, 200 on); the write
+  steps first passed vacuously because an earlier step had unlinked the parent and removed the child from the class,
+  which the block now restores; dropping the `student_tracks` check fails the DB test. `mountOrder.test.ts` covers both
+  methods without a token. Mobile tests for the rules and the screen wiring. Not checked: a phone, and a real parent.
 - **«رموز أولياء الأمور» for a whole class (teacher).** A parent cannot join from the class code
   (`claimParentNeedsOwnCode`), so each family needs its child's own code, and a teacher with thirty students opened
   `/messaging/claim/<student>` thirty times. The class page's join-status card now opens
