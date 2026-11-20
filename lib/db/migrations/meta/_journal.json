@@ -218,6 +218,13 @@
       "when": 1795167609292,
       "tag": "0030_glossy_carnage",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795213444338,
+      "tag": "0031_oval_mantis",
+      "breakpoints": true
     }
   ]
 }
