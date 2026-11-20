@@ -46,6 +46,7 @@ the app state; both hooks call it), each seen failing first; `pnpm run typecheck
 size of the overstatement is unknown until the admin page has a few days of rows); the admin screen in a
 browser; the polling change in a browser tab or on a phone; any change in Neon's compute hours. No «ما الجديد»:
 nothing a teacher, student or parent sees changes.
+
 ## Grade 3 second pass: skip counting by 10s, 100s and 1000s, four-digit comparing, like fractions, conversions within 9999 — 2026-11-20
 
 This is a second read of Grade 3 maths, on top of «Grade 3 review: six maths lessons asked about their own objective»,
