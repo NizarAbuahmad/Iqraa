@@ -26,7 +26,7 @@
  */
 import { Router } from "express";
 import { newsletterIssues, newsletterSends, systemDb as db, users } from "@workspace/db";
-import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, notExists, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { UUID } from "../lib/adminMetrics.js";
 import { sendBroadcast } from "../lib/email.js";
@@ -133,6 +133,10 @@ router.post("/admin/newsletter/test", authMiddleware, requireRole("system_admin"
       .where(
         and(
           isNull(newsletterIssues.sentAt),
+          // An issue with recipients is the record of who was mailed, whatever its sent_at
+          // (the stamp can fail to land after the provider took the mail), and the cascade
+          // would erase that record.
+          notExists(db.select({ one: sql`1` }).from(newsletterSends).where(eq(newsletterSends.issueId, newsletterIssues.id))),
           or(isNull(newsletterIssues.sendingAt), lt(newsletterIssues.sendingAt, sql`now() - make_interval(mins => ${SENDING_CLAIM_MINUTES})`)),
         ),
       );
@@ -189,7 +193,7 @@ router.post("/admin/newsletter/send", authMiddleware, requireRole("system_admin"
         .innerJoin(users, eq(users.id, newsletterSends.userId))
         .where(eq(newsletterSends.issueId, issueId));
       const alreadyIds = new Set(sentUsers.map((r) => r.userId));
-      const alreadyEmails = new Set(sentUsers.map((r) => (r.email ?? "").toLowerCase()));
+      const alreadyEmails = new Set(sentUsers.map((r) => (r.email ?? "").trim().toLowerCase()));
       const recipients = pickTeacherRecipients(await teacherRows()).filter(
         (r) => !alreadyIds.has(r.id) && !alreadyEmails.has(r.email.toLowerCase()),
       );

@@ -235,4 +235,20 @@ describeDb("teacher newsletter", () => {
     assert.deepEqual(failed.json, { sent: 0, failed: 2, skipped: 1 });
     assert.equal(await sendsOf(t2.json.issueId), 0);
   });
+
+  it("a new test never deletes an issue that already has recipients", async () => {
+    const body = `${BODY}\n\nEleventh issue`;
+    const tested = await test2(body);
+    const issueId: string = tested.json.issueId;
+    assert.equal((await send2(issueId, body)).status, 200);
+    const mailed = await sendsOf(issueId);
+    assert.equal(mailed, 2);
+    // Simulate the stamp that never landed after the provider took the mail.
+    await db.pool.query(`UPDATE newsletter_issues SET sent_at = NULL WHERE id = $1`, [issueId]);
+    const next = await test2(`${BODY}\n\nTwelfth issue`);
+    assert.equal(next.status, 200, next.text);
+    const rows = await db.pool.query(`SELECT 1 FROM newsletter_issues WHERE id = $1`, [issueId]);
+    assert.equal(rows.rowCount, 1);
+    assert.equal(await sendsOf(issueId), mailed);
+  });
 });
