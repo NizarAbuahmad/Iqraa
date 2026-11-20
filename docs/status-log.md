@@ -47,21 +47,27 @@ offline blueprint stood in. Reproduced exactly with `buildOfflineActivity`: step
   its pool (more live spend); the owner's call.
 - **A fallback is said on the result.** `aiFallbackNotice` (`aiProvenance.ts`) decides through `aiSourceBadgeState`,
   so the pill and the notice cannot disagree, and adds: the record is this generator's and produced content (`mock`;
-  a strict failure has no result to annotate). The activity screen keeps this call's own record (`generationSince`: the
-  newest `activity` record since the call started — not the last record, because a fallback is recorded before the
-  offline generator's 1–2 s delay and a chat reply in that window would otherwise replace it), clears it when a
-  saved material is reopened, shows `AiFallbackNotice` above the result («هذا محتوى تجريبي، لم يكتبه الذكاء
+  a strict failure has no result to annotate). **Five screens have it:** activity, quiz, worksheet/homework, lesson
+  plan and Slides Maker. Each shows `AiFallbackNotice` on the result («هذا محتوى تجريبي، لم يكتبه الذكاء
   الاصطناعي…» and «أعد المحاولة», which runs the generator again with the form as it now stands — if the teacher
-  changed it after the fallback, that is what is asked for), and hides «النشاط جاهز» with its tick under it.
-  **The quiz and the worksheet/homework screens have it too** (`kind` `quiz`, and `homework` or `worksheet` by the
-  screen's mode). They read the record off the returned object: `generateWithProvenance` now tags each output with
-  the record of the call that made it (`provenanceOf`, a WeakMap), because the worksheet's three-level mode runs three
-  generations at once and one can fall back alone — each level keeps its own record and the notice follows the level
-  tab. The quiz reads it before `normalizeQuestionOptions` copies the paper. Both screens' «covers N lessons» notice
-  (`coverageInfo.modelReported`) used `getLastGeneration()` and now uses the same record. On the worksheet, a retry
-  in three-level mode asks for the three again. `fallbackNoticeScreens.test.ts` pins, for all three screens: the
-  notice is mounted for the screen's kind, no `getLastGeneration()` call, and a reopened material carries no record.
-  The lesson plan and slides screens do not have it yet.
+  changed it after the fallback, that is what is asked for), clears it when a saved material is reopened, and on
+  the activity and the lesson plan hides the «… جاهز» tick under it.
+  - **Each screen keeps its own call's record, never `getLastGeneration()`.** A fallback is recorded before the
+    offline generator's 1–2 s delay, so the last record can be a chat reply's, or another level's: the worksheet's
+    three-level mode runs three generations at once and one can fall back alone. `generateWithProvenance` tags each
+    output with its record (`provenanceOf`, a WeakMap); a service that copies the output afterwards carries it
+    (`carryProvenance`: `plainActivity` for the activity, `applyClassroomSetup` for classroom activities). The quiz
+    reads it before `normalizeQuestionOptions` copies the paper; each worksheet level keeps its own and the notice
+    follows the level tab, and a retry in three-level mode asks for the three again. The quiz and worksheet «covers N
+    lessons» notice (`coverageInfo.modelReported`) used `getLastGeneration()` and now uses the same record.
+  - **Slides Maker** builds one deck from the book, a lesson plan and formative checks; the plan (`lesson-plan`) and
+    the checks (`classroom-activity`) each fall back on their own, and either one gives the notice
+    (`firstFallbackNotice`). Its explanation call (`lesson-teaching`) is strict and never falls back.
+  - **Prompt Slides has none, deliberately:** `generatePromptSlides` is `strict: true` with no offline twin, so it
+    shows an error and never sample content.
+  - `fallbackNoticeScreens.test.ts` pins, for every screen: the notice is mounted for the screen's kind, no
+    `getLastGeneration()` call, and a reopened material carries no record (it fails 5 of 14 with the lesson plan and
+    slides changes removed).
 - **No «ما الجديد» entry:** the content changes are fixes to what the offline path serves, and the notice appears
   only when live generation has failed — announcing it would announce a failure mode.
 
@@ -73,7 +79,7 @@ call runs on the 45 s default client timeout, while lesson plans, worksheets, qu
 Verified: typecheck; mobile tests (`activityDiscussionFit.test.ts`, new: no doubled quotes in any format, version or
 language; stated minutes equal the step's for discussion and game at 20/30/45/60; jigsaw turns fit; the question
 reaches the discussion in Arabic and English; Grade 6 vs Grade 10 wording; the two helpers; plus `aiFallbackNotice`
-cases in `aiProvenance.test.ts`, with `provenanceOf` over three parallel calls, and `fallbackNoticeScreens.test.ts`); `activityBlueprints.test.ts` and the other activity suites unchanged and passing;
+cases in `aiProvenance.test.ts`, with `provenanceOf` over three parallel calls, `carryProvenance` and `firstFallbackNotice`, and `fallbackNoticeScreens.test.ts`); `activityBlueprints.test.ts` and the other activity suites unchanged and passing;
 api-server build + tests (2991 pass, with new cases in `activityPrompts.test.ts`). A review of the first version
 found, and this fixes with a test each: any «؟» made a factual question an "open" one; the question was cut inside
 «1.5» / «3:4» and not at «؛» or a dash; «الصف الثاني عشر» read as Grade 2 (`activityGradeNumber`); the screen could

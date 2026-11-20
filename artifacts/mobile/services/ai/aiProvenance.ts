@@ -433,21 +433,28 @@ export function aiFallbackNotice(
 }
 
 /**
- * The newest record of `kind` made at or after `since` — the record of the
- * call a screen just made.
- *
- * Not `getLastGeneration()`: a fallback is recorded before the offline
- * generator's 1–2 s delay, so a chat reply or another screen's generation in
- * that window would be "last", and the activity's notice would be lost.
+ * Give `to` the record `from` carries. For a service that copies the output
+ * after `generateWithProvenance` returned it (`plainActivity`,
+ * `applyClassroomSetup`): the copy is what the screen holds, and
+ * `provenanceOf` on it would otherwise answer null.
  */
-export function generationSince(
-  log: readonly AiGenerationRecord[],
-  kind: AiGenerationKind,
-  since: number,
-): AiGenerationRecord | null {
-  for (let i = log.length - 1; i >= 0; i--) {
-    const r = log[i]!;
-    if (r.kind === kind && r.at >= since) return r;
+export function carryProvenance<T>(from: unknown, to: T): T {
+  const record = provenanceOf(from);
+  return record ? remember(to, record) : to;
+}
+
+/**
+ * The notice for a result built from several calls — a Slides Maker deck is
+ * the book plus a lesson plan and formative checks, each of which can fall
+ * back on its own. The first part that is sample content gives the notice.
+ */
+export function firstFallbackNotice(
+  demoMode: boolean,
+  parts: ReadonlyArray<{ record: AiGenerationRecord | null; kind: AiGenerationKind }>,
+): AiFallbackNotice | null {
+  for (const { record, kind } of parts) {
+    const notice = aiFallbackNotice(demoMode, record, kind);
+    if (notice) return notice;
   }
   return null;
 }

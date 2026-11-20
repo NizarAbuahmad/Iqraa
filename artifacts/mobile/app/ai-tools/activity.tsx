@@ -31,7 +31,7 @@ import {
   type ActivityTypeId } from '@/constants/activityType';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
-import { aiErrorText, aiFallbackNotice, generationSince, getGenerationHistory, isAbortError, type AiGenerationRecord } from '@/services/ai/aiProvenance';
+import { aiErrorText, aiFallbackNotice, isAbortError, provenanceOf, type AiGenerationRecord } from '@/services/ai/aiProvenance';
 import { DEMO_MODE } from '@/services/ai/demoMode';
 import { AiFallbackNotice } from '@/components/ui/AiFallbackNotice';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
@@ -336,7 +336,6 @@ export default function ActivityScreen() {
     setLoading(true); setResult(null); setSaveLabel('save');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await nextFrame();
-    const startedAt = Date.now();
     try {
       const grounding = wide
         ? WIDE_GROUNDING
@@ -352,7 +351,7 @@ export default function ActivityScreen() {
       setBuiltWith({ activityTypeIdx, durationIdx, objective });
       // This call's own record — not the last one, which a chat reply during
       // the offline generator's delay could have replaced.
-      setResultRecord(generationSince(getGenerationHistory(), 'activity', startedAt));
+      setResultRecord(provenanceOf(out));
       setResult(out);
       // A regenerated activity is a new copy: leave the saved one alone, and
       // let «حفظ» create it. The star belonged to the saved material.

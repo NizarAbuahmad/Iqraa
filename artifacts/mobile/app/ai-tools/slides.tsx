@@ -22,7 +22,9 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorMessageKey, aiErrorText, isAbortError, throwIfAborted } from '@/services/ai/aiProvenance';
+import { aiErrorMessageKey, aiErrorText, firstFallbackNotice, isAbortError, provenanceOf, throwIfAborted, type AiGenerationKind, type AiGenerationRecord } from '@/services/ai/aiProvenance';
+import { DEMO_MODE } from '@/services/ai/demoMode';
+import { AiFallbackNotice } from '@/components/ui/AiFallbackNotice';
 import { GroundingNotice } from '@/components/ui/GroundingNotice';
 import { Toast } from '@/components/ui/Toast';
 import { FeedbackWidget } from '@/components/ui/FeedbackWidget';
@@ -237,6 +239,15 @@ export default function SlidesScreen() {
   const [cancelled, setCancelled] = useState(false);
   const [deck, setDeck] = useState<ClassroomActivity | null>(null);
   /**
+   * The model calls the deck on screen was built from, each with its record
+   * (`provenanceOf`). The book is curriculum data; the plan and the checks can
+   * each fall back to sample content on their own, and either one is enough
+   * for the notice. (The explanation call is strict: it fails, never falls
+   * back.) Null for a reopened deck: nothing is known about how it was made.
+   */
+  const [deckParts, setDeckParts] = useState<Array<{ record: AiGenerationRecord | null; kind: AiGenerationKind }> | null>(null);
+  const fallbackNotice = deckParts ? firstFallbackNotice(DEMO_MODE, deckParts) : null;
+  /**
    * The deck on screen is the book-only draft shown while the model calls
    * are still running. Read-only: an edit made to it would be lost when the
    * full deck replaces it.
@@ -418,6 +429,7 @@ export default function SlidesScreen() {
         : scope.lesson ? (deckIsAr(scope) ? scope.lesson.titleAr : scope.lesson.titleEn) : '');
       setPreliminary(false);
       workspace.adopt(id, loaded, deckIdentity(loaded, scope));
+      setDeckParts(null);
       setDeck(loaded);
     })();
     return () => { cancelled = true; };
@@ -478,6 +490,7 @@ export default function SlidesScreen() {
       setValidationError('');
       setTopic('');
       setDeck(null);
+      setDeckParts(null);
       setGenerated(null);
       setWideFrozen(null);
       setTeachingVariantId(undefined);
@@ -506,6 +519,7 @@ export default function SlidesScreen() {
     groundedLesson: string;
     videoOptions: DeckVideo[];
     built: ClassroomActivity | null;
+    parts: typeof deckParts;
   };
   const restoreDeck = (prev: DeckSnapshot) => {
     setDeck(prev.deck);
@@ -517,6 +531,7 @@ export default function SlidesScreen() {
     setGrounded(prev.grounded);
     setGroundedLesson(prev.groundedLesson);
     setVideoOptions(prev.videoOptions);
+    setDeckParts(prev.parts);
     builtRef.current = prev.built;
     // A verification still running for the restored deck may land again.
     if (prev.built) deckRunRef.current.begin(prev.built);
@@ -568,8 +583,9 @@ export default function SlidesScreen() {
       groundedLesson,
       videoOptions,
       built: builtRef.current,
+      parts: deckParts,
     } : null;
-    setLoading(true); setDeck(null); setTeachingVariantId(undefined);
+    setLoading(true); setDeck(null); setDeckParts(null); setTeachingVariantId(undefined);
     // The previous deck's alternatives are not this deck's: "another
     // suggestion" would otherwise cycle through videos for the old lesson.
     setVideoOptions([]);
@@ -650,8 +666,9 @@ export default function SlidesScreen() {
       // one; a wide deck sends its scope on this call too.
       const checksPromise = aiService
         .generateClassroomActivity(slidesChecksRequest(form, lessonFields, wide?.fields ?? null), { signal: controller.signal })
-        .then(a => a.slides)
-        .catch((): ActivitySlide[] => []);
+        // The record rides along: `provenanceOf` reads the call's output, not its slides.
+        .then(a => ({ slides: a.slides, record: provenanceOf(a) }))
+        .catch(() => ({ slides: [] as ActivitySlide[], record: null }));
 
       // The explanation section the book data does not carry — hook, concept
       // slides, a worked example, a practice problem (`lessonSlides.ts`).
@@ -701,7 +718,8 @@ export default function SlidesScreen() {
         return;
       }
 
-      const [checks, teaching] = await Promise.all([checksPromise, teachingPromise]);
+      const [checksOut, teaching] = await Promise.all([checksPromise, teachingPromise]);
+      const checks = checksOut.slides;
       // Both promises above absorb their own failures, the abort included, so
       // a Cancel that lands after the plan returned would otherwise finish as
       // a deck. Re-raise it here; the catch below reports it as a stop.
@@ -790,6 +808,10 @@ export default function SlidesScreen() {
       });
       setWideFrozen(wideSel);
       setDeck(built);
+      setDeckParts([
+        { record: provenanceOf(lessonPlan), kind: 'lesson-plan' },
+        { record: checksOut.record, kind: 'classroom-activity' },
+      ]);
       setPreliminary(false);
       // A spent allowance refuses the plan, the checks and the explanation
       // together, and the deck above is the book alone — for a thin lesson,
@@ -1251,6 +1273,12 @@ export default function SlidesScreen() {
           t={t}
         />
         </View>
+
+        {deck && !loading && fallbackNotice && (
+          <View style={{ marginHorizontal: 20 }}>
+            <AiFallbackNotice notice={fallbackNotice} onRetry={() => generate()} disabled={loading} />
+          </View>
+        )}
 
         {deck && (!loading || preliminary) && (
           // One switch for the whole block: while the draft is on screen

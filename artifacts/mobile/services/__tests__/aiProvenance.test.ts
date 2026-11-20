@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {
   aiErrorMessageKey,
   aiFallbackNotice,
-  generationSince,
+  carryProvenance,
+  firstFallbackNotice,
   provenanceOf,
   aiSourceBadgeState,
   type AiGenerationRecord,
@@ -459,24 +460,6 @@ test("aiFallbackNotice: another generator's fallback is not this result's", () =
   assert.equal(aiFallbackNotice(false, rec({ kind: 'chat' }), 'activity'), null);
 });
 
-// ─── generationSince ─────────────────────────────────────────────────────────
-// Found in review: the activity screen took `getLastGeneration()` when its
-// result arrived, but the fallback is recorded BEFORE the mock's 1–2 s delay,
-// so a chat reply in that window became "last" and the notice was lost.
-
-test('generationSince: the newest record of this kind since the call started', () => {
-  const log: AiGenerationRecord[] = [
-    rec({ at: AT - 10 }),                                   // an earlier activity
-    rec({ at: AT + 1, reason: 'fallback' }),                // this call's
-    rec({ kind: 'chat', source: 'live', reason: 'live', at: AT + 2 }), // a chat reply meanwhile
-  ];
-  assert.equal(generationSince(log, 'activity', AT)?.at, AT + 1);
-});
-
-test('generationSince: null when this call recorded nothing', () => {
-  assert.equal(generationSince([rec({ at: AT - 10 })], 'activity', AT), null);
-});
-
 // ─── provenanceOf ────────────────────────────────────────────────────────────
 // The worksheet's three-level mode runs three generations at once, so "the
 // newest record since the call started" cannot say which record is which
@@ -501,4 +484,27 @@ test('provenanceOf: demo mode, and an object no generator made', async () => {
   assert.equal(provenanceOf(out)?.reason, 'demo-mode');
   assert.equal(provenanceOf({}), null);
   assert.equal(provenanceOf(null), null);
+});
+
+// ─── carryProvenance / firstFallbackNotice ───────────────────────────────────
+// A service that copies the output after the provenance step (`plainActivity`,
+// `applyClassroomSetup`) carries the record to the copy; a deck built from
+// several calls shows the notice when any part of it is sample content.
+
+test('carryProvenance: the copy has the original output record', async () => {
+  fresh();
+  const out = await generateWithProvenance('activity', () => Promise.reject(new Error('HTTP 502')), async () => ({ a: 1 }), { demoMode: false, strict: false, now: clock });
+  const copy = carryProvenance(out, { ...out });
+  assert.equal(provenanceOf(copy)?.reason, 'fallback');
+  assert.equal(provenanceOf(carryProvenance({}, { b: 2 })), null);
+});
+
+test('firstFallbackNotice: any part that fell back gives the notice', () => {
+  const live = rec({ kind: 'lesson-plan', source: 'live', reason: 'live', error: undefined });
+  const fell = rec({ kind: 'classroom-activity' });
+  assert.equal(firstFallbackNotice(false, [{ record: live, kind: 'lesson-plan' }, { record: null, kind: 'classroom-activity' }]), null);
+  assert.equal(firstFallbackNotice(false, [{ record: live, kind: 'lesson-plan' }, { record: fell, kind: 'classroom-activity' }])?.detail, 'HTTP 502');
+  // A record is only counted against its own kind.
+  assert.equal(firstFallbackNotice(false, [{ record: fell, kind: 'lesson-plan' }]), null);
+  assert.equal(firstFallbackNotice(true, [{ record: fell, kind: 'classroom-activity' }]), null);
 });

@@ -30,7 +30,9 @@ import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, aiFallbackNotice, isAbortError, provenanceOf, type AiGenerationRecord } from '@/services/ai/aiProvenance';
+import { DEMO_MODE } from '@/services/ai/demoMode';
+import { AiFallbackNotice } from '@/components/ui/AiFallbackNotice';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { readIndexParam } from '@/services/materialParams';
@@ -198,6 +200,13 @@ export default function LessonPlanScreen() {
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<LessonPlanOutput | null>(null);
   /**
+   * The record of the call that made the plan on screen (`provenanceOf`), kept
+   * apart from `result` because an edit replaces that object. Null for a
+   * reopened material: nothing is known about how it was made.
+   */
+  const [resultRecord, setResultRecord] = useState<AiGenerationRecord | null>(null);
+  const fallbackNotice = aiFallbackNotice(DEMO_MODE, resultRecord, 'lesson-plan');
+  /**
    * The scope the plan on screen was generated under — pickers, topic and
    * the grounded lesson, frozen at generation time (or re-derived from the
    * saved form state on reopen, which is what gives a reopened plan its
@@ -282,6 +291,7 @@ export default function LessonPlanScreen() {
         if (item) {
           try {
             const parsed = JSON.parse(item.content) as LessonPlanOutput;
+            setResultRecord(null);
             setResult(parsed);
           } catch { /* noop */ }
           setFavorited(item.isFavorite);
@@ -323,7 +333,7 @@ export default function LessonPlanScreen() {
     // What a failed or cancelled run must hand back. It used to be cleared
     // up front and never restored, so Cancel on a regenerate threw away the
     // unsaved plan the teacher was looking at.
-    const held = { result, editedFields, generated, wideFrozen };
+    const held = { result, editedFields, generated, wideFrozen, resultRecord };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // plan — the KB serves that lesson's own content while the header claims
@@ -373,6 +383,8 @@ export default function LessonPlanScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setWideFrozen(wideReq ? wideSel : null);
+      // This call's own record — `getLastGeneration()` could be another call's.
+      setResultRecord(provenanceOf(out));
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
@@ -390,6 +402,7 @@ export default function LessonPlanScreen() {
         setEditedFields(held.editedFields);
         setGenerated(held.generated);
         setWideFrozen(held.wideFrozen);
+        setResultRecord(held.resultRecord);
       }
     } finally {
       abortRef.current = null;
@@ -879,10 +892,16 @@ export default function LessonPlanScreen() {
           <ShortPaperNotice repeated={result.repeated} repeatedUnit="sections" />
         </View>
       )}
+      {result && fallbackNotice && (
+        <View style={{ paddingHorizontal: 20 }}>
+          <AiFallbackNotice notice={fallbackNotice} onRetry={() => generate()} disabled={loading} />
+        </View>
+      )}
       {result && (
         <LessonPlanResult
           plan={result}
           ink={accentInk}
+          ready={!fallbackNotice}
           colors={colors}
           isRTL={outLang === 'ar'}
           t={outT}
@@ -936,8 +955,10 @@ export default function LessonPlanScreen() {
   );
 }
 
-function LessonPlanResult({ plan, ink, colors, isRTL, t, onEdit, editedFields }: {
+function LessonPlanResult({ plan, ink, colors, isRTL, t, onEdit, editedFields, ready = true }: {
   plan: LessonPlanOutput;
+  /** False under the fallback notice: no «ready» tick on sample content. */
+  ready?: boolean;
   /** The accent as text, an icon or an outline on a card (`readableOn`); `ACCENT` itself is for fills and tints. */
   ink: string;
   colors: ReturnType<typeof useColors>;
@@ -949,12 +970,14 @@ function LessonPlanResult({ plan, ink, colors, isRTL, t, onEdit, editedFields }:
 }) {
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
-      <View style={[styles.resultHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Ionicons name="checkmark-circle" size={20} color={ink} />
-        <Text style={[styles.resultHeaderText, { color: ink, fontFamily: 'ReadexPro_600SemiBold' }]}>
-          {t('lessonPlanReady')}
-        </Text>
-      </View>
+      {ready && (
+        <View style={[styles.resultHeader, { backgroundColor: ACCENT + '15', borderColor: ACCENT + '30', borderRadius: colors.radius, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name="checkmark-circle" size={20} color={ink} />
+          <Text style={[styles.resultHeaderText, { color: ink, fontFamily: 'ReadexPro_600SemiBold' }]}>
+            {t('lessonPlanReady')}
+          </Text>
+        </View>
+      )}
 
       <LessonPlanView
         plan={plan}
