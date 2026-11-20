@@ -38,9 +38,14 @@ Verified: `grounding.test.ts` (none → null, including with a unit id and a wid
 for an ungrounded topic and leaves a grounded body without it; the wide-scope fields likewise); api-server
 `pnpm build` + `pnpm test` (2,999 pass); mobile `pnpm test` (9,447, 0 fail); `pnpm run typecheck`.
 
-**Not verified:** a live generation with the field set (no model call was made). `services/cqv/batch.ts`
-(the content-QA batch) still sends its context without the field; it is an internal tool. No «ما الجديد»: the
-teacher sees no new control, only material that no longer quotes another grade's book.
+- **Content-QA batch** (`services/cqv/batch.ts`): its context now comes from `cqvGroundingFields`
+  (`services/cqv/grounding.ts`), grounded in its own scope, Grade 10 Mathematics, and carries the flag when
+  nothing grounds. Of its 37 lessons, 34 ground exactly as before; «تبسيط المقادير الأسية» and «النسب المثلثية»
+  had grounded on Grade 9 lessons of the same title and now ground on Grade 10's; «جمع المتجهات وطرحها» picks
+  the other Grade 10 lesson of that title. Pinned by `cqvGrounding.test.ts`.
+
+**Not verified:** a live generation with the field set (no model call was made). No «ما الجديد»: the teacher
+sees no new control, only material that no longer quotes another grade's book.
 ## The Activity tool waits 90 s for the model, not 45 — 2026-11-20
 
 **What happened.** After «A fallback result says so on the result…» deployed, the owner made an activity on
