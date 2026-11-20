@@ -136,6 +136,38 @@ them it had one solved item, and no half-solved question.
 - Only the offline generator changed. The live path (`worksheetPromptAr/En`) is the model's, and production runs live
   AI, so a teacher sees this paper only when live generation is off or fails.
 
+## Grade 1 review: the last three thin maths lessons fill a quiz, two shapes named in their own question, no elapsed time — 2026-11-20
+
+The same per-lesson read as «Grade 2 review: fifteen maths lessons…» and «Grade 3 review: six maths lessons…» (below),
+on top of «Grade 1 second pass…», which had already read every Grade 1 maths quiz against its objectives. A sweep of all 279
+Grade 1 lessons through the offline plan, quiz, worksheet and activity: every lesson grounds by id, plans and activities
+generate for all, and 63 of 66 maths lessons gave a full paper. What was left (`lib/math-practice/src/early.ts`):
+
+- **The three lessons the second pass left at 8 questions now fill ten.**
+  - «الأشكال المستوية» names shapes from things around a child. Two of those things gave the answer away: «قطعة الجبنة
+    المثلثة» and «بلاطة الأرض المربعة» carry their shape's name, as «كرة القدم» once did for the solids. They are gone,
+    and 11 things now have one shape each, none named after it: a door, a board and a notebook; a clock, a wheel and a
+    plate; a slice of pizza, a coat hanger and a warning road sign; a chessboard and a face of a dice.
+  - «أضلاع الأشكال المستوية ورؤوسها» adds the sides of two shapes together, which of two shapes has more sides, and which
+    shape has four sides of equal length.
+  - «الربع» (and «النصف») add what each of the equal parts is called, how many are left when one is eaten, and (the
+    quarter only) how many quarters make a half.
+- **«الوقت بنصف الساعة» asked «ما الوقت بعد نصف ساعة؟»**, elapsed time, which is Grade 3's «الفترات الزمنية». It now asks
+  which two numbers the hour hand is between at half past.
+- **«الجمع الذهني»** — «عدد من منزلتين مع عدد من منزلة واحدة» — could ask «8 + 9 (أضف 10 ثم انقص 1)»; the number that 9 is
+  added to now has two digits.
+
+**Verified.**
+- `early.test.ts` and `earlyG1Ops.test.ts` recompute the new kinds and fail a thing that carries its shape's name.
+  `earlyG1Ops.test.ts` also checks that the three lessons and «النصف» hold ten different questions.
+- Six planted bugs, one per fix, each failed a test.
+- All 66 Grade 1 maths lessons give a full ten-question quiz and worksheet. The new questions were read by hand and every key
+  is right.
+- math-practice passes; the PR body has the rest of the CI set.
+
+**Not done.** Grade 1 has no extracted book text, so as before the objectives were the reference. The non-maths subjects
+have no offline question bank, by design. Everything the audit left for the page images.
+
 ## OpenAI credit ran out; the app-wide AI cap is now $100 — 2026-11-20
 
 **What happened.** On 2026-11-20 every Activity-tool request on app.iqrra.com came back as the offline template,
