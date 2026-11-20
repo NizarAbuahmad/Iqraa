@@ -85,8 +85,15 @@ const withoutSolution = ({ solution: _solution, ...rest }: FlatItem): FlatItem =
 const withoutFormat = ({ format: _format, ...rest }: WorksheetQuestion): WorksheetQuestion => rest;
 
 /**
+ * The same question without its model-written drawing. The drawing was made
+ * from the original words and answer; once either changes it no longer matches.
+ */
+const withoutVisual = ({ visual: _visual, ...rest }: WorksheetQuestion): WorksheetQuestion => rest;
+
+/**
  * Patch a question's own fields (text, points) — the answer is untouched. A new
- * `text` drops this row's working and its format; a points-only edit keeps both.
+ * `text` drops this row's working, its format and its drawing; a points-only
+ * edit keeps all three.
  */
 export function applyWorksheetQuestionEdit(
   ws: WorksheetOutput,
@@ -96,7 +103,7 @@ export function applyWorksheetQuestionEdit(
 ): WorksheetOutput {
   const flat = flatten(ws).map(f =>
     f.sectionIndex === sectionIndex && f.questionIndex === questionIndex
-      ? { ...('text' in patch ? withoutSolution(f) : f), question: { ...('text' in patch ? withoutFormat(f.question) : f.question), ...patch } }
+      ? { ...('text' in patch ? withoutSolution(f) : f), question: { ...('text' in patch ? withoutVisual(withoutFormat(f.question)) : f.question), ...patch } }
       : f,
   );
   return rebuild(ws, flat);
@@ -105,7 +112,8 @@ export function applyWorksheetQuestionEdit(
 /**
  * Rewrite one option, carrying the answer key if that option was the answer —
  * same rule as `applyOptionEdit` in `quizEdits.ts`, just against the flat
- * answer instead of a field on the question itself.
+ * answer instead of a field on the question itself. Rewriting the answer option
+ * drops the question's drawing; another option keeps it.
  */
 export function applyWorksheetOptionEdit(
   ws: WorksheetOutput,
@@ -118,7 +126,11 @@ export function applyWorksheetOptionEdit(
     if (f.sectionIndex !== sectionIndex || f.questionIndex !== questionIndex) return f;
     const options = (f.question.options ?? []).map((o, i) => (i === optionIndex ? next : o));
     const wasCorrect = (f.question.options ?? [])[optionIndex] === f.answer;
-    return { ...withoutSolution(f), question: { ...f.question, options }, answer: wasCorrect ? next : f.answer };
+    return {
+      ...withoutSolution(f),
+      question: { ...(wasCorrect ? withoutVisual(f.question) : f.question), options },
+      answer: wasCorrect ? next : f.answer,
+    };
   });
   return rebuild(ws, flat);
 }
@@ -131,7 +143,8 @@ export function applyWorksheetOptionEdit(
  * أين الخطأ؟ convert from `format` (pairs, order, wrongStep), not from the
  * answer, so a kept format would auto-mark students against the key the
  * teacher just corrected. The question stays, as plain text. ارسم keeps its
- * format: its equations are the stem's, and its key IS the answer.
+ * format: its equations are the stem's, and its key IS the answer. The drawing
+ * always goes: it was made for the answer the question had.
  */
 export function applyWorksheetAnswerEdit(
   ws: WorksheetOutput,
@@ -141,7 +154,7 @@ export function applyWorksheetAnswerEdit(
 ): WorksheetOutput {
   const flat = flatten(ws).map(f =>
     f.sectionIndex === sectionIndex && f.questionIndex === questionIndex
-      ? { ...withoutSolution(f), question: f.question.format?.kind === 'graph' ? f.question : withoutFormat(f.question), answer: next }
+      ? { ...withoutSolution(f), question: withoutVisual(f.question.format?.kind === 'graph' ? f.question : withoutFormat(f.question)), answer: next }
       : f,
   );
   return rebuild(ws, flat);
