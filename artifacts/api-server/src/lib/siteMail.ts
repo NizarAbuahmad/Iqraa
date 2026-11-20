@@ -89,8 +89,8 @@ export function pickRecipients(
     .map(({ id, email }) => ({ id, email }));
 }
 
-const SUBJECT_MAX = 150;
-const BODY_MAX = 10_000;
+export const SUBJECT_MAX = 150;
+export const BODY_MAX = 10_000;
 
 /**
  * `{purpose, subject?, body?, dryRun?, testOnly?}` from the admin form. `invite`
@@ -119,7 +119,7 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
  * The admin's text as email HTML. Everything is escaped; the only markup that
  * comes back is paragraphs, line breaks and links for bare http(s) URLs, so a
  * pasted `<script>` or a `javascript:` link is inert text. A blank line starts
- * a new paragraph. Direction follows the language: any Arabic letter → RTL.
+ * a new paragraph. Direction follows each paragraph's language: any Arabic letter → RTL.
  */
 export function renderBroadcastBody(text: string): string {
   const link = (part: string) => {
@@ -132,15 +132,15 @@ export function renderBroadcastBody(text: string): string {
       .split(/(https?:\/\/[^\s<>"'«»]+)/g)
       .map((part, i) => (i % 2 === 1 ? link(part) : esc(part)))
       .join("");
+  const isArabic = (s: string) => /[؀-ۿ]/.test(s);
   const paragraphs = text
     .replace(/\r\n?/g, "\n")
     .split(/\n{2,}/)
     .map(p => p.trim())
     .filter(Boolean)
-    .map(p => `<p style="margin:0 0 14px;">${p.split("\n").map(inline).join("<br />")}</p>`)
+    .map(p => `<p dir="${isArabic(p) ? "rtl" : "ltr"}" style="margin:0 0 14px;">${p.split("\n").map(inline).join("<br />")}</p>`)
     .join("");
-  const dir = /[؀-ۿ]/.test(text) ? "rtl" : "ltr";
-  return `<div dir="${dir}" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;">${paragraphs}</div>`;
+  return `<div style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;">${paragraphs}</div>`;
 }
 
 /** HMAC of the signup id, so an unsubscribe link can't be forged for someone else's row. */

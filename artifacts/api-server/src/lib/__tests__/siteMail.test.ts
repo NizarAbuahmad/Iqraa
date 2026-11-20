@@ -142,6 +142,12 @@ describe("renderBroadcastBody", () => {
     assert.doesNotMatch(html, /href="javascript:/i);
     assert.match(html, /&quot;quoted&quot;/);
   });
+  it("sets direction per paragraph, so an English block under an Arabic one reads left to right", () => {
+    const html = renderBroadcastBody("مرحبًا بكم في إقرأ\n\nHello from Iqrra");
+    const dirs = [...html.matchAll(/<p dir="(rtl|ltr)"/g)].map(m => m[1]);
+    assert.deepEqual(dirs, ["rtl", "ltr"]);
+    assert.doesNotMatch(html, /<div dir=/, "the wrapper carries no direction of its own");
+  });
   it("splits paragraphs on blank lines and keeps single newlines as breaks", () => {
     const html = renderBroadcastBody("one\ntwo\n\nthree");
     assert.equal(html.match(/<p /g)?.length, 2);
