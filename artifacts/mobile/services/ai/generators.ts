@@ -1119,7 +1119,7 @@ export function buildOfflineActivity(req: AIRequest, variant = 0, probe?: Revisi
         : [];
 
   const subjectForKind = (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject;
-  // Grades 1 and 2 are six- and seven-year-olds: each format has its own early-grade
+  // Grades 1 to 3 are six- to eight-year-olds: each format has its own early-grade
   // version (`activityFirstGrade.ts`), a unit or semester review included (its
   // composite lesson sits in a real unit, so the book still decides).
   const early = earlyGradeOf(kb, req.grade);
@@ -1469,7 +1469,7 @@ export class MockAIService extends AIService {
     // Grade 1 is six-year-olds learning to read: a plan of its own, every field
     // of it, instead of the paragraph-and-exit-ticket plan below (see
     // `lessonPlanFirstGrade.ts`).
-    // Grade 2 uses the same plans, with its own Arabic strands and writing (`EarlyGrade`).
+    // Grades 2 and 3 use the same plans, each with its own content and writing (`EarlyGrade`).
     const earlyPlan = earlyGradeOf(kb, req.grade);
     if (earlyPlan) {
       const g1 = firstGradePlan({ topic, kb, lang, kind, style, duration: dur, variant, customObjectives: req.objectives, grade: earlyPlan });
