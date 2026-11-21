@@ -1743,8 +1743,12 @@ const dailyOrder = T('daily_order_g1', /^ترتيب الاعمال اليومي�
   }
   if (k === 1) {
     // what comes next
+    // The four to choose from are in the question, as in k === 0: with none, «أنظّف
+    // أسناني» after breakfast is as right as the keyed «أذهب إلى المدرسة» (hand review
+    // of the ready-made sheets, 2026-11-20).
     const i = int(rng, 0, DAY_ACTS.length - 2), ans = DAY_ACTS[i + 1]![0];
-    return { eq: DAY_ACTS[i]![0], answer: ans, wrongs: fourOf(rng, ans, DAY_ACTS.map(x => x[0]).filter(x => x !== DAY_ACTS[i]![0])), ar: `في يوم المدرسة: ما العمل الذي يأتي بعد «${DAY_ACTS[i]![0]}» مباشرة؟`, en: `On a school day, what comes right after «${DAY_ACTS[i]![0]}»? (Arabic)` };
+    const wrongs = fourOf(rng, ans, DAY_ACTS.map(x => x[0]).filter(x => x !== DAY_ACTS[i]![0])), shown = shuffle(rng, [ans, ...wrongs]);
+    return { eq: DAY_ACTS[i]![0], answer: ans, wrongs, ar: `في يوم المدرسة: ما العمل الذي يأتي بعد «${DAY_ACTS[i]![0]}» مباشرة: ${shown.join('، ')}؟`, en: `On a school day, what comes right after «${DAY_ACTS[i]![0]}»: ${shown.join(', ')}? (Arabic)` };
   }
   // the time of day an activity belongs to
   const [act, time] = pick(rng, DAY_ACTS.filter(a => a[0] !== 'أكتب واجباتي'));
