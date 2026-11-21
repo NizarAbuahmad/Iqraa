@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { plainTitle } from '@workspace/curriculum';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -124,7 +125,7 @@ export default function LessonsScreen() {
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <Text style={[styles.unitName, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: isRTL ? 'right' : 'left', flex: 1, marginBottom: 0 }]}>
-                    {unitName}
+                    {plainTitle(unitName)}
                   </Text>
                   {isBrowserUnitTitleOnly(unit.id) ? (
                     <View style={[styles.prepBadge, { backgroundColor: colors.muted, borderColor: colors.border }]}>

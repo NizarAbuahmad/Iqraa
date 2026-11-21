@@ -16,6 +16,7 @@
  * thing you are made to look at before you can see the state of your own lesson.
  */
 import React, { useState } from 'react';
+import { plainTitle } from '@workspace/curriculum';
 import {
   ActivityIndicator,
   Platform,
@@ -175,7 +176,7 @@ function LessonWorkspace() {
           </Text>
         </View>
         <Text style={[s.lessonTitle, { color: '#FFFFFF', textAlign: align }]}>
-          {topic || t('homeNoLesson')}
+          {plainTitle(topic) || t('homeNoLesson')}
         </Text>
         {!topic ? (
           <Text style={[s.hint, { color: 'rgba(255,255,255,0.78)', textAlign: align }]}>

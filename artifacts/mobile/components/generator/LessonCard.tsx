@@ -14,6 +14,7 @@
  * the field the validation message is about cannot be folded away.
  */
 import React from 'react';
+import { plainTitle } from '@workspace/curriculum';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -48,7 +49,8 @@ export function LessonCard({ gradeLabel, subjectLabel, subjectId, topic, grounde
   const tile = subjectTile(subjectId);
   const badgeInk = readableOn(colors.primary, colors.card);
   const align = isRTL ? 'right' : 'left';
-  const title = topic.trim();
+  // Display only: `topic` itself stays as stored, since grounding matches on it.
+  const title = plainTitle(topic.trim());
   // `locked` keeps the body open whatever `expanded` says, so a screen cannot fold away
   // the field its validation message is about (and there is no one-render flash).
   const open = expanded || locked;
