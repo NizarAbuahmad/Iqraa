@@ -29,6 +29,51 @@
       "verificationSource": "sympy"
     },
     {
+      "id": "bi-math-s2-student-book-u6l1-t29",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 29
+      },
+      "kind": "unit-test",
+      "instruction": "إذا كان المستقيم المار بالنقطتين P وQ في الشكل هو منحنى الاقتران f(x)، فأجد f′(x)",
+      "stem": "P(0, 2), Q(6, 0)",
+      "visual": {
+        "kind": "function-graph",
+        "functions": [
+          {
+            "expr": "2 - x/3"
+          }
+        ],
+        "x": [
+          -1,
+          7
+        ],
+        "points": [
+          {
+            "at": 0,
+            "label": "P",
+            "on": 0
+          },
+          {
+            "at": 6,
+            "label": "Q",
+            "on": 0
+          }
+        ]
+      },
+      "printedAnswer": null,
+      "computedAnswer": "f'(x) = -1/3",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
       "id": "bi-math-s2-student-book-u6l2-1",
       "lessonId": "kbl-math-s2-nccd-u6_l2",
       "source": {
@@ -354,6 +399,106 @@
       "tierSource": "position",
       "status": "verified",
       "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t32",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 32
+      },
+      "kind": "unit-test",
+      "instruction": "يمثل الشكل منحنى الاقتران الآتي. أجد f′(x)",
+      "stem": "f(x) = x^3 - 12x + 17",
+      "visual": {
+        "kind": "function-graph",
+        "functions": [
+          {
+            "expr": "x^3 - 12x + 17"
+          }
+        ],
+        "x": [
+          -4,
+          4
+        ],
+        "points": [
+          {
+            "at": -2,
+            "label": "A",
+            "on": 0
+          },
+          {
+            "at": 0,
+            "label": "B",
+            "on": 0
+          },
+          {
+            "at": 2,
+            "label": "C",
+            "on": 0
+          }
+        ]
+      },
+      "printedAnswer": null,
+      "computedAnswer": "f'(x) = 3x^2 - 12",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t33",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 33
+      },
+      "kind": "unit-test",
+      "instruction": "يمثل الشكل منحنى الاقتران الآتي، ويقطع محور y عند النقطة B. أجد ميل منحنى الاقتران عند النقطة B",
+      "stem": "f(x) = x^3 - 12x + 17",
+      "visual": {
+        "kind": "function-graph",
+        "functions": [
+          {
+            "expr": "x^3 - 12x + 17"
+          }
+        ],
+        "x": [
+          -4,
+          4
+        ],
+        "points": [
+          {
+            "at": -2,
+            "label": "A",
+            "on": 0
+          },
+          {
+            "at": 0,
+            "label": "B",
+            "on": 0
+          },
+          {
+            "at": 2,
+            "label": "C",
+            "on": 0
+          }
+        ]
+      },
+      "printedAnswer": null,
+      "computedAnswer": "-12",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "computed",
+      "verificationSource": "sympy"
     },
     {
       "id": "bi-math-s2-student-book-u6l3-1",
@@ -703,6 +848,56 @@
       ],
       "printedAnswer": null,
       "computedAnswer": "1",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l3-t34",
+      "lessonId": "kbl-math-s2-nccd-u6_l3",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 34
+      },
+      "kind": "unit-test",
+      "instruction": "يمثل الشكل منحنى الاقتران الآتي، وله قيمة عظمى عند النقطة A وقيمة صغرى عند النقطة C. أجد إحداثيي كل من النقطتين A وC",
+      "stem": "f(x) = x^3 - 12x + 17",
+      "visual": {
+        "kind": "function-graph",
+        "functions": [
+          {
+            "expr": "x^3 - 12x + 17"
+          }
+        ],
+        "x": [
+          -4,
+          4
+        ],
+        "points": [
+          {
+            "at": -2,
+            "label": "A",
+            "on": 0
+          },
+          {
+            "at": 0,
+            "label": "B",
+            "on": 0
+          },
+          {
+            "at": 2,
+            "label": "C",
+            "on": 0
+          }
+        ]
+      },
+      "printedAnswer": null,
+      "computedAnswer": "A(-2, 33), C(2, 1)",
       "check": null,
       "tier": "medium",
       "tierSource": "default",

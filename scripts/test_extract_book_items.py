@@ -698,8 +698,9 @@ class Readings(unittest.TestCase):
             for r in rs:
                 counts[r['status']] = counts.get(r['status'], 0) + 1
         # verified: 5 from guide p.47, 13 s2 derivatives, 3 s2 unit-test max/min (20-22);
-        # computed: 28 before, + the s2 unit-6 test's 6 multiple choice, + p.74's 9 max/min, + test item 23
-        self.assertEqual((counts['verified'], counts['computed']), (21, 44))
+        # computed: 28 before, + the s2 unit-6 test's 6 multiple choice, + p.74's 9 max/min, + test item 23,
+        # + its 4 drawn graph questions (29, 32-34)
+        self.assertEqual((counts['verified'], counts['computed']), (21, 48))
 
 
 class RivalReadings(unittest.TestCase):
@@ -901,8 +902,10 @@ class StudentBookDerivatives(unittest.TestCase):
 
     def test_unit_test_ids_never_collide_with_the_lessons_practice_numbers(self):
         ids = [r['id'] for r in self.items.values() if r['kind'] == 'unit-test']
-        self.assertEqual(sorted(ids), [f'bi-math-s2-student-book-u6l2-t{n}' for n in (15, 16, 18, 19)]
-                         + [f'bi-math-s2-student-book-u6l3-t{n}' for n in (20, 21, 22, 23)])
+        self.assertEqual(sorted(ids), sorted(
+            ['bi-math-s2-student-book-u6l1-t29']
+            + [f'bi-math-s2-student-book-u6l2-t{n}' for n in (15, 16, 18, 19, 32, 33)]
+            + [f'bi-math-s2-student-book-u6l3-t{n}' for n in (20, 21, 22, 23, 34)]))
 
     def test_item_17_is_left_out_on_purpose_not_quarantined(self):
         # `f(x) = x` is a near-duplicate of four other items by the validator's measure
@@ -911,7 +914,7 @@ class StudentBookDerivatives(unittest.TestCase):
 
     def test_every_served_one_is_verified(self):
         open_ones = [r for r in self.items.values()
-                     if r['kind'] != 'unit-test-mcq' and r['lessonId'] == 'kbl-math-s2-nccd-u6_l2']
+                     if r['kind'] != 'unit-test-mcq' and r['lessonId'] == 'kbl-math-s2-nccd-u6_l2' and not r.get('visual')]
         self.assertEqual(len(open_ones), 13)
         self.assertEqual({r['status'] for r in open_ones}, {'verified'})
 
@@ -1099,7 +1102,7 @@ class StudentBookTestExtrema(unittest.TestCase):
     def setUpClass(cls):
         cls.by_source, cls.rejects = x.build()
         cls.items = {r['source']['number']: r for r in cls.by_source.get('math-s2-student-book', [])
-                     if r['lessonId'] == 'kbl-math-s2-nccd-u6_l3' and r['kind'] == 'unit-test'}
+                     if r['lessonId'] == 'kbl-math-s2-nccd-u6_l3' and r['kind'] == 'unit-test' and not r.get('visual')}
 
     def test_the_four_keys_and_their_states(self):
         self.assertEqual(sorted(self.items), [20, 21, 22, 23])
@@ -1143,6 +1146,72 @@ class StudentBookTestExtrema(unittest.TestCase):
         self.assertFalse(x.extrema_set(full) == {('min', 1, 1)})                  # a missing max is no match
         self.assertEqual(x.extrema_set(x.EXTREMA_NONE_AR), set())
         self.assertIsNone(x.extrema_set('f(x) = 2'))                              # not a key of this family
+
+
+class StudentBookFigures(unittest.TestCase):
+    """The unit-6 test's graph questions whose curve the question itself defines: p.77 item 29
+    (the line through (0, 2) and (6, 0)) and 32-34 (f(x) = x^3 - 12x + 17, A the maximum, B the
+    y-intercept, C the minimum). Each carries a drawing (`visual`, a `function-graph`) that is
+    checked against the question: its curve is the stated one, its points sit where the
+    question says. 26-28 are left out: their curve has no formula."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.by_source, cls.rejects = x.build()
+        cls.items = {r['source']['number']: r for r in cls.by_source.get('math-s2-student-book', [])
+                     if r.get('visual')}
+
+    def test_the_four_items_their_keys_and_lessons(self):
+        self.assertEqual(sorted(self.items), [29, 32, 33, 34])
+        expect = {
+            29: ('kbl-math-s2-nccd-u6_l1', 'P(0, 2), Q(6, 0)', "f'(x) = -1/3"),
+            32: ('kbl-math-s2-nccd-u6_l2', 'f(x) = x^3 - 12x + 17', "f'(x) = 3x^2 - 12"),
+            33: ('kbl-math-s2-nccd-u6_l2', 'f(x) = x^3 - 12x + 17', '-12'),
+            34: ('kbl-math-s2-nccd-u6_l3', 'f(x) = x^3 - 12x + 17', 'A(-2, 33), C(2, 1)'),
+        }
+        for n, (lesson, stem, key) in expect.items():
+            with self.subTest(item=n):
+                r = self.items[n]
+                self.assertEqual((r['lessonId'], r['stem'], r['computedAnswer']), (lesson, stem, key))
+                self.assertEqual((r['kind'], r['status'], r['printedAnswer'], r['check']),
+                                 ('unit-test', 'computed', None, None))
+                self.assertEqual(r['visual']['kind'], 'function-graph')
+
+    def test_the_drawings(self):
+        self.assertEqual(self.items[29]['visual'], {
+            'kind': 'function-graph', 'functions': [{'expr': '2 - x/3'}], 'x': [-1, 7],
+            'points': [{'at': 0, 'label': 'P', 'on': 0}, {'at': 6, 'label': 'Q', 'on': 0}]})
+        cubic = {'kind': 'function-graph', 'functions': [{'expr': 'x^3 - 12x + 17'}], 'x': [-4, 4],
+                 'points': [{'at': -2, 'label': 'A', 'on': 0}, {'at': 0, 'label': 'B', 'on': 0},
+                            {'at': 2, 'label': 'C', 'on': 0}]}
+        for n in (32, 33, 34):
+            self.assertEqual(self.items[n]['visual'], cubic)
+
+    def test_a_drawing_of_another_curve_is_refused(self):
+        with self.assertRaises(x.Reject) as e:
+            x.check_figure('f(x) = x^3 - 12x + 17', {'functions': [{'expr': 'x^3 - 12x + 16'}], 'points': []}, {})
+        self.assertEqual(str(e.exception), 'drawing_is_another_curve')
+
+    def test_a_point_off_the_stated_line_is_refused(self):
+        with self.assertRaises(x.Reject) as e:
+            x.check_figure('f(x) = 2 - x/3', {'functions': [{'expr': '2 - x/3'}], 'points': []},
+                           {'through': [(0, 2), (6, 1)]})
+        self.assertEqual(str(e.exception), 'curve_misses_a_stated_point')
+
+    def test_a_drawing_whose_labels_disagree_with_the_answer_is_refused(self):
+        # A must be the maximum: put it at the minimum and the item is quarantined
+        swapped = {'functions': [{'expr': 'x^3 - 12x + 17'}],
+                   'points': [{'at': 2, 'label': 'A'}, {'at': 0, 'label': 'B'}, {'at': -2, 'label': 'C'}]}
+        with self.assertRaises(x.Reject) as e:
+            x.solve_figure('f(x) = x^3 - 12x + 17', swapped, {'ask': 'extrema_points'})
+        self.assertEqual(str(e.exception), 'drawing_labels_disagree')
+
+    def test_the_stated_data_must_be_on_the_page(self):
+        page = x.page_text('math-s2-student-book', 77)
+        x.require_on_page(page, ['(0, 2)', '(6, 0)', 'f(x) = x^3 -12x + 17'])
+        with self.assertRaises(x.Reject) as e:
+            x.require_on_page(page, ['f(x) = x^3 -12x + 18'])
+        self.assertEqual(str(e.exception), 'not_on_page')
 
 
 if __name__ == '__main__':

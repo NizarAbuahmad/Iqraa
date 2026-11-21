@@ -14,8 +14,9 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
 `scripts/extract_book_items.py` now reads the NCCD Grade 10 maths **student book**, semester 2
 (`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **16 `verified`
-(13 derivatives, and 3 of the unit test's 4 open max/min questions); 16 `computed` (lesson 6.3's 9 max/min
-exercises, the test's other max/min question, and its 6 multiple choice)**, written to
+(13 derivatives, and 3 of the unit test's 4 open max/min questions); 20 `computed` (lesson 6.3's 9 max/min
+exercises, the test's other max/min question, its 6 multiple choice, and 4 graph questions that carry a
+drawing)**, written to
 `lib/curriculum/src/data/book-items/math-s2-student-book.json` and served to lessons 6.1–6.3
 (`kbl-math-s2-nccd-u6_l1` … `u6_l3`).
 
@@ -27,6 +28,7 @@ exercises, the test's other max/min question, and its 6 multiple choice)**, writ
 | 74 | 1, 3–10 local max/min (6.3) | `exercise` | 9 computed; 2 left out (a near-duplicate of 1, 0.89) |
 | 77 | unit test 14–19 «أجد مشتقة» | `unit-test` | 4 verified (15, 16, 18, 19); 14 (`2π/3`) quarantined; 17 left out (below) |
 | 77 | unit test 20–23, max/min (6.3) | `unit-test` | 3 verified (20, 21, 22); 23 computed (its max is printed rounded) |
+| 77 | unit test 29, 32–34, graph questions | `unit-test` + `visual` | 4 computed, each with a drawing (6.1, 6.2, 6.2, 6.3); 26–28 left out |
 | 76 | unit test 1–4, multiple choice | `unit-test-mcq` | 4 computed: slope at a point (6.1), a derivative (6.2), the x of a maximum (6.3), a velocity (6.2) |
 | 77 | unit test 30–31, multiple choice | `unit-test-mcq` | 2 computed: all local extrema, the number of critical points (6.3) |
 
@@ -89,6 +91,38 @@ another item's label — to show it catches each. Two smaller changes came with 
   `join`, which joins a line starting with `+` or `−` onto the one before (`join_continued`); a line starting
   with a digit, like a split fraction's denominator, is never joined.
 
+**The unit test's graph questions are drawn, where the question fixes the curve.** A graph question cannot be
+asked without its graph, and no crop of the book's picture can reach a paper from here (no figure crop exists
+for p.77, and book items were text only). But `lib/figure` already draws a `function-graph` and the app already
+renders a question's `body.visual` (the exam a student takes, the teacher's evaluation, the answer review). So
+a `BookItem` may now carry a `visual`, and `buildBookQuestion` puts it in `body.visual`, where `studentVisual`
+gates it again as it does a model's drawing. Four items qualify, all `computed` (the guide's answers on p.112
+are unlabelled or split):
+
+| Item | Drawing | Key | Lesson |
+| --- | --- | --- | --- |
+| 29 | the line `2 - x/3` through P(0, 2) and Q(6, 0) | f′(x) = −1/3 | 6.1 |
+| 32 | `x^3 - 12x + 17`, A, B, C at x = −2, 0, 2 | f′(x) = 3x² − 12 | 6.2 |
+| 33 | the same | slope at B: −12 | 6.2 |
+| 34 | the same | A(−2, 33), C(2, 1) | 6.3 |
+
+A drawing is trusted for nothing (`solve_figure`): its curve must be the stated one (`drawing_is_another_curve`),
+each stated point must lie on it (29: the line was derived from its two labelled points, and both are checked),
+the stated data must be on the page (`require_on_page`), and every label the answer names must sit where the
+answer is (34: A at the computed maximum, C at the minimum, else `drawing_labels_disagree`). The drawings are in
+the figure gate's canonical form, and the API suite checks `resolveFigure` returns each one unchanged. A drawn
+label may not hold a value, so 29's points are drawn as P and Q and its stem states their coordinates.
+Following the newer printing (and the picture), 32–34 call the minimum C; the guide and the 2021 text call it B.
+
+**Items 26–28 are left out.** Their curve is drawn through four labelled points with no formula, and no simple
+curve fits them (a cubic turning at −2 and 2 passes (−5, −35.9) and (3, 13.1), not the book's −42 and 14). A
+curve of ours would be a different picture in a question about reading the book's.
+
+**Seen, not only tested.** Both drawings were rendered with `figureSvg` and compared with the book's picture:
+the line through P and Q, and the cubic with A at its maximum, B on the y-axis and C at its minimum. **Known
+limit:** the drawing has a numbered grid the book's picture does not, so a student could read item 34's
+A ≈ (−2, 33) off it rather than compute it — the same answer, by an easier road.
+
 **How they are verified.** The s2 teacher guide reproduces each student page with its answers printed on
 it (guide p.102 for student p.68, p.103 for p.69, p.112 for p.77). `printed_derivatives` reads every
 `name '(x) = value` there (with its `)15` item number when printed), and `pair_derivatives` verifies an item
@@ -113,13 +147,13 @@ and a printed number that is another item's.
   practice numbers, which run to 30.
 - An `Entry` takes `page` for a source with no exercise index, `answers` (the guide page) and `unit_test`.
 
-**Verified.** The Python tests failed first, then passed (129). Every stem was compared by eye with the
+**Verified.** The Python tests failed first, then passed (135). Every stem was compared by eye with the
 printed pages of a copy of the book: pp.68, 69, 74 and 76 match. **That copy is an older printing (2021): its
 p.77 numbers the derivatives 15–20 (with `2π³` where the app's text, reprinted 2021–2025, has `2π/3` at 14)
 and the multiple choice 31–32, and its p.76 item 4 says `d(t)` where the app's text says `s(t)`.** The
 guide's labels `)14`…`)19` agree with the app's newer numbering, which is what is cited. Every answer key was
-also re-derived by hand. Curriculum `test` (939) and `verify`, monorepo typecheck, api-server build + test
-(3021; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
+also re-derived by hand. Curriculum `test` (940) and `verify`, monorepo typecheck, api-server build + test
+(3024; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
 mobile suite (9540 after the latest merge of main, 0 failing; the app does not import book items) pass. A
 `password hasher` failure (its event-loop timing assertion) appeared once while the mobile suite ran in
 parallel; the API suite re-run alone passed 3021/3021, and this branch does not touch that code. **Not checked:** how a multi-line
@@ -130,8 +164,12 @@ counted only `exercise` as a short answer — a `unit-test` open question is one
 dry run avoids what the teacher was shown» assumed lesson 6.2 had no multiple choice, so «shown» is now every
 choice item of both its lessons. Neither assertion was loosened: both still compare exact numbers.
 
-**Not done.** The unit test's graph questions (26–29) and its word problems (24, 25), lesson 6.1's exercises
-(figures), every other word problem, and units 5, 7, 8. Users
+**Not checked:** a drawn book question in a browser end to end (the take screen, the teacher's evaluation, the
+answer review render `body.visual`; nothing else was looked at, and a printed or exported paper may show the
+question without its drawing).
+
+**Not done.** The unit test's graph questions 26–28 (no formula, above) and its word problems (24, 25), lesson
+6.1's exercises (figures), every other word problem, and units 5, 7, 8. Users
 see none of this in production yet: book items reach a paper only on the mock path or with
 `BOOK_ITEMS_LIVE=true`, which is off.
 

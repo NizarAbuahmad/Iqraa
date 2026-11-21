@@ -64,6 +64,7 @@ class Entry:
     # answers printed on it. They are paired with the items by name and value (`pair_derivatives`).
     answers: int | None = None
     unit_test: bool = False                      # an exercise family printed in the unit test: kind `unit-test`
+    visual: dict | None = None                   # `figure` rows: the drawing the question carries (lib/figure)
 
     @property
     def items(self) -> tuple[int, ...]:
@@ -72,6 +73,11 @@ class Entry:
 
 EX1, EX2, G1 = 'math-s1-exercise-book', 'math-s2-exercise-book', 'math-s1-teacher-guide'
 SB2, G2 = 'math-s2-student-book', 'math-s2-teacher-guide'
+# Student p.77 items 32-34's curve, drawn as the book does: A (max), B (y-intercept), C (min).
+# Written in the figure gate's canonical form (`on` explicit), so the gate returns it unchanged.
+CUBIC_77 = {'kind': 'function-graph', 'functions': [{'expr': 'x^3 - 12x + 17'}], 'x': [-4, 4],
+            'points': [{'at': -2, 'label': 'A', 'on': 0}, {'at': 0, 'label': 'B', 'on': 0},
+                       {'at': 2, 'label': 'C', 'on': 0}]}
 DERIVATIVE_AR = 'أجد مشتقة الاقتران الآتي'
 SYSTEM_AR = 'أحل نظام المعادلتين الآتي'
 PAIR_AR = 'أي الأزواج المرتبة الآتية يمثل حلا لنظام المعادلتين الآتي؟'
@@ -132,6 +138,33 @@ TABLE: list[Entry] = [
     # lines by the text layer (`2x3 -4x2` / `+2x+1`), hence `join`.
     Entry(SB2, 's2', 6, 3, 20, 23, 'extrema', 'أجد القيم العظمى والقيم الصغرى المحلية للاقتران الآتي (إن وجدت)',
           page=77, answers=112, unit_test=True, params={'join': True}),
+    # The unit-6 test's graph questions whose curve the question fixes, drawn (see solve_figure).
+    # 29: «the line in the figure» through the labelled (0, 2) and (6, 0); its points are drawn
+    # as P and Q because a drawn label may not hold a value, so the stem states them. 32-34: the
+    # stated f(x) = x^3 - 12x + 17 with A the maximum, B the y-intercept, C the minimum, as the
+    # newer printing (and the picture) say; the guide and the 2021 text call the minimum B.
+    Entry(SB2, 's2', 6, 1, 29, 29, 'figure',
+          'إذا كان المستقيم المار بالنقطتين P وQ في الشكل هو منحنى الاقتران f(x)، فأجد f′(x)', page=77,
+          unit_test=True, params={'stem': 'P(0, 2), Q(6, 0)', 'curve': 'f(x) = 2 - x/3', 'ask': 'derivative',
+                                  'through': [(0, 2), (6, 0)], 'on_page': ['(0, 2)', '(6, 0)']},
+          visual={'kind': 'function-graph', 'functions': [{'expr': '2 - x/3'}], 'x': [-1, 7],
+                  'points': [{'at': 0, 'label': 'P', 'on': 0}, {'at': 6, 'label': 'Q', 'on': 0}]}),
+    Entry(SB2, 's2', 6, 2, 32, 32, 'figure', 'يمثل الشكل منحنى الاقتران الآتي. أجد f′(x)', page=77,
+          unit_test=True, params={'stem': 'f(x) = x^3 - 12x + 17', 'curve': 'f(x) = x^3 - 12x + 17',
+                                  'ask': 'derivative', 'on_page': ['f(x) = x^3 -12x + 17']},
+          visual=CUBIC_77),
+    Entry(SB2, 's2', 6, 2, 33, 33, 'figure',
+          'يمثل الشكل منحنى الاقتران الآتي، ويقطع محور y عند النقطة B. أجد ميل منحنى الاقتران عند النقطة B',
+          page=77, unit_test=True,
+          params={'stem': 'f(x) = x^3 - 12x + 17', 'curve': 'f(x) = x^3 - 12x + 17', 'ask': 'slope_at',
+                  'label': 'B', 'expect_at': 0, 'on_page': ['f(x) = x^3 -12x + 17']},
+          visual=CUBIC_77),
+    Entry(SB2, 's2', 6, 3, 34, 34, 'figure',
+          'يمثل الشكل منحنى الاقتران الآتي، وله قيمة عظمى عند النقطة A وقيمة صغرى عند النقطة C. أجد إحداثيي كل من النقطتين A وC',
+          page=77, unit_test=True,
+          params={'stem': 'f(x) = x^3 - 12x + 17', 'curve': 'f(x) = x^3 - 12x + 17', 'ask': 'extrema_points',
+                  'max': 'A', 'min': 'C', 'on_page': ['f(x) = x^3 -12x + 17']},
+          visual=CUBIC_77),
     # The unit-6 test's multiple choice, read from SB2_READINGS. The guide circles its key, which
     # the text layer does not carry, so these are `computed`. `choices` is the page's whole run.
     Entry(SB2, 's2', 6, 1, 1, 1, 'reading', 'ما ميل منحنى الاقتران الآتي عند قيمة x المعطاة؟', page=76,
@@ -818,20 +851,32 @@ def solve_extrema(stem: str) -> str:
     odd; then the k-th derivative of f′ at r is non-zero and its sign says which (positive:
     f′ rises through 0, a minimum). So `2x^3 + 7` has none, and `x^4` has a minimum at 0. A
     root SymPy can only give as a CRootOf, or a sign it cannot decide, is refused."""
-    from sympy import Poly, real_roots
     name, f = parse_f(stem)
+    decimal = '.' in stem
+    found = extrema_points(f)
+    line = lambda p: f'{name}({fmt(p[0], decimal)}) = {fmt(p[1], decimal)}'
+    maxima, minima = [line(p) for p in found['max']], [line(p) for p in found['min']]
+    if not maxima and not minima:
+        return EXTREMA_NONE_AR
+    out = [EXTREMA_MAX_AR, *maxima] if maxima else [EXTREMA_NO_MAX_AR]
+    out += [EXTREMA_MIN_AR, *minima] if minima else [EXTREMA_NO_MIN_AR]
+    return '\n'.join(out)
+
+
+def extrema_points(f) -> dict[str, list[tuple]]:
+    """{'max': [(x, y)…], 'min': […]}, exact and sorted by x (see `solve_extrema`)."""
+    from sympy import Poly, real_roots
     d1 = diff(f, X)
     if not d1.is_polynomial(X):
         raise Reject('not_a_polynomial')
+    out: dict[str, list[tuple]] = {'max': [], 'min': []}
     if simplify(d1) == 0:
         # A constant: every point is a non-strict extremum, but the guide answers p.77 item 20
         # (f(x) = 17) «لا توجد قيم عظمى وقيم صغرى» - the school counts strict extrema only.
-        return EXTREMA_NONE_AR
+        return out
     roots = Counter(real_roots(Poly(d1, X)))
     if any(r.has(CRootOf) for r in roots):
         raise Reject('not_clean')
-    decimal = '.' in stem
-    maxima, minima = [], []
     for r in sorted(roots, key=lambda r: float(r)):
         k = roots[r]
         if k % 2 == 0:
@@ -839,13 +884,58 @@ def solve_extrema(stem: str) -> str:
         s = simplify(diff(d1, X, k).subs(X, r))
         if s.is_positive is None or s == 0:
             raise Reject('extremum_not_decided')
-        line = f'{name}({fmt(simplify(r), decimal)}) = {fmt(simplify(f.subs(X, r)), decimal)}'
-        (minima if s.is_positive else maxima).append(line)
-    if not maxima and not minima:
-        return EXTREMA_NONE_AR
-    out = [EXTREMA_MAX_AR, *maxima] if maxima else [EXTREMA_NO_MAX_AR]
-    out += [EXTREMA_MIN_AR, *minima] if minima else [EXTREMA_NO_MIN_AR]
-    return '\n'.join(out)
+        out['min' if s.is_positive else 'max'].append((simplify(r), simplify(f.subs(X, r))))
+    return out
+
+
+# ── graph questions whose curve the question defines (student p.77) ─────────
+# The book's picture cannot be cropped into a paper here, but where the question itself
+# fixes the curve - a line through two stated points, a stated polynomial - the figure
+# package can draw it exactly (`function-graph`; `lib/figure`'s gate checks it again in the
+# API). Such a drawing is trusted for nothing either: its curve must BE the stated one, each
+# stated point must lie on it, the stated data must be on the page, and every label the
+# answer names must sit where the answer is. A graph whose curve the book never states
+# (p.77 items 26-28) is not drawn at all: a curve of ours would be a different picture.
+def require_on_page(text: str, fragments: list[str]) -> None:
+    """Each fragment's meaning characters appear, in order, in the page's Latin text."""
+    page = core(ARABIC.sub('', nfkc(text)).translate(MINUS))
+    for frag in fragments:
+        if core(frag.translate(MINUS)) not in page:
+            raise Reject('not_on_page')
+
+
+def check_figure(curve: str, visual: dict, params: dict) -> None:
+    _name, f = parse_f(curve)
+    for fn in visual.get('functions', []):
+        if simplify(parse(fn['expr']) - f) != 0:
+            raise Reject('drawing_is_another_curve')
+    for px, py in params.get('through', []):
+        if simplify(f.subs(X, px) - py) != 0:
+            raise Reject('curve_misses_a_stated_point')
+
+
+def solve_figure(curve: str, visual: dict, params: dict) -> str:
+    check_figure(curve, visual, params)
+    _name, f = parse_f(curve)
+    at = {p['label']: p['at'] for p in visual.get('points', [])}
+    ask = params['ask']
+    if ask == 'derivative':
+        return solve_derivative(curve)
+    if ask == 'slope_at':
+        label = params['label']
+        if label not in at or at[label] != params.get('expect_at', at.get(label)):
+            raise Reject('drawing_labels_disagree')
+        return fmt(simplify(diff(f, X).subs(X, at[label])))
+    if ask == 'extrema_points':
+        found = extrema_points(f)
+        if len(found['max']) != 1 or len(found['min']) != 1:
+            raise Reject('not_one_max_and_one_min')
+        (mx, my), (nx, ny) = found['max'][0], found['min'][0]
+        hi, lo = params.get('max', 'A'), params.get('min', 'C')
+        if at.get(hi) != mx or at.get(lo) != nx:
+            raise Reject('drawing_labels_disagree')
+        return f'{hi}({fmt(mx)}, {fmt(my)}), {lo}({fmt(nx)}, {fmt(ny)})'
+    raise Reject('unknown_ask')
 
 
 def join_continued(text: str) -> str:
@@ -1077,9 +1167,11 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                 'source': {'sourceId': e.source, 'page': page, 'bookPage': book_page, 'unit': e.unit, 'number': n},
             }
             try:
-                if n not in blocks:
+                # A figure row's question is a picture, not a text block: its data is checked
+                # on the page by `require_on_page` instead (item 29's number has no marker).
+                if e.family != 'figure' and n not in blocks:
                     raise Reject('item_not_found')
-                if isinstance(blocks[n], Reject):
+                if e.family != 'figure' and isinstance(blocks[n], Reject):
                     raise blocks[n]
                 if e.family == 'mcq_pair':
                     stem, options, key = solve_mcq_pair(blocks[n])
@@ -1100,6 +1192,12 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                                 else solve_system(stem, e.allow_none))
                     kind, tier, tier_source = 'unit-test', 'medium', 'default'
                     extra = {}
+                elif e.family == 'figure':
+                    require_on_page(page_text(e.source, page), e.params['on_page'])
+                    stem = e.params['stem']
+                    computed = solve_figure(e.params['curve'], e.visual, e.params)
+                    kind, tier, tier_source = 'unit-test', 'medium', 'default'
+                    extra = {'visual': e.visual}
                 else:
                     lead = lead_math(blocks[n])
                     stem = normalise_stem(join_continued(lead) if e.params.get('join') else lead, MAX_EXP[e.family])

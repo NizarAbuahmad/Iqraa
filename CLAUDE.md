@@ -358,7 +358,11 @@ sweep in your staged files.
   whole line apart from the maths (`EXTREMA_*_AR`, mirrored in `bookItems.test.ts`).
   The unit test's max/min (p.77 items 20-22) are `verified` by `pair_extrema` only
   where the guide's `)n` line holds EXACTLY the computed answer; a constant has none,
-  as the guide says (strict extrema only).
+  as the guide says (strict extrema only). A book item may carry a `visual` (a
+  `lib/figure` drawing, in the gate's canonical form) only where the question itself
+  fixes the curve (p.77 items 29, 32-34; `solve_figure` checks the drawing against the
+  question); `buildBookQuestion` puts it in `body.visual`. A graph whose curve the book
+  never states (26-28) is not drawn: a curve of ours would not be the book's picture.
   A new book item must not be a near-duplicate (`stemSimilarity` > 0.85) of another
   in its lesson, or the book plan promises a question the draw cannot deliver —
   `bookQuestions.test.ts` catches it, but only for draw orders it happens to try. `SERVED_STATUSES` is the one place

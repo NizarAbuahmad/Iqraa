@@ -409,7 +409,7 @@ describe('book items — the reader', () => {
 
   it('serves the semester-2 student book’s derivatives to lesson 6.2, every one verified', () => {
     const fromStudentBook = bookItemsForLesson('kbl-math-s2-nccd-u6_l2').filter(
-      i => i.source.sourceId === 'math-s2-student-book' && i.kind !== 'unit-test-mcq',
+      i => i.source.sourceId === 'math-s2-student-book' && i.kind !== 'unit-test-mcq' && !i.visual,
     );
     assert.equal(fromStudentBook.length, 13); // 14 verified minus t17, a near-duplicate (see the extractor's TABLE)
     for (const i of fromStudentBook) assert.equal(i.status, 'verified', i.id);
@@ -429,6 +429,22 @@ describe('book items — the reader', () => {
     const eight = extrema.find(i => i.source.number === 8)!;
     assert.equal(eight.computedAnswer, 'لا توجد قيم عظمى أو صغرى محلية'); // 2x³ + 7: f′ does not change sign
     assert.equal(bookCitation(eight, 'ar'), 'كتاب الطالب ص ٧٤، س ٨');
+  });
+
+  it('draws only the graph questions whose curve the question fixes, and never verifies them', () => {
+    const drawn = items.filter(i => i.visual);
+    assert.deepEqual(drawn.map(i => i.id).sort(), [
+      'bi-math-s2-student-book-u6l1-t29',
+      'bi-math-s2-student-book-u6l2-t32',
+      'bi-math-s2-student-book-u6l2-t33',
+      'bi-math-s2-student-book-u6l3-t34',
+    ]);
+    for (const i of drawn) {
+      assert.equal(i.visual!.kind, 'function-graph', i.id);
+      assert.deepEqual([i.kind, i.status, i.check], ['unit-test', 'computed', null], i.id);
+    }
+    // 26-28's curve has no formula: no drawing, no item
+    for (const n of [26, 27, 28]) assert.ok(!items.some(i => i.id === `bi-math-s2-student-book-u6l3-t${n}`), String(n));
   });
 
   it('serves the unit-6 test’s six multiple choice as computed, across lessons 6.1-6.3', () => {

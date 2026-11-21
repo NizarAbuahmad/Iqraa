@@ -556,6 +556,10 @@ function buildBookQuestion(
     },
   };
 
+  // A graph question's drawing (the book item's own `visual`, written only where the question
+  // fixes the curve). The student view gates it again (`studentVisual`), as for a model's.
+  const visual = item.visual ? { visual: item.visual } : {};
+
   if (item.kind === "unit-test-mcq") {
     // Find the key among the RAW strings, then convert for display: matching
     // the converted text against the raw answer would never find it.
@@ -568,7 +572,7 @@ function buildBookQuestion(
     return {
       ...common,
       type: "multiple_choice",
-      body: { stem: prompt, multiSelect: false, options },
+      body: { stem: prompt, multiSelect: false, options, ...visual },
       expectedAnswer: { optionIds: [options[correct]!.id] },
       rubric: null,
       gradingMode: QUESTION_TYPES["multiple_choice"].defaultGradingMode,
@@ -577,7 +581,7 @@ function buildBookQuestion(
   return {
     ...common,
     type: "short_answer",
-    body: { prompt },
+    body: { prompt, ...visual },
     expectedAnswer: {
       modelAnswer: displayMath(item.computedAnswer),
       keyConcepts: [displayMath(item.computedAnswer)],

@@ -66,6 +66,13 @@ export interface BookItem {
   tierSource: 'position' | 'default';
   status: BookItemStatus;
   verificationSource: 'sympy+book' | 'sympy' | 'book' | 'none';
+  /**
+   * A drawing the question carries (a `@workspace/figure` figure, in the gate's canonical
+   * form), only where the question itself fixes the curve: a graph question cannot be asked
+   * without its graph. The API puts it in `body.visual`, where `studentVisual` gates it again.
+   * Typed loosely here so this package needs no dependency on the figure package.
+   */
+  visual?: { kind: string } & Record<string, unknown>;
 }
 
 /** What a paper may draw. Narrow to `['verified']` here and nowhere else. */
