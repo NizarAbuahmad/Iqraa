@@ -383,9 +383,24 @@ export function appInviteBodyHtml(link: string): string {
  * lands entirely in `failed`; no key, or an unreadable unsubscribe list, means
  * everyone failed. Anyone who unsubscribed from any of our mail
  * (`email_suppressions`) is left out, in `skipped`.
+ *
+ * A batch with no clear answer lands in `unconfirmed`, not `failed`: the request
+ * threw (connection dropped, our own timeout) or the answer was 408, 502 or 504,
+ * where an edge gave up and the provider may still have accepted the batch. A
+ * caller that retries `failed` must not retry `unconfirmed`, or it can mail
+ * someone twice. Only a body that could not be built counts as failed before the
+ * request, since nothing was sent.
  */
 const BATCH_SIZE = 100;
 const BATCH_PAUSE_MS = 600;
+/**
+ * How long one batch request may take before we stop waiting. A timeout throws, so the
+ * batch is `unconfirmed` (the provider may have accepted it); it bounds a request that
+ * would otherwise hang the synchronous admin send.
+ */
+const BATCH_TIMEOUT_MS = 30_000;
+/** Answers that do not say whether the provider processed the batch: an edge timed out or gave up. */
+const UNCONFIRMED_STATUSES: ReadonlySet<number> = new Set([408, 502, 504]);
 
 export type BroadcastRecipient = { id: string; email: string };
 /** The "why you got this" sentence under a broadcast. Trusted text written in code, never user input. */
@@ -420,8 +435,8 @@ export async function sendBroadcast(
   bodyHtml: string,
   unsubscribeUrl: (r: BroadcastRecipient) => string,
   footer: BroadcastFooter = WAITLIST_FOOTER,
-): Promise<{ sent: string[]; failed: string[]; skipped: string[] }> {
-  const out = { sent: [] as string[], failed: [] as string[], skipped: [] as string[] };
+): Promise<{ sent: string[]; failed: string[]; skipped: string[]; unconfirmed: string[] }> {
+  const out = { sent: [] as string[], failed: [] as string[], skipped: [] as string[], unconfirmed: [] as string[] };
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     logger.warn({ count: recipients.length }, "RESEND_API_KEY not set — broadcast not sent");
@@ -444,39 +459,59 @@ export async function sendBroadcast(
   for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
     const chunk = recipients.slice(i, i + BATCH_SIZE);
     if (i > 0) await new Promise(r => setTimeout(r, BATCH_PAUSE_MS));
+    const emails = chunk.map(r => r.email);
+    // Built before the request: a chunk whose body cannot be built reached nobody, so it is failed.
+    let body: string;
     try {
-      const res = await fetch(`${resendBase()}/emails/batch`, {
+      body = JSON.stringify(
+        chunk.map(r => {
+          const url = unsubscribeUrl(r);
+          return {
+            from,
+            to: r.email,
+            subject,
+            html: renderEmailShell(
+              bodyHtml,
+              `<div style="font-size:12px;color:#94A3B8;line-height:1.7;">
+                <div dir="rtl">${footer.ar} <a href="${url}" style="color:#94A3B8;">إلغاء الاشتراك</a></div>
+                <div dir="ltr">${footer.en} <a href="${url}" style="color:#94A3B8;">Unsubscribe</a></div>
+              </div>`,
+            ),
+            headers: { "List-Unsubscribe": `<${url}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+          };
+        }),
+      );
+    } catch (err) {
+      logger.error({ err, size: chunk.length }, "resend broadcast batch not built — not sent");
+      out.failed.push(...emails);
+      continue;
+    }
+    // From here the provider may have the batch: only a clear answer says whether it took it.
+    let res: Response;
+    try {
+      res = await fetch(`${resendBase()}/emails/batch`, {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify(
-          chunk.map(r => {
-            const url = unsubscribeUrl(r);
-            return {
-              from,
-              to: r.email,
-              subject,
-              html: renderEmailShell(
-                bodyHtml,
-                `<div style="font-size:12px;color:#94A3B8;line-height:1.7;">
-                  <div dir="rtl">${footer.ar} <a href="${url}" style="color:#94A3B8;">إلغاء الاشتراك</a></div>
-                  <div dir="ltr">${footer.en} <a href="${url}" style="color:#94A3B8;">Unsubscribe</a></div>
-                </div>`,
-              ),
-              headers: { "List-Unsubscribe": `<${url}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
-            };
-          }),
-        ),
+        body,
+        signal: AbortSignal.timeout(BATCH_TIMEOUT_MS),
       });
-      if (!res.ok) {
-        logger.error({ status: res.status, body: await res.text(), size: chunk.length }, "resend broadcast batch failed");
-        out.failed.push(...chunk.map(r => r.email));
-        continue;
-      }
-      out.sent.push(...chunk.map(r => r.email));
     } catch (err) {
-      logger.error({ err, size: chunk.length }, "resend broadcast batch threw");
-      out.failed.push(...chunk.map(r => r.email));
+      logger.error({ err, size: chunk.length }, "resend broadcast batch unconfirmed — the provider may have accepted it");
+      out.unconfirmed.push(...emails);
+      continue;
     }
+    if (res.ok) {
+      out.sent.push(...emails);
+      continue;
+    }
+    const text = await res.text().catch(() => "");
+    if (UNCONFIRMED_STATUSES.has(res.status)) {
+      logger.error({ status: res.status, body: text, size: chunk.length }, "resend broadcast batch unconfirmed — the provider may have accepted it");
+      out.unconfirmed.push(...emails);
+      continue;
+    }
+    logger.error({ status: res.status, body: text, size: chunk.length }, "resend broadcast batch failed");
+    out.failed.push(...emails);
   }
   return out;
 }

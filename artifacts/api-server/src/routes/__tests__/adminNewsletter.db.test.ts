@@ -8,7 +8,8 @@
  * and nobody else; a second send of one issue mails nobody again; and a refused batch leaves
  * its teachers eligible for the retry. Re-testing identical text after a send resumes that
  * issue; only the admin who got the test copy may send; and a run mails only the teachers
- * whose record its own insert wrote.
+ * whose record its own insert wrote. A batch whose answer was lost (the provider may have taken
+ * it) stays recorded, so the retry does not mail those teachers again.
  */
 import { after, before, it } from "node:test";
 import assert from "node:assert/strict";
@@ -126,7 +127,7 @@ describeDb("teacher newsletter", () => {
 
     const sent = await send(issueId);
     assert.equal(sent.status, 200, sent.text);
-    assert.deepEqual(sent.json, { sent: 2, failed: 0, skipped: 1 });
+    assert.deepEqual(sent.json, { sent: 2, failed: 0, skipped: 1, unconfirmed: 0 });
     assert.deepEqual(recipients(), [mail("Ayla"), mail("Principal")]);
     const one = stub.mails()[0]!;
     assert.equal(one.subject, SUBJECT);
@@ -154,7 +155,7 @@ describeDb("teacher newsletter", () => {
     stub.failNext(500);
     const failed = await send(issueId, SUBJECT, `${BODY}\n\nSecond issue`);
     assert.equal(failed.status, 200);
-    assert.deepEqual(failed.json, { sent: 0, failed: 2, skipped: 1 });
+    assert.deepEqual(failed.json, { sent: 0, failed: 2, skipped: 1, unconfirmed: 0 });
     assert.equal(stub.mails().length, 0);
 
     const retry = await send(issueId, SUBJECT, `${BODY}\n\nSecond issue`);
@@ -234,7 +235,7 @@ describeDb("teacher newsletter", () => {
     stub.clear();
     stub.failNext(500);
     const failed = await send2(t2.json.issueId, body2);
-    assert.deepEqual(failed.json, { sent: 0, failed: 2, skipped: 1 });
+    assert.deepEqual(failed.json, { sent: 0, failed: 2, skipped: 1, unconfirmed: 0 });
     assert.equal(await sendsOf(t2.json.issueId), 0);
   });
 
@@ -419,5 +420,29 @@ describeDb("teacher newsletter", () => {
     assert.equal(resumed.status, 200, resumed.text);
     assert.equal(resumed.json.sent, 0);
     assert.deepEqual(recipients(), [], "no teacher mailed again");
+  });
+
+  it("a batch whose answer was lost is not re-mailed", async () => {
+    const admin11 = await addUser("Admin11", "system_admin");
+    const body = `${BODY}\n\nAnswer lost`;
+    const tested = await testAs(admin11, body);
+    assert.equal(tested.status, 200, tested.text);
+    const issueId: string = tested.json.issueId;
+
+    stub.clear();
+    stub.dropAfterAccept();
+    const lost = await sendAs(admin11, issueId, body);
+    assert.equal(lost.status, 200, lost.text);
+    assert.equal(lost.json.sent, 0);
+    assert.equal(lost.json.unconfirmed, 2, "Ayla and the principal: the provider may have taken their mail");
+    assert.deepEqual(recipients(), [mail("Ayla"), mail("Principal")], "the provider did receive their mail");
+    assert.equal(await sendsOf(issueId), lost.json.unconfirmed, "their records are kept");
+
+    stub.clear();
+    const retry = await sendAs(admin11, issueId, body);
+    assert.equal(retry.status, 200, retry.text);
+    assert.equal(retry.json.sent, 0);
+    assert.equal(retry.json.unconfirmed, 0);
+    assert.deepEqual(recipients(), [], "no teacher mailed a second time");
   });
 });

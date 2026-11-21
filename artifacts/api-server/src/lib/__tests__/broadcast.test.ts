@@ -97,7 +97,7 @@ describe("sendBroadcast", () => {
 
     const out = await sendBroadcast(people(2), "Hello", "<p>body</p>", unsub);
     assert.equal(url, "https://api.resend.com/emails/batch");
-    assert.deepEqual(out, { sent: ["p0@school.jo", "p1@school.jo"], failed: [], skipped: [] });
+    assert.deepEqual(out, { sent: ["p0@school.jo", "p1@school.jo"], failed: [], skipped: [], unconfirmed: [] });
     assert.equal(batch.length, 2);
     assert.equal(batch[1]!.to, "p1@school.jo");
     assert.equal(batch[1]!.subject, "Hello");
@@ -121,14 +121,85 @@ describe("sendBroadcast", () => {
     assert.deepEqual(out.failed, ["p100@school.jo"]);
   });
 
-  it("fails everyone for a lost request, and for a missing key", async () => {
+  it("fails everyone for a missing key: nothing was sent", async () => {
+    delete process.env.RESEND_API_KEY;
+    assert.deepEqual(await sendBroadcast(people(1), "s", "<p>x</p>", unsub), { sent: [], failed: ["p0@school.jo"], skipped: [], unconfirmed: [] });
+  });
+
+  // A lost answer is not a refusal: the provider may have accepted the batch. Those recipients
+  // are `unconfirmed`, so a caller that retries `failed` never mails them twice.
+  const both = ["p0@school.jo", "p1@school.jo"];
+  const answering = (status: number) =>
+    (async () => new Response("x", { status })) as typeof fetch;
+  const throwing = (err: Error) =>
+    (async () => {
+      throw err;
+    }) as typeof fetch;
+
+  it("a 200 is sent, and nothing is unconfirmed", async () => {
+    globalThis.fetch = answering(200);
+    assert.deepEqual(await sendBroadcast(people(2), "s", "<p>x</p>", unsub), { sent: both, failed: [], skipped: [], unconfirmed: [] });
+  });
+
+  it("a request that threw is unconfirmed, not failed", async () => {
+    globalThis.fetch = throwing(new Error("socket hang up"));
+    assert.deepEqual(await sendBroadcast(people(2), "s", "<p>x</p>", unsub), { sent: [], failed: [], skipped: [], unconfirmed: both });
+  });
+
+  it("our own timeout is unconfirmed", async () => {
+    globalThis.fetch = throwing(Object.assign(new Error("t"), { name: "TimeoutError" }));
+    assert.deepEqual(await sendBroadcast(people(2), "s", "<p>x</p>", unsub), { sent: [], failed: [], skipped: [], unconfirmed: both });
+  });
+
+  for (const status of [408, 502, 504]) {
+    it(`a ${status} answer is unconfirmed`, async () => {
+      globalThis.fetch = answering(status);
+      assert.deepEqual(await sendBroadcast(people(2), "s", "<p>x</p>", unsub), { sent: [], failed: [], skipped: [], unconfirmed: both });
+    });
+  }
+
+  for (const status of [400, 422, 429, 500, 503]) {
+    it(`a ${status} answer is failed`, async () => {
+      globalThis.fetch = answering(status);
+      assert.deepEqual(await sendBroadcast(people(2), "s", "<p>x</p>", unsub), { sent: [], failed: both, skipped: [], unconfirmed: [] });
+    });
+  }
+
+  it("each request carries an abort signal (the per-batch timeout)", async () => {
+    let signal: unknown;
+    globalThis.fetch = (async (_u: unknown, init?: RequestInit) => {
+      signal = init?.signal;
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    await sendBroadcast(people(2), "s", "<p>x</p>", unsub);
+    assert.ok(signal instanceof AbortSignal, "fetch got an AbortSignal");
+  });
+
+  it("a later batch that threw is unconfirmed, and the earlier one stays sent", async () => {
+    let calls = 0;
     globalThis.fetch = (async () => {
+      calls += 1;
+      if (calls === 1) return new Response("{}", { status: 200 });
       throw new Error("socket hang up");
     }) as typeof fetch;
-    assert.deepEqual(await sendBroadcast(people(2), "s", "<p>x</p>", unsub), { sent: [], failed: ["p0@school.jo", "p1@school.jo"], skipped: [] });
+    const out = await sendBroadcast(people(101), "s", "<p>x</p>", unsub);
+    assert.equal(out.sent.length, 100);
+    assert.deepEqual(out.unconfirmed, ["p100@school.jo"]);
+    assert.deepEqual(out.failed, []);
+  });
 
-    delete process.env.RESEND_API_KEY;
-    assert.deepEqual(await sendBroadcast(people(1), "s", "<p>x</p>", unsub), { sent: [], failed: ["p0@school.jo"], skipped: [] });
+  it("a batch whose body could not be built is failed: nothing reached the provider", async () => {
+    let called = false;
+    globalThis.fetch = (async () => {
+      called = true;
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    const out = await sendBroadcast(people(2), "s", "<p>x</p>", (r) => {
+      if (r.id === "id-1") throw new Error("no secret");
+      return unsub(r);
+    });
+    assert.deepEqual(out, { sent: [], failed: both, skipped: [], unconfirmed: [] });
+    assert.equal(called, false);
   });
 
   it("leaves out anyone who unsubscribed from any of our mail, whatever the case they signed up in", async () => {
@@ -141,7 +212,7 @@ describe("sendBroadcast", () => {
 
     const out = await sendBroadcast([...people(1), { id: "id-x", email: "P1@School.jo" }], "s", "<p>x</p>", unsub);
     assert.deepEqual(batch.map((m) => m.to), ["p0@school.jo"]);
-    assert.deepEqual(out, { sent: ["p0@school.jo"], failed: [], skipped: ["P1@School.jo"] });
+    assert.deepEqual(out, { sent: ["p0@school.jo"], failed: [], skipped: ["P1@School.jo"], unconfirmed: [] });
   });
 
   it("sends nothing when the unsubscribe list cannot be read", async () => {
@@ -153,7 +224,7 @@ describe("sendBroadcast", () => {
     setSuppressionCheck(async () => {
       throw new Error("db down");
     });
-    assert.deepEqual(await sendBroadcast(people(2), "s", "<p>x</p>", unsub), { sent: [], failed: ["p0@school.jo", "p1@school.jo"], skipped: [] });
+    assert.deepEqual(await sendBroadcast(people(2), "s", "<p>x</p>", unsub), { sent: [], failed: ["p0@school.jo", "p1@school.jo"], skipped: [], unconfirmed: [] });
     assert.equal(called, false);
   });
 });

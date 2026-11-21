@@ -942,7 +942,7 @@ router.post("/admin/broadcasts", authMiddleware, requireRole("system_admin"), br
         return;
       }
       const test = await sendBroadcast([{ id: me.id, email: me.email }], `[تجريبي] ${subject}`, html, (r) => unsubscribeUrl(r.id));
-      if (test.failed.length > 0) {
+      if (test.failed.length + test.unconfirmed.length > 0) {
         res.status(502).json({ error: "send" });
         return;
       }
@@ -981,7 +981,9 @@ router.post("/admin/broadcasts", authMiddleware, requireRole("system_admin"), br
       { by: req.user!.id, purpose, sent: result.sent.length, failed: result.failed.length, skipped: result.skipped.length },
       "waitlist broadcast",
     );
-    res.json({ sent: result.sent.length, failed: result.failed.length, skipped: result.skipped.length });
+    // The waitlist keeps its old contract: an unconfirmed batch is reported as failed (and, as
+    // before, not stamped), so a re-send can reach it again.
+    res.json({ sent: result.sent.length, failed: result.failed.length + result.unconfirmed.length, skipped: result.skipped.length });
   } catch (err) {
     logger.error({ err }, "admin broadcast failed");
     res.status(500).json({ error: "Failed to send" });

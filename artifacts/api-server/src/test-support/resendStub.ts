@@ -22,12 +22,19 @@ export interface ResendStub {
   clear(): void;
   /** Refuse the next request, whatever it is, with this status (default 500) and record nothing from it. */
   failNext(status?: number): void;
+  /**
+   * The next batch request is RECORDED (its mails join `mails()`, as if the provider accepted
+   * them), then its socket is destroyed with no HTTP answer at all, so the server's `fetch`
+   * throws. Stands in for an answer lost after the provider took the batch.
+   */
+  dropAfterAccept(): void;
   close(): Promise<void>;
 }
 
 export async function startResendStub(): Promise<ResendStub> {
   let received: StubMail[] = [];
   let failStatus: number | null = null;
+  let dropNext = false;
 
   const server = http.createServer((req, res) => {
     let raw = "";
@@ -54,6 +61,11 @@ export async function startResendStub(): Promise<ResendStub> {
         res.end("bad json");
         return;
       }
+      if (dropNext) {
+        dropNext = false;
+        req.socket.destroy();
+        return;
+      }
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ data: [] }));
     });
@@ -69,6 +81,9 @@ export async function startResendStub(): Promise<ResendStub> {
     },
     failNext(status = 500) {
       failStatus = status;
+    },
+    dropAfterAccept() {
+      dropNext = true;
     },
     close: () => new Promise<void>(resolve => server.close(() => resolve())),
   };

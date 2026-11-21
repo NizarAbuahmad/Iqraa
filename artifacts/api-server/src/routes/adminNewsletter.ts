@@ -21,8 +21,8 @@
  * may never run on Cloud Run.
  *
  * Who is mailed is recorded BEFORE each batch is handed to the provider (and taken back for the
- * ones the provider did not accept), so a crash can make a teacher miss an issue but never get it
- * twice. A retry skips everyone recorded, by user id and by address, and a run mails only the
+ * ones the provider refused or skipped; a batch with no clear answer stays recorded), so a crash
+ * or a lost answer can make a teacher miss an issue but never get it twice. A retry skips everyone recorded, by user id and by address, and a run mails only the
  * teachers whose record its own insert wrote. Re-testing the identical text resumes the issue
  * that already has it (an edited text, even by one character, is a new issue). Only the admin
  * who received the test copy may send it.
@@ -221,6 +221,7 @@ router.post("/admin/newsletter/send", authMiddleware, requireRole("system_admin"
       let sent = 0;
       let failed = 0;
       let skipped = 0;
+      let unconfirmed = 0;
       for (let at = 0; at < recipients.length; at += CHUNK) {
         const slice = recipients.slice(at, at + CHUNK);
         if (at > 0) await sleep(CHUNK_PAUSE_MS);
@@ -244,9 +245,11 @@ router.post("/admin/newsletter/send", authMiddleware, requireRole("system_admin"
         const chunk = slice.filter((r) => mine.has(r.id));
         if (chunk.length === 0) continue;
         const out = await sendBroadcast(chunk, parsed.subject, html, teacherUnsubscribeUrl, TEACHER_FOOTER);
-        const accepted = new Set(out.sent.map((e) => e.toLowerCase()));
-        // Only this request's own rows are taken back.
-        const notSent = chunk.filter((r) => !accepted.has(r.email.toLowerCase())).map((r) => r.id);
+        // Only this request's own rows are taken back, and only for recipients the provider clearly
+        // did not take (refused, or unsubscribed). An unconfirmed batch may have been accepted with
+        // its answer lost, so its rows stay: those teachers may miss the issue, never get it twice.
+        const notTaken = new Set([...out.failed, ...out.skipped].map((e) => e.toLowerCase()));
+        const notSent = chunk.filter((r) => notTaken.has(r.email.toLowerCase())).map((r) => r.id);
         if (notSent.length > 0) {
           try {
             await db.delete(newsletterSends).where(and(eq(newsletterSends.issueId, issueId), inArray(newsletterSends.userId, notSent)));
@@ -264,11 +267,18 @@ router.post("/admin/newsletter/send", authMiddleware, requireRole("system_admin"
         sent += out.sent.length;
         failed += out.failed.length;
         skipped += out.skipped.length;
+        unconfirmed += out.unconfirmed.length;
       }
-      logger.info({ by: req.user!.id, issueId, sent, failed, skipped }, "teacher newsletter");
+      logger.info({ by: req.user!.id, issueId, sent, failed, skipped, unconfirmed }, "teacher newsletter");
+      if (unconfirmed > 0) {
+        logger.error(
+          { issueId, sent, failed, skipped, unconfirmed },
+          "teacher newsletter: some batches unconfirmed — kept as mailed, not retried; check the Resend log",
+        );
+      }
       // Release before answering: nothing is guaranteed to run after `res.json`.
       await releaseClaim(issueId);
-      res.json({ sent, failed, skipped });
+      res.json({ sent, failed, skipped, unconfirmed });
     } finally {
       await releaseClaim(issueId); // also on an error path; harmless twice
     }
