@@ -42,8 +42,11 @@ schedule: nothing is ever sent unless an admin presses send.
 - `newsletter_issues.sending_at` is a 10-minute claim taken while a send runs. A second send, or a new test copy,
   is refused with 409 `sending` while it is fresh.
 - Who is mailed is recorded **before** each batch of 100 goes to the provider, and removed again for anyone the
-  provider did not accept. The plan recorded after the whole send, and review found that could mail teachers twice.
-  Now a crash can make a teacher miss an issue, never get it twice.
+  provider clearly refused (or who had unsubscribed). The plan recorded after the whole send, and review found that
+  could mail teachers twice. Now a crash can make a teacher miss an issue, never get it twice.
+- The provider call has a 30-second timeout per batch, and an unconfirmed outcome (no clear answer: the connection
+  dropped, the timeout, or a 408, 502 or 504 answer) keeps its recipients recorded as mailed (`sendBroadcast`
+  returns them in `unconfirmed`; the send answer has an `unconfirmed` count).
 - Recipients are read in a stable order and excluded by user id or by an address already mailed.
 - A test copy never deletes an issue that already has recorded recipients.
 - The route has no `sent-not-recorded` answer any more. The 24-hour check refuses a test exactly 24 hours old.
@@ -67,12 +70,18 @@ against production):
   `95db0b6`, 2026-11-21, after merging main.
 - `lib/db` suite with `RLS_TEST_DATABASE_URL` on that database: 76 pass, 0 fail, including «row-level security
   covers every table» (at `95db0b6`).
-- API: `adminNewsletter.db.test.ts` 19 of 19 (five runs in a row, all green, at `0d520ed`); the whole suite after
-  `pnpm build` with `TEST_DATABASE_URL` set: 3,618 pass, 0 fail, 0 skipped, at `95db0b6`. Mail in these tests went
+- API: `adminNewsletter.db.test.ts` 20 of 20; the whole suite after `pnpm build` with `TEST_DATABASE_URL` set:
+  3,633 pass, 0 fail, 0 skipped, at `bc65aad` (2026-11-21, the unconfirmed-batch fix). Mail in these tests went
   only to a local stub (`test-support/resendStub.ts`).
-- Mobile `pnpm test` at the fix commit: 9,456 tests, 9,446 pass, 0 fail, 10 skipped.
+- What the tests cover for a lost answer: the unit tests (`broadcast.test.ts`, stubbed `fetch`) put a thrown request,
+  our own timeout and the answers 408, 502 and 504 in `unconfirmed`, and 400, 422, 429, 500 and 503 in `failed`;
+  check that each request carries an abort signal; and fail (not unconfirm) a batch whose body could not be built.
+  The database test «a batch whose answer was lost is not re-mailed» has the stub record a batch and then drop the
+  connection without answering: the send answers `unconfirmed: 2`, both records stay, and a second send mails
+  nobody. A refused batch (500) is still un-recorded and reached on the retry.
+- Mobile `pnpm test` at `bc65aad`: 9,469 tests, 9,459 pass, 0 fail, 10 skipped.
 - `lib/curriculum`: `pnpm test` 931 pass, 0 fail; `pnpm run verify` 0 errors (3,369 lessons, 200 files).
-- `pnpm run typecheck` at the fix commit: exits 0.
+- `pnpm run typecheck` at the fix commit, and again at `bc65aad`: exits 0.
 - CI on `b152778`: row-level security, migrations match schema, destructive migrations acknowledged, math verifier
   and the teacher-to-student smoke test passed.
 - Browser (headless Chromium, built web app, local API with no mail key, a seeded system admin, two teachers of
@@ -94,6 +103,9 @@ against production):
 - The policy sentence was written by a model and not read by a lawyer. Existing teachers are not shown the change
   (there is no re-acceptance flow).
 - A failing write-ahead insert and a failing un-record delete have no test (they need fault injection).
+- What real Resend does on a dropped connection, and whether a 502 or 504 from it ever follows an accepted batch,
+  was not observed; the unconfirmed rule is built on the possibility, tested only against the stub. The
+  unconfirmed line on the screen was not seen in a browser.
 - The screen's count wording (below) and the Amman date of the last issue were not seen in a browser; only the
   typechecker and the mobile suite ran over them.
 - The math verifier's Python test (`test_equations.py`) was not run; this change does not touch it.
@@ -104,8 +116,11 @@ against production):
   2026-11-20). The repo's own waitlist rule (`UPDATES_CONSENT_FROM`) is stricter.
 - Unsubscribe stops all general mail to that address, not only the newsletter. Security codes still arrive.
 - The send is synchronous (100 per batch, about 0.6 s apart): fine into the low thousands of teachers.
-- If the provider accepts a batch but the connection fails before it answers, that batch is treated as refused and a
-  retry can mail those teachers again. There is no timeout on the provider call.
+- When the provider gives no clear answer for a batch (the connection dropped, the 30-second timeout passed, or it
+  answered 408, 502 or 504), those teachers are recorded as mailed and are not retried automatically. So a teacher
+  can miss an issue but cannot get it twice. The screen shows how many were unconfirmed and says to check the
+  Resend log. There is no button to retry unconfirmed teachers: sending to them on purpose would take a new action
+  that is not built.
 - A crash in the middle of a batch can leave up to 100 teachers marked as mailed who were not.
 - An edited text is a different issue: correcting even one typo after a send and sending again mails every teacher
   a second time. Only the identical text resumes an issue.
@@ -115,7 +130,9 @@ against production):
 
 **Screen copy.** Counts are worded so no plural agreement is needed, with Latin digits throughout: «عدد المعلّمين
 المستلمين: N · ألغوا الاشتراك: M» / "Teachers who would receive it: N · Unsubscribed: M"; the button «أرسل إلى
-المعلّمين (N)» / "Send to teachers (N)"; the result «وصلت: A · تعذّرت: B». The confirm dialog says the number is an
+المعلّمين (N)» / "Send to teachers (N)"; the result «وصلت: A · تعذّرت: B», followed only when some are unconfirmed by «غير مؤكَّدة: U — لم يردّ مزوّد
+البريد بوضوح، فلن يُعاد الإرسال إليهم تلقائيًا؛ راجع سجل Resend» / "Unconfirmed: U — the mail provider did not
+answer clearly, so these teachers will not be retried automatically; check the Resend log". The confirm dialog says the number is an
 upper bound («ما لا يزيد على N من المعلّمين» / "at most N teachers"), since a retry skips anyone already mailed. The
 last issue's date is its Amman day (`ammanToday`), not the device's.
 
