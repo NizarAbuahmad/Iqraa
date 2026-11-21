@@ -57,6 +57,15 @@ exam generator and grading (`evaluations.ts`, `attempts.ts`), `siteAsk`, the ver
 which call the OpenAI client directly — an empty OpenAI balance still fails those. The backup writes in another
 model's voice; the quality of OpenAI-written documents is the 2026-10-23 comparison's (it lost 14 of 16).
 
+**Found while rotating (same day): a trailing comma failed a whole lesson plan.** With the old key back, Claude
+answered but `/generate/lesson-plan` returned 500, logged «Expected double-quoted property name in JSON at position
+3844 (line 33 column 5)»: a comma before a closing brace. `parseRepairing` (`lib/generationShape.ts`) already doubled
+stray backslashes after a failed strict parse; it now also drops a comma that stands right before `}` or `]` outside a
+string (`dropTrailingCommas`, which tracks strings and escapes, so a «, }» in the text is kept). Valid JSON is still
+parsed untouched. Four tests in `generationShape.test.ts`, three of which failed first. Not verified against the actual
+reply, which is not logged; only its error message and position were. Also on the way: the first new key saved
+(secret version 3) was rejected with `401 invalid x-api-key`, so the service was pinned back to version 2.
+
 Rotating the key is still the fix; the fallback only keeps the screens working meanwhile. Rotation is
 `gcloud secrets versions add ANTHROPIC_API_KEY` plus `gcloud run services update iqraa-api
 --update-secrets=ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest`; the instant rollback is
