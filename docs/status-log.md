@@ -10,6 +10,22 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A 1.6.0 production build sent to Google Play for review — 2026-11-21
+
+After the chat fix (#1527) merged, the owner asked for a 1.6.0 production build and for it to go to Play for review.
+
+- **Build.** Mobile Android build run 11 (`profile: production`) from `main` at `de31781`: EAS build
+  `735f7858-a355-486c-be10-5c4bf999b62c`, version 1.6.0, versionCode 15 (EAS took the next code itself,
+  `appVersionSource: "remote"`), status `FINISHED` with an `.aab`.
+- **Submit.** Mobile Android submit to Play run 4, `send_for_review: true` (submit profile `production-review`):
+  the build check, the upload and the key deletion all passed. This sends the release for review at once, so any
+  store-listing edit drafted in Play Console did not go with it.
+- **OTA.** The same commit was published to the `production` update channel by hand (Mobile OTA update run 1201).
+- **STATUS.md** «Mobile» no longer says the installed binary is 1.5.0: 1.6.0 production builds have existed since
+  2026-11-13 (versionCode 12) and were submitted on 2026-11-14 (submit runs 2–3), which that line had not caught up with.
+
+**Not verified:** Google's review result and the rollout, and which version is installed on any user's phone.
+
 ## Chat answers the topic asked about; the picked lesson stays put — 2026-11-21
 
 **Reported:** «chat when the user asks for a specific topic it keeps changing… is that because of the topic selected
