@@ -10,6 +10,91 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 3 review, the Grade 2 way: plans, activities, quick checks and live prompts for eight-year-olds — 2026-11-20
+
+The Grade 2 review (below, «Grade 2 review, the Grade 1 way… — 2026-11-15») repeated for Grade 3: 8 subjects, 254
+lessons. The Grade 3 books in the repo carry titles only (no lesson text), so the level below is set from the
+lesson titles, the maths banks (`lib/math-practice`, numbers within 9999) and the curriculum's usual Grade 3
+expectations, not read off the pages.
+
+**Swept.** The offline plan (three styles) and the six activity formats, for all 254 lessons. Every lesson got the
+all-grades templates:
+- «اكتب من ذاكرتك — الدفاتر مغلقة», a claim to defend, a debate, teams betting points, a written summary, «برّر» and an
+  individual worksheet with a "worked example": all 254;
+- a 3-2-1 exit card in about half the plans; a concept map in 143; «فقرة قصيرة (٤–٥ جمل)» in Arabic and a
+  five-sentence paragraph for homework;
+- a controlled experiment in all 13 science lessons.
+
+**Offline (`artifacts/mobile`).**
+- **Grade 3 now uses the early-grade plans, activities, quick check and review** (`EarlyGrade` is 1, 2 or 3), at its
+  own level. Grade 1's content (counting cubes, colouring, answering with a word or a finger) is too young for
+  multiplication, division, fractions and angles, so:
+  - **Maths, science, social studies and English have Grade 3 content** (`thirdGradeContent`). Maths models an
+    example with materials or a drawing (an array, a number line, a shape), writes the same steps in numbers, and each
+    child solves three examples on a small board. Science predicts, observes, tries it with simple tools and records
+    in a two-column table, then writes two sentences, one starting «لأنّ…»; no controlled experiment, no variables.
+    Social studies reads the book's short sentences with a picture or a map and answers two questions in sentences.
+    English reads and writes the lesson words and a short sentence.
+  - **Arabic follows the book's strands with two or three sentences of the child's own** (`thirdGradeArabic`): a
+    reading lesson reads its text by name and answers two questions in sentences; a spelling lesson writes four words
+    by its rule and two sentences. **A punctuation lesson works in sentences** («أكتب (علامتا الترقيم (:) و(؛))»,
+    `isPunctuation`), in the plan, the game and the quick check: the marks are not "in words".
+  - **Islamic education**: a surah is recited and one verse's meaning written in a sentence; any other lesson answers
+    two questions in sentences and names one thing the child will do (`thirdGradeRecitation`). Grade 1 colours a picture.
+  - **A child answers in a sentence** (`ANSWER`), not "a word or by pointing", in the plan and the individual activity.
+  - Every assessment and the activities' writing tip end with the Grade 3 limit: «ولا تزيد الكتابة على جملتين أو ثلاث جمل
+    قصيرة يكتبها الطفل بنفسه.» (`WRITING_LIMIT`).
+  - A Grade 3 unit or semester review is the early-grade review, and each child solves an example or writes two
+    sentences from each unit.
+  - Movement and the arts keep the shared early-grade content (done, not written).
+- **`titleDetail` reads to the last closing bracket.** «أكتب (علامتا الترقيم (:) و(؛))» had been read as «علامتا الترقيم
+  (:» and printed into «كلمات فيها «علامتا الترقيم (:»».
+- **The review's principle line follows the grade.** It said «لا يكتب فيها إلا حرفًا أو كلمة أو عددًا» for every early
+  grade, contradicting the Grade 2 review's own sentence-writing step two lines above. Grade 1 keeps it; Grades 2 and
+  3 say what they write (`REVIEW_PRINCIPLE_AR`).
+- Measured again over all 254 lessons: every phrase above → 0; no template leak.
+
+**Live (`artifacts/api-server`).**
+- **A Grade 3 clause** (`firstGrade.ts`, `isThirdGrade`; «الصف الثالث الثانوي» is not Grade 3) for every use the Grade 1
+  and 2 clauses cover. It says:
+  - reading is a short book text answered in sentences, and writing is two or three sentences of the child's own;
+  - "why?" is answered in one sentence starting «لأنّ…», and a simple prediction checked by observing is fine;
+  - no long paragraphs, summaries, debates, defending a claim, written exit tickets or controlled experiments with
+    variables, and a problem is two steps at most;
+  - by subject, Arabic's strands (a spelling rule or a punctuation mark), and maths within 9999 with the facts to 10.
+
+  `firstGradeClause*` picks the clause by grade (`clauseGradeOf`), so it reaches the plan, worksheet, homework, quiz,
+  activity, lesson explanation, Prompt Slides, classroom, infographic and evaluation prompts. The evaluation's Grade 1
+  type notes stay Grade 1's.
+- **The pool key gains `thirdGrade: "2026-11-20"`** for a Grade 3 request of those kinds, so nothing pooled under the
+  grade-blind prompt is served to one. Grade 2 and Grade 4 keys are unchanged, pinned by literal keys computed from
+  the code before the change. Two earlier tests pinned a Grade 3 lesson-plan key as "unchanged"
+  (`secondGradePrompts.test.ts`, `earlyGradeDifficulty.test.ts`); they now pin Grade 4's.
+
+**Verified.**
+- `thirdGradePlans.test.ts` (mobile, 11 tests) runs every Grade 3 lesson through the plan in three styles, the six
+  formats and the quick check. It checks for none of the phrases above, no Grade 1 counting in maths, science, social
+  studies or English, the teacher's first-person voice and the Grade 3 limit. It also pins maths, science, Islamic
+  education, the Arabic strands, the punctuation lesson and the review. On the old generators all 11 fail.
+- `thirdGradePrompts.test.ts` (API) checks the clause in each builder for Grade 3 only, and the keys.
+- `pnpm run typecheck`; api-server `build` + `test` (3,004 pass); the mobile suite (9,451 pass, 10 skipped).
+- Tests that pinned Grade 3 as all-grades now pin Grade 4 (`secondGradePlans.test.ts`, `activityFirstGrade.test.ts`).
+  `lessonPlanKinds.test.ts` and `lessonPlanVariants.test.ts` sampled the first lesson of each subject, which for
+  science, social studies and PE was a Grade 3 lesson; they now sample from Grade 4 up, since they test the
+  all-grades plan kinds.
+- One full mobile run failed `earlyMathDifficulty.test.ts` (Grade 3 «خواص الضرب» not between easy and hard). It
+  passed on the next three runs, with and without this change: the maths banks draw at random, and this change does
+  not touch them.
+
+**Not verified:** a live model's Grade 3 output; the Arabic wording by a native reader; the level against the Grade 3
+book pages, which the repo does not hold as text.
+
+**Still open.**
+- Grade 3 evaluations keep every question type.
+- Grade 4 keeps the all-grades templates; it was not swept.
+
+No «ما الجديد» entry: these correct what existing generators write for Grade 3.
+
 ## Grades 1–3: «مقارنة الأعداد» and «ترتيب الأعداد» ask their own skill — 2026-11-20
 
 The Grade 3 review found the two lessons drew the same mix: both titles routed to the one `compare` op in
