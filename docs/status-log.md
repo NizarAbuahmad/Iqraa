@@ -10,6 +10,57 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A dead key now switches provider for chat, exams and grading too — 2026-11-21
+
+Second half of «Production runs Claude for documents …». That change covered the pooled generators only
+(`generateContent`); every other route still called `openai.chat.completions.create` itself, so an empty OpenAI
+balance would have failed chat, exam generation and the photo-marking scans with nothing behind them. Chosen with the
+owner after the Haiku 5.5 comparison (`provider-eval` run 9: Haiku 16/16 complete and Arabic 4/4, 2.2× cheaper on
+documents and 4× on chat, but 3–5× slower — documents 26 s against 8 s, chat 12.5 s against 5 s): for an emergency
+path price barely matters, so the backup is the model most trusted, Claude Sonnet 5.5, not the cheapest.
+
+**Changed.**
+
+- `lib/aiComplete.ts` (new): `completeAi` (a finished reply) and `openChatStream` (a streamed one) are now the only
+  doors to a model. The model id names the provider; an account error (`providerFallback.ts`) re-sends the request
+  once to the other provider's configured model; the result carries the model that ANSWERED, and every caller records
+  spend and names the response against it. OpenAI's full `usage` is kept, so cached-token pricing still works.
+- `lib/claudeMessages.ts` (new): OpenAI-shaped messages → a Claude request. System messages move to `system`;
+  empty text blocks are dropped (Claude rejects them); a `data:image/{jpeg,png,gif,webp};base64,…` photo becomes a
+  base64 image block, an `https` URL a url block, anything else (a HEIC photo, an SVG) an `UnsupportedImageError`.
+- `lib/claude.ts`: `completeWithClaude` takes a message list as well as one prompt; `streamWithClaude` (new) adapts
+  Claude's event stream to the chunk shape `pumpChatStream` already reads, forwards only text deltas, and fails the
+  stream on a refusal. It settles once the API has accepted the request, which is when a bad key shows, so the chat
+  route can still switch before it has sent its client a byte.
+- Moved onto the helper: `routes/chat.ts` (both shapes), `routes/evaluations.ts` (exam generation, worked steps,
+  scan-paper, scan-class-paper), `routes/attempts.ts` (scan-marks), `routes/generate.ts` (prompt-slides questions;
+  `/generate/solve` wraps its call in `withProviderFallback`), `lib/derivativeVerified.ts`.
+- **Left alone on purpose.** `completeOnce` in `routes/generate.ts` still calls OpenAI itself: `generateContent`
+  already wraps the whole pooled flow, so the pool is read and written under the model that answered. A fallback
+  inside the call would store one model's paper under the other's key. `routes/siteAsk.ts`, the public site
+  assistant, has no backup: a visitor watching a typing indicator cannot wait out a fallback.
+- `aiComplete.test.ts` ends with a guard that counts direct `openai.chat.completions.create(` calls per file and
+  fails on any not listed (generate.ts: 1, siteAsk.ts: 1). `scanRoutes.test.ts` finds «the model call» by the text
+  `completeAi(` now; its checks (guards before the call, no roster sent) are unchanged.
+
+**Verified.** `claudeMessages.test.ts` 9, `aiComplete.test.ts` 12, `claude.test.ts` 13 (the streaming adapter against
+the real SDK parsing server-sent events, including thinking left out, a refusal failing the stream, and a 401 thrown
+from the open call before any chunk). api-server 3048 / 3048 after `pnpm build`; typecheck clean.
+
+**Not verified.**
+
+- No request went to a real dead key, an empty balance or a live Claude stream; the error shapes are the SDKs'
+  documented `status` / `code`. No route-level test stands in for either provider (route tests run with live AI off),
+  so the six rewired call sites are covered by the helper's tests, the typechecker and the guard, not by an end-to-end
+  run.
+- Photo scans through Claude: the conversion is tested, Claude's reading of handwriting is not. A scan response is
+  `saved: false` (the teacher confirms), but nobody has compared the two providers on a real paper.
+- Latency: the app's chat gives up after 45 s of silence (`IDLE_TIMEOUT_MS`). Claude thinks before its first word and
+  the thinking is not forwarded, so a slow turn is silent for that long. Haiku finished whole chat replies in about
+  12 s; Sonnet 5.5 was not timed on chat.
+- The exam and chat answers a fallback writes are Sonnet-voiced, not the OpenAI model's; a teacher or student would
+  not be told.
+
 ## Chat answers the topic asked about; the picked lesson stays put — 2026-11-21
 
 **Reported:** «chat when the user asks for a specific topic it keeps changing… is that because of the topic selected
