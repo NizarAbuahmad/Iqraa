@@ -78,6 +78,27 @@ the app state; both hooks call it), each seen failing first; `pnpm run typecheck
 size of the overstatement is unknown until the admin page has a few days of rows); the admin screen in a
 browser; the polling change in a browser tab or on a phone; any change in Neon's compute hours. No «ما الجديد»:
 nothing a teacher, student or parent sees changes.
+## A unit's theme reaches the model: the «Let's Explore!» quiz report — 2026-11-21
+
+A teacher reported a Grade 5 English quiz for «هيا نستكشف!» (artifact report, «الشرح والأسئلة لا يطابق محتوى الدرس»). The
+questions were about explorers, compasses and drivers. The unit is about **space** («Talking about space; using big
+numbers.», `general_idea_ar` in `iqra_curriculum_g5_english_sem1.json`).
+
+- **Root cause.** The unit's theme was never put in a prompt. `serializeLessonContext` (one lesson) and
+  `resolveScopeGrounding` (a unit / semester / book) carried the unit *title*, the lesson's grammar point and, in the
+  digest, only the first three vocabulary words («Sun; star; rocket»). A model given «Let's Explore!» and `will/won't`
+  reads «explore» in its everyday sense. Measured with a probe on the built context before the change; the digest
+  had no line containing «space».
+- **Fix.** `KBUnit.generalIdea` (from `makeNccdCatalog`, every NCCD-built book) is printed as «Unit theme (stay on it…)» /
+  «موضوع الوحدة…» by `unitThemeLine` in both builders, and the digest's concepts go from 3 to 8 words per lesson (the
+  digest's own tiering still drops detail before lessons if it runs over budget).
+- **Same hole elsewhere.** Every NCCD-built book with a printed unit theme and every model-bound generator, since all of
+  them ground through these two functions. Offline generators build from the lesson's own data and were not touched.
+- **Verified.** `unitTheme.test.ts` (new; unit digest and single lesson both say «space», no line when a book prints no
+  theme); full mobile suite 9453 pass / 0 fail; `pnpm run typecheck` clean.
+- **Not verified.** No live model run, so that a real paper now stays on space is expected, not observed. The pooled
+  artifact the teacher reported stays served until an admin approves the report (retiring it is a moderation action,
+  not part of this change), and other pooled papers made before this keep their old content.
 
 ## Grades 1–3: «مقارنة الأعداد» and «ترتيب الأعداد» ask their own skill — 2026-11-20
 
