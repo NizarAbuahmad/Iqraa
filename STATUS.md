@@ -40,9 +40,12 @@ Checked 2026-10-22:
   first item under *Open*. The schema deploys as migrations (33 files in
   `lib/db/migrations`, up to `0032`; `0032_lumpy_sleeper`, the newsletter tables with one issue per text, is applied by the first deploy after that PR merges; `0018` was applied by deploy run 801 on 2026-10-25); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
-  for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
-  worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
-  the secret and the switch are Nizar's — «Claude writes the documents» in the log); budgets `AI_BUDGET_USD=100` (raised from 50 by the
+  for generation and for chat; **`AI_MODEL_DOCUMENTS=claude-sonnet-5-5` is set** (read back by the
+  owner on 2026-11-21, with `ANTHROPIC_API_KEY` attached from Secret Manager), so lesson plans,
+  worksheets, quizzes, slide decks and student lesson explanations are written by Claude. Since
+  2026-11-21 an expired key or empty balance on either provider switches every pooled generation
+  (`generateContent`) to the other one, logged as an error; chat, exams, grading and the other
+  direct OpenAI calls have no backup yet («Production runs Claude for documents» in the log); budgets `AI_BUDGET_USD=100` (raised from 50 by the
   owner on 2026-11-20, revision `iqraa-api-00551-pzt`, read back as `limitUsd: 100` from `/api/healthz/ai-budget`; it is
   set on the service, not in `deploy.yml`, and deploys keep it), per user `1`, per
   student `0.20` (a system admin can give one account its own limit on the admin Users screen —

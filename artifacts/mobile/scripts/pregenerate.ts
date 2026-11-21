@@ -1,5 +1,5 @@
 /**
- * Pre-generate default worksheets, lesson plans and lesson explanations into
+ * Pre-generate default worksheets, lesson plans, quizzes and lesson explanations into
  * the shared pool.
  *
  * The first teacher to ask for a lesson waits 7–14 s for the model; everyone
@@ -92,6 +92,7 @@ import { resolveGeneratorGrounding } from '../services/kbContext.ts';
 import {
   buildLessonPlanRequest,
   buildLessonTeachingRequest,
+  buildQuizRequest,
   buildWorksheetRequest,
   groundLessonPlanTopic,
 } from '../services/generatorRequests.ts';
@@ -123,7 +124,7 @@ const reviewPath = flag('review') ?? 'pregen-review.json';
 const approvePath = flag('approve');
 const force = args.includes('--force');
 
-const KINDS = ['worksheet', 'lesson-plan', 'lesson-teaching'] as const;
+const KINDS = ['worksheet', 'lesson-plan', 'quiz', 'lesson-teaching'] as const;
 export type Kind = (typeof KINDS)[number];
 
 /** The value of `--name=value`, or undefined when the flag is absent or has no `=`. */
@@ -189,7 +190,7 @@ function* lessonsIn(scope: Scope) {
   }
 }
 
-/** Every worksheet and lesson-plan call the default form would make. Exported for the test. */
+/** Every worksheet, lesson-plan and quiz call the default form would make. Exported for the test. */
 export function plannedCalls(): Call[] {
   const calls: Call[] = [];
   for (const { grade, subject, topic } of SCOPES.flatMap(scope => [...lessonsIn(scope)])) {
@@ -201,6 +202,15 @@ export function plannedCalls(): Call[] {
     calls.push({
       kind: 'worksheet', lesson: topic,
       body: buildWorksheetRequest(worksheetForm, resolveGeneratorGrounding(topic, 'ar')) as unknown as Record<string, unknown>,
+    });
+    // The quiz screen's defaults: «عادي» (easy), 20 minutes, 20 marks, 10 questions, three types.
+    const quizForm = {
+      ...common, duration: 20, totalMarks: 20, numQuestions: 10, difficulty: 'easy' as const,
+      questionTypes: ['multiple_choice', 'true_false', 'short_answer'] as ('multiple_choice' | 'true_false' | 'short_answer')[],
+    };
+    calls.push({
+      kind: 'quiz', lesson: topic,
+      body: buildQuizRequest(quizForm, resolveGeneratorGrounding(topic, 'ar')) as unknown as Record<string, unknown>,
     });
     const planForm = {
       ...common, durationMinutes: 45, teachingStyle: 'direct' as const,

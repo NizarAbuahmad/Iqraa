@@ -11,6 +11,7 @@ import {
   buildActivityRequest,
   buildLessonPlanRequest,
   buildLessonTeachingRequest,
+  buildQuizRequest,
   buildWorksheetRequest,
   scopeRequestFields,
 } from '../generatorRequests.ts';
@@ -124,6 +125,10 @@ describe('a request no lesson grounds tells the API so', () => {
       ['lesson plan', g => buildLessonPlanRequest(planForm, g)],
       ['worksheet', g => buildWorksheetRequest(worksheetForm, g)],
       ['lesson teaching', g => buildLessonTeachingRequest({ gradeName: 'الصف العاشر', subjectName: 'Mathematics', topic: form.topic, lang: 'ar' }, g)],
+      ['quiz', g => buildQuizRequest({
+        gradeName: 'الصف العاشر', subjectName: 'Mathematics', topic: form.topic, lang: 'ar' as const, duration: 20, totalMarks: 20,
+        questionTypes: ['multiple_choice'], numQuestions: 10, difficulty: 'easy',
+      }, g)],
       ['groundingRequestFields', g => groundingRequestFields(g)],
     ];
     for (const [name, build] of builders) {
@@ -148,5 +153,63 @@ describe('a request no lesson grounds tells the API so', () => {
   it('noLessonField is the one switch', () => {
     assert.deepEqual(noLessonField(false), { grounding: 'none' });
     assert.deepEqual(noLessonField(true), {});
+  });
+});
+
+describe('buildQuizRequest', () => {
+  const quizForm = {
+    gradeName: 'الصف العاشر',
+    subjectName: 'Mathematics',
+    topic: ` ${LESSON.titleAr} `,
+    lang: 'ar' as const,
+    duration: 20,
+    totalMarks: 20,
+    questionTypes: ['multiple_choice', 'true_false', 'short_answer'] as ('multiple_choice' | 'true_false' | 'short_answer')[],
+    numQuestions: 10,
+    difficulty: 'easy' as const,
+  };
+  const grounding = () => resolveGeneratorGrounding(LESSON.titleAr, 'ar');
+
+  it('is the quiz screen\'s request: its form, the grounded lesson by id, the curriculum as the context\'s source', () => {
+    const req = buildQuizRequest(quizForm, grounding());
+    assert.equal(req.grade, 'الصف العاشر');
+    assert.equal(req.subject, 'Mathematics');
+    assert.equal(req.topic, LESSON.titleAr, 'the topic is trimmed');
+    assert.equal(req.language, 'arabic');
+    assert.equal(req.duration, 20);
+    assert.equal(req.totalMarks, 20);
+    assert.deepEqual(req.questionTypes, ['multiple_choice', 'true_false', 'short_answer']);
+    assert.equal(req.numQuestions, 10);
+    assert.equal(req.difficulty, 'easy');
+    assert.equal(req.lessonId, LESSON.id);
+    assert.ok(req.additionalContext && req.additionalContext.length > 0);
+    assert.equal(req.contextSource, 'curriculum');
+    assert.equal(req.regenerate, undefined);
+  });
+
+  it('takes every lesson field from the one grounding, never from the title again', () => {
+    const g = grounding();
+    const req = buildQuizRequest(quizForm, g);
+    const fields = groundingRequestFields(g);
+    assert.equal(req.additionalContext, fields.additionalContext);
+    assert.equal(req.unitId, fields.unitId);
+    assert.equal(req.lessonId, fields.lessonId);
+    assert.equal(req.bookFigureCount, fields.bookFigureCount);
+  });
+
+  it('sends no lesson fields at all for a wide scope (null grounding): the scope\'s own fields replace them', () => {
+    const req = buildQuizRequest(quizForm, null);
+    // `scopeRequestFields` decides `grounding` for a wide scope; the lesson path must not guess it here.
+    assert.ok(!('grounding' in req) || req.grounding === undefined);
+    assert.equal(req.lessonId, undefined);
+    assert.equal(req.unitId, undefined);
+    assert.equal(req.additionalContext, undefined);
+    assert.equal(req.bookFigureCount, undefined);
+    assert.equal(req.contextSource, 'curriculum');
+  });
+
+  it('asks for a replacement, not a copy, on regenerate', () => {
+    const req = buildQuizRequest({ ...quizForm, regenerate: true, previous: { title: 'old' } }, grounding());
+    assert.equal(req.regenerate, true);
   });
 });

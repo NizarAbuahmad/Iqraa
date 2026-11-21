@@ -62,6 +62,7 @@ import {
   type GenerationDetail,
 } from "../lib/aiBudget.ts";
 import { ClaudeRefusalError, completeWithClaude } from "../lib/claude.ts";
+import { withProviderFallback } from "../lib/providerFallback.ts";
 import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
 import { withGrounding, type Grounding } from "../lib/grounding.ts";
 import { PROMPT_VERSION, generationKeys, hasBookFigures, normalizeText, promptVersionFor, scopeKeyOf } from "../lib/generationKey.ts";
@@ -344,8 +345,20 @@ async function refusalFromCaps(
  */
 async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
   assertLiveModeEnabled();
-  const { kind, body, userId } = args;
-  const model = args.model ?? getDocumentModel(kind);
+  const model = args.model ?? getDocumentModel(args.kind);
+  // An expired key or an empty balance on one provider answers with the other
+  // (lib/providerFallback.ts). The whole pooled flow re-runs under the backup's
+  // model, so its pool is read and its artifact stored under its own key, and
+  // the caps are asked again for the call that is actually made.
+  return withProviderFallback(
+    model,
+    (m) => generateContentWith({ ...args, model: m }),
+    { kind: args.kind, userId: args.userId },
+  );
+}
+
+async function generateContentWith(args: GenerateArgs & { model: string }): Promise<GenerateResult> {
+  const { kind, body, userId, model } = args;
   const keys = generationKeys(kind, model, body);
   const regenerate = body.regenerate === true;
   const detail = { kind, promptVersion: promptVersionFor(kind), userId, ...keys };
