@@ -355,42 +355,69 @@ describeDb("teacher newsletter", () => {
     }
   });
 
-  it("re-testing text that has an empty twin resumes the issue that was sent", async () => {
+  const issuesWithBody = async (body: string) =>
+    Number((await db.pool.query(`SELECT count(*) FROM newsletter_issues WHERE body = $1`, [body])).rows[0].count);
+
+  it("the database refuses a second issue with the same text", async () => {
     const admin8 = await addUser("Admin8", "system_admin");
     const body = `${BODY}\n\nTwin issue`;
     const tested = await testAs(admin8, body);
     assert.equal(tested.status, 200, tested.text);
-    const sentId: string = tested.json.issueId;
+    const issueId: string = tested.json.issueId;
+    await assert.rejects(
+      db.pool.query(
+        `INSERT INTO newsletter_issues (subject, body, content_hash, created_by)
+         SELECT subject, body, content_hash, created_by FROM newsletter_issues WHERE id = $1`,
+        [issueId],
+      ),
+      (err: { code?: string }) => err.code === "23505",
+    );
+    assert.equal(await issuesWithBody(body), 1);
+  });
+
+  it("two tests of the same text at the same instant give one issue", async () => {
+    const admin9 = await addUser("Admin9", "system_admin");
+    const body = `${BODY}\n\nSimultaneous tests`;
+    const [a, b] = await Promise.all([testAs(admin9, body), testAs(admin9, body)]);
+    assert.equal(a.status, 200, a.text);
+    assert.equal(b.status, 200, b.text);
+    assert.equal(a.json.issueId, b.json.issueId, "both land on one issue");
+    assert.equal(await issuesWithBody(body), 1);
+
     stub.clear();
-    const first = await sendAs(admin8, sentId, body);
-    assert.equal(first.status, 200, first.text);
-    const teachersMailed = stub.mails().length;
-    assert.equal(teachersMailed, 2);
-    const mailed = await sendsOf(sentId);
+    const sent = await sendAs(admin9, a.json.issueId, body);
+    assert.equal(sent.status, 200, sent.text);
+    assert.equal(sent.json.sent, 2);
+    assert.deepEqual(recipients(), [mail("Ayla"), mail("Principal")]);
 
-    // Two test copies of the same text at one instant: each found no match, so each inserted.
-    // The empty twin is the newest by tested_at.
-    const twinId: string = (
-      await db.pool.query<{ id: string }>(
-        `INSERT INTO newsletter_issues (subject, body, content_hash, created_by, sent_at, sending_at, tested_at)
-         SELECT subject, body, content_hash, $2, NULL, NULL, now() + interval '1 minute'
-           FROM newsletter_issues WHERE id = $1
-         RETURNING id`,
-        [sentId, admin8],
-      )
-    ).rows[0]!.id;
-
-    const again = await testAs(admin8, body);
+    stub.clear();
+    const again = await sendAs(admin9, a.json.issueId, body);
     assert.equal(again.status, 200, again.text);
-    assert.equal(again.json.issueId, sentId, "the issue that mailed teachers, not its empty twin");
-    const twin = await db.pool.query(`SELECT 1 FROM newsletter_issues WHERE id = $1`, [twinId]);
-    assert.equal(twin.rowCount, 0, "the empty twin is removed");
-    assert.equal(await sendsOf(sentId), mailed);
+    assert.equal(again.json.sent, 0);
+    assert.equal(stub.mails().length, 0);
+  });
+
+  it("an issue whose sent stamp never landed is still resumed", async () => {
+    const admin10 = await addUser("Admin10", "system_admin");
+    const body = `${BODY}\n\nStamp never landed`;
+    const tested = await testAs(admin10, body);
+    assert.equal(tested.status, 200, tested.text);
+    const issueId: string = tested.json.issueId;
+    const first = await sendAs(admin10, issueId, body);
+    assert.equal(first.status, 200, first.text);
+    assert.equal(first.json.sent, 2);
+    const mailed = await sendsOf(issueId);
+    await db.pool.query(`UPDATE newsletter_issues SET sent_at = NULL WHERE id = $1`, [issueId]);
+
+    const again = await testAs(admin10, body);
+    assert.equal(again.status, 200, again.text);
+    assert.equal(again.json.issueId, issueId, "the same issue, not a new one");
+    assert.equal(await sendsOf(issueId), mailed);
 
     stub.clear();
-    const resumed = await sendAs(admin8, sentId, body);
+    const resumed = await sendAs(admin10, issueId, body);
     assert.equal(resumed.status, 200, resumed.text);
     assert.equal(resumed.json.sent, 0);
-    assert.equal(stub.mails().length, 0, "no teacher mailed again");
+    assert.deepEqual(recipients(), [], "no teacher mailed again");
   });
 });
