@@ -23,8 +23,10 @@ copy, and only then can send. Design: `docs/superpowers/specs/2026-11-20-teacher
   (eligible-teacher count and the last issue), `POST /admin/newsletter/test` (mails the admin one copy and stores
   the text), `POST /admin/newsletter/send`. The rules live in `lib/newsletter.ts`: who is eligible, a hash of the
   text, and the test-before-send decision.
-- **Tables** `newsletter_issues` and `newsletter_sends`, created by migration `0031_oval_mantis.sql`. Row-level
-  security is on and the app role gets no grant, so only `systemDb` reads them (listed in `systemDbFiles.test.ts`).
+- **Tables** `newsletter_issues` and `newsletter_sends`, in two migrations: `0031_oval_mantis.sql` creates the
+  tables, and `0032_peaceful_malice.sql` makes an issue's text unique (`newsletter_issues_content_hash_unique`).
+  Row-level security is on and the app role gets no grant, so only `systemDb` reads them (listed in
+  `systemDbFiles.test.ts`).
 - **Mail:** `sendBroadcast` now builds each recipient's own unsubscribe link, takes a teacher footer, and sets the
   text direction per paragraph. That last change also affects the waitlist mail.
 - **Policy:** one sentence added to section 2 of the privacy policy in both languages, and `LEGAL_VERSION` is now
@@ -45,9 +47,11 @@ schedule: nothing is ever sent unless an admin presses send.
 - Recipients are read in a stable order and excluded by user id or by an address already mailed.
 - A test copy never deletes an issue that already has recorded recipients.
 - The route has no `sent-not-recorded` answer any more. The 24-hour check refuses a test exactly 24 hours old.
-- Re-testing the identical text resumes the issue that already has it: the test refreshes that issue's test time
-  and makes it the tester's, so a send after a partly failed one, or after its test expired, skips everyone already
-  mailed. An edited text, even by one typo, is a new issue and goes to every teacher again.
+- One text is one issue. Testing text that already has an issue resumes it: the test refreshes that issue's test
+  time and makes it the tester's, so a send after a partly failed one, or after its test expired, skips everyone
+  already mailed. The database enforces it (the test route upserts on the text's hash), so identical text cannot be
+  sent to the same teacher twice, even when it is tested from two tabs at once. An edited text, even by one typo, is
+  a new issue and goes to every teacher again.
 - Only the admin who received the test copy can send it. Another admin gets 409 `not-tested` until they send
   themselves a test of the same text, which makes the issue theirs.
 - A send mails only the teachers whose record its own insert wrote. If two sends of one issue overlap (a stale claim
@@ -58,11 +62,11 @@ schedule: nothing is ever sent unless an admin presses send.
 **Verified** (by command, on 2026-11-20, on the author's machine against a local throwaway Postgres 16; nothing
 against production):
 
-- `lib/db` suite with `RLS_TEST_DATABASE_URL`: 72 pass, 0 fail, including «row-level security covers every table»
-  (at `2558130`).
-- API: `adminNewsletter.db.test.ts` 17 of 17; the whole suite after `pnpm build` with `TEST_DATABASE_URL` set:
-  3,612 pass, 0 fail, 0 skipped, at `9751dab` (the empty-twin fix, 2026-11-21). Mail in these tests went only to a
-  local stub (`test-support/resendStub.ts`).
+- `lib/db` suite with `RLS_TEST_DATABASE_URL`: 76 pass, 0 fail, including «row-level security covers every table»
+  (at `0d520ed`, 2026-11-21, after applying `0032` locally with the migrate script).
+- API: `adminNewsletter.db.test.ts` 19 of 19 (five runs in a row, all green); the whole suite after `pnpm build`
+  with `TEST_DATABASE_URL` set: 3,614 pass, 0 fail, 0 skipped, at `0d520ed` (one issue per text, 2026-11-21). Mail
+  in these tests went only to a local stub (`test-support/resendStub.ts`).
 - Mobile `pnpm test` at the fix commit: 9,456 tests, 9,446 pass, 0 fail, 10 skipped.
 - `lib/curriculum`: `pnpm test` 931 pass, 0 fail; `pnpm run verify` 0 errors (3,369 lessons, 200 files).
 - `pnpm run typecheck` at the fix commit: exits 0.
@@ -100,11 +104,8 @@ against production):
 - If the provider accepts a batch but the connection fails before it answers, that batch is treated as refused and a
   retry can mail those teachers again. There is no timeout on the provider call.
 - A crash in the middle of a batch can leave up to 100 teachers marked as mailed who were not.
-- Two identical test copies sent at the same instant can still create a twin issue. A later test of that text
-  resumes the one that already mailed teachers and removes the empty twin, so the twin cannot be used to mail them
-  again.
-- An edited text is a new issue: correcting one typo after a send and sending again mails every teacher a second
-  time. Only the identical text resumes an issue.
+- An edited text is a different issue: correcting even one typo after a send and sending again mails every teacher
+  a second time. Only the identical text resumes an issue.
 - Screen copy: in the English interface the body box is left-aligned, so Arabic lines show their full stop on the
   wrong side while editing (the email itself is right). The Arabic policy says «رسالة دورية» (periodic) where the
   English says "occasional".

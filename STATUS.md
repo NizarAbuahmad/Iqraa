@@ -37,8 +37,8 @@ Checked 2026-10-22:
 - **Database:** Neon Postgres, **Launch plan since 2026-10-23** (was Free: 100 compute-hours a
   month, 30.92 used, after which Neon suspends the compute), autoscaling 0.25-0.5 CU, scale to
   zero on, $10 spend alert — see «Neon leaves the Free plan before launch» in the log and the
-  first item under *Open*. The schema deploys as migrations (32 files in
-  `lib/db/migrations`, up to `0031`, the newsletter tables, which the first deploy after that PR merges applies; `0018` was applied by deploy run 801 on 2026-10-25); `verify-schema` runs before every API deploy.
+  first item under *Open*. The schema deploys as migrations (33 files in
+  `lib/db/migrations`, up to `0032`; `0031` (the newsletter tables) and `0032` (one newsletter issue per text) are applied by the first deploy after that PR merges; `0018` was applied by deploy run 801 on 2026-10-25); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
   for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
   worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
