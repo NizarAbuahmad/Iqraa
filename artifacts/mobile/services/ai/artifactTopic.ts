@@ -192,9 +192,38 @@ const CURRENT_LESSON_REF = new RegExp(
   'i',
 );
 
+/**
+ * «عليه», «عنها», «أكثر», «آخر»: words that point back at what the chat is
+ * already talking about. With the generic nouns below they make «ورقة عمل
+ * عليه», «أعطني أمثلة عليه», «مثال آخر» — follow-ups, not topics. Left as a
+ * topic, «عليه» titled a worksheet and was built as a free topic, and the
+ * search matched it to «موسى عليه السلام», which read as another subject and
+ * dropped the lesson the conversation was on.
+ */
+const POINTER_WORDS = new Set([
+  'عليه', 'عليها', 'عنه', 'عنها', 'فيه', 'فيها', 'منه', 'منها', 'به', 'بها', 'له', 'لها',
+  'أكثر', 'اكثر', 'آخر', 'اخر', 'أخرى', 'اخرى', 'غيره', 'غيرها', 'كمان', 'زيادة', 'مزيد',
+  'إضافي', 'إضافية', 'اضافي', 'اضافية', 'إضافيه', 'اضافيه',
+  'it', 'more', 'another', 'again',
+]);
+/** What a follow-up asks for, which names no topic beside a pointer. */
+const FOLLOW_UP_NOUNS = new Set([
+  'أمثلة', 'امثلة', 'أمثله', 'امثله', 'مثال', 'مثالا', 'تمارين', 'تمرين', 'أسئلة', 'اسئلة', 'سؤال',
+  'حل', 'شرح', 'اشرح', 'وضح', 'فسر', 'على', 'عن', 'في', 'من',
+  'examples', 'example', 'exercises', 'exercise', 'questions', 'question', 'on', 'about', 'of',
+]);
+
+function isPointerOnly(s: string): boolean {
+  // Lower-cased except «IT», which is a subject ("a quiz on IT"), not "it".
+  const words = s.replace(/[ً-ْـ]/g, '').split(/\s+/).filter(Boolean)
+    .map(w => (w === 'IT' ? w : w.toLowerCase()));
+  return words.some(w => POINTER_WORDS.has(w))
+    && words.every(w => POINTER_WORDS.has(w) || FOLLOW_UP_NOUNS.has(w) || ASKING_ONLY.has(w));
+}
+
 function isCurrentLessonRef(s: string): boolean {
   // Vowel marks and tatweel are typing noise here, not part of the pointer.
-  return CURRENT_LESSON_REF.test(s.replace(/[ً-ْـ]/g, '').trim());
+  return CURRENT_LESSON_REF.test(s.replace(/[ً-ْـ]/g, '').trim()) || isPointerOnly(s);
 }
 
 /**
@@ -240,7 +269,8 @@ export function topicFromQuery(query: string): string {
     .replace(/^(?:a|an|the)\s+/i, '')
     .trim();
   const topic = trimEdgeFiller(out.replace(HOW_LEAD, ''));
-  return isOnlyAsking(topic) || isCurrentLessonRef(topic) ? '' : topic;
+  // Before the trim too: it takes «آخر» off «مثال آخر», leaving a bare «مثال».
+  return isOnlyAsking(topic) || isCurrentLessonRef(topic) || isPointerOnly(out) ? '' : topic;
 }
 
 const QUOTED_TOPIC_RE = /«([^«»]+)»|“([^“”]+)”|"([^"]+)"/;
