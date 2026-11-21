@@ -45,6 +45,8 @@ describe('isUnlistedPick', () => {
       isUnlistedPick('رتّبت المعلمة الأشكال في صناديق حسب الشكل واللون. في أيّ صندوق نضع «دائرة زرقاء»؟', 'صندوق «دائرة زرقاء»'),
       true,
     );
+    // «Which model», with the models never shown (second pass).
+    assert.equal(isUnlistedPick('أيّ تمثيل يُظهر العدد 35 بأعمدة العشرات ومكعبات الآحاد؟', '3 أعمدة و 5 مكعبات'), true);
   });
 
   it('a pick that lists its choices, harakat and guillemets aside', () => {

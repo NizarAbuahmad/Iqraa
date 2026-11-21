@@ -62,6 +62,21 @@ was arithmetically wrong. What it found, and what was done:
 - **Not checked:** coordinates written «(8 ، 4)» with Latin digits in an RTL line may render reversed (g5 u5_l2,
   u8_l6, g6 u4_l1–l3) — look at one printed sheet.
 
+**Second pass, on the sheets that ship.** The first pass read a draw that the next build replaced (the build was not
+yet seeded), so the 432 seeded sheets were read again in full: 4,314 keys, no arithmetic error. Six generators made
+questions right by formula and wrong as questions; each is fixed at the source and pinned in
+`lib/math-practice/src/__tests__/sheetReviewFindings.test.ts` (or `picksShowChoices.test.ts`):
+- «ما القيمة المنزلية للرقم 6 في العدد 64.36؟» — the digit occurs twice (`dec_place` now asks only about a digit that
+  occurs once, as the whole-number version already did);
+- a square pyramid with slant height 3 cm on an 11 cm base — slant height is now over half the side;
+- the angle-bisector item keyed DC = 48 for sides 6, 24, 60 — `bd` is now drawn so the triangle exists;
+- «نظّمها في فئات طول كل منها 5» never named the first class — it now says «أولاها 0–4»;
+- «ما العمل الذي يأتي بعد … مباشرة؟» had no list — it lists four, like its sibling;
+- «أيّ تمثيل يُظهر العدد 35…؟» printed no models — `picks.ts` covers «أيّ تمثيل / نموذج».
+The rebuild after those fixes (and after merging `main`, whose Grade 1–3 bank changes also moved some sheets) changed
+41 sheets; every other sheet is byte-identical to what was read. **The 41 are being read again; this PR stays a
+draft until that is in.**
+
 **Not done.**
 - **Other subjects, grades 1–8.** The only built-in source is the QR codes printed in the books
   (`scripts/scan_book_qr.py --fetch`), and `nccd.gov.jo` resets connections from this cloud environment (checked
