@@ -34,6 +34,32 @@ const AR_DIGITS: Record<string, string> = {
   "۵": "5", "۶": "6", "۷": "7", "۸": "8", "۹": "9",
 };
 
+/**
+ * Tashkeel marks: tanween, the short vowels, shadda, sukun (U+064B–U+0652)
+ * and the superscript alef (U+0670). Not tatweel, not hamza, not letters.
+ */
+const TASHKEEL_MARKS = /[ً-ْٰ]/g;
+
+/**
+ * A curriculum title as a screen should show it: no tashkeel.
+ *
+ * The NCCD books are fully vowelled for students, and their titles were
+ * copied in that way, so a lesson card read «الاستماعُ» — a case ending on a
+ * heading, which no Arabic heading carries. About 3,300 titles in the data
+ * have marks.
+ *
+ * **Display only.** The stored title is left vowelled on purpose: lesson
+ * lookup scores tokens WITHOUT folding tashkeel (`resolveGroundedKbLesson` in
+ * the app's `knowledgeBase.ts`), and that ranking is what separates two
+ * same-named lessons in different subjects. Stripping the data would re-rank
+ * them. So call this where a title is rendered, never where one is stored,
+ * compared or sent to a generator.
+ */
+export function plainTitle(input: string | null | undefined): string {
+  if (!input) return '';
+  return input.normalize('NFC').replace(TASHKEEL_MARKS, '');
+}
+
 export function normalizeArabic(input: unknown): string {
   if (typeof input !== "string") return "";
   let s = input.normalize("NFKC");

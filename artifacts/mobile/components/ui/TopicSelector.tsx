@@ -15,6 +15,7 @@ import {
   Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { plainTitle } from '@workspace/curriculum';
 import { NationalBookBanner } from '@/components/ui/NationalBookBanner';
 import {
   KB_BOOKS,
@@ -271,9 +272,9 @@ export function TopicSelector({
 
   // English books print English titles only; `titleAr` there is our gloss.
   // Display-only: the topic string sent via onChange above stays as it was,
-  // since grounding matches on it.
+  // since grounding matches on it. Tashkeel goes too: «الاستماعُ» → «الاستماع».
   const shownTitle = (x: { titleAr: string; titleEn: string }) =>
-    (subjectId === 'english' || lang !== 'ar') ? (x.titleEn || x.titleAr) : x.titleAr;
+    plainTitle((subjectId === 'english' || lang !== 'ar') ? (x.titleEn || x.titleAr) : x.titleAr);
 
   const unitTitle = selectedUnit ? shownTitle(selectedUnit) : '';
   const unitDisplayValue = selectedUnitId === ENTIRE_BOOK
