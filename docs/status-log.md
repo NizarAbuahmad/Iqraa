@@ -10,6 +10,28 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Production runs Claude for documents (STATUS.md said it did not) — 2026-11-21
+
+Docs only. `STATUS.md` «Live config» said `AI_MODEL_DOCUMENTS` was **unset**, while the 2026-11-03 entry
+(«lesson-teaching now runs on the documents model») said Claude Sonnet 5.5 ran in production. An
+Anthropic Console email that a key expires on 2026-11-22 raised the question of which was true.
+
+**Verified.** The owner read the live service in Cloud Shell on 2026-11-21:
+`gcloud run services describe iqraa-api … --format="value(spec.template.spec.containers[0].env)"` shows
+`AI_MODEL_DOCUMENTS=claude-sonnet-5-5` and `ANTHROPIC_API_KEY` as a `secretKeyRef` (`latest`). So lesson plans,
+worksheets, quizzes, slide decks and `lesson-teaching` (`DOCUMENT_KINDS` in `aiBudget.ts`) go to Claude. Chat,
+evaluations, grading, homework, activities and infographics stay on OpenAI.
+
+**Not verified.** Whether the expiring key («Agents test») is the one in the `ANTHROPIC_API_KEY` secret, and the
+date `AI_MODEL_DOCUMENTS` was set.
+
+**Known limit, unchanged.** `usableModel` (`lib/aiBudget.ts`) skips Claude only when `ANTHROPIC_API_KEY` is
+*unset*. A key that is set but expired or revoked is used anyway, and every one of those five kinds answers with
+the generation error until the secret has a new version and the service rolls a revision. Rotation is
+`gcloud secrets versions add ANTHROPIC_API_KEY` plus `gcloud run services update iqraa-api
+--update-secrets=ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest`; the instant rollback is
+`--remove-env-vars=AI_MODEL_DOCUMENTS`.
+
 ## Whiteboard: redo, four more pen colours, and a board from Today is filed under its lesson — 2026-11-21
 
 Follow-up to «The whiteboard has a card of its own…». Three things a teacher at the board meets.
