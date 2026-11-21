@@ -102,7 +102,9 @@ and the multiple choice 31–32, and its p.76 item 4 says `d(t)` where the app's
 guide's labels `)14`…`)19` agree with the app's newer numbering, which is what is cited. Every answer key was
 also re-derived by hand. Curriculum `test` (938) and `verify`, monorepo typecheck, api-server build + test
 (3021; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
-mobile suite (9496, 0 failing; the app does not import book items) pass. **Not checked:** how a multi-line
+mobile suite (9540 after the latest merge of main, 0 failing; the app does not import book items) pass. A
+`password hasher` failure (its event-loop timing assertion) appeared once while the mobile suite ran in
+parallel; the API suite re-run alone passed 3021/3021, and this branch does not touch that code. **Not checked:** how a multi-line
 max/min key looks in the teacher's paper view in a browser (it is shown as `modelAnswer`, newlines kept).
 
 **API test fixtures that changed, and why.** `bookQuestions.test.ts`: «is never more than what is eligible»
