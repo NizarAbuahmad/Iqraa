@@ -74,8 +74,8 @@ questions right by formula and wrong as questions; each is fixed at the source a
 - «ما العمل الذي يأتي بعد … مباشرة؟» had no list — it lists four, like its sibling;
 - «أيّ تمثيل يُظهر العدد 35…؟» printed no models — `picks.ts` covers «أيّ تمثيل / نموذج».
 The rebuild after those fixes (and after merging `main`, whose Grade 1–3 bank changes also moved some sheets) changed
-41 sheets; every other sheet is byte-identical to what was read. **The 41 are being read again; this PR stays a
-draft until that is in.**
+41 sheets; every other sheet is byte-identical to what was read. The 41 were read again in full: 410 keys, none
+wrong, nothing unanswerable, and each of the six fixes seen in the output.
 
 **Not done.**
 - **Other subjects, grades 1–8.** The only built-in source is the QR codes printed in the books
