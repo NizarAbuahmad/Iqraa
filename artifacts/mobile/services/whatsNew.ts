@@ -39,6 +39,15 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
+    id: 'whiteboard-in-tools',
+    date: '2026-11-20',
+    roles: ['teacher'],
+    titleKey: 'whatsNewWhiteboardTitle',
+    bodyKey: 'whatsNewWhiteboardBody',
+    route: '/ai-tools/whiteboard',
+    toolId: 'whiteboard',
+  },
+  {
     id: 'chat-free-topic-material',
     date: '2026-11-20',
     roles: ['teacher'],
