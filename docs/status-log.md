@@ -10,6 +10,28 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Pool prefill: Grade 10 chemistry worksheets and lesson plans — 2026-11-21
+
+`artifacts/mobile/scripts/pregenerate.ts` filled the shared pool with default-form worksheets and lesson plans
+for Grade 10 **maths** only; chemistry had student explanations and nothing else, so a chemistry teacher's first
+request for a lesson always paid for a model call. The script now plans both for Grade 10 chemistry too: one
+`SCOPES` list (maths, chemistry) feeds the worksheet, lesson-plan and lesson-teaching plans. A dry run reads
+**153 calls** (51 worksheets, 51 lesson plans, 51 explanations; it was 119), worst case $7.65 at the script's
+$0.05-a-call estimate. A call the pool already holds answers fast and is not counted, so a re-run costs only the new
+lessons.
+
+**Verified:** `pregenerate.test.ts` — the new test failed first («expected Chemistry worksheet calls, got 0»), then
+passed; it also pins one call per lesson id, and the existing default-form test now accepts both subjects. The
+screens' defaults (normal → `easy`, 10 questions, multiple choice + short answer, 45 minutes, direct) were read in
+`worksheet.tsx` and `lesson-plan.tsx`, not run. `pnpm run typecheck`.
+
+**Not verified:** a live run (none was made; it needs a login and spends money — command in the PR), that a
+teacher's chemistry request then hits the pool, or the quality of the stored chemistry worksheets: they are served to
+every teacher who asks, and nobody has read them. The per-account allowance (`AI_USER_BUDGET_USD`, reset to `1` by
+every API deploy) is what actually stops a run, about 100 calls at roughly $0.01 each is on the edge of it; give the
+dedicated account its own limit on the admin Users screen first. The model is part of the pool key: run this after
+deciding `AI_MODEL_DOCUMENTS`, or the copies are orphaned. No «ما الجديد»: nothing a user sees changes.
+
 ## Cost review: cached input tokens are recorded, and a hidden tab stops polling — 2026-11-20
 
 From a review of what the app costs to run (OpenAI about three quarters of it, by the app's own estimate:
