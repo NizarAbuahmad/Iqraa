@@ -471,7 +471,10 @@ export function activeLessonReuse(opts: ActiveLessonReuseInput): ActiveLessonReu
   // «علمني» / «ابدأ» name no topic: the open lesson is the only one they can
   // mean, so what the KB ranks for the verb itself is noise, not evidence of
   // another subject («start» ranks «تأسيس مشروع تجاري» at 92).
-  const bareTeach = intent === 'teaching' && isBareTeachAsk(query);
+  // So does a follow-up that names nothing beside a pointer back at the
+  // conversation («أعطني أمثلة عليه», «مثال آخر»): «عليه» alone ranks «موسى عليه
+  // السلام» at 12 (`topicFromQuery`'s pointer rule).
+  const bareTeach = intent === 'teaching' && (isBareTeachAsk(query) || topicFromQuery(query) === '');
   // Same for a bare ask for material: «ورقة عمل» ranks English «طرق العمل» at 38.
   const bareArtifact = intent === 'artifact' && isBareArtifactShortcut(query);
   // KB evidence for a different subject beats the hard pin
@@ -525,7 +528,8 @@ export function activeLessonReuse(opts: ActiveLessonReuseInput): ActiveLessonReu
  * the lesson already on the card.
  */
 export function withActiveLesson(results: KBLesson[], active: KBLesson, query: string): KBLesson[] {
-  if (isBareTeachAsk(query)) return [active];
+  // Same for any message that names no topic («أعطني أمثلة عليه» matched «موسى عليه السلام»).
+  if (isBareTeachAsk(query) || topicFromQuery(query) === '') return [active];
   return [active, ...results.filter(r => r.id !== active.id)].slice(0, 3);
 }
 

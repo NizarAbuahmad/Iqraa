@@ -174,3 +174,39 @@ describe('searchSupportsLesson', () => {
     assert.equal(searchSupportsLesson(searchKBRanked('أعطني أمثلة على الاقتران العكسي', 'ar'), barId), false);
   });
 });
+
+describe('a follow-up that points back keeps the conversation’s lesson', () => {
+  // The conversation moved to «قانون جيب التمام»; «عليه» alone matches «موسى
+  // عليه السلام» (Islamic education, 12), which used to read as another
+  // subject and drop the lesson.
+  const cosine = getLessonById('kbl-math-s1-nccd-u4_l3')!;
+  const memory: ChatSessionMemory = {
+    ...emptyChatSessionMemory(),
+    activeLessonId: cosine.id,
+    activeTopicAr: cosine.titleAr,
+    lessonPin: 'hard',
+  };
+  for (const [q, intent] of [
+    ['أعطني أمثلة عليه', 'teaching'],
+    ['حل مثال عليه', 'teaching'],
+    ['مثال آخر', 'teaching'],
+    ['ورقة عمل عليه', 'artifact'],
+  ] as const) {
+    it(`«${q}»`, () => {
+      const ranked = searchKBRanked(q, 'ar');
+      assert.equal(activeLessonReuse({
+        memory,
+        intent,
+        query: q,
+        hasConfidentKbHit: isConfidentSingleSubjectHit(ranked),
+        activeLessonGradeId: 'grade-10',
+        activeLessonSubjectId: 'mathematics',
+        topRankedSubjectId: ranked[0] && ranked[0].score >= KB_SUGGEST_SCORE
+          ? getBookForLesson(ranked[0].lesson)?.subjectId ?? null
+          : null,
+        searchSupportsActive: searchSupportsLesson(ranked, cosine.id),
+        searchPointsElsewhere: searchPointsElsewhere(ranked, cosine.id),
+      }), 'ground');
+    });
+  }
+});
