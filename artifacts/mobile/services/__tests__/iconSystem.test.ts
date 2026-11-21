@@ -104,7 +104,7 @@ const ids = Object.keys(CONCEPTS) as ConceptId[];
 const CONCEPT_OF_TOOL: Record<string, ConceptId> = { game: 'challenge' };
 
 test('the concept list covers every teaching concept the audit named', () => {
-  for (const id of ['lesson-plan', 'worksheet', 'quiz', 'slides', 'activity', 'homework', 'evaluations', 'challenge', 'games', 'classroom', 'parent-msg', 'lesson-flow', 'prompt-slides', 'geogebra'] as ConceptId[]) {
+  for (const id of ['lesson-plan', 'worksheet', 'quiz', 'slides', 'activity', 'homework', 'evaluations', 'challenge', 'games', 'classroom', 'whiteboard', 'parent-msg', 'lesson-flow', 'prompt-slides', 'geogebra'] as ConceptId[]) {
     assert.ok(CONCEPTS[id], `missing concept ${id}`);
   }
   assert.equal(CONCEPTS.quiz.icon, 'checkmark-done-outline');
@@ -335,14 +335,15 @@ test('a material that is a teaching concept takes icon and colour from CONCEPTS'
     assert.equal(MATERIAL_ICON[kind as keyof typeof MATERIAL_ICON], CONCEPTS[id!].icon, `${kind} icon`);
     assert.equal(MATERIAL_FILL[kind as keyof typeof MATERIAL_FILL], CONCEPTS[id!].color, `${kind} colour`);
   }
-  // Seven of the eight kinds are concepts; only the whiteboard canvas is not.
-  assert.deepEqual(MATERIAL_KINDS.filter(k => !(k in MATERIAL_CONCEPT)), ['board']);
+  // All eight are concepts since the whiteboard got a Tools card (2026-11-20); a saved board is that concept.
+  assert.deepEqual(MATERIAL_KINDS.filter(k => !(k in MATERIAL_CONCEPT)), []);
+  assert.equal(MATERIAL_CONCEPT.board, 'whiteboard');
   assert.equal(MATERIAL_ICON.quiz, 'checkmark-done-outline', 'the quiz was help-circle-outline here and checkmark-done-outline everywhere else');
   assert.equal(MATERIAL_ICON.activity, CONCEPTS.activity.icon);
 });
 
-test('the material tables hold no colour literal but the whiteboard slate and the dark card', () => {
-  assert.deepEqual(hexLiterals(read('constants/materialKindData.ts')).sort(), ['#111F36', '#475569']);
+test('the material tables hold no colour literal but the dark card', () => {
+  assert.deepEqual(hexLiterals(read('constants/materialKindData.ts')).sort(), ['#111F36']);
   assert.deepEqual(hexLiterals(read('constants/materialKind.ts')), [], 'materialKind.ts re-exports the data; it holds no colour');
   assert.match(read('constants/colors.ts'), /card:\s*'#111F36'/, 'palette.card in dark mode moved: update DARK_CARD in materialKindData.ts');
   assert.equal(MATERIAL_DARK_CARD, DARK_CARD);
@@ -354,7 +355,6 @@ test('material fills carry white at 4.5:1, are not amber, and are told apart', (
     assert.ok(contrast('#FFFFFF', c) >= 4.5, `${kind}: white on ${c}`);
     assert.equal(amberProblem(c), null, kind);
   }
-  assertOwnColour('board', MATERIAL_FILL.board);
   // Seven, not eight: lesson plan and prompt slides are the concept pair 7.4 apart, and the same holds on the Tools tab.
   assertApart('material fills', MATERIAL_FILL, 7);
 });

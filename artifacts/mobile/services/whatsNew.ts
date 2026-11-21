@@ -47,6 +47,15 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
     route: '/curriculum/resources',
   },
   {
+    id: 'whiteboard-in-tools',
+    date: '2026-11-20',
+    roles: ['teacher'],
+    titleKey: 'whatsNewWhiteboardTitle',
+    bodyKey: 'whatsNewWhiteboardBody',
+    route: '/ai-tools/whiteboard',
+    toolId: 'whiteboard',
+  },
+  {
     id: 'chat-free-topic-material',
     date: '2026-11-20',
     roles: ['teacher'],
