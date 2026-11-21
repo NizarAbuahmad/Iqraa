@@ -1,1 +1,0 @@
-ALTER TABLE "newsletter_issues" ADD CONSTRAINT "newsletter_issues_content_hash_unique" UNIQUE("content_hash");

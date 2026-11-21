@@ -1020,10 +1020,11 @@ router.get("/admin/ai-costs", authMiddleware, requireRole(...ADMIN_ROLES), async
   const hits = sql<number>`count(*) filter (where ${aiGenerations.cacheStatus} = 'hit')::int`;
   const costUsd = sql<number>`coalesce(sum(${aiGenerations.costUsd}), 0)::float`;
   const promptTokens = sql<number>`coalesce(sum(${aiGenerations.promptTokens}), 0)::int`;
+  const cachedPromptTokens = sql<number>`coalesce(sum(${aiGenerations.cachedPromptTokens}), 0)::int`;
   const completionTokens = sql<number>`coalesce(sum(${aiGenerations.completionTokens}), 0)::int`;
   try {
     const [[totals], byDay, byKind, byModel, byUser, byPlatform] = await Promise.all([
-      db.select({ calls, hits, costUsd, promptTokens, completionTokens }).from(aiGenerations).where(where),
+      db.select({ calls, hits, costUsd, promptTokens, cachedPromptTokens, completionTokens }).from(aiGenerations).where(where),
       db
         .select({ day: sql<string>`to_char(${aiGenerations.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`, calls, costUsd })
         .from(aiGenerations)
@@ -1044,7 +1045,7 @@ router.get("/admin/ai-costs", authMiddleware, requireRole(...ADMIN_ROLES), async
         .groupBy(aiGenerations.kind)
         .orderBy(desc(sql`4`)),
       db
-        .select({ model: aiGenerations.model, calls, costUsd, promptTokens, completionTokens })
+        .select({ model: aiGenerations.model, calls, costUsd, promptTokens, completionTokens, cachedPromptTokens })
         .from(aiGenerations)
         .where(where)
         .groupBy(aiGenerations.model)
