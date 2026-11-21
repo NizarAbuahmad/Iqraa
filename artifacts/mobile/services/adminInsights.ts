@@ -103,7 +103,8 @@ const AREA_NAMES: Record<UsageArea, [string, string]> = {
   'gen-activity': ['مولّد النشاط', 'Activity generator'],
   'gen-slides': ['مولّد العروض', 'Slides generator'],
   'gen-other': ['أدوات أخرى', 'Other tools'],
-  'classroom': ['وضع الصف والسبورة', 'Classroom & whiteboard'],
+  // Held the whiteboard's minutes too until 2026-11-20, when `whiteboard` became its own area.
+  'classroom': ['وضع الصف', 'Classroom mode'],
   'chat': ['المساعد «إقرأ»', 'Iqrra assistant chat'],
   'curriculum': ['المنهاج', 'Curriculum'],
   'corner-math': ['ركن الرياضيات', 'Math corner'],
@@ -123,6 +124,7 @@ const AREA_NAMES: Record<UsageArea, [string, string]> = {
   'profile': ['الملف الشخصي والإعدادات', 'Profile & settings'],
   'admin': ['لوحة الإدارة', 'Admin'],
   'other': ['أخرى', 'Other'],
+  'whiteboard': ['السبورة', 'Whiteboard'],
 };
 
 /** A usage area's name; an area this build does not know is shown as is. */

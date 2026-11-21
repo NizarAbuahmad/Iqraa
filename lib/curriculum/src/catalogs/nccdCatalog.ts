@@ -80,6 +80,12 @@ export type NccdKbUnit = {
   order: number;
   titleAr: string;
   titleEn: string;
+  /**
+   * The unit's own theme («الفكرة العامة»), when the book prints one. A title
+   * alone does not say what a unit is about: «Let's Explore!» is a SPACE unit,
+   * and a model given only the title wrote about explorers and compasses.
+   */
+  generalIdea?: string;
 };
 
 export type NccdKbLesson = {
@@ -180,6 +186,7 @@ export function makeNccdCatalog(opts: {
       order: u.number,
       titleAr: u.title_ar,
       titleEn: u.title_en,
+      ...(u.general_idea_ar?.trim() ? { generalIdea: u.general_idea_ar.trim() } : {}),
     }));
 
     const lessons: NccdKbLesson[] = [];

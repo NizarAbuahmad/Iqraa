@@ -58,6 +58,7 @@ import { SendWorksheetSheet } from '@/components/ui/SendWorksheetSheet';
 import { Image } from 'expo-image';
 import { questionRefersToFigure } from '@/services/questionFigures';
 import { GeneratorResultActions, GeneratorSaveBar } from '@/components/ui/GeneratorResultActions';
+import { AiFallbackNotice } from '@/components/ui/AiFallbackNotice';
 import { isolateForeignRuns, prettifySymPy } from '@/services/mathRender';
 import { buildWorksheetHTML, buildWorksheetSlidesHTML, formatWorksheetText } from '@/services/share';
 import { EditableText } from '@/components/ui/Editable';
@@ -637,14 +638,19 @@ export default function WorksheetScreen() {
     // over a material that no longer existed and the work was never saved
     // again. Folding the call into the condition makes a failed update fall
     // through to creating a fresh one, which is what pressing Save meant.
+    let id: string;
     if (savedId && (await updateItem(savedId, payload))) {
+      id = savedId;
       setSaveLabel('updated');
     } else {
       const saved = await saveItem({ type: 'worksheet', ...payload });
+      id = saved.id;
       setSavedId(saved.id);
       setSaveLabel('saved');
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // The id «مشاركة رابط» shares (useGeneratorExport's `ensureSaved`).
+    return id;
   };
 
   /** Marks the paper dirty and drops the verified badge at this position. */
@@ -762,7 +768,7 @@ export default function WorksheetScreen() {
 
   const {
     getExportFigures,
-    handleShareText,
+    handleShareLink,
     handleCopy,
     handlePDF,
     handleWord,
@@ -784,6 +790,7 @@ export default function WorksheetScreen() {
     buildSlidesHTML: (ws, title, meta, isAr, figures) => buildWorksheetSlidesHTML(ws, title, meta, isAr, figures, exportWithKey),
     onError: key => showToast(t(key)),
     onCopied: key => showToast(t(key)),
+    ensureSaved: handleSave,
   });
   /** What a question can be given — the lesson's own book figures, every one of them. */
   const lessonFigures: QuestionFigure[] = result ? getExportFigures() : [];
@@ -1012,6 +1019,9 @@ export default function WorksheetScreen() {
       {/* Grounding status — never present ungrounded output as curriculum-backed */}
       {/* What the material is anchored to. Shown both ways: a teacher needs
           to know it IS tied to the lesson as much as when it isn't. */}
+      {/* Above everything else in the result: when it is the offline sample,
+          the teacher reads that before reading the content. */}
+      {result && !loading && <AiFallbackNotice kinds={['worksheet', 'homework']} onRetry={() => generate()} isRTL={isRTL} />}
       {result && curriculumGrounded !== null && (
         <View style={{ marginHorizontal: 20 }}>
           <GroundingNotice
@@ -1454,7 +1464,7 @@ export default function WorksheetScreen() {
     <ExportMenu
       visible={showExport}
       onClose={() => setShowExport(false)}
-      onShare={handleShareText}
+      onShare={handleShareLink}
       onCopy={handleCopy}
       onPDF={handlePDF}
       onWord={handleWord}

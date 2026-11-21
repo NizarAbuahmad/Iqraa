@@ -560,7 +560,7 @@ function ResultCard({
             </Pressable>
             <Pressable onPress={onShare} hitSlop={8} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="share-outline" size={16} color={ACCENT} />
-              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('exportShare')}</Text>
+              <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_500Medium', fontSize: 13 }}>{t('exportShareText')}</Text>
             </Pressable>
           </View>
         </View>

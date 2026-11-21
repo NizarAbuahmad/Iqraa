@@ -39,6 +39,47 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
+    id: 'chat-stays-on-topic',
+    date: '2026-11-21',
+    roles: ['teacher'],
+    titleKey: 'whatsNewChatOnTopicTitle',
+    bodyKey: 'whatsNewChatOnTopicBody',
+    route: '/iqra',
+  },
+  {
+    id: 'whiteboard-redo-colours',
+    date: '2026-11-21',
+    roles: ['teacher'],
+    titleKey: 'whatsNewBoardRedoTitle',
+    bodyKey: 'whatsNewBoardRedoBody',
+    route: '/ai-tools/whiteboard',
+  },
+  {
+    id: 'whiteboard-in-tools',
+    date: '2026-11-20',
+    roles: ['teacher'],
+    titleKey: 'whatsNewWhiteboardTitle',
+    bodyKey: 'whatsNewWhiteboardBody',
+    route: '/ai-tools/whiteboard',
+    toolId: 'whiteboard',
+  },
+  {
+    id: 'chat-free-topic-material',
+    date: '2026-11-20',
+    roles: ['teacher'],
+    titleKey: 'whatsNewChatFreeTopicTitle',
+    bodyKey: 'whatsNewChatFreeTopicBody',
+    route: '/iqra',
+  },
+  {
+    id: 'material-share-link',
+    date: '2026-11-20',
+    roles: ['teacher'],
+    titleKey: 'whatsNewShareLinkTitle',
+    bodyKey: 'whatsNewShareLinkBody',
+    route: '/ai-tools/lesson-plan',
+  },
+  {
     id: 'worksheet-export-key-logo',
     date: '2026-11-20',
     roles: ['teacher'],

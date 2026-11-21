@@ -12,7 +12,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { brandLockupSvg } from '../brandLockup.ts';
+import { PDF_LOCKUP_WIDTH, brandLockupSvg } from '../brandLockup.ts';
 import {
   buildActivityHTML,
   buildActivitySlidesHTML,
@@ -624,7 +624,7 @@ describe('worksheet formats', () => {
     const html = buildWorksheetHTML(formatted(), 'ورقة', meta, true, [], false);
     assert.ok(!html.includes(FIX) && !html.includes(WHY));
     // The header's logo is drawn with paths too; the paper below it must have none.
-    const paper = html.replace(brandLockupSvg(78), '');
+    const paper = html.replace(brandLockupSvg(PDF_LOCKUP_WIDTH), '');
     assert.notEqual(paper, html, 'the logo is in the header');
     assert.ok(!/<polyline|<path/.test(paper));
     assert.ok(paper.includes('<svg'), 'the empty grid is there');
