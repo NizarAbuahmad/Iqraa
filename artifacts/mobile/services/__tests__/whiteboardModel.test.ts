@@ -15,6 +15,7 @@ import {
   addPage,
   blankPage,
   axesGeometry,
+  canRedo,
   canUndo,
   clearBoard,
   commitStrokes,
@@ -30,6 +31,7 @@ import {
   hasInk,
   localizeDigits,
   parsePoints,
+  redoBoard,
   removePage,
   strokeHit,
   undoBoard,
@@ -179,6 +181,69 @@ describe('board state', () => {
     for (let i = 0; i < HISTORY_LIMIT; i++) s = undoBoard(s);
     assert.equal(s.strokes.length, total - HISTORY_LIMIT);
     assert.equal(undoBoard(s), s);
+  });
+
+  it('has nothing to redo until something is undone', () => {
+    assert.equal(canRedo(EMPTY_BOARD), false);
+    const s = commitStrokes(EMPTY_BOARD, [a]);
+    assert.equal(canRedo(s), false);
+    assert.equal(redoBoard(s), s);
+  });
+
+  it('redoes what was undone, in order, then stops', () => {
+    let s: BoardState = commitStrokes(EMPTY_BOARD, [a]);
+    s = commitStrokes(s, [a, b]);
+    s = undoBoard(undoBoard(s));
+    assert.deepEqual(s.strokes, []);
+    assert.equal(canRedo(s), true);
+    s = redoBoard(s);
+    assert.deepEqual(s.strokes, [a]);
+    s = redoBoard(s);
+    assert.deepEqual(s.strokes, [a, b]);
+    assert.equal(canRedo(s), false);
+    assert.equal(redoBoard(s), s);
+    // And undo walks back through the same two steps.
+    assert.deepEqual(undoBoard(s).strokes, [a]);
+  });
+
+  it('drops the redo list when something new is drawn after an undo', () => {
+    let s: BoardState = commitStrokes(EMPTY_BOARD, [a]);
+    s = commitStrokes(s, [a, b]);
+    s = undoBoard(s);
+    assert.equal(canRedo(s), true);
+    s = commitStrokes(s, [a, line('4,4 5,5')]);
+    assert.equal(canRedo(s), false);
+    assert.equal(s.future.length, 0);
+  });
+
+  it('can redo a clear, and an erase, because both are commits', () => {
+    const s = commitStrokes(EMPTY_BOARD, [a, b]);
+    const cleared = clearBoard(s);
+    assert.deepEqual(redoBoard(undoBoard(cleared)).strokes, []);
+    const erased = commitStrokes(s, eraseAt(s.strokes, 0, 0, 3));
+    assert.notEqual(erased, s);
+    assert.deepEqual(redoBoard(undoBoard(erased)).strokes, erased.strokes);
+  });
+
+  it('keeps undo and redo within HISTORY_LIMIT in total', () => {
+    let s: BoardState = EMPTY_BOARD;
+    for (let i = 1; i <= HISTORY_LIMIT + 10; i++) s = commitStrokes(s, Array.from({ length: i }, () => a));
+    for (let i = 0; i < HISTORY_LIMIT; i++) s = undoBoard(s);
+    assert.equal(s.future.length, HISTORY_LIMIT);
+    assert.equal(s.past.length, 0);
+    for (let i = 0; i < HISTORY_LIMIT; i++) s = redoBoard(s);
+    assert.equal(s.strokes.length, HISTORY_LIMIT + 10);
+    assert.equal(canRedo(s), false);
+  });
+
+  it('keeps redo per page: it is on the board state, not the document', () => {
+    let d: BoardDoc = EMPTY_DOC;
+    d = updateCurrent(d, p => ({ ...p, board: commitStrokes(p.board, [a]) }));
+    d = updateCurrent(d, p => ({ ...p, board: undoBoard(p.board) }));
+    assert.equal(canRedo(currentPage(d).board), true);
+    const moved = addPage(d);
+    assert.equal(canRedo(currentPage(moved).board), false);
+    assert.equal(canRedo(moved.pages[0]!.board), true);
   });
 });
 

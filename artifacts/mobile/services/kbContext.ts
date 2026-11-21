@@ -81,6 +81,22 @@ export function curriculumObjectivesFor(lesson: KBLesson): string[] {
   return lesson.objectives?.length ? lesson.objectives : [];
 }
 
+/**
+ * One line saying what the lesson's UNIT is about, from the book's own
+ * «الفكرة العامة». A unit title is not a topic: «Let's Explore!» is a space
+ * unit (planets, rockets, big numbers), and with only the title and a grammar
+ * point the model wrote a quiz about explorers and compasses, which a teacher
+ * reported as not matching the lesson. '' when the book prints no theme.
+ */
+export function unitThemeLine(generalIdea: string | undefined, isAr: boolean): string {
+  const idea = generalIdea?.trim();
+  if (!idea) return '';
+  const cut = idea.length > 240 ? `${idea.slice(0, 237)}…` : idea;
+  return isAr
+    ? `موضوع الوحدة (التزم به، ولا تخرج عنه): ${cut}`
+    : `Unit theme (stay on it; do not drift to other meanings of the unit title): ${cut}`;
+}
+
 function serializeLessonContext(
   lesson: KBLesson,
   lang: 'ar' | 'en',
@@ -163,6 +179,8 @@ function serializeLessonContext(
       unitSelfAssessment.forEach(o => lines.push(`• ${o}`));
     }
   }
+  const theme = unitThemeLine(getUnitForLesson(lesson)?.generalIdea, isAr);
+  if (theme) lines.push('', theme);
 
   if (vocabulary.length > 0) {
     lines.push('');
@@ -504,6 +522,30 @@ export function isConfidentSingleSubjectHit(ranked: KBScoredLesson[]): boolean {
     r.score >= KB_SUGGEST_SCORE
     && getBookForLesson(r.lesson)?.subjectId !== topSubject,
   );
+}
+
+/**
+ * Whether this message's own search points at `lessonId`: it scored at least
+ * `KB_SUGGEST_SCORE`, and no confident hit names a different lesson. A shared
+ * word is not support — «أمثلة على الاقتران العكسي» scores «تركيب الاقترانات» on
+ * «الاقترانات», but the confident answer is «الاقتران العكسي».
+ */
+export function searchSupportsLesson(ranked: KBScoredLesson[], lessonId: string | null | undefined): boolean {
+  if (!lessonId) return false;
+  const own = ranked.find(r => r.lesson.id === lessonId);
+  if (!own || own.score < KB_SUGGEST_SCORE) return false;
+  return ranked[0]!.lesson.id === lessonId || !isConfidentSingleSubjectHit(ranked);
+}
+
+/**
+ * Whether this message's own search points somewhere other than `lessonId`:
+ * its top hit clears `KB_SUGGEST_SCORE` and the lesson is not supported. Used to
+ * tell a follow-up («أضف نشاطاً») from a new question that happens to say «أضف».
+ */
+export function searchPointsElsewhere(ranked: KBScoredLesson[], lessonId: string | null | undefined): boolean {
+  const top = ranked[0];
+  if (!top || top.score < KB_SUGGEST_SCORE) return false;
+  return !searchSupportsLesson(ranked, lessonId);
 }
 
 /** Another subject within this share of the top score makes the hit a shared word. */

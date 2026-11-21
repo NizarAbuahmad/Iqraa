@@ -38,7 +38,7 @@ Follow-up to «المسار كاملًا» below. That one changed `TopicSelecto
 **What changed:** a «الكتاب كاملًا (كل الدروس)» row heads the lesson list whenever a book has more than one lesson. It ticks every objective of the book; tapped again with everything ticked, it clears them. It works on every book, not only the tracks.
 - The logic is `toggleEverything` / `isEverythingSelected` in `services/objectiveLessons.ts`.
 - The server needed no change. `POST /evaluations` already takes any number of objectives, provided they all belong to the chosen book (`objectivesAreWithinBook`).
-- The track's «ما الجديد» entry (`g10-english-whole-track`, not shipped yet) now also tells teachers how to do it for an exam. Its date moved to 2026-11-20.
+- The track's «ما الجديد» entry (`g10-english-whole-track`, not shipped yet) now also tells teachers how to do it for an exam. Its date, and that of `g10-exams-humanities-pe`, moved to 2026-11-21, the day of the last merge from `main`.
 
 **Test:** `evaluationWholeBook.test.ts`, which failed before the helpers existed.
 - For each of the four track books, select-all ticks all of its objectives, and `objectivesAreWithinBook` accepts the ids.
@@ -311,6 +311,516 @@ First fix from a Grade 10 review covering coverage, results and book images, acr
 - the vocational-English tracks mixed into the English unit picker;
 - the 2026 maths lesson «حل معادلات خاصة» missing from the catalog;
 - the vocational books: Part 2 on file is the Grade 9 book.
+## A 1.6.0 production build sent to Google Play for review — 2026-11-21
+
+After the chat fix (#1527) merged, the owner asked for a 1.6.0 production build and for it to go to Play for review.
+
+- **Build.** Mobile Android build run 11 (`profile: production`) from `main` at `de31781`: EAS build
+  `735f7858-a355-486c-be10-5c4bf999b62c`, version 1.6.0, versionCode 15 (EAS took the next code itself,
+  `appVersionSource: "remote"`), status `FINISHED` with an `.aab`.
+- **Submit.** Mobile Android submit to Play run 4, `send_for_review: true` (submit profile `production-review`):
+  the build check, the upload and the key deletion all passed. This sends the release for review at once, so any
+  store-listing edit drafted in Play Console did not go with it.
+- **OTA.** The same commit was published to the `production` update channel by hand (Mobile OTA update run 1201).
+- **STATUS.md** «Mobile» no longer says the installed binary is 1.5.0: 1.6.0 production builds have existed since
+  2026-11-13 (versionCode 12) and were submitted on 2026-11-14 (submit runs 2–3), which that line had not caught up with.
+
+**Not verified:** Google's review result and the rollout, and which version is installed on any user's phone.
+
+## Chat answers the topic asked about; the picked lesson stays put — 2026-11-21
+
+**Reported:** «chat when the user asks for a specific topic it keeps changing… is that because of the topic selected
+on top of the app», after several earlier fixes («Fixed 2026-08-13 — changing the lesson mid-chat didn't take»,
+«The chat answers before it asks…», «The chat answers teachers, on the web too», «Chat builds material on a topic the
+curriculum does not have»). Each of those patched one path; the two causes below were left.
+
+**Cause 1: a picked lesson was a leash.** A lesson picked from the top bar or the change-lesson sheet is pinned
+`hard`, and `shouldReuseActiveLesson` reused a hard pin for every teaching question the keyword search was not
+*confident* about. Confidence is a property of the search, not of the question. Measured with the app's own functions
+and «تركيب الاقترانات» picked: «اشرح لي المتجهات» (vectors 35.5, not a confident single-subject hit), «ما هي الدالة
+الأسية», «اشرح لي المصفوفات», «سؤال عن الجذور», «كيف أدير صفًا مزعجًا؟» and «اختبار قصير عن الاحتمالات» all went
+to the model with «تركيب الاقترانات» as the textbook («استخدمه أساسًا لإجابتك»). A soft (restored) pin did not do
+this, so it hit exactly the teachers who had picked a lesson.
+
+**Cause 2: two lessons in one field.** A confident hit on another lesson hard-pinned it as the chat's lesson
+(`pendingHardPin`, and the offline assistant's `memoryPatch`). The chat's card moved; the top bar, Today and the
+sidebar card (which read the saved pick) did not. Every later question was then pulled to the new lesson by cause 1.
+
+**What changed.**
+- **`activeLessonReuse`** (`services/lessonCopilot.ts`; `shouldReuseActiveLesson` wraps it) returns `ground`,
+  `background` or `none`. A lesson grounds a turn only when the message names no topic of its own (a bare ask, a
+  refinement, a short follow-up) or the message's own search points at it (`searchSupportsLesson`,
+  `services/kbContext.ts`: scored ≥ `KB_SUGGEST_SCORE` and no confident hit names another lesson). Pin strength no
+  longer overrides a message that names a topic. `background` is a lesson the teacher picked plus words nothing in
+  the curriculum matches («كيف أبدأ الحصة», «كيف أدير صفًا مزعجًا؟»): the live model gets the existing «اربط إجابتك به
+  فقط إن كان السؤال عنه» line and no textbook block, and the offline assistant, which has no model, still answers from
+  the lesson. «أضف…» counts as a follow-up only when the search does not point elsewhere («اشرح المتجهات وأضف أمثلة»
+  names its topic).
+- **The selected lesson and the conversation's lesson are kept apart** (`services/chatLessonFocus.ts`,
+  `ChatSessionMemory.conversation`). `sendMessage` reads `conversationView(sessionMemory)` and writes every update
+  through `commitConversation`, so a question about another lesson moves the conversation (follow-ups use it) and
+  never the card. A question on a topic of its own that grounded on no lesson takes the conversation off the
+  lesson it was on (`leavesLesson`): «اشرح لي المتجهات» (not a confident hit) and then «أعطني أمثلة عليه» used to be
+  about the card's lesson. The selected lesson changes only through the sheet (which also saves the app-wide pick),
+  a deep link from a lesson, or «إلغاء التثبيت»; `pinLesson` and a free-topic pick in the sheet reset the
+  conversation. «خلينا نتكلم عن…» leaves the lesson for the conversation only and no longer clears `teachingCtx`.
+  While the conversation is on another lesson, what it makes (`generatedResources`, `discussedArtifacts`,
+  `lastGeneratedResource`, the prep fields) is kept on `conversation.record`, so it does not tick the card's lesson
+  or turn a starter chip («اجعل الاختبار أصعب») onto another lesson's quiz. Chips under a reply act on the reply's
+  lesson; the card's buttons, the starter chips and the «+» menu act on the card's. `background` is only for the
+  lesson the teacher picked, never one the conversation moved to (the prompt calls it «الدرس المختار في التطبيق»).
+  A lesson the teacher cleared, or the conversation left, is picked up again by a confident hit on it.
+- **A pointer is not a topic** (`topicFromQuery`, `services/ai/artifactTopic.ts`). «ورقة عمل عليه» returned the topic
+  «عليه»: a worksheet titled «عليه», built as a free topic. «أعطني أمثلة عليه» searched «عليه», which matches «موسى
+  عليه السلام» (Islamic education, 12), read as another subject and dropped the lesson. A topic made only of pointer
+  words («عليه», «عنها», «أكثر», «آخر», «إضافية», "more", "it") and follow-up nouns («أمثلة», «مثال», «تمارين», «حل»)
+  is now `''`, like «هذا الدرس» already was; one that also names something («اشرح المتجهات أكثر», «quiz on IT») is
+  unchanged. Such a
+  message is a bare follow-up in the gate and gets the conversation's lesson alone (`withActiveLesson`).
+- A bare ask for material ignores the KB-subject guard, as a bare teach ask already did: «ورقة عمل» ranks English
+  «طرق العمل» at 38, which used to drop even a picked lesson.
+- «ما الجديد»: `chat-stays-on-topic` (teachers, `/iqra`).
+
+**Verified.**
+- Tests written first and watched failing: `lessonPinGate.test.ts` (the measured questions above on the real KB:
+  `none` for a named other topic, `background` for unmatched words under a picked lesson and `none` under a restored
+  one, `ground` for a question about the lesson, a bare ask and a follow-up, including «أعطني أمثلة عليه» with the
+  conversation on «قانون جيب التمام»), `chatLessonFocus.test.ts` (8 cases: the card keeps the pick, the conversation
+  follows, returning clears it, a switch, a cleared lesson, preparation, re-picking), `artifactTopic.test.ts`
+  (pointer-only topics, and named topics that keep their name). The older gate suites (`teachMeAsk`,
+  `gradeDetection`, `topicSwitch`, `subjectDetection`) pass unchanged. `pnpm run typecheck`; mobile `pnpm test`
+  (after the review fixes: 9,540 tests, 9,530 pass, 0 fail, 10 skipped).
+- **In a browser:** a live-mode web build (`EXPO_PUBLIC_DEMO_MODE=false`), desktop 1366×860, every `/api` call stubbed
+  and each `/chat` body captured. «تركيب الاقترانات» picked by deep link, then: «اشرح لي المتجهات» → no lesson in the
+  context (before: «تركيب الاقترانات» as the textbook); «كيف أدير صفًا مزعجًا؟» → the «only if» line naming it, no
+  textbook; «اشرح قانون جيب التمام» → grounded on it; «أعطني أمثلة عليه» and «حل مثال عليه» → «قانون جيب التمام»;
+  «ما هي الدالة الأسية» → no lesson. After all of it, the chat card and the sidebar's «الدرس الحالي» both still read
+  «تركيب الاقترانات».
+- **A code review** (a separate reviewer agent, given the goal and the diff) found, on the pure functions: the
+  two-turn case above, material made on the conversation's lesson ticking the card's, the starter chips refining
+  another lesson's quiz, `background` applied to a lesson the teacher never picked, a cleared lesson losing the
+  conversation, a free-topic pick in the sheet keeping the old conversation, and «IT» read as "it". Each is fixed
+  and has a test (`chatLessonFocus.test.ts` «review findings», `leavesLesson`, `lessonPinGate.test.ts`, «IT» in
+  `artifactTopic.test.ts`). The browser pass was rerun after the fixes, now with «اشرح لي المتجهات» → «أعطني أمثلة عليه»
+  (no lesson in the context, where the first version sent «تركيب الاقترانات») and «كيف أدير صفًا مزعجًا؟» while the
+  conversation was on «قانون جيب التمام» (no lesson, not «background» on a lesson the teacher never picked).
+
+**Not verified / left.**
+- No live model answered: the replies were stubbed. Whether a model given no textbook answers «اشرح لي المتجهات»
+  from the curriculum's angle is not measured. The vectors lesson scores 35.5 but is not sent, because
+  `liveChatGrounding` does not trust a top hit with another subject within half its score; that rule is unchanged.
+- Not driven on a phone or in demo mode. In demo mode a teaching question the search cannot place no longer gets the
+  picked lesson unless it is `background` (picked + nothing matched), so the offline assistant answers fewer
+  "elsewhere" questions from the card's lesson, by design.
+- `classifyChatIntent` reads «أمثلة أكثر» as ambiguous and asks to clarify; not changed here.
+
+## The quiz request tells the API when no lesson grounds the topic — 2026-11-21
+
+Found while moving the quiz request into `buildQuizRequest` («Pool prefill: a default-form quiz per Grade 10 lesson»):
+the quiz screen built its body from four of `groundingRequestFields`' five fields and dropped `grounding: 'none'`, so
+it never sent the marker that «The API no longer attaches a book to a topic the app found no lesson for» (2026-11-20)
+gave every other generator. A quiz for a topic no lesson in the picked grade and subject covers (a free topic from
+chat, a title only another grade has) could therefore still get another lesson's book pages from the API, which
+matches the title across the whole catalog when the request carries no unit.
+
+**Changed.** `buildQuizRequest` now passes `grounding: 'none'` through when the lesson grounding says no lesson grounds
+the topic, and only then. A grounded body is exactly what it was, so **every pooled quiz key, and every quiz the prefill
+plans, is unchanged**; the requests that change are the ungrounded ones, whose prompt loses the wrong book pages (their
+pool key moves with it: the server keys on the body after grounding). A wide scope (unit, semester, book) still takes
+its `grounding` from `scopeRequestFields`, spread over the builder last.
+
+**Verified.** `generatorRequests.test.ts`: the quiz joined the existing «every builder adds it when ungrounded, and only
+then» test, which failed first (the quiz returned no marker for the free topic and, in the same test, a grounded quiz
+gains no field), and a wide scope (null grounding) sets none itself. Related suites (`pregenerate`, `generatorScreens`) and
+`pnpm run typecheck`; mobile `pnpm test`.
+
+**Not verified.** A live quiz for a free topic (the API side was not exercised: it is the 2026-11-20 change, whose own
+note says no model call was made), and the quiz screen in a browser.
+
+## Pool prefill: a default-form quiz per Grade 10 lesson — 2026-11-21
+
+`scripts/pregenerate.ts` now plans a quiz for every Grade 10 maths and chemistry lesson beside the worksheet and the
+lesson plan: a dry run reads **204 calls** (51 each of worksheet, lesson plan, quiz and student explanation), worst case
+$10.20 at the script's $0.05-a-call estimate. A quiz is stored under the quiz screen's defaults: «عادي» (easy),
+20 minutes, 20 marks, 10 questions, multiple choice + true/false + short answer.
+
+**Why a refactor came with it.** The quiz screen spelled its request out inline, so a script could not send the same
+body, and the pool only answers a body that hashes the same. The request is now `buildQuizRequest`
+(`services/generatorRequests.ts`), called by the screen (the wide scope's fields still spread over it, last) and by the
+script, like the worksheet, lesson plan and activity. `quiz.tsx` lost its inline literal and two imports.
+
+**Verified.** `generatorRequests.test.ts` (the builder: form, trimmed topic, every lesson field from the one grounding,
+no lesson fields for a wide scope, regenerate) and `pregenerate.test.ts` (a quiz per lesson in both subjects, one per
+lesson id, the defaults above; and a source guard that the screen calls `buildQuizRequest` and that its initial indices
+are the ones the prefill assumes) failed first, then passed. **The screen's request is unchanged:** a throwaway test
+rebuilt the old inline body from the previous `quiz.tsx` and compared it with the builder's over 137 lessons (all of
+Grade 10 maths and chemistry plus every 40th lesson), both languages, regenerate on and off, grounded and wide:
+1,096 bodies, all identical on the wire. Not kept, because it would only compare the builder with a copy of
+itself. `pnpm run typecheck`; mobile `pnpm test` 9,486 pass, 0 fail.
+
+**Running it.** Production writes quizzes with Claude Sonnet 5.5 (`AI_MODEL_DOCUMENTS=claude-sonnet-5-5`), so a
+quiz is about $0.05 and the 51 about $2.60; rotate the Anthropic key first (the one in use expires 2026-11-22): with a dead
+key a run falls back to OpenAI and fills the pool under that model's key, where Claude's teachers never look.
+
+**Not verified.** The quiz screen on a device or in a browser (the request is identical, but the file changed); a
+live run of the quiz prefill; that a teacher's default quiz then hits the pool; the quality of the stored quizzes
+(each is served to every teacher who asks, answer key included: read a few after a run).
+
+**Found, left alone (fixed the same day: «The quiz request tells the API when no lesson grounds the topic»).** `groundingRequestFields` can add `grounding: 'none'` (no lesson grounds the topic: the API then
+must not attach a book by title). The quiz screen never sent it: it copies four of the helper's fields and drops that
+one, so a quiz for a topic no lesson covers can still get another lesson's book pages from the API. The builder keeps
+that behaviour, since the refactor was not meant to change a request. A one-line fix would add `...noLessonField(...)`
+to the builder; it changes the pool key of those requests, so it is its own change.
+
+## Production runs Claude for documents (STATUS.md said it did not); a dead key now switches provider — 2026-11-21
+
+`STATUS.md` «Live config» said `AI_MODEL_DOCUMENTS` was **unset**, while the 2026-11-03 entry
+(«lesson-teaching now runs on the documents model») said Claude Sonnet 5.5 ran in production. An
+Anthropic Console email that a key expires on 2026-11-22 raised the question of which was true.
+
+**Verified.** The owner read the live service in Cloud Shell on 2026-11-21:
+`gcloud run services describe iqraa-api … --format="value(spec.template.spec.containers[0].env)"` shows
+`AI_MODEL_DOCUMENTS=claude-sonnet-5-5` and `ANTHROPIC_API_KEY` as a `secretKeyRef` (`latest`). So lesson plans,
+worksheets, quizzes, slide decks and `lesson-teaching` (`DOCUMENT_KINDS` in `aiBudget.ts`) go to Claude. Chat,
+evaluations, grading, homework, activities and infographics stay on OpenAI.
+
+**Not verified.** Whether the expiring key («Agents test») is the one in the `ANTHROPIC_API_KEY` secret, and the
+date `AI_MODEL_DOCUMENTS` was set.
+
+**The gap this closes.** `usableModel` (`lib/aiBudget.ts`) skips Claude only when `ANTHROPIC_API_KEY` is
+*unset*. A key that was set but expired, revoked or on an empty balance was used anyway, and every one of those
+five kinds answered with the generation error until the secret had a new version — and the same held the other
+way for OpenAI's own empty balance.
+
+**Changed.**
+
+- `lib/providerFallback.ts` (new): `isProviderAccountError` — 401, 402, 403, 404, OpenAI's 429
+  `insufficient_quota`, Anthropic's 400 «credit balance», and `ClaudeNotConfiguredError`; **not** a plain 429,
+  5xx, 529, a refusal or a malformed reply, which the other provider would not fix and which would double the
+  spend on busy days. `fallbackModelFor` — Claude is backed by `getGenerationModel()`; OpenAI by
+  `AI_MODEL_DOCUMENTS` when that is a Claude id and the key is set, so no new variable. `withProviderFallback`
+  switches once, never back, and logs «AI provider refused the account — answering with the other provider» at
+  error level.
+- `routes/generate.ts`: `generateContent` resolves the model and runs the pooled flow (now
+  `generateContentWith`) through `withProviderFallback`. The whole flow re-runs under the backup's model, so the
+  pool is read and the artifact stored under the backup's key — a fallback artifact never poses as the other
+  model's — and the caps are asked again for the call actually made. That covers every `/generate/*` kind that
+  goes through it: the five document kinds, homework, activities and the rest.
+- `scripts/provider-eval.ts`: prices for `claude-sonnet-5-5` ($2/$10) and `claude-haiku-5-5` ($0.10/$0.50), so a
+  run against them reports cost.
+
+**Verified.** `providerFallback.test.ts`, 14 tests: which errors switch and which do not, the model each side
+falls back to, one switch and never back, the original error rethrown when there is no backup, and that
+`generateContent` still calls `withProviderFallback`. api-server 3017 / 3017 after `pnpm build`; typecheck clean.
+
+**Not verified.** No request has been made against a real expired key or an empty balance: the error shapes are
+the SDKs' documented `status` / `code`, not ones captured from production. Not covered: chat (streaming), the
+exam generator and grading (`evaluations.ts`, `attempts.ts`), `siteAsk`, the verified-derivative path and `solve`,
+which call the OpenAI client directly — an empty OpenAI balance still fails those. The backup writes in another
+model's voice; the quality of OpenAI-written documents is the 2026-10-23 comparison's (it lost 14 of 16).
+
+**Found while rotating (same day): a trailing comma failed a whole lesson plan.** With the old key back, Claude
+answered but `/generate/lesson-plan` returned 500, logged «Expected double-quoted property name in JSON at position
+3844 (line 33 column 5)»: a comma before a closing brace. `parseRepairing` (`lib/generationShape.ts`) already doubled
+stray backslashes after a failed strict parse; it now also drops a comma that stands right before `}` or `]` outside a
+string (`dropTrailingCommas`, which tracks strings and escapes, so a «, }» in the text is kept). Valid JSON is still
+parsed untouched. Four tests in `generationShape.test.ts`, three of which failed first. Not verified against the actual
+reply, which is not logged; only its error message and position were. Also on the way: the first new key saved
+(secret version 3) was rejected with `401 invalid x-api-key`, so the service was pinned back to version 2.
+
+Rotating the key is still the fix; the fallback only keeps the screens working meanwhile. Rotation is
+`gcloud secrets versions add ANTHROPIC_API_KEY` plus `gcloud run services update iqraa-api
+--update-secrets=ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest`; the instant rollback is
+`--remove-env-vars=AI_MODEL_DOCUMENTS`.
+
+## `earlyMathDifficulty.test.ts` draws the same papers on every run — 2026-11-21
+
+**Why.** The mobile suite failed once on CI (and once on a first local run, not captured) on a change that did not
+touch it: «Grade 2 … most lessons are clearly harder at «صعب», with «متوسط» between», the lesson «السنتيمتر» in the
+out-of-order list. The test draws 12 random five-question papers per lesson and checks means against fixed bounds
+(medium within 5% of the range between easy and hard), with `Math.random` unseeded, so a lesson with little spread
+lands outside them on an unlucky draw.
+
+**Measured.** The same test with 84 different seeds: **1 failed (seed 51), with the same lesson and the same
+assertion as CI**, and 83 passed. So about one run in eighty fails, on code that has not changed.
+
+**Changed.** The file seeds `Math.random` (mulberry32, the generator `classroomWideScope.test.ts` already uses) while
+its suites are defined, which is where the papers are drawn, and restores it afterwards. `SEED` is fixed at
+`0x2f6e2b1`. Nothing else in the test or in the generators changed.
+
+**Verified.** The same seed run twice gives an identical fingerprint of every mean drawn (the seeding really covers
+the draws); seed 51 fails both times it is run, so the failure is now reproducible rather than occasional; the
+committed seed passes (8 of 8); `pnpm run typecheck`.
+
+**Not verified / the catch.** A seed is one fixed set of draws, not a statement about every draw: the lesson that
+failed sits close to a bound, and a change to a Grade 1–4 generator can move another one across it. That now shows as a
+failure to read (the message names the lesson), not as a flake. Do not respond by changing `SEED` until it passes. The
+bounds were set from unseeded runs and were not revisited.
+
+## Pool prefill: Grade 10 chemistry worksheets and lesson plans — 2026-11-21
+
+`artifacts/mobile/scripts/pregenerate.ts` filled the shared pool with default-form worksheets and lesson plans
+for Grade 10 **maths** only; chemistry had student explanations and nothing else, so a chemistry teacher's first
+request for a lesson always paid for a model call. The script now plans both for Grade 10 chemistry too: one
+`SCOPES` list (maths, chemistry) feeds the worksheet, lesson-plan and lesson-teaching plans. A dry run reads
+**153 calls** (51 worksheets, 51 lesson plans, 51 explanations; it was 119), worst case $7.65 at the script's
+$0.05-a-call estimate. A call the pool already holds answers fast and is not counted, so a re-run costs only the new
+lessons.
+
+**Verified:** `pregenerate.test.ts` — the new test failed first («expected Chemistry worksheet calls, got 0»), then
+passed; it also pins one call per lesson id, and the existing default-form test now accepts both subjects. The
+screens' defaults (normal → `easy`, 10 questions, multiple choice + short answer, 45 minutes, direct) were read in
+`worksheet.tsx` and `lesson-plan.tsx`, not run. `pnpm run typecheck`.
+
+**Not verified:** a live run (none was made; it needs a login and spends money — command in the PR), that a
+teacher's chemistry request then hits the pool, or the quality of the stored chemistry worksheets: they are served to
+every teacher who asks, and nobody has read them. The per-account allowance (`AI_USER_BUDGET_USD`, reset to `1` by
+every API deploy) is what actually stops a run: give the dedicated account its own limit on the admin Users screen
+first. **Corrected 2026-11-21, same day:** this entry first said a call costs roughly $0.01 and that
+`AI_MODEL_DOCUMENTS` was still to be decided. Neither held: production already runs `AI_MODEL_DOCUMENTS=claude-sonnet-5-5`
+(«Production runs Claude for documents», above), so worksheets, lesson plans and quizzes are written by Claude Sonnet 5.5
+($2/$10 per million tokens, adaptive thinking), which is closer to the script's $0.05 a call than to $0.01. The run is
+**about $2.60 for each kind of 51**, so give the account at least $10. No «ما الجديد»: nothing a user sees changes.
+
+## Whiteboard: redo, four more pen colours, and a board from Today is filed under its lesson — 2026-11-21
+
+Follow-up to «The whiteboard has a card of its own…». Three things a teacher at the board meets.
+
+- **Redo.** `BoardState` gains `future` (`services/whiteboardModel.ts`): `undoBoard` pushes the strokes it
+  leaves onto it, `redoBoard` takes them back, and any commit that changes the board (a stroke, an erase, a
+  clear) empties it, so drawing after an undo discards what was undone. History is per page, as undo was, and
+  undo plus redo together stay within `HISTORY_LIMIT`. A saved board stores strokes only, so nothing in the file
+  changes. The toolbar has a Redo button beside Undo; a reopened board starts with no history either way.
+- **Pen colours.** The board offers seven: the three it had, in the same order, then blue `#2563EB`, green
+  `#15803D`, orange `#EA580C`, purple `#7C3AED` (`services/penColors.ts`, new and pure). The slide and book-page
+  pens stay at three. `penColors.test.ts` holds the board's set to at least 3:1 on the white paper and ΔE2000 10
+  between every pair, and round-trips a stroke in a new colour through save and reopen. `boardFile.ts` already
+  accepted any hex, so an older client opens a board drawn in the new colours.
+- **Filing.** A board opened from Today's quick tools or the Tools tab arrives with the lesson's `gradeIdx` and
+  `subjectIdx` and no names, and was saved with an empty grade and subject (the limit named in the previous
+  entry). `services/boardScope.ts` now resolves them to the picker names, the way the generator screens save;
+  the presentation's own names still win, an index the list cannot honour is absent (never index 0, which is
+  Mathematics), and a bare topic is filed under nothing, as before.
+
+Verified: `whiteboardModel.test.ts` (redo order, cleared by a new commit, redo of a clear and of an erase, the
+history bound, per page), `penColors.test.ts`, `boardScope.test.ts` (including a real lesson's positions and a
+chemistry lesson, which must not land on index 0), `boardFile` and `boardExportHtml` tests; mobile `pnpm test`
+(9,475 pass, 0 fail); `pnpm run typecheck`. In Chromium against a local API and Postgres, opening the board from
+Today's quick tools with a new teacher account: seven swatches; Redo disabled on a fresh board, enabled after two
+undos, and three strokes went to one and back to two; a stroke after an undo disabled Redo again; the saved
+row read subject «Mathematics», grade «Grade 10». The toolbar was looked at on desktop and at 390 px in Arabic.
+
+Not verified: touch input on a real phone or Android, and the keyboard (there is no Ctrl+Z / Ctrl+Y on the
+board; only the buttons). Known limits: undo and redo arrows are not mirrored in right-to-left, as undo never
+was; a board saved before this change keeps its empty grade and subject.
+
+## Cost review: cached input tokens are recorded, and a hidden tab stops polling — 2026-11-20
+
+From a review of what the app costs to run (OpenAI about three quarters of it, by the app's own estimate:
+$48.66 by 2026-11-20; Cloud Run and Neon about $10 each, both estimates). Two small changes, neither of which
+changes what a model is asked or what it answers.
+
+- **Cached input tokens are recorded.** OpenAI serves a repeated prompt prefix from its own cache and bills it
+  below the input rate; chat sends up to 24,000 characters of book text on every turn, so later turns of a
+  conversation are likely mostly cached. The ledger priced and stored every input token alike. New column
+  `ai_generations.cached_prompt_tokens` (migration `0031`, additive, default 0), filled by `recordUsage` from
+  `usage.prompt_tokens_details.cached_tokens` (`cachedPromptTokensOf`, `lib/aiBudget.ts`); `GET /admin/ai-costs`
+  returns the sum in `totals` and `byModel`, and the admin AI costs screen shows it as a count and a share of
+  input. **The cost estimate and the caps are unchanged**: they still bill every input token at the full rate,
+  because no cached-input rate was read from the provider's price list (the pricing pages are not reachable
+  from a cloud session). To price them, add a cached rate per model to `PRICING_PER_MILLION_USD` once it has
+  been read there. Claude calls report none (that path sets no cache breakpoints).
+- **A timer skips its turn when the app is not in front.** `usePollingRefresh` (the unread badge in the tab
+  layout, notifications, a message thread, settings, the guardian waiting screen) kept fetching every 10-20 s
+  in a browser tab behind another one, for as long as the tab stayed open, which also keeps Neon from scaling
+  to zero. It now asks `isInFront` (`services/foreground.ts`, shared with the usage heartbeat, which already
+  had the rule inline). Coming back to the tab or the app still loads at once, as before.
+
+**Looked at and not done:** dropping the fields prompts ask the model to echo (`grade`, `subject`, `duration`…),
+listed as outstanding in `docs/ai-cost-savings-plan.md`. Counted in the prompts, it is three to six short
+fields, some 20-40 output tokens of a 1,300+ token artifact (about $0.0001 a call), and a prompt edit changes
+the prompt version, which empties the shared pool for those kinds. It would cost more than it saves.
+
+**Verified:** `aiBudget.test.ts` (the cached count is read, clamped to the prompt, zero when absent or bad, and
+written while the cost line still prices every input token), `foreground.test.ts` (web follows the tab, a phone
+the app state; both hooks call it), each seen failing first; `pnpm run typecheck`; api-server `pnpm build` and
+`pnpm test`; mobile `pnpm test`.
+
+**Not verified:** a live completion (no model call was made, so no real `cached_tokens` value was seen, and the
+size of the overstatement is unknown until the admin page has a few days of rows); the admin screen in a
+browser; the polling change in a browser tab or on a phone; any change in Neon's compute hours. No «ما الجديد»:
+nothing a teacher, student or parent sees changes.
+## A unit's theme reaches the model: the «Let's Explore!» quiz report — 2026-11-21
+
+A teacher reported a Grade 5 English quiz for «هيا نستكشف!» (artifact report, «الشرح والأسئلة لا يطابق محتوى الدرس»). The
+questions were about explorers, compasses and drivers. The unit is about **space** («Talking about space; using big
+numbers.», `general_idea_ar` in `iqra_curriculum_g5_english_sem1.json`).
+
+- **Root cause.** The unit's theme was never put in a prompt. `serializeLessonContext` (one lesson) and
+  `resolveScopeGrounding` (a unit / semester / book) carried the unit *title*, the lesson's grammar point and, in the
+  digest, only the first three vocabulary words («Sun; star; rocket»). A model given «Let's Explore!» and `will/won't`
+  reads «explore» in its everyday sense. Measured with a probe on the built context before the change; the digest
+  had no line containing «space».
+- **Fix.** `KBUnit.generalIdea` (from `makeNccdCatalog`, every NCCD-built book) is printed as «Unit theme (stay on it…)» /
+  «موضوع الوحدة…» by `unitThemeLine` in both builders, and the digest's concepts go from 3 to 8 words per lesson (the
+  digest's own tiering still drops detail before lessons if it runs over budget).
+- **Same hole elsewhere.** Every NCCD-built book with a printed unit theme and every model-bound generator, since all of
+  them ground through these two functions. Offline generators build from the lesson's own data and were not touched.
+- **Verified.** `unitTheme.test.ts` (new; unit digest and single lesson both say «space», no line when a book prints no
+  theme); full mobile suite 9453 pass / 0 fail; `pnpm run typecheck` clean.
+- **Not verified.** No live model run, so that a real paper now stays on space is expected, not observed. The pooled
+  artifact the teacher reported stays served until an admin approves the report (retiring it is a moderation action,
+  not part of this change), and other pooled papers made before this keep their old content.
+
+## Grades 1–3: «مقارنة الأعداد» and «ترتيب الأعداد» ask their own skill — 2026-11-20
+
+The Grade 3 review found the two lessons drew the same mix: both titles routed to the one `compare` op in
+`lib/math-practice/src/elementary.ts`, so a comparing paper asked «رتّب الأعداد الآتية…» and an ordering paper
+asked «ضع الإشارة المناسبة». Grades 1 and 2 have the same two lessons with the same titles and had the same fault.
+
+- **Routing.** A title naming only comparing goes to the new `compare_only` op, one naming only ordering to
+  `order_only`. A title naming both («مقارنة الأعداد وترتيبها», Grades 4–5, and Grade 7's rational numbers) keeps
+  the mixed `compare` op, unchanged.
+- **`compare_only`** asks for the sign between two numbers (about 40%), the greatest or least of four (30%), or
+  «أيّ الأعداد الآتية أكبر/أصغر من N؟», where exactly one of four is past the bound and the bound itself is one of
+  the distractors (30%).
+- **`order_only`** asks to order three numbers (four at hard), «رتّب… ثم اكتب العدد الذي يأتي ثانيًا/ثالثًا»
+  (the other three numbers are the wrong options), or the greatest or least number made from given digits. Grade 1's
+  numbers have two places, so its version picks two of three digits («ما أكبر عدد من منزلتين يمكن تكوينه من
+  الأرقام 2، 1، 5…» is 52).
+- **Grade 3's range.** Both lessons say «ضمن 4 منازل» and drew from 0, so a paper could compare 91 and 392. They
+  now draw from 1000 to 9999 at every tier (`compareRange`), the same range as the Grade 3 second pass
+  (NizarAbuahmad/Iqraa#1505) sets for the mixed op. Grades 1 (10–99, by tier) and 2 (100–999) are unchanged.
+
+Verified: `compareOrder.test.ts` (new) draws 240 items per lesson for Grades 1–3. It checks the routing, including
+the combined titles. It checks that a compare paper never orders and an order paper never asks a sign or the greatest
+of a list, and that all three kinds appear in each. Every key is recomputed from the stem, the numbers stay in the
+grade's range, and there are three distinct wrong options (two for a sign). `elementary.test.ts`'s
+key-from-the-stem solver learned the new stems and now covers both lessons at Grades 1 and 3, plus the combined
+title at Grade 4. `earlyG1Ops.test.ts`'s two-place check counts the digits item by its two-place answer. I read 42
+sampled questions across the six lessons and checked each key by hand. math-practice suite, monorepo typecheck,
+mobile suite, api-server build and tests.
+
+**Not done.** The drawn shares are uneven: Grades 1–4 choose among drawn items by difficulty
+(`earlyDifficulty.ts`), so Grade 3's digits question is about 1 in 11 of an order paper rather than 3 in 10. The
+live model path is untouched; this is the offline generator only. No «ما الجديد» entry: it changes the questions a
+generator draws, not anything a teacher operates.
+
+## The whiteboard has a card of its own, and the in-class tools report what is done in them — 2026-11-20
+
+The admin insights showed teachers spending time in «وضع الصف والسبورة» and nothing else about it: one
+usage area covered the whiteboard, the classroom hub, the presentation player and the book-page view, and
+only two actions in them were events (`game_started`, `game_finished`). The whiteboard itself could be
+opened only from inside a running presentation or from a saved board in «ملفاتي».
+
+- **A Tools-tab card.** `whiteboard` is a tool in `services/toolCatalog.ts` (second in «أثناء الحصة»), so it
+  is on the Tools tab and, being one of the first four tools with no prep-board row, in Today's «أدوات سريعة
+  لهذا الدرس» on phone and desktop. From Today it opens with the lesson's `topic`, which names the board
+  «السبورة — <الدرس>». A «ما الجديد» entry (`whiteboard-in-tools`, teachers) names the tool, so the card wears
+  «جديد». `howWhiteboard` in the help now gives the direct way in first.
+- **A concept.** `CONCEPTS.whiteboard` is the easel in slate `#475569`, the look a saved board already had;
+  `MATERIAL_CONCEPT.board` now reads it, so every saved-material kind is a concept. The Library's `document`
+  shelf was the same slate and moved to warm grey `#57534E` (a shelf with a colour of its own may not twin a
+  concept).
+- **Usage area.** `whiteboard` is appended to `USAGE_AREAS` in the app and the API; `/ai-tools/whiteboard`
+  beats under it. `classroom` is not renamed: its minutes before this day include the whiteboard's, and the
+  admin label is now «وضع الصف» beside «السبورة». An app updated before the API deploys would have its
+  whiteboard minutes stored as `other`; `deploy.yml` ships the API first.
+- **Events** (`services/classUsage.ts`, PostHog, counts and choices only, never a title, lesson or problem):
+  `whiteboard_opened {source: saved | presentation | menu}`, `whiteboard_drawn` (first stroke of a visit),
+  `whiteboard_solved {ok}`, `whiteboard_saved {pages, first, withSolution}`, `whiteboard_exported {pages}`,
+  `classroom_activity_started {format, duration, group, setup}`, `class_pen_used {surface: slides |
+  book_page}` (first stroke of a visit). Today's quick tools now send `tool_opened {source: 'today'}`, which
+  they never did for any tool.
+
+Verified: `classUsage.test.ts` (the names are pinned, each screen calls its events, no whiteboard event
+carries a title or topic); `usageAreas.test.ts`, `toolCatalog.test.ts`, `iconSystem.test.ts`,
+`whatsNew.test.ts`; mobile `pnpm test` (9,449 pass, 0 fail); api-server `pnpm build` + `pnpm test` (2,999
+pass); `pnpm run typecheck`. In Chromium against a local API and Postgres, with a new teacher account: the
+card on the Tools tab (desktop and 390 px, light and dark, Arabic and English), the card in Today's quick
+tools at 390 px dark, opening the board from both, and a stroke drawn with the mouse.
+
+Not verified: that the events arrive in PostHog (the local build has no key, so every call is a no-op);
+the admin insights page showing the new area (no minutes were recorded locally); Android, and touch on a
+real phone. Known limits: a board opened from the Tools tab or Today is saved with an empty `subject` and
+`grade` (only the presentation passes them); `whiteboard_drawn` and `class_pen_used` say that the pen was
+used, not how much; an event fires only where `EXPO_PUBLIC_POSTHOG_API_KEY` is set.
+
+## Grade 3 second pass: skip counting by 10s, 100s and 1000s, four-digit comparing, like fractions, conversions within 9999 — 2026-11-20
+
+This is a second read of Grade 3 maths, on top of «Grade 3 review: six maths lessons asked about their own objective»,
+«Grade 3 maths: offline questions for the four lessons that had none» and «Grade 3 audit…». The generators were run over
+all 254 Grade 3 lessons; each grounds by its own id, and all 70 maths lessons fill a ten-question quiz. Every question of
+every maths quiz was read against its lesson's objective. Every key was right. (The audit script's «wrong key» flags are
+its own: it reads only three-digit numbers and misreads «ولُوّن 3 منها».) Six things did not fit the lesson:
+
+- **«العد القفزي» skipped by 3, 4, 6, 7, 8, 9, 25 and 50**, always from a multiple of the step. The objective is «العدّ
+  قفزيًّا بالعشرات والمئات والألوف تصاعديًّا وتنازليًّا». It now skips by 10, 100 or 1000, from any number within the
+  thousands («3921، 4921، 5921، ___»), and no option passes 9999.
+- **«مقارنة الأعداد» and «ترتيب الأعداد» showed 91, 392 and 732**, while both objectives say «4 منازل». At Grade 3 the
+  `compare` op now draws 1000–9999, as Grade 2's draws 100–999.
+- **«مقارنة الكسور» and «ترتيب الكسور» compared unlike fractions** («6/7 ___ 5/8», «4/5 ___ 5/6»), which takes a common
+  denominator. The objectives compare «باستعمال النماذج وخط الأعداد». At Grade 3 the sign item now uses one denominator or
+  one numerator, and every fraction is proper. Grades 4 and up still cross-multiply.
+- **The four conversion lessons went past the thousands:** «حوّل 18000 م إلى كم», «حوّل 21 لترًا إلى مل», and options such as
+  4860000 (a product of the two numbers). `convertGen` (Grade 3 only) now caps every amount and option at 9999. The
+  compound and story helpers take that cap as an optional argument, so Grades 4–5 are unchanged.
+- **«الضرب في 6 و9» and «الضرب في 7 و8» only drilled 6 and 7.** `lessonTable` read the first number. The new `lessonTables`
+  reads both, and each item draws one of them.
+- **«ما 1/6 العدد 30»** now reads «ما 1/6 من العدد 30» (and «… نجد بها 1/6 من العدد 78»).
+
+**Mental adding of thousands went past 9999 too.** «9000 + 3000 = ___» (12000) and options such as 80000 for «3000 + 5000».
+«Grade 2 second pass…» (below) capped most of those options; this change caps the plain-sum kind at Grade 3 as well, and
+draws no two thousands that sum past 9000.
+
+**Verified:**
+- `grade3SecondPass.test.ts` (8 tests) was written first. Six of its eight failed before the fix; the other two pin
+  Grades 1 and 5 as they were. The «6 و9» test first passed for the wrong reason (9 also appears as the other factor), so it now
+  reads the repeated-addition kind, which always adds the lesson's own table.
+- Sampled items were read by hand. That caught a slip in this change: the same-denominator branch kept the old
+  numerator («1/2 ___ 3/2», «4/5 ___ 5/5»). It is fixed, and the test now fails an improper fraction.
+- `lib/math-practice`, the full mobile suite and `pnpm run typecheck` pass (counts in the PR). Rerunning the Grade 3 audit
+  found nothing past 9999 and no improper fraction in the fraction lessons; all 70 maths lessons still fill ten questions.
+
+**Not done:**
+- There is no Grade 3 book text, so the objectives were the reference, as in the earlier reviews.
+- «الفترات الزمنية (2)» (across the day) still includes some intervals inside one hour, which is the previous lesson's
+  content. Left as it is.
+
+No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+
+## Grade 1 review: the last three thin maths lessons fill a quiz, two shapes named in their own question, no elapsed time — 2026-11-20
+
+The same per-lesson read as «Grade 2 review: fifteen maths lessons…» and «Grade 3 review: six maths lessons…» (below),
+on top of «Grade 1 second pass…», which had already read every Grade 1 maths quiz against its objectives. A sweep of all 279
+Grade 1 lessons through the offline plan, quiz, worksheet and activity: every lesson grounds by id, plans and activities
+generate for all, and 63 of 66 maths lessons gave a full paper. What was left (`lib/math-practice/src/early.ts`):
+
+- **The three lessons the second pass left at 8 questions now fill ten.**
+  - «الأشكال المستوية» names shapes from things around a child. Two of those things gave the answer away: «قطعة الجبنة
+    المثلثة» and «بلاطة الأرض المربعة» carry their shape's name, as «كرة القدم» once did for the solids. They are gone,
+    and 11 things now have one shape each, none named after it: a door, a board and a notebook; a clock, a wheel and a
+    plate; a slice of pizza, a coat hanger and a warning road sign; a chessboard and a face of a dice.
+  - «أضلاع الأشكال المستوية ورؤوسها» adds the sides of two shapes together, which of two shapes has more sides, and which
+    shape has four sides of equal length.
+  - «الربع» (and «النصف») add what each of the equal parts is called, how many are left when one is eaten, and (the
+    quarter only) how many quarters make a half.
+- **«الوقت بنصف الساعة» asked «ما الوقت بعد نصف ساعة؟»**, elapsed time, which is Grade 3's «الفترات الزمنية». It now asks
+  which two numbers the hour hand is between at half past.
+- **«الجمع الذهني»** — «عدد من منزلتين مع عدد من منزلة واحدة» — could ask «8 + 9 (أضف 10 ثم انقص 1)»; the number that 9 is
+  added to now has two digits.
+
+**Verified.**
+- `early.test.ts` and `earlyG1Ops.test.ts` recompute the new kinds and fail a thing that carries its shape's name.
+  `earlyG1Ops.test.ts` also checks that the three lessons and «النصف» hold ten different questions.
+- Six planted bugs, one per fix, each failed a test.
+- All 66 Grade 1 maths lessons give a full ten-question quiz and worksheet. The new questions were read by hand and every key
+  is right.
+- math-practice passes; the PR body has the rest of the CI set.
+
+**Not done.** Grade 1 has no extracted book text, so as before the objectives were the reference. The non-maths subjects
+have no offline question bank, by design. Everything the audit left for the page images.
+
 ## OpenAI credit ran out; the app-wide AI cap is now $100 — 2026-11-20
 
 **What happened.** On 2026-11-20 every Activity-tool request on app.iqrra.com came back as the offline template,

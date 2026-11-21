@@ -170,6 +170,7 @@ export function docOfFile(file: BoardFile): BoardDoc {
       board: {
         strokes: p.strokes.map(s => ({ color: s.color, width: s.width, points: s.points })),
         past: [],
+        future: [],
       },
       ...(p.solution ? { solution: solutionOut(p.solution) } : {}),
     })),

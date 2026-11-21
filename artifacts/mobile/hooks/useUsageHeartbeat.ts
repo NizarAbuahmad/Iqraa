@@ -17,6 +17,7 @@ import { AppState, Platform } from 'react-native';
 import { apiFetch } from '@/services/apiClient';
 import { areaForPath } from '@/services/usageAreas';
 import { BEAT_MS, shouldBeat } from '@/services/usageHeartbeat';
+import { isInFront } from '@/services/foreground';
 
 let lastInteractionAt = Date.now();
 
@@ -26,10 +27,11 @@ export function noteInteraction(): void {
 }
 
 function isForeground(): boolean {
-  if (Platform.OS === 'web') {
-    return typeof document === 'undefined' || document.visibilityState === 'visible';
-  }
-  return AppState.currentState === 'active';
+  return isInFront({
+    os: Platform.OS,
+    visibilityState: typeof document === 'undefined' ? undefined : document.visibilityState,
+    appState: AppState.currentState,
+  });
 }
 
 export function useUsageHeartbeat(signedIn: boolean, pathname: string | null | undefined): void {

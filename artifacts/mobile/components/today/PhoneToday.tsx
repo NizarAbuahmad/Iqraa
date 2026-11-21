@@ -27,6 +27,7 @@ import { Band } from '@/components/ui/Band';
 import { BRAND_BAND, subjectTheme } from '@/services/subjectTheme';
 import { Surface, useSurface } from '@/components/ui/Surface';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { trackEvent } from '@/services/analytics';
 import { Entrance } from '@/components/ui/Entrance';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { JordanFlag } from '@/components/ui/JordanFlag';
@@ -275,7 +276,10 @@ export function PhoneToday() {
                 {quickTools.map(tool => (
                   <PressableScale
                     key={tool.id}
-                    onPress={() => router.push({ pathname: tool.route as never, params: toolParams as never })}
+                    onPress={() => {
+                      trackEvent('tool_opened', { toolId: tool.id, source: 'today' });
+                      router.push({ pathname: tool.route as never, params: toolParams as never });
+                    }}
                     style={[s.tool, surface]}
                   >
                     <View style={[s.toolIcon, { backgroundColor: tool.color + '1A' }]}>

@@ -821,6 +821,8 @@ export interface KBUnit {
   order: number;
   titleAr: string;
   titleEn: string;
+  /** The unit's printed theme, when the book has one — see `NccdKbUnit.generalIdea`. */
+  generalIdea?: string;
 }
 
 export interface KBLesson {

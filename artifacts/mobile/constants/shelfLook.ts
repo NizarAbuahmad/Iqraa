@@ -34,7 +34,8 @@ const OWN_LOOK: Partial<Record<Shelf, { icon: IconName; color: string }>> = {
   video: { icon: 'play-circle-outline', color: '#DC2626' },
   audio: { icon: 'headset-outline', color: '#115F40' },
   template: { icon: 'copy-outline', color: '#96412C' },
-  document: { icon: 'folder-open-outline', color: '#475569' },
+  // Warm grey. It was the slate #475569 until the whiteboard became a concept in that colour.
+  document: { icon: 'folder-open-outline', color: '#57534E' },
 };
 
 const SHELVES = ['infographic', 'image', 'video', 'audio', 'game', 'worksheet', 'template', 'presentation', 'document'] as const satisfies readonly Shelf[];
