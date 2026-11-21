@@ -122,6 +122,131 @@ RTL and dark mode.
 `/parent/homework/:id/submissions` was not called from the app against a real database, and photos were local SVGs,
 not signed R2 links (the route itself is covered by the API's own tests). Whether replay masking hides the photos is
 unverified, as for the student's and the teacher's project screens (STATUS.md, «Screen recording»).
+## A 1.6.0 production build sent to Google Play for review — 2026-11-21
+
+After the chat fix (#1527) merged, the owner asked for a 1.6.0 production build and for it to go to Play for review.
+
+- **Build.** Mobile Android build run 11 (`profile: production`) from `main` at `de31781`: EAS build
+  `735f7858-a355-486c-be10-5c4bf999b62c`, version 1.6.0, versionCode 15 (EAS took the next code itself,
+  `appVersionSource: "remote"`), status `FINISHED` with an `.aab`.
+- **Submit.** Mobile Android submit to Play run 4, `send_for_review: true` (submit profile `production-review`):
+  the build check, the upload and the key deletion all passed. This sends the release for review at once, so any
+  store-listing edit drafted in Play Console did not go with it.
+- **OTA.** The same commit was published to the `production` update channel by hand (Mobile OTA update run 1201).
+- **STATUS.md** «Mobile» no longer says the installed binary is 1.5.0: 1.6.0 production builds have existed since
+  2026-11-13 (versionCode 12) and were submitted on 2026-11-14 (submit runs 2–3), which that line had not caught up with.
+
+**Not verified:** Google's review result and the rollout, and which version is installed on any user's phone.
+
+## Chat answers the topic asked about; the picked lesson stays put — 2026-11-21
+
+**Reported:** «chat when the user asks for a specific topic it keeps changing… is that because of the topic selected
+on top of the app», after several earlier fixes («Fixed 2026-08-13 — changing the lesson mid-chat didn't take»,
+«The chat answers before it asks…», «The chat answers teachers, on the web too», «Chat builds material on a topic the
+curriculum does not have»). Each of those patched one path; the two causes below were left.
+
+**Cause 1: a picked lesson was a leash.** A lesson picked from the top bar or the change-lesson sheet is pinned
+`hard`, and `shouldReuseActiveLesson` reused a hard pin for every teaching question the keyword search was not
+*confident* about. Confidence is a property of the search, not of the question. Measured with the app's own functions
+and «تركيب الاقترانات» picked: «اشرح لي المتجهات» (vectors 35.5, not a confident single-subject hit), «ما هي الدالة
+الأسية», «اشرح لي المصفوفات», «سؤال عن الجذور», «كيف أدير صفًا مزعجًا؟» and «اختبار قصير عن الاحتمالات» all went
+to the model with «تركيب الاقترانات» as the textbook («استخدمه أساسًا لإجابتك»). A soft (restored) pin did not do
+this, so it hit exactly the teachers who had picked a lesson.
+
+**Cause 2: two lessons in one field.** A confident hit on another lesson hard-pinned it as the chat's lesson
+(`pendingHardPin`, and the offline assistant's `memoryPatch`). The chat's card moved; the top bar, Today and the
+sidebar card (which read the saved pick) did not. Every later question was then pulled to the new lesson by cause 1.
+
+**What changed.**
+- **`activeLessonReuse`** (`services/lessonCopilot.ts`; `shouldReuseActiveLesson` wraps it) returns `ground`,
+  `background` or `none`. A lesson grounds a turn only when the message names no topic of its own (a bare ask, a
+  refinement, a short follow-up) or the message's own search points at it (`searchSupportsLesson`,
+  `services/kbContext.ts`: scored ≥ `KB_SUGGEST_SCORE` and no confident hit names another lesson). Pin strength no
+  longer overrides a message that names a topic. `background` is a lesson the teacher picked plus words nothing in
+  the curriculum matches («كيف أبدأ الحصة», «كيف أدير صفًا مزعجًا؟»): the live model gets the existing «اربط إجابتك به
+  فقط إن كان السؤال عنه» line and no textbook block, and the offline assistant, which has no model, still answers from
+  the lesson. «أضف…» counts as a follow-up only when the search does not point elsewhere («اشرح المتجهات وأضف أمثلة»
+  names its topic).
+- **The selected lesson and the conversation's lesson are kept apart** (`services/chatLessonFocus.ts`,
+  `ChatSessionMemory.conversation`). `sendMessage` reads `conversationView(sessionMemory)` and writes every update
+  through `commitConversation`, so a question about another lesson moves the conversation (follow-ups use it) and
+  never the card. A question on a topic of its own that grounded on no lesson takes the conversation off the
+  lesson it was on (`leavesLesson`): «اشرح لي المتجهات» (not a confident hit) and then «أعطني أمثلة عليه» used to be
+  about the card's lesson. The selected lesson changes only through the sheet (which also saves the app-wide pick),
+  a deep link from a lesson, or «إلغاء التثبيت»; `pinLesson` and a free-topic pick in the sheet reset the
+  conversation. «خلينا نتكلم عن…» leaves the lesson for the conversation only and no longer clears `teachingCtx`.
+  While the conversation is on another lesson, what it makes (`generatedResources`, `discussedArtifacts`,
+  `lastGeneratedResource`, the prep fields) is kept on `conversation.record`, so it does not tick the card's lesson
+  or turn a starter chip («اجعل الاختبار أصعب») onto another lesson's quiz. Chips under a reply act on the reply's
+  lesson; the card's buttons, the starter chips and the «+» menu act on the card's. `background` is only for the
+  lesson the teacher picked, never one the conversation moved to (the prompt calls it «الدرس المختار في التطبيق»).
+  A lesson the teacher cleared, or the conversation left, is picked up again by a confident hit on it.
+- **A pointer is not a topic** (`topicFromQuery`, `services/ai/artifactTopic.ts`). «ورقة عمل عليه» returned the topic
+  «عليه»: a worksheet titled «عليه», built as a free topic. «أعطني أمثلة عليه» searched «عليه», which matches «موسى
+  عليه السلام» (Islamic education, 12), read as another subject and dropped the lesson. A topic made only of pointer
+  words («عليه», «عنها», «أكثر», «آخر», «إضافية», "more", "it") and follow-up nouns («أمثلة», «مثال», «تمارين», «حل»)
+  is now `''`, like «هذا الدرس» already was; one that also names something («اشرح المتجهات أكثر», «quiz on IT») is
+  unchanged. Such a
+  message is a bare follow-up in the gate and gets the conversation's lesson alone (`withActiveLesson`).
+- A bare ask for material ignores the KB-subject guard, as a bare teach ask already did: «ورقة عمل» ranks English
+  «طرق العمل» at 38, which used to drop even a picked lesson.
+- «ما الجديد»: `chat-stays-on-topic` (teachers, `/iqra`).
+
+**Verified.**
+- Tests written first and watched failing: `lessonPinGate.test.ts` (the measured questions above on the real KB:
+  `none` for a named other topic, `background` for unmatched words under a picked lesson and `none` under a restored
+  one, `ground` for a question about the lesson, a bare ask and a follow-up, including «أعطني أمثلة عليه» with the
+  conversation on «قانون جيب التمام»), `chatLessonFocus.test.ts` (8 cases: the card keeps the pick, the conversation
+  follows, returning clears it, a switch, a cleared lesson, preparation, re-picking), `artifactTopic.test.ts`
+  (pointer-only topics, and named topics that keep their name). The older gate suites (`teachMeAsk`,
+  `gradeDetection`, `topicSwitch`, `subjectDetection`) pass unchanged. `pnpm run typecheck`; mobile `pnpm test`
+  (after the review fixes: 9,540 tests, 9,530 pass, 0 fail, 10 skipped).
+- **In a browser:** a live-mode web build (`EXPO_PUBLIC_DEMO_MODE=false`), desktop 1366×860, every `/api` call stubbed
+  and each `/chat` body captured. «تركيب الاقترانات» picked by deep link, then: «اشرح لي المتجهات» → no lesson in the
+  context (before: «تركيب الاقترانات» as the textbook); «كيف أدير صفًا مزعجًا؟» → the «only if» line naming it, no
+  textbook; «اشرح قانون جيب التمام» → grounded on it; «أعطني أمثلة عليه» and «حل مثال عليه» → «قانون جيب التمام»;
+  «ما هي الدالة الأسية» → no lesson. After all of it, the chat card and the sidebar's «الدرس الحالي» both still read
+  «تركيب الاقترانات».
+- **A code review** (a separate reviewer agent, given the goal and the diff) found, on the pure functions: the
+  two-turn case above, material made on the conversation's lesson ticking the card's, the starter chips refining
+  another lesson's quiz, `background` applied to a lesson the teacher never picked, a cleared lesson losing the
+  conversation, a free-topic pick in the sheet keeping the old conversation, and «IT» read as "it". Each is fixed
+  and has a test (`chatLessonFocus.test.ts` «review findings», `leavesLesson`, `lessonPinGate.test.ts`, «IT» in
+  `artifactTopic.test.ts`). The browser pass was rerun after the fixes, now with «اشرح لي المتجهات» → «أعطني أمثلة عليه»
+  (no lesson in the context, where the first version sent «تركيب الاقترانات») and «كيف أدير صفًا مزعجًا؟» while the
+  conversation was on «قانون جيب التمام» (no lesson, not «background» on a lesson the teacher never picked).
+
+**Not verified / left.**
+- No live model answered: the replies were stubbed. Whether a model given no textbook answers «اشرح لي المتجهات»
+  from the curriculum's angle is not measured. The vectors lesson scores 35.5 but is not sent, because
+  `liveChatGrounding` does not trust a top hit with another subject within half its score; that rule is unchanged.
+- Not driven on a phone or in demo mode. In demo mode a teaching question the search cannot place no longer gets the
+  picked lesson unless it is `background` (picked + nothing matched), so the offline assistant answers fewer
+  "elsewhere" questions from the card's lesson, by design.
+- `classifyChatIntent` reads «أمثلة أكثر» as ambiguous and asks to clarify; not changed here.
+
+## The quiz request tells the API when no lesson grounds the topic — 2026-11-21
+
+Found while moving the quiz request into `buildQuizRequest` («Pool prefill: a default-form quiz per Grade 10 lesson»):
+the quiz screen built its body from four of `groundingRequestFields`' five fields and dropped `grounding: 'none'`, so
+it never sent the marker that «The API no longer attaches a book to a topic the app found no lesson for» (2026-11-20)
+gave every other generator. A quiz for a topic no lesson in the picked grade and subject covers (a free topic from
+chat, a title only another grade has) could therefore still get another lesson's book pages from the API, which
+matches the title across the whole catalog when the request carries no unit.
+
+**Changed.** `buildQuizRequest` now passes `grounding: 'none'` through when the lesson grounding says no lesson grounds
+the topic, and only then. A grounded body is exactly what it was, so **every pooled quiz key, and every quiz the prefill
+plans, is unchanged**; the requests that change are the ungrounded ones, whose prompt loses the wrong book pages (their
+pool key moves with it: the server keys on the body after grounding). A wide scope (unit, semester, book) still takes
+its `grounding` from `scopeRequestFields`, spread over the builder last.
+
+**Verified.** `generatorRequests.test.ts`: the quiz joined the existing «every builder adds it when ungrounded, and only
+then» test, which failed first (the quiz returned no marker for the free topic and, in the same test, a grounded quiz
+gains no field), and a wide scope (null grounding) sets none itself. Related suites (`pregenerate`, `generatorScreens`) and
+`pnpm run typecheck`; mobile `pnpm test`.
+
+**Not verified.** A live quiz for a free topic (the API side was not exercised: it is the 2026-11-20 change, whose own
+note says no model call was made), and the quiz screen in a browser.
 
 ## Pool prefill: a default-form quiz per Grade 10 lesson — 2026-11-21
 
@@ -152,7 +277,7 @@ key a run falls back to OpenAI and fills the pool under that model's key, where 
 live run of the quiz prefill; that a teacher's default quiz then hits the pool; the quality of the stored quizzes
 (each is served to every teacher who asks, answer key included: read a few after a run).
 
-**Found, left alone.** `groundingRequestFields` can add `grounding: 'none'` (no lesson grounds the topic: the API then
+**Found, left alone (fixed the same day: «The quiz request tells the API when no lesson grounds the topic»).** `groundingRequestFields` can add `grounding: 'none'` (no lesson grounds the topic: the API then
 must not attach a book by title). The quiz screen never sent it: it copies four of the helper's fields and drops that
 one, so a quiz for a topic no lesson covers can still get another lesson's book pages from the API. The builder keeps
 that behaviour, since the refactor was not meant to change a request. A one-line fix would add `...noLessonField(...)`
@@ -1359,6 +1484,40 @@ into a unit test, summary or glossary.
   pass, plus `r2.test.ts`, which fails only because this environment has R2 configured.
 
 **Not run:** live AI, anything needing the PDFs.
+
+## The web publish tries a failed Cloudflare call again — 2026-11-13
+
+On 2026-11-13 two merges in a row built the web bundle and then failed to publish it. Deploy run #949 (PR #1438, 15:32 UTC)
+and #950 (PR #1433, 15:48 UTC) both shipped their API and ran their migrations, but `iqraa-web` died at «Publish to
+Cloudflare Pages» about four seconds in, before any upload: `GET /accounts/…/pages/projects/iqraa-web → 503 Service
+Unavailable`, «no healthy upstream», from Cloudflare's own API. Nothing in the repo was wrong. The workflow had no retry,
+so the live site kept the previous bundle until run #951 (16:03 UTC, a later merge that contains both PRs) published at
+16:07 UTC: about 28 minutes behind for #1438's web changes and 17 for #1433's. A quiet hour would have made it much longer,
+because only a later merge ships it.
+
+**What changed.** The publish step in `.github/workflows/deploy.yml` (`web` job) now runs `wrangler pages deploy` up to
+five times, waiting 30, 60, 120 and 240 s between attempts (7.5 minutes at most; the job's timeout is 20 and the verify step
+after it needs about 2). Any failure is retried, not only a 5xx, on purpose: telling them apart would mean parsing wrangler's
+output, and a real failure such as a bad token now costs 7.5 minutes before the same red X. Each failed attempt prints a
+`::warning::` and the last prints `::error::`. The command is unchanged. A newer push still cancels the job
+(`cancel-in-progress`), which is right: the newer run builds and publishes the newer commit.
+
+**Verified.** The step's real `run:` text was taken out of `deploy.yml` and run against stand-ins for `pnpm` and `sleep`
+(not committed; CI does not run shell tests): with a healthy Cloudflare it makes one call and no waits; after two 503s it
+succeeds on the third call having waited 30 and 60 s; after four 503s it succeeds on the fifth having waited 30, 60, 120
+and 240 s; with Cloudflare down throughout it makes five calls, waits 30, 60, 120 and 240 s (none after the last), prints
+the `::error::` line and exits 1; and every call has the exact arguments it had before. Red first: against the old step the
+two-503 and four-503 cases failed (one call, exit 1) and the healthy case passed. The workflow still parses and the
+step order is unchanged.
+
+**Not verified / limits.** It has not run against a real Cloudflare failure; the first outage is the first real test.
+**It covers a short outage, not a long one.** If Cloudflare was down continuously from 15:39 to 16:06 UTC (27 minutes), 7.5
+minutes of retries would not have saved #949 or #950; it helps only if the failures were intermittent, which the logs do
+not say (two runs 16 minutes apart both failed, then #951 passed). A longer wait does not fit this job's 20-minute budget;
+covering a long outage would need a delayed re-run of the failed web job (the pattern in `deploy-rerun-stalled.yml`), which
+is not built. I did not read wrangler's source: the step relies only on a failed attempt publishing nothing and a repeat
+attempt deploying the same files, not on wrangler skipping files it already uploaded.
+
 ## Grade 1 review: coverage, generated results, book images — 2026-11-13
 
 A review of Grade 1 (all 8 subjects, 15 books, 279 lessons) against three asks: every subject covered, the right
