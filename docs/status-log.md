@@ -72,7 +72,7 @@ sidebar card (which read the saved pick) did not. Every later question was then 
   follows, returning clears it, a switch, a cleared lesson, preparation, re-picking), `artifactTopic.test.ts`
   (pointer-only topics, and named topics that keep their name). The older gate suites (`teachMeAsk`,
   `gradeDetection`, `topicSwitch`, `subjectDetection`) pass unchanged. `pnpm run typecheck`; mobile `pnpm test`
-  (9,532 tests: 9,522 pass, 0 fail, the rest skipped).
+  (after the review fixes: 9,540 tests, 9,530 pass, 0 fail, 10 skipped).
 - **In a browser:** a live-mode web build (`EXPO_PUBLIC_DEMO_MODE=false`), desktop 1366×860, every `/api` call stubbed
   and each `/chat` body captured. «تركيب الاقترانات» picked by deep link, then: «اشرح لي المتجهات» → no lesson in the
   context (before: «تركيب الاقترانات» as the textbook); «كيف أدير صفًا مزعجًا؟» → the «only if» line naming it, no
