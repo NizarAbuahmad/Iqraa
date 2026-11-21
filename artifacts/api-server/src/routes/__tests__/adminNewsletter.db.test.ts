@@ -354,4 +354,43 @@ describeDb("teacher newsletter", () => {
       await db.pool.query(`DROP TRIGGER newsletter_overlap ON newsletter_sends; DROP FUNCTION newsletter_overlap();`);
     }
   });
+
+  it("re-testing text that has an empty twin resumes the issue that was sent", async () => {
+    const admin8 = await addUser("Admin8", "system_admin");
+    const body = `${BODY}\n\nTwin issue`;
+    const tested = await testAs(admin8, body);
+    assert.equal(tested.status, 200, tested.text);
+    const sentId: string = tested.json.issueId;
+    stub.clear();
+    const first = await sendAs(admin8, sentId, body);
+    assert.equal(first.status, 200, first.text);
+    const teachersMailed = stub.mails().length;
+    assert.equal(teachersMailed, 2);
+    const mailed = await sendsOf(sentId);
+
+    // Two test copies of the same text at one instant: each found no match, so each inserted.
+    // The empty twin is the newest by tested_at.
+    const twinId: string = (
+      await db.pool.query<{ id: string }>(
+        `INSERT INTO newsletter_issues (subject, body, content_hash, created_by, sent_at, sending_at, tested_at)
+         SELECT subject, body, content_hash, $2, NULL, NULL, now() + interval '1 minute'
+           FROM newsletter_issues WHERE id = $1
+         RETURNING id`,
+        [sentId, admin8],
+      )
+    ).rows[0]!.id;
+
+    const again = await testAs(admin8, body);
+    assert.equal(again.status, 200, again.text);
+    assert.equal(again.json.issueId, sentId, "the issue that mailed teachers, not its empty twin");
+    const twin = await db.pool.query(`SELECT 1 FROM newsletter_issues WHERE id = $1`, [twinId]);
+    assert.equal(twin.rowCount, 0, "the empty twin is removed");
+    assert.equal(await sendsOf(sentId), mailed);
+
+    stub.clear();
+    const resumed = await sendAs(admin8, sentId, body);
+    assert.equal(resumed.status, 200, resumed.text);
+    assert.equal(resumed.json.sent, 0);
+    assert.equal(stub.mails().length, 0, "no teacher mailed again");
+  });
 });

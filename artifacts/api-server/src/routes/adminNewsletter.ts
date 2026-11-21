@@ -29,7 +29,7 @@
  */
 import { Router } from "express";
 import { newsletterIssues, newsletterSends, systemDb as db, users } from "@workspace/db";
-import { and, desc, eq, gte, inArray, ne, notExists, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, exists, gte, inArray, ne, notExists, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { authMiddleware, requireRole, type AuthenticatedRequest } from "../middlewares/auth.js";
 import { UUID } from "../lib/adminMetrics.js";
 import { sendBroadcast } from "../lib/email.js";
@@ -134,11 +134,18 @@ router.post("/admin/newsletter/test", authMiddleware, requireRole("system_admin"
     // The identical text was tested before (perhaps sent in part, then its test expired): resume
     // THAT issue, so its recorded recipients are skipped. A new row would mail them all again.
     // The issue becomes the caller's, since only the admin who got the test copy may send it.
+    // Two test copies at one instant can leave two issues with this text, so the one that already
+    // mailed teachers (it has recipients, or a sent stamp) wins over the newest test. Picking the
+    // empty twin would send the same text to every teacher again; the clean-up below deletes it.
     const [same] = await db
       .select({ id: newsletterIssues.id })
       .from(newsletterIssues)
       .where(eq(newsletterIssues.contentHash, contentHash))
-      .orderBy(desc(newsletterIssues.testedAt))
+      .orderBy(
+        desc(exists(db.select({ one: sql`1` }).from(newsletterSends).where(eq(newsletterSends.issueId, newsletterIssues.id)))),
+        sql`${newsletterIssues.sentAt} desc nulls last`,
+        desc(newsletterIssues.testedAt),
+      )
       .limit(1);
     // One unsent issue at a time: this test replaces the last one, whose id then no longer sends.
     await db
