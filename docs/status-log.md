@@ -13,9 +13,9 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 ## Book items: the semester-2 student book's unit 6 (derivatives, max/min, the test's multiple choice) — 2026-11-21
 
 `scripts/extract_book_items.py` now reads the NCCD Grade 10 maths **student book**, semester 2
-(`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **13 derivative
-questions, all `verified`; lesson 6.3's 9 max/min exercises and the unit test's 6 multiple choice, all
-`computed`**, written to
+(`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **16 `verified`
+(13 derivatives, and 3 of the unit test's 4 open max/min questions); 16 `computed` (lesson 6.3's 9 max/min
+exercises, the test's other max/min question, and its 6 multiple choice)**, written to
 `lib/curriculum/src/data/book-items/math-s2-student-book.json` and served to lessons 6.1–6.3
 (`kbl-math-s2-nccd-u6_l1` … `u6_l3`).
 
@@ -26,6 +26,7 @@ questions, all `verified`; lesson 6.3's 9 max/min exercises and the unit test's 
 | 69 | 24–26 products | `exercise` | 3 verified |
 | 74 | 1, 3–10 local max/min (6.3) | `exercise` | 9 computed; 2 left out (a near-duplicate of 1, 0.89) |
 | 77 | unit test 14–19 «أجد مشتقة» | `unit-test` | 4 verified (15, 16, 18, 19); 14 (`2π/3`) quarantined; 17 left out (below) |
+| 77 | unit test 20–23, max/min (6.3) | `unit-test` | 3 verified (20, 21, 22); 23 computed (its max is printed rounded) |
 | 76 | unit test 1–4, multiple choice | `unit-test-mcq` | 4 computed: slope at a point (6.1), a derivative (6.2), the x of a maximum (6.3), a velocity (6.2) |
 | 77 | unit test 30–31, multiple choice | `unit-test-mcq` | 2 computed: all local extrema, the number of critical points (6.3) |
 
@@ -71,6 +72,23 @@ those five lines as Arabic in a key and nothing else. Item 2 (`x² + 6x - 3`) is
 of item 1 (0.89), for the same reason as item 17 below; a probe of lessons 6.1–6.3's whole pools afterwards
 finds no pair above 0.82.
 
+**The unit test's open max/min questions (p.77 items 20–23) are verified where the guide allows.** The guide's
+copy of p.77 (p.112) prints each answer on a line ending in its item number: «لا توجد قيم عظمى وقيم صغرى. )20»,
+the same for 21, «: صغرى.(2.5, -0.25) )22», and for 23 only a split, rounded fragment, `3 , 1.296) )23`.
+`printed_extrema` reads that line alone, and `pair_extrema` verifies an item only when the line holds **exactly**
+the computed answer: the same kinds and the same exact points (`2.5` = 5/2, `−0.25` = −1/4), or the «none»
+phrase for none. A line holding part of an answer, a rounded value or anything else beside whole points
+verifies nothing. So 20, 21 and 22 are `verified`, and 23 (max f(1/3) = 35/27; the guide's 1.296 is rounded)
+stays `computed` with a note in `report.json`. The TS suite re-reads every pair independently (`extrema` in
+`bookItems.test.ts`, exact rationals only) and is fed three corruptions — a rounded value, a missing point,
+another item's label — to show it catches each. Two smaller changes came with it:
+- **A constant has no extrema**, as the guide answers item 20 (`f(x) = 17`): `solve_extrema` used to refuse
+  f′ ≡ 0 and now answers «لا توجد قيم عظمى أو صغرى محلية». Every point of a constant is a non-strict
+  extremum; the school counts strict ones only, and the key follows the book.
+- **Item 23's stem is broken over two lines** by the text layer (`2x3 -4x2` / `+2x+1`). That row alone sets
+  `join`, which joins a line starting with `+` or `−` onto the one before (`join_continued`); a line starting
+  with a digit, like a split fraction's denominator, is never joined.
+
 **How they are verified.** The s2 teacher guide reproduces each student page with its answers printed on
 it (guide p.102 for student p.68, p.103 for p.69, p.112 for p.77). `printed_derivatives` reads every
 `name '(x) = value` there (with its `)15` item number when printed), and `pair_derivatives` verifies an item
@@ -95,12 +113,12 @@ and a printed number that is another item's.
   practice numbers, which run to 30.
 - An `Entry` takes `page` for a source with no exercise index, `answers` (the guide page) and `unit_test`.
 
-**Verified.** The Python tests failed first, then passed (122). Every stem was compared by eye with the
+**Verified.** The Python tests failed first, then passed (129). Every stem was compared by eye with the
 printed pages of a copy of the book: pp.68, 69, 74 and 76 match. **That copy is an older printing (2021): its
 p.77 numbers the derivatives 15–20 (with `2π³` where the app's text, reprinted 2021–2025, has `2π/3` at 14)
 and the multiple choice 31–32, and its p.76 item 4 says `d(t)` where the app's text says `s(t)`.** The
 guide's labels `)14`…`)19` agree with the app's newer numbering, which is what is cited. Every answer key was
-also re-derived by hand. Curriculum `test` (938) and `verify`, monorepo typecheck, api-server build + test
+also re-derived by hand. Curriculum `test` (939) and `verify`, monorepo typecheck, api-server build + test
 (3021; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
 mobile suite (9540 after the latest merge of main, 0 failing; the app does not import book items) pass. A
 `password hasher` failure (its event-loop timing assertion) appeared once while the mobile suite ran in
@@ -112,9 +130,8 @@ counted only `exercise` as a short answer — a `unit-test` open question is one
 dry run avoids what the teacher was shown» assumed lesson 6.2 had no multiple choice, so «shown» is now every
 choice item of both its lessons. Neither assertion was loosened: both still compare exact numbers.
 
-**Not done.** The unit test's open max/min questions (20–23: `solve_extrema` could take 21–23; 20, `f(x) = 17`,
-has no extremum anywhere and needs its own wording) and its graph questions, lesson 6.1's exercises
-(figures), every word problem, and units 5, 7, 8. Users
+**Not done.** The unit test's graph questions (26–29) and its word problems (24, 25), lesson 6.1's exercises
+(figures), every other word problem, and units 5, 7, 8. Users
 see none of this in production yet: book items reach a paper only on the mock path or with
 `BOOK_ITEMS_LIVE=true`, which is off.
 

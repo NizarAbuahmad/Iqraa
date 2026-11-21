@@ -1,14 +1,15 @@
 {
   "counts": {
-    "computed": 43,
-    "verified": 18,
+    "computed": 44,
+    "verified": 21,
     "quarantined": 18
   },
   "unmatchedPrinted": [
     "(0, 5), (2. 1)"
   ],
   "notes": {
-    "bi-math-s1-teacher-guide-u1l3-8": "the guide prints answers on this page and none equals the computed answer; see unmatchedPrinted"
+    "bi-math-s1-teacher-guide-u1l3-8": "the guide prints answers on this page and none equals the computed answer; see unmatchedPrinted",
+    "bi-math-s2-student-book-u6l3-t23": "its line on guide p.112 does not hold exactly the computed answer"
   },
   "quarantined": [
     {

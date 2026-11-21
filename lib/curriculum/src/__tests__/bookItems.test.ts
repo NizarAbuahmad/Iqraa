@@ -84,8 +84,59 @@ const derivative = (s: string): { name: string; terms: string; label: number | n
   const terms = [...coef].filter(([, c]) => c !== 0).sort(([a], [b]) => a - b).map(([p, c]) => `${c}x^${p}`).join(' ');
   return { name: m[1]!, terms, label: m[3] === undefined ? null : Number(m[3]) };
 };
+/** An exact rational as «p/q» in lowest terms: «2.5» and «5/2» meet; «1.296» never meets 35/27. */
+const rational = (s: string): string | null => {
+  const m = /^(-?)(\d+)(?:\.(\d+))?(?:\/(\d+))?$/.exec(s.replace(/\s+/g, ''));
+  if (!m || (m[3] && m[4])) return null;
+  let p = BigInt(m[2]! + (m[3] ?? '')) * (m[1] ? -1n : 1n);
+  let q = m[3] ? 10n ** BigInt(m[3].length) : BigInt(m[4] ?? '1');
+  const gcd = (a: bigint, b: bigint): bigint => (b === 0n ? (a < 0n ? -a : a) : gcd(b, a % b));
+  const g = gcd(p, q);
+  return `${p / g}/${q / g}`;
+};
+/**
+ * A max/min answer as a sorted list of «kind x y», or null. Reads both the computed key (the
+ * extractor's fixed labels, then `f(a) = v` lines) and the guide's printed line
+ * («: صغرى.(2.5, -0.25) )22», «لا توجد قيم عظمى وقيم صغرى. )20»). Exact rationals only, so a
+ * rounded or surd value never matches. Written apart from the extractor on purpose.
+ */
+const extrema = (s: string): { points: string[]; label: number | null } | null => {
+  const label = /\)\s*(\d{1,2})\s*$/.exec(s);
+  const body = label ? s.slice(0, label.index) : s;
+  if (body.replace(/[.:\s]/g, '') === 'لاتوجدقيمعظمىوقيمصغرى' || body === 'لا توجد قيم عظمى أو صغرى محلية') {
+    return { points: [], label: label ? Number(label[1]) : null };
+  }
+  const points: string[] = [];
+  if (label) {
+    // the guide's line: whole «kind (x, y)» points and punctuation, nothing else
+    const re = /(عظمى|صغرى)\s*\.?\s*\(([^()]*)\)/g;
+    if (body.replace(re, '').replace(/[.:\s،]/g, '') !== '') return null;
+    for (const [, kind, pair] of body.matchAll(re)) {
+      const [x, y, more] = pair!.split(',').map(t => rational(t!));
+      if (!x || !y || more !== undefined) return null;
+      points.push(`${kind === 'عظمى' ? 'max' : 'min'} ${x} ${y}`);
+    }
+    return points.length ? { points: points.sort(), label: Number(label[1]) } : null;
+  }
+  let kind: string | null = null;
+  for (const line of s.split('\n')) {
+    if (line === 'قيمة عظمى محلية:' || line === 'قيمة صغرى محلية:') kind = line.includes('عظمى') ? 'max' : 'min';
+    else if (line === 'لا توجد قيمة عظمى محلية' || line === 'لا توجد قيمة صغرى محلية') kind = null;
+    else {
+      const m = /^[a-z]\((.+)\) = (.+)$/.exec(line);
+      const x = m && rational(m[1]!);
+      const y = m && rational(m[2]!);
+      if (!kind || !x || !y) return null;
+      points.push(`${kind} ${x} ${y}`);
+    }
+  }
+  return { points: points.sort(), label: null };
+};
 const sameValue = (printed: string, computed: string) => {
   if (flat(printed) === flat(computed)) return true;
+  const ep = extrema(printed);
+  const ec = extrema(computed);
+  if (ep && ec) return ep.points.join('|') === ec.points.join('|');
   const p = derivative(printed);
   const c = derivative(computed);
   if (p && c) return p.name === c.name && p.terms === c.terms;
@@ -99,7 +150,7 @@ const verifiedDisagreements = (list: BookItem[]) =>
     .filter(i => {
       if (i.status !== 'verified') return false;
       const printed = i.printedAnswer ?? '';
-      const label = derivative(printed)?.label ?? null;
+      const label = derivative(printed)?.label ?? extrema(printed)?.label ?? null;
       // a printed item number must be this item's own
       return !sameValue(printed, i.computedAnswer) || (label !== null && label !== i.source.number);
     })
@@ -242,7 +293,8 @@ describe('book items — the committed data', () => {
     const eight = items.find(i => i.id === 'bi-math-s1-teacher-guide-u1l3-8')!;
     assert.deepEqual([eight.status, eight.printedAnswer, eight.computedAnswer], ['computed', null, '(0, 5), (2, 1)']);
     assert.deepEqual(report.unmatchedPrinted, ['(0, 5), (2. 1)']);
-    assert.deepEqual(Object.keys(report.notes), [eight.id]);
+    // and the s2 unit test's item 23, whose maximum the guide prints only rounded (1.296 for 35/27)
+    assert.deepEqual(Object.keys(report.notes), [eight.id, 'bi-math-s2-student-book-u6l3-t23']);
     for (const [id, note] of Object.entries(report.notes)) {
       assert.equal(items.find(i => i.id === id)?.status, 'computed', id);
       assert.ok(note.length > 0, id);
@@ -335,6 +387,17 @@ describe('book items — the reader', () => {
     const test = items.find(i => i.id === 'bi-math-s2-student-book-u6l2-t15')!;
     assert.equal(bookCitation(test, 'ar'), 'كتاب الطالب ص ٧٧، اختبار نهاية الوحدة ٦، س ١٥');
     assert.equal(bookCitation(test, 'en'), 'Student book p. 77, unit 6 test, Q15');
+  });
+
+  it('verifies the unit test’s max/min only where its own printed line holds the whole answer', () => {
+    const t = (n: number) => items.find(i => i.id === `bi-math-s2-student-book-u6l3-t${n}`)!;
+    assert.deepEqual([20, 21, 22, 23].map(n => t(n).status), ['verified', 'verified', 'verified', 'computed']);
+    // the same reader, fed edits: a rounded value, a missing point, another item's label
+    const edit = (over: Partial<BookItem>) => verifiedDisagreements([{ ...t(22), ...over }]);
+    assert.deepEqual(edit({ printedAnswer: ': صغرى.(2.5, -0.3) )22' }), [t(22).id]);
+    assert.deepEqual(edit({ printedAnswer: 'لا توجد قيم عظمى وقيم صغرى. )22' }), [t(22).id]);
+    assert.deepEqual(edit({ printedAnswer: ': صغرى.(2.5, -0.25) )21' }), [t(22).id]);
+    assert.deepEqual(edit({}), []);
   });
 
   it('catches a printed derivative labelled for another item', () => {

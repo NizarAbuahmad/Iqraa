@@ -414,7 +414,8 @@ class UnitOpenPage(unittest.TestCase):
 
     def test_item_8_s_printed_entry_is_reported_not_forgiven(self):
         self.assertEqual(self.extras['unmatchedPrinted'], ['(0, 5), (2. 1)'])
-        self.assertEqual(list(self.extras['notes']), ['bi-math-s1-teacher-guide-u1l3-8'])
+        # the s1 guide's only note; the s2 student book's unit test 23 has its own (its max is printed rounded)
+        self.assertEqual(list(self.extras['notes']), ['bi-math-s1-teacher-guide-u1l3-8', 'bi-math-s2-student-book-u6l3-t23'])
 
     def test_nothing_unit_open_carries_a_check(self):
         for n in range(6, 12):
@@ -696,9 +697,9 @@ class Readings(unittest.TestCase):
         for rs in self.by_source.values():
             for r in rs:
                 counts[r['status']] = counts.get(r['status'], 0) + 1
-        # verified: 5 from guide p.47, 13 from the s2 student book's unit 6;
-        # computed: 28 before, + the s2 unit-6 test's 6 multiple choice, + p.74's 9 max/min
-        self.assertEqual((counts['verified'], counts['computed']), (18, 43))
+        # verified: 5 from guide p.47, 13 s2 derivatives, 3 s2 unit-test max/min (20-22);
+        # computed: 28 before, + the s2 unit-6 test's 6 multiple choice, + p.74's 9 max/min, + test item 23
+        self.assertEqual((counts['verified'], counts['computed']), (21, 44))
 
 
 class RivalReadings(unittest.TestCase):
@@ -900,7 +901,8 @@ class StudentBookDerivatives(unittest.TestCase):
 
     def test_unit_test_ids_never_collide_with_the_lessons_practice_numbers(self):
         ids = [r['id'] for r in self.items.values() if r['kind'] == 'unit-test']
-        self.assertEqual(sorted(ids), [f'bi-math-s2-student-book-u6l2-t{n}' for n in (15, 16, 18, 19)])
+        self.assertEqual(sorted(ids), [f'bi-math-s2-student-book-u6l2-t{n}' for n in (15, 16, 18, 19)]
+                         + [f'bi-math-s2-student-book-u6l3-t{n}' for n in (20, 21, 22, 23)])
 
     def test_item_17_is_left_out_on_purpose_not_quarantined(self):
         # `f(x) = x` is a near-duplicate of four other items by the validator's measure
@@ -1074,11 +1076,73 @@ class StudentBookExtrema(unittest.TestCase):
         self.assertEqual(x.solve_extrema('f(x) = x^4'), f'{x.EXTREMA_NO_MAX_AR}\n{x.EXTREMA_MIN_AR}\nf(0) = 0')
 
     def test_what_cannot_be_judged_is_refused(self):
-        for stem, reason in (('f(x) = 1/x', 'not_a_polynomial'), ('f(x) = 5', 'derivative_is_zero'),
+        for stem, reason in (('f(x) = 1/x', 'not_a_polynomial'),
                              ('f(x) = x^4 + 2x^2 + 4x', 'not_clean')):   # f' = 4(x^3 + x + 1): a CRootOf
             with self.subTest(stem=stem), self.assertRaises(x.Reject) as e:
                 x.solve_extrema(stem)
             self.assertEqual(str(e.exception), reason)
+
+    def test_a_constant_has_none_as_the_book_says(self):
+        # f' ≡ 0: every point is a non-strict extremum, but the guide answers p.77 item 20
+        # (f(x) = 17) «لا توجد قيم عظمى وقيم صغرى» - the school counts strict extrema only
+        self.assertEqual(x.solve_extrema('f(x) = 17'), x.EXTREMA_NONE_AR)
+
+
+class StudentBookTestExtrema(unittest.TestCase):
+    """The unit-6 test's open max/min questions, student p.77 items 20-23.
+
+    The guide's copy (p.112) prints each answer on a line ending in its `)n` label. An item
+    is `verified` only when that line holds exactly what SymPy found - the same kinds and the
+    same exact points, or the «none» phrase for none."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.by_source, cls.rejects = x.build()
+        cls.items = {r['source']['number']: r for r in cls.by_source.get('math-s2-student-book', [])
+                     if r['lessonId'] == 'kbl-math-s2-nccd-u6_l3' and r['kind'] == 'unit-test'}
+
+    def test_the_four_keys_and_their_states(self):
+        self.assertEqual(sorted(self.items), [20, 21, 22, 23])
+        self.assertEqual(self.items[20]['computedAnswer'], x.EXTREMA_NONE_AR)
+        self.assertEqual(self.items[21]['computedAnswer'], x.EXTREMA_NONE_AR)
+        self.assertEqual(self.items[22]['computedAnswer'], f'{x.EXTREMA_NO_MAX_AR}\n{x.EXTREMA_MIN_AR}\nf(5/2) = -1/4')
+        self.assertEqual(self.items[23]['computedAnswer'],
+                         f'{x.EXTREMA_MAX_AR}\nf(1/3) = 35/27\n{x.EXTREMA_MIN_AR}\nf(1) = 1')
+        for n in (20, 21, 22):
+            with self.subTest(item=n):
+                r = self.items[n]
+                self.assertEqual((r['status'], r['verificationSource'], r['check']), ('verified', 'sympy+book', None))
+                self.assertTrue(r['printedAnswer'].endswith(f'){n}'), r['printedAnswer'])
+        # 23's maximum is printed split and rounded (1.296 for 35/27): no agreement, so computed
+        self.assertEqual((self.items[23]['status'], self.items[23]['printedAnswer']), ('computed', None))
+
+    def test_ids_kind_and_citation_fields(self):
+        r = self.items[22]
+        self.assertEqual(r['id'], 'bi-math-s2-student-book-u6l3-t22')
+        self.assertEqual((r['kind'], r['tier'], r['tierSource']), ('unit-test', 'medium', 'default'))
+        self.assertEqual(r['source'], {'sourceId': 'math-s2-student-book', 'page': 77, 'bookPage': 77, 'unit': 6, 'number': 22})
+
+    def test_item_23_is_joined_across_its_line_break(self):
+        self.assertEqual(self.items[23]['stem'], 'f(x)=2x^3 -4x^2 +2x+1')
+
+    def test_only_a_line_starting_with_a_sign_is_joined(self):
+        self.assertEqual(x.join_continued('f(x)=2x3 -4x2\n+2x+1'), 'f(x)=2x3 -4x2 +2x+1')
+        self.assertEqual(x.join_continued('f(x)= 3\n5 x3 + x4'), 'f(x)= 3\n5 x3 + x4')   # a split fraction stays split
+
+    def test_the_printed_lines_are_read_by_label(self):
+        got = x.printed_extrema(x.page_text('math-s2-teacher-guide', 112))
+        self.assertEqual(got[20][1], set())
+        self.assertEqual(got[21][1], set())
+        self.assertEqual(got[22][1], {('min', x.Rational(5, 2), x.Rational(-1, 4))})
+        self.assertIsNone(got[23][1])     # «3 , 1.296)»: a fragment, not an answer
+
+    def test_a_printed_line_verifies_only_the_whole_answer(self):
+        rec = lambda key: {'computedAnswer': key}
+        full = f'{x.EXTREMA_MAX_AR}\nf(1/3) = 35/27\n{x.EXTREMA_MIN_AR}\nf(1) = 1'
+        self.assertEqual(x.extrema_set(full), {('max', x.Rational(1, 3), x.Rational(35, 27)), ('min', 1, 1)})
+        self.assertFalse(x.extrema_set(full) == {('min', 1, 1)})                  # a missing max is no match
+        self.assertEqual(x.extrema_set(x.EXTREMA_NONE_AR), set())
+        self.assertIsNone(x.extrema_set('f(x) = 2'))                              # not a key of this family
 
 
 if __name__ == '__main__':

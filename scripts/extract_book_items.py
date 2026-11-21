@@ -126,6 +126,12 @@ TABLE: list[Entry] = [
     # word problems.
     Entry(SB2, 's2', 6, 3, 1, 10, 'extrema', 'أجد القيم العظمى والقيم الصغرى المحلية للاقتران الآتي (إن وجدت)',
           page=74, numbers=(1, 3, 4, 5, 6, 7, 8, 9, 10)),
+    # The unit-6 test's open max/min questions, p.77 items 20-23 (21-24 in the 2021 printing).
+    # The guide prints each answer on a line labelled `)n` (p.112); `pair_extrema` verifies an
+    # item only when that line holds exactly the computed answer. 23's stem is broken over two
+    # lines by the text layer (`2x3 -4x2` / `+2x+1`), hence `join`.
+    Entry(SB2, 's2', 6, 3, 20, 23, 'extrema', 'أجد القيم العظمى والقيم الصغرى المحلية للاقتران الآتي (إن وجدت)',
+          page=77, answers=112, unit_test=True, params={'join': True}),
     # The unit-6 test's multiple choice, read from SB2_READINGS. The guide circles its key, which
     # the text layer does not carry, so these are `computed`. `choices` is the page's whole run.
     Entry(SB2, 's2', 6, 1, 1, 1, 'reading', 'ما ميل منحنى الاقتران الآتي عند قيمة x المعطاة؟', page=76,
@@ -818,7 +824,9 @@ def solve_extrema(stem: str) -> str:
     if not d1.is_polynomial(X):
         raise Reject('not_a_polynomial')
     if simplify(d1) == 0:
-        raise Reject('derivative_is_zero')
+        # A constant: every point is a non-strict extremum, but the guide answers p.77 item 20
+        # (f(x) = 17) «لا توجد قيم عظمى وقيم صغرى» - the school counts strict extrema only.
+        return EXTREMA_NONE_AR
     roots = Counter(real_roots(Poly(d1, X)))
     if any(r.has(CRootOf) for r in roots):
         raise Reject('not_clean')
@@ -838,6 +846,75 @@ def solve_extrema(stem: str) -> str:
     out = [EXTREMA_MAX_AR, *maxima] if maxima else [EXTREMA_NO_MAX_AR]
     out += [EXTREMA_MIN_AR, *minima] if minima else [EXTREMA_NO_MIN_AR]
     return '\n'.join(out)
+
+
+def join_continued(text: str) -> str:
+    """Join a line that starts with + or − onto the line before it: an expression the text
+    layer broke (student p.77 item 23, `2x3 -4x2` over `+2x+1`). Only for the rows that ask
+    (`params['join']`): a line starting with a digit, like a split fraction's `5 x3`, stays."""
+    return re.sub(r'\n[ \t]*(?=[+\-−–])', ' ', text)
+
+
+EXTREMA_POINT = re.compile(r'([a-z])\((.+)\) = (.+)')
+
+
+def extrema_set(key: str) -> set | None:
+    """A max/min key as {(kind, x, value)}, exact; None if it is not a key of this family."""
+    if key == EXTREMA_NONE_AR:
+        return set()
+    out, kind = set(), None
+    for line in key.split('\n'):
+        if line in (EXTREMA_MAX_AR, EXTREMA_MIN_AR):
+            kind = 'max' if line == EXTREMA_MAX_AR else 'min'
+        elif line in (EXTREMA_NO_MAX_AR, EXTREMA_NO_MIN_AR):
+            kind = None
+        elif kind and (m := EXTREMA_POINT.fullmatch(line)):
+            out.add((kind, simplify(parse(m.group(2).replace('√', 'sqrt'))),
+                     simplify(parse(m.group(3).replace('√', 'sqrt')))))
+        else:
+            return None
+    return out
+
+
+# The s2 guide prints a unit-test max/min answer on a line ending in its item number:
+# «لا توجد قيم عظمى وقيم صغرى. ⇥)20», «: صغرى.(2.5, -0.25) ⇥)22». Only that line is read. A line
+# whose points cannot all be read (p.112's `3 , 1.296) )23`, a fragment of a split fraction)
+# reads as None and verifies nothing; a line that holds part of an answer verifies nothing either,
+# because the item is verified only when the line's set EQUALS the computed one.
+PRINTED_NONE_AR = 'لا توجد قيم عظمى وقيم صغرى'
+PRINTED_POINT = re.compile(r'(عظمى|صغرى)\s*\.?\s*\(([^()]*)\)')
+
+
+def printed_extrema(text: str) -> dict[int, tuple[str, set | None]]:
+    out: dict[int, tuple[str, set | None]] = {}
+    for line in (nfkc(l) for l in text.split('\n')):
+        label = PRINTED_LABEL.search(line)
+        if not label:
+            continue
+        raw = re.sub(r'\s+', ' ', line).strip()
+        body = line[:label.start()]
+        if body.strip().strip('.: ').strip() == PRINTED_NONE_AR:
+            out[int(label.group(1))] = (raw, set())
+            continue
+        found, rest = set(), PRINTED_POINT.sub('', body)
+        try:
+            for kind, pair in PRINTED_POINT.findall(body):
+                a, b = pair.translate(MINUS).split(',')
+                found.add(('max' if kind == 'عظمى' else 'min', simplify(parse(a)), simplify(parse(b))))
+        except Exception:  # noqa: BLE001 - an unreadable printed point verifies nothing
+            found = set()
+        # anything left beyond punctuation means the line holds more than whole points
+        out[int(label.group(1))] = (raw, found if found and not re.search(r'[^\s.:،]', rest) else None)
+    return out
+
+
+def pair_extrema(records: list[dict], printed: dict[int, tuple[str, set | None]]) -> None:
+    """Verify a record when its own labelled line holds exactly its computed answer."""
+    for r in records:
+        raw, found = printed.get(r['source']['number'], ('', None))
+        if found is not None and found == extrema_set(r['computedAnswer']):
+            r['status'], r['verificationSource'] = assign_state(r['computedAnswer'], r['computedAnswer'], False)
+            r['printedAnswer'] = raw
 
 
 # ── the s2 guide's printed derivatives ───────────────────────────────────────
@@ -974,6 +1051,7 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
     rejects: list[dict] = []
     open_items: dict[tuple[str, int], list[dict]] = {}     # unit_open records waiting for their printed answers
     derivative_items: dict[int, list[dict]] = {}           # s2 guide page -> derivative records it answers
+    extrema_items: dict[int, list[dict]] = {}              # s2 guide page -> max/min records it answers
     for e in TABLE:
         lesson_id = curriculum_lesson_id(e.semester, e.unit, e.lesson)
         if lesson_id is None:
@@ -1023,7 +1101,8 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                     kind, tier, tier_source = 'unit-test', 'medium', 'default'
                     extra = {}
                 else:
-                    stem = normalise_stem(lead_math(blocks[n]), MAX_EXP[e.family])
+                    lead = lead_math(blocks[n])
+                    stem = normalise_stem(join_continued(lead) if e.params.get('join') else lead, MAX_EXP[e.family])
                     computed = {
                         'system': lambda: solve_system(stem),
                         'derivative': lambda: solve_derivative(stem),
@@ -1043,13 +1122,18 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                 if e.family == 'unit_open':
                     open_items.setdefault((e.source, e.page), []).append(record)
                 if e.answers is not None:
-                    derivative_items.setdefault(e.answers, []).append(record)
+                    (derivative_items if e.family == 'derivative' else extrema_items).setdefault(e.answers, []).append(record)
             except Reject as r:
                 rejects.append({**base, 'family': e.family, 'reason': str(r)})
             except Exception as ex:  # noqa: BLE001 - any parse/solve failure quarantines; nothing is guessed
                 rejects.append({**base, 'family': e.family, 'reason': f'{type(ex).__name__}: {ex}'[:120]})
     unmatched: list[str] = []
     notes: dict[str, str] = {}
+    for page, records in extrema_items.items():
+        pair_extrema(records, printed_extrema(page_text(G2, page)))
+        for rec in records:
+            if rec['status'] == 'computed':
+                notes[rec['id']] = f'its line on guide p.{page} does not hold exactly the computed answer'
     for page, records in derivative_items.items():
         pair_derivatives(records, printed_derivatives(page_text(G2, page)))
         for rec in records:

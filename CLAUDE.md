@@ -356,6 +356,9 @@ sweep in your staged files.
   Lesson 6.3's max/min exercises (p.74, `solve_extrema`) are `computed` too, and their
   key is the one family allowed Arabic beyond «لا يوجد حل»: five fixed labels, each a
   whole line apart from the maths (`EXTREMA_*_AR`, mirrored in `bookItems.test.ts`).
+  The unit test's max/min (p.77 items 20-22) are `verified` by `pair_extrema` only
+  where the guide's `)n` line holds EXACTLY the computed answer; a constant has none,
+  as the guide says (strict extrema only).
   A new book item must not be a near-duplicate (`stemSimilarity` > 0.85) of another
   in its lesson, or the book plan promises a question the draw cannot deliver —
   `bookQuestions.test.ts` catches it, but only for draw orders it happens to try. `SERVED_STATUSES` is the one place
