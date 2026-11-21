@@ -114,7 +114,27 @@ TABLE: list[Entry] = [
     Entry(SB2, 's2', 6, 2, 7, 9, 'derivative_at', 'أجد قيمة f′(-2) للاقتران الآتي', page=68,
           params={'point': '-2'}),
     Entry(SB2, 's2', 6, 2, 24, 26, 'derivative', DERIVATIVE_AR, page=69, answers=103),
-    Entry(SB2, 's2', 6, 2, 14, 19, 'derivative', DERIVATIVE_AR, page=77, answers=112, unit_test=True),
+    # Not 17, `f(x) = x`: its prompt is so short that the shared instruction makes it a
+    # near-duplicate (0.86 > the validator's 0.85) of four other derivative items in this
+    # lesson, so a draw could never place it beside them and the plan, a dry run with one
+    # seed, would promise a question the paper does not get (bookQuestions.test.ts).
+    Entry(SB2, 's2', 6, 2, 14, 19, 'derivative', DERIVATIVE_AR, page=77, answers=112, unit_test=True,
+          numbers=(14, 15, 16, 18, 19)),
+    # The unit-6 test's multiple choice, read from SB2_READINGS. The guide circles its key, which
+    # the text layer does not carry, so these are `computed`. `choices` is the page's whole run.
+    Entry(SB2, 's2', 6, 1, 1, 1, 'reading', 'ما ميل منحنى الاقتران الآتي عند قيمة x المعطاة؟', page=76,
+          params={'check': 'slope_at', 'choices': (1, 2, 3, 4)}, unit_test=True),
+    Entry(SB2, 's2', 6, 2, 2, 2, 'reading', 'ما مشتقة الاقتران الآتي؟', page=76,
+          params={'check': 'derivative', 'choices': (1, 2, 3, 4)}, unit_test=True),
+    Entry(SB2, 's2', 6, 3, 3, 3, 'reading', 'ما قيمة x التي يكون عندها للاقتران الآتي قيمة عظمى؟', page=76,
+          params={'check': 'max_at', 'choices': (1, 2, 3, 4)}, unit_test=True),
+    Entry(SB2, 's2', 6, 2, 4, 4, 'reading',
+          'يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم (s بالأمتار، t بالثواني). ما سرعة الجسم بوحدة m/s عند الزمن المعطى؟',
+          page=76, params={'check': 'velocity_at', 'choices': (1, 2, 3, 4)}, unit_test=True),
+    Entry(SB2, 's2', 6, 3, 30, 30, 'reading', 'ما جميع قيم x التي يكون عندها للاقتران الآتي قيم عظمى أو صغرى محلية؟',
+          page=77, params={'check': 'extrema_at', 'choices': (30, 31)}, unit_test=True),
+    Entry(SB2, 's2', 6, 3, 31, 31, 'reading', 'ما عدد النقاط الحرجة للاقتران الآتي؟', page=77,
+          params={'check': 'critical_count', 'choices': (30, 31)}, unit_test=True),
 ]
 MAX_EXP = {'system': 12, 'derivative': 9, 'derivative_at': 9, 'mcq_pair': 9, 'unit_open': 9, 'reading': 0}
 
@@ -344,7 +364,9 @@ def pair_printed(records: list[dict], entries: list[str]) -> list[str]:
 # Passing is evidence, not proof - no page image has been compared - so the item is `computed`,
 # never `verified`, and is on the list a person compares with the printed book.
 STRUCTURE = re.compile(r'[\s^()/]')
-LABEL = re.compile(r'(?m)(^|\t)[ ]*[a-d]\)')
+# Also after a digit and a space: a split fraction leaves its denominator on the next option's
+# line (student p.76 item 3: «3 b) - 5»). Not after any space, which `f(2, a)` could have.
+LABEL = re.compile(r'(?m)(^|\t|(?<=\d) )[ ]*[a-d]\)')
 DASHES = str.maketrans({'−': '-', '–': '-', '‒': '-', '—': '-'})
 
 
@@ -427,17 +449,89 @@ def split_readings(text: str, numbers: tuple[int, ...]) -> dict[int, str | Rejec
     return out
 
 
-def solve_reading(n: int, page: str, check: str) -> tuple[str, list[str], int]:
-    """(stem, options, index of the single correct option) for item `n` read as READINGS[n]."""
-    r = READINGS.get(n)
+RESIDUE = re.compile(r'«[^«»]*»')
+
+
+def served_stem(lines: tuple[str, ...]) -> tuple[str, ...]:
+    """A reading's stem as served: its «residue» removed, blank lines dropped.
+
+    Residue is page text that belongs to the Arabic sentence (`t`, `s` and `m/s` in «s موقع
+    الجسم ... بوحدة m/s»). It is written in the reading, in its place, so the character gate
+    still checks it against the page - it is just not part of the maths. The served stem is
+    derived from the reading by this one rule, never written separately, so a stem cannot
+    quietly drop the end of an expression."""
+    out = (re.sub(r'\s+', ' ', RESIDUE.sub('', l)).strip() for l in lines)
+    return tuple(l for l in out if l)
+
+
+# ── the student book's multiple choice ───────────────────────────────────────
+# Its test pages cannot be cut by heading lines, as guide p.47 is: on p.76 item 2's number
+# also ends another line, item 4's is followed by a diacritic, and p.77 prints item 31's
+# function on the line ABOVE its heading. So the block after the «أضع دائرة حول رمز الإجابة»
+# instruction is cut into consecutive chunks, each ending at its `d)` line plus any bare-number
+# lines that follow it (option d)'s split denominator, p.76 item 3). A chunk must hold exactly
+# one Arabic heading line ending in its own number, or that item is not cut.
+CHOICE_INSTRUCTION = 'دائرة حول رمز'
+DIACRITICS = re.compile(r'[ً-ْٰـ]')   # harakat, superscript alef, tatweel
+
+
+def split_choices(text: str, numbers: tuple[int, ...]) -> dict[int, str | Reject]:
+    """The Latin text of each multiple-choice item in `numbers` (the page's whole run, in order)."""
+    plain = [DIACRITICS.sub('', nfkc(l)) for l in text.split('\n')]
+    starts = [i for i, l in enumerate(plain) if CHOICE_INSTRUCTION in l]
+    if len(starts) != 1:
+        return {n: Reject('choice_block_not_found') for n in numbers}
+    out: dict[int, str | Reject] = {}
+    i = starts[0] + 1
+    for n in numbers:
+        chunk: list[int] = []
+        while i < len(plain) and not re.search(r'\bd\)', plain[i]):
+            chunk.append(i)
+            i += 1
+        if i == len(plain):
+            out[n] = Reject('options_not_found')
+            continue
+        chunk.append(i)
+        i += 1
+        while i < len(plain) and re.fullmatch(r'\s*\d+\s*', plain[i]):
+            chunk.append(i)
+            i += 1
+        heads = [j for j in chunk if ARABIC.search(plain[j]) and (m := ITEM_END.search(plain[j])) and int(m.group(1)) == n]
+        if len(heads) != 1:
+            out[n] = Reject('item_not_found')
+            continue
+        out[n] = '\n'.join(
+            ARABIC.sub('', ITEM_END.sub('', plain[j]) if j == heads[0] else plain[j]).replace(':', '')
+            for j in chunk)
+    return out
+
+
+# Student book p.76 items 1-4 and p.77 items 30-31 (the newer printing's numbers; the 2021
+# printing numbers p.77's 31-32 and writes item 4 with d(t)). Compared by eye with the printed
+# page: 1-3 on p.76, 30-31 on p.77 of the 2021 printing, whose layout of these is the same.
+SB2_READINGS: dict[tuple[int, int], Reading] = {
+    (76, 1): Reading(('x = 5', 'f(x) = 3x - 1'), ('3', '1/3', '-1', '0')),
+    (76, 2): Reading(("«f '(x)»", 'f(x) = x(2x + 1)'), ('x', '2x + 1', '2x^2 + x', '4x + 1')),
+    (76, 3): Reading(('«x»', 'f(x) = (x-2)(x-3)^2'), ('-7/3', '-5/2', '7/3', '5/2')),
+    (76, 4): Reading(('s(t) = t^2', '«t s»', 't = 1 «m/s»'), ('0', '1', '2', '4')),
+    (77, 30): Reading(('«x»', 'f(x) = 3x^5 - 5x^3 + 15'), ('-1, 0, 1', '-1, 0', '0, 1', '-1, 1')),
+    (77, 31): Reading(('f(x) = (x-3)^2',), ('0', '1', '2', '3')),
+}
+
+
+def solve_reading(n: int, page: str, check: str, reading: 'Reading | None' = None) -> tuple[str, list[str], int]:
+    """(stem, options, index of the single correct option) for item `n` read as `reading`
+    (default READINGS[n], guide p.47)."""
+    r = reading if reading is not None else READINGS.get(n)
     if r is None:
         raise Reject('no_reading')
-    written = '\n'.join([*r.stem, *(f'{l} {o}' for l, o in zip(LABELS, r.options))])
+    written = '\n'.join([*(l.replace('«', '').replace('»', '') for l in r.stem),
+                         *(f'{l} {o}' for l, o in zip(LABELS, r.options))])
     if core(written) != core(page):
         raise Reject('reading_changes_characters')
     if bracket_pairs(page) - bracket_pairs(written):
         raise Reject('reading_moves_brackets')
-    stem = '\n'.join(l.translate(DASHES) for l in r.stem)
+    stem = '\n'.join(l.translate(DASHES) for l in served_stem(r.stem))
     hits = [i for i, o in enumerate(r.options) if option_holds(check, stem, o)]
     if len(hits) != 1:
         raise Reject('key_not_unique')
@@ -472,7 +566,60 @@ def option_holds(check: str, stem: str, option: str) -> bool:
         if len(found) != 1:
             raise Reject('box_not_determined')
         return simplify(parse(option) - found[0]) == 0
+    if check in CURVE_CHECKS:
+        return curve_option_holds(check, lines, option.translate(MINUS))
     raise Reject('unknown_check')
+
+
+# ── the s2 unit-6 test: questions about a curve ──────────────────────────────
+# The stem is the curve's definition, `f(x) = …` or `s(t) = …`, plus, for the two "at a
+# point" checks, the point line `x = 5` / `t = 1`. Anything the rule cannot decide is an
+# error, never a "no": a second derivative of 0 at a stationary point, a curve that is not
+# a polynomial (its critical points would also need where f′ is undefined), f′ ≡ 0.
+CURVE_CHECKS = ('slope_at', 'velocity_at', 'derivative', 'max_at', 'extrema_at', 'critical_count')
+CURVE = re.compile(r'([a-z])\s*\(\s*([a-z])\s*\)\s*=(.*)')
+POINT = re.compile(r'([a-z])\s*=\s*(\S.*)')
+
+
+def curve_option_holds(check: str, lines: list[str], option: str) -> bool:
+    from sympy import Poly, real_roots
+    curves = [m for l in lines if (m := CURVE.fullmatch(l.strip()))]
+    points = [m for l in lines if not CURVE.fullmatch(l.strip()) and (m := POINT.fullmatch(l.strip()))]
+    at_point = check in ('slope_at', 'velocity_at')
+    if len(curves) != 1 or len(points) != (1 if at_point else 0) or len(lines) != len(curves) + len(points):
+        raise Reject('unexpected_stem_line')
+    _name, var, right = curves[0].groups()
+    f = parse(right)
+    v = next((s for s in f.free_symbols if s.name == var), Symbol(var))
+    if f.free_symbols - {v}:
+        raise Reject('more_than_one_variable')
+    d1 = diff(f, v)
+    if at_point:
+        if points[0].group(1) != var:
+            raise Reject('point_on_another_variable')
+        return simplify(d1.subs(v, parse(points[0].group(2))) - parse(option)) == 0
+    if check == 'derivative':
+        return simplify(parse(option) - d1) == 0
+    if check == 'max_at':
+        a = parse(option)
+        if simplify(d1.subs(v, a)) != 0:
+            return False
+        d2 = simplify(diff(d1, v).subs(v, a))
+        if d2 == 0:
+            raise Reject('second_derivative_zero')
+        return bool(d2 < 0)
+    if not d1.is_polynomial(v):
+        raise Reject('not_a_polynomial')
+    if simplify(d1) == 0:
+        raise Reject('derivative_is_zero')
+    roots = Counter(real_roots(Poly(d1, v)))
+    if check == 'critical_count':
+        return parse(option) == len(roots)
+    # extrema_at: a real root of f′ is a local extremum iff f′ changes sign there, i.e. its
+    # multiplicity is odd. The option is the whole set, so a missing or extra point is a no.
+    extrema = {r for r, k in roots.items() if k % 2 == 1}
+    picked = [parse(p) for p in option.split(',')]
+    return len(picked) == len(set(picked)) and set(picked) == extrema
 
 
 # ── normalisation ────────────────────────────────────────────────────────────
@@ -780,8 +927,12 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
             raise SystemExit(f'table row {e.source} u{e.unit} l{e.lesson} has no curriculum lesson')
         if e.family in ('mcq_pair', 'unit_open', 'reading'):
             text = page_text(e.source, e.page)
-            blocks = (split_readings(text, e.items) if e.family == 'reading'
-                      else (split_questions if e.family == 'mcq_pair' else split_unit_open)(text))
+            if e.family == 'reading' and 'choices' in e.params:
+                blocks = split_choices(text, e.params['choices'])
+            elif e.family == 'reading':
+                blocks = split_readings(text, e.items)
+            else:
+                blocks = (split_questions if e.family == 'mcq_pair' else split_unit_open)(text)
             page, book_page = e.page, int(text.split('\n', 1)[0].strip())
         else:
             page = e.page or exercise_page(e.source, e.unit, e.lesson)
@@ -804,7 +955,12 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                     computed, kind, tier, tier_source = options[key], 'unit-test-mcq', 'medium', 'default'
                     extra = {'options': options}
                 elif e.family == 'reading':
-                    stem, options, key = solve_reading(n, blocks[n], e.params['check'])
+                    reading = None
+                    if e.source == SB2:   # never fall back to guide p.47's READINGS for another page
+                        reading = SB2_READINGS.get((e.page, n))
+                        if reading is None:
+                            raise Reject('no_reading')
+                    stem, options, key = solve_reading(n, blocks[n], e.params['check'], reading)
                     computed, kind, tier, tier_source = options[key], 'unit-test-mcq', 'medium', 'default'
                     extra = {'options': options}
                 elif e.family == 'unit_open':

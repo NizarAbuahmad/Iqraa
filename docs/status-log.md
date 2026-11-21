@@ -10,19 +10,49 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Book items: the semester-2 student book's derivatives (unit 6) — 2026-11-21
+## Book items: the semester-2 student book's unit 6 (derivatives and the test's multiple choice) — 2026-11-21
 
 `scripts/extract_book_items.py` now reads the NCCD Grade 10 maths **student book**, semester 2
-(`math-s2-student-book`), not only the exercise books and the s1 guide. First slice, unit 6 only:
-**14 items, all `verified`**, written to `lib/curriculum/src/data/book-items/math-s2-student-book.json` and
-served to lesson 6.2 (`kbl-math-s2-nccd-u6_l2`).
+(`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **13 open questions,
+all `verified`, and the unit test's 6 multiple choice, all `computed`**, written to
+`lib/curriculum/src/data/book-items/math-s2-student-book.json` and served to lessons 6.1–6.3
+(`kbl-math-s2-nccd-u6_l1` … `u6_l3`).
 
 | Page | Items | Kind | Result |
 | --- | --- | --- | --- |
 | 68 | 1–6 «أجد مشتقة» | `exercise` | 6 verified |
 | 68 | 7–9 f′(−2) | — | quarantined: split fractions (7 `not_a_function_definition`, 9) and `x99` (8, `exponent_out_of_range`) |
 | 69 | 24–26 products | `exercise` | 3 verified |
-| 77 | unit test 14–19 «أجد مشتقة» | `unit-test` | 5 verified; 14 (`2π/3`) quarantined |
+| 77 | unit test 14–19 «أجد مشتقة» | `unit-test` | 4 verified (15, 16, 18, 19); 14 (`2π/3`) quarantined; 17 left out (below) |
+| 76 | unit test 1–4, multiple choice | `unit-test-mcq` | 4 computed: slope at a point (6.1), a derivative (6.2), the x of a maximum (6.3), a velocity (6.2) |
+| 77 | unit test 30–31, multiple choice | `unit-test-mcq` | 2 computed: all local extrema, the number of critical points (6.3) |
+
+**Item 17, `f(x) = x`, is left out on purpose.** Its prompt is so short that the shared instruction makes it a
+near-duplicate (0.86, over the validator's 0.85) of four other derivative items in lesson 6.2, so no paper can
+carry it beside them, and the plan — a dry run with one seed — promised a question the draw then did not
+deliver. `bookQuestions.test.ts` («a draw of the planned size delivers exactly the plan») caught it once the
+multiple choice changed the draw order; it had passed before only because the old order never hit it.
+
+**The multiple choice is read, not parsed.** The text layer splits every fraction in these options (`-7/3`)
+and drops two exponents onto their own lines (item 3's `(x-3)²`, item 31's), and the guide marks its key by
+circling it, which the text layer does not carry. So each item has a hand-written reading (`SB2_READINGS`,
+keyed by page and number) that passes the existing gates or is quarantined: the same characters and bracket
+pairs as the page, and exactly one option correct under SymPy. New pieces:
+- `split_choices` cuts the block after «أضع دائرة حول رمز الإجابة» at each `d)` line, keeping the bare-number
+  lines after it (option d)'s split denominator, p.76 item 3). Heading lines cannot cut these pages: item 2's
+  number also ends another line, item 4's is followed by a diacritic, and item 31's function is printed above
+  its heading. A chunk without exactly one heading carrying its own number is not cut.
+- «Residue» in a reading (`«t s»`, `«m/s»`): sentence words left in the Latin text. The character gate still
+  checks them in place; `served_stem` removes them. The served stem is derived, never written separately, so
+  it cannot drop the end of an expression.
+- Six SymPy checks (`curve_option_holds`): `slope_at`, `velocity_at`, `derivative`, `max_at` (refuses
+  f″ = 0), `extrema_at` and `critical_count` (polynomials only; a local extremum is a real root of f′ of odd
+  multiplicity, so item 30's 0 is not one).
+- The option-label stripper also takes a label after a digit and a space («3 b) - 5», a split fraction's
+  denominator beside the next label); guide p.47's output is unchanged.
+
+A reading's gates are evidence, not proof: read flat, item 31 is `2(x-3)`, which has no critical point, and
+the gate would accept option a). Its exponent, like each reading, was compared by eye with the printed page.
 
 **How they are verified.** The s2 teacher guide reproduces each student page with its answers printed on
 it (guide p.102 for student p.68, p.103 for p.69, p.112 for p.77). `printed_derivatives` reads every
@@ -48,15 +78,22 @@ and a printed number that is another item's.
   practice numbers, which run to 30.
 - An `Entry` takes `page` for a source with no exercise index, `answers` (the guide page) and `unit_test`.
 
-**Verified.** The Python tests failed first, then passed (106). Every stem was compared by eye with the
-printed pages of a copy of the book: pp.68 and 69 match. **That copy is an older printing (2021), and its
-p.77 numbers the same questions 15–20 and prints `2π³` where the app's text (reprinted 2021–2025) has `2π/3`
-at 14.** The guide's labels `)14`…`)19` agree with the app's newer numbering, which is what is cited. Each
-answer key was also re-derived by hand. Curriculum `test` (936) and `verify`, monorepo typecheck, api-server
-build + test (3021) and the mobile suite (9496, 0 failing) pass.
+**Verified.** The Python tests failed first, then passed (116). Every stem was compared by eye with the
+printed pages of a copy of the book: pp.68, 69 and 76 match. **That copy is an older printing (2021): its
+p.77 numbers the derivatives 15–20 (with `2π³` where the app's text, reprinted 2021–2025, has `2π/3` at 14)
+and the multiple choice 31–32, and its p.76 item 4 says `d(t)` where the app's text says `s(t)`.** The
+guide's labels `)14`…`)19` agree with the app's newer numbering, which is what is cited. Every answer key was
+also re-derived by hand. Curriculum `test` (937) and `verify`, monorepo typecheck, api-server build + test
+(3021; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
+mobile suite (9496, 0 failing; the app does not import book items) pass.
 
-**Not done.** The unit-6 test's multiple choice (some options are fractions the text layer splits), lesson
-6.3's max/min exercises (needs a solver), lesson 6.1 (figures), every word problem, and units 5, 7, 8. Users
+**API test fixtures that changed, and why.** `bookQuestions.test.ts`: «is never more than what is eligible»
+counted only `exercise` as a short answer — a `unit-test` open question is one too; «on a regeneration the
+dry run avoids what the teacher was shown» assumed lesson 6.2 had no multiple choice, so «shown» is now every
+choice item of both its lessons. Neither assertion was loosened: both still compare exact numbers.
+
+**Not done.** The unit test's open max/min questions (20–23) and its graph questions, lesson 6.3's max/min
+exercises (needs a solver), lesson 6.1's exercises (figures), every word problem, and units 5, 7, 8. Users
 see none of this in production yet: book items reach a paper only on the mock path or with
 `BOOK_ITEMS_LIVE=true`, which is off.
 

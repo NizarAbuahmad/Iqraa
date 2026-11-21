@@ -685,16 +685,20 @@ class Readings(unittest.TestCase):
     def test_nothing_is_guessed_for_the_other_unit_test_items(self):
         # items 12-18 of the page are not rows; a reading row for them would need its own reading
         self.assertEqual(set(x.READINGS), {3, 4, 5})
-        rows = [e for e in x.TABLE if e.family == 'reading']
+        rows = [e for e in x.TABLE if e.family == 'reading' and e.source == x.G1]
         self.assertEqual(sorted(n for e in rows for n in e.items), [3, 4, 5])
+        # and every student-book reading row has its own reading, keyed by page
+        sb2 = [(e.page, n) for e in x.TABLE if e.family == 'reading' and e.source == x.SB2 for n in e.items]
+        self.assertEqual(sorted(sb2), sorted(x.SB2_READINGS))
 
     def test_the_report_counts_the_new_items_as_computed(self):
         counts = {}
         for rs in self.by_source.values():
             for r in rs:
                 counts[r['status']] = counts.get(r['status'], 0) + 1
-        # 5 from guide p.47, 14 from the semester-2 student book's unit 6
-        self.assertEqual((counts['verified'], counts['computed']), (19, 28))
+        # verified: 5 from guide p.47, 13 from the s2 student book's unit 6;
+        # computed: 28 before, + the s2 unit-6 test's 6 multiple choice
+        self.assertEqual((counts['verified'], counts['computed']), (18, 34))
 
 
 class RivalReadings(unittest.TestCase):
@@ -896,11 +900,115 @@ class StudentBookDerivatives(unittest.TestCase):
 
     def test_unit_test_ids_never_collide_with_the_lessons_practice_numbers(self):
         ids = [r['id'] for r in self.items.values() if r['kind'] == 'unit-test']
-        self.assertEqual(sorted(ids), [f'bi-math-s2-student-book-u6l2-t{n}' for n in range(15, 20)])
+        self.assertEqual(sorted(ids), [f'bi-math-s2-student-book-u6l2-t{n}' for n in (15, 16, 18, 19)])
+
+    def test_item_17_is_left_out_on_purpose_not_quarantined(self):
+        # `f(x) = x` is a near-duplicate of four other items by the validator's measure
+        self.assertNotIn('bi-math-s2-student-book-u6l2-t17', self.items)
+        self.assertNotIn('bi-math-s2-student-book-u6l2-t17', self.reasons)
 
     def test_every_served_one_is_verified(self):
-        self.assertEqual(len(self.items), 14)
-        self.assertEqual({r['status'] for r in self.items.values()}, {'verified'})
+        open_ones = [r for r in self.items.values() if r['kind'] != 'unit-test-mcq']
+        self.assertEqual(len(open_ones), 13)
+        self.assertEqual({r['status'] for r in open_ones}, {'verified'})
+
+
+class StudentBookChoices(unittest.TestCase):
+    """The unit-6 test's multiple choice: student p.76 items 1-4 and p.77 items 30-31.
+
+    Read from hand-written readings (`SB2_READINGS`) that must keep the page's characters
+    and brackets and leave exactly one correct option. The guide marks its key by circling
+    it, which the text layer does not carry, so every one is `computed`, never `verified`.
+    """
+
+    KEYS = {  # id: (lessonId suffix, stem, options, key)
+        't1': ('u6_l1', 'x = 5\nf(x) = 3x - 1', ['3', '1/3', '-1', '0'], '3'),
+        't2': ('u6_l2', 'f(x) = x(2x + 1)', ['x', '2x + 1', '2x^2 + x', '4x + 1'], '4x + 1'),
+        't3': ('u6_l3', 'f(x) = (x-2)(x-3)^2', ['-7/3', '-5/2', '7/3', '5/2'], '7/3'),
+        't4': ('u6_l2', 's(t) = t^2\nt = 1', ['0', '1', '2', '4'], '2'),
+        't30': ('u6_l3', 'f(x) = 3x^5 - 5x^3 + 15', ['-1, 0, 1', '-1, 0', '0, 1', '-1, 1'], '-1, 1'),
+        't31': ('u6_l3', 'f(x) = (x-3)^2', ['0', '1', '2', '3'], '1'),
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        cls.by_source, cls.rejects = x.build()
+        cls.items = {r['id'].rsplit('-', 1)[1]: r for r in cls.by_source.get('math-s2-student-book', [])
+                     if r['kind'] == 'unit-test-mcq'}
+        cls.p76 = x.page_text('math-s2-student-book', 76)
+        cls.p77 = x.page_text('math-s2-student-book', 77)
+
+    def test_all_six_are_served_computed_with_the_right_key(self):
+        self.assertEqual(sorted(self.items), sorted(self.KEYS))
+        for k, (lesson, stem, options, key) in self.KEYS.items():
+            with self.subTest(item=k):
+                r = self.items[k]
+                self.assertEqual((r['stem'], r['options'], r['computedAnswer']), (stem, options, key))
+                self.assertEqual(r['lessonId'], f'kbl-math-s2-nccd-{lesson}')
+                self.assertEqual((r['status'], r['verificationSource'], r['printedAnswer'], r['check']),
+                                 ('computed', 'sympy', None, None))
+                self.assertEqual((r['tier'], r['tierSource']), ('medium', 'default'))
+
+    def test_the_choice_block_is_cut_at_each_d_line_and_keeps_a_split_denominator(self):
+        lines = lambda b: [l.strip() for l in b.split('\n') if l.strip()]
+        blocks = x.split_choices(self.p76, (1, 2, 3, 4))
+        self.assertEqual(lines(blocks[3])[-2:], ['3 d) 5', '2'])          # d)'s denominator stays with item 3
+        self.assertEqual(lines(blocks[4])[0], 's(t) = t 2')                # and item 4's heading lost its «4»
+        blocks = x.split_choices(self.p77, (30, 31))
+        self.assertEqual(lines(blocks[31])[:2], ['f(x) = (x-3)', '2'])     # the exponent printed in the heading
+
+    def test_a_chunk_without_its_own_number_is_not_cut(self):
+        blocks = x.split_choices(self.p76, (1, 2, 3, 5))
+        self.assertIsInstance(blocks[5], x.Reject)
+
+    def test_residue_is_checked_against_the_page_but_never_served(self):
+        r = x.SB2_READINGS[(76, 4)]
+        self.assertTrue(any('«' in l for l in r.stem))
+        self.assertEqual(x.served_stem(r.stem), ('s(t) = t^2', 't = 1'))
+
+    def test_a_reading_that_drops_a_character_is_refused(self):
+        page = x.split_choices(self.p76, (1, 2, 3, 4))[4]
+        dropped = x.Reading(('s(t) = t^2', 't = 1 «m/s»'), x.SB2_READINGS[(76, 4)].options)   # «t s» gone
+        with self.assertRaises(x.Reject) as e:
+            x.solve_reading(4, page, 'velocity_at', dropped)
+        self.assertEqual(str(e.exception), 'reading_changes_characters')
+
+    def test_the_flattened_readings_give_no_key_or_another_key(self):
+        page = x.split_choices(self.p76, (1, 2, 3, 4))[3]
+        flat = x.Reading(('«x»', 'f(x) = (x-2)(x-3)2'), x.SB2_READINGS[(76, 3)].options)
+        with self.assertRaises(x.Reject):   # 2(x-2)(x-3) has no maximum
+            x.solve_reading(3, page, 'max_at', flat)
+        # Item 31 read flat, f(x) = 2(x-3), has no critical point, so the gate alone would accept
+        # option a): the reading's exponent rests on the page image (p.77, compared by eye).
+        page = x.split_choices(self.p77, (30, 31))[31]
+        flat = x.Reading(('f(x) = (x-3)2',), x.SB2_READINGS[(77, 31)].options)
+        self.assertEqual(x.solve_reading(31, page, 'critical_count', flat)[2], 0)
+
+    def test_the_checks(self):
+        h = x.option_holds
+        self.assertTrue(h('slope_at', 'x = 5\nf(x) = 3x - 1', '3'))
+        self.assertFalse(h('slope_at', 'x = 5\nf(x) = 3x - 1', '1/3'))
+        self.assertTrue(h('derivative', 'f(x) = x(2x + 1)', '4x + 1'))
+        self.assertFalse(h('derivative', 'f(x) = x(2x + 1)', '2x + 1'))
+        self.assertTrue(h('max_at', 'f(x) = (x-2)(x-3)^2', '7/3'))
+        self.assertFalse(h('max_at', 'f(x) = (x-2)(x-3)^2', '3'))       # a minimum
+        self.assertTrue(h('velocity_at', 's(t) = t^2\nt = 1', '2'))
+        self.assertFalse(h('velocity_at', 's(t) = t^2\nt = 1', '1'))
+        self.assertTrue(h('extrema_at', 'f(x) = 3x^5 - 5x^3 + 15', '-1, 1'))
+        self.assertFalse(h('extrema_at', 'f(x) = 3x^5 - 5x^3 + 15', '-1, 0, 1'))  # 0 is not one
+        self.assertTrue(h('critical_count', 'f(x) = (x-3)^2', '1'))
+        self.assertFalse(h('critical_count', 'f(x) = (x-3)^2', '2'))
+
+    def test_an_undecided_second_derivative_is_not_judged(self):
+        with self.assertRaises(x.Reject) as e:
+            x.option_holds('max_at', 'f(x) = x^4', '0')
+        self.assertEqual(str(e.exception), 'second_derivative_zero')
+
+    def test_a_curve_that_is_not_a_polynomial_is_not_judged(self):
+        for check in ('extrema_at', 'critical_count'):
+            with self.subTest(check=check), self.assertRaises(x.Reject) as e:
+                x.option_holds(check, 'f(x) = 1/x', '0')
+            self.assertEqual(str(e.exception), 'not_a_polynomial')
 
 
 if __name__ == '__main__':

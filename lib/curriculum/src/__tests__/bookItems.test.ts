@@ -334,10 +334,26 @@ describe('book items — the reader', () => {
 
   it('serves the semester-2 student book’s derivatives to lesson 6.2, every one verified', () => {
     const fromStudentBook = bookItemsForLesson('kbl-math-s2-nccd-u6_l2').filter(
-      i => i.source.sourceId === 'math-s2-student-book',
+      i => i.source.sourceId === 'math-s2-student-book' && i.kind !== 'unit-test-mcq',
     );
-    assert.equal(fromStudentBook.length, 14);
+    assert.equal(fromStudentBook.length, 13); // 14 verified minus t17, a near-duplicate (see the extractor's TABLE)
     for (const i of fromStudentBook) assert.equal(i.status, 'verified', i.id);
+  });
+
+  it('serves the unit-6 test’s six multiple choice as computed, across lessons 6.1-6.3', () => {
+    const choices = ['u6_l1', 'u6_l2', 'u6_l3'].flatMap(l =>
+      bookItemsForLesson(`kbl-math-s2-nccd-${l}`).filter(
+        i => i.source.sourceId === 'math-s2-student-book' && i.kind === 'unit-test-mcq',
+      ),
+    );
+    assert.deepEqual(choices.map(i => i.source.number).sort((a, b) => a - b), [1, 2, 3, 4, 30, 31]);
+    for (const i of choices) {
+      // the guide circles its key, which the text layer does not carry: never verified
+      assert.deepEqual([i.status, i.printedAnswer, i.check], ['computed', null, null], i.id);
+      assert.equal(bookStatusLabel(i, 'ar'), 'الحل محسوب من نص السؤال');
+    }
+    const three = choices.find(i => i.source.number === 3)!;
+    assert.equal(bookCitation(three, 'ar'), 'كتاب الطالب ص ٧٦، اختبار نهاية الوحدة ٦، س ٣');
   });
 
   it('labels what is not verified, and says nothing about what is', () => {

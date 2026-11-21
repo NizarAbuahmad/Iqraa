@@ -334,7 +334,7 @@ sweep in your staged files.
   existing verification pass would badge it «تم التحقق», which says the stem was
   read correctly and nothing has checked that. `verified` exists for book items
   only where the guide prints the answer (the `unit-test` items 6-11 on
-  teacher-guide p.47, 5 of 6; and since 2026-11-21 the 14 unit-6 derivatives of the
+  teacher-guide p.47, 5 of 6; and since 2026-11-21 the 13 unit-6 derivatives of the
   semester-2 student book, from the s2 guide's copies of student pp.68, 69, 77,
   matched by function name and value — `pair_derivatives`; a student-book item
   cites «كتاب الطالب» (a unit-test one with its page, since printings renumber the
@@ -350,7 +350,12 @@ sweep in your staged files.
   hand-written reading (`READINGS`) that is trusted for nothing: it must keep
   exactly the page's characters and brackets and leave exactly one correct
   option, or the item is quarantined. A reading is evidence about a layout, never
-  a key. `SERVED_STATUSES` is the one place
+  a key. The s2 student book's unit-6 multiple choice (pp.76-77) is read the same way
+  (`SB2_READINGS`, keyed by page and number; `«…»` marks sentence residue the gate
+  checks but the stem never serves), and stays `computed`: the guide circles its key.
+  A new book item must not be a near-duplicate (`stemSimilarity` > 0.85) of another
+  in its lesson, or the book plan promises a question the draw cannot deliver —
+  `bookQuestions.test.ts` catches it, but only for draw orders it happens to try. `SERVED_STATUSES` is the one place
   that decides what a paper may draw. Only the API's evaluation generator uses
   book items: the mock path (live AI off), and the live model path only when
   `BOOK_ITEMS_LIVE=true` (off by default, read per request; production runs
