@@ -119,9 +119,16 @@ export type ChatSessionMemory = {
    * (`chatLessonFocus.ts`). `activeLessonId` is the lesson the teacher picked
    * (the card, the top bar); a question about another lesson moves this, never
    * that. Absent / null: the conversation is on the selected lesson.
-   * `{ lessonId: null }`: the teacher left it («خلينا نتكلم عن…»).
+   * `{ lessonId: null }`: the conversation left it («خلينا نتكلم عن…», or a
+   * question on a topic no lesson grounded). `record`: what the conversation
+   * made while it was away, kept off the selected lesson's card.
    */
-  conversation?: { lessonId: string | null } | null;
+  conversation?: {
+    lessonId: string | null;
+    record?: Pick<ChatSessionMemory,
+      | 'generatedResources' | 'discussedArtifacts' | 'lastGeneratedResource'
+      | 'prepLessonId' | 'prepCompleted' | 'lastCompletedPrepStep'>;
+  } | null;
 };
 
 export type TeachingAssistantInput = {

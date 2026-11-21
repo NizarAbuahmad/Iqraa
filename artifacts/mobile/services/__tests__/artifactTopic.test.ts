@@ -243,3 +243,10 @@ describe('a pointer back at the conversation names no topic', () => {
     assert.equal(topicFromQuery('أمثلة'), 'أمثلة');
   });
 });
+
+describe('«IT» is a subject, not a pointer', () => {
+  it('keeps "IT" as the topic', () => {
+    assert.equal(topicFromQuery('quiz on IT'), 'IT');
+    assert.equal(topicFromQuery('اختبار في IT').includes('IT'), true);
+  });
+});

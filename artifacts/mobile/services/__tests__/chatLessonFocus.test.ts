@@ -12,9 +12,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { commitConversation, conversationLessonId, conversationView } from '../chatLessonFocus.ts';
+import { commitConversation, conversationLessonId, conversationView, leaveLesson, leavesLesson } from '../chatLessonFocus.ts';
 import { pinLesson } from '../lessonCopilot.ts';
-import { emptyChatSessionMemory, type ChatSessionMemory } from '../ai/teachingAssistant.ts';
+import { emptyChatSessionMemory, hasGeneratedResource, recordGeneratedResource, type ChatSessionMemory } from '../ai/teachingAssistant.ts';
 import { getLessonById } from '../knowledgeBase.ts';
 
 const picked = getLessonById('kbl-math-s2-nccd-u5_l3')!; // تركيب الاقترانات
@@ -97,5 +97,53 @@ describe('conversationView / commitConversation', () => {
     assert.equal(repicked.activeLessonId, other.id);
     assert.equal(repicked.conversation ?? null, null);
     assert.equal(conversationLessonId(repicked), other.id);
+  });
+});
+
+describe('review findings, 2026-11-21', () => {
+  it('a material made on the conversation’s lesson does not count as done for the picked one', () => {
+    const prev = commitConversation(selected(), pinLesson(conversationView(selected()), other, 'hard'));
+    const next = commitConversation(prev, recordGeneratedResource(conversationView(prev), 'worksheet'));
+    assert.equal(hasGeneratedResource(next, 'worksheet'), false, 'the card and starter chips read the picked lesson');
+    assert.equal(next.lastGeneratedResource, null, '«اجعله أصعب» from a starter chip is not about the other lesson');
+    assert.equal(hasGeneratedResource(conversationView(next), 'worksheet'), true, 'the conversation remembers it');
+    assert.equal(conversationView(next).lastGeneratedResource, 'worksheet');
+  });
+
+  it('returning to the picked lesson brings back its own record', () => {
+    const prev = commitConversation(selected(), pinLesson(conversationView(selected()), other, 'hard'));
+    const made = commitConversation(prev, recordGeneratedResource(conversationView(prev), 'quiz'));
+    const back = commitConversation(made, pinLesson(conversationView(made), picked, 'hard'));
+    assert.equal(back.conversation ?? null, null);
+    assert.equal(hasGeneratedResource(back, 'quiz'), false);
+  });
+
+  it('a lesson the teacher cleared and the conversation returns to is followed', () => {
+    const cleared = { ...selected(), lessonPin: 'none' as const };
+    const next = commitConversation(cleared, pinLesson(conversationView(cleared), picked, 'hard'));
+    assert.equal(next.lessonPin, 'none', 'still cleared on the card');
+    assert.equal(conversationLessonId(next), picked.id);
+    assert.equal(conversationView(next).lessonPin, 'hard');
+  });
+
+  it('leaveLesson: the conversation leaves the lesson for a topic nothing pinned', () => {
+    const prev = selected();
+    const next = commitConversation(prev, leaveLesson(conversationView(prev)));
+    assert.equal(conversationLessonId(next), null);
+    assert.equal(next.activeLessonId, picked.id);
+  });
+});
+
+describe('leavesLesson', () => {
+  const base = { pinnedThisTurn: false, groundsOnActive: false, movesToLesson: false, intent: 'teaching' };
+  it('a question on its own topic that pinned nothing leaves the lesson', () => {
+    assert.equal(leavesLesson({ ...base, query: 'اشرح لي المتجهات' }), true);
+  });
+  it('a follow-up, a refinement, or a turn on the lesson does not', () => {
+    assert.equal(leavesLesson({ ...base, query: 'أعطني أمثلة عليه' }), false);
+    assert.equal(leavesLesson({ ...base, query: 'اجعله أقصر', intent: 'refinement' }), false);
+    assert.equal(leavesLesson({ ...base, query: 'اشرح تركيب الاقترانات', groundsOnActive: true }), false);
+    assert.equal(leavesLesson({ ...base, query: 'اشرح قانون جيب التمام', movesToLesson: true }), false);
+    assert.equal(leavesLesson({ ...base, query: 'اشرح لي المتجهات', pinnedThisTurn: true }), false);
   });
 });

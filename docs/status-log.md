@@ -42,16 +42,23 @@ sidebar card (which read the saved pick) did not. Every later question was then 
 - **The selected lesson and the conversation's lesson are kept apart** (`services/chatLessonFocus.ts`,
   `ChatSessionMemory.conversation`). `sendMessage` reads `conversationView(sessionMemory)` and writes every update
   through `commitConversation`, so a question about another lesson moves the conversation (follow-ups use it) and
-  never the card. The selected lesson changes only through the sheet (which also saves the app-wide pick), a deep
-  link from a lesson, or «إلغاء التثبيت»; `pinLesson` resets the conversation. «خلينا نتكلم عن…» leaves the lesson for
-  the conversation only and no longer clears `teachingCtx`. Material made on another lesson does not tick the
-  selected lesson's preparation. Chips under a reply act on the reply's lesson; the card's buttons and the «+» menu
-  act on the card's.
+  never the card. A question on a topic of its own that grounded on no lesson takes the conversation off the
+  lesson it was on (`leavesLesson`): «اشرح لي المتجهات» (not a confident hit) and then «أعطني أمثلة عليه» used to be
+  about the card's lesson. The selected lesson changes only through the sheet (which also saves the app-wide pick),
+  a deep link from a lesson, or «إلغاء التثبيت»; `pinLesson` and a free-topic pick in the sheet reset the
+  conversation. «خلينا نتكلم عن…» leaves the lesson for the conversation only and no longer clears `teachingCtx`.
+  While the conversation is on another lesson, what it makes (`generatedResources`, `discussedArtifacts`,
+  `lastGeneratedResource`, the prep fields) is kept on `conversation.record`, so it does not tick the card's lesson
+  or turn a starter chip («اجعل الاختبار أصعب») onto another lesson's quiz. Chips under a reply act on the reply's
+  lesson; the card's buttons, the starter chips and the «+» menu act on the card's. `background` is only for the
+  lesson the teacher picked, never one the conversation moved to (the prompt calls it «الدرس المختار في التطبيق»).
+  A lesson the teacher cleared, or the conversation left, is picked up again by a confident hit on it.
 - **A pointer is not a topic** (`topicFromQuery`, `services/ai/artifactTopic.ts`). «ورقة عمل عليه» returned the topic
   «عليه»: a worksheet titled «عليه», built as a free topic. «أعطني أمثلة عليه» searched «عليه», which matches «موسى
   عليه السلام» (Islamic education, 12), read as another subject and dropped the lesson. A topic made only of pointer
   words («عليه», «عنها», «أكثر», «آخر», «إضافية», "more", "it") and follow-up nouns («أمثلة», «مثال», «تمارين», «حل»)
-  is now `''`, like «هذا الدرس» already was; one that also names something («اشرح المتجهات أكثر») is unchanged. Such a
+  is now `''`, like «هذا الدرس» already was; one that also names something («اشرح المتجهات أكثر», «quiz on IT») is
+  unchanged. Such a
   message is a bare follow-up in the gate and gets the conversation's lesson alone (`withActiveLesson`).
 - A bare ask for material ignores the KB-subject guard, as a bare teach ask already did: «ورقة عمل» ranks English
   «طرق العمل» at 38, which used to drop even a picked lesson.
@@ -72,6 +79,14 @@ sidebar card (which read the saved pick) did not. Every later question was then 
   textbook; «اشرح قانون جيب التمام» → grounded on it; «أعطني أمثلة عليه» and «حل مثال عليه» → «قانون جيب التمام»;
   «ما هي الدالة الأسية» → no lesson. After all of it, the chat card and the sidebar's «الدرس الحالي» both still read
   «تركيب الاقترانات».
+- **A code review** (a separate reviewer agent, given the goal and the diff) found, on the pure functions: the
+  two-turn case above, material made on the conversation's lesson ticking the card's, the starter chips refining
+  another lesson's quiz, `background` applied to a lesson the teacher never picked, a cleared lesson losing the
+  conversation, a free-topic pick in the sheet keeping the old conversation, and «IT» read as "it". Each is fixed
+  and has a test (`chatLessonFocus.test.ts` «review findings», `leavesLesson`, `lessonPinGate.test.ts`, «IT» in
+  `artifactTopic.test.ts`). The browser pass was rerun after the fixes, now with «اشرح لي المتجهات» → «أعطني أمثلة عليه»
+  (no lesson in the context, where the first version sent «تركيب الاقترانات») and «كيف أدير صفًا مزعجًا؟» while the
+  conversation was on «قانون جيب التمام» (no lesson, not «background» on a lesson the teacher never picked).
 
 **Not verified / left.**
 - No live model answered: the replies were stubbed. Whether a model given no textbook answers «اشرح لي المتجهات»

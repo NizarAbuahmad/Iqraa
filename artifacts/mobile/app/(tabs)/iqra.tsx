@@ -189,7 +189,7 @@ import {
   topicSwitchTarget,
   type LessonSuggestion,
 } from '@/services/lessonCopilot';
-import { commitConversation, conversationLessonId, conversationView } from '@/services/chatLessonFocus';
+import { commitConversation, conversationView, leaveLesson, leavesLesson } from '@/services/chatLessonFocus';
 import {
   DEFAULT_SECONDS,
   DRILL_TITLE_KEYS,
@@ -2382,6 +2382,8 @@ export default function IqraScreen() {
           : null,
         searchSupportsActive: searchSupportsLesson(ranked, activeLesson?.id),
         searchPointsElsewhere: searchPointsElsewhere(ranked, activeLesson?.id),
+        // A lesson the conversation moved to is not the one the teacher picked.
+        isSelectedLesson: !sessionMemory.conversation,
       });
       const reuseActive = activeReuse === 'ground' || (activeReuse === 'background' && DEMO_MODE);
       if (reuseActive && activeLesson) {
@@ -2404,7 +2406,8 @@ export default function IqraScreen() {
         !pinnedLessonId
         && confidentHit
         && ranked[0]
-        && ranked[0].lesson.id !== memory.activeLessonId
+        // A lesson the conversation left (or the teacher cleared) is picked up again.
+        && (ranked[0].lesson.id !== memory.activeLessonId || memory.lessonPin === 'none')
         && !isReferentialQuery(q)
         && route.intent !== 'refinement'
       ) {
@@ -2601,6 +2604,19 @@ export default function IqraScreen() {
           setMessages(prev => [...prev, clarifyMsg]);
           return;
         }
+      }
+
+      // A question on a topic of its own that grounded on no lesson takes the
+      // conversation off the one it was on, so the next «أعطني أمثلة عليه» is
+      // not about the lesson on the card (`leavesLesson`).
+      if (leavesLesson({
+        query: q,
+        intent: route.intent,
+        pinnedThisTurn: !!pinnedLessonId,
+        groundsOnActive: activeReuse === 'ground',
+        movesToLesson: !!pendingHardPin,
+      })) {
+        setConversation(leaveLesson);
       }
 
       const hasKBMatch = results.length > 0;
@@ -3453,9 +3469,10 @@ export default function IqraScreen() {
     if (s.toolType) {
       // Recording happens after the reply; prompt carries the intent
     }
-    sendMessage(prompt, s.lessonId ?? conversationLessonId(sessionMemory) ?? undefined);
+    // Starter chips are built from the picked lesson (`buildLessonSuggestions`).
+    sendMessage(prompt, s.lessonId ?? sessionMemory.activeLessonId ?? undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang, messages, sendMessage, sessionMemory, t]);
+  }, [lang, messages, sendMessage, sessionMemory.activeLessonId, t]);
 
 
   const handleResourcePress = useCallback((type: SessionArtifact, done: boolean) => {
@@ -4100,6 +4117,8 @@ export default function IqraScreen() {
                 activeTopicAr: topic,
                 activeTopicEn: topic,
                 lessonPin: 'hard',
+                // A new pick starts the conversation on it (as `pinLesson` does).
+                conversation: null,
               }));
             }
           }}

@@ -455,6 +455,12 @@ export type ActiveLessonReuseInput = {
   searchSupportsActive?: boolean;
   /** This message's own search points at another lesson (`searchPointsElsewhere`). */
   searchPointsElsewhere?: boolean;
+  /**
+   * The lesson is the one the teacher picked, not one the conversation moved to
+   * (`chatLessonFocus.ts`). Only a picked lesson is `background`: the prompt
+   * names it «الدرس المختار في التطبيق».
+   */
+  isSelectedLesson?: boolean;
 };
 
 export function activeLessonReuse(opts: ActiveLessonReuseInput): ActiveLessonReuse {
@@ -462,7 +468,7 @@ export function activeLessonReuse(opts: ActiveLessonReuseInput): ActiveLessonReu
     memory, intent, query, hasConfidentKbHit,
     hasDocuments = false, activeLessonGradeId = null,
     activeLessonSubjectId = null, topRankedSubjectId = null,
-    searchSupportsActive = false, searchPointsElsewhere = false,
+    searchSupportsActive = false, searchPointsElsewhere = false, isSelectedLesson = true,
   } = opts;
   if (!memory.activeLessonId || memory.lessonPin === 'none') return 'none';
   if (topicSwitchTarget(query) !== null) return 'none';
@@ -512,6 +518,7 @@ export function activeLessonReuse(opts: ActiveLessonReuseInput): ActiveLessonReu
   // background — `chooseArtifactLesson` wants the topic's own support.
   if (
     memory.lessonPin === 'hard'
+    && isSelectedLesson
     && intent !== 'artifact'
     && !hasConfidentKbHit
     && !searchPointsElsewhere

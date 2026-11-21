@@ -210,3 +210,20 @@ describe('a follow-up that points back keeps the conversation’s lesson', () =>
     });
   }
 });
+
+describe('background is only for the lesson the teacher picked', () => {
+  it('a lesson the conversation moved to is not background for an unrelated question', () => {
+    const q = 'كيف أدير صفًا مزعجًا؟';
+    const ranked = searchKBRanked(q, 'ar');
+    const opts = {
+      memory: { ...hardPinned, activeLessonId: 'kbl-math-s1-nccd-u4_l3', activeTopicAr: 'قانون جيب التمام' },
+      intent: 'teaching',
+      query: q,
+      hasConfidentKbHit: isConfidentSingleSubjectHit(ranked),
+      searchSupportsActive: false,
+      searchPointsElsewhere: searchPointsElsewhere(ranked, 'kbl-math-s1-nccd-u4_l3'),
+    };
+    assert.equal(activeLessonReuse({ ...opts, isSelectedLesson: false }), 'none');
+    assert.equal(activeLessonReuse(opts), 'background');
+  });
+});

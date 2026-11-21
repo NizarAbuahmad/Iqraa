@@ -214,7 +214,9 @@ const FOLLOW_UP_NOUNS = new Set([
 ]);
 
 function isPointerOnly(s: string): boolean {
-  const words = s.replace(/[ً-ْـ]/g, '').toLowerCase().split(/\s+/).filter(Boolean);
+  // Lower-cased except «IT», which is a subject ("a quiz on IT"), not "it".
+  const words = s.replace(/[ً-ْـ]/g, '').split(/\s+/).filter(Boolean)
+    .map(w => (w === 'IT' ? w : w.toLowerCase()));
   return words.some(w => POINTER_WORDS.has(w))
     && words.every(w => POINTER_WORDS.has(w) || FOLLOW_UP_NOUNS.has(w) || ASKING_ONLY.has(w));
 }
