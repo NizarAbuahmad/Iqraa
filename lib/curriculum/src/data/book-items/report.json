@@ -1,8 +1,8 @@
 {
   "counts": {
     "computed": 28,
-    "verified": 5,
-    "quarantined": 14
+    "verified": 19,
+    "quarantined": 18
   },
   "unmatchedPrinted": [
     "(0, 5), (2. 1)"
@@ -192,6 +192,58 @@
       },
       "family": "derivative_at",
       "reason": "not_a_function_definition"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-7",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 7
+      },
+      "family": "derivative_at",
+      "reason": "not_a_function_definition"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-8",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 8
+      },
+      "family": "derivative_at",
+      "reason": "exponent_out_of_range"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-9",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 9
+      },
+      "family": "derivative_at",
+      "reason": "broken_fraction_or_exponent"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t14",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 14
+      },
+      "family": "derivative",
+      "reason": "broken_fraction_or_exponent"
     }
   ]
 }

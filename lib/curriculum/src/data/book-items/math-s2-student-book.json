@@ -1,0 +1,299 @@
+{
+  "sourceId": "math-s2-student-book",
+  "items": [
+    {
+      "id": "bi-math-s2-student-book-u6l2-1",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 1
+      },
+      "kind": "exercise",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "f(x) = -7",
+      "printedAnswer": "f '(x) = 0",
+      "computedAnswer": "f'(x) = 0",
+      "check": null,
+      "tier": "easy",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-2",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 2
+      },
+      "kind": "exercise",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "g(x) = 3x^9",
+      "printedAnswer": "g '(x) = 27x8",
+      "computedAnswer": "g'(x) = 27x^8",
+      "check": null,
+      "tier": "easy",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-3",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 3
+      },
+      "kind": "exercise",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "r(x) = -5x^2",
+      "printedAnswer": "r '(x) = -10x",
+      "computedAnswer": "r'(x) = -10x",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-4",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 4
+      },
+      "kind": "exercise",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "i(x) = x^4 - 3x",
+      "printedAnswer": "i '(x) = 4x3 - 3",
+      "computedAnswer": "i'(x) = 4x^3 - 3",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-5",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 5
+      },
+      "kind": "exercise",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "v(x) = x^2 + x + 1",
+      "printedAnswer": "v '(x) = 2x + 1",
+      "computedAnswer": "v'(x) = 2x + 1",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-6",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 6
+      },
+      "kind": "exercise",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "t(x) = 6 - 2x + x^2",
+      "printedAnswer": "t '(x) = -2 + 2x",
+      "computedAnswer": "t'(x) = 2x - 2",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t15",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 15
+      },
+      "kind": "unit-test",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "f(x) = x^8",
+      "printedAnswer": "f '(x) = 8x 7 )15",
+      "computedAnswer": "f'(x) = 8x^7",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t16",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 16
+      },
+      "kind": "unit-test",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "f(x) = -3x^4",
+      "printedAnswer": "f '(x) = -12x 3 )16",
+      "computedAnswer": "f'(x) = -12x^3",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t17",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 17
+      },
+      "kind": "unit-test",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "f(x) = x",
+      "printedAnswer": "f '(x) = 1 )17",
+      "computedAnswer": "f'(x) = 1",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t18",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 18
+      },
+      "kind": "unit-test",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "f(x) = 1-2x",
+      "printedAnswer": "f '(x) = -2 )18",
+      "computedAnswer": "f'(x) = -2",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t19",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 19
+      },
+      "kind": "unit-test",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "f(x) = 4-5x^2 + x^3",
+      "printedAnswer": "f '(x) = -10x + 3x 2 )19",
+      "computedAnswer": "f'(x) = 3x^2 - 10x",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-24",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 24
+      },
+      "kind": "exercise",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "f(x) = 2x (x+1)",
+      "printedAnswer": "f '(x) = 4x + 2",
+      "computedAnswer": "f'(x) = 4x + 2",
+      "check": null,
+      "tier": "easy",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-25",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 25
+      },
+      "kind": "exercise",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "f(x) = (x + 2)(x + 5)",
+      "printedAnswer": "f '(x) = 2x + 7",
+      "computedAnswer": "f'(x) = 2x + 7",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-26",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 26
+      },
+      "kind": "exercise",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "f(x) = (x + 3)(x-3)",
+      "printedAnswer": "f '(x) = 2x",
+      "computedAnswer": "f'(x) = 2x",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    }
+  ]
+}

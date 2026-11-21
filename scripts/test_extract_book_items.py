@@ -693,7 +693,8 @@ class Readings(unittest.TestCase):
         for rs in self.by_source.values():
             for r in rs:
                 counts[r['status']] = counts.get(r['status'], 0) + 1
-        self.assertEqual((counts['verified'], counts['computed']), (5, 28))
+        # 5 from guide p.47, 14 from the semester-2 student book's unit 6
+        self.assertEqual((counts['verified'], counts['computed']), (19, 28))
 
 
 class RivalReadings(unittest.TestCase):
@@ -797,6 +798,81 @@ class RivalReadings(unittest.TestCase):
                         except Exception:
                             pass
         self.assertEqual(keys, {'2x^4y'})
+
+
+class StudentBookDerivatives(unittest.TestCase):
+    """Unit 6 of the semester-2 student book: p.68-69 (lesson 2) and the unit test, p.77.
+
+    The guide reproduces each student page with its answers printed on it (guide p.102,
+    p.103, p.112); an item is `verified` only when one of those, read by value, equals
+    SymPy's answer.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.by_source, cls.rejects = x.build()
+        cls.items = {r['id']: r for r in cls.by_source.get('math-s2-student-book', [])}
+        cls.reasons = {q['id']: q['reason'] for q in cls.rejects}
+
+    def test_a_derivative_keeps_the_function_name_the_book_gives_it(self):
+        self.assertEqual(x.solve_derivative('g(x) = 3x^9'), "g'(x) = 27x^8")
+        self.assertEqual(x.solve_derivative('t(x) = 6 - 2x + x^2'), "t'(x) = 2x - 2")
+        self.assertEqual(x.solve_derivative('f (x) = 7x^3'), "f'(x) = 21x^2")
+
+    def test_a_name_that_is_not_one_letter_is_rejected(self):
+        for stem in ('fg(x) = x^2', '2(x) = x', 'f(y) = y^2', '(x) = x'):
+            with self.subTest(stem=stem), self.assertRaises(x.Reject):
+                x.solve_derivative(stem)
+
+    def test_printed_derivatives_are_read_with_their_names_and_labels(self):
+        got = x.printed_derivatives("f '(x) = 0 \t)14\nf '(x) = 8x 7 )15\ng '(x) = 27x8 \tr '(x) = -10x\nf '(x) = m\nk = 3")
+        self.assertEqual([g[:3] for g in got], [('f', '0', 14), ('f', '8x^7', 15), ('g', '27x^8', None), ('r', '-10x', None), ('f', 'm', None)])
+        self.assertEqual(got[1][3], "f '(x) = 8x 7 )15")
+
+    def test_a_printed_entry_split_over_lines_is_not_read(self):
+        self.assertEqual(x.printed_derivatives("f '(x) = 7\n3\ng '(x) = 2x"), [('g', '2x', None, "g '(x) = 2x")])
+
+    def test_a_printed_derivative_matches_by_name_and_value_and_label(self):
+        rec = {'source': {'number': 2}, 'computedAnswer': "g'(x) = 27x^8"}
+        self.assertTrue(x.derivative_matches(('g', '27x^8', None), rec))
+        self.assertFalse(x.derivative_matches(('r', '27x^8', None), rec))    # another item's name
+        self.assertFalse(x.derivative_matches(('g', '27x^7', None), rec))    # another value
+        self.assertFalse(x.derivative_matches(('g', '27x^8', 3), rec))       # another item's label
+        self.assertTrue(x.derivative_matches(('g', '27x^8', 2), rec))
+
+    def test_golden_derivative_from_student_page_68(self):
+        r = self.items['bi-math-s2-student-book-u6l2-2']
+        self.assertEqual((r['stem'], r['computedAnswer']), ('g(x) = 3x^9', "g'(x) = 27x^8"))
+        self.assertEqual((r['status'], r['verificationSource'], r['printedAnswer']), ('verified', 'sympy+book', "g '(x) = 27x8"))
+        self.assertEqual(r['source'], {'sourceId': 'math-s2-student-book', 'page': 68, 'bookPage': 68, 'unit': 6, 'number': 2})
+        self.assertEqual((r['kind'], r['lessonId'], r['check']), ('exercise', 'kbl-math-s2-nccd-u6_l2', None))
+
+    def test_golden_unit_test_derivative_from_student_page_77(self):
+        r = self.items['bi-math-s2-student-book-u6l2-t15']
+        self.assertEqual((r['stem'], r['computedAnswer']), ('f(x) = x^8', "f'(x) = 8x^7"))
+        self.assertEqual((r['kind'], r['tier'], r['tierSource']), ('unit-test', 'medium', 'default'))
+        self.assertEqual((r['status'], r['printedAnswer']), ('verified', "f '(x) = 8x 7 )15"))
+        self.assertEqual(r['source']['bookPage'], 77)
+
+    def test_the_products_on_page_69_are_verified(self):
+        for n in (24, 25, 26):
+            with self.subTest(n=n):
+                self.assertEqual(self.items[f'bi-math-s2-student-book-u6l2-{n}']['status'], 'verified')
+
+    def test_the_unreadable_ones_are_quarantined_with_a_reason(self):
+        # 7: `3/5 x3` arrives as «3» then «5 x3» on the next line, so the stem is two lines
+        self.assertEqual(self.reasons['bi-math-s2-student-book-u6l2-7'], 'not_a_function_definition')
+        self.assertEqual(self.reasons['bi-math-s2-student-book-u6l2-8'], 'exponent_out_of_range')
+        self.assertEqual(self.reasons['bi-math-s2-student-book-u6l2-9'], 'broken_fraction_or_exponent')
+        self.assertEqual(self.reasons['bi-math-s2-student-book-u6l2-t14'], 'broken_fraction_or_exponent')
+
+    def test_unit_test_ids_never_collide_with_the_lessons_practice_numbers(self):
+        ids = [r['id'] for r in self.items.values() if r['kind'] == 'unit-test']
+        self.assertEqual(sorted(ids), [f'bi-math-s2-student-book-u6l2-t{n}' for n in range(15, 20)])
+
+    def test_every_served_one_is_verified(self):
+        self.assertEqual(len(self.items), 14)
+        self.assertEqual({r['status'] for r in self.items.values()}, {'verified'})
 
 
 if __name__ == '__main__':

@@ -54,10 +54,16 @@ class Entry:
     last: int
     family: str           # system | derivative | derivative_at | mcq_pair | unit_open | reading
     instruction_ar: str
-    page: int | None = None                      # mcq_pair / unit_open: the guide page holding the test
+    # mcq_pair / unit_open / reading: the guide page holding the test. An exercise family:
+    # the source page holding the items, for a source with no exercise index (the student book).
+    page: int | None = None
     params: dict = field(default_factory=dict)
     numbers: tuple[int, ...] = ()                # unit_open: exactly these items (first..last is only the span)
     allow_none: bool = False                     # unit_open: «لا يوجد حل» is a servable answer for this row
+    # derivative rows: the page of the s2 teacher guide that reproduces this page with its
+    # answers printed on it. They are paired with the items by name and value (`pair_derivatives`).
+    answers: int | None = None
+    unit_test: bool = False                      # an exercise family printed in the unit test: kind `unit-test`
 
     @property
     def items(self) -> tuple[int, ...]:
@@ -65,6 +71,8 @@ class Entry:
 
 
 EX1, EX2, G1 = 'math-s1-exercise-book', 'math-s2-exercise-book', 'math-s1-teacher-guide'
+SB2, G2 = 'math-s2-student-book', 'math-s2-teacher-guide'
+DERIVATIVE_AR = 'أجد مشتقة الاقتران الآتي'
 SYSTEM_AR = 'أحل نظام المعادلتين الآتي'
 PAIR_AR = 'أي الأزواج المرتبة الآتية يمثل حلا لنظام المعادلتين الآتي؟'
 ROOT_AR = 'أي المعادلات الأسية الآتية يكون العدد الآتي حلا لها؟'
@@ -95,6 +103,18 @@ TABLE: list[Entry] = [
     Entry(G1, 's1', 1, 5, 3, 3, 'reading', PAIR_AR, page=47, params={'check': 'points'}),
     Entry(G1, 's1', 1, 5, 4, 4, 'reading', ROOT_AR, page=47, params={'check': 'root'}),
     Entry(G1, 's1', 1, 4, 5, 5, 'reading', BOX_AR, page=47, params={'check': 'box'}),
+    # The semester-2 student book, unit 6 (derivatives). p.68 items 1-9 and p.69 items 24-26
+    # are lesson 2's practice; p.77 items 14-19 are the unit test's «find the derivative»
+    # questions, which are lesson 2's skill. The guide reproduces each page with its
+    # answers printed on it (guide p.102, p.103, p.112). Items 7-9 and 14 are expected to
+    # quarantine: split fractions (7, 9, 14) and `x99`, which no rule tells from a flattened
+    # exponent (8). Items 10-23 and 27-30 of p.68-69, and the test's multiple choice and
+    # max/min questions, are word problems, figures or another family: not here on purpose.
+    Entry(SB2, 's2', 6, 2, 1, 6, 'derivative', DERIVATIVE_AR, page=68, answers=102),
+    Entry(SB2, 's2', 6, 2, 7, 9, 'derivative_at', 'أجد قيمة f′(-2) للاقتران الآتي', page=68,
+          params={'point': '-2'}),
+    Entry(SB2, 's2', 6, 2, 24, 26, 'derivative', DERIVATIVE_AR, page=69, answers=103),
+    Entry(SB2, 's2', 6, 2, 14, 19, 'derivative', DERIVATIVE_AR, page=77, answers=112, unit_test=True),
 ]
 MAX_EXP = {'system': 12, 'derivative': 9, 'derivative_at': 9, 'mcq_pair': 9, 'unit_open': 9, 'reading': 0}
 
@@ -596,21 +616,86 @@ def strict_upper_bound(allowed):
     return allowed.end
 
 
+FUNCTION = re.compile(r'([a-z])\(x\)')
+
+
 def parse_f(stem: str):
+    """(the function's one-letter name, its right-hand side). The student book names
+    its functions g, r, i, v, t as well as f; the answer keeps the book's name."""
     if '\n' in stem or stem.count('=') != 1:
         raise Reject('not_a_function_definition')
     left, right = stem.split('=')
-    if left.replace(' ', '') != 'f(x)':
+    m = FUNCTION.fullmatch(left.replace(' ', ''))
+    if not m:
         raise Reject('not_a_function_definition')
-    return parse(right)
+    return m.group(1), parse(right)
 
 
 def solve_derivative(stem: str) -> str:
-    return f"f'(x) = {fmt(diff(parse_f(stem), X), '.' in stem)}"
+    name, f = parse_f(stem)
+    return f"{name}'(x) = {fmt(diff(f, X), '.' in stem)}"
 
 
 def solve_derivative_at(stem: str, point: str) -> str:
-    return fmt(diff(parse_f(stem), X).subs(X, Rational(point)), '.' in stem)
+    return fmt(diff(parse_f(stem)[1], X).subs(X, Rational(point)), '.' in stem)
+
+
+# ── the s2 guide's printed derivatives ───────────────────────────────────────
+# The guide reproduces a student page and prints the answers on it, in its own order
+# and sometimes with the item number after them («f '(x) = 8x 7 )15»). An entry is
+# `name '(x) = value`; several can share a line. The value is read with the stem's own
+# exponent rule, and an entry whose value cannot be read cleanly, or that ends a line
+# whose next line is a bare number (a fraction split over lines), is skipped - it can
+# then verify nothing. A printed answer verifies an item only when the name, the value
+# (by SymPy) and any printed number all agree; nothing is paired by position.
+PRINTED_DERIVATIVE = re.compile(r"(?<![A-Za-z])([a-z])\s*'\s*\(x\)\s*=\s*")
+PRINTED_LABEL = re.compile(r'\s*\)\s*(\d{1,2})\s*$')
+
+
+def printed_derivatives(text: str) -> list[tuple[str, str, int | None, str]]:
+    """[(name, value as the stem rule reads it, printed item number or None, the entry as printed)]."""
+    lines = [nfkc(l).replace('\t', ' ').translate(MINUS) for l in text.split('\n')]
+    out = []
+    for i, line in enumerate(lines):
+        heads = list(PRINTED_DERIVATIVE.finditer(line))
+        for k, h in enumerate(heads):
+            end = heads[k + 1].start() if k + 1 < len(heads) else len(line)
+            raw = re.sub(r'\s+', ' ', line[h.start():end]).strip()
+            value = line[h.end():end]
+            label = PRINTED_LABEL.search(value)
+            if label:
+                value = value[:label.start()]
+            value = value.strip()
+            last = k + 1 == len(heads)
+            if not value or (last and i + 1 < len(lines) and re.fullmatch(r'\s*\d+\s*', lines[i + 1])):
+                continue
+            try:
+                value = value if re.fullmatch(r'-?\d+', value) else normalise_stem(value, MAX_EXP['derivative'])
+                parse(value)
+            except Exception:  # noqa: BLE001 - an unreadable printed entry verifies nothing
+                continue
+            out.append((h.group(1), value, int(label.group(1)) if label else None, raw))
+    return out
+
+
+def derivative_matches(entry: tuple, record: dict) -> bool:
+    name, value, label = entry[:3]
+    if label is not None and label != record['source']['number']:
+        return False
+    computed_name, computed_value = record['computedAnswer'].split("'(x) = ")
+    return name == computed_name and simplify(parse(value) - parse(computed_value)) == 0
+
+
+def pair_derivatives(records: list[dict], entries: list[tuple]) -> None:
+    """Verify each record against one printed entry, in item order, each entry once."""
+    free = list(entries)
+    for r in sorted(records, key=lambda r: r['source']['number']):
+        hit = next((e for e in free if derivative_matches(e, r)), None)
+        if hit is None:
+            continue
+        free.remove(hit)
+        r['status'], r['verificationSource'] = assign_state(r['computedAnswer'], r['computedAnswer'], False)
+        r['printedAnswer'] = hit[3]
 
 
 OPT = re.compile(r'([a-d])\)\s*(\([^()]*\))')
@@ -669,6 +754,7 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
     by_source: dict[str, list[dict]] = {}
     rejects: list[dict] = []
     open_items: dict[tuple[str, int], list[dict]] = {}     # unit_open records waiting for their printed answers
+    derivative_items: dict[int, list[dict]] = {}           # s2 guide page -> derivative records it answers
     for e in TABLE:
         lesson_id = curriculum_lesson_id(e.semester, e.unit, e.lesson)
         if lesson_id is None:
@@ -679,11 +765,13 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                       else (split_questions if e.family == 'mcq_pair' else split_unit_open)(text))
             page, book_page = e.page, int(text.split('\n', 1)[0].strip())
         else:
-            page = exercise_page(e.source, e.unit, e.lesson)
+            page = e.page or exercise_page(e.source, e.unit, e.lesson)
             blocks, book_page = split_items(page_text(e.source, page), e.first), page
         for n in e.items:
             base = {
-                'id': f'bi-{e.source}-u{e.unit}l{e.lesson}-{n}',
+                # A unit-test row of a book whose lessons are numbered in the same book (the
+                # student book) takes a `t`: its item 15 is not the lesson's practice item 15.
+                'id': f'bi-{e.source}-u{e.unit}l{e.lesson}-{"t" if e.unit_test else ""}{n}',
                 'lessonId': lesson_id,
                 'source': {'sourceId': e.source, 'page': page, 'bookPage': book_page, 'unit': e.unit, 'number': n},
             }
@@ -713,7 +801,8 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                         'derivative': lambda: solve_derivative(stem),
                         'derivative_at': lambda: solve_derivative_at(stem, e.params['point']),
                     }[e.family]()
-                    kind, tier, tier_source = 'exercise', tier_for(n, e.first, e.last), 'position'
+                    kind, tier, tier_source = (('unit-test', 'medium', 'default') if e.unit_test
+                                               else ('exercise', tier_for(n, e.first, e.last), 'position'))
                     extra = {}
                 status, how = assign_state(computed, None, False)
                 record = {
@@ -724,12 +813,19 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                 by_source.setdefault(e.source, []).append(record)
                 if e.family == 'unit_open':
                     open_items.setdefault((e.source, e.page), []).append(record)
+                if e.answers is not None:
+                    derivative_items.setdefault(e.answers, []).append(record)
             except Reject as r:
                 rejects.append({**base, 'family': e.family, 'reason': str(r)})
             except Exception as ex:  # noqa: BLE001 - any parse/solve failure quarantines; nothing is guessed
                 rejects.append({**base, 'family': e.family, 'reason': f'{type(ex).__name__}: {ex}'[:120]})
     unmatched: list[str] = []
     notes: dict[str, str] = {}
+    for page, records in derivative_items.items():
+        pair_derivatives(records, printed_derivatives(page_text(G2, page)))
+        for rec in records:
+            if rec['status'] == 'computed':
+                notes[rec['id']] = f'no printed answer on guide p.{page} has this name and value'
     for (source, page), records in open_items.items():
         try:
             entries, _ignored = printed_entries(page_text(source, page))

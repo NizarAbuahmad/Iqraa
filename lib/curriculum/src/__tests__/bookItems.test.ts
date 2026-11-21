@@ -26,7 +26,7 @@ import {
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const read = (rel: string) => JSON.parse(readFileSync(join(HERE, rel), 'utf8'));
-const SOURCES = ['math-s1-exercise-book', 'math-s2-exercise-book', 'math-s1-teacher-guide'];
+const SOURCES = ['math-s1-exercise-book', 'math-s2-exercise-book', 'math-s1-teacher-guide', 'math-s2-student-book'];
 const items: BookItem[] = SOURCES.flatMap(id => read(`../data/book-items/${id}.json`).items);
 const report = read('../data/book-items/report.json') as {
   counts: Record<string, number>;
@@ -51,8 +51,34 @@ const points = (s: string): string[] | null => {
   const pts = f.match(/\([^()]*\)/g) ?? [];
   return pts.length > 0 && pts.join(',') === f ? [...pts].sort() : null;
 };
+/**
+ * A printed or computed derivative, `g '(x) = 27x8 )15` or `g'(x) = 27x^8`, as its name and
+ * its polynomial's coefficients by power, or null when it is not one. Written separately from
+ * the extractor's SymPy check on purpose: the guide prints the terms in its own order
+ * (`-2 + 2x` for `2x - 2`) and drops the `^` (`27x8`, or `8x 7` with a gap), so only a
+ * comparison of coefficients can tell agreement from a misreading. It reads polynomials with
+ * integer coefficients and nothing else.
+ */
+const derivative = (s: string): { name: string; terms: string } | null => {
+  const m = /^([a-z])\s*'\s*\(x\)\s*=\s*(.+?)(?:\s*\)\s*\d{1,2})?$/.exec(s.trim());
+  if (!m) return null;
+  const coef = new Map<number, number>();
+  const body = m[2]!.replace(/x\s*\^?\s*(\d+)/g, 'x^$1').replace(/\s+/g, '');
+  for (const term of body.match(/[+-]?[^+-]+/g) ?? []) {
+    const t = /^([+-]?)(\d*)(x(?:\^(\d+))?)?$/.exec(term);
+    if (!t || (t[2] === '' && !t[3])) return null;
+    const power = t[3] ? Number(t[4] ?? 1) : 0;
+    const value = (t[1] === '-' ? -1 : 1) * (t[2] === '' ? 1 : Number(t[2]));
+    coef.set(power, (coef.get(power) ?? 0) + value);
+  }
+  const terms = [...coef].filter(([, c]) => c !== 0).sort(([a], [b]) => a - b).map(([p, c]) => `${c}x^${p}`).join(' ');
+  return { name: m[1]!, terms };
+};
 const sameValue = (printed: string, computed: string) => {
   if (flat(printed) === flat(computed)) return true;
+  const p = derivative(printed);
+  const c = derivative(computed);
+  if (p && c) return p.name === c.name && p.terms === c.terms;
   const a = points(printed);
   const b = points(computed);
   return a !== null && b !== null && a.join('|') === b.join('|');
@@ -85,6 +111,26 @@ describe('book items — comparing a printed answer by value', () => {
   it('does not take a duplicated point for a single point', () => {
     assert.equal(sameValue('(1, 4), (1, 4)', '(1, 4)'), false);
     assert.equal(sameValue('(1, 4)', '(1, 4), (1, 4)'), false);
+  });
+
+  it('matches a printed derivative in the guide’s own term order and spelling', () => {
+    assert.equal(sameValue("t '(x) = -2 + 2x", "t'(x) = 2x - 2"), true);
+    assert.equal(sameValue("f '(x) = -10x + 3x 2 )19", "f'(x) = 3x^2 - 10x"), true);
+    assert.equal(sameValue("g '(x) = 27x8", "g'(x) = 27x^8"), true);
+    assert.equal(sameValue("f '(x) = 0", "f'(x) = 0"), true);
+  });
+
+  it('keeps a derivative apart when the name, a power or a coefficient differs', () => {
+    for (const [printed, computed] of [
+      ["r '(x) = 27x8", "g'(x) = 27x^8"],
+      ["g '(x) = 27x7", "g'(x) = 27x^8"],
+      ["g '(x) = 2x8", "g'(x) = 27x^8"],
+      ["f '(x) = 2x + 7", "f'(x) = 2x - 7"],
+      ["f '(x) = 3x 2", "f'(x) = 3x^2 - 10x"],
+      ["f '(x) = m", "f'(x) = 0"],
+    ]) {
+      assert.equal(sameValue(printed, computed), false, `${printed} vs ${computed}`);
+    }
   });
 });
 
@@ -180,7 +226,7 @@ describe('book items — the committed data', () => {
   });
 
   it('cites a unit-test open question as the unit test, from the guide page that prints it', () => {
-    const open = items.filter(i => i.kind === 'unit-test');
+    const open = items.filter(i => i.kind === 'unit-test' && i.source.sourceId === 'math-s1-teacher-guide');
     assert.deepEqual(open.map(i => i.source.number).sort((a, b) => a - b), [6, 7, 8, 9, 10, 11]);
     for (const i of open) {
       assert.deepEqual([i.source.sourceId, i.source.page, i.source.bookPage, i.source.unit], ['math-s1-teacher-guide', 47, 34, 1], i.id);
@@ -255,6 +301,23 @@ describe('book items — the reader', () => {
     assert.equal(bookCitation(exercise, 'en'), 'Exercise book p. 11, Q3');
     const test = items.find(i => i.id === 'bi-math-s1-teacher-guide-u1l2-1')!;
     assert.equal(bookCitation(test, 'ar'), 'اختبار نهاية الوحدة ١، س ١');
+  });
+
+  it('cites a student-book exercise as the student book, never the exercise book', () => {
+    const exercise = items.find(i => i.id === 'bi-math-s2-student-book-u6l2-2')!;
+    assert.equal(bookCitation(exercise, 'ar'), 'كتاب الطالب ص ٦٨، س ٢');
+    assert.equal(bookCitation(exercise, 'en'), 'Student book p. 68, Q2');
+    const test = items.find(i => i.id === 'bi-math-s2-student-book-u6l2-t15')!;
+    assert.equal(bookCitation(test, 'ar'), 'اختبار نهاية الوحدة ٦، س ١٥');
+    assert.equal(bookCitation(test, 'en'), 'Unit 6 test, Q15');
+  });
+
+  it('serves the semester-2 student book’s derivatives to lesson 6.2, every one verified', () => {
+    const fromStudentBook = bookItemsForLesson('kbl-math-s2-nccd-u6_l2').filter(
+      i => i.source.sourceId === 'math-s2-student-book',
+    );
+    assert.equal(fromStudentBook.length, 14);
+    for (const i of fromStudentBook) assert.equal(i.status, 'verified', i.id);
   });
 
   it('labels what is not verified, and says nothing about what is', () => {

@@ -10,6 +10,49 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Book items: the semester-2 student book's derivatives (unit 6) — 2026-11-21
+
+`scripts/extract_book_items.py` now reads the NCCD Grade 10 maths **student book**, semester 2
+(`math-s2-student-book`), not only the exercise books and the s1 guide. First slice, unit 6 only:
+**14 items, all `verified`**, written to `lib/curriculum/src/data/book-items/math-s2-student-book.json` and
+served to lesson 6.2 (`kbl-math-s2-nccd-u6_l2`).
+
+| Page | Items | Kind | Result |
+| --- | --- | --- | --- |
+| 68 | 1–6 «أجد مشتقة» | `exercise` | 6 verified |
+| 68 | 7–9 f′(−2) | — | quarantined: split fractions (7 `not_a_function_definition`, 9) and `x99` (8, `exponent_out_of_range`) |
+| 69 | 24–26 products | `exercise` | 3 verified |
+| 77 | unit test 14–19 «أجد مشتقة» | `unit-test` | 5 verified; 14 (`2π/3`) quarantined |
+
+**How they are verified.** The s2 teacher guide reproduces each student page with its answers printed on
+it (guide p.102 for student p.68, p.103 for p.69, p.112 for p.77). `printed_derivatives` reads every
+`name '(x) = value` there (with its `)15` item number when printed), and `pair_derivatives` verifies an item
+only when the **function name**, the **value** (SymPy) and any printed number agree; an entry ending a line
+whose next line is a bare number (a split fraction) is skipped. Nothing pairs by position. The TS suite
+re-checks every verified pair independently, comparing polynomial coefficients (`derivative` in
+`bookItems.test.ts`), because the guide prints terms in its own order (`-2 + 2x` for `2x - 2`).
+
+**Smaller changes that came with it.**
+- The book names its functions g, r, i, v, t: `parse_f` takes any one letter and the answer keeps it
+  (`g'(x) = 27x^8`). The existing outputs are byte-identical.
+- A student-book `exercise` cites «كتاب الطالب ص ٦٨، س ٢» / "Student book p. 68, Q2" (`bookCitation`); it
+  would have said «كتاب التمارين».
+- Unit-test ids carry a `t` (`bi-math-s2-student-book-u6l2-t15`): the test's 14–19 overlap the lesson's own
+  practice numbers, which run to 30.
+- An `Entry` takes `page` for a source with no exercise index, `answers` (the guide page) and `unit_test`.
+
+**Verified.** The Python tests failed first, then passed (102). Every stem was compared by eye with the
+printed pages of a copy of the book: pp.68 and 69 match. **That copy is an older printing (2021), and its
+p.77 numbers the same questions 15–20 and prints `2π³` where the app's text (reprinted 2021–2025) has `2π/3`
+at 14.** The guide's labels `)14`…`)19` agree with the app's newer numbering, which is what is cited. Each
+answer key was also re-derived by hand. Curriculum `test` (935) and `verify`, monorepo typecheck, api-server
+build + test (3021), and the mobile suite were run.
+
+**Not done.** The unit-6 test's multiple choice (some options are fractions the text layer splits), lesson
+6.3's max/min exercises (needs a solver), lesson 6.1 (figures), every word problem, and units 5, 7, 8. Users
+see none of this in production yet: book items reach a paper only on the mock path or with
+`BOOK_ITEMS_LIVE=true`, which is off.
+
 ## Pool prefill: a default-form quiz per Grade 10 lesson — 2026-11-21
 
 `scripts/pregenerate.ts` now plans a quiz for every Grade 10 maths and chemistry lesson beside the worksheet and the
