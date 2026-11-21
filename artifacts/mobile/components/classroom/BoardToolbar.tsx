@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 // Ionicons has no eraser glyph (its nearest, `backspace`, reads as "delete a character"), so this one icon stays MaterialCommunityIcons.
 import { DECK_ACCENT, DECK_BORDER, DECK_CARD_BG, DECK_MUTED } from '@/services/deckTheme';
-import { PEN_COLORS } from '@/components/classroom/PenLayer';
+import { BOARD_PEN_COLORS } from '@/services/penColors';
 import { BOARD_BACKGROUNDS, STROKE_WIDTHS, type BoardBackground } from '@/services/whiteboardModel';
 
 export type BoardToolbarLabels = {
@@ -11,8 +11,9 @@ export type BoardToolbarLabels = {
   pen: string;
   eraser: string;
   undo: string;
+  redo: string;
   clear: string;
-  /** One per `PEN_COLORS` entry. */
+  /** One per `BOARD_PEN_COLORS` entry. */
   colors: string[];
   /** One per `STROKE_WIDTHS` entry. */
   widths: string[];
@@ -39,7 +40,7 @@ export type BoardToolbarLabels = {
 export function BoardToolbar({
   isRTL, topInset, bottomInset,
   color, onColor, width, onWidth, erase, onErase,
-  canUndo, onUndo, hasInk, onClear,
+  canUndo, onUndo, canRedo, onRedo, hasInk, onClear,
   background, onBackground, onClose, labels,
   pageLabel, canPrevPage, canNextPage, canAddPage, canDeletePage,
   onPrevPage, onNextPage, onAddPage, onDeletePage,
@@ -58,6 +59,8 @@ export function BoardToolbar({
   onErase: (on: boolean) => void;
   canUndo: boolean;
   onUndo: () => void;
+  canRedo: boolean;
+  onRedo: () => void;
   hasInk: boolean;
   onClear: () => void;
   background: BoardBackground;
@@ -119,7 +122,7 @@ export function BoardToolbar({
           dangling at the end of a row. */}
       <View style={[styles.palette, { bottom: bottomInset + 12 }]}>
         <View style={styles.group}>
-          {PEN_COLORS.map((c, i) => (
+          {BOARD_PEN_COLORS.map((c, i) => (
             <Pressable
               key={c}
               onPress={() => { onColor(c); onErase(false); }}
@@ -157,6 +160,9 @@ export function BoardToolbar({
         <View style={styles.group}>
           <Pressable onPress={onUndo} disabled={!canUndo} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.undo} style={{ opacity: canUndo ? 1 : 0.35 }}>
             <Ionicons name="arrow-undo-outline" size={20} color={DECK_MUTED} />
+          </Pressable>
+          <Pressable onPress={onRedo} disabled={!canRedo} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.redo} style={{ opacity: canRedo ? 1 : 0.35 }}>
+            <Ionicons name="arrow-redo-outline" size={20} color={DECK_MUTED} />
           </Pressable>
           <Pressable onPress={onClear} disabled={!hasInk} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.clear} style={{ opacity: hasInk ? 1 : 0.35 }}>
             <Ionicons name="trash-outline" size={20} color={DECK_MUTED} />

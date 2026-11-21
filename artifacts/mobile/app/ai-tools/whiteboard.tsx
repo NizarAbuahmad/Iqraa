@@ -8,7 +8,9 @@ import { goBack } from '@/services/navigation';
 import { DECK_ACCENT, DECK_BG, DECK_CARD_BG } from '@/services/deckTheme';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
 import { BOARD_FILE_VERSION, boardFileOf, docOfFile, isBoardDirty, parseBoard, serializeBoard } from '@/services/boardFile';
-import { PEN_COLORS, PenCanvas } from '@/components/classroom/PenLayer';
+import { PenCanvas } from '@/components/classroom/PenLayer';
+import { BOARD_PEN_COLORS, BOARD_PEN_LABEL_KEYS } from '@/services/penColors';
+import { boardScope } from '@/services/boardScope';
 import { BoardBackground } from '@/components/classroom/BoardBackground';
 import { exportAsPDF } from '@/services/share';
 import { exportFilename } from '@/services/exportFilename';
@@ -36,6 +38,7 @@ import {
   EMPTY_DOC,
   MAX_PAGES,
   addPage,
+  canRedo,
   canUndo,
   clearBoard,
   commitStrokes,
@@ -47,6 +50,7 @@ import {
   hasInk,
   localizeDigits,
   removePage,
+  redoBoard,
   undoBoard,
   updateCurrent,
   withSolution,
@@ -84,13 +88,18 @@ type Saved = { id: string; title: string; json: string };
 export default function WhiteboardScreen() {
   const { t, isRTL, lang } = useLanguage();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ savedId?: string; topic?: string; subject?: string; grade?: string; from?: string }>();
+  const params = useLocalSearchParams<{ savedId?: string; topic?: string; subject?: string; grade?: string; gradeIdx?: string; subjectIdx?: string; from?: string }>();
+  // What a new board is filed under: the presentation's names, else Today's / the Tools tab's picker positions.
+  const scope = useMemo(
+    () => boardScope({ subject: params.subject, grade: params.grade, gradeIdx: params.gradeIdx, subjectIdx: params.subjectIdx }),
+    [params.subject, params.grade, params.gradeIdx, params.subjectIdx],
+  );
   // How the board was reached, fixed at the first render: the usage events below report it.
   const source = useRef(whiteboardSource(params)).current;
   const drawnReported = useRef(false);
   useEffect(() => { trackWhiteboardOpened(source); }, [source]);
   const [doc, setDoc] = useState<BoardDoc>(EMPTY_DOC);
-  const [color, setColor] = useState(PEN_COLORS[0]!);
+  const [color, setColor] = useState(BOARD_PEN_COLORS[0]!);
   const [width, setWidth] = useState(BOARD_DEFAULT_WIDTH);
   const [erase, setErase] = useState(false);
   const [area, setArea] = useState({ w: 0, h: 0 });
@@ -390,8 +399,8 @@ export default function WhiteboardScreen() {
         const created = await saveItem({
           type: 'board',
           title,
-          subject: params.subject ?? '',
-          grade: params.grade ?? '',
+          subject: scope.subject,
+          grade: scope.grade,
           topic: params.topic ?? '',
           language: lang === 'ar' ? 'ar' : 'en',
           content: r.json,
@@ -411,7 +420,7 @@ export default function WhiteboardScreen() {
       saving.current = false;
       setSaveBusy(false);
     }
-  }, [lang, params.grade, params.subject, params.topic, showToast, t]);
+  }, [lang, params.topic, scope, showToast, t]);
 
   const onSave = useCallback(() => {
     if (saving.current || loading) return;
@@ -503,6 +512,8 @@ export default function WhiteboardScreen() {
         onErase={setErase}
         canUndo={canUndo(page.board)}
         onUndo={() => setDoc(d => updateCurrent(d, p => ({ ...p, board: undoBoard(p.board) })))}
+        canRedo={canRedo(page.board)}
+        onRedo={() => setDoc(d => updateCurrent(d, p => ({ ...p, board: redoBoard(p.board) })))}
         hasInk={hasInk(page.board)}
         onClear={onClear}
         background={page.background}
@@ -539,8 +550,9 @@ export default function WhiteboardScreen() {
           pen: t('penTool'),
           eraser: t('boardEraser'),
           undo: t('penUndo'),
+          redo: t('penRedo'),
           clear: t('penClear'),
-          colors: [t('penRed'), t('penTeal'), t('penBlack')],
+          colors: BOARD_PEN_LABEL_KEYS.map(k => t(k)),
           widths: [t('boardWidthThin'), t('boardWidthMedium'), t('boardWidthThick')],
           backgrounds: { blank: t('boardBgBlank'), grid: t('boardBgGrid'), axes: t('boardBgAxes') },
           prevPage: t('boardPrevPage'),

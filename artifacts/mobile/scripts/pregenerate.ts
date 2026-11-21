@@ -78,10 +78,9 @@
  * which retires the row. The next `--go --only=lesson-teaching` then generates
  * a new variant for that lesson.
  *
- * ponytail: grade 10 maths (worksheets and plans) and grade 10 maths +
- * chemistry (explanations). Other grades/subjects are the `SCOPE` and
- * `TEACHING_SCOPES` lines; other option combinations only if teachers turn out
- * to change the defaults a lot (the pool's hit rate says).
+ * ponytail: grade 10 maths and chemistry (worksheets, plans and explanations).
+ * Other grades/subjects are the `SCOPES` list; other option combinations only if
+ * teachers turn out to change the defaults a lot (the pool's hit rate says).
  */
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -99,9 +98,9 @@ import {
 
 type Scope = { gradeNameAr: string; subjectName: string };
 
-const SCOPE: Scope = { gradeNameAr: 'الصف العاشر', subjectName: 'Mathematics' };
-const TEACHING_SCOPES: Scope[] = [
-  SCOPE,
+/** Grade 10, the pilot's two subjects. Worksheets, lesson plans and student explanations all cover both. */
+const SCOPES: Scope[] = [
+  { gradeNameAr: 'الصف العاشر', subjectName: 'Mathematics' },
   { gradeNameAr: 'الصف العاشر', subjectName: 'Chemistry' },
 ];
 /**
@@ -193,7 +192,7 @@ function* lessonsIn(scope: Scope) {
 /** Every worksheet and lesson-plan call the default form would make. Exported for the test. */
 export function plannedCalls(): Call[] {
   const calls: Call[] = [];
-  for (const { grade, subject, topic } of lessonsIn(SCOPE)) {
+  for (const { grade, subject, topic } of SCOPES.flatMap(scope => [...lessonsIn(scope)])) {
     const common = { gradeName: grade.nameAr, subjectName: subject.name, topic, lang: 'ar' as const };
     const worksheetForm = {
       ...common, difficulty: 'easy' as const, numQuestions: 10,
@@ -218,7 +217,7 @@ export function plannedCalls(): Call[] {
 /** One `lesson-teaching` call per lesson — the body Slides Maker sends. Exported for the test. */
 export function plannedTeachingCalls(): Call[] {
   const calls: Call[] = [];
-  for (const scope of TEACHING_SCOPES) {
+  for (const scope of SCOPES) {
     for (const { grade, subject, topic } of lessonsIn(scope)) {
       calls.push({
         kind: 'lesson-teaching', lesson: topic,

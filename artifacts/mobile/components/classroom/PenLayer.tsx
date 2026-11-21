@@ -3,7 +3,8 @@ import { PanResponder, Platform, Pressable, StyleSheet, View } from 'react-nativ
 import Svg, { Polyline } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { appendInkPoint, scaleInkPoints } from '@/services/penInk';
-import { DECK_ACCENT, DECK_BORDER, DECK_CARD_BG, DECK_MUTED, DECK_TEXT, TIMER_RED } from '@/services/deckTheme';
+import { DECK_BORDER, DECK_CARD_BG, DECK_MUTED } from '@/services/deckTheme';
+import { PEN_COLORS } from '@/services/penColors';
 import { DEFAULT_STROKE_WIDTH, ERASER_RADIUS, eraseAlong, eraseAt, type Stroke } from '@/services/whiteboardModel';
 
 // Ink over a projected slide — the teacher circles a term, underlines a step,
@@ -20,7 +21,8 @@ import { DEFAULT_STROKE_WIDTH, ERASER_RADIUS, eraseAlong, eraseAt, type Stroke }
  */
 export type { Stroke };
 
-export const PEN_COLORS = [TIMER_RED, DECK_ACCENT, DECK_TEXT];
+// The colour lists live in services/penColors.ts (pure, so a test can load them).
+export { PEN_COLORS };
 
 /**
  * Committed strokes, drawn at the canvas's current width. Memoised so a
