@@ -125,14 +125,21 @@ export default function AdminNewsletterScreen() {
     setBusy('send');
     setNote('');
     try {
-      const r = await apiJson<{ sent: number; failed: number; skipped: number }>('/admin/newsletter/send', {
+      const r = await apiJson<{ sent: number; failed: number; skipped: number; unconfirmed: number }>('/admin/newsletter/send', {
         method: 'POST',
         body: JSON.stringify({ issueId: tested.issueId, subject, body }),
         timeoutMs: 180_000,
       });
+      // Unconfirmed: the provider gave no clear answer, so the server keeps them recorded as mailed
+      // and a retry skips them (a missed issue, never a second copy).
+      const unconfirmed = r.unconfirmed > 0
+        ? (ar
+          ? ` · غير مؤكَّدة: ${r.unconfirmed} — لم يردّ مزوّد البريد بوضوح، فلن يُعاد الإرسال إليهم تلقائيًا؛ راجع سجل Resend`
+          : ` · Unconfirmed: ${r.unconfirmed} — the mail provider did not answer clearly, so these teachers will not be retried automatically; check the Resend log`)
+        : '';
       const skipped = r.skipped ? (ar ? ` · ألغوا الاشتراك: ${r.skipped}` : ` · Unsubscribed: ${r.skipped}`) : '';
       const retry = r.failed > 0 ? (ar ? ' · اضغط الإرسال مرة أخرى ليصل إلى من لم يصلهم فقط' : ' · press send again to reach only those who were missed') : '';
-      setNote((ar ? `وصلت: ${r.sent} · تعذّرت: ${r.failed}` : `Sent: ${r.sent} · Failed: ${r.failed}`) + skipped + retry);
+      setNote((ar ? `وصلت: ${r.sent} · تعذّرت: ${r.failed}` : `Sent: ${r.sent} · Failed: ${r.failed}`) + unconfirmed + skipped + retry);
     } catch (e: unknown) {
       setNote(failed(e));
     } finally {
