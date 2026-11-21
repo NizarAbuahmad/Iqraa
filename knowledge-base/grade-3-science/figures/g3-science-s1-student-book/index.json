@@ -178,14 +178,14 @@
       "lessonStartPage": 21
     },
     {
-      "file": "p026c-v2.png",
+      "file": "p026c-v3.png",
       "sourceId": "g3-science-s1-student-book",
       "pdfPage": 26,
       "rect": [
         0.0,
         460.0,
         595.3,
-        793.7
+        694.0
       ],
       "unit": 1,
       "lesson": 3,
