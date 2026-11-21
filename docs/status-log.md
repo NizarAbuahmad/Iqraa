@@ -10,6 +10,139 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Teacher newsletter: a what's-new email an admin sends after a test copy (2026-11-20)
+
+**What it is.** A system admin can mail every verified teacher a «ما الجديد» digest from a new screen,
+`/admin/newsletter` (`artifacts/mobile/app/admin/newsletter.tsx`, linked from the admin dashboard). The screen
+builds a draft from the app's «ما الجديد» entries (`artifacts/mobile/services/newsletterDraft.ts`: the first issue
+covers the last 31 days, later ones start after the previous issue), the admin edits it, sends themselves a test
+copy, and only then can send. Design: `docs/superpowers/specs/2026-11-20-teacher-newsletter-design.md`; plan:
+`docs/superpowers/plans/2026-11-20-teacher-newsletter.md`.
+
+- **API** (`artifacts/api-server/src/routes/adminNewsletter.ts`, system admin only): `GET /admin/newsletter`
+  (eligible-teacher count and the last issue), `POST /admin/newsletter/test` (mails the admin one copy and stores
+  the text), `POST /admin/newsletter/send`. The rules live in `lib/newsletter.ts`: who is eligible, a hash of the
+  text, and the test-before-send decision.
+- **Tables** `newsletter_issues` and `newsletter_sends`, in one migration, `0032_lumpy_sleeper.sql`: it creates
+  both tables and makes an issue's text unique (`newsletter_issues_content_hash_unique`).
+  Row-level security is on and the app role gets no grant, so only `systemDb` reads them (listed in
+  `systemDbFiles.test.ts`).
+- **Mail:** `sendBroadcast` now builds each recipient's own unsubscribe link, takes a teacher footer, and sets the
+  text direction per paragraph. That last change also affects the waitlist mail.
+- **Policy:** one sentence added to section 2 of the privacy policy in both languages, and `LEGAL_VERSION` is now
+  2026-11-20.
+
+**The approval rule.** The server sends only text whose hash matches a test copy mailed to the admin less than 24
+hours ago; any edit after the test, an older test, or an unreadable test date refuses the send. There is no
+schedule: nothing is ever sent unless an admin presses send.
+
+**How it differs from the spec and the plan.**
+
+- It has its own rate limiter, `admin-newsletter` (20 an hour per admin), not the waitlist one.
+- `newsletter_issues.sending_at` is a 10-minute claim taken while a send runs. A second send, or a new test copy,
+  is refused with 409 `sending` while it is fresh.
+- Who is mailed is recorded **before** each batch of 100 goes to the provider, and removed again for anyone the
+  provider clearly refused (or who had unsubscribed). The plan recorded after the whole send, and review found that
+  could mail teachers twice. Now a crash can make a teacher miss an issue, never get it twice.
+- The provider call has a 30-second timeout per batch, and an unconfirmed outcome (no clear answer: the connection
+  dropped, the timeout, or a 408, 502 or 504 answer) keeps its recipients recorded as mailed (`sendBroadcast`
+  returns them in `unconfirmed`; the send answer has an `unconfirmed` count).
+- Recipients are read in a stable order and excluded by user id or by an address already mailed.
+- A test copy never deletes an issue that already has recorded recipients.
+- The route has no `sent-not-recorded` answer any more. The 24-hour check refuses a test exactly 24 hours old.
+- One text is one issue. Testing text that already has an issue resumes it: the test refreshes that issue's test
+  time and makes it the tester's, so a send after a partly failed one, or after its test expired, skips everyone
+  already mailed. The database enforces it (the test route upserts on the text's hash), so identical text cannot be
+  sent to the same teacher twice, even when it is tested from two tabs at once. An edited text, even by one typo, is
+  a new issue and goes to every teacher again.
+- Only the admin who received the test copy can send it. Another admin gets 409 `not-tested` until they send
+  themselves a test of the same text, which makes the issue theirs.
+- A send mails only the teachers whose record its own insert wrote. If two sends of one issue overlap (a stale claim
+  taken while the first is stalled), a teacher the other run recorded is not mailed or counted by this one.
+- `RESEND_API_URL` (the test stub's address) is ignored in production, with one error in the log, so a stray value
+  cannot send the provider key and the addresses anywhere but Resend.
+
+**Verified** (by command, on 2026-11-20, on the author's machine against a local throwaway Postgres 16; nothing
+against production):
+
+- Migrations: all 33 apply in order to a new empty local database with the migrate script, and `verify-schema`
+  finds every table, column and unique constraint (65 of 65 tables); `generate` reports no schema change. At
+  `95db0b6`, 2026-11-21, after merging main.
+- `lib/db` suite with `RLS_TEST_DATABASE_URL` on that database: 76 pass, 0 fail, including «row-level security
+  covers every table» (at `95db0b6`).
+- API: `adminNewsletter.db.test.ts` 20 of 20; the whole suite after `pnpm build` with `TEST_DATABASE_URL` set:
+  3,633 pass, 0 fail, 0 skipped, at `bc65aad` (2026-11-21, the unconfirmed-batch fix). Mail in these tests went
+  only to a local stub (`test-support/resendStub.ts`).
+- What the tests cover for a lost answer: the unit tests (`broadcast.test.ts`, stubbed `fetch`) put a thrown request,
+  our own timeout and the answers 408, 502 and 504 in `unconfirmed`, and 400, 422, 429, 500 and 503 in `failed`;
+  check that each request carries an abort signal; and fail (not unconfirm) a batch whose body could not be built.
+  The database test «a batch whose answer was lost is not re-mailed» has the stub record a batch and then drop the
+  connection without answering: the send answers `unconfirmed: 2`, both records stay, and a second send mails
+  nobody. A refused batch (500) is still un-recorded and reached on the retry.
+- Mobile `pnpm test` at `bc65aad`: 9,469 tests, 9,459 pass, 0 fail, 10 skipped.
+- `lib/curriculum`: `pnpm test` 931 pass, 0 fail; `pnpm run verify` 0 errors (3,369 lessons, 200 files).
+- `pnpm run typecheck` at the fix commit, and again at `bc65aad`: exits 0.
+- CI on `b152778`: row-level security, migrations match schema, destructive migrations acknowledged, math verifier
+  and the teacher-to-student smoke test passed.
+- Browser (headless Chromium, built web app, local API with no mail key, a seeded system admin, two teachers of
+  whom one had unsubscribed), English light and Arabic dark: the count line and "No issue has been sent yet." show;
+  send is disabled before a draft; the draft button fills the subject and a body of 11 notes with 22
+  `app.iqrra.com` links and both opening sentences; send stays disabled after the draft; "Send me a test copy"
+  answers "Could not send" (there is no mail key) and send stays disabled; no page errors. This was before the
+  count wording below changed.
+- No database-backed test was skipped: all of them ran locally.
+
+**Not verified.**
+
+- **No real email was ever sent.** Delivery, spam placement, how the mail looks in Gmail and Outlook, the one-click
+  unsubscribe from a real inbox, and how the mixed Arabic and English subject orders in an inbox are all untested.
+- The success path on screen (a test copy arriving, send unlocking, the confirm dialog, the result line) was not seen
+  in a browser; only the API's database test covers it.
+- Not seen on a phone or in the Android app.
+- Resend plan caps and whether the sending domain is verified were not checked.
+- The policy sentence was written by a model and not read by a lawyer. Existing teachers are not shown the change
+  (there is no re-acceptance flow).
+- A failing write-ahead insert and a failing un-record delete have no test (they need fault injection).
+- What real Resend does on a dropped connection, and whether a 502 or 504 from it ever follows an accepted batch,
+  was not observed; the unconfirmed rule is built on the possibility, tested only against the stub. The
+  unconfirmed line on the screen was not seen in a browser.
+- The screen's count wording (below) and the Amman date of the last issue were not seen in a browser; only the
+  typechecker and the mobile suite ran over them.
+- The math verifier's Python test (`test_equations.py`) was not run; this change does not touch it.
+
+**Known limits.**
+
+- Opt-out, not opt-in: every verified teacher receives it unless they unsubscribe (the owner's decision,
+  2026-11-20). The repo's own waitlist rule (`UPDATES_CONSENT_FROM`) is stricter.
+- Unsubscribe stops all general mail to that address, not only the newsletter. Security codes still arrive.
+- The send is synchronous (100 per batch, about 0.6 s apart): fine into the low thousands of teachers.
+- When the provider gives no clear answer for a batch (the connection dropped, the 30-second timeout passed, or it
+  answered 408, 502 or 504), those teachers are recorded as mailed and are not retried automatically. So a teacher
+  can miss an issue but cannot get it twice. The screen shows how many were unconfirmed and says to check the
+  Resend log. There is no button to retry unconfirmed teachers: sending to them on purpose would take a new action
+  that is not built.
+- A crash in the middle of a batch can leave up to 100 teachers marked as mailed who were not.
+- An edited text is a different issue: correcting even one typo after a send and sending again mails every teacher
+  a second time. Only the identical text resumes an issue.
+- Screen copy: in the English interface the body box is left-aligned, so Arabic lines show their full stop on the
+  wrong side while editing (the email itself is right).
+
+**Screen copy.** Counts are worded so no plural agreement is needed, with Latin digits throughout: «عدد المعلّمين
+المستلمين: N · ألغوا الاشتراك: M» / "Teachers who would receive it: N · Unsubscribed: M"; the button «أرسل إلى
+المعلّمين (N)» / "Send to teachers (N)"; the result «وصلت: A · تعذّرت: B», followed only when some are unconfirmed by «غير مؤكَّدة: U — لم يردّ مزوّد
+البريد بوضوح، فلن يُعاد الإرسال إلى هؤلاء المعلّمين تلقائيًا؛ راجع سجل Resend» / "Unconfirmed: U — the mail provider did not
+answer clearly, so these teachers will not be retried automatically; check the Resend log". The confirm dialog says the number is an
+upper bound («ما لا يزيد على N من المعلّمين» / "at most N teachers"), since a retry skips anyone already mailed. The
+last issue's date is its Amman day (`ammanToday`), not the device's.
+
+**Before the first real issue (owner).** Read the policy sentence (`constants/legal.ts`, section 2, both languages).
+In the Resend dashboard, check the plan's daily and monthly caps against the count on `/admin/newsletter`, and that
+the sending domain is verified. Then on `/admin/newsletter`: draft, edit, send yourself the test copy, open every
+link in it, and only then send.
+
+No «ما الجديد» entry: only a system admin can see the screen. The migration only creates tables, so no
+`destructive-migration` line is needed.
+
 ## `earlyMathDifficulty.test.ts` draws the same papers on every run — 2026-11-21
 
 **Why.** The mobile suite failed once on CI (and once on a first local run, not captured) on a change that did not

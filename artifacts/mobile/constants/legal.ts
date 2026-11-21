@@ -55,6 +55,10 @@
  * :studentId`, `routes/homeworkSubmissions.ts`). §6 relies on that. If any of
  * those paths changes, §1 and §6 change with it.
  *
+ * **2026-11-20 — teachers receive an occasional what's-new email** (spec
+ * 2026-11-20-teacher-newsletter-design.md). The sentence sits in the «To email
+ * you» bullet of §2 in both languages.
+ *
  * **Recording (§1, §3, §4, §6, since 2026-10-31).** Three places use the
  * microphone: English speaking practice (`hooks/useSpeakingRecorder.ts`, kept on
  * the device, never uploaded), read-aloud practice (`routes/practice.ts`,
@@ -72,7 +76,7 @@
 export const LEGAL_CONTACT_EMAIL = 'info@iqrra.com';
 
 /** Shown on both documents. Bump when the text below changes materially. */
-export const LEGAL_LAST_UPDATED = { ar: '19 تشرين الثاني 2026', en: '19 November 2026' };
+export const LEGAL_LAST_UPDATED = { ar: '20 تشرين الثاني 2026', en: '20 November 2026' };
 
 /**
  * The same date, as the version a new account records it accepted
@@ -86,7 +90,7 @@ export const LEGAL_LAST_UPDATED = { ar: '19 تشرين الثاني 2026', en: '
  * new version: there is no re-acceptance flow, so a bump changes what the
  * next sign-ups record and nothing else.
  */
-export const LEGAL_VERSION = '2026-11-19';
+export const LEGAL_VERSION = '2026-11-20';
 
 export type LegalSection = { heading: string; body: string[] };
 export type LegalDoc = { title: string; intro: string; sections: LegalSection[] };
@@ -120,7 +124,7 @@ const PRIVACY_AR: LegalDoc = {
         'لتشغيل ما طلبته: إنشاء الحساب والدخول إليه، وتوليد الخطط وأوراق العمل والاختبارات، وتصحيحها، وإيصال الرسائل والإشعارات.',
         'لحماية الخدمة: الحدّ من محاولات الدخول المتكرّرة، ومعالجة بلاغات الإساءة.',
         'لتحسين الخدمة: قياس أيّ الأدوات تُستخدم فعلًا، ومشاهدة تسجيلات الشاشة لفهم أين يتعثّر المستخدمون. هذا الاستخدام هو الوحيد الذي يعتمد على التحليلات، وهو الأقلّ ضرورة.',
-        'لمراسلتك بالبريد الإلكتروني: رمز التحقّق ورمز استعادة كلمة المرور، وطلب موافقة وليّ الأمر حين يكتب الطالب بريده، ودعوة التطبيق وأخبار إطلاقه لمن سجّل اهتمامه. في أسفل كلّ رسالة رابط «إلغاء الاشتراك» يوقف رسائلنا إلى ذلك البريد، ما عدا رمزًا تطلبه أنت لإنشاء حساب أو لاستعادة كلمة المرور، فبدونه لا تصل إلى حسابك.',
+        'لمراسلتك بالبريد الإلكتروني: رمز التحقّق ورمز استعادة كلمة المرور، وطلب موافقة وليّ الأمر حين يكتب الطالب بريده، ودعوة التطبيق وأخبار إطلاقه لمن سجّل اهتمامه. ونرسل إلى المعلّمين رسالة بين حين وآخر بما استجدّ في التطبيق. في أسفل كلّ رسالة رابط «إلغاء الاشتراك» يوقف رسائلنا إلى ذلك البريد، ما عدا رمزًا تطلبه أنت لإنشاء حساب أو لاستعادة كلمة المرور، فبدونه لا تصل إلى حسابك.',
         'لا نبيع بياناتك، ولا نستخدمها في إعلانات، ولا نبني منها ملفًّا إعلانيًّا عنك.',
       ],
     },
@@ -221,7 +225,7 @@ const PRIVACY_EN: LegalDoc = {
         'To run what you asked for: creating and signing in to an account, generating lesson plans, worksheets and tests, marking them, and delivering messages and notifications.',
         'To protect the service: limiting repeated sign-in attempts and acting on abuse reports.',
         'To improve the service: measuring which tools are actually used, and watching screen recordings to see where people get stuck. This is the only purpose that relies on analytics, and the least necessary one.',
-        'To email you: verification and password-reset codes, a request for a parent\'s approval when a student gives their address, and the app invitation and launch news to people who registered interest. Every email has an Unsubscribe link at the bottom that stops our email to that address, except a code you ask for yourself to create an account or reset a password, without which you could not reach your account.',
+        'To email you: verification and password-reset codes, a request for a parent\'s approval when a student gives their address, and the app invitation and launch news to people who registered interest. Teachers also receive an occasional email about what is new in the app. Every email has an Unsubscribe link at the bottom that stops our email to that address, except a code you ask for yourself to create an account or reset a password, without which you could not reach your account.',
         'We do not sell your data, we do not use it for advertising, and we do not build an advertising profile from it.',
       ],
     },

@@ -37,8 +37,8 @@ Checked 2026-10-22:
 - **Database:** Neon Postgres, **Launch plan since 2026-10-23** (was Free: 100 compute-hours a
   month, 30.92 used, after which Neon suspends the compute), autoscaling 0.25-0.5 CU, scale to
   zero on, $10 spend alert — see «Neon leaves the Free plan before launch» in the log and the
-  first item under *Open*. The schema deploys as migrations (19 files in
-  `lib/db/migrations`, `0018` applied by deploy run 801 on 2026-10-25); `verify-schema` runs before every API deploy.
+  first item under *Open*. The schema deploys as migrations (33 files in
+  `lib/db/migrations`, up to `0032`; `0032_lumpy_sleeper`, the newsletter tables with one issue per text, is applied by the first deploy after that PR merges; `0018` was applied by deploy run 801 on 2026-10-25); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
   for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
   worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
@@ -78,6 +78,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- **Teacher newsletter is built and has never sent a real email.** A system admin drafts it from «ما الجديد» on `/admin/newsletter`, and the server sends only text that was test-sent to the admin in the last 24 hours; there is no schedule. Recipients are recorded before each batch is mailed, so a crash can make a teacher miss an issue but not get it twice. Every verified teacher receives it unless they unsubscribe (opt-out, the owner's decision); the policy sentence (`LEGAL_VERSION` 2026-11-20) was not read by a lawyer. Before the first issue: check the Resend plan's caps and the sending domain. Entry: «Teacher newsletter: a what's-new email an admin sends after a test copy» in the log.
 - 2026-11-13 — Grade 3: Arabic S2, maths S2 and science S2 book pages corrected (re-pointed on `main` at the images already in the bucket); no Grade 3 book text is extracted, so live generation has no book passages for Grade 3; Grade 5 social S1/S2 and Grade 8 Arabic S2 lessons whose right pages sit inside another lesson's images were withdrawn and could be re-pointed the same way («Grade 3 review…» in the log)
 - 2026-11-13 — Grade 10 checked against its books and corrected; history, civics and art text now grounds live prompts (it never did); vocational S1 added; what is left needs the PDFs or a book (PE S2, financial literacy S2, vocational S2, the «حل معادلات خاصة» figures to map and upload) and the same English word-list fix for Grade 9 («Grade 10 checked against its books, and corrected» in the log)
 - 2026-11-13 — Grade 9 checked against its books and corrected; what is left needs the PDFs (nccd.gov.jo does not answer from cloud sessions): figures for 16 books, book pages for art / vocational / history S2, two missing download links, and a page check of the 11 books with no extracted text («Grade 9 checked against its books, and corrected» in the log)
@@ -119,7 +120,7 @@ Checked 2026-10-22:
   running, and whether masking hides their photos is unverified, like every other screen. The
   teacher's screens are reached from the tracked class page, so on the web a Contentsquare
   recording is usually already running when they open and only the body-level mask protects the
-  photos; Android replay has `maskAllImages` true. The policy (`LEGAL_VERSION` 2026-11-19 now; its recording text dates from 2026-10-30, its «time in the app» and optional-teacher-details lines from 2026-11-19, «Admin user insights» in the log) was written by a model and **not reviewed by a
+  photos; Android replay has `maskAllImages` true. The policy (`LEGAL_VERSION` 2026-11-20 from the merge of the newsletter PR (2026-11-19 until then); its recording text dates from 2026-10-30, its «time in the app» and optional-teacher-details lines from 2026-11-19, «Admin user insights» in the log, and its occasional what's-new email to teachers from 2026-11-20, «Teacher newsletter: a what's-new email an admin sends after a test copy» in the log) was written by a model and **not reviewed by a
   lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
   and the Contentsquare plan shows a 200K sessions a month cap.
   Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
@@ -230,6 +231,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-11-20 — Teacher newsletter: a what's-new email an admin sends after a test copy
 - 2026-11-01 — «جديد» on a new tool's card, from its «ما الجديد» entry
 - 2026-11-01 — «ما الجديد»: existing users are told about new features, once, in the app
 - 2026-11-01 — Grammar sheets stop mentioning pictures in the grades that have none

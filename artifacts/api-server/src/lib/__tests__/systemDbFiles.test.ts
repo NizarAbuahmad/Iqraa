@@ -21,6 +21,7 @@ const ALLOWED: Record<string, string> = {
   "routes/auth.ts": "sign-in, sign-up, refresh, password reset and claim run before — or without — a user identity; they own the token tables",
   "routes/admin.ts": "admin-only routes that read and revoke across every user, plus public site-signup ingestion",
   "routes/adminInsights.ts": "system-admin-only usage insights: counts and ranks every user's activity, time spent and profile answers",
+  "routes/adminNewsletter.ts": "system-admin-only teacher newsletter: reads every teacher's address to mail them, and records who was mailed in two tables that have no app-role grant",
   "routes/moderation.ts": "admin-only: reads the reported thread's messages, which the admin is not a participant of",
   "routes/studentAttempt.ts": "a student takes an exam from a share link with no login, so no identity",
   "routes/messaging.ts": "a recipient's blocks and push tokens belong to the recipient, and a phone handed to another account re-registers a token that still belongs to the last one",

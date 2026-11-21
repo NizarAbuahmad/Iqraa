@@ -61,3 +61,5 @@ export * from "./emailSuppressions";
 
 // Minutes per app area per day, for the admin insights page — see usage.ts
 export * from "./usage";
+// The teacher newsletter: issues and who received each — see newsletter.ts
+export * from "./newsletter";
