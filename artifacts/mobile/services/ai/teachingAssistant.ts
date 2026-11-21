@@ -114,6 +114,14 @@ export type ChatSessionMemory = {
    * not the lesson on the card. Cleared when a lesson is pinned (`pinLesson`).
    */
   freeTopic?: string | null;
+  /**
+   * The lesson the conversation is on when it is not the selected one above
+   * (`chatLessonFocus.ts`). `activeLessonId` is the lesson the teacher picked
+   * (the card, the top bar); a question about another lesson moves this, never
+   * that. Absent / null: the conversation is on the selected lesson.
+   * `{ lessonId: null }`: the teacher left it («خلينا نتكلم عن…»).
+   */
+  conversation?: { lessonId: string | null } | null;
 };
 
 export type TeachingAssistantInput = {

@@ -407,12 +407,38 @@ export function mergeScopeReply(pending: string | null, reply: string): string {
 
 /**
  * Decide whether chat should force the session's active lesson into results.
- * Soft pins must not override a confident KB hit for a different topic.
- * Teacher-uploaded documents beat a soft-pinned default lesson.
- * A message that names a new topic never reuses the old lesson, however pinned.
- * Same for a message that names a different grade than the active lesson's own.
+ *
+ * The lesson is reused for a message that names no topic of its own — a bare
+ * ask («علمني», «ورقة عمل»), a refinement, a short follow-up («أضف نشاطاً») —
+ * and for one whose own search points at it (`searchSupportsActive`). A message
+ * that names another topic never gets it, however hard the pin: a hard pin is
+ * the teacher choosing the lesson, not every later question being about it.
+ * Until 2026-11-21 a hard pin was reused whenever the keyword search was not
+ * confident, so with «تركيب الاقترانات» picked in the top bar «اشرح لي المتجهات»
+ * and «كيف أدير صفًا مزعجًا؟» were answered from «تركيب الاقترانات»
+ * (`lessonPinGate.test.ts`).
+ *
+ * Teacher-uploaded documents beat a soft-pinned default lesson. A message that
+ * names a different grade or subject than the active lesson's own never reuses it.
  */
-export function shouldReuseActiveLesson(opts: {
+export function shouldReuseActiveLesson(opts: ActiveLessonReuseInput): boolean {
+  return activeLessonReuse(opts) !== 'none';
+}
+
+/**
+ * How the active lesson takes part in this turn:
+ *  - `ground` — the answer is about it: it goes first in the turn's lessons and
+ *    the live model gets it as the textbook;
+ *  - `background` — a lesson the teacher picked, and a question the search
+ *    cannot place («كيف أبدأ الحصة»، «كيف أدير صفًا مزعجًا؟»). Only the model can
+ *    tell which of those is about the lesson, so it is told the lesson and to
+ *    tie its answer to it only if the question is about it — never handed it as
+ *    the textbook. The offline assistant, which has no model, still answers from it;
+ *  - `none` — the message is about something else.
+ */
+export type ActiveLessonReuse = 'ground' | 'background' | 'none';
+
+export type ActiveLessonReuseInput = {
   memory: ChatSessionMemory;
   intent: 'teaching' | 'artifact' | 'refinement' | string;
   query: string;
@@ -425,47 +451,69 @@ export function shouldReuseActiveLesson(opts: {
   activeLessonSubjectId?: string | null;
   /** Subject of the top-ranked KB hit (only passed when score ≥ KB_SUGGEST_SCORE). */
   topRankedSubjectId?: string | null;
-}): boolean {
+  /** This message's own search points at the active lesson (`searchSupportsLesson`). */
+  searchSupportsActive?: boolean;
+  /** This message's own search points at another lesson (`searchPointsElsewhere`). */
+  searchPointsElsewhere?: boolean;
+};
+
+export function activeLessonReuse(opts: ActiveLessonReuseInput): ActiveLessonReuse {
   const {
     memory, intent, query, hasConfidentKbHit,
     hasDocuments = false, activeLessonGradeId = null,
     activeLessonSubjectId = null, topRankedSubjectId = null,
+    searchSupportsActive = false, searchPointsElsewhere = false,
   } = opts;
-  if (!memory.activeLessonId || memory.lessonPin === 'none') return false;
-  if (topicSwitchTarget(query) !== null) return false;
+  if (!memory.activeLessonId || memory.lessonPin === 'none') return 'none';
+  if (topicSwitchTarget(query) !== null) return 'none';
   const queryGradeId = extractQueryGradeId(query);
-  if (queryGradeId && activeLessonGradeId && queryGradeId !== activeLessonGradeId) return false;
+  if (queryGradeId && activeLessonGradeId && queryGradeId !== activeLessonGradeId) return 'none';
   // «علمني» / «ابدأ» name no topic: the open lesson is the only one they can
   // mean, so what the KB ranks for the verb itself is noise, not evidence of
   // another subject («start» ranks «تأسيس مشروع تجاري» at 92).
   const bareTeach = intent === 'teaching' && isBareTeachAsk(query);
+  // Same for a bare ask for material: «ورقة عمل» ranks English «طرق العمل» at 38.
+  const bareArtifact = intent === 'artifact' && isBareArtifactShortcut(query);
   // KB evidence for a different subject beats the hard pin
   if (
     !bareTeach
+    && !bareArtifact
     && activeLessonSubjectId && topRankedSubjectId && topRankedSubjectId !== activeLessonSubjectId
-  ) return false;
+  ) return 'none';
   const querySubjectId = extractQuerySubjectId(query);
-  if (querySubjectId && activeLessonSubjectId && querySubjectId !== activeLessonSubjectId) return false;
+  if (querySubjectId && activeLessonSubjectId && querySubjectId !== activeLessonSubjectId) return 'none';
 
   // Uploads are primary context until the teacher hard-pins a curriculum lesson
   if (hasDocuments && memory.lessonPin !== 'hard' && intent !== 'refinement') {
-    return false;
+    return 'none';
   }
 
-  if (intent === 'refinement' || isReferentialQuery(query)) return true;
+  if (intent === 'refinement') return 'ground';
+  // «أضف…» / «كمان» refers back — unless the message's own words point at
+  // another lesson («اشرح المتجهات وأضف أمثلة» names its topic).
+  if (isReferentialQuery(query) && !searchPointsElsewhere) return 'ground';
   // Without this a soft pin is not reused for a teaching ask, and the
   // pipeline searches the curriculum for the verb itself.
-  if (bareTeach) return true;
+  if (bareTeach) return 'ground';
 
-  if (intent === 'artifact') {
-    if (memory.lessonPin === 'hard') return true;
-    // Soft pin: reuse only for bare shortcuts (no competing topic in the query)
-    return isBareArtifactShortcut(query) && !hasConfidentKbHit;
+  if (bareArtifact) {
+    // No topic in the ask: it is for the lesson. A soft (restored) pin yields
+    // to a confident hit; a lesson the teacher picked does not.
+    return memory.lessonPin === 'hard' || !hasConfidentKbHit ? 'ground' : 'none';
   }
 
-  // Teaching: hard pin only when retrieval is weak; soft never forces
-  if (memory.lessonPin === 'hard' && !hasConfidentKbHit) return true;
-  return false;
+  // The message names a topic: the lesson only if its own words point at it.
+  if (searchSupportsActive) return 'ground';
+  // Nothing in the curriculum matched the words at all, and the teacher picked
+  // this lesson: background, for the model to judge. A material is not built on
+  // background — `chooseArtifactLesson` wants the topic's own support.
+  if (
+    memory.lessonPin === 'hard'
+    && intent !== 'artifact'
+    && !hasConfidentKbHit
+    && !searchPointsElsewhere
+  ) return 'background';
+  return 'none';
 }
 
 /**
@@ -495,6 +543,8 @@ export function pinLesson(
     prepLessonId: memory.prepLessonId ?? lesson.id,
     // A lesson is the context now, not the last free topic.
     freeTopic: null,
+    // Picking a lesson starts the conversation on it (`chatLessonFocus.ts`).
+    conversation: null,
   };
 }
 

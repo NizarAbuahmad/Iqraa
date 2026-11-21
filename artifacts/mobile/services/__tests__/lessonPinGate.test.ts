@@ -13,8 +13,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { shouldReuseActiveLesson } from '../lessonCopilot.ts';
-import { emptyChatSessionMemory } from '../ai/teachingAssistant.ts';
+import { activeLessonReuse, shouldReuseActiveLesson } from '../lessonCopilot.ts';
+import { emptyChatSessionMemory, type ChatSessionMemory } from '../ai/teachingAssistant.ts';
+import { isConfidentSingleSubjectHit, searchPointsElsewhere, searchSupportsLesson } from '../kbContext.ts';
+import { getBookForLesson, getLessonById, searchKBRanked } from '../knowledgeBase.ts';
+import { KB_SUGGEST_SCORE } from '../kbSuggestion.ts';
 
 const hardPinned = {
   ...emptyChatSessionMemory(),
@@ -74,5 +77,100 @@ describe('shouldReuseActiveLesson with a lesson picked in chat', () => {
       }),
       true,
     );
+  });
+});
+
+/**
+ * Reported 2026-11-21: «chat keeps changing the topic I ask for». A lesson
+ * picked from the top bar is pinned hard, and the gate used to reuse a hard pin
+ * for any teaching question the keyword search was not confident about, so the
+ * picked lesson went to the model as the textbook. Measured with the picked
+ * lesson «تركيب الاقترانات»: «اشرح لي المتجهات» (vectors scored 35.5, not a
+ * confident single-subject hit), «ما هي الدالة الأسية», «اشرح لي المصفوفات»
+ * and «كيف أدير صفًا مزعجًا؟» were all answered from «تركيب الاقترانات».
+ *
+ * The rule now: a message that names a topic of its own gets the picked lesson
+ * only when this message's own search points at it (`searchSupportsLesson`).
+ * The pin's strength says how sure the teacher is about the lesson, not what
+ * every later question is about.
+ */
+describe('a question that names its own topic is answered about that topic', () => {
+  const bar = getLessonById('kbl-math-s2-nccd-u5_l3')!;
+  const book = getBookForLesson(bar)!;
+  const gate = (
+    query: string,
+    intent: 'teaching' | 'artifact' = 'teaching',
+    memory: ChatSessionMemory = hardPinned,
+  ) => {
+    const ranked = searchKBRanked(query, 'ar');
+    return activeLessonReuse({
+      memory,
+      intent,
+      query,
+      hasConfidentKbHit: isConfidentSingleSubjectHit(ranked),
+      activeLessonGradeId: book.gradeId,
+      activeLessonSubjectId: book.subjectId,
+      topRankedSubjectId: ranked[0] && ranked[0].score >= KB_SUGGEST_SCORE
+        ? getBookForLesson(ranked[0].lesson)?.subjectId ?? null
+        : null,
+      searchSupportsActive: searchSupportsLesson(ranked, bar.id),
+      searchPointsElsewhere: searchPointsElsewhere(ranked, bar.id),
+    });
+  };
+
+  // The words point at another lesson: that lesson, not the picked one.
+  for (const q of [
+    'اشرح لي المتجهات',
+    'ما هي الدالة الأسية',
+    'سؤال عن الجذور',
+  ]) {
+    it(`does not answer «${q}» from the picked lesson`, () => {
+      assert.equal(gate(q), 'none');
+    });
+  }
+
+  // Nothing in the curriculum matches: the model is told the lesson as
+  // background and answers the question as asked — never handed the lesson as
+  // the textbook, which is what made it answer about «تركيب الاقترانات».
+  for (const q of ['اشرح لي المصفوفات', 'كيف أدير صفًا مزعجًا؟']) {
+    it(`gives «${q}» the picked lesson as background only`, () => {
+      assert.equal(gate(q), 'background');
+    });
+  }
+
+  it('a soft (restored) pin is not even background', () => {
+    assert.equal(gate('كيف أدير صفًا مزعجًا؟', 'teaching', { ...hardPinned, lessonPin: 'soft' }), 'none');
+  });
+
+  it('does not build «اختبار قصير عن الاحتمالات» on the picked lesson', () => {
+    assert.equal(gate('اختبار قصير عن الاحتمالات', 'artifact'), 'none');
+  });
+
+  it('a long message that names a topic is not a follow-up because it says «أضف»', () => {
+    assert.equal(gate('اشرح المتجهات وأضف أمثلة'), 'none');
+  });
+
+  it('still grounds on the picked lesson when the question is about it', () => {
+    assert.equal(gate('اشرح تركيب الاقترانات'), 'ground');
+  });
+
+  it('still grounds on it for a short follow-up or a bare ask', () => {
+    assert.equal(gate('أضف نشاطاً', 'artifact'), 'ground');
+    assert.equal(gate('علمني'), 'ground');
+    assert.equal(gate('ورقة عمل', 'artifact'), 'ground');
+  });
+});
+
+describe('searchSupportsLesson', () => {
+  const barId = 'kbl-math-s2-nccd-u5_l3';
+  it('is false when the words point at another lesson', () => {
+    assert.equal(searchSupportsLesson(searchKBRanked('اشرح لي المتجهات', 'ar'), barId), false);
+  });
+  it('is true when the words point at the lesson itself', () => {
+    assert.equal(searchSupportsLesson(searchKBRanked('اشرح تركيب الاقترانات', 'ar'), barId), true);
+  });
+  it('is false when a confident hit is another lesson, even if this one scored', () => {
+    // «الاقتران العكسي» 135.5 is the answer; «تركيب الاقترانات» scores on the shared word.
+    assert.equal(searchSupportsLesson(searchKBRanked('أعطني أمثلة على الاقتران العكسي', 'ar'), barId), false);
   });
 });
