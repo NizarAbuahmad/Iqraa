@@ -65,6 +65,102 @@ Verified: typecheck; mobile and api-server tests (counts in the PR).
 live call fell back («OpenAI credit ran out; the app-wide AI cap is now $100», below). The 45 s client timeout was
 not the cause.
 
+## Pool prefill: a default-form quiz per Grade 10 lesson — 2026-11-21
+
+`scripts/pregenerate.ts` now plans a quiz for every Grade 10 maths and chemistry lesson beside the worksheet and the
+lesson plan: a dry run reads **204 calls** (51 each of worksheet, lesson plan, quiz and student explanation), worst case
+$10.20 at the script's $0.05-a-call estimate. A quiz is stored under the quiz screen's defaults: «عادي» (easy),
+20 minutes, 20 marks, 10 questions, multiple choice + true/false + short answer.
+
+**Why a refactor came with it.** The quiz screen spelled its request out inline, so a script could not send the same
+body, and the pool only answers a body that hashes the same. The request is now `buildQuizRequest`
+(`services/generatorRequests.ts`), called by the screen (the wide scope's fields still spread over it, last) and by the
+script, like the worksheet, lesson plan and activity. `quiz.tsx` lost its inline literal and two imports.
+
+**Verified.** `generatorRequests.test.ts` (the builder: form, trimmed topic, every lesson field from the one grounding,
+no lesson fields for a wide scope, regenerate) and `pregenerate.test.ts` (a quiz per lesson in both subjects, one per
+lesson id, the defaults above; and a source guard that the screen calls `buildQuizRequest` and that its initial indices
+are the ones the prefill assumes) failed first, then passed. **The screen's request is unchanged:** a throwaway test
+rebuilt the old inline body from the previous `quiz.tsx` and compared it with the builder's over 137 lessons (all of
+Grade 10 maths and chemistry plus every 40th lesson), both languages, regenerate on and off, grounded and wide:
+1,096 bodies, all identical on the wire. Not kept, because it would only compare the builder with a copy of
+itself. `pnpm run typecheck`; mobile `pnpm test` 9,486 pass, 0 fail.
+
+**Running it.** Production writes quizzes with Claude Sonnet 5.5 (`AI_MODEL_DOCUMENTS=claude-sonnet-5-5`), so a
+quiz is about $0.05 and the 51 about $2.60; rotate the Anthropic key first (the one in use expires 2026-11-22): with a dead
+key a run falls back to OpenAI and fills the pool under that model's key, where Claude's teachers never look.
+
+**Not verified.** The quiz screen on a device or in a browser (the request is identical, but the file changed); a
+live run of the quiz prefill; that a teacher's default quiz then hits the pool; the quality of the stored quizzes
+(each is served to every teacher who asks, answer key included: read a few after a run).
+
+**Found, left alone.** `groundingRequestFields` can add `grounding: 'none'` (no lesson grounds the topic: the API then
+must not attach a book by title). The quiz screen never sent it: it copies four of the helper's fields and drops that
+one, so a quiz for a topic no lesson covers can still get another lesson's book pages from the API. The builder keeps
+that behaviour, since the refactor was not meant to change a request. A one-line fix would add `...noLessonField(...)`
+to the builder; it changes the pool key of those requests, so it is its own change.
+
+## Production runs Claude for documents (STATUS.md said it did not); a dead key now switches provider — 2026-11-21
+
+`STATUS.md` «Live config» said `AI_MODEL_DOCUMENTS` was **unset**, while the 2026-11-03 entry
+(«lesson-teaching now runs on the documents model») said Claude Sonnet 5.5 ran in production. An
+Anthropic Console email that a key expires on 2026-11-22 raised the question of which was true.
+
+**Verified.** The owner read the live service in Cloud Shell on 2026-11-21:
+`gcloud run services describe iqraa-api … --format="value(spec.template.spec.containers[0].env)"` shows
+`AI_MODEL_DOCUMENTS=claude-sonnet-5-5` and `ANTHROPIC_API_KEY` as a `secretKeyRef` (`latest`). So lesson plans,
+worksheets, quizzes, slide decks and `lesson-teaching` (`DOCUMENT_KINDS` in `aiBudget.ts`) go to Claude. Chat,
+evaluations, grading, homework, activities and infographics stay on OpenAI.
+
+**Not verified.** Whether the expiring key («Agents test») is the one in the `ANTHROPIC_API_KEY` secret, and the
+date `AI_MODEL_DOCUMENTS` was set.
+
+**The gap this closes.** `usableModel` (`lib/aiBudget.ts`) skips Claude only when `ANTHROPIC_API_KEY` is
+*unset*. A key that was set but expired, revoked or on an empty balance was used anyway, and every one of those
+five kinds answered with the generation error until the secret had a new version — and the same held the other
+way for OpenAI's own empty balance.
+
+**Changed.**
+
+- `lib/providerFallback.ts` (new): `isProviderAccountError` — 401, 402, 403, 404, OpenAI's 429
+  `insufficient_quota`, Anthropic's 400 «credit balance», and `ClaudeNotConfiguredError`; **not** a plain 429,
+  5xx, 529, a refusal or a malformed reply, which the other provider would not fix and which would double the
+  spend on busy days. `fallbackModelFor` — Claude is backed by `getGenerationModel()`; OpenAI by
+  `AI_MODEL_DOCUMENTS` when that is a Claude id and the key is set, so no new variable. `withProviderFallback`
+  switches once, never back, and logs «AI provider refused the account — answering with the other provider» at
+  error level.
+- `routes/generate.ts`: `generateContent` resolves the model and runs the pooled flow (now
+  `generateContentWith`) through `withProviderFallback`. The whole flow re-runs under the backup's model, so the
+  pool is read and the artifact stored under the backup's key — a fallback artifact never poses as the other
+  model's — and the caps are asked again for the call actually made. That covers every `/generate/*` kind that
+  goes through it: the five document kinds, homework, activities and the rest.
+- `scripts/provider-eval.ts`: prices for `claude-sonnet-5-5` ($2/$10) and `claude-haiku-5-5` ($0.10/$0.50), so a
+  run against them reports cost.
+
+**Verified.** `providerFallback.test.ts`, 14 tests: which errors switch and which do not, the model each side
+falls back to, one switch and never back, the original error rethrown when there is no backup, and that
+`generateContent` still calls `withProviderFallback`. api-server 3017 / 3017 after `pnpm build`; typecheck clean.
+
+**Not verified.** No request has been made against a real expired key or an empty balance: the error shapes are
+the SDKs' documented `status` / `code`, not ones captured from production. Not covered: chat (streaming), the
+exam generator and grading (`evaluations.ts`, `attempts.ts`), `siteAsk`, the verified-derivative path and `solve`,
+which call the OpenAI client directly — an empty OpenAI balance still fails those. The backup writes in another
+model's voice; the quality of OpenAI-written documents is the 2026-10-23 comparison's (it lost 14 of 16).
+
+**Found while rotating (same day): a trailing comma failed a whole lesson plan.** With the old key back, Claude
+answered but `/generate/lesson-plan` returned 500, logged «Expected double-quoted property name in JSON at position
+3844 (line 33 column 5)»: a comma before a closing brace. `parseRepairing` (`lib/generationShape.ts`) already doubled
+stray backslashes after a failed strict parse; it now also drops a comma that stands right before `}` or `]` outside a
+string (`dropTrailingCommas`, which tracks strings and escapes, so a «, }» in the text is kept). Valid JSON is still
+parsed untouched. Four tests in `generationShape.test.ts`, three of which failed first. Not verified against the actual
+reply, which is not logged; only its error message and position were. Also on the way: the first new key saved
+(secret version 3) was rejected with `401 invalid x-api-key`, so the service was pinned back to version 2.
+
+Rotating the key is still the fix; the fallback only keeps the screens working meanwhile. Rotation is
+`gcloud secrets versions add ANTHROPIC_API_KEY` plus `gcloud run services update iqraa-api
+--update-secrets=ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest`; the instant rollback is
+`--remove-env-vars=AI_MODEL_DOCUMENTS`.
+
 ## `earlyMathDifficulty.test.ts` draws the same papers on every run — 2026-11-21
 
 **Why.** The mobile suite failed once on CI (and once on a first local run, not captured) on a change that did not
@@ -107,9 +203,12 @@ screens' defaults (normal → `easy`, 10 questions, multiple choice + short answ
 **Not verified:** a live run (none was made; it needs a login and spends money — command in the PR), that a
 teacher's chemistry request then hits the pool, or the quality of the stored chemistry worksheets: they are served to
 every teacher who asks, and nobody has read them. The per-account allowance (`AI_USER_BUDGET_USD`, reset to `1` by
-every API deploy) is what actually stops a run, about 100 calls at roughly $0.01 each is on the edge of it; give the
-dedicated account its own limit on the admin Users screen first. The model is part of the pool key: run this after
-deciding `AI_MODEL_DOCUMENTS`, or the copies are orphaned. No «ما الجديد»: nothing a user sees changes.
+every API deploy) is what actually stops a run: give the dedicated account its own limit on the admin Users screen
+first. **Corrected 2026-11-21, same day:** this entry first said a call costs roughly $0.01 and that
+`AI_MODEL_DOCUMENTS` was still to be decided. Neither held: production already runs `AI_MODEL_DOCUMENTS=claude-sonnet-5-5`
+(«Production runs Claude for documents», above), so worksheets, lesson plans and quizzes are written by Claude Sonnet 5.5
+($2/$10 per million tokens, adaptive thinking), which is closer to the script's $0.05 a call than to $0.01. The run is
+**about $2.60 for each kind of 51**, so give the account at least $10. No «ما الجديد»: nothing a user sees changes.
 
 ## Whiteboard: redo, four more pen colours, and a board from Today is filed under its lesson — 2026-11-21
 

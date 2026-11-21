@@ -12,8 +12,9 @@ import type { QuizCopy } from '@/services/quizExport';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 import { remoteAIService as aiService } from '@/services/ai/RemoteAIService';
-import { groundingRequestFields, resolveGeneratorGrounding } from '@/services/kbContext';
-import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
+import { resolveGeneratorGrounding } from '@/services/kbContext';
+import { buildQuizRequest } from '@/services/generatorRequests';
+import { pooledVariantId } from '@/services/ai/regeneration';
 import { QuizOutput, QuizQuestion } from '@/services/ai/AIService';
 import { buildDeckFromQuiz } from '@/services/classDeck';
 import { ShortPaperNotice } from '@/components/ui/ShortPaperNotice';
@@ -471,31 +472,22 @@ export default function QuizScreen() {
         ? null
         : resolveGeneratorGrounding(topic.trim(), lang, { scope: kbScope, lessonId: pickedLesson.lessonId });
       const grounding = lessonGrounding ?? WIDE_GROUNDING;
-      // Every field from that one grounding — never the title again (`groundingRequestFields`).
-      const lessonFields = lessonGrounding ? groundingRequestFields(lessonGrounding) : undefined;
+      // The body lives in `buildQuizRequest`, shared with `scripts/pregenerate.ts`: the pool
+      // only answers a request that matches, so the two must not spell it twice.
       const out = await aiService.generateQuiz({
-        // Localised: this string is carried into generated content verbatim —
-        // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
-        // compared anywhere, only displayed and passed through, so translating it
-        // is safe. `subject` is deliberately left in English: it feeds
-        // isMathContext and ~30 other call sites.
-        grade: lang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
-        subject: subjects[subjectIdx].name,
-        topic: topic.trim(),
-        language: lang === 'ar' ? 'arabic' : 'english',
-        duration: DURATION_OPTIONS[durationIdx],
-        totalMarks: MARKS_OPTIONS[marksIdx],
-        questionTypes: Array.from(selectedTypes),
-        numQuestions: NUM_Q_OPTIONS[effNumQIdx],
-        difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
-        additionalContext: lessonFields?.additionalContext,
-        unitId: lessonFields?.unitId,
-        lessonId: lessonFields?.lessonId,
-        bookFigureCount: lessonFields?.bookFigureCount,
-        // Curriculum-derived, so the artifact may be shared with any teacher
-        // who asks the same question — see AIRequest.contextSource.
-        contextSource: 'curriculum',
-        ...regenerationFields(opts?.regenerate === true, previous),
+        ...buildQuizRequest({
+          gradeName: lang === 'ar' ? grades[gradeIdx].nameAr : grades[gradeIdx].name,
+          subjectName: subjects[subjectIdx].name,
+          topic,
+          lang,
+          duration: DURATION_OPTIONS[durationIdx],
+          totalMarks: MARKS_OPTIONS[marksIdx],
+          questionTypes: Array.from(selectedTypes),
+          numQuestions: NUM_Q_OPTIONS[effNumQIdx],
+          difficulty: DIFFICULTY_MAP[DIFFICULTY_IDS[diffIdx]],
+          regenerate: opts?.regenerate === true,
+          previous,
+        }, lessonGrounding),
         // Last: the wide scope's digest replaces the lesson-derived context, and
         // its explicit-undefined lessonId / unitId clear the single-lesson fields.
         ...(wide ? wide.fields : {}),
