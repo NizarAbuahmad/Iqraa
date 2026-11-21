@@ -116,6 +116,9 @@ export function buildQuizRequest(form: QuizForm, grounding: GeneratorGrounding |
     unitId: lessonFields?.unitId,
     lessonId: lessonFields?.lessonId,
     bookFigureCount: lessonFields?.bookFigureCount,
+    // No lesson in this scope: the API must not find one by the title. Only the lesson path
+    // decides it here; a wide scope's own fields (`scopeRequestFields`) carry theirs.
+    ...(lessonFields?.grounding ? { grounding: lessonFields.grounding } : {}),
     // Curriculum-derived, so the artifact may be shared with any teacher
     // who asks the same question — see AIRequest.contextSource.
     contextSource: 'curriculum',
