@@ -337,7 +337,8 @@ sweep in your staged files.
   teacher-guide p.47, 5 of 6; and since 2026-11-21 the 14 unit-6 derivatives of the
   semester-2 student book, from the s2 guide's copies of student pp.68, 69, 77,
   matched by function name and value — `pair_derivatives`; a student-book item
-  cites «كتاب الطالب», and its unit-test items' ids carry a `t`, `…-u6l2-t15`, because
+  cites «كتاب الطالب» (a unit-test one with its page, since printings renumber the
+  test), and its unit-test items' ids carry a `t`, `…-u6l2-t15`, because
   the test's numbers overlap the lesson's): the printed answers come in a different order from
   the items, so the extractor pairs by VALUE (printed entry equals SymPy's answer
   for the stem it read; a misread stem finds no answer), never by position, and

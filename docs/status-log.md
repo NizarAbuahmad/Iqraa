@@ -27,26 +27,33 @@ served to lesson 6.2 (`kbl-math-s2-nccd-u6_l2`).
 **How they are verified.** The s2 teacher guide reproduces each student page with its answers printed on
 it (guide p.102 for student p.68, p.103 for p.69, p.112 for p.77). `printed_derivatives` reads every
 `name '(x) = value` there (with its `)15` item number when printed), and `pair_derivatives` verifies an item
-only when the **function name**, the **value** (SymPy) and any printed number agree; an entry ending a line
-whose next line is a bare number (a split fraction) is skipped. Nothing pairs by position. The TS suite
-re-checks every verified pair independently, comparing polynomial coefficients (`derivative` in
-`bookItems.test.ts`), because the guide prints terms in its own order (`-2 + 2x` for `2x - 2`).
+only when the **function name**, the **value** (SymPy) and any printed number agree. Nothing pairs by
+position. `printed_derivatives` fails closed on three layouts a review found (none fired on these pages, but
+each could one day let a cut-off answer verify a misread stem): an entry the next line continues
+(`CONTINUES`: a bare number, an operator then a space as in p.112's `3x 2` over `- 12`, or `1` over `3 x2`;
+deliberately not every line starting with a digit or sign, since p.102 prints the next answer, `-26.8`, on
+the next line); a tab inside a value (a column gap, never an exponent); and, on a page where any entry
+carries an item number, every entry without one. Labelled entries are tried first. The TS suite re-checks
+every verified pair independently, comparing polynomial coefficients (`derivative` in `bookItems.test.ts`),
+because the guide prints terms in its own order (`-2 + 2x` for `2x - 2`); it rejects a lone or doubled sign
+and a printed number that is another item's.
 
 **Smaller changes that came with it.**
 - The book names its functions g, r, i, v, t: `parse_f` takes any one letter and the answer keeps it
   (`g'(x) = 27x^8`). The existing outputs are byte-identical.
 - A student-book `exercise` cites «كتاب الطالب ص ٦٨، س ٢» / "Student book p. 68, Q2" (`bookCitation`); it
-  would have said «كتاب التمارين».
+  would have said «كتاب التمارين». A student-book unit-test question cites its page too, «كتاب الطالب ص ٧٧،
+  اختبار نهاية الوحدة ٦، س ١٥», because the 2021 printing numbers that test one higher.
 - Unit-test ids carry a `t` (`bi-math-s2-student-book-u6l2-t15`): the test's 14–19 overlap the lesson's own
   practice numbers, which run to 30.
 - An `Entry` takes `page` for a source with no exercise index, `answers` (the guide page) and `unit_test`.
 
-**Verified.** The Python tests failed first, then passed (102). Every stem was compared by eye with the
+**Verified.** The Python tests failed first, then passed (106). Every stem was compared by eye with the
 printed pages of a copy of the book: pp.68 and 69 match. **That copy is an older printing (2021), and its
 p.77 numbers the same questions 15–20 and prints `2π³` where the app's text (reprinted 2021–2025) has `2π/3`
 at 14.** The guide's labels `)14`…`)19` agree with the app's newer numbering, which is what is cited. Each
-answer key was also re-derived by hand. Curriculum `test` (935) and `verify`, monorepo typecheck, api-server
-build + test (3021), and the mobile suite were run.
+answer key was also re-derived by hand. Curriculum `test` (936) and `verify`, monorepo typecheck, api-server
+build + test (3021) and the mobile suite (9496, 0 failing) pass.
 
 **Not done.** The unit-6 test's multiple choice (some options are fractions the text layer splits), lesson
 6.3's max/min exercises (needs a solver), lesson 6.1 (figures), every word problem, and units 5, 7, 8. Users

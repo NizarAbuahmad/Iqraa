@@ -652,9 +652,23 @@ PRINTED_DERIVATIVE = re.compile(r"(?<![A-Za-z])([a-z])\s*'\s*\(x\)\s*=\s*")
 PRINTED_LABEL = re.compile(r'\s*\)\s*(\d{1,2})\s*$')
 
 
+# A line shaped like this continues the entry on the line before, which is then cut off and
+# not read: a bare number (a fraction's denominator), an operator then a space (`3x 2` over
+# `- 12`), or a number then a space and a term (`1` over `3 x2`). Narrower than "starts with a
+# sign or digit" on purpose: guide p.102 prints the NEXT answer on the next line (`-26.8`,
+# a signed number with no space; `4⇥التدريب`, a section number), and those are not continuations.
+CONTINUES = re.compile(r'\s*(?:\d+\s*$|[-+*/^]\s|\d+ +[A-Za-z(√])')
+
+
 def printed_derivatives(text: str) -> list[tuple[str, str, int | None, str]]:
-    """[(name, value as the stem rule reads it, printed item number or None, the entry as printed)]."""
-    lines = [nfkc(l).replace('\t', ' ').translate(MINUS) for l in text.split('\n')]
+    """[(name, value as the stem rule reads it, printed item number or None, the entry as printed)].
+
+    Fails closed on three layouts: an entry that ends a line the next line continues; a tab
+    inside a value (the text layer separates columns with tabs, so `2x ⇥3` is two columns,
+    never 2x³ - the exponent gaps it flattens are spaces); and, on a page where some entry is
+    labelled with its item number, every unlabelled entry (it answers some other question).
+    """
+    lines = [nfkc(l).translate(MINUS) for l in text.split('\n')]
     out = []
     for i, line in enumerate(lines):
         heads = list(PRINTED_DERIVATIVE.finditer(line))
@@ -667,7 +681,7 @@ def printed_derivatives(text: str) -> list[tuple[str, str, int | None, str]]:
                 value = value[:label.start()]
             value = value.strip()
             last = k + 1 == len(heads)
-            if not value or (last and i + 1 < len(lines) and re.fullmatch(r'\s*\d+\s*', lines[i + 1])):
+            if not value or '\t' in value or (last and i + 1 < len(lines) and CONTINUES.match(lines[i + 1])):
                 continue
             try:
                 value = value if re.fullmatch(r'-?\d+', value) else normalise_stem(value, MAX_EXP['derivative'])
@@ -675,6 +689,8 @@ def printed_derivatives(text: str) -> list[tuple[str, str, int | None, str]]:
             except Exception:  # noqa: BLE001 - an unreadable printed entry verifies nothing
                 continue
             out.append((h.group(1), value, int(label.group(1)) if label else None, raw))
+    if any(e[2] is not None for e in out):
+        out = [e for e in out if e[2] is not None]
     return out
 
 
@@ -687,8 +703,11 @@ def derivative_matches(entry: tuple, record: dict) -> bool:
 
 
 def pair_derivatives(records: list[dict], entries: list[tuple]) -> None:
-    """Verify each record against one printed entry, in item order, each entry once."""
-    free = list(entries)
+    """Verify each record against one printed entry, in item order, each entry once.
+
+    Labelled entries are tried first, so an unlabelled one is never spent on an item whose
+    own labelled entry is on the page."""
+    free = sorted(entries, key=lambda e: e[2] is None)
     for r in sorted(records, key=lambda r: r['source']['number']):
         hit = next((e for e in free if derivative_matches(e, r)), None)
         if hit is None:

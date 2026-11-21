@@ -59,12 +59,14 @@ const points = (s: string): string[] | null => {
  * comparison of coefficients can tell agreement from a misreading. It reads polynomials with
  * integer coefficients and nothing else.
  */
-const derivative = (s: string): { name: string; terms: string } | null => {
-  const m = /^([a-z])\s*'\s*\(x\)\s*=\s*(.+?)(?:\s*\)\s*\d{1,2})?$/.exec(s.trim());
+const derivative = (s: string): { name: string; terms: string; label: number | null } | null => {
+  const m = /^([a-z])\s*'\s*\(x\)\s*=\s*(.+?)(?:\s*\)\s*(\d{1,2}))?$/.exec(s.trim());
   if (!m) return null;
   const coef = new Map<number, number>();
   const body = m[2]!.replace(/x\s*\^?\s*(\d+)/g, 'x^$1').replace(/\s+/g, '');
-  for (const term of body.match(/[+-]?[^+-]+/g) ?? []) {
+  const pieces = body.match(/[+-]?[^+-]+/g) ?? [];
+  if (pieces.join('') !== body) return null; // a lone or doubled sign: a cut-off or misread entry
+  for (const term of pieces) {
     const t = /^([+-]?)(\d*)(x(?:\^(\d+))?)?$/.exec(term);
     if (!t || (t[2] === '' && !t[3])) return null;
     const power = t[3] ? Number(t[4] ?? 1) : 0;
@@ -72,7 +74,7 @@ const derivative = (s: string): { name: string; terms: string } | null => {
     coef.set(power, (coef.get(power) ?? 0) + value);
   }
   const terms = [...coef].filter(([, c]) => c !== 0).sort(([a], [b]) => a - b).map(([p, c]) => `${c}x^${p}`).join(' ');
-  return { name: m[1]!, terms };
+  return { name: m[1]!, terms, label: m[3] === undefined ? null : Number(m[3]) };
 };
 const sameValue = (printed: string, computed: string) => {
   if (flat(printed) === flat(computed)) return true;
@@ -85,7 +87,15 @@ const sameValue = (printed: string, computed: string) => {
 };
 /** The ids of verified items whose printed answer is not their computed answer, by value. */
 const verifiedDisagreements = (list: BookItem[]) =>
-  list.filter(i => i.status === 'verified' && !sameValue(i.printedAnswer ?? '', i.computedAnswer)).map(i => i.id);
+  list
+    .filter(i => {
+      if (i.status !== 'verified') return false;
+      const printed = i.printedAnswer ?? '';
+      const label = derivative(printed)?.label ?? null;
+      // a printed item number must be this item's own
+      return !sameValue(printed, i.computedAnswer) || (label !== null && label !== i.source.number);
+    })
+    .map(i => i.id);
 
 describe('book items — comparing a printed answer by value', () => {
   it('keeps values apart that only collide once the fraction bar is deleted', () => {
@@ -128,6 +138,8 @@ describe('book items — comparing a printed answer by value', () => {
       ["f '(x) = 2x + 7", "f'(x) = 2x - 7"],
       ["f '(x) = 3x 2", "f'(x) = 3x^2 - 10x"],
       ["f '(x) = m", "f'(x) = 0"],
+      ["f '(x) = 3x 2 -", "f'(x) = 3x^2"], // a cut-off entry
+      ["f '(x) = 2x - -3", "f'(x) = 2x - 3"], // a lone sign is not dropped
     ]) {
       assert.equal(sameValue(printed, computed), false, `${printed} vs ${computed}`);
     }
@@ -307,9 +319,17 @@ describe('book items — the reader', () => {
     const exercise = items.find(i => i.id === 'bi-math-s2-student-book-u6l2-2')!;
     assert.equal(bookCitation(exercise, 'ar'), 'كتاب الطالب ص ٦٨، س ٢');
     assert.equal(bookCitation(exercise, 'en'), 'Student book p. 68, Q2');
+    // the page too: an older printing numbers this test's questions one higher
     const test = items.find(i => i.id === 'bi-math-s2-student-book-u6l2-t15')!;
-    assert.equal(bookCitation(test, 'ar'), 'اختبار نهاية الوحدة ٦، س ١٥');
-    assert.equal(bookCitation(test, 'en'), 'Unit 6 test, Q15');
+    assert.equal(bookCitation(test, 'ar'), 'كتاب الطالب ص ٧٧، اختبار نهاية الوحدة ٦، س ١٥');
+    assert.equal(bookCitation(test, 'en'), 'Student book p. 77, unit 6 test, Q15');
+  });
+
+  it('catches a printed derivative labelled for another item', () => {
+    const t15 = items.find(i => i.id === 'bi-math-s2-student-book-u6l2-t15')!;
+    assert.equal(t15.status, 'verified');
+    const edited = items.map(i => (i.id === t15.id ? { ...i, printedAnswer: "f '(x) = 8x 7 )16" } : i));
+    assert.deepEqual(verifiedDisagreements(edited), [t15.id]);
   });
 
   it('serves the semester-2 student book’s derivatives to lesson 6.2, every one verified', () => {

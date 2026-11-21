@@ -825,12 +825,40 @@ class StudentBookDerivatives(unittest.TestCase):
                 x.solve_derivative(stem)
 
     def test_printed_derivatives_are_read_with_their_names_and_labels(self):
-        got = x.printed_derivatives("f '(x) = 0 \t)14\nf '(x) = 8x 7 )15\ng '(x) = 27x8 \tr '(x) = -10x\nf '(x) = m\nk = 3")
-        self.assertEqual([g[:3] for g in got], [('f', '0', 14), ('f', '8x^7', 15), ('g', '27x^8', None), ('r', '-10x', None), ('f', 'm', None)])
+        got = x.printed_derivatives("f '(x) = 0 \t)14\nf '(x) = 8x 7 )15\nk = 3")
+        self.assertEqual([g[:3] for g in got], [('f', '0', 14), ('f', '8x^7', 15)])
         self.assertEqual(got[1][3], "f '(x) = 8x 7 )15")
+        got = x.printed_derivatives("g '(x) = 27x8 \tr '(x) = -10x\nf '(x) = m")
+        self.assertEqual([g[:3] for g in got], [('g', '27x^8', None), ('r', '-10x', None), ('f', 'm', None)])
 
     def test_a_printed_entry_split_over_lines_is_not_read(self):
         self.assertEqual(x.printed_derivatives("f '(x) = 7\n3\ng '(x) = 2x"), [('g', '2x', None, "g '(x) = 2x")])
+        # guide p.112 prints item 32's 3x^2 - 12 as «3x 2» over «- 12»: the line continues
+        self.assertEqual(x.printed_derivatives("f '(x) = 3x 2\n- 12"), [])
+        # a split 1/3 x^2 must not read as 1
+        self.assertEqual(x.printed_derivatives("f '(x) = 1\n3 x2"), [])
+
+    def test_the_next_answer_on_the_next_line_is_not_a_continuation(self):
+        # guide p.102: item 4's answer, then item 7's; item 2's and 3's, then a section number
+        got = x.printed_derivatives("i '(x) = 4x3 - 3\n-26.8\ng '(x) = 27x8 \tr '(x) = -10x\n4\tالتدريب")
+        self.assertEqual([g[:3] for g in got], [('i', '4x^3 - 3', None), ('g', '27x^8', None), ('r', '-10x', None)])
+
+    def test_a_number_in_the_next_column_is_not_an_exponent(self):
+        self.assertEqual(x.printed_derivatives("f '(x) = 2x \t3"), [])
+        # a tab before the next entry or before the label still ends the value cleanly
+        got = x.printed_derivatives("v '(x) = 2x + 1 \tt '(x) = -2 + 2x")
+        self.assertEqual([g[:3] for g in got], [('v', '2x + 1', None), ('t', '-2 + 2x', None)])
+        self.assertEqual([g[:3] for g in x.printed_derivatives("f '(x) = 0 \t)14")], [('f', '0', 14)])
+
+    def test_on_a_labelled_page_an_unlabelled_entry_answers_nothing(self):
+        # p.112 labels the unit test's 14-19; its unlabelled entries are items 29 and 32
+        got = x.printed_derivatives("f '(x) = 0 \t)14\nf '(x) = m\nf '(x) = 3x 2\nk = 3")
+        self.assertEqual([g[:3] for g in got], [('f', '0', 14)])
+
+    def test_a_labelled_entry_is_preferred_to_an_unlabelled_one(self):
+        recs = [{'source': {'number': n}, 'computedAnswer': "f'(x) = 2x", 'status': 'computed'} for n in (3, 5)]
+        x.pair_derivatives(recs, [('f', '2x', None, 'a'), ('f', '2x', 3, 'b')])
+        self.assertEqual([r['printedAnswer'] for r in recs], ['b', 'a'])
 
     def test_a_printed_derivative_matches_by_name_and_value_and_label(self):
         rec = {'source': {'number': 2}, 'computedAnswer': "g'(x) = 27x^8"}

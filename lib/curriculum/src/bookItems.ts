@@ -139,6 +139,13 @@ const arabicDigits = (n: number) => String(n).replace(/[0-9]/g, d => '٠١٢٣٤
 export function bookCitation(item: BookItem, lang: 'ar' | 'en'): string {
   const { bookPage, number, unit } = item.source;
   // Both unit-test kinds cite the test; an `exercise` cites the book it came from.
+  if ((item.kind === 'unit-test-mcq' || item.kind === 'unit-test') && item.source.sourceId.endsWith('-student-book')) {
+    // The page too: printings of the student book number a test's questions differently
+    // (the 2021 printing's unit-6 test runs one higher), so a number alone can point elsewhere.
+    return lang === 'ar'
+      ? `كتاب الطالب ص ${arabicDigits(bookPage)}، اختبار نهاية الوحدة ${arabicDigits(unit)}، س ${arabicDigits(number)}`
+      : `Student book p. ${bookPage}, unit ${unit} test, Q${number}`;
+  }
   if (item.kind === 'unit-test-mcq' || item.kind === 'unit-test') {
     return lang === 'ar'
       ? `اختبار نهاية الوحدة ${arabicDigits(unit)}، س ${arabicDigits(number)}`
