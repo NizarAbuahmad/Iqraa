@@ -37,6 +37,14 @@ const report = read('../data/book-items/report.json') as {
 const ARABIC = /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/;
 /** The one Arabic answer the data may hold: what the guide prints for a system with no real solution. */
 const NO_SOLUTION = 'لا يوجد حل';
+/** The max/min family's labels (`EXTREMA_*_AR` in scripts/extract_book_items.py). Keep the two in step. */
+const EXTREMA_PHRASES = new Set([
+  'قيمة عظمى محلية:',
+  'قيمة صغرى محلية:',
+  'لا توجد قيمة عظمى محلية',
+  'لا توجد قيمة صغرى محلية',
+  'لا توجد قيم عظمى أو صغرى محلية',
+]);
 
 /**
  * The extractor's `flat` (scripts/extract_book_items.py): the fraction bar becomes a gap and
@@ -181,7 +189,11 @@ describe('book items — the committed data', () => {
         assert.equal(i.kind, 'unit-test', `${i.id}: «${NO_SOLUTION}» on a ${i.kind}`);
         assert.equal(i.printedAnswer, NO_SOLUTION, i.id);
       } else {
-        assert.ok(!ARABIC.test(i.computedAnswer), `${i.id}: ${i.computedAnswer}`);
+        // The only other Arabic a key may hold: the max/min family's labels, each a whole line,
+        // never sharing a line with maths (bidi scrambles a mixed line on web).
+        for (const line of i.computedAnswer.split('\n')) {
+          assert.ok(EXTREMA_PHRASES.has(line) || !ARABIC.test(line), `${i.id}: «${line}»`);
+        }
       }
     }
   });
@@ -338,6 +350,22 @@ describe('book items — the reader', () => {
     );
     assert.equal(fromStudentBook.length, 13); // 14 verified minus t17, a near-duplicate (see the extractor's TABLE)
     for (const i of fromStudentBook) assert.equal(i.status, 'verified', i.id);
+  });
+
+  it('serves p.74’s max/min exercises to lesson 6.3 as computed, every label from the fixed set', () => {
+    const extrema = bookItemsForLesson('kbl-math-s2-nccd-u6_l3').filter(
+      i => i.source.sourceId === 'math-s2-student-book' && i.kind === 'exercise',
+    );
+    // 1 and 3-10: item 2 is a near-duplicate of item 1 (see the extractor's TABLE)
+    assert.deepEqual(extrema.map(i => i.source.number).sort((a, b) => a - b), [1, 3, 4, 5, 6, 7, 8, 9, 10]);
+    for (const i of extrema) {
+      assert.deepEqual([i.status, i.printedAnswer, i.check], ['computed', null, null], i.id);
+      const labels = i.computedAnswer.split('\n').filter(l => ARABIC.test(l));
+      assert.ok(labels.length > 0 && labels.every(l => EXTREMA_PHRASES.has(l)), i.id);
+    }
+    const eight = extrema.find(i => i.source.number === 8)!;
+    assert.equal(eight.computedAnswer, 'لا توجد قيم عظمى أو صغرى محلية'); // 2x³ + 7: f′ does not change sign
+    assert.equal(bookCitation(eight, 'ar'), 'كتاب الطالب ص ٧٤، س ٨');
   });
 
   it('serves the unit-6 test’s six multiple choice as computed, across lessons 6.1-6.3', () => {

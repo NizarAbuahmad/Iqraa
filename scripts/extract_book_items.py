@@ -120,6 +120,12 @@ TABLE: list[Entry] = [
     # seed, would promise a question the paper does not get (bookQuestions.test.ts).
     Entry(SB2, 's2', 6, 2, 14, 19, 'derivative', DERIVATIVE_AR, page=77, answers=112, unit_test=True,
           numbers=(14, 15, 16, 18, 19)),
+    # Lesson 6.3's practice, p.74: «find the local maximum and minimum values (if any)». No
+    # readable printed key, so `computed`. Not item 2, `x^2 + 6x - 3`: a near-duplicate (0.89) of
+    # item 1 by the validator's measure, which the book plan cannot draw beside it. Not 11-13:
+    # word problems.
+    Entry(SB2, 's2', 6, 3, 1, 10, 'extrema', 'أجد القيم العظمى والقيم الصغرى المحلية للاقتران الآتي (إن وجدت)',
+          page=74, numbers=(1, 3, 4, 5, 6, 7, 8, 9, 10)),
     # The unit-6 test's multiple choice, read from SB2_READINGS. The guide circles its key, which
     # the text layer does not carry, so these are `computed`. `choices` is the page's whole run.
     Entry(SB2, 's2', 6, 1, 1, 1, 'reading', 'ما ميل منحنى الاقتران الآتي عند قيمة x المعطاة؟', page=76,
@@ -136,7 +142,7 @@ TABLE: list[Entry] = [
     Entry(SB2, 's2', 6, 3, 31, 31, 'reading', 'ما عدد النقاط الحرجة للاقتران الآتي؟', page=77,
           params={'check': 'critical_count', 'choices': (30, 31)}, unit_test=True),
 ]
-MAX_EXP = {'system': 12, 'derivative': 9, 'derivative_at': 9, 'mcq_pair': 9, 'unit_open': 9, 'reading': 0}
+MAX_EXP = {'system': 12, 'derivative': 9, 'derivative_at': 9, 'extrema': 9, 'mcq_pair': 9, 'unit_open': 9, 'reading': 0}
 
 
 # ── text access ──────────────────────────────────────────────────────────────
@@ -787,6 +793,53 @@ def solve_derivative_at(stem: str, point: str) -> str:
     return fmt(diff(parse_f(stem)[1], X).subs(X, Rational(point)), '.' in stem)
 
 
+# ── local maxima and minima (student p.74, lesson 6.3) ──────────────────────
+# The key is words as well as maths, so it is fixed Arabic labels, each on its own line,
+# and Latin maths on its own lines: a line mixing the two scrambles under the bidi algorithm
+# on web. These five phrases are the only Arabic a key of this family may hold
+# (bookItems.test.ts checks the same set).
+EXTREMA_MAX_AR = 'قيمة عظمى محلية:'
+EXTREMA_MIN_AR = 'قيمة صغرى محلية:'
+EXTREMA_NO_MAX_AR = 'لا توجد قيمة عظمى محلية'
+EXTREMA_NO_MIN_AR = 'لا توجد قيمة صغرى محلية'
+EXTREMA_NONE_AR = 'لا توجد قيم عظمى أو صغرى محلية'
+
+
+def solve_extrema(stem: str) -> str:
+    """Every local maximum and minimum of a polynomial, exact.
+
+    A real root r of f′ is an extremum iff f′ changes sign there, i.e. its multiplicity k is
+    odd; then the k-th derivative of f′ at r is non-zero and its sign says which (positive:
+    f′ rises through 0, a minimum). So `2x^3 + 7` has none, and `x^4` has a minimum at 0. A
+    root SymPy can only give as a CRootOf, or a sign it cannot decide, is refused."""
+    from sympy import Poly, real_roots
+    name, f = parse_f(stem)
+    d1 = diff(f, X)
+    if not d1.is_polynomial(X):
+        raise Reject('not_a_polynomial')
+    if simplify(d1) == 0:
+        raise Reject('derivative_is_zero')
+    roots = Counter(real_roots(Poly(d1, X)))
+    if any(r.has(CRootOf) for r in roots):
+        raise Reject('not_clean')
+    decimal = '.' in stem
+    maxima, minima = [], []
+    for r in sorted(roots, key=lambda r: float(r)):
+        k = roots[r]
+        if k % 2 == 0:
+            continue
+        s = simplify(diff(d1, X, k).subs(X, r))
+        if s.is_positive is None or s == 0:
+            raise Reject('extremum_not_decided')
+        line = f'{name}({fmt(simplify(r), decimal)}) = {fmt(simplify(f.subs(X, r)), decimal)}'
+        (minima if s.is_positive else maxima).append(line)
+    if not maxima and not minima:
+        return EXTREMA_NONE_AR
+    out = [EXTREMA_MAX_AR, *maxima] if maxima else [EXTREMA_NO_MAX_AR]
+    out += [EXTREMA_MIN_AR, *minima] if minima else [EXTREMA_NO_MIN_AR]
+    return '\n'.join(out)
+
+
 # ── the s2 guide's printed derivatives ───────────────────────────────────────
 # The guide reproduces a student page and prints the answers on it, in its own order
 # and sometimes with the item number after them («f '(x) = 8x 7 )15»). An entry is
@@ -975,6 +1028,7 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                         'system': lambda: solve_system(stem),
                         'derivative': lambda: solve_derivative(stem),
                         'derivative_at': lambda: solve_derivative_at(stem, e.params['point']),
+                        'extrema': lambda: solve_extrema(stem),
                     }[e.family]()
                     kind, tier, tier_source = (('unit-test', 'medium', 'default') if e.unit_test
                                                else ('exercise', tier_for(n, e.first, e.last), 'position'))

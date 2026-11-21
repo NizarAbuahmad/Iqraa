@@ -697,8 +697,8 @@ class Readings(unittest.TestCase):
             for r in rs:
                 counts[r['status']] = counts.get(r['status'], 0) + 1
         # verified: 5 from guide p.47, 13 from the s2 student book's unit 6;
-        # computed: 28 before, + the s2 unit-6 test's 6 multiple choice
-        self.assertEqual((counts['verified'], counts['computed']), (18, 34))
+        # computed: 28 before, + the s2 unit-6 test's 6 multiple choice, + p.74's 9 max/min
+        self.assertEqual((counts['verified'], counts['computed']), (18, 43))
 
 
 class RivalReadings(unittest.TestCase):
@@ -908,7 +908,8 @@ class StudentBookDerivatives(unittest.TestCase):
         self.assertNotIn('bi-math-s2-student-book-u6l2-t17', self.reasons)
 
     def test_every_served_one_is_verified(self):
-        open_ones = [r for r in self.items.values() if r['kind'] != 'unit-test-mcq']
+        open_ones = [r for r in self.items.values()
+                     if r['kind'] != 'unit-test-mcq' and r['lessonId'] == 'kbl-math-s2-nccd-u6_l2']
         self.assertEqual(len(open_ones), 13)
         self.assertEqual({r['status'] for r in open_ones}, {'verified'})
 
@@ -1009,6 +1010,75 @@ class StudentBookChoices(unittest.TestCase):
             with self.subTest(check=check), self.assertRaises(x.Reject) as e:
                 x.option_holds(check, 'f(x) = 1/x', '0')
             self.assertEqual(str(e.exception), 'not_a_polynomial')
+
+
+class StudentBookExtrema(unittest.TestCase):
+    """Lesson 6.3's practice, student p.74 items 1 and 3-10: local maxima and minima.
+
+    No readable printed key (the guide's copy of p.74 has none in its text layer, and the
+    appendix only split, rounded fragments for 9 and 10), so every one is `computed`. The key
+    is fixed Arabic labels on their own lines and Latin maths on its own lines, never mixed
+    on one line (bidi). Item 2 is left out: a near-duplicate of item 1.
+    """
+
+    MAX, MIN = x.EXTREMA_MAX_AR, x.EXTREMA_MIN_AR
+    KEYS = {
+        1: f'{x.EXTREMA_NO_MAX_AR}\n{x.EXTREMA_MIN_AR}\nf(2) = -1',
+        3: f'{x.EXTREMA_MAX_AR}\nf(5/2) = 29/4\n{x.EXTREMA_NO_MIN_AR}',
+        4: f'{x.EXTREMA_MAX_AR}\nf(-3) = 40.5\n{x.EXTREMA_MIN_AR}\nf(2) = -22',
+        5: f'{x.EXTREMA_MAX_AR}\nf(-3) = 81\nf(3) = 81\n{x.EXTREMA_MIN_AR}\nf(0) = 0',
+        6: f'{x.EXTREMA_MAX_AR}\nf(-1) = 8\n{x.EXTREMA_MIN_AR}\nf(1) = 0',
+        7: f'{x.EXTREMA_MAX_AR}\nf(-2) = 12\n{x.EXTREMA_MIN_AR}\nf(2) = -20',
+        8: x.EXTREMA_NONE_AR,
+        9: f'{x.EXTREMA_MAX_AR}\nf(-√6/3) = 4√6/9 + 4\n{x.EXTREMA_MIN_AR}\nf(√6/3) = 4 - 4√6/9',   # SymPy's term order
+        10: f'{x.EXTREMA_MAX_AR}\nf(-2) = 66\n{x.EXTREMA_MIN_AR}\nf(4/3) = 1282/27',
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        cls.by_source, cls.rejects = x.build()
+        cls.items = {r['source']['number']: r for r in cls.by_source.get('math-s2-student-book', [])
+                     if r['lessonId'] == 'kbl-math-s2-nccd-u6_l3' and r['kind'] == 'exercise'}
+
+    def test_every_key(self):
+        self.assertEqual(sorted(self.items), sorted(self.KEYS))
+        for n, key in self.KEYS.items():
+            with self.subTest(item=n):
+                r = self.items[n]
+                self.assertEqual(r['computedAnswer'], key)
+                self.assertEqual((r['status'], r['verificationSource'], r['printedAnswer'], r['check']),
+                                 ('computed', 'sympy', None, None))
+                self.assertEqual(r['source'], {'sourceId': 'math-s2-student-book', 'page': 74, 'bookPage': 74,
+                                               'unit': 6, 'number': n})
+                self.assertEqual(r['tierSource'], 'position')
+
+    def test_golden_stem(self):
+        self.assertEqual(self.items[4]['stem'], 'f(x) = x^3 + 1.5x^2 - 18x')
+        self.assertEqual(self.items[9]['stem'], 'f(x) = x^3 -2x + 4')
+
+    def test_item_2_is_left_out_on_purpose_not_quarantined(self):
+        self.assertNotIn(2, self.items)
+        self.assertNotIn('bi-math-s2-student-book-u6l3-2', {q['id'] for q in self.rejects})
+
+    def test_no_line_mixes_arabic_and_maths(self):
+        phrases = {x.EXTREMA_MAX_AR, x.EXTREMA_MIN_AR, x.EXTREMA_NO_MAX_AR, x.EXTREMA_NO_MIN_AR, x.EXTREMA_NONE_AR}
+        for r in self.items.values():
+            for line in r['computedAnswer'].split('\n'):
+                with self.subTest(line=line):
+                    self.assertTrue(line in phrases or not x.ARABIC.search(line))
+
+    def test_a_flat_point_is_not_an_extremum(self):
+        # 2x^3 + 7: f'(0) = 0 but f' does not change sign there
+        self.assertEqual(x.solve_extrema('f(x) = 2x^3 + 7'), x.EXTREMA_NONE_AR)
+        # x^4: f' = 4x^3, a root of odd multiplicity 3, so 0 IS a minimum
+        self.assertEqual(x.solve_extrema('f(x) = x^4'), f'{x.EXTREMA_NO_MAX_AR}\n{x.EXTREMA_MIN_AR}\nf(0) = 0')
+
+    def test_what_cannot_be_judged_is_refused(self):
+        for stem, reason in (('f(x) = 1/x', 'not_a_polynomial'), ('f(x) = 5', 'derivative_is_zero'),
+                             ('f(x) = x^4 + 2x^2 + 4x', 'not_clean')):   # f' = 4(x^3 + x + 1): a CRootOf
+            with self.subTest(stem=stem), self.assertRaises(x.Reject) as e:
+                x.solve_extrema(stem)
+            self.assertEqual(str(e.exception), reason)
 
 
 if __name__ == '__main__':

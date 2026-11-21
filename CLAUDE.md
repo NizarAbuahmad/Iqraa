@@ -353,6 +353,9 @@ sweep in your staged files.
   a key. The s2 student book's unit-6 multiple choice (pp.76-77) is read the same way
   (`SB2_READINGS`, keyed by page and number; `«…»` marks sentence residue the gate
   checks but the stem never serves), and stays `computed`: the guide circles its key.
+  Lesson 6.3's max/min exercises (p.74, `solve_extrema`) are `computed` too, and their
+  key is the one family allowed Arabic beyond «لا يوجد حل»: five fixed labels, each a
+  whole line apart from the maths (`EXTREMA_*_AR`, mirrored in `bookItems.test.ts`).
   A new book item must not be a near-duplicate (`stemSimilarity` > 0.85) of another
   in its lesson, or the book plan promises a question the draw cannot deliver —
   `bookQuestions.test.ts` catches it, but only for draw orders it happens to try. `SERVED_STATUSES` is the one place

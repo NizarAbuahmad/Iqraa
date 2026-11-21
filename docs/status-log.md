@@ -10,11 +10,12 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Book items: the semester-2 student book's unit 6 (derivatives and the test's multiple choice) — 2026-11-21
+## Book items: the semester-2 student book's unit 6 (derivatives, max/min, the test's multiple choice) — 2026-11-21
 
 `scripts/extract_book_items.py` now reads the NCCD Grade 10 maths **student book**, semester 2
-(`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **13 open questions,
-all `verified`, and the unit test's 6 multiple choice, all `computed`**, written to
+(`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **13 derivative
+questions, all `verified`; lesson 6.3's 9 max/min exercises and the unit test's 6 multiple choice, all
+`computed`**, written to
 `lib/curriculum/src/data/book-items/math-s2-student-book.json` and served to lessons 6.1–6.3
 (`kbl-math-s2-nccd-u6_l1` … `u6_l3`).
 
@@ -23,6 +24,7 @@ all `verified`, and the unit test's 6 multiple choice, all `computed`**, written
 | 68 | 1–6 «أجد مشتقة» | `exercise` | 6 verified |
 | 68 | 7–9 f′(−2) | — | quarantined: split fractions (7 `not_a_function_definition`, 9) and `x99` (8, `exponent_out_of_range`) |
 | 69 | 24–26 products | `exercise` | 3 verified |
+| 74 | 1, 3–10 local max/min (6.3) | `exercise` | 9 computed; 2 left out (a near-duplicate of 1, 0.89) |
 | 77 | unit test 14–19 «أجد مشتقة» | `unit-test` | 4 verified (15, 16, 18, 19); 14 (`2π/3`) quarantined; 17 left out (below) |
 | 76 | unit test 1–4, multiple choice | `unit-test-mcq` | 4 computed: slope at a point (6.1), a derivative (6.2), the x of a maximum (6.3), a velocity (6.2) |
 | 77 | unit test 30–31, multiple choice | `unit-test-mcq` | 2 computed: all local extrema, the number of critical points (6.3) |
@@ -54,6 +56,21 @@ pairs as the page, and exactly one option correct under SymPy. New pieces:
 A reading's gates are evidence, not proof: read flat, item 31 is `2(x-3)`, which has no critical point, and
 the gate would accept option a). Its exponent, like each reading, was compared by eye with the printed page.
 
+**Lesson 6.3's max/min exercises (p.74) are solved, not verified.** «أستعمل المشتقة لإيجاد القيم العظمى والقيم
+الصغرى المحلية (إن وجدت)»: all ten stems are clean in the text layer, but the guide's copy of p.74 carries no
+answer in its text, and the appendix (guide p.117) only split, rounded fragments for 9 and 10 (`3 , 47.48)`),
+which would need rounding to count as agreement — so all are `computed`. `solve_extrema` (polynomials only):
+a real root of f′ is an extremum iff its multiplicity is odd, classified by the sign of the first non-zero
+derivative of f′ there, so item 8's `2x³ + 7` has none and `x⁴` would have a minimum; values are exact (item 9:
+`f(-√6/3) = 4√6/9 + 4`, item 10: `f(4/3) = 1282/27`; decimals where the stem has them, item 4: `40.5`). A root
+only a CRootOf can name, or a sign SymPy cannot decide, is refused. **The key is words as well as maths**, so it
+is one of five fixed Arabic labels per line («قيمة عظمى محلية:», «قيمة صغرى محلية:», «لا توجد قيمة عظمى محلية»,
+«لا توجد قيمة صغرى محلية», «لا توجد قيم عظمى أو صغرى محلية») with each `f(a) = v` on its own line: a line
+mixing Arabic and Latin maths scrambles under the bidi algorithm on web. `bookItems.test.ts` allows exactly
+those five lines as Arabic in a key and nothing else. Item 2 (`x² + 6x - 3`) is left out as a near-duplicate
+of item 1 (0.89), for the same reason as item 17 below; a probe of lessons 6.1–6.3's whole pools afterwards
+finds no pair above 0.82.
+
 **How they are verified.** The s2 teacher guide reproduces each student page with its answers printed on
 it (guide p.102 for student p.68, p.103 for p.69, p.112 for p.77). `printed_derivatives` reads every
 `name '(x) = value` there (with its `)15` item number when printed), and `pair_derivatives` verifies an item
@@ -78,22 +95,24 @@ and a printed number that is another item's.
   practice numbers, which run to 30.
 - An `Entry` takes `page` for a source with no exercise index, `answers` (the guide page) and `unit_test`.
 
-**Verified.** The Python tests failed first, then passed (116). Every stem was compared by eye with the
-printed pages of a copy of the book: pp.68, 69 and 76 match. **That copy is an older printing (2021): its
+**Verified.** The Python tests failed first, then passed (122). Every stem was compared by eye with the
+printed pages of a copy of the book: pp.68, 69, 74 and 76 match. **That copy is an older printing (2021): its
 p.77 numbers the derivatives 15–20 (with `2π³` where the app's text, reprinted 2021–2025, has `2π/3` at 14)
 and the multiple choice 31–32, and its p.76 item 4 says `d(t)` where the app's text says `s(t)`.** The
 guide's labels `)14`…`)19` agree with the app's newer numbering, which is what is cited. Every answer key was
-also re-derived by hand. Curriculum `test` (937) and `verify`, monorepo typecheck, api-server build + test
+also re-derived by hand. Curriculum `test` (938) and `verify`, monorepo typecheck, api-server build + test
 (3021; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
-mobile suite (9496, 0 failing; the app does not import book items) pass.
+mobile suite (9496, 0 failing; the app does not import book items) pass. **Not checked:** how a multi-line
+max/min key looks in the teacher's paper view in a browser (it is shown as `modelAnswer`, newlines kept).
 
 **API test fixtures that changed, and why.** `bookQuestions.test.ts`: «is never more than what is eligible»
 counted only `exercise` as a short answer — a `unit-test` open question is one too; «on a regeneration the
 dry run avoids what the teacher was shown» assumed lesson 6.2 had no multiple choice, so «shown» is now every
 choice item of both its lessons. Neither assertion was loosened: both still compare exact numbers.
 
-**Not done.** The unit test's open max/min questions (20–23) and its graph questions, lesson 6.3's max/min
-exercises (needs a solver), lesson 6.1's exercises (figures), every word problem, and units 5, 7, 8. Users
+**Not done.** The unit test's open max/min questions (20–23: `solve_extrema` could take 21–23; 20, `f(x) = 17`,
+has no extremum anywhere and needs its own wording) and its graph questions, lesson 6.1's exercises
+(figures), every word problem, and units 5, 7, 8. Users
 see none of this in production yet: book items reach a paper only on the mock path or with
 `BOOK_ITEMS_LIVE=true`, which is off.
 
