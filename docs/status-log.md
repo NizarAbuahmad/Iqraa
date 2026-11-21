@@ -10,6 +10,37 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Pool prefill: a default-form quiz per Grade 10 lesson — 2026-11-21
+
+`scripts/pregenerate.ts` now plans a quiz for every Grade 10 maths and chemistry lesson beside the worksheet and the
+lesson plan: a dry run reads **204 calls** (51 each of worksheet, lesson plan, quiz and student explanation), worst case
+$10.20 at the script's $0.05-a-call estimate. A quiz is stored under the quiz screen's defaults: «عادي» (easy),
+20 minutes, 20 marks, 10 questions, multiple choice + true/false + short answer.
+
+**Why a refactor came with it.** The quiz screen spelled its request out inline, so a script could not send the same
+body, and the pool only answers a body that hashes the same. The request is now `buildQuizRequest`
+(`services/generatorRequests.ts`), called by the screen (the wide scope's fields still spread over it, last) and by the
+script, like the worksheet, lesson plan and activity. `quiz.tsx` lost its inline literal and two imports.
+
+**Verified.** `generatorRequests.test.ts` (the builder: form, trimmed topic, every lesson field from the one grounding,
+no lesson fields for a wide scope, regenerate) and `pregenerate.test.ts` (a quiz per lesson in both subjects, one per
+lesson id, the defaults above; and a source guard that the screen calls `buildQuizRequest` and that its initial indices
+are the ones the prefill assumes) failed first, then passed. **The screen's request is unchanged:** a throwaway test
+rebuilt the old inline body from the previous `quiz.tsx` and compared it with the builder's over 137 lessons (all of
+Grade 10 maths and chemistry plus every 40th lesson), both languages, regenerate on and off, grounded and wide:
+1,096 bodies, all identical on the wire. Not kept, because it would only compare the builder with a copy of
+itself. `pnpm run typecheck`; mobile `pnpm test` 9,486 pass, 0 fail.
+
+**Not verified.** The quiz screen on a device or in a browser (the request is identical, but the file changed); a
+live run of the quiz prefill; that a teacher's default quiz then hits the pool; the quality of the stored quizzes
+(each is served to every teacher who asks, answer key included: read a few after a run).
+
+**Found, left alone.** `groundingRequestFields` can add `grounding: 'none'` (no lesson grounds the topic: the API then
+must not attach a book by title). The quiz screen never sent it: it copies four of the helper's fields and drops that
+one, so a quiz for a topic no lesson covers can still get another lesson's book pages from the API. The builder keeps
+that behaviour, since the refactor was not meant to change a request. A one-line fix would add `...noLessonField(...)`
+to the builder; it changes the pool key of those requests, so it is its own change.
+
 ## `earlyMathDifficulty.test.ts` draws the same papers on every run — 2026-11-21
 
 **Why.** The mobile suite failed once on CI (and once on a first local run, not captured) on a change that did not
