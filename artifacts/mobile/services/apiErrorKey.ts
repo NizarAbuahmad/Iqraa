@@ -65,6 +65,8 @@ const BY_CODE = {
   // A homework that is handed in as a project: ticking it done (PUT/DELETE /student/homework/:id/done) is refused.
   // Raised by HomeworkError, not SubmissionError, so it is global.
   submission_required: 'errSubmissionRequired',
+  // PUT/DELETE /parent/homework/:id/done: the child has a student account in that class, so they tick their own.
+  student_tracks: 'errStudentTracksOwn',
   // PATCH /homework/:id: the project switch cannot change once any student has a tick or project work. Raised by
   // HomeworkError, so global; not the student's scoped `locked` («the due day has passed»).
   submission_locked: 'errSubmissionSwitchLocked',

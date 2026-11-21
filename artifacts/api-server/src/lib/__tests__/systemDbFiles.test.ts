@@ -32,7 +32,7 @@ const ALLOWED: Record<string, string> = {
   "lib/guardianRequests.ts": "the parent's approval link has no user, and sign-up and verification queue and mail the request before one exists; the table has no app-role grant",
   "lib/rosterClaim.ts": "resolves a claim code before any roster link for the claimer exists",
   "lib/resultsReleaseNotify.ts": "notifies every linked student and parent, none of whom is the teacher whose request triggered it",
-  "lib/familyAccess.ts": "accountsLinkedTo / liveClassStudentIds find the accounts and children a teacher's action is about — other people's roster links and settings, which that teacher cannot see",
+  "lib/familyAccess.ts": "accountsLinkedTo / liveClassStudentIds find the accounts and children a teacher's action is about — other people's roster links and settings, which that teacher cannot see; and studentIdsWithSelfAccount tells a parent's request whether their child's rows have a student account — the child's own `self` link, which a guardian cannot see, and which decides whether the parent may tick",
   "lib/familyPush.ts": "reads the recipients' device tokens (each belongs to the recipient) and prunes the dead ones; the caller is a teacher",
   "lib/homeworkMaterial.ts": "a student or parent opens the teacher's saved material attached to a homework — the teacher's row, read only after the homework, class and membership checks pass as the caller",
   "lib/sharedMaterial.ts": "a material's share link is opened by anyone, signed in or not — the owner's row, found by its share code, sent without answers unless the caller is a teacher; never the form state or the owner",

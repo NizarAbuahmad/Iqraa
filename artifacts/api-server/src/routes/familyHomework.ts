@@ -2,8 +2,10 @@
  * «الواجبات» for students and parents. A student sees the homework of the live
  * classes their `self`-linked roster rows sit in and can tick it off; a parent
  * sees one list per child (guardian-linked rows grouped by name, exactly as
- * the schedule does, so the `key` matches) and can read but never tick. Both
- * can open a saved material the teacher attached (…/:id/materials/:materialId).
+ * the schedule does, so the `key` matches) and can tick only for a child with
+ * no student account in that homework's class (since 2026-11-20,
+ * `setHomeworkDoneAsGuardian`). Both can open a saved material the teacher
+ * attached (…/:id/materials/:materialId).
  *
  * Path-scoped guards, like every other router here — see `mountOrder.test.ts`.
  * `studentExams.ts` already guards all of `/student` and `/parent`; these
@@ -16,7 +18,7 @@ import { logger } from "../lib/logger";
 import { guardianLinkedStudents, selfLinkedStudentIds, studentIdsWithSelfAccount } from "../lib/familyAccess.ts";
 import { loadFamilyHomework } from "../lib/familyHomeworkLoad.ts";
 import { loadHomeworkMaterial } from "../lib/homeworkMaterial.ts";
-import { setHomeworkDone } from "../lib/homeworkDone.ts";
+import { setHomeworkDone, setHomeworkDoneAsGuardian } from "../lib/homeworkDone.ts";
 import { recordGameResult } from "../lib/homeworkGame.ts";
 import { groupChildren } from "../modules/family/children.ts";
 import { parseGameResult } from "../modules/homework/game.ts";
@@ -175,5 +177,41 @@ router.put("/student/homework/:id/game-result", async (req: AuthenticatedRequest
 
 router.put("/student/homework/:id/done", (req: AuthenticatedRequest, res) => mark(req, res, true));
 router.delete("/student/homework/:id/done", (req: AuthenticatedRequest, res) => mark(req, res, false));
+
+/**
+ * A parent ticks (PUT) or un-ticks (DELETE) one homework for one child: `?child=<key>`, the child key the parent's
+ * list carries. In the query, not the body, because some clients drop a DELETE's body. 409 `student_tracks` when the
+ * child has a student account in that class (they tick their own); 409 `submission_required` for a project; every
+ * other refusal one 404. The rules are `setHomeworkDoneAsGuardian`'s.
+ */
+async function markForChild(req: AuthenticatedRequest, res: Response, done: boolean): Promise<void> {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json(DISABLED);
+      return;
+    }
+    const child = typeof req.query["child"] === "string" ? req.query["child"] : "";
+    const result = await setHomeworkDoneAsGuardian(req.user!.id, String(req.params["id"]), child, done);
+    if (result === "not_found") {
+      res.status(404).json(NO_HOMEWORK);
+      return;
+    }
+    if (result === "submission_required") {
+      res.status(409).json({ error: "This homework is done by handing in the project", code: "submission_required" });
+      return;
+    }
+    if (result === "student_tracks") {
+      res.status(409).json({ error: "Your child marks this homework done from their own account", code: "student_tracks" });
+      return;
+    }
+    res.json({ done });
+  } catch (err) {
+    logger.error({ err }, "parent homework done failed");
+    res.status(500).json({ error: "Failed to update the homework" });
+  }
+}
+
+router.put("/parent/homework/:id/done", (req: AuthenticatedRequest, res) => markForChild(req, res, true));
+router.delete("/parent/homework/:id/done", (req: AuthenticatedRequest, res) => markForChild(req, res, false));
 
 export default router;

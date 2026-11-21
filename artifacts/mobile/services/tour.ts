@@ -58,13 +58,14 @@ export function tourRoleOf(role: string | null | undefined): TourRole | null {
 
 /**
  * Where the app lands this role (app/(tabs)/index.tsx): Today for a teacher, the
- * library for a student, Messages for a parent. expo-router reports Today as '/'.
+ * library for a student, «المدرسة» for a parent (Messages until 2026-11-13, from
+ * when that tab was only a timetable). expo-router reports Today as '/'.
  */
 export function homeRouteFor(role: TourRole): string {
   switch (role) {
     case 'teacher': return '/';
     case 'student': return '/curriculum';
-    case 'parent': return '/notifications';
+    case 'parent': return '/school';
   }
 }
 
@@ -75,15 +76,16 @@ export function isTourHome(role: TourRole, pathname: string): boolean {
 }
 
 /**
- * The href to navigate to for a replay: the one `app/(tabs)/index.tsx` itself
- * redirects each role with, which resolves to the tab and not to a same-named
- * route outside it (`/curriculum` is also a folder of screens).
+ * The href to navigate to for a replay, and the one `app/(tabs)/index.tsx`
+ * itself redirects a student or parent with (it calls this, so the two cannot
+ * drift). It resolves to the tab and not to a same-named route outside it
+ * (`/curriculum` is also a folder of screens).
  */
 export function homeHrefFor(role: TourRole): string {
   switch (role) {
     case 'teacher': return '/(tabs)';
     case 'student': return '/(tabs)/curriculum';
-    case 'parent': return '/(tabs)/notifications';
+    case 'parent': return '/(tabs)/school';
   }
 }
 

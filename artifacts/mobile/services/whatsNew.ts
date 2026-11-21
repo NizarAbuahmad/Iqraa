@@ -47,6 +47,22 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
     route: '/ai-tools/whiteboard',
   },
   {
+    id: 'teacher-class-parent-codes',
+    date: '2026-11-20',
+    roles: ['teacher'],
+    titleKey: 'whatsNewParentCodesTitle',
+    bodyKey: 'whatsNewParentCodesBody',
+    route: '/classes',
+  },
+  {
+    id: 'parent-school-first-projects',
+    date: '2026-11-20',
+    roles: ['parent'],
+    titleKey: 'whatsNewParentSchoolTitle',
+    bodyKey: 'whatsNewParentSchoolBody',
+    route: '/school',
+  },
+  {
     id: 'whiteboard-in-tools',
     date: '2026-11-20',
     roles: ['teacher'],

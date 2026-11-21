@@ -56,7 +56,7 @@ test('only a teacher, student or parent has a tour — an admin has none', () =>
 test('each role starts where the app lands it', () => {
   assert.equal(homeRouteFor('teacher'), '/');
   assert.equal(homeRouteFor('student'), '/curriculum');
-  assert.equal(homeRouteFor('parent'), '/notifications');
+  assert.equal(homeRouteFor('parent'), '/school');
 });
 
 test('the home route is recognised under both of Today’s spellings, and only for its own role', () => {
@@ -65,14 +65,15 @@ test('the home route is recognised under both of Today’s spellings, and only f
   assert.equal(isTourHome('teacher', '/classes'), false);
   assert.equal(isTourHome('student', '/curriculum'), true);
   assert.equal(isTourHome('student', '/'), false);
-  assert.equal(isTourHome('parent', '/notifications'), true);
+  assert.equal(isTourHome('parent', '/school'), true);
+  assert.equal(isTourHome('parent', '/notifications'), false);
   assert.equal(isTourHome('parent', '/curriculum'), false);
 });
 
 test('replay goes to the home tab by the href the app’s own redirects use', () => {
   assert.equal(homeHrefFor('teacher'), '/(tabs)');
   assert.equal(homeHrefFor('student'), '/(tabs)/curriculum');
-  assert.equal(homeHrefFor('parent'), '/(tabs)/notifications');
+  assert.equal(homeHrefFor('parent'), '/(tabs)/school');
 });
 
 // ─── steps ──────────────────────────────────────────────────────────────────
@@ -126,7 +127,8 @@ test('every step names copy that exists in both languages', () => {
 test('a new account on its home screen, nothing pending, is eligible', () => {
   assert.equal(tourBlocker(ok()), null);
   assert.equal(tourBlocker(ok({ user: student, pathname: '/curriculum' })), null);
-  assert.equal(tourBlocker(ok({ user: parent, pathname: '/notifications' })), null);
+  assert.equal(tourBlocker(ok({ user: parent, pathname: '/school' })), null);
+  assert.equal(tourBlocker(ok({ user: parent, pathname: '/notifications' })), 'route');
 });
 
 test('the landing route is accepted under either spelling expo-router reports', () => {
@@ -155,7 +157,7 @@ test('only on the role’s own home route, so a redirect in flight never starts 
 
 test('not while a setup or approval gate is still ahead of the account', () => {
   assert.equal(tourBlocker(ok({ user: { ...teacher, gradeIds: [], subjectIds: [] } })), 'gate');
-  assert.equal(tourBlocker(ok({ user: { ...parent, hasRosterLink: false }, pathname: '/notifications' })), 'gate');
+  assert.equal(tourBlocker(ok({ user: { ...parent, hasRosterLink: false }, pathname: '/school' })), 'gate');
   assert.equal(tourBlocker(ok({ user: { ...student, gradeIds: [] }, pathname: '/curriculum' })), 'gate');
   assert.equal(tourBlocker(ok({ user: { ...student, guardianStatus: 'waiting' }, pathname: '/curriculum' })), 'gate');
 });
