@@ -81,7 +81,7 @@ export default function AdminNewsletterScreen() {
     setSubject(draft.subject);
     setBody(draft.body);
     setTested(null);
-    setNote(ar ? `مسودة فيها ${draft.count} من الأخبار. عدّلها ثم أرسل نسخة لنفسك.` : `Notes in this draft: ${draft.count}. Edit it, then send yourself a copy.`);
+    setNote(ar ? `عدد الأخبار في المسودة: ${draft.count}. عدّلها ثم أرسل نسخة لنفسك.` : `Notes in this draft: ${draft.count}. Edit it, then send yourself a copy.`);
   };
 
   const failed = (e: unknown): string => {
@@ -134,7 +134,7 @@ export default function AdminNewsletterScreen() {
       // and a retry skips them (a missed issue, never a second copy).
       const unconfirmed = r.unconfirmed > 0
         ? (ar
-          ? ` · غير مؤكَّدة: ${r.unconfirmed} — لم يردّ مزوّد البريد بوضوح، فلن يُعاد الإرسال إليهم تلقائيًا؛ راجع سجل Resend`
+          ? ` · غير مؤكَّدة: ${r.unconfirmed} — لم يردّ مزوّد البريد بوضوح، فلن يُعاد الإرسال إلى هؤلاء المعلّمين تلقائيًا؛ راجع سجل Resend`
           : ` · Unconfirmed: ${r.unconfirmed} — the mail provider did not answer clearly, so these teachers will not be retried automatically; check the Resend log`)
         : '';
       const skipped = r.skipped ? (ar ? ` · ألغوا الاشتراك: ${r.skipped}` : ` · Unsubscribed: ${r.skipped}`) : '';

@@ -125,13 +125,12 @@ against production):
 - An edited text is a different issue: correcting even one typo after a send and sending again mails every teacher
   a second time. Only the identical text resumes an issue.
 - Screen copy: in the English interface the body box is left-aligned, so Arabic lines show their full stop on the
-  wrong side while editing (the email itself is right). The Arabic policy says «رسالة دورية» (periodic) where the
-  English says "occasional".
+  wrong side while editing (the email itself is right).
 
 **Screen copy.** Counts are worded so no plural agreement is needed, with Latin digits throughout: «عدد المعلّمين
 المستلمين: N · ألغوا الاشتراك: M» / "Teachers who would receive it: N · Unsubscribed: M"; the button «أرسل إلى
 المعلّمين (N)» / "Send to teachers (N)"; the result «وصلت: A · تعذّرت: B», followed only when some are unconfirmed by «غير مؤكَّدة: U — لم يردّ مزوّد
-البريد بوضوح، فلن يُعاد الإرسال إليهم تلقائيًا؛ راجع سجل Resend» / "Unconfirmed: U — the mail provider did not
+البريد بوضوح، فلن يُعاد الإرسال إلى هؤلاء المعلّمين تلقائيًا؛ راجع سجل Resend» / "Unconfirmed: U — the mail provider did not
 answer clearly, so these teachers will not be retried automatically; check the Resend log". The confirm dialog says the number is an
 upper bound («ما لا يزيد على N من المعلّمين» / "at most N teachers"), since a retry skips anyone already mailed. The
 last issue's date is its Amman day (`ammanToday`), not the device's.
