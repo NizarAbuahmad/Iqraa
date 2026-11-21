@@ -60,9 +60,9 @@ against production):
 
 - `lib/db` suite with `RLS_TEST_DATABASE_URL`: 72 pass, 0 fail, including «row-level security covers every table»
   (at `2558130`).
-- API: `adminNewsletter.db.test.ts` 16 of 16; the whole suite after `pnpm build` with `TEST_DATABASE_URL` set:
-  3,611 pass, 0 fail, 0 skipped, at the fix commit (the code of `ef3abc4`). Mail in these tests went only to a local
-  stub (`test-support/resendStub.ts`).
+- API: `adminNewsletter.db.test.ts` 17 of 17; the whole suite after `pnpm build` with `TEST_DATABASE_URL` set:
+  3,612 pass, 0 fail, 0 skipped, at `9751dab` (the empty-twin fix, 2026-11-21). Mail in these tests went only to a
+  local stub (`test-support/resendStub.ts`).
 - Mobile `pnpm test` at the fix commit: 9,456 tests, 9,446 pass, 0 fail, 10 skipped.
 - `lib/curriculum`: `pnpm test` 931 pass, 0 fail; `pnpm run verify` 0 errors (3,369 lessons, 200 files).
 - `pnpm run typecheck` at the fix commit: exits 0.
@@ -100,7 +100,9 @@ against production):
 - If the provider accepts a batch but the connection fails before it answers, that batch is treated as refused and a
   retry can mail those teachers again. There is no timeout on the provider call.
 - A crash in the middle of a batch can leave up to 100 teachers marked as mailed who were not.
-- Two test copies sent at the same instant can leave two unsent issues.
+- Two identical test copies sent at the same instant can still create a twin issue. A later test of that text
+  resumes the one that already mailed teachers and removes the empty twin, so the twin cannot be used to mail them
+  again.
 - An edited text is a new issue: correcting one typo after a send and sending again mails every teacher a second
   time. Only the identical text resumes an issue.
 - Screen copy: in the English interface the body box is left-aligned, so Arabic lines show their full stop on the
