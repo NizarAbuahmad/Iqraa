@@ -30,19 +30,47 @@ export class UnsupportedImageError extends Error {
   }
 }
 
-const MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
+type MediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+const MEDIA_TYPES = new Set<string>(["image/jpeg", "image/png", "image/gif", "image/webp"]);
+
+/** Claude's per-image limit. The scan routes accept up to about 6 MB, which OpenAI takes. */
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 type ImageBlock = Anthropic.ImageBlockParam;
+
+/**
+ * The type the bytes themselves say, or null when they are not a format Claude
+ * reads. Claude rejects a `media_type` that disagrees with the bytes; OpenAI
+ * never minded, and a phone or a browser can label a photo wrongly.
+ */
+function sniffMediaType(base64: string): MediaType | null {
+  const head = Buffer.from(base64.slice(0, 24), "base64");
+  if (head.length >= 3 && head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return "image/jpeg";
+  if (head.length >= 8 && head.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png";
+  if (head.length >= 4 && head.subarray(0, 4).toString("latin1") === "GIF8") return "image/gif";
+  if (head.length >= 12 && head.subarray(0, 4).toString("latin1") === "RIFF" && head.subarray(8, 12).toString("latin1") === "WEBP") return "image/webp";
+  return null;
+}
+
+/** Decoded size from the base64 text, without decoding it. */
+function decodedBytes(base64: string): number {
+  const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+  return Math.floor((base64.length * 3) / 4) - padding;
+}
 
 function toImageBlock(url: string): ImageBlock {
   const data = /^data:([^;,]+);base64,(.+)$/is.exec(url);
   if (data) {
-    const mediaType = data[1]!.toLowerCase();
-    if (!MEDIA_TYPES.has(mediaType)) throw new UnsupportedImageError(mediaType);
-    return {
-      type: "image",
-      source: { type: "base64", media_type: mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp", data: data[2]! },
-    };
+    const declared = data[1]!.toLowerCase();
+    const base64 = data[2]!;
+    // The bytes win over the label; an unrecognised file keeps its label only if Claude reads that type.
+    const mediaType = sniffMediaType(base64) ?? (MEDIA_TYPES.has(declared) ? (declared as MediaType) : null);
+    if (!mediaType) throw new UnsupportedImageError(declared);
+    const bytes = decodedBytes(base64);
+    if (bytes > MAX_IMAGE_BYTES) {
+      throw new UnsupportedImageError(`${(bytes / (1024 * 1024)).toFixed(1)} MB is over the 5 MB limit`);
+    }
+    return { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } };
   }
   if (/^data:/i.test(url)) throw new UnsupportedImageError("a data URL that is not base64");
   if (/^https:\/\//i.test(url)) return { type: "image", source: { type: "url", url } };
@@ -78,6 +106,11 @@ export function toClaudeRequest(messages: AiMessage[]): { system: string; messag
     }
     if (blocks.length > 0) out.push({ role: m.role, content: blocks });
   }
+
+  // Claude answers 400 when the first message is not the user's. A slice of chat
+  // history can start with the assistant (a greeting, an odd cut), and an empty
+  // user turn removed above can leave one first.
+  while (out.length > 0 && out[0]!.role === "assistant") out.shift();
 
   return { system: system.join("\n\n"), messages: out };
 }

@@ -16,9 +16,13 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { completeAi, openChatStream, type AiMessage, type AiDeps } from "../aiComplete.ts";
 import type { StreamChunk } from "../chatStream.ts";
+
+/** The api-server `src` directory, for the tests that read source files. */
+const SRC = fileURLToPath(new URL("../..", import.meta.url));
 
 const apiError = (status: number, message = "error", extra: Record<string, unknown> = {}) =>
   Object.assign(new Error(message), { status, ...extra });
@@ -105,6 +109,14 @@ describe("completeAi — OpenAI answers", () => {
       completeAi({ model: "gpt-5.4-mini", messages: MESSAGES, maxTokens: 100 }, { openai: o.client }),
     );
     assert.equal(out.text, null);
+  });
+
+  it("sends no options argument at all when neither a timeout nor a retry count is set", async () => {
+    const o = fakeOpenai([openaiReply("x")]);
+    await withEnv(BOTH, () =>
+      completeAi({ model: "gpt-5.4-mini", messages: MESSAGES, maxTokens: 100 }, { openai: o.client }),
+    );
+    assert.equal(o.calls[0]!.options, undefined);
   });
 
   it("passes a timeout and a retry count through to the OpenAI client", async () => {
@@ -287,7 +299,6 @@ describe("no route talks to OpenAI on its own", () => {
    * `aiComplete.ts`; this lists the ones that still do not, so the list can
    * only get shorter.
    */
-  const SRC = new URL("../..", import.meta.url).pathname;
   const ALLOWED = new Map<string, { calls: number; why: string }>([
     [
       "routes/generate.ts",
@@ -330,5 +341,60 @@ describe("no route talks to OpenAI on its own", () => {
       "a file calls OpenAI directly that is not allowed to (use completeAi / openChatStream from lib/aiComplete.ts), " +
         "or an allowed one now has a different number of calls",
     );
+  });
+});
+
+
+describe("every route records spend against the model that answered", () => {
+  /**
+   * `completeAi` / `openChatStream` say which model answered, because after a
+   * dead key that is not the one asked for. A route that keeps recording against
+   * `getGenerationModel()` or `getChatModel()` prices a Claude reply at OpenAI's
+   * rate: the ledger goes wrong in the direction that lets a budget be passed.
+   * No route test stands in for either provider, so this reads the source.
+   */
+  const read = (rel: string) => readFileSync(join(SRC, rel), "utf8");
+  const secondArg = (call: string) => /recordUsage\(\s*[^,]+,\s*([^,]+),/.exec(call)?.[1]?.trim();
+
+  const ROUTES = ["routes/chat.ts", "routes/evaluations.ts", "routes/attempts.ts", "lib/derivativeVerified.ts"];
+  for (const rel of ROUTES) {
+    it(`${rel}: no recordUsage call is priced at the model it asked for`, () => {
+      const src = read(rel);
+      const calls = src.match(/recordUsage\([\s\S]*?\)\s*;/g) ?? [];
+      assert.ok(calls.length > 0, "found no recordUsage call");
+      for (const call of calls) {
+        const model = secondArg(call);
+        assert.ok(model, `could not read the model argument of: ${call.slice(0, 80)}`);
+        assert.doesNotMatch(model!, /getGenerationModel|getChatModel|askedModel/, `priced at the asked-for model: ${call.slice(0, 120)}`);
+      }
+    });
+  }
+
+  it("chat takes the model from what answered, for both reply shapes", () => {
+    const src = read("routes/chat.ts");
+    assert.match(src, /model = completion\.model;/);
+    assert.match(src, /model = opened\.model;/);
+  });
+
+  it("evaluations.ts and attempts.ts take it from the completion in every scan and exam call", () => {
+    const evals = read("routes/evaluations.ts");
+    const attempts = read("routes/attempts.ts");
+    assert.equal((evals.match(/const model = completion\.model;/g) ?? []).length, 3, "exam, scan-paper, scan-class-paper");
+    assert.match(evals, /recordUsage\(completion\.usage, completion\.model, \{\s*kind: "solve"/, "worked steps");
+    assert.equal((attempts.match(/const model = completion\.model;/g) ?? []).length, 1);
+  });
+
+  it("chat's estimate for a turn with no usage figures charges the ceiling the provider was really sent", () => {
+    // Claude is sent at least 16000 tokens whatever chat asks for (thinking counts
+    // against it), so charging CHAT_MAX_TOKENS for an abandoned turn would put up
+    // to 13x too little against a student's budget while a fallback is running.
+    const src = read("routes/chat.ts");
+    assert.match(src, /isClaudeModel\(model\) \? claudeMaxTokens\(CHAT_MAX_TOKENS\) : CHAT_MAX_TOKENS/);
+  });
+
+  it("generate.ts: the questions route and /generate/solve record against the answering model", () => {
+    const src = read("routes/generate.ts");
+    assert.match(src, /recordUsage\(completion\.usage, completion\.model, \{\s*kind: "prompt-slides-questions"/);
+    assert.match(src, /recordUsage\(done\.usage, answeredBy,/);
   });
 });

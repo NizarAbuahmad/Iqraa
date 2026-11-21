@@ -19,6 +19,8 @@ import {
   CLAUDE_MIN_MAX_TOKENS,
   ClaudeNotConfiguredError,
   ClaudeRefusalError,
+  claudeMaxTokens,
+  claudeRequestOptions,
   completeWithClaude,
   streamWithClaude,
 } from "../claude.ts";
@@ -283,5 +285,34 @@ describe("streamWithClaude", () => {
     } finally {
       await new Promise<void>((r) => bad.close(() => r()));
     }
+  });
+});
+
+
+describe("claudeMaxTokens and claudeRequestOptions", () => {
+  it("claudeMaxTokens is the ceiling a call is really sent with: never under the floor, never cutting a caller that asks for more", () => {
+    // Chat asks for 1200. Claude is sent 16000, so spend estimates must use this, not the 1200.
+    assert.equal(claudeMaxTokens(1200), CLAUDE_MIN_MAX_TOKENS);
+    assert.equal(claudeMaxTokens(24000), 24000);
+  });
+
+  it("leaves an ordinary call on the client's defaults", () => {
+    assert.equal(claudeRequestOptions(400), undefined);
+    assert.equal(claudeRequestOptions(CLAUDE_MIN_MAX_TOKENS), undefined);
+  });
+
+  it("gives a long reply (a big exam paper) more than the two-minute default, no retry, and never more than Cloud Run allows", () => {
+    // A retry cannot fit in the 300 s request limit, and the 120 s default cuts a
+    // 24000-token paper off before it is written.
+    const big = claudeRequestOptions(24000)!;
+    assert.equal(big.maxRetries, 0);
+    assert.ok(big.timeout! > 120_000, "longer than the default");
+    assert.ok(big.timeout! < 300_000, "inside Cloud Run's request limit");
+    assert.ok(claudeRequestOptions(20000)!.timeout! < big.timeout!, "scales with the ceiling");
+  });
+
+  it("a long call still reaches the API as an ordinary request", async () => {
+    await completeWithClaude({ model: "claude-sonnet-5-5", system: "S", user: "U", maxTokens: 24000 }, { client });
+    assert.equal(seen[0]!.body.max_tokens, 24000);
   });
 });

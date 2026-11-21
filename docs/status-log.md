@@ -43,9 +43,32 @@ path price barely matters, so the backup is the model most trusted, Claude Sonne
   fails on any not listed (generate.ts: 1, siteAsk.ts: 1). `scanRoutes.test.ts` finds «the model call» by the text
   `completeAi(` now; its checks (guards before the call, no roster sent) are unchanged.
 
-**Verified.** `claudeMessages.test.ts` 9, `aiComplete.test.ts` 12, `claude.test.ts` 13 (the streaming adapter against
+**A review of the first version found five things, fixed in the same PR.**
+
+- *Spend under Claude.* Claude is never sent fewer than 16000 tokens (`CLAUDE_MIN_MAX_TOKENS`; thinking counts against
+  it), but chat's estimate for a turn with no usage figures (the client left, the stream failed) charged
+  `CHAT_MAX_TOKENS` (1200): up to 13× too little against `AI_STUDENT_BUDGET_USD` during a fallback. It now charges
+  `claudeMaxTokens(CHAT_MAX_TOKENS)` when the model is Claude. The same floor means chat's 1200-token reply cap does
+  not hold on the Claude path; the prompt's brevity is all that limits a fallback reply.
+- *Big exam papers.* `completeWithClaude` ran on a 120 s timeout with the SDK's two retries, so a 30-question paper
+  (24000-token ceiling) would time out three times and fail after about six minutes. A reply above the floor now gets
+  `claudeRequestOptions`: time in proportion to its ceiling (12 ms a token, capped at 280 s inside Cloud Run's 300 s
+  limit) and no retry. Ordinary calls keep the client's defaults.
+- *Photos.* Claude takes images up to 5 MB and rejects a `media_type` that disagrees with the bytes; the scan routes
+  accept about 6 MB and OpenAI never checked the label. `toImageBlock` now reads the type from the bytes (JPEG, PNG,
+  GIF, WebP; an unrecognised file keeps its label only if Claude reads that type) and refuses an image over 5 MB with a
+  message that names the size.
+- *Chat history starting with the assistant.* Claude answers 400 when the first message is not the user's, and
+  `messages.slice(-CHAT_HISTORY_TURNS)` can start with an assistant turn. `toClaudeRequest` drops leading assistant turns.
+- *Tests.* Nothing pinned «record against the model that answered» at any route, and the guard built its path with
+  `.pathname`, which breaks on Windows and on a path with a space. Source-level tests now require every
+  `recordUsage` in the moved routes to avoid `getGenerationModel` / `getChatModel`, and the chat and scan sites to take
+  the model from the completion (checked by breaking two sites on purpose: both were caught); the path uses
+  `fileURLToPath`; and a test asserts no options argument is sent to OpenAI when neither a timeout nor a retry count is set.
+
+**Verified.** `claudeMessages.test.ts` 14, `aiComplete.test.ts` 20, `claude.test.ts` 17 (the streaming adapter against
 the real SDK parsing server-sent events, including thinking left out, a refusal failing the stream, and a 401 thrown
-from the open call before any chunk). api-server 3048 / 3048 after `pnpm build`; typecheck clean.
+from the open call before any chunk). api-server 3066 / 3066 after `pnpm build`; typecheck clean.
 
 **Not verified.**
 
@@ -55,6 +78,8 @@ from the open call before any chunk). api-server 3048 / 3048 after `pnpm build`;
   run.
 - Photo scans through Claude: the conversion is tested, Claude's reading of handwriting is not. A scan response is
   `saved: false` (the teacher confirms), but nobody has compared the two providers on a real paper.
+- A 30-question exam paper written by Claude may still not finish inside Cloud Run's 300 s request limit; the
+  timeout is now sized to it, but no paper that large has been timed on Claude.
 - Latency: the app's chat gives up after 45 s of silence (`IDLE_TIMEOUT_MS`). Claude thinks before its first word and
   the thinking is not forwarded, so a slow turn is silent for that long. Haiku finished whole chat replies in about
   12 s; Sonnet 5.5 was not timed on chat.

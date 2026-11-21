@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { logger } from "../lib/logger";
 import { completeAi, openChatStream } from "../lib/aiComplete.ts";
+import { claudeMaxTokens } from "../lib/claude.ts";
 import {
   AiBudgetExceededError,
   AiLiveModeOffError,
@@ -10,6 +11,7 @@ import {
   assertLiveModeEnabled,
   assertUserQuotaAvailable,
   getChatModel,
+  isClaudeModel,
   recordUsage,
   withUserAiSlot,
 } from "../lib/aiBudget.ts";
@@ -151,7 +153,13 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     recordEstimate = (reason, streamedChars) => {
       recordEstimate = null;
       recordUsage(
-        { prompt_tokens: estimateTokens(promptChars), completion_tokens: CHAT_MAX_TOKENS },
+        {
+          prompt_tokens: estimateTokens(promptChars),
+          // The ceiling the provider was really sent: Claude is never sent less
+          // than its thinking floor, whatever chat asks for, so charging
+          // CHAT_MAX_TOKENS for an abandoned fallback turn would under-record it.
+          completion_tokens: isClaudeModel(model) ? claudeMaxTokens(CHAT_MAX_TOKENS) : CHAT_MAX_TOKENS,
+        },
         model,
         { ...detail, durationMs: Date.now() - startedAt },
       );

@@ -35,6 +35,29 @@ type Effort = (typeof EFFORTS)[number];
 /** A document takes 15–40 s; a call still running at two minutes is not coming back. */
 const REQUEST_TIMEOUT_MS = 120_000;
 
+/** The ceiling a call is REALLY sent with. Spend estimates must use this, not what the caller asked for. */
+export function claudeMaxTokens(requested: number): number {
+  return Math.max(requested, CLAUDE_MIN_MAX_TOKENS);
+}
+
+/** Cloud Run's request limit is 300 s: a reply that cannot finish inside it is not worth waiting for. */
+const LONG_REPLY_TIMEOUT_CAP_MS = 280_000;
+
+/**
+ * Per-call limits for a reply too large for the two-minute default.
+ *
+ * A 30-question exam paper asks for up to 24000 tokens with thinking, which
+ * takes longer than 120 s: every try would time out and the SDK would retry it
+ * twice, six minutes of waiting for the usual generation error. So a long call
+ * gets time in proportion to its ceiling (capped inside the request limit) and
+ * no retry, since a second try cannot fit. An ordinary call keeps the client's
+ * defaults, so the document generators behave as they did.
+ */
+export function claudeRequestOptions(maxTokens: number): { timeout: number; maxRetries: number } | undefined {
+  if (maxTokens <= CLAUDE_MIN_MAX_TOKENS) return undefined;
+  return { timeout: Math.min(LONG_REPLY_TIMEOUT_CAP_MS, maxTokens * 12), maxRetries: 0 };
+}
+
 export type ClaudeCompletion = {
   text: string;
   usage: { prompt_tokens: number; completion_tokens: number };
@@ -100,14 +123,17 @@ export async function completeWithClaude(
   /** Tests hand in a client pointed at a local server. */
   deps: { client?: Anthropic } = {},
 ): Promise<ClaudeCompletion> {
-  const msg = await (deps.client ?? client()).messages.create({
-    model: args.model,
-    max_tokens: Math.max(args.maxTokens, CLAUDE_MIN_MAX_TOKENS),
-    system: args.system,
-    thinking: { type: "adaptive" },
-    output_config: { effort: effortFromEnv() },
-    messages: messagesOf(args),
-  });
+  const msg = await (deps.client ?? client()).messages.create(
+    {
+      model: args.model,
+      max_tokens: claudeMaxTokens(args.maxTokens),
+      system: args.system,
+      thinking: { type: "adaptive" },
+      output_config: { effort: effortFromEnv() },
+      messages: messagesOf(args),
+    },
+    claudeRequestOptions(args.maxTokens),
+  );
 
   if (msg.stop_reason === "refusal") {
     throw new ClaudeRefusalError(msg.stop_details?.category ?? null);
@@ -146,7 +172,7 @@ export async function streamWithClaude(
   const stream = await (deps.client ?? client()).messages.create(
     {
       model: args.model,
-      max_tokens: Math.max(args.maxTokens, CLAUDE_MIN_MAX_TOKENS),
+      max_tokens: claudeMaxTokens(args.maxTokens),
       system: args.system,
       thinking: { type: "adaptive" },
       output_config: { effort: effortFromEnv() },
