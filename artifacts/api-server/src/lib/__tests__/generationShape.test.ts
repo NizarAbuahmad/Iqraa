@@ -762,3 +762,30 @@ describe("prompt-slides — the structure layouts keep their words in a payload"
     }
   });
 });
+
+describe("extractJSON — a trailing comma", () => {
+  // Seen in production 2026-11-21: a Claude lesson plan failed with «Expected
+  // double-quoted property name in JSON at position 3844 (line 33 column 5)» —
+  // a comma left before a closing brace — and the teacher got a 500 for a plan
+  // that was otherwise whole.
+  it("drops a comma before a closing brace or bracket", () => {
+    const raw = '{\n  "title": "الاستماع",\n  "objectives": [\n    "أ",\n    "ب",\n  ],\n  "duration": 45,\n}';
+    assert.deepEqual(extractJSON(raw), { title: "الاستماع", objectives: ["أ", "ب"], duration: 45 });
+  });
+
+  it("never touches a comma inside a string", () => {
+    // «, }» and «,]» typed by the model as text must survive as written.
+    const raw = '{"a": "قبل ,} بعد", "b": "x ,] y", "c": [1, 2,],}';
+    assert.deepEqual(extractJSON(raw), { a: "قبل ,} بعد", b: "x ,] y", c: [1, 2] });
+  });
+
+  it("keeps an escaped quote from ending the string early", () => {
+    const raw = '{"a": "he said \\",}\\" here", "b": 1,}';
+    assert.deepEqual(extractJSON(raw), { a: 'he said ",}" here', b: 1 });
+  });
+
+  it("leaves valid JSON exactly as JSON.parse reads it", () => {
+    const raw = '{"a": [1, 2], "b": {"c": "d, }"}}';
+    assert.deepEqual(extractJSON(raw), JSON.parse(raw));
+  });
+});
