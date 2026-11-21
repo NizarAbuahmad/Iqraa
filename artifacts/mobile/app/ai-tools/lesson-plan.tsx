@@ -30,7 +30,7 @@ import { useGeneratorExport } from '@/hooks/useGeneratorExport';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError, provenanceOf, type AiGenerationRecord } from '@/services/ai/aiProvenance';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
 import { captureGenerationScope, materialScope, reopenedGenerationScope, type GenerationScope } from '@/services/generationScope';
 import { readIndexParam } from '@/services/materialParams';
@@ -199,6 +199,12 @@ export default function LessonPlanScreen() {
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<LessonPlanOutput | null>(null);
   /**
+   * The record of the call that made the result on screen (`provenanceOf`), for
+   * the fallback notice: kept apart from `result`, which an edit replaces.
+   * Null for a reopened material.
+   */
+  const [resultRecord, setResultRecord] = useState<AiGenerationRecord | null>(null);
+  /**
    * The scope the plan on screen was generated under — pickers, topic and
    * the grounded lesson, frozen at generation time (or re-derived from the
    * saved form state on reopen, which is what gives a reopened plan its
@@ -283,6 +289,7 @@ export default function LessonPlanScreen() {
         if (item) {
           try {
             const parsed = JSON.parse(item.content) as LessonPlanOutput;
+            setResultRecord(null);
             setResult(parsed);
           } catch { /* noop */ }
           setFavorited(item.isFavorite);
@@ -324,7 +331,7 @@ export default function LessonPlanScreen() {
     // What a failed or cancelled run must hand back. It used to be cleared
     // up front and never restored, so Cancel on a regenerate threw away the
     // unsaved plan the teacher was looking at.
-    const held = { result, editedFields, generated, wideFrozen };
+    const held = { result, editedFields, generated, wideFrozen, resultRecord };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // plan — the KB serves that lesson's own content while the header claims
@@ -374,6 +381,7 @@ export default function LessonPlanScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setWideFrozen(wideReq ? wideSel : null);
+      setResultRecord(provenanceOf(out));
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
     } catch (e) {
@@ -388,6 +396,7 @@ export default function LessonPlanScreen() {
       // lose it.
       if (held.result) {
         setResult(held.result);
+        setResultRecord(held.resultRecord);
         setEditedFields(held.editedFields);
         setGenerated(held.generated);
         setWideFrozen(held.wideFrozen);
@@ -857,7 +866,7 @@ export default function LessonPlanScreen() {
           to know it IS tied to the lesson as much as when it isn't. */}
       {/* Above everything else in the result: when it is the offline sample,
           the teacher reads that before reading the content. */}
-      {result && !loading && <AiFallbackNotice kinds={['lesson-plan']} onRetry={() => generate()} isRTL={isRTL} />}
+      {result && !loading && <AiFallbackNotice kinds={['lesson-plan']} records={[resultRecord]} onRetry={() => generate()} isRTL={isRTL} />}
       {result && curriculumGrounded !== null && (
         <View style={{ marginHorizontal: 20 }}>
           <GroundingNotice

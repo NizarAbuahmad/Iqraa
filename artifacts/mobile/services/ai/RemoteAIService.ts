@@ -24,7 +24,7 @@ import { appendFormats, requestWithoutFormats, splitFormatTypes } from './worksh
 import { applyClassroomSetup } from '@/services/classroomRouting';
 import { ApiError, apiFetch } from '../apiClient';
 import { reportRequestBody } from '../reportReason';
-import { describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
+import { carryProvenance, describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
 import { streamChat, type ChatParams } from './chatStreamClient';
 import type { BoardSolution } from '@workspace/math-verify';
 import { acceptSolveResponse, type SolveRequest } from '../solve';
@@ -166,11 +166,13 @@ export class RemoteAIService extends AIService {
   async generateActivity(req: AIRequest, opts?: GenerateOptions): Promise<ActivityOutput> {
     // The model can echo the `**bold**` its prompt uses; no renderer here
     // reads markdown, so it would print as asterisks.
-    return plainActivity(await generateWithProvenance(
+    const out = await generateWithProvenance(
       'activity',
       () => postJSON<ActivityOutput>('/generate/activity', req, opts, DOCUMENT_TIMEOUT_MS),
       () => this.fallback.generateActivity(req),
-    ));
+    );
+    // The copy is what the screen holds; it keeps the call's record.
+    return carryProvenance(out, plainActivity(out));
   }
 
   async generateInfographic(req: AIRequest, opts?: GenerateOptions): Promise<InfographicOutput> {
@@ -199,11 +201,12 @@ export class RemoteAIService extends AIService {
     // deck and any future source all pass through this method, and a model
     // that ignored the prompt's "there is a projector" line would otherwise
     // still tell the teacher to print the slides.
-    return applyClassroomSetup(
+    // The copy keeps the call's record — Slides Maker reads it for the notice.
+    return carryProvenance(activity, applyClassroomSetup(
       activity,
       req.classroomSetup ?? 'screen',
       req.language === 'arabic',
-    );
+    ));
   }
 
   /**

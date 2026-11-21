@@ -31,7 +31,7 @@ import {
   type ActivityTypeId } from '@/constants/activityType';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
-import { aiErrorText, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError, provenanceOf, type AiGenerationRecord } from '@/services/ai/aiProvenance';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
 import { useFavorite } from '@/hooks/useFavorite';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
@@ -169,6 +169,11 @@ export default function ActivityScreen() {
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<ActivityOutput | null>(null);
   /**
+   * The record of the call that made the activity on screen (`provenanceOf`),
+   * for the fallback notice. Null for a reopened material.
+   */
+  const [resultRecord, setResultRecord] = useState<AiGenerationRecord | null>(null);
+  /**
    * The scope the activity on screen was generated under — pickers, topic
    * and the grounded lesson, frozen at generation time (or re-derived from
    * the saved form state on reopen). Save and export read this, never the
@@ -246,6 +251,7 @@ export default function ActivityScreen() {
     if (params.savedId) {
       getItem(params.savedId).then(item => {
         if (item) {
+          setResultRecord(null);
           try { setResult(plainActivity(JSON.parse(item.content) as ActivityOutput)); } catch { /* noop */ }
           setFavorited(item.isFavorite);
         }
@@ -279,7 +285,7 @@ export default function ActivityScreen() {
     // up front and never restored, so a failed regenerate threw away the
     // unsaved activity the teacher was looking at. The frozen scope goes back
     // with it, so Save and the notice describe the restored activity.
-    const held = { result, generated, builtWith, wideFrozen };
+    const held = { result, generated, builtWith, wideFrozen, resultRecord };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     const missing = scopeWithoutCurriculum(grades[gradeIdx].id, subjects[subjectIdx].id, uiLang);
     if (missing) { setError(t('scopeNoCurriculum', missing.grade, missing.subject)); return; }
@@ -340,6 +346,7 @@ export default function ActivityScreen() {
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setWideFrozen(wide ? wideScope.scopeSel : null);
       setBuiltWith({ activityTypeIdx, durationIdx, objective });
+      setResultRecord(provenanceOf(out));
       setResult(out);
       // A regenerated activity is a new copy: leave the saved one alone, and
       // let «حفظ» create it. The star belonged to the saved material.
@@ -353,6 +360,7 @@ export default function ActivityScreen() {
       else setError(aiErrorText(e, t));
       if (held.result) {
         setResult(held.result);
+        setResultRecord(held.resultRecord);
         setGenerated(held.generated);
         setBuiltWith(held.builtWith);
         setWideFrozen(held.wideFrozen);
@@ -651,7 +659,7 @@ export default function ActivityScreen() {
           know it IS tied to the lesson as much as when it isn't. */}
       {/* Above everything else in the result: when it is the offline sample,
           the teacher reads that before reading the content. */}
-      {result && !loading && <AiFallbackNotice kinds={['activity']} onRetry={() => generate()} isRTL={isRTL} />}
+      {result && !loading && <AiFallbackNotice kinds={['activity']} records={[resultRecord]} onRetry={() => generate()} isRTL={isRTL} />}
       {result && curriculumGrounded !== null && (
         <View style={{ marginHorizontal: 20 }}>
           <GroundingNotice

@@ -30,7 +30,7 @@ import { TopicSelector } from '@/components/ui/TopicSelector';
 import { PickerField as SharedPickerField } from '@/components/ui/PickerField';
 import { StrandedSelectionNote } from '@/components/ui/StrandedSelectionNote';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorText, getLastGeneration, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError, provenanceOf, type AiGenerationRecord } from '@/services/ai/aiProvenance';
 import { CoverageNotice } from '@/components/ui/CoverageNotice';
 import { useWideScope } from '@/hooks/useWideScope';
 import { DISTRIBUTIONS, type CoverageLesson, type Distribution } from '@/services/coveragePlan';
@@ -225,6 +225,12 @@ export default function QuizScreen() {
   useAbortOnUnmount(abortRef);
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<QuizOutput | null>(null);
+  /**
+   * The record of the call that made the result on screen (`provenanceOf`), for
+   * the fallback notice: kept apart from `result`, which an edit replaces.
+   * Null for a reopened material.
+   */
+  const [resultRecord, setResultRecord] = useState<AiGenerationRecord | null>(null);
   /** null = not checked yet (or the check failed); [] onwards = per question. */
   const [outcomes, setOutcomes] = useState<(VerifyOutcome | undefined)[] | null>(null);
   /**
@@ -285,6 +291,7 @@ export default function QuizScreen() {
     if (params.savedId) {
       getItem(params.savedId).then(item => {
         if (item) {
+          setResultRecord(null);
           try { setResult(JSON.parse(item.content) as QuizOutput); } catch { /* noop */ }
           setFavorited(item.isFavorite);
         }
@@ -434,7 +441,7 @@ export default function QuizScreen() {
     // badges and edits, and the scope it was generated under. It used to be
     // cleared up front and never restored, so Cancel on a regenerate threw
     // away the unsaved quiz the teacher was looking at.
-    const held = { result, outcomes, editedQuestions, showAnswers, generated, wideFrozen, coverageInfo };
+    const held = { result, outcomes, editedQuestions, showAnswers, generated, wideFrozen, coverageInfo, resultRecord };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // paper — the KB serves that lesson's own content while the header claims
@@ -499,10 +506,12 @@ export default function QuizScreen() {
       // leaving it there prints "أ. أ) الوقت" on the paper — so it is dropped
       // on the way in, before this ever reaches the editor or the exporter.
       const normalized = { ...out, questions: out.questions.map(normalizeQuestionOptions) };
+      // Read off `out`: the copy carries no record.
+      setResultRecord(provenanceOf(out));
       setResult(normalized);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setWideFrozen(wide ? { sel: wideScope.scopeSel!, distribution: wideScope.distribution } : null);
-      setCoverageInfo(wide ? { lessons: wide.lessons, modelReported: getLastGeneration()?.source === 'live' } : null);
+      setCoverageInfo(wide ? { lessons: wide.lessons, modelReported: provenanceOf(out)?.source === 'live' } : null);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
 
       verifyKeys(normalized);
@@ -518,6 +527,7 @@ export default function QuizScreen() {
       // notice describe the restored paper, not the one that never came.
       if (held.result) {
         setResult(held.result);
+        setResultRecord(held.resultRecord);
         setOutcomes(held.outcomes);
         setEditedQuestions(held.editedQuestions);
         setShowAnswers(held.showAnswers);
@@ -801,7 +811,7 @@ export default function QuizScreen() {
           know it IS tied to the lesson as much as when it isn't. */}
       {/* Above everything else in the result: when it is the offline sample,
           the teacher reads that before reading the content. */}
-      {result && !loading && <AiFallbackNotice kinds={['quiz']} onRetry={() => generate()} isRTL={isRTL} />}
+      {result && !loading && <AiFallbackNotice kinds={['quiz']} records={[resultRecord]} onRetry={() => generate()} isRTL={isRTL} />}
       {result && curriculumGrounded !== null && (
         <View style={{ marginHorizontal: 20 }}>
           <GroundingNotice
