@@ -225,6 +225,13 @@
       "when": 1795213444338,
       "tag": "0031_oval_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795245849065,
+      "tag": "0032_peaceful_malice",
+      "breakpoints": true
     }
   ]
 }
