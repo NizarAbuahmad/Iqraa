@@ -173,6 +173,22 @@ question without its drawing).
 see none of this in production yet: book items reach a paper only on the mock path or with
 `BOOK_ITEMS_LIVE=true`, which is off.
 
+## A 1.6.0 production build sent to Google Play for review — 2026-11-21
+
+After the chat fix (#1527) merged, the owner asked for a 1.6.0 production build and for it to go to Play for review.
+
+- **Build.** Mobile Android build run 11 (`profile: production`) from `main` at `de31781`: EAS build
+  `735f7858-a355-486c-be10-5c4bf999b62c`, version 1.6.0, versionCode 15 (EAS took the next code itself,
+  `appVersionSource: "remote"`), status `FINISHED` with an `.aab`.
+- **Submit.** Mobile Android submit to Play run 4, `send_for_review: true` (submit profile `production-review`):
+  the build check, the upload and the key deletion all passed. This sends the release for review at once, so any
+  store-listing edit drafted in Play Console did not go with it.
+- **OTA.** The same commit was published to the `production` update channel by hand (Mobile OTA update run 1201).
+- **STATUS.md** «Mobile» no longer says the installed binary is 1.5.0: 1.6.0 production builds have existed since
+  2026-11-13 (versionCode 12) and were submitted on 2026-11-14 (submit runs 2–3), which that line had not caught up with.
+
+**Not verified:** Google's review result and the rollout, and which version is installed on any user's phone.
+
 ## Chat answers the topic asked about; the picked lesson stays put — 2026-11-21
 
 **Reported:** «chat when the user asks for a specific topic it keeps changing… is that because of the topic selected
@@ -1519,6 +1535,40 @@ into a unit test, summary or glossary.
   pass, plus `r2.test.ts`, which fails only because this environment has R2 configured.
 
 **Not run:** live AI, anything needing the PDFs.
+
+## The web publish tries a failed Cloudflare call again — 2026-11-13
+
+On 2026-11-13 two merges in a row built the web bundle and then failed to publish it. Deploy run #949 (PR #1438, 15:32 UTC)
+and #950 (PR #1433, 15:48 UTC) both shipped their API and ran their migrations, but `iqraa-web` died at «Publish to
+Cloudflare Pages» about four seconds in, before any upload: `GET /accounts/…/pages/projects/iqraa-web → 503 Service
+Unavailable`, «no healthy upstream», from Cloudflare's own API. Nothing in the repo was wrong. The workflow had no retry,
+so the live site kept the previous bundle until run #951 (16:03 UTC, a later merge that contains both PRs) published at
+16:07 UTC: about 28 minutes behind for #1438's web changes and 17 for #1433's. A quiet hour would have made it much longer,
+because only a later merge ships it.
+
+**What changed.** The publish step in `.github/workflows/deploy.yml` (`web` job) now runs `wrangler pages deploy` up to
+five times, waiting 30, 60, 120 and 240 s between attempts (7.5 minutes at most; the job's timeout is 20 and the verify step
+after it needs about 2). Any failure is retried, not only a 5xx, on purpose: telling them apart would mean parsing wrangler's
+output, and a real failure such as a bad token now costs 7.5 minutes before the same red X. Each failed attempt prints a
+`::warning::` and the last prints `::error::`. The command is unchanged. A newer push still cancels the job
+(`cancel-in-progress`), which is right: the newer run builds and publishes the newer commit.
+
+**Verified.** The step's real `run:` text was taken out of `deploy.yml` and run against stand-ins for `pnpm` and `sleep`
+(not committed; CI does not run shell tests): with a healthy Cloudflare it makes one call and no waits; after two 503s it
+succeeds on the third call having waited 30 and 60 s; after four 503s it succeeds on the fifth having waited 30, 60, 120
+and 240 s; with Cloudflare down throughout it makes five calls, waits 30, 60, 120 and 240 s (none after the last), prints
+the `::error::` line and exits 1; and every call has the exact arguments it had before. Red first: against the old step the
+two-503 and four-503 cases failed (one call, exit 1) and the healthy case passed. The workflow still parses and the
+step order is unchanged.
+
+**Not verified / limits.** It has not run against a real Cloudflare failure; the first outage is the first real test.
+**It covers a short outage, not a long one.** If Cloudflare was down continuously from 15:39 to 16:06 UTC (27 minutes), 7.5
+minutes of retries would not have saved #949 or #950; it helps only if the failures were intermittent, which the logs do
+not say (two runs 16 minutes apart both failed, then #951 passed). A longer wait does not fit this job's 20-minute budget;
+covering a long outage would need a delayed re-run of the failed web job (the pattern in `deploy-rerun-stalled.yml`), which
+is not built. I did not read wrangler's source: the step relies only on a failed attempt publishing nothing and a repeat
+attempt deploying the same files, not on wrangler skipping files it already uploaded.
+
 ## Grade 1 review: coverage, generated results, book images — 2026-11-13
 
 A review of Grade 1 (all 8 subjects, 15 books, 279 lessons) against three asks: every subject covered, the right
