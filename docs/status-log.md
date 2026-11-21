@@ -10,6 +10,67 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Production runs Claude for documents (STATUS.md said it did not); a dead key now switches provider — 2026-11-21
+
+`STATUS.md` «Live config» said `AI_MODEL_DOCUMENTS` was **unset**, while the 2026-11-03 entry
+(«lesson-teaching now runs on the documents model») said Claude Sonnet 5.5 ran in production. An
+Anthropic Console email that a key expires on 2026-11-22 raised the question of which was true.
+
+**Verified.** The owner read the live service in Cloud Shell on 2026-11-21:
+`gcloud run services describe iqraa-api … --format="value(spec.template.spec.containers[0].env)"` shows
+`AI_MODEL_DOCUMENTS=claude-sonnet-5-5` and `ANTHROPIC_API_KEY` as a `secretKeyRef` (`latest`). So lesson plans,
+worksheets, quizzes, slide decks and `lesson-teaching` (`DOCUMENT_KINDS` in `aiBudget.ts`) go to Claude. Chat,
+evaluations, grading, homework, activities and infographics stay on OpenAI.
+
+**Not verified.** Whether the expiring key («Agents test») is the one in the `ANTHROPIC_API_KEY` secret, and the
+date `AI_MODEL_DOCUMENTS` was set.
+
+**The gap this closes.** `usableModel` (`lib/aiBudget.ts`) skips Claude only when `ANTHROPIC_API_KEY` is
+*unset*. A key that was set but expired, revoked or on an empty balance was used anyway, and every one of those
+five kinds answered with the generation error until the secret had a new version — and the same held the other
+way for OpenAI's own empty balance.
+
+**Changed.**
+
+- `lib/providerFallback.ts` (new): `isProviderAccountError` — 401, 402, 403, 404, OpenAI's 429
+  `insufficient_quota`, Anthropic's 400 «credit balance», and `ClaudeNotConfiguredError`; **not** a plain 429,
+  5xx, 529, a refusal or a malformed reply, which the other provider would not fix and which would double the
+  spend on busy days. `fallbackModelFor` — Claude is backed by `getGenerationModel()`; OpenAI by
+  `AI_MODEL_DOCUMENTS` when that is a Claude id and the key is set, so no new variable. `withProviderFallback`
+  switches once, never back, and logs «AI provider refused the account — answering with the other provider» at
+  error level.
+- `routes/generate.ts`: `generateContent` resolves the model and runs the pooled flow (now
+  `generateContentWith`) through `withProviderFallback`. The whole flow re-runs under the backup's model, so the
+  pool is read and the artifact stored under the backup's key — a fallback artifact never poses as the other
+  model's — and the caps are asked again for the call actually made. That covers every `/generate/*` kind that
+  goes through it: the five document kinds, homework, activities and the rest.
+- `scripts/provider-eval.ts`: prices for `claude-sonnet-5-5` ($2/$10) and `claude-haiku-5-5` ($0.10/$0.50), so a
+  run against them reports cost.
+
+**Verified.** `providerFallback.test.ts`, 14 tests: which errors switch and which do not, the model each side
+falls back to, one switch and never back, the original error rethrown when there is no backup, and that
+`generateContent` still calls `withProviderFallback`. api-server 3017 / 3017 after `pnpm build`; typecheck clean.
+
+**Not verified.** No request has been made against a real expired key or an empty balance: the error shapes are
+the SDKs' documented `status` / `code`, not ones captured from production. Not covered: chat (streaming), the
+exam generator and grading (`evaluations.ts`, `attempts.ts`), `siteAsk`, the verified-derivative path and `solve`,
+which call the OpenAI client directly — an empty OpenAI balance still fails those. The backup writes in another
+model's voice; the quality of OpenAI-written documents is the 2026-10-23 comparison's (it lost 14 of 16).
+
+**Found while rotating (same day): a trailing comma failed a whole lesson plan.** With the old key back, Claude
+answered but `/generate/lesson-plan` returned 500, logged «Expected double-quoted property name in JSON at position
+3844 (line 33 column 5)»: a comma before a closing brace. `parseRepairing` (`lib/generationShape.ts`) already doubled
+stray backslashes after a failed strict parse; it now also drops a comma that stands right before `}` or `]` outside a
+string (`dropTrailingCommas`, which tracks strings and escapes, so a «, }» in the text is kept). Valid JSON is still
+parsed untouched. Four tests in `generationShape.test.ts`, three of which failed first. Not verified against the actual
+reply, which is not logged; only its error message and position were. Also on the way: the first new key saved
+(secret version 3) was rejected with `401 invalid x-api-key`, so the service was pinned back to version 2.
+
+Rotating the key is still the fix; the fallback only keeps the screens working meanwhile. Rotation is
+`gcloud secrets versions add ANTHROPIC_API_KEY` plus `gcloud run services update iqraa-api
+--update-secrets=ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest`; the instant rollback is
+`--remove-env-vars=AI_MODEL_DOCUMENTS`.
+
 ## `earlyMathDifficulty.test.ts` draws the same papers on every run — 2026-11-21
 
 **Why.** The mobile suite failed once on CI (and once on a first local run, not captured) on a change that did not
