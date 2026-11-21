@@ -31,6 +31,10 @@ Grade 10 maths and chemistry plus every 40th lesson), both languages, regenerate
 1,096 bodies, all identical on the wire. Not kept, because it would only compare the builder with a copy of
 itself. `pnpm run typecheck`; mobile `pnpm test` 9,486 pass, 0 fail.
 
+**Running it.** Production writes quizzes with Claude Sonnet 5.5 (`AI_MODEL_DOCUMENTS=claude-sonnet-5-5`), so a
+quiz is about $0.05 and the 51 about $2.60; rotate the Anthropic key first (the one in use expires 2026-11-22): with a dead
+key a run falls back to OpenAI and fills the pool under that model's key, where Claude's teachers never look.
+
 **Not verified.** The quiz screen on a device or in a browser (the request is identical, but the file changed); a
 live run of the quiz prefill; that a teacher's default quiz then hits the pool; the quality of the stored quizzes
 (each is served to every teacher who asks, answer key included: read a few after a run).
@@ -144,9 +148,12 @@ screens' defaults (normal → `easy`, 10 questions, multiple choice + short answ
 **Not verified:** a live run (none was made; it needs a login and spends money — command in the PR), that a
 teacher's chemistry request then hits the pool, or the quality of the stored chemistry worksheets: they are served to
 every teacher who asks, and nobody has read them. The per-account allowance (`AI_USER_BUDGET_USD`, reset to `1` by
-every API deploy) is what actually stops a run, about 100 calls at roughly $0.01 each is on the edge of it; give the
-dedicated account its own limit on the admin Users screen first. The model is part of the pool key: run this after
-deciding `AI_MODEL_DOCUMENTS`, or the copies are orphaned. No «ما الجديد»: nothing a user sees changes.
+every API deploy) is what actually stops a run: give the dedicated account its own limit on the admin Users screen
+first. **Corrected 2026-11-21, same day:** this entry first said a call costs roughly $0.01 and that
+`AI_MODEL_DOCUMENTS` was still to be decided. Neither held: production already runs `AI_MODEL_DOCUMENTS=claude-sonnet-5-5`
+(«Production runs Claude for documents», above), so worksheets, lesson plans and quizzes are written by Claude Sonnet 5.5
+($2/$10 per million tokens, adaptive thinking), which is closer to the script's $0.05 a call than to $0.01. The run is
+**about $2.60 for each kind of 51**, so give the account at least $10. No «ما الجديد»: nothing a user sees changes.
 
 ## Whiteboard: redo, four more pen colours, and a board from Today is filed under its lesson — 2026-11-21
 
