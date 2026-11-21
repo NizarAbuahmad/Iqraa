@@ -62,6 +62,52 @@ Rotating the key is still the fix; the fallback only keeps the screens working m
 --update-secrets=ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest`; the instant rollback is
 `--remove-env-vars=AI_MODEL_DOCUMENTS`.
 
+## `earlyMathDifficulty.test.ts` draws the same papers on every run — 2026-11-21
+
+**Why.** The mobile suite failed once on CI (and once on a first local run, not captured) on a change that did not
+touch it: «Grade 2 … most lessons are clearly harder at «صعب», with «متوسط» between», the lesson «السنتيمتر» in the
+out-of-order list. The test draws 12 random five-question papers per lesson and checks means against fixed bounds
+(medium within 5% of the range between easy and hard), with `Math.random` unseeded, so a lesson with little spread
+lands outside them on an unlucky draw.
+
+**Measured.** The same test with 84 different seeds: **1 failed (seed 51), with the same lesson and the same
+assertion as CI**, and 83 passed. So about one run in eighty fails, on code that has not changed.
+
+**Changed.** The file seeds `Math.random` (mulberry32, the generator `classroomWideScope.test.ts` already uses) while
+its suites are defined, which is where the papers are drawn, and restores it afterwards. `SEED` is fixed at
+`0x2f6e2b1`. Nothing else in the test or in the generators changed.
+
+**Verified.** The same seed run twice gives an identical fingerprint of every mean drawn (the seeding really covers
+the draws); seed 51 fails both times it is run, so the failure is now reproducible rather than occasional; the
+committed seed passes (8 of 8); `pnpm run typecheck`.
+
+**Not verified / the catch.** A seed is one fixed set of draws, not a statement about every draw: the lesson that
+failed sits close to a bound, and a change to a Grade 1–4 generator can move another one across it. That now shows as a
+failure to read (the message names the lesson), not as a flake. Do not respond by changing `SEED` until it passes. The
+bounds were set from unseeded runs and were not revisited.
+
+## Pool prefill: Grade 10 chemistry worksheets and lesson plans — 2026-11-21
+
+`artifacts/mobile/scripts/pregenerate.ts` filled the shared pool with default-form worksheets and lesson plans
+for Grade 10 **maths** only; chemistry had student explanations and nothing else, so a chemistry teacher's first
+request for a lesson always paid for a model call. The script now plans both for Grade 10 chemistry too: one
+`SCOPES` list (maths, chemistry) feeds the worksheet, lesson-plan and lesson-teaching plans. A dry run reads
+**153 calls** (51 worksheets, 51 lesson plans, 51 explanations; it was 119), worst case $7.65 at the script's
+$0.05-a-call estimate. A call the pool already holds answers fast and is not counted, so a re-run costs only the new
+lessons.
+
+**Verified:** `pregenerate.test.ts` — the new test failed first («expected Chemistry worksheet calls, got 0»), then
+passed; it also pins one call per lesson id, and the existing default-form test now accepts both subjects. The
+screens' defaults (normal → `easy`, 10 questions, multiple choice + short answer, 45 minutes, direct) were read in
+`worksheet.tsx` and `lesson-plan.tsx`, not run. `pnpm run typecheck`.
+
+**Not verified:** a live run (none was made; it needs a login and spends money — command in the PR), that a
+teacher's chemistry request then hits the pool, or the quality of the stored chemistry worksheets: they are served to
+every teacher who asks, and nobody has read them. The per-account allowance (`AI_USER_BUDGET_USD`, reset to `1` by
+every API deploy) is what actually stops a run, about 100 calls at roughly $0.01 each is on the edge of it; give the
+dedicated account its own limit on the admin Users screen first. The model is part of the pool key: run this after
+deciding `AI_MODEL_DOCUMENTS`, or the copies are orphaned. No «ما الجديد»: nothing a user sees changes.
+
 ## Whiteboard: redo, four more pen colours, and a board from Today is filed under its lesson — 2026-11-21
 
 Follow-up to «The whiteboard has a card of its own…». Three things a teacher at the board meets.
