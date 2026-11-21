@@ -55,11 +55,16 @@ Checked 2026-10-22:
   call failed while the app showed sample content (see «OpenAI credit ran out» in the log).
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».
-- **Mobile:** `app.json` version `1.6.0` once the screen-recording PR merges (bumped 2026-10-29 for
-  PostHog session replay's native module); **the installed production binary is still `1.5.0`**, so
-  OTAs published from `main` stop reaching it until a 1.6.0 build is made and installed. An OTA
-  update only reaches a binary with the same version (CLAUDE.md, «`app.json`'s `version` is the OTA
-  compatibility key»).
+- **Mobile:** `app.json` version `1.6.0` (bumped 2026-10-29 for PostHog session replay's native
+  module). **Latest production build (2026-11-21): 1.6.0, versionCode 15**, EAS build
+  `735f7858-a355-486c-be10-5c4bf999b62c`, from `main` at `de31781` (Mobile Android build run 11), **sent
+  to Google Play for review** (Mobile Android submit run 4, «send for review», success). Google's review
+  outcome and the rollout were not checked. Earlier 1.6.0 production builds: versionCode 12 (2026-11-13)
+  and two on 2026-11-14, submitted to Play (submit runs 2–3). Which version is on users' phones is not
+  known from here: a phone still on 1.5.0 gets no OTA from `main`, whose runtime is 1.6.0 (CLAUDE.md,
+  «`app.json`'s `version` is the OTA compatibility key»). OTAs reach the `production` channel only when
+  published by hand (`mobile-update.yml`, `branch=production`); the latest is from `de31781` (run 1201,
+  2026-11-21).
 - **Every shipped build uses live AI.** `EXPO_PUBLIC_DEMO_MODE=false` is set for Android
   (`eas.json`, `mobile-update.yml`) and, since 2026-10-16, for the web build (`deploy.yml`).
   The code default in `demoMode.ts` is still demo mode; do not flip it without a decision
