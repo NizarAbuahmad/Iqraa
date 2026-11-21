@@ -138,21 +138,39 @@ export function eraseAlong(
   return current;
 }
 
-/** The strokes on the board plus snapshots to undo back to. */
-export type BoardState = { strokes: Stroke[]; past: Stroke[][] };
+/**
+ * The strokes on the board plus snapshots to undo back to (`past`, oldest first)
+ * and to redo forward to (`future`, the next redo first). `future` is empty
+ * until something is undone, and any new commit empties it again.
+ */
+export type BoardState = { strokes: Stroke[]; past: Stroke[][]; future: Stroke[][] };
 
-export const EMPTY_BOARD: BoardState = { strokes: [], past: [] };
+export const EMPTY_BOARD: BoardState = { strokes: [], past: [], future: [] };
 
-/** Make `next` the board's strokes, remembering the old list. Same list in, same state out. */
+/**
+ * Make `next` the board's strokes, remembering the old list. Same list in, same
+ * state out. A real change drops the redo list: once the teacher draws after an
+ * undo, the undone strokes are no longer a future of this board.
+ */
 export function commitStrokes(state: BoardState, next: Stroke[]): BoardState {
   if (next === state.strokes) return state;
   const past = [...state.past, state.strokes];
-  return { strokes: next, past: past.length > HISTORY_LIMIT ? past.slice(past.length - HISTORY_LIMIT) : past };
+  return { strokes: next, past: past.length > HISTORY_LIMIT ? past.slice(past.length - HISTORY_LIMIT) : past, future: [] };
 }
 
 export function undoBoard(state: BoardState): BoardState {
   if (state.past.length === 0) return state;
-  return { strokes: state.past[state.past.length - 1]!, past: state.past.slice(0, -1) };
+  return {
+    strokes: state.past[state.past.length - 1]!,
+    past: state.past.slice(0, -1),
+    future: [state.strokes, ...state.future],
+  };
+}
+
+/** Step forward again after an undo. Nothing to redo gives the same state back. */
+export function redoBoard(state: BoardState): BoardState {
+  if (state.future.length === 0) return state;
+  return { strokes: state.future[0]!, past: [...state.past, state.strokes], future: state.future.slice(1) };
 }
 
 /** Wipe the board — as a commit, so it can be undone. No-op when already empty. */
@@ -162,6 +180,7 @@ export function clearBoard(state: BoardState): BoardState {
 
 export const hasInk = (state: BoardState): boolean => state.strokes.length > 0;
 export const canUndo = (state: BoardState): boolean => state.past.length > 0;
+export const canRedo = (state: BoardState): boolean => state.future.length > 0;
 
 export type BoardBackground = 'blank' | 'grid' | 'axes';
 export const BOARD_BACKGROUNDS: readonly BoardBackground[] = ['blank', 'grid', 'axes'];

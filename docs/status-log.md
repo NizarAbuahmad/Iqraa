@@ -125,6 +125,38 @@ unverified, as for the student's and the teacher's project screens (STATUS.md, �
 
 
 
+## Whiteboard: redo, four more pen colours, and a board from Today is filed under its lesson — 2026-11-21
+
+Follow-up to «The whiteboard has a card of its own…». Three things a teacher at the board meets.
+
+- **Redo.** `BoardState` gains `future` (`services/whiteboardModel.ts`): `undoBoard` pushes the strokes it
+  leaves onto it, `redoBoard` takes them back, and any commit that changes the board (a stroke, an erase, a
+  clear) empties it, so drawing after an undo discards what was undone. History is per page, as undo was, and
+  undo plus redo together stay within `HISTORY_LIMIT`. A saved board stores strokes only, so nothing in the file
+  changes. The toolbar has a Redo button beside Undo; a reopened board starts with no history either way.
+- **Pen colours.** The board offers seven: the three it had, in the same order, then blue `#2563EB`, green
+  `#15803D`, orange `#EA580C`, purple `#7C3AED` (`services/penColors.ts`, new and pure). The slide and book-page
+  pens stay at three. `penColors.test.ts` holds the board's set to at least 3:1 on the white paper and ΔE2000 10
+  between every pair, and round-trips a stroke in a new colour through save and reopen. `boardFile.ts` already
+  accepted any hex, so an older client opens a board drawn in the new colours.
+- **Filing.** A board opened from Today's quick tools or the Tools tab arrives with the lesson's `gradeIdx` and
+  `subjectIdx` and no names, and was saved with an empty grade and subject (the limit named in the previous
+  entry). `services/boardScope.ts` now resolves them to the picker names, the way the generator screens save;
+  the presentation's own names still win, an index the list cannot honour is absent (never index 0, which is
+  Mathematics), and a bare topic is filed under nothing, as before.
+
+Verified: `whiteboardModel.test.ts` (redo order, cleared by a new commit, redo of a clear and of an erase, the
+history bound, per page), `penColors.test.ts`, `boardScope.test.ts` (including a real lesson's positions and a
+chemistry lesson, which must not land on index 0), `boardFile` and `boardExportHtml` tests; mobile `pnpm test`
+(9,475 pass, 0 fail); `pnpm run typecheck`. In Chromium against a local API and Postgres, opening the board from
+Today's quick tools with a new teacher account: seven swatches; Redo disabled on a fresh board, enabled after two
+undos, and three strokes went to one and back to two; a stroke after an undo disabled Redo again; the saved
+row read subject «Mathematics», grade «Grade 10». The toolbar was looked at on desktop and at 390 px in Arabic.
+
+Not verified: touch input on a real phone or Android, and the keyboard (there is no Ctrl+Z / Ctrl+Y on the
+board; only the buttons). Known limits: undo and redo arrows are not mirrored in right-to-left, as undo never
+was; a board saved before this change keeps its empty grade and subject.
+
 ## Cost review: cached input tokens are recorded, and a hidden tab stops polling — 2026-11-20
 
 From a review of what the app costs to run (OpenAI about three quarters of it, by the app's own estimate:
@@ -161,6 +193,27 @@ the app state; both hooks call it), each seen failing first; `pnpm run typecheck
 size of the overstatement is unknown until the admin page has a few days of rows); the admin screen in a
 browser; the polling change in a browser tab or on a phone; any change in Neon's compute hours. No «ما الجديد»:
 nothing a teacher, student or parent sees changes.
+## A unit's theme reaches the model: the «Let's Explore!» quiz report — 2026-11-21
+
+A teacher reported a Grade 5 English quiz for «هيا نستكشف!» (artifact report, «الشرح والأسئلة لا يطابق محتوى الدرس»). The
+questions were about explorers, compasses and drivers. The unit is about **space** («Talking about space; using big
+numbers.», `general_idea_ar` in `iqra_curriculum_g5_english_sem1.json`).
+
+- **Root cause.** The unit's theme was never put in a prompt. `serializeLessonContext` (one lesson) and
+  `resolveScopeGrounding` (a unit / semester / book) carried the unit *title*, the lesson's grammar point and, in the
+  digest, only the first three vocabulary words («Sun; star; rocket»). A model given «Let's Explore!» and `will/won't`
+  reads «explore» in its everyday sense. Measured with a probe on the built context before the change; the digest
+  had no line containing «space».
+- **Fix.** `KBUnit.generalIdea` (from `makeNccdCatalog`, every NCCD-built book) is printed as «Unit theme (stay on it…)» /
+  «موضوع الوحدة…» by `unitThemeLine` in both builders, and the digest's concepts go from 3 to 8 words per lesson (the
+  digest's own tiering still drops detail before lessons if it runs over budget).
+- **Same hole elsewhere.** Every NCCD-built book with a printed unit theme and every model-bound generator, since all of
+  them ground through these two functions. Offline generators build from the lesson's own data and were not touched.
+- **Verified.** `unitTheme.test.ts` (new; unit digest and single lesson both say «space», no line when a book prints no
+  theme); full mobile suite 9453 pass / 0 fail; `pnpm run typecheck` clean.
+- **Not verified.** No live model run, so that a real paper now stays on space is expected, not observed. The pooled
+  artifact the teacher reported stays served until an admin approves the report (retiring it is a moderation action,
+  not part of this change), and other pooled papers made before this keep their old content.
 
 ## Grades 1–3: «مقارنة الأعداد» and «ترتيب الأعداد» ask their own skill — 2026-11-20
 
