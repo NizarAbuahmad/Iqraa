@@ -23,8 +23,8 @@ copy, and only then can send. Design: `docs/superpowers/specs/2026-11-20-teacher
   (eligible-teacher count and the last issue), `POST /admin/newsletter/test` (mails the admin one copy and stores
   the text), `POST /admin/newsletter/send`. The rules live in `lib/newsletter.ts`: who is eligible, a hash of the
   text, and the test-before-send decision.
-- **Tables** `newsletter_issues` and `newsletter_sends`, in two migrations: `0031_oval_mantis.sql` creates the
-  tables, and `0032_peaceful_malice.sql` makes an issue's text unique (`newsletter_issues_content_hash_unique`).
+- **Tables** `newsletter_issues` and `newsletter_sends`, in one migration, `0032_lumpy_sleeper.sql`: it creates
+  both tables and makes an issue's text unique (`newsletter_issues_content_hash_unique`).
   Row-level security is on and the app role gets no grant, so only `systemDb` reads them (listed in
   `systemDbFiles.test.ts`).
 - **Mail:** `sendBroadcast` now builds each recipient's own unsubscribe link, takes a teacher footer, and sets the
@@ -62,11 +62,14 @@ schedule: nothing is ever sent unless an admin presses send.
 **Verified** (by command, on 2026-11-20, on the author's machine against a local throwaway Postgres 16; nothing
 against production):
 
-- `lib/db` suite with `RLS_TEST_DATABASE_URL`: 76 pass, 0 fail, including «row-level security covers every table»
-  (at `0d520ed`, 2026-11-21, after applying `0032` locally with the migrate script).
-- API: `adminNewsletter.db.test.ts` 19 of 19 (five runs in a row, all green); the whole suite after `pnpm build`
-  with `TEST_DATABASE_URL` set: 3,614 pass, 0 fail, 0 skipped, at `0d520ed` (one issue per text, 2026-11-21). Mail
-  in these tests went only to a local stub (`test-support/resendStub.ts`).
+- Migrations: all 33 apply in order to a new empty local database with the migrate script, and `verify-schema`
+  finds every table, column and unique constraint (65 of 65 tables); `generate` reports no schema change. At
+  `95db0b6`, 2026-11-21, after merging main.
+- `lib/db` suite with `RLS_TEST_DATABASE_URL` on that database: 76 pass, 0 fail, including «row-level security
+  covers every table» (at `95db0b6`).
+- API: `adminNewsletter.db.test.ts` 19 of 19 (five runs in a row, all green, at `0d520ed`); the whole suite after
+  `pnpm build` with `TEST_DATABASE_URL` set: 3,618 pass, 0 fail, 0 skipped, at `95db0b6`. Mail in these tests went
+  only to a local stub (`test-support/resendStub.ts`).
 - Mobile `pnpm test` at the fix commit: 9,456 tests, 9,446 pass, 0 fail, 10 skipped.
 - `lib/curriculum`: `pnpm test` 931 pass, 0 fail; `pnpm run verify` 0 errors (3,369 lessons, 200 files).
 - `pnpm run typecheck` at the fix commit: exits 0.
