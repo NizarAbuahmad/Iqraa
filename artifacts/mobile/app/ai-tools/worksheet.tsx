@@ -38,7 +38,7 @@ import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Toast } from '@/components/ui/Toast';
 import { GenerationStatus } from '@/components/ui/GenerationStatus';
-import { aiErrorText, getLastGeneration, isAbortError } from '@/services/ai/aiProvenance';
+import { aiErrorText, isAbortError, provenanceOf, type AiGenerationRecord } from '@/services/ai/aiProvenance';
 import { CoverageNotice } from '@/components/ui/CoverageNotice';
 import { useWideScope } from '@/hooks/useWideScope';
 import { DISTRIBUTIONS, type CoverageLesson, type Distribution } from '@/services/coveragePlan';
@@ -139,6 +139,8 @@ type LevelEntry = {
   savedId?: string;
   /** Flat question positions the teacher has hand-edited on this level's paper. */
   editedFlatIndexes: Set<number>;
+  /** The call that made this level's paper: the three run at once, and one can fall back alone. */
+  record?: AiGenerationRecord | null;
 };
 
 export default function WorksheetScreen() {
@@ -253,6 +255,12 @@ export default function WorksheetScreen() {
   useAbortOnUnmount(abortRef);
   const [cancelled, setCancelled] = useState(false);
   const [result, setResult] = useState<WorksheetOutput | null>(null);
+  /**
+   * The record of the call that made the result on screen (`provenanceOf`), for
+   * the fallback notice: kept apart from `result`, which an edit replaces.
+   * Null for a reopened material.
+   */
+  const [resultRecord, setResultRecord] = useState<AiGenerationRecord | null>(null);
   /** null = not checked yet (or the check failed); [] onwards = per question. */
   const [outcomes, setOutcomes] = useState<(VerifyOutcome | undefined)[] | null>(null);
   /**
@@ -354,6 +362,7 @@ export default function WorksheetScreen() {
     if (params.savedId) {
       getItem(params.savedId).then(item => {
         if (item) {
+          setResultRecord(null);
           try { setResult(JSON.parse(item.content) as WorksheetOutput); } catch { /* noop */ }
           setFavorited(item.isFavorite);
         }
@@ -445,12 +454,13 @@ export default function WorksheetScreen() {
   const showLevel = (i: number) => {
     if (!levels || !result || i === diffIdx) return;
     const cur = LEVELS[diffIdx]!;
-    const next: Partial<Record<Level, LevelEntry>> = { ...levels, [cur]: { result, outcomes, savedId, editedFlatIndexes } };
+    const next: Partial<Record<Level, LevelEntry>> = { ...levels, [cur]: { result, outcomes, savedId, editedFlatIndexes, record: resultRecord } };
     const entry = next[LEVELS[i]!];
     if (!entry) return;
     setLevels(next);
     setDiffIdx(i);
     setResult(entry.result);
+    setResultRecord(entry.record ?? null);
     setSavedId(entry.savedId);
     setEditedFlatIndexes(entry.editedFlatIndexes);
     // null = never checked, or the check failed — ask again rather than show nothing.
@@ -481,7 +491,7 @@ export default function WorksheetScreen() {
     // badges, edits and levels, and the scope it was generated under. It
     // used to be cleared up front and never restored, so Cancel on a
     // regenerate threw away the unsaved paper the teacher was looking at.
-    const held = { result, outcomes, editedFlatIndexes, levels, savedId, generated, wideFrozen, coverageInfo };
+    const held = { result, outcomes, editedFlatIndexes, levels, savedId, generated, wideFrozen, coverageInfo, resultRecord };
     if (!topic.trim()) { setError(t('topicRequired')); return; }
     // A topic that grounds to another subject's lesson cannot make an honest
     // paper — the KB serves that lesson's own content while the header claims
@@ -550,7 +560,7 @@ export default function WorksheetScreen() {
         if (aborted) throw aborted.reason;
         const entries: Partial<Record<Level, LevelEntry>> = {};
         settled.forEach((s, i) => {
-          if (s.status === 'fulfilled') entries[LEVELS[i]!] = { result: s.value, outcomes: null, editedFlatIndexes: new Set<number>() };
+          if (s.status === 'fulfilled') entries[LEVELS[i]!] = { result: s.value, outcomes: null, editedFlatIndexes: new Set<number>(), record: provenanceOf(s.value) };
         });
         const first = LEVELS.find(d => entries[d]);
         if (!first) throw (settled[0] as PromiseRejectedResult).reason;
@@ -565,7 +575,8 @@ export default function WorksheetScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setGenerated(captureGenerationScope({ gradeIdx, subjectIdx, topic }, grounding));
       setWideFrozen(wide ? { sel: wideScope.scopeSel!, distribution: wideScope.distribution } : null);
-      setCoverageInfo(wide ? { lessons: wide.lessons, modelReported: getLastGeneration()?.source === 'live' } : null);
+      setCoverageInfo(wide ? { lessons: wide.lessons, modelReported: provenanceOf(out)?.source === 'live' } : null);
+      setResultRecord(provenanceOf(out));
       setResult(out);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
       verifyKeys(out);
@@ -581,6 +592,7 @@ export default function WorksheetScreen() {
       // notice describe the restored paper, not the one that never came.
       if (held.result) {
         setResult(held.result);
+        setResultRecord(held.resultRecord);
         setOutcomes(held.outcomes);
         setEditedFlatIndexes(held.editedFlatIndexes);
         setLevels(held.levels);
@@ -1021,7 +1033,7 @@ export default function WorksheetScreen() {
           to know it IS tied to the lesson as much as when it isn't. */}
       {/* Above everything else in the result: when it is the offline sample,
           the teacher reads that before reading the content. */}
-      {result && !loading && <AiFallbackNotice kinds={['worksheet', 'homework']} onRetry={() => generate()} isRTL={isRTL} />}
+      {result && !loading && <AiFallbackNotice kinds={['worksheet', 'homework']} records={[resultRecord]} onRetry={() => generate(levels ? { levels: true } : undefined)} isRTL={isRTL} />}
       {result && curriculumGrounded !== null && (
         <View style={{ marginHorizontal: 20 }}>
           <GroundingNotice

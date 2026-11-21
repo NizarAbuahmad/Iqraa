@@ -141,3 +141,33 @@ describe("discussion uses the teacher's question", () => {
     assert.match(p, /If the activity objective contains a question the teacher wrote/);
   });
 });
+
+// The offline discussion (activityBlueprints.ts) moved again on 2026-11-20 and
+// the live clause moves with it: only a question of opinion or choice becomes
+// the open discussion, a length written inside a step agrees with that step's
+// minutes, and Grades 2–6 get plain wording.
+describe("activity prompts stay in step with the offline discussion", () => {
+  const discussion = { ...baseBody, activityType: "discussion" };
+
+  it("only a question of opinion or choice becomes the open discussion", () => {
+    assert.match(activityPromptAr(discussion), /سؤال رأي أو اختيار/);
+    assert.match(activityPromptEn(discussion), /asks for an opinion or a choice/);
+  });
+
+  it("no fixed two-minute think step that can contradict the step's minutes", () => {
+    assert.doesNotMatch(activityPromptAr(discussion), /دقيقتَي تفكير/);
+    assert.doesNotMatch(activityPromptEn(discussion), /two minutes of silent/i);
+  });
+
+  for (const type of FORMATS) {
+    it(`${type}: a length written in a step must match its durationMin`, () => {
+      assert.match(activityPromptAr({ ...baseBody, activityType: type }), /كل مدة تذكرها داخل وصف خطوة/);
+      assert.match(activityPromptEn({ ...baseBody, activityType: type }), /Any length you write inside a step/);
+    });
+  }
+
+  it("Grades 2–6 get plain wording for the claim and the close", () => {
+    assert.match(activityPromptAr(discussion), /من الثاني إلى السادس/);
+    assert.match(activityPromptEn(discussion), /Grades 2 to 6/);
+  });
+});
