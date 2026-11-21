@@ -27,7 +27,7 @@ test('pregenerate plans a worksheet and a lesson plan per lesson, in the default
     const b = c.body as Record<string, unknown>;
     assert.equal(b.contextSource, 'curriculum', c.lesson);
     assert.equal(b.language, 'arabic');
-    assert.equal(b.subject, 'Mathematics');
+    assert.ok(['Mathematics', 'Chemistry'].includes(b.subject as string), `${c.lesson}: ${String(b.subject)}`);
     assert.equal(b.grade, 'الصف العاشر');
     assert.ok(b.lessonId, `no lessonId for ${c.lesson}`);
     assert.ok(b.additionalContext, `no curriculum context for ${c.lesson}`);
@@ -41,6 +41,21 @@ test('pregenerate plans a worksheet and a lesson plan per lesson, in the default
       assert.equal(b.teachingStyle, 'direct');
     }
   }
+});
+
+// Chemistry teachers open the same default forms. The pool only hits for a body that
+// matches, so a subject missing here is a subject whose first teacher still waits and pays.
+test('pregenerate plans chemistry worksheets and lesson plans as well as maths', () => {
+  const calls = plannedCalls();
+  for (const subject of ['Mathematics', 'Chemistry']) {
+    for (const kind of ['worksheet', 'lesson-plan'] as const) {
+      const n = calls.filter(c => c.kind === kind && (c.body as Record<string, unknown>).subject === subject).length;
+      assert.ok(n >= 10, `expected ${subject} ${kind} calls, got ${n}`);
+    }
+  }
+  // One of each per lesson id: a lesson planned twice is a call paid for twice.
+  const ids = calls.map(c => `${c.kind}:${(c.body as Record<string, unknown>).lessonId}`);
+  assert.equal(new Set(ids).size, ids.length);
 });
 
 import { getLessonById as getBrowserLessonById } from '../curriculumData.ts';

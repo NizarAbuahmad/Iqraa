@@ -65,6 +65,142 @@ Verified: typecheck; mobile and api-server tests (counts in the PR).
 live call fell back («OpenAI credit ran out; the app-wide AI cap is now $100», below). The 45 s client timeout was
 not the cause.
 
+## `earlyMathDifficulty.test.ts` draws the same papers on every run — 2026-11-21
+
+**Why.** The mobile suite failed once on CI (and once on a first local run, not captured) on a change that did not
+touch it: «Grade 2 … most lessons are clearly harder at «صعب», with «متوسط» between», the lesson «السنتيمتر» in the
+out-of-order list. The test draws 12 random five-question papers per lesson and checks means against fixed bounds
+(medium within 5% of the range between easy and hard), with `Math.random` unseeded, so a lesson with little spread
+lands outside them on an unlucky draw.
+
+**Measured.** The same test with 84 different seeds: **1 failed (seed 51), with the same lesson and the same
+assertion as CI**, and 83 passed. So about one run in eighty fails, on code that has not changed.
+
+**Changed.** The file seeds `Math.random` (mulberry32, the generator `classroomWideScope.test.ts` already uses) while
+its suites are defined, which is where the papers are drawn, and restores it afterwards. `SEED` is fixed at
+`0x2f6e2b1`. Nothing else in the test or in the generators changed.
+
+**Verified.** The same seed run twice gives an identical fingerprint of every mean drawn (the seeding really covers
+the draws); seed 51 fails both times it is run, so the failure is now reproducible rather than occasional; the
+committed seed passes (8 of 8); `pnpm run typecheck`.
+
+**Not verified / the catch.** A seed is one fixed set of draws, not a statement about every draw: the lesson that
+failed sits close to a bound, and a change to a Grade 1–4 generator can move another one across it. That now shows as a
+failure to read (the message names the lesson), not as a flake. Do not respond by changing `SEED` until it passes. The
+bounds were set from unseeded runs and were not revisited.
+
+## Pool prefill: Grade 10 chemistry worksheets and lesson plans — 2026-11-21
+
+`artifacts/mobile/scripts/pregenerate.ts` filled the shared pool with default-form worksheets and lesson plans
+for Grade 10 **maths** only; chemistry had student explanations and nothing else, so a chemistry teacher's first
+request for a lesson always paid for a model call. The script now plans both for Grade 10 chemistry too: one
+`SCOPES` list (maths, chemistry) feeds the worksheet, lesson-plan and lesson-teaching plans. A dry run reads
+**153 calls** (51 worksheets, 51 lesson plans, 51 explanations; it was 119), worst case $7.65 at the script's
+$0.05-a-call estimate. A call the pool already holds answers fast and is not counted, so a re-run costs only the new
+lessons.
+
+**Verified:** `pregenerate.test.ts` — the new test failed first («expected Chemistry worksheet calls, got 0»), then
+passed; it also pins one call per lesson id, and the existing default-form test now accepts both subjects. The
+screens' defaults (normal → `easy`, 10 questions, multiple choice + short answer, 45 minutes, direct) were read in
+`worksheet.tsx` and `lesson-plan.tsx`, not run. `pnpm run typecheck`.
+
+**Not verified:** a live run (none was made; it needs a login and spends money — command in the PR), that a
+teacher's chemistry request then hits the pool, or the quality of the stored chemistry worksheets: they are served to
+every teacher who asks, and nobody has read them. The per-account allowance (`AI_USER_BUDGET_USD`, reset to `1` by
+every API deploy) is what actually stops a run, about 100 calls at roughly $0.01 each is on the edge of it; give the
+dedicated account its own limit on the admin Users screen first. The model is part of the pool key: run this after
+deciding `AI_MODEL_DOCUMENTS`, or the copies are orphaned. No «ما الجديد»: nothing a user sees changes.
+
+## Whiteboard: redo, four more pen colours, and a board from Today is filed under its lesson — 2026-11-21
+
+Follow-up to «The whiteboard has a card of its own…». Three things a teacher at the board meets.
+
+- **Redo.** `BoardState` gains `future` (`services/whiteboardModel.ts`): `undoBoard` pushes the strokes it
+  leaves onto it, `redoBoard` takes them back, and any commit that changes the board (a stroke, an erase, a
+  clear) empties it, so drawing after an undo discards what was undone. History is per page, as undo was, and
+  undo plus redo together stay within `HISTORY_LIMIT`. A saved board stores strokes only, so nothing in the file
+  changes. The toolbar has a Redo button beside Undo; a reopened board starts with no history either way.
+- **Pen colours.** The board offers seven: the three it had, in the same order, then blue `#2563EB`, green
+  `#15803D`, orange `#EA580C`, purple `#7C3AED` (`services/penColors.ts`, new and pure). The slide and book-page
+  pens stay at three. `penColors.test.ts` holds the board's set to at least 3:1 on the white paper and ΔE2000 10
+  between every pair, and round-trips a stroke in a new colour through save and reopen. `boardFile.ts` already
+  accepted any hex, so an older client opens a board drawn in the new colours.
+- **Filing.** A board opened from Today's quick tools or the Tools tab arrives with the lesson's `gradeIdx` and
+  `subjectIdx` and no names, and was saved with an empty grade and subject (the limit named in the previous
+  entry). `services/boardScope.ts` now resolves them to the picker names, the way the generator screens save;
+  the presentation's own names still win, an index the list cannot honour is absent (never index 0, which is
+  Mathematics), and a bare topic is filed under nothing, as before.
+
+Verified: `whiteboardModel.test.ts` (redo order, cleared by a new commit, redo of a clear and of an erase, the
+history bound, per page), `penColors.test.ts`, `boardScope.test.ts` (including a real lesson's positions and a
+chemistry lesson, which must not land on index 0), `boardFile` and `boardExportHtml` tests; mobile `pnpm test`
+(9,475 pass, 0 fail); `pnpm run typecheck`. In Chromium against a local API and Postgres, opening the board from
+Today's quick tools with a new teacher account: seven swatches; Redo disabled on a fresh board, enabled after two
+undos, and three strokes went to one and back to two; a stroke after an undo disabled Redo again; the saved
+row read subject «Mathematics», grade «Grade 10». The toolbar was looked at on desktop and at 390 px in Arabic.
+
+Not verified: touch input on a real phone or Android, and the keyboard (there is no Ctrl+Z / Ctrl+Y on the
+board; only the buttons). Known limits: undo and redo arrows are not mirrored in right-to-left, as undo never
+was; a board saved before this change keeps its empty grade and subject.
+
+## Cost review: cached input tokens are recorded, and a hidden tab stops polling — 2026-11-20
+
+From a review of what the app costs to run (OpenAI about three quarters of it, by the app's own estimate:
+$48.66 by 2026-11-20; Cloud Run and Neon about $10 each, both estimates). Two small changes, neither of which
+changes what a model is asked or what it answers.
+
+- **Cached input tokens are recorded.** OpenAI serves a repeated prompt prefix from its own cache and bills it
+  below the input rate; chat sends up to 24,000 characters of book text on every turn, so later turns of a
+  conversation are likely mostly cached. The ledger priced and stored every input token alike. New column
+  `ai_generations.cached_prompt_tokens` (migration `0031`, additive, default 0), filled by `recordUsage` from
+  `usage.prompt_tokens_details.cached_tokens` (`cachedPromptTokensOf`, `lib/aiBudget.ts`); `GET /admin/ai-costs`
+  returns the sum in `totals` and `byModel`, and the admin AI costs screen shows it as a count and a share of
+  input. **The cost estimate and the caps are unchanged**: they still bill every input token at the full rate,
+  because no cached-input rate was read from the provider's price list (the pricing pages are not reachable
+  from a cloud session). To price them, add a cached rate per model to `PRICING_PER_MILLION_USD` once it has
+  been read there. Claude calls report none (that path sets no cache breakpoints).
+- **A timer skips its turn when the app is not in front.** `usePollingRefresh` (the unread badge in the tab
+  layout, notifications, a message thread, settings, the guardian waiting screen) kept fetching every 10-20 s
+  in a browser tab behind another one, for as long as the tab stayed open, which also keeps Neon from scaling
+  to zero. It now asks `isInFront` (`services/foreground.ts`, shared with the usage heartbeat, which already
+  had the rule inline). Coming back to the tab or the app still loads at once, as before.
+
+**Looked at and not done:** dropping the fields prompts ask the model to echo (`grade`, `subject`, `duration`…),
+listed as outstanding in `docs/ai-cost-savings-plan.md`. Counted in the prompts, it is three to six short
+fields, some 20-40 output tokens of a 1,300+ token artifact (about $0.0001 a call), and a prompt edit changes
+the prompt version, which empties the shared pool for those kinds. It would cost more than it saves.
+
+**Verified:** `aiBudget.test.ts` (the cached count is read, clamped to the prompt, zero when absent or bad, and
+written while the cost line still prices every input token), `foreground.test.ts` (web follows the tab, a phone
+the app state; both hooks call it), each seen failing first; `pnpm run typecheck`; api-server `pnpm build` and
+`pnpm test`; mobile `pnpm test`.
+
+**Not verified:** a live completion (no model call was made, so no real `cached_tokens` value was seen, and the
+size of the overstatement is unknown until the admin page has a few days of rows); the admin screen in a
+browser; the polling change in a browser tab or on a phone; any change in Neon's compute hours. No «ما الجديد»:
+nothing a teacher, student or parent sees changes.
+## A unit's theme reaches the model: the «Let's Explore!» quiz report — 2026-11-21
+
+A teacher reported a Grade 5 English quiz for «هيا نستكشف!» (artifact report, «الشرح والأسئلة لا يطابق محتوى الدرس»). The
+questions were about explorers, compasses and drivers. The unit is about **space** («Talking about space; using big
+numbers.», `general_idea_ar` in `iqra_curriculum_g5_english_sem1.json`).
+
+- **Root cause.** The unit's theme was never put in a prompt. `serializeLessonContext` (one lesson) and
+  `resolveScopeGrounding` (a unit / semester / book) carried the unit *title*, the lesson's grammar point and, in the
+  digest, only the first three vocabulary words («Sun; star; rocket»). A model given «Let's Explore!» and `will/won't`
+  reads «explore» in its everyday sense. Measured with a probe on the built context before the change; the digest
+  had no line containing «space».
+- **Fix.** `KBUnit.generalIdea` (from `makeNccdCatalog`, every NCCD-built book) is printed as «Unit theme (stay on it…)» /
+  «موضوع الوحدة…» by `unitThemeLine` in both builders, and the digest's concepts go from 3 to 8 words per lesson (the
+  digest's own tiering still drops detail before lessons if it runs over budget).
+- **Same hole elsewhere.** Every NCCD-built book with a printed unit theme and every model-bound generator, since all of
+  them ground through these two functions. Offline generators build from the lesson's own data and were not touched.
+- **Verified.** `unitTheme.test.ts` (new; unit digest and single lesson both say «space», no line when a book prints no
+  theme); full mobile suite 9453 pass / 0 fail; `pnpm run typecheck` clean.
+- **Not verified.** No live model run, so that a real paper now stays on space is expected, not observed. The pooled
+  artifact the teacher reported stays served until an admin approves the report (retiring it is a moderation action,
+  not part of this change), and other pooled papers made before this keep their old content.
+
 ## Grades 1–3: «مقارنة الأعداد» and «ترتيب الأعداد» ask their own skill — 2026-11-20
 
 The Grade 3 review found the two lessons drew the same mix: both titles routed to the one `compare` op in

@@ -8,6 +8,15 @@
  * hard, and 8 were harder at easy. `earlyDifficulty.ts` now keeps one of several
  * draws by difficulty. Measured here by `difficultyLoad` (the largest number,
  * then the words to read) over whole five-question papers, the way a quiz draws.
+ *
+ * The papers are random draws, and the assertions are statistical (a mean over 12
+ * papers, medium between easy and hard within 5%), so on an unseeded run a lesson
+ * with little spread sometimes lands outside them: «السنتيمتر» failed a CI run that
+ * passed on the same code a minute before. `Math.random` is therefore seeded for the
+ * sweep below, so the papers, and the verdict, are the same on every run. A seed is
+ * a fixed set of draws, not a guarantee about every draw: a change to a generator
+ * that moves a lesson across a bound shows here as a failure to look at, and moving
+ * `SEED` to find a passing one hides it, so read the failing lesson first.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,6 +26,18 @@ import { KB_LESSONS, getBookForLesson } from '../knowledgeBase.ts';
 
 type Lesson = (typeof KB_LESSONS)[number];
 const PAPERS = 12;
+const SEED = 0x2f6e2b1;
+
+/** mulberry32, the same generator `classroomWideScope.test.ts` seeds with. */
+function seeded(seed: number): () => number {
+  let a = seed | 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 function meanLoad(lesson: Lesson, grade: number, diff: 'easy' | 'medium' | 'hard'): number {
   let sum = 0, n = 0;
@@ -37,6 +58,11 @@ function meanLoad(lesson: Lesson, grade: number, diff: 'easy' | 'medium' | 'hard
  * of 10, half past, a shape's sides, solids, the days, before and after noon).
  */
 const MIN_CLEAR: Record<number, number> = { 1: 48, 2: 50, 3: 60, 4: 44 };
+
+// The papers are drawn while the suites are defined (the `rows` below), never inside an
+// `it`, so seeding here and restoring after the loop covers every draw and nothing else.
+const realRandom = Math.random;
+Math.random = seeded(SEED);
 
 for (const grade of [1, 2, 3, 4]) {
   describe(`Grade ${grade} maths difficulty, offline`, () => {
@@ -59,3 +85,5 @@ for (const grade of [1, 2, 3, 4]) {
     });
   });
 }
+
+Math.random = realRandom;
