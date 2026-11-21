@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## `earlyMathDifficulty.test.ts` draws the same papers on every run — 2026-11-21
+
+**Why.** The mobile suite failed once on CI (and once on a first local run, not captured) on a change that did not
+touch it: «Grade 2 … most lessons are clearly harder at «صعب», with «متوسط» between», the lesson «السنتيمتر» in the
+out-of-order list. The test draws 12 random five-question papers per lesson and checks means against fixed bounds
+(medium within 5% of the range between easy and hard), with `Math.random` unseeded, so a lesson with little spread
+lands outside them on an unlucky draw.
+
+**Measured.** The same test with 84 different seeds: **1 failed (seed 51), with the same lesson and the same
+assertion as CI**, and 83 passed. So about one run in eighty fails, on code that has not changed.
+
+**Changed.** The file seeds `Math.random` (mulberry32, the generator `classroomWideScope.test.ts` already uses) while
+its suites are defined, which is where the papers are drawn, and restores it afterwards. `SEED` is fixed at
+`0x2f6e2b1`. Nothing else in the test or in the generators changed.
+
+**Verified.** The same seed run twice gives an identical fingerprint of every mean drawn (the seeding really covers
+the draws); seed 51 fails both times it is run, so the failure is now reproducible rather than occasional; the
+committed seed passes (8 of 8); `pnpm run typecheck`.
+
+**Not verified / the catch.** A seed is one fixed set of draws, not a statement about every draw: the lesson that
+failed sits close to a bound, and a change to a Grade 1–4 generator can move another one across it. That now shows as a
+failure to read (the message names the lesson), not as a flake. Do not respond by changing `SEED` until it passes. The
+bounds were set from unseeded runs and were not revisited.
+
 ## Pool prefill: Grade 10 chemistry worksheets and lesson plans — 2026-11-21
 
 `artifacts/mobile/scripts/pregenerate.ts` filled the shared pool with default-form worksheets and lesson plans
