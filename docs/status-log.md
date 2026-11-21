@@ -60,6 +60,29 @@ build + test (3021) and the mobile suite (9496, 0 failing) pass.
 see none of this in production yet: book items reach a paper only on the mock path or with
 `BOOK_ITEMS_LIVE=true`, which is off.
 
+## The quiz request tells the API when no lesson grounds the topic — 2026-11-21
+
+Found while moving the quiz request into `buildQuizRequest` («Pool prefill: a default-form quiz per Grade 10 lesson»):
+the quiz screen built its body from four of `groundingRequestFields`' five fields and dropped `grounding: 'none'`, so
+it never sent the marker that «The API no longer attaches a book to a topic the app found no lesson for» (2026-11-20)
+gave every other generator. A quiz for a topic no lesson in the picked grade and subject covers (a free topic from
+chat, a title only another grade has) could therefore still get another lesson's book pages from the API, which
+matches the title across the whole catalog when the request carries no unit.
+
+**Changed.** `buildQuizRequest` now passes `grounding: 'none'` through when the lesson grounding says no lesson grounds
+the topic, and only then. A grounded body is exactly what it was, so **every pooled quiz key, and every quiz the prefill
+plans, is unchanged**; the requests that change are the ungrounded ones, whose prompt loses the wrong book pages (their
+pool key moves with it: the server keys on the body after grounding). A wide scope (unit, semester, book) still takes
+its `grounding` from `scopeRequestFields`, spread over the builder last.
+
+**Verified.** `generatorRequests.test.ts`: the quiz joined the existing «every builder adds it when ungrounded, and only
+then» test, which failed first (the quiz returned no marker for the free topic and, in the same test, a grounded quiz
+gains no field), and a wide scope (null grounding) sets none itself. Related suites (`pregenerate`, `generatorScreens`) and
+`pnpm run typecheck`; mobile `pnpm test`.
+
+**Not verified.** A live quiz for a free topic (the API side was not exercised: it is the 2026-11-20 change, whose own
+note says no model call was made), and the quiz screen in a browser.
+
 ## Pool prefill: a default-form quiz per Grade 10 lesson — 2026-11-21
 
 `scripts/pregenerate.ts` now plans a quiz for every Grade 10 maths and chemistry lesson beside the worksheet and the
@@ -89,7 +112,7 @@ key a run falls back to OpenAI and fills the pool under that model's key, where 
 live run of the quiz prefill; that a teacher's default quiz then hits the pool; the quality of the stored quizzes
 (each is served to every teacher who asks, answer key included: read a few after a run).
 
-**Found, left alone.** `groundingRequestFields` can add `grounding: 'none'` (no lesson grounds the topic: the API then
+**Found, left alone (fixed the same day: «The quiz request tells the API when no lesson grounds the topic»).** `groundingRequestFields` can add `grounding: 'none'` (no lesson grounds the topic: the API then
 must not attach a book by title). The quiz screen never sent it: it copies four of the helper's fields and drops that
 one, so a quiz for a topic no lesson covers can still get another lesson's book pages from the API. The builder keeps
 that behaviour, since the refactor was not meant to change a request. A one-line fix would add `...noLessonField(...)`

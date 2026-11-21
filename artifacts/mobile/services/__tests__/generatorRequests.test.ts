@@ -125,6 +125,10 @@ describe('a request no lesson grounds tells the API so', () => {
       ['lesson plan', g => buildLessonPlanRequest(planForm, g)],
       ['worksheet', g => buildWorksheetRequest(worksheetForm, g)],
       ['lesson teaching', g => buildLessonTeachingRequest({ gradeName: 'الصف العاشر', subjectName: 'Mathematics', topic: form.topic, lang: 'ar' }, g)],
+      ['quiz', g => buildQuizRequest({
+        gradeName: 'الصف العاشر', subjectName: 'Mathematics', topic: form.topic, lang: 'ar' as const, duration: 20, totalMarks: 20,
+        questionTypes: ['multiple_choice'], numQuestions: 10, difficulty: 'easy',
+      }, g)],
       ['groundingRequestFields', g => groundingRequestFields(g)],
     ];
     for (const [name, build] of builders) {
@@ -195,6 +199,8 @@ describe('buildQuizRequest', () => {
 
   it('sends no lesson fields at all for a wide scope (null grounding): the scope\'s own fields replace them', () => {
     const req = buildQuizRequest(quizForm, null);
+    // `scopeRequestFields` decides `grounding` for a wide scope; the lesson path must not guess it here.
+    assert.ok(!('grounding' in req) || req.grounding === undefined);
     assert.equal(req.lessonId, undefined);
     assert.equal(req.unitId, undefined);
     assert.equal(req.additionalContext, undefined);
