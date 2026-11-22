@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { plainTitle } from '@workspace/curriculum';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -130,7 +131,7 @@ export default function LessonDetailScreen() {
       <View style={[styles.hero, { backgroundColor: colorFill, paddingTop: insets.top + 12 }]}>
         <BackButton color="#fff" style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={[styles.heroTitle, { color: '#fff', fontFamily: 'ReadexPro_700Bold', textAlign: isRTL ? 'right' : 'left' }]}>
-          {lessonTitle}
+          {plainTitle(lessonTitle)}
         </Text>
         <View style={[styles.heroMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {showTitleOnly ? (

@@ -11,6 +11,7 @@
  * means "now".
  */
 import React, { useCallback, useRef, useState } from 'react';
+import { plainTitle } from '@workspace/curriculum';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -149,7 +150,7 @@ export function PhoneToday() {
               </Text>
             </View>
 
-            <Text style={[s.lessonTitle, { textAlign: align }]}>{topic || t('homeNoLesson')}</Text>
+            <Text style={[s.lessonTitle, { textAlign: align }]}>{plainTitle(topic) || t('homeNoLesson')}</Text>
             {!topic ? (
               <Text style={[s.hint, { color: ON_NAVY_MUTED, textAlign: align }]}>{t('homeNoLessonHint')}</Text>
             ) : null}
