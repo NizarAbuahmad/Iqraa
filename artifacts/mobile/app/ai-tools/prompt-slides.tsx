@@ -32,6 +32,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { SPACE } from '@/constants/theme';
 import { useLanguage } from '@/context/LanguageContext';
 import { contentLang } from '@/services/contentLanguage';
 import { useAuth } from '@/context/AuthContext';
@@ -76,6 +78,9 @@ export default function PromptSlidesScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang: uiLang } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
+  // Where the result starts (an empty marker above it), so a new one opens at its top.
+  const resultY = useRef(0);
+  const reduceMotion = useReduceMotion();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const { user } = useAuth();
@@ -304,7 +309,8 @@ export default function PromptSlidesScreen() {
       setBuiltFrom(form);
       setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+      // Open the result at its top, never at its end.
+      setTimeout(() => scrollRef.current?.scrollTo({ y: Math.max(0, resultY.current - SPACE.lg), animated: !reduceMotion }), 200);
 
       // Photos and video arrive afterwards, exactly as the older Slides Maker
       // does it: never blocking the deck. They come back as a patch keyed by
@@ -597,6 +603,7 @@ export default function PromptSlidesScreen() {
           </View>
         )}
 
+        <View onLayout={e => { resultY.current = e.nativeEvent.layout.y; }} />
         {deck && !loading && (
           <View style={{ marginHorizontal: 20 }}>
             <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>

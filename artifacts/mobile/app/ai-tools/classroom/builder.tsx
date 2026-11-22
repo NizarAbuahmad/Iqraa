@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { SPACE } from '@/constants/theme';
 import { useLanguage } from '@/context/LanguageContext';
 import { getT } from '@/services/i18n';
 import { contentLang } from '@/services/contentLanguage';
@@ -53,6 +55,9 @@ export default function ClassroomBuilderScreen() {
   // Header reflects the card the teacher picked (falls back to escape-challenge).
   const selectedCard = ACTIVITY_CARDS.find(c => c.id === resolveActivityType(params));
   const scrollRef = useRef<ScrollView>(null);
+  // Where the result starts (an empty marker above it), so a new one opens at its top.
+  const resultY = useRef(0);
+  const reduceMotion = useReduceMotion();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const grades = getPickerGrades();
@@ -175,7 +180,8 @@ export default function ClassroomBuilderScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setOutLang(lang);
       setResult(out);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+      // Open the result at its top, never at its end.
+      setTimeout(() => scrollRef.current?.scrollTo({ y: Math.max(0, resultY.current - SPACE.lg), animated: !reduceMotion }), 200);
     } catch (e) {
       // A cancel is the teacher's own doing, so it is reported as a stop, not
       // as a failure to diagnose or retry out of.
@@ -342,6 +348,7 @@ export default function ClassroomBuilderScreen() {
         t={t}
       />
 
+      <View onLayout={e => { resultY.current = e.nativeEvent.layout.y; }} />
       {/* Preview */}
       {result && !loading && (
         <View style={{ marginHorizontal: 20, marginBottom: 20 }}>

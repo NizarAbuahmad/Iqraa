@@ -633,7 +633,8 @@ export default function SlidesScreen() {
         setDeck(prelim);
         setPreliminary(true);
         setVerifyDone(false);
-        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+        // Open the result at its top (the status anchor sits right above it), never at its end.
+        setTimeout(() => scrollRef.current?.scrollTo({ y: Math.max(0, statusY.current - SPACE.lg), animated: !reduceMotion }), 200);
       }
 
       // The plan supplies only the connective tissue. If it fails we still have
@@ -797,7 +798,8 @@ export default function SlidesScreen() {
       // generated.
       if (!lessonPlan && aiErrorMessageKey(planError) === 'aiQuotaSpent') setError(t('slidesBookOnlyQuota'));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+      // Open the result at its top (the status anchor sits right above it), never at its end.
+      setTimeout(() => scrollRef.current?.scrollTo({ y: Math.max(0, statusY.current - SPACE.lg), animated: !reduceMotion }), 200);
 
       // Verify the worked examples' answers after the deck is on screen —
       // never blocks generation. Outcomes are matched back by slide object

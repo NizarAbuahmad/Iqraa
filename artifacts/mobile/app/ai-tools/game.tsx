@@ -20,6 +20,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { SPACE } from '@/constants/theme';
 import { useLanguage } from '@/context/LanguageContext';
 import { contentLang, topicInLang } from '@/services/contentLanguage';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
@@ -69,6 +71,9 @@ export default function ClassGameScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang: uiLang } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
+  // Where the result starts (an empty marker above it), so a new one opens at its top.
+  const resultY = useRef(0);
+  const reduceMotion = useReduceMotion();
   const topPad = insets.top + (insets.top === 0 ? 16 : 0);
 
   const grades = getPickerGrades();
@@ -271,7 +276,8 @@ export default function ClassGameScreen() {
 
       setDeck(built);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+      // Open the result at its top, never at its end.
+      setTimeout(() => scrollRef.current?.scrollTo({ y: Math.max(0, resultY.current - SPACE.lg), animated: !reduceMotion }), 200);
     } catch (e) {
       // A cancel is the teacher's own action, not a failure to report.
       if (isAbortError(e)) setCancelled(true);
@@ -484,6 +490,7 @@ export default function ClassGameScreen() {
           </View>
         )}
 
+        <View onLayout={e => { resultY.current = e.nativeEvent.layout.y; }} />
         {deck && !loading && (
           <View style={{ marginHorizontal: 20 }}>
             <View style={{ marginBottom: 12 }}>

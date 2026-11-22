@@ -567,7 +567,8 @@ export default function WorksheetScreen() {
       setWideFrozen(wide ? { sel: wideScope.scopeSel!, distribution: wideScope.distribution } : null);
       setCoverageInfo(wide ? { lessons: wide.lessons, modelReported: getLastGeneration()?.source === 'live' } : null);
       setResult(out);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+      // Open the result at its top (the status anchor sits right above it), never at its end.
+      setTimeout(() => scrollRef.current?.scrollTo({ y: Math.max(0, statusY.current - SPACE.lg), animated: !reduceMotion }), 200);
       verifyKeys(out);
     } catch (e) {
       // A cancel is the teacher's own doing, so it is reported as a stop, not

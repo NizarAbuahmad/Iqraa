@@ -10,6 +10,25 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A generated result opens at its top, not its end — 2026-11-22
+
+**Reported:** «When the results like worksheet and study plan results show it show from the end of the page the
+results need to appear from the start of the page».
+
+**Cause.** Every generator screen ran `scrollRef.current?.scrollToEnd()` 200 ms after setting its result, so a long
+worksheet or lesson plan put the teacher on its last line. Nine call sites in eight screens: worksheet/homework,
+lesson plan, quiz, activity, slides (preliminary deck and final deck), game, classroom builder, prompt slides.
+
+**Fix.** They scroll to the top of the result instead, `SPACE.lg` above it, unanimated under reduced motion. The five
+ported generator screens already had an anchor (`statusY`: the wrapper around `GenerationStatus`, a direct child of
+the `ScrollView` sitting right above the result) and reuse it. Game, classroom builder and prompt slides get an empty
+`<View onLayout>` marker (`resultY`) directly above the result block. Left alone on purpose: prompt slides' step that
+shows its clarifying questions (they are part of the form, not a result), and lesson flow, which follows a stream as
+it arrives. `services/__tests__/resultScroll.test.ts` reads the eight screens and fails a `scrollToEnd` in them.
+
+**Verified:** typecheck; the mobile suite. **Not verified:** in a browser or on a phone — the test reads source, so the
+exact landing position (the anchor's `layout.y` once the result has rendered) was not watched on a real screen.
+
 ## A 1.6.0 production build sent to Google Play for review — 2026-11-21
 
 After the chat fix (#1527) merged, the owner asked for a 1.6.0 production build and for it to go to Play for review.
