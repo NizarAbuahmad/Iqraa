@@ -44,7 +44,7 @@ const T: Record<string, string> = {
 
 const LESSON_PARAMS = { topic: 'تركيب الاقترانات', gradeIdx: '0', subjectIdx: '1' };
 
-function build(lessonTopic?: string | null) {
+function build(lessonTopic?: string | null, chatEnabled = true) {
   return buildCommands({
     lang: 'ar',
     nav: NAV,
@@ -52,6 +52,7 @@ function build(lessonTopic?: string | null) {
     lessonParams: lessonTopic ? LESSON_PARAMS : undefined,
     t: k => T[k] ?? k,
     workflow: WORKFLOW,
+    chatEnabled,
   });
 }
 
@@ -63,6 +64,12 @@ describe('buildCommands', () => {
       'lesson:start-class',
       'lesson:change',
     ]);
+  });
+
+  it('does not offer «اسأل إقرأ» while the chat is off', () => {
+    const cmds = build('تركيب الاقترانات', false);
+    assert.deepEqual(cmds.slice(0, 2).map(c => c.id), ['lesson:start-class', 'lesson:change']);
+    assert.ok(!cmds.some(c => c.action === 'ask-iqra'));
   });
 
   it('drops the lesson-scoped actions when nothing is picked', () => {

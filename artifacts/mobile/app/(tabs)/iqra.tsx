@@ -132,7 +132,7 @@ import { CurrentLessonCard } from '@/components/ui/CurrentLessonCard';
 import { subjectChipColor } from '@/services/subjectTheme';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { DocumentAttachmentBar } from '@/components/ui/DocumentAttachmentBar';
-import { DOCUMENT_UPLOAD_ENABLED } from '@/services/features';
+import { DOCUMENT_UPLOAD_ENABLED, IQRA_CHAT_ENABLED } from '@/services/features';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { ComposerToolsMenu, type MenuAction, type MenuSection } from '@/components/ui/ComposerToolsMenu';
 import {
@@ -723,13 +723,16 @@ function ContextBanner({
                 },
               ]}
             >
-              <Ionicons name="chatbubble-ellipses-outline" size={20} color={draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground} />
+              {/* With the chat off the pick goes nowhere near it, so neither the icon nor the English says chat. */}
+              <Ionicons name={IQRA_CHAT_ENABLED ? 'chatbubble-ellipses-outline' : 'checkmark-outline'} size={20} color={draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground} />
               <Text style={[ctxStyles.askBtnText, {
                 color: draftTopic.trim() ? colors.primaryForeground : colors.mutedForeground,
                 fontFamily: 'ReadexPro_700Bold',
               }]}>
                 {draftTopic.trim()
-                  ? (lang === 'ar' ? `ابدأ التحضير: ${draftTopic}` : `Ask Iqrra about: ${draftTopic}`)
+                  ? (lang === 'ar'
+                    ? `ابدأ التحضير: ${draftTopic}`
+                    : IQRA_CHAT_ENABLED ? `Ask Iqrra about: ${draftTopic}` : `Start preparing: ${draftTopic}`)
                   : (lang === 'ar' ? 'اختر الدرس أولاً' : 'Select a lesson first')}
               </Text>
             </Pressable>
@@ -1425,6 +1428,73 @@ function MessageBubble({
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 export default function IqraScreen() {
+  // A build-time constant, so the same component renders for the life of the app.
+  return IQRA_CHAT_ENABLED ? <IqraChatScreen /> : <LessonPickerOnlyScreen />;
+}
+
+/**
+ * What `/iqra` is while the chat is off (`IQRA_CHAT_ENABLED` in
+ * services/features.ts): the change-lesson sheet and nothing else. The lesson
+ * bar, Today and ⌘K still open it here with `openLessonPicker`, so switching
+ * lessons keeps working; once the sheet closes, picked or dismissed, the
+ * teacher goes back where they came from (`returnTo`, else Today). Anything
+ * else that lands on this route — an old link, a notification — is sent to
+ * Today, so no one reaches the chat.
+ */
+function LessonPickerOnlyScreen() {
+  const colors = useColors();
+  const { t, lang, isRTL } = useLanguage();
+  const params = useLocalSearchParams<{ openLessonPicker?: string; returnTo?: string }>();
+  const [open, setOpen] = useState(false);
+  const returnTo = useRef('/');
+
+  useEffect(() => {
+    if (!params.openLessonPicker) {
+      router.navigate('/' as never);
+      return;
+    }
+    // Only a same-app path, and never this route itself (that would be a loop).
+    const to = params.returnTo;
+    returnTo.current =
+      to && to.startsWith('/') && !to.startsWith('//') && !to.includes('\\') && !isTabActive(to, 'iqra') ? to : '/';
+    setOpen(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the nonce; returnTo rides with it
+  }, [params.openLessonPicker]);
+
+  const onOpenChange = useCallback((next: boolean) => {
+    setOpen(next);
+    if (!next) router.navigate(returnTo.current as never);
+  }, []);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ContextBanner
+        colors={colors}
+        isRTL={isRTL}
+        lang={lang as 'ar' | 'en'}
+        t={t}
+        currentTopic=""
+        hidePill
+        externalOpen={open}
+        onExternalOpenChange={onOpenChange}
+        // The app-wide lesson: the lesson bar, Today and the tools follow it.
+        onGlobalPick={(pick) => {
+          void saveLessonPick({
+            topic: pick.topic,
+            unitOrder: null,
+            subjectId: pick.subjectId,
+            gradeId: pick.gradeId,
+            lessonId: pick.lessonId,
+          });
+        }}
+        onContextChange={() => {}}
+        onAsk={() => {}}
+      />
+    </View>
+  );
+}
+
+function IqraChatScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useSafeTabBarHeight();
