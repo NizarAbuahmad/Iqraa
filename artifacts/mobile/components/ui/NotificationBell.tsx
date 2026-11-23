@@ -14,7 +14,7 @@ import { isTeacherRole, useAuth } from '@/context/AuthContext';
 import { useStudentAccountsEnabled } from '@/services/features';
 import { getLinkRequestSummary } from '@/services/roster';
 import { linkRequestSummaryQueryKey } from '@/services/rosterQueryKeys';
-import { linkRequestsClassName, linkRequestsRoute } from '@/services/linkRequests';
+import { linkRequestRows } from '@/services/linkRequests';
 
 const PANEL_WIDTH = 360;
 /** How often a teacher's bell re-asks for waiting join requests. A minute: a request is not a chat message. */
@@ -37,14 +37,17 @@ export function NotificationBell({ size = ICON.xl, onDark = false }: { size?: nu
   const unread = useUnreadMessages();
   const { user } = useAuth();
   const studentAccounts = useStudentAccountsEnabled();
+  const countsRequests = studentAccounts && isTeacherRole(user?.role);
   const joinRequests = useQuery({
     queryKey: linkRequestSummaryQueryKey,
     queryFn: getLinkRequestSummary,
-    enabled: studentAccounts && isTeacherRole(user?.role),
+    enabled: countsRequests,
     refetchInterval: JOIN_REQUESTS_POLL_MS,
   });
   // A failed read counts nothing: the bell must not invent requests, and the class banner is still there.
-  const waiting = joinRequests.data && !joinRequests.isError ? joinRequests.data : null;
+  // Gated on the same condition as the query: a disabled query keeps its last data.
+  const waiting = countsRequests && joinRequests.data && !joinRequests.isError ? joinRequests.data : null;
+  const waitingRows = waiting ? linkRequestRows(waiting, lang === 'ar' ? 'ar' : 'en') : [];
   const waitingCount = waiting?.total ?? 0;
   const label = badgeLabel(unread + waitingCount);
   const { width: winW } = useWindowDimensions();
@@ -106,7 +109,7 @@ export function NotificationBell({ size = ICON.xl, onDark = false }: { size?: nu
           t('bellTitle'),
           unread > 0 ? t('unread', unread) : '',
           waitingCount > 0 ? t('bellJoinRequests', waitingCount, '') : '',
-        ].filter(Boolean).join(': ')}
+        ].filter(Boolean).join(lang === 'ar' ? '، ' : ', ')}
       >
         <Ionicons name={unread + waitingCount > 0 ? 'notifications' : 'notifications-outline'} size={size} color={onDark ? '#FFFFFF' : unread + waitingCount > 0 ? colors.primary : colors.foreground} />
         {label ? (
@@ -141,9 +144,10 @@ export function NotificationBell({ size = ICON.xl, onDark = false }: { size?: nu
               <Text style={[styles.markError, { color: colors.destructive, textAlign: align }]}>{t('bellMarkFailed')}</Text>
             ) : null}
 
-            {waiting && waitingCount > 0 ? (
+            {waitingRows.map(r => (
               <Pressable
-                onPress={() => go(linkRequestsRoute(waiting))}
+                key={r.key}
+                onPress={() => go(r.route)}
                 accessibilityRole="button"
                 style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
                   styles.item,
@@ -157,14 +161,14 @@ export function NotificationBell({ size = ICON.xl, onDark = false }: { size?: nu
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.name, { color: colors.foreground, textAlign: align }]} numberOfLines={1}>{t('linkRequestsTitle')}</Text>
                   <Text style={[styles.preview, { color: colors.mutedForeground, textAlign: align }]} numberOfLines={2}>
-                    {t('bellJoinRequests', waitingCount, linkRequestsClassName(waiting, lang === 'ar' ? 'ar' : 'en'))}
+                    {t('bellJoinRequests', r.count, r.className)}
                   </Text>
                 </View>
                 <View style={[styles.count, { backgroundColor: colors.primary }]}>
-                  <Text style={[styles.badgeText, { color: colors.primaryForeground }]}>{badgeLabel(waitingCount)}</Text>
+                  <Text style={[styles.badgeText, { color: colors.primaryForeground }]}>{badgeLabel(r.count)}</Text>
                 </View>
               </Pressable>
-            ) : null}
+            ))}
 
             {failed ? (
               <Text style={[styles.empty, { color: colors.mutedForeground }]}>{t('messagingLoadError')}</Text>

@@ -6,7 +6,10 @@
  * teacher had been asked.
  *
  * Only a NEW request pushes: the same account entering the same code again
- * changes nothing and is not news. The caller decides that; this only sends.
+ * changes nothing and is not news. The caller decides that. This decides the
+ * rest: one push per class per JOIN_REQUEST_PUSH_WINDOW_MINUTES (a whole class
+ * joining off the board is one ring, not thirty — the banner and the bell count
+ * them), and silent at night (joinRequestDelivery).
  *
  * Never throws — the request is already committed, and a push that fails must
  * not turn it into an error. The caller awaits it through `pushWithin`, before
@@ -15,15 +18,43 @@
  */
 // systemDb: the caller is the joining student, and the teacher's class row and
 // device tokens are the teacher's — under row-level security `db` reads none of them.
-import { systemDb as db, classGroups, devicePushTokens, students } from "@workspace/db";
-import { and, eq, inArray, isNull } from "drizzle-orm";
-import { deadTokensFrom, sendExpoPush, PUSH_CHANNEL } from "./pushNotifications.ts";
+import { systemDb as db, classGroups, classMemberships, devicePushTokens, rosterLinkRequests, students } from "@workspace/db";
+import { and, eq, gt, inArray, isNull, not, sql } from "drizzle-orm";
+import { deadTokensFrom, sendExpoPush } from "./pushNotifications.ts";
 import { logger } from "./logger.ts";
 import { classLabel } from "../modules/notifications/familyPushText.ts";
-import { joinRequestData, joinRequestText } from "../modules/notifications/joinRequestText.ts";
+import {
+  JOIN_REQUEST_PUSH_WINDOW_MINUTES,
+  joinRequestData,
+  joinRequestDelivery,
+  joinRequestPushes,
+  joinRequestText,
+} from "../modules/notifications/joinRequestText.ts";
+import { quietHoursEnabled } from "../modules/notifications/quietHours.ts";
 
-export async function notifyTeacherOfJoinRequest(input: { studentId: string; classGroupId: string }): Promise<void> {
+export async function notifyTeacherOfJoinRequest(input: {
+  studentId: string;
+  classGroupId: string;
+  /** The account that asked — its own request is not one of «the others». */
+  userId: string;
+  now?: Date;
+}): Promise<void> {
   try {
+    const [{ n: others } = { n: 0 }] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(rosterLinkRequests)
+      .innerJoin(
+        classMemberships,
+        and(eq(classMemberships.studentId, rosterLinkRequests.studentId), eq(classMemberships.classGroupId, input.classGroupId)),
+      )
+      .where(
+        and(
+          gt(rosterLinkRequests.createdAt, sql`now() - make_interval(mins => ${JOIN_REQUEST_PUSH_WINDOW_MINUTES})`),
+          not(and(eq(rosterLinkRequests.studentId, input.studentId), eq(rosterLinkRequests.userId, input.userId))!),
+        ),
+      );
+    if (!joinRequestPushes(others)) return;
+
     const [klass] = await db
       .select({ teacherId: classGroups.teacherId, name: classGroups.name, nameAr: classGroups.nameAr })
       .from(classGroups)
@@ -48,14 +79,9 @@ export async function notifyTeacherOfJoinRequest(input: { studentId: string; cla
       studentName: student.displayNameAr.trim() || student.displayName,
       className: classLabel(klass),
     });
+    const delivery = joinRequestDelivery(input.now ?? new Date(), quietHoursEnabled());
     const results = await sendExpoPush(
-      tokens.map(t => ({
-        to: t.expoPushToken,
-        ...text,
-        data: joinRequestData(input.classGroupId),
-        channelId: PUSH_CHANNEL.requests,
-        sound: "default" as const,
-      })),
+      tokens.map(t => ({ to: t.expoPushToken, ...text, data: joinRequestData(input.classGroupId), ...delivery })),
     );
     const dead = deadTokensFrom(results);
     if (dead.length > 0) await db.delete(devicePushTokens).where(inArray(devicePushTokens.expoPushToken, dead));

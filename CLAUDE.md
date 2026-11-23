@@ -806,8 +806,9 @@ sweep in your staged files.
   `needsRosterClaim` only on purpose. The teacher hears of a NEW request (since
   2026-11-23): `linkRosterRowInTx` returns `requested` only when it inserted the row
   (`pending` is the same pick again) and the route pushes through
-  `lib/joinRequestNotify.ts`; a teacher's bell counts what waits
-  (`GET /classes/link-requests`, which must keep the class list's filters).
+  `lib/joinRequestNotify.ts` — one push per class per 10 minutes, silent at night;
+  a teacher's bell counts what waits (`GET /classes/link-requests`, which must keep
+  the filters of `GET /classes/:id/link-requests` and `findOwnRequest`).
 - **The first-run tour points at an element by NAME, and the name lives in two places
   (since 2026-10-26).** `services/tour.ts` says what each role's steps ring
   (`today-lesson`, `tab-ai-tools`, `nav-profile`…); the screen that owns the element

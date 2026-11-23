@@ -6,8 +6,7 @@ import {
   competingCount,
   competingWarning,
   enJoinRequestsLine,
-  linkRequestsClassName,
-  linkRequestsRoute,
+  linkRequestRows,
   type LinkRequestSummary,
 } from '../linkRequests.ts';
 
@@ -42,16 +41,17 @@ describe("the bell's join-request row", () => {
     ],
   };
 
-  it('opens the class when only one has requests, the class list otherwise', () => {
-    assert.equal(linkRequestsRoute(one), '/classes/c1');
-    assert.equal(linkRequestsRoute(two), '/classes');
+  it('gives one row per class, each opening that class', () => {
+    assert.deepEqual(linkRequestRows(one, 'ar'), [{ key: 'c1', route: '/classes/c1', className: 'العاشر أ', count: 2 }]);
+    assert.deepEqual(linkRequestRows(two, 'en').map(r => [r.route, r.className, r.count]), [
+      ['/classes/c1', '10A', 2],
+      ['/classes/c2', '9B', 1],
+    ]);
   });
 
-  it('names the class only when there is one, in the reader\'s language', () => {
-    assert.equal(linkRequestsClassName(one, 'ar'), 'العاشر أ');
-    assert.equal(linkRequestsClassName(one, 'en'), '10A');
-    assert.equal(linkRequestsClassName(two, 'ar'), '');
-    assert.equal(linkRequestsClassName({ total: 1, classes: [{ classId: 'c2', name: '9B', nameAr: ' ', count: 1 }] }, 'ar'), '9B');
+  it('falls back to the class name when it has no Arabic one', () => {
+    assert.equal(linkRequestRows(two, 'ar')[1]!.className, '9B');
+    assert.equal(linkRequestRows({ total: 1, classes: [{ classId: 'c2', name: '9B', nameAr: ' ', count: 1 }] }, 'ar')[0]!.className, '9B');
   });
 
   it('declines the Arabic count', () => {

@@ -479,10 +479,10 @@ async function linkRosterRowInTx(
  * committed and before the joiner is answered (lib/pushWithin.ts says why).
  * Capped and never throwing, so a slow or failed push costs the joiner nothing.
  */
-async function pushJoinRequest(resolved: Extract<ClaimResolution, { ok: true }>): Promise<void> {
+async function pushJoinRequest(resolved: Extract<ClaimResolution, { ok: true }>, userId: string): Promise<void> {
   const classGroupId = resolved.classGroupId;
   if (!classGroupId) return;
-  await pushWithin("join request", () => notifyTeacherOfJoinRequest({ studentId: resolved.studentId, classGroupId }));
+  await pushWithin("join request", () => notifyTeacherOfJoinRequest({ studentId: resolved.studentId, classGroupId, userId }));
 }
 
 /**
@@ -1133,7 +1133,7 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
     const userId = req.user!.id;
     const outcome = await db.transaction(tx => linkRosterRowInTx(tx, userId, resolved));
     if (outcome === "requested" || outcome === "pending") {
-      if (outcome === "requested") await pushJoinRequest(resolved);
+      if (outcome === "requested") await pushJoinRequest(resolved, userId);
       const [row] = await db
         .select({ displayName: students.displayName })
         .from(students)
@@ -1616,7 +1616,7 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
       throw err;
     }
 
-    if (requested) await pushJoinRequest(resolved);
+    if (requested) await pushJoinRequest(resolved, user.id);
 
     if (resolved.relation === "self" && !held) {
       try {

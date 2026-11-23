@@ -38,6 +38,8 @@ describeDb("the teacher hears of a class-code pick waiting for them", () => {
     await q(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c1, id]);
     return id;
   };
+  /** Pushes are one per class per window; move every waiting request out of it, as if the window had passed. */
+  const ageRequests = () => q(`UPDATE roster_link_requests SET created_at = now() - interval '1 hour'`);
   const toTeacher = () => stub.messages().filter(m => m.to === T1_PHONE || m.to === T1_TABLET);
   const summary = async (teacher: string) => {
     const res = await call(on, "GET", "/classes/link-requests", teacher);
@@ -95,6 +97,7 @@ describeDb("the teacher hears of a class-code pick waiting for them", () => {
     });
 
     it("is sent again when the account picks a different name — that is a new request", async () => {
+      await ageRequests();
       const other = await newRow("رهف");
       const res = await call(on, "POST", "/auth/claim", joiner, { claimCode: CLASS_CODE, studentId: other });
       assert.equal(res.status, 202);
@@ -102,7 +105,21 @@ describeDb("the teacher hears of a class-code pick waiting for them", () => {
       assert.match(toTeacher()[0].body, /«رهف»/);
     });
 
+    it("rings once for a burst in one class: the second pick within the window is counted, not pushed", async () => {
+      await ageRequests();
+      const a = await newRow("بشرى");
+      const b = await newRow("دانة");
+      assert.equal((await call(on, "POST", "/auth/claim", await newStudentUser("burst1"), { claimCode: CLASS_CODE, studentId: a })).status, 202);
+      assert.equal((await call(on, "POST", "/auth/claim", await newStudentUser("burst2"), { claimCode: CLASS_CODE, studentId: b })).status, 202);
+      await stub.settle(200);
+      assert.equal(toTeacher().length, 2, "one push, to each of the teacher's two devices");
+      assert.match(toTeacher()[0].body, /«بشرى»/);
+      const waiting = await q(`SELECT student_id FROM roster_link_requests WHERE student_id = ANY($1::uuid[])`, [[a, b]]);
+      assert.equal(waiting.length, 2, "both requests are waiting all the same");
+    });
+
     it("goes out for a code-only signup held the same way", async () => {
+      await ageRequests();
       const redeemRow = await newRow("هديل");
       const res = await call(on, "POST", "/auth/redeem", undefined, {
         role: "student",
@@ -124,11 +141,24 @@ describeDb("the teacher hears of a class-code pick waiting for them", () => {
       assert.deepEqual(await stub.settle(200), []);
     });
 
+    it("is not sent when a student already linked to the name enters the class code again", async () => {
+      const mine = await newRow("ميار");
+      const owner = await newStudentUser("owner");
+      await q(`INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [mine, owner]);
+      await ageRequests();
+      const res = await call(on, "POST", "/auth/claim", owner, { claimCode: CLASS_CODE, studentId: mine });
+      assert.ok(res.status < 300, `${res.status} ${res.text}`);
+      assert.deepEqual(await stub.settle(200), []);
+    });
+
     it("does not fail the request when Expo is down", async () => {
+      await ageRequests();
       const row2 = await newRow("جود");
       stub.failNext(500);
-      const res = await call(on, "POST", "/auth/claim", await newStudentUser("down"), { claimCode: CLASS_CODE, studentId: row2 });
+      const down = await newStudentUser("down");
+      const res = await call(on, "POST", "/auth/claim", down, { claimCode: CLASS_CODE, studentId: row2 });
       assert.equal(res.status, 202, on.logs().slice(-1500));
+      assert.equal((await q(`SELECT 1 FROM roster_link_requests WHERE student_id = $1 AND user_id = $2`, [row2, down])).length, 1);
     });
   });
 
@@ -149,6 +179,29 @@ describeDb("the teacher hears of a class-code pick waiting for them", () => {
       // The class list the bell reads must agree with the class's own banner.
       const list = await call(on, "GET", `/classes/${w.classes.c1}/link-requests`, w.users.t1);
       assert.equal(list.json.requests.length, waiting);
+    });
+
+    it("counts a child in two of the teacher's classes once in total, under both classes", async () => {
+      const before = await summary(w.users.t1);
+      const both = await newRow("شهد");
+      await q(`INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)`, [w.classes.c3, both]);
+      await q(`INSERT INTO roster_link_requests (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [both, await newStudentUser("twice")]);
+      const after = await summary(w.users.t1);
+      assert.equal(after.total, before.total + 1);
+      const count = (s: typeof after, id: string) => s.classes.find(c => c.classId === id)?.count ?? 0;
+      assert.equal(count(after, w.classes.c1), count(before, w.classes.c1) + 1);
+      assert.equal(count(after, w.classes.c3), count(before, w.classes.c3) + 1);
+    });
+
+    it("leaves out archived classes and archived students", async () => {
+      const gone = await newRow("غادة");
+      await q(`INSERT INTO roster_link_requests (student_id, user_id, relation) VALUES ($1, $2, 'self')`, [gone, await newStudentUser("gone")]);
+      const before = await summary(w.users.t1);
+      await q(`UPDATE students SET archived_at = now() WHERE id = $1`, [gone]);
+      assert.equal((await summary(w.users.t1)).total, before.total - 1);
+      await q(`UPDATE class_groups SET archived_at = now() WHERE id = $1`, [w.classes.c3]);
+      assert.equal((await summary(w.users.t1)).classes.some(c => c.classId === w.classes.c3), false);
+      await q(`UPDATE class_groups SET archived_at = NULL WHERE id = $1`, [w.classes.c3]);
     });
 
     it("drops a request once it is approved", async () => {

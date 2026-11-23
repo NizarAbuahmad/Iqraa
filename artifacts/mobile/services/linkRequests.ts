@@ -12,15 +12,20 @@ export interface LinkRequestSummary {
   classes: { classId: string; name: string; nameAr: string; count: number }[];
 }
 
-/** Where the bell's row goes: straight to the class when only one has requests, else the class list. */
-export function linkRequestsRoute(summary: LinkRequestSummary): string {
-  return summary.classes.length === 1 ? `/classes/${summary.classes[0]!.classId}` : '/classes';
+type SummaryClass = LinkRequestSummary['classes'][number];
+
+/**
+ * The bell's rows: one per class with requests, each opening that class (its
+ * Students tab carries the banner). One row for all of them used to open the
+ * class list, which shows no requests, so a teacher had to open each class to find them.
+ */
+export function linkRequestRows(summary: LinkRequestSummary, lang: 'ar' | 'en'): { key: string; route: string; className: string; count: number }[] {
+  return summary.classes
+    .filter(c => c.count > 0)
+    .map(c => ({ key: c.classId, route: `/classes/${c.classId}`, className: classNameOf(c, lang), count: c.count }));
 }
 
-/** The one class to name on the bell's row, or '' when the requests sit in several. */
-export function linkRequestsClassName(summary: LinkRequestSummary, lang: 'ar' | 'en'): string {
-  if (summary.classes.length !== 1) return '';
-  const c = summary.classes[0]!;
+function classNameOf(c: SummaryClass, lang: 'ar' | 'en'): string {
   return (lang === 'ar' ? c.nameAr.trim() : '') || c.name;
 }
 
