@@ -10,6 +10,24 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The games hub has a back arrow again when opened from inside the app — 2026-11-22
+
+Reported: «Iqrra games no back button». The `/play` hub passed `hideBack` to `CornerFrame` unconditionally, on
+the idea that it is only ever opened cold from a shared link. But the Tools tab's «الألعاب» card, two «ما الجديد»
+entries and the help search all push `/play`, and the hub is a full-screen stack page with no tab bar, so a
+signed-in teacher who opened it there could not get back.
+
+- `services/publicGames/hubBack.ts` `hubShowsBack({ canGoBack, signedIn })`: the arrow shows when there is
+  history, or when the user is signed in (with no history `goBack()` goes to `/`, their own landing tab). Only an
+  anonymous visitor on a cold link gets none, since `/` would bounce them to sign-in.
+- `app/play/index.tsx` uses it, so `CornerFrame`'s `hideBack` is now decided by that helper, not hard-coded.
+- `playHubBack.test.ts` pins the three cases and checks that the hub calls the helper and passes no bare `hideBack`.
+
+**Verified:** `pnpm run typecheck`; mobile `pnpm test` (9,544 tests, 0 failures); the new wiring test matches
+the old source, so it would have failed before this fix.
+**Not verified:** in a browser or on a device. The individual games were not touched; each already had a back
+button to the hub (`GameShell`).
+
 ## The AI chat «اسأل إقرأ» is hidden from the app — 2026-11-22
 
 **Asked:** «Hide the chat feature from the app, it isn't working well». The AI assistant, not person-to-person
