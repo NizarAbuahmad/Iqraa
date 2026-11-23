@@ -21,18 +21,22 @@ import {
   CANVAS_W,
   DEFAULT_STROKE_WIDTH,
   MAX_PAGES,
+  cleanText,
   docHasInk,
   docHasSolution,
+  docHasText,
   type BoardBackground,
   type BoardDoc,
 } from './whiteboardModel.ts';
 
 /**
- * The newest version this app understands. A board is WRITTEN as version 1
- * unless a page carries a solution, so an app that has not updated yet can
- * still open every board that has none.
+ * The newest version this app understands. A board is WRITTEN at the lowest
+ * version that holds it — 1 for ink only, 2 once a page carries a solution, 3
+ * once a page holds typed text — so an app that has not updated yet can still
+ * open every board that uses nothing it does not know. (An older app refuses a
+ * newer version whole, rather than drawing a text item as a stray dot.)
  */
-export const BOARD_FILE_VERSION = 2;
+export const BOARD_FILE_VERSION = 3;
 /**
  * Cap on the STORED STRING: enforced on save by `serializeBoard` and on open by
  * `parseBoard` for string input. For already-parsed object input only the
@@ -45,9 +49,10 @@ export const MAX_POINTS_CHARS = 200_000;
 export const MIN_STROKE_WIDTH = 0.5;
 export const MAX_STROKE_WIDTH = 64;
 
-export type BoardFileStroke = { color: string; width: number; points: string };
+/** With `text`, a typed text item (version 3): `points` is its one anchor pair and `width` its font size. */
+export type BoardFileStroke = { color: string; width: number; points: string; text?: string };
 export type BoardFilePage = { background: BoardBackground; strokes: BoardFileStroke[]; solution?: BoardSolution };
-export type BoardFile = { version: 1 | 2; canvas: { w: number; h: number }; pages: BoardFilePage[] };
+export type BoardFile = { version: 1 | 2 | 3; canvas: { w: number; h: number }; pages: BoardFilePage[] };
 
 const BACKGROUNDS: readonly string[] = ['blank', 'grid', 'axes'];
 /** #rgb, #rgba, #rrggbb or #rrggbbaa — nothing else gets into an attribute. */
@@ -73,7 +78,7 @@ const solutionOut = (s: BoardSolution): BoardSolution => ({
 /** The board as a plain, fixed-shape object. Never includes undo history. */
 export function boardFileOf(doc: BoardDoc): BoardFile {
   return {
-    version: docHasSolution(doc) ? BOARD_FILE_VERSION : 1,
+    version: docHasText(doc) ? 3 : docHasSolution(doc) ? 2 : 1,
     canvas: { w: CANVAS_W, h: CANVAS_H },
     pages: doc.pages.map(p => ({
       background: p.background,
@@ -81,6 +86,7 @@ export function boardFileOf(doc: BoardDoc): BoardFile {
         color: s.color,
         width: s.width ?? DEFAULT_STROKE_WIDTH,
         points: s.points,
+        ...(s.text !== undefined ? { text: s.text } : {}),
       })),
       ...(p.solution ? { solution: solutionOut(p.solution) } : {}),
     })),
@@ -123,8 +129,8 @@ export function parseBoard(content: unknown): ParseResult {
   }
   if (!value || typeof value !== 'object' || Array.isArray(value)) return bad('not-an-object');
   const v = value as Record<string, unknown>;
-  if (v.version !== 1 && v.version !== 2) return bad('version');
-  const version: 1 | 2 = v.version;
+  if (v.version !== 1 && v.version !== 2 && v.version !== 3) return bad('version');
+  const version: 1 | 2 | 3 = v.version;
   const canvas = v.canvas as Record<string, unknown> | null | undefined;
   if (!canvas || typeof canvas !== 'object' || canvas.w !== CANVAS_W || canvas.h !== CANVAS_H) return bad('canvas');
   if (!Array.isArray(v.pages) || v.pages.length < 1 || v.pages.length > MAX_PAGES) return bad('pages');
@@ -145,14 +151,23 @@ export function parseBoard(content: unknown): ParseResult {
         return bad('width');
       }
       if (!validPoints(s.points)) return bad('points');
+      let text: string | undefined;
+      if ('text' in s) {
+        // Text is a version-3 field. It must already be in its stored form
+        // (`cleanText` would not change it), non-empty, at a single anchor.
+        if (version !== 3 || typeof s.text !== 'string' || !s.text || cleanText(s.text) !== s.text) return bad('text');
+        if (s.points.includes(' ')) return bad('text');
+        text = s.text;
+        totalChars += text.length;
+      }
       totalChars += s.points.length;
       if (totalChars > MAX_BOARD_BYTES) return bad('too-big');
-      strokes.push({ color: s.color, width: s.width, points: s.points });
+      strokes.push({ color: s.color, width: s.width, points: s.points, ...(text !== undefined ? { text } : {}) });
     }
     let solution: BoardSolution | undefined;
     if ('solution' in p) {
       // A solution is a version-2 field; a version-1 file never has one.
-      const read = version === 2 ? parseBoardSolution(p.solution) : null;
+      const read = version >= 2 ? parseBoardSolution(p.solution) : null;
       if (!read) return bad('solution');
       solution = read;
     }
@@ -168,7 +183,7 @@ export function docOfFile(file: BoardFile): BoardDoc {
     pages: file.pages.map(p => ({
       background: p.background,
       board: {
-        strokes: p.strokes.map(s => ({ color: s.color, width: s.width, points: s.points })),
+        strokes: p.strokes.map(s => ({ color: s.color, width: s.width, points: s.points, ...(s.text !== undefined ? { text: s.text } : {}) })),
         past: [],
         future: [],
       },

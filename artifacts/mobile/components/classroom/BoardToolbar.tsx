@@ -6,10 +6,14 @@ import { DECK_ACCENT, DECK_BORDER, DECK_CARD_BG, DECK_MUTED } from '@/services/d
 import { BOARD_PEN_COLORS } from '@/services/penColors';
 import { BOARD_BACKGROUNDS, STROKE_WIDTHS, type BoardBackground } from '@/services/whiteboardModel';
 
+/** What a touch on the page does: draw, erase, or place / edit / move text. */
+export type BoardTool = 'pen' | 'eraser' | 'text';
+
 export type BoardToolbarLabels = {
   close: string;
   pen: string;
   eraser: string;
+  text: string;
   undo: string;
   redo: string;
   clear: string;
@@ -32,14 +36,16 @@ export type BoardToolbarLabels = {
 
 /**
  * Floating controls for the board: a top bar (close + paper) and a bottom pill
- * (colour, width, pen/eraser, undo, clear, pages, solve, save/export). The solve
+ * (colour, width, pen/eraser/text, undo, clear, pages, solve, save/export). With
+ * the text tool on, colour and width pick the next text's colour and size, so a
+ * swatch leaves the text tool on (it only turns the eraser back into the pen). The solve
  * button (calculator) opens the problem dialog; when the page has a solution a
  * further group appears with next-step, hide-all and delete controls. The top container is `box-none` so
  * the empty gap between its two groups still lets the pen draw underneath.
  */
 export function BoardToolbar({
   isRTL, topInset, bottomInset,
-  color, onColor, width, onWidth, erase, onErase,
+  color, onColor, width, onWidth, tool, onTool,
   canUndo, onUndo, canRedo, onRedo, hasInk, onClear,
   background, onBackground, onClose, labels,
   pageLabel, canPrevPage, canNextPage, canAddPage, canDeletePage,
@@ -55,8 +61,8 @@ export function BoardToolbar({
   onColor: (c: string) => void;
   width: number;
   onWidth: (w: number) => void;
-  erase: boolean;
-  onErase: (on: boolean) => void;
+  tool: BoardTool;
+  onTool: (tool: BoardTool) => void;
   canUndo: boolean;
   onUndo: () => void;
   canRedo: boolean;
@@ -94,6 +100,7 @@ export function BoardToolbar({
   solution: null | { shown: number; total: number; counter: string; onNext: () => void; onHideAll: () => void; onDelete: () => void };
 }) {
   const rowDir = isRTL ? 'row-reverse' : 'row';
+  const erase = tool === 'eraser';
   return (
     <>
       <View pointerEvents="box-none" style={[styles.top, { top: topInset + 8, flexDirection: rowDir }]}>
@@ -125,7 +132,7 @@ export function BoardToolbar({
           {BOARD_PEN_COLORS.map((c, i) => (
             <Pressable
               key={c}
-              onPress={() => { onColor(c); onErase(false); }}
+              onPress={() => { onColor(c); if (erase) onTool('pen'); }}
               hitSlop={6}
               accessibilityRole="button"
               accessibilityLabel={labels.colors[i]}
@@ -150,10 +157,13 @@ export function BoardToolbar({
           ))}
         </View>
         <View style={styles.group}>
-          <Pressable onPress={() => onErase(false)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.pen} aria-selected={!erase}>
-            <Ionicons name={erase ? 'brush-outline' : 'brush'} size={20} color={erase ? DECK_MUTED : DECK_ACCENT} />
+          <Pressable onPress={() => onTool('pen')} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.pen} aria-selected={tool === 'pen'}>
+            <Ionicons name={tool === 'pen' ? 'brush' : 'brush-outline'} size={20} color={tool === 'pen' ? DECK_ACCENT : DECK_MUTED} />
           </Pressable>
-          <Pressable onPress={() => onErase(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.eraser} aria-selected={erase}>
+          <Pressable onPress={() => onTool('text')} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.text} aria-selected={tool === 'text'}>
+            <Ionicons name="text" size={20} color={tool === 'text' ? DECK_ACCENT : DECK_MUTED} />
+          </Pressable>
+          <Pressable onPress={() => onTool('eraser')} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.eraser} aria-selected={erase}>
             <MaterialCommunityIcons name="eraser" size={20} color={erase ? DECK_ACCENT : DECK_MUTED} />
           </Pressable>
         </View>

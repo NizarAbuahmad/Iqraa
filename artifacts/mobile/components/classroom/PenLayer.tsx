@@ -1,11 +1,24 @@
 import React, { memo, useMemo, useRef, useState } from 'react';
-import { PanResponder, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { PanResponder, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Polyline } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { appendInkPoint, scaleInkPoints } from '@/services/penInk';
 import { DECK_BORDER, DECK_CARD_BG, DECK_MUTED } from '@/services/deckTheme';
 import { PEN_COLORS } from '@/services/penColors';
-import { DEFAULT_STROKE_WIDTH, ERASER_RADIUS, eraseAlong, eraseAt, type Stroke } from '@/services/whiteboardModel';
+import {
+  DEFAULT_STROKE_WIDTH,
+  ERASER_RADIUS,
+  TEXT_LINE_HEIGHT,
+  eraseAlong,
+  eraseAt,
+  isText,
+  moveText,
+  parsePoints,
+  replaceStrokeAt,
+  textAt,
+  textDirection,
+  type Stroke,
+} from '@/services/whiteboardModel';
 
 // Ink over a projected slide — the teacher circles a term, underlines a step,
 // sketches a quick arrow. The slide pen stays deliberately simple: three
@@ -31,7 +44,7 @@ export { PEN_COLORS };
 const StrokeLines = memo(function StrokeLines({ strokes, canvasW, strokeScale }: { strokes: Stroke[]; canvasW: number; strokeScale: number }) {
   return (
     <>
-      {strokes.map((s, i) => (
+      {strokes.map((s, i) => isText(s) ? null : (
         <Polyline
           key={i}
           points={scaleInkPoints(s.points, canvasW)}
@@ -47,6 +60,60 @@ const StrokeLines = memo(function StrokeLines({ strokes, canvasW, strokeScale }:
 });
 
 /**
+ * Typed text items (board only), drawn as React Native text over the ink's
+ * SVG — RN text shapes Arabic and lays out bidi properly on every platform,
+ * which SVG text on Android does not reliably do. Each sits in a wide box
+ * anchored at its start corner so it never wraps: a saved text looks the same
+ * on every screen and in the PDF, which cannot wrap either. The page clips it.
+ */
+const TextItems = memo(function TextItems({ strokes, canvasW, strokeScale }: { strokes: Stroke[]; canvasW: number; strokeScale: number }) {
+  if (!(canvasW > 0)) return null;
+  return (
+    <>
+      {strokes.map((s, i) => {
+        if (!isText(s)) return null;
+        const [at] = parsePoints(s.points);
+        if (!at) return null;
+        const rtl = textDirection(s.text) === 'rtl';
+        const size = (s.width ?? DEFAULT_STROKE_WIDTH) * strokeScale;
+        const x = at.x * canvasW;
+        return (
+          <View
+            key={i}
+            pointerEvents="none"
+            style={[
+              styles.textBox,
+              { top: at.y * canvasW, width: canvasW * 2, alignItems: rtl ? 'flex-end' : 'flex-start' },
+              rtl ? { right: canvasW - x } : { left: x },
+            ]}
+          >
+            <Text
+              selectable={false}
+              style={[
+                {
+                  color: s.color,
+                  fontSize: size,
+                  lineHeight: size * TEXT_LINE_HEIGHT,
+                  fontFamily: 'Almarai_400Regular',
+                  writingDirection: rtl ? 'rtl' : 'ltr',
+                  textAlign: rtl ? 'right' : 'left',
+                },
+                Platform.OS === 'web' && ({ whiteSpace: 'pre', userSelect: 'none' } as any),
+              ]}
+            >
+              {s.text}
+            </Text>
+          </View>
+        );
+      })}
+    </>
+  );
+});
+
+/** Moving a text starts once the finger has travelled this many pixels; less is a tap. */
+const TEXT_DRAG_SLOP = 6;
+
+/**
  * Transparent drawing surface. Sits inside the slide's ScrollView content so
  * ink scrolls with what it marks. When `active` is false it neither draws nor
  * takes touches, so reveal buttons under the ink still work.
@@ -55,7 +122,7 @@ const StrokeLines = memo(function StrokeLines({ strokes, canvasW, strokeScale }:
  * component while the finger is down and is handed to `onChange` once, on
  * release — so a long board does not rebuild every polyline on every touch event.
  */
-export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_STROKE_WIDTH, erase = false, strokeScale = 1 }: {
+export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_STROKE_WIDTH, erase = false, strokeScale = 1, textMode = false, onTextTap }: {
   strokes: Stroke[];
   color: string;
   active: boolean;
@@ -69,13 +136,21 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
    * its thickness relative to the PAGE on every screen; slides leave it at 1.
    */
   strokeScale?: number;
+  /**
+   * The board's text tool: a tap reports where it landed (stored units) and
+   * which text item it hit (`index`, -1 for none) through `onTextTap`, which
+   * opens the editor; dragging a text item moves it (committed through
+   * `onChange`, so it is one undo step). Nothing is drawn or erased.
+   */
+  textMode?: boolean;
+  onTextTap?: (at: { x: number; y: number }, index: number) => void;
 }) {
   // The canvas follows the slide's content box, so its width changes with the
   // stage. Strokes are stored relative to it and drawn at whatever it is now.
   const [canvasW, setCanvasW] = useState(0);
   // PanResponder is built once; read the latest props through a ref.
-  const latest = useRef({ strokes, color, width, erase, onChange, canvasW, strokeScale });
-  latest.current = { strokes, color, width, erase, onChange, canvasW, strokeScale };
+  const latest = useRef({ strokes, color, width, erase, onChange, canvasW, strokeScale, textMode, onTextTap });
+  latest.current = { strokes, color, width, erase, onChange, canvasW, strokeScale, textMode, onTextTap };
 
   const [draft, setDraft] = useState<Stroke | null>(null);
   const [erased, setErased] = useState<Stroke[] | null>(null);
@@ -85,9 +160,31 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
   const base = useRef<Stroke[]>([]);
   /** Where the eraser was last applied (in stored units), so a fast drag is swept rather than sampled. */
   const lastErase = useRef<{ x: number; y: number } | null>(null);
+  /**
+   * A text-tool gesture: the item under the finger (-1 for none), where it went
+   * down in stored units and in pixels, and whether it has become a drag. While
+   * dragging, the moved list is previewed through `erased` like an erase.
+   */
+  const textGesture = useRef<{ index: number; x: number; y: number; px: number; py: number; moved: boolean } | null>(null);
 
   const responder = useMemo(() => {
-    const finish = () => {
+    const finish = (tap: boolean) => {
+      const g = textGesture.current;
+      if (g) {
+        textGesture.current = null;
+        const e = erasedRef.current;
+        erasedRef.current = null;
+        setErased(null);
+        const { onChange: set, onTextTap: onTap, strokes: now } = latest.current;
+        // Commit only if the list did not change under the gesture (an undo
+        // mid-drag); an index into a changed list could name another item.
+        if (g.moved) {
+          if (e && e !== base.current && now === base.current) set(e);
+        } else if (tap) {
+          onTap?.({ x: g.x, y: g.y }, now === base.current ? g.index : -1);
+        }
+        return;
+      }
       const d = draftRef.current;
       const e = erasedRef.current;
       draftRef.current = null;
@@ -110,6 +207,13 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
         const { locationX: x, locationY: y } = ev.nativeEvent;
         const cur = latest.current;
         base.current = cur.strokes;
+        if (cur.textMode) {
+          if (!(cur.canvasW > 0)) return;
+          const fx = x / cur.canvasW;
+          const fy = y / cur.canvasW;
+          textGesture.current = { index: textAt(cur.strokes, fx, fy, cur.strokeScale / cur.canvasW), x: fx, y: fy, px: x, py: y, moved: false };
+          return;
+        }
         if (cur.erase) {
           // Strokes are stored as fractions of the canvas width, so the touch
           // and the eraser's reach are converted to the same units. `unit` is
@@ -139,6 +243,17 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
       onPanResponderMove: ev => {
         const { locationX: x, locationY: y } = ev.nativeEvent;
         const cw = latest.current.canvasW;
+        const g = textGesture.current;
+        if (g) {
+          const item = base.current[g.index];
+          if (!item || !(cw > 0)) return;
+          if (!g.moved && Math.hypot(x - g.px, y - g.py) < TEXT_DRAG_SLOP) return;
+          g.moved = true;
+          const next = replaceStrokeAt(base.current, g.index, moveText(item, x / cw - g.x, y / cw - g.y));
+          erasedRef.current = next;
+          setErased(next);
+          return;
+        }
         if (erasedRef.current) {
           if (!(cw > 0)) return;
           const px = 1 / cw;
@@ -158,8 +273,8 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
           setDraft(s);
         }
       },
-      onPanResponderRelease: finish,
-      onPanResponderTerminate: finish,
+      onPanResponderRelease: () => finish(true),
+      onPanResponderTerminate: () => finish(false),
     });
   }, []);
 
@@ -171,12 +286,13 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
       // would make them relative to the polyline instead).
       pointerEvents={active ? 'box-only' : 'none'}
       onLayout={e => setCanvasW(e.nativeEvent.layout.width)}
-      style={[StyleSheet.absoluteFill, active && Platform.OS === 'web' && ({ touchAction: 'none', cursor: 'crosshair' } as any)]}
+      style={[StyleSheet.absoluteFill, active && Platform.OS === 'web' && ({ touchAction: 'none', cursor: textMode ? 'text' : 'crosshair' } as any)]}
     >
       <Svg width="100%" height="100%">
         <StrokeLines strokes={erased ?? strokes} canvasW={canvasW} strokeScale={strokeScale} />
         {draft && <StrokeLines strokes={[draft]} canvasW={canvasW} strokeScale={strokeScale} />}
       </Svg>
+      <TextItems strokes={erased ?? strokes} canvasW={canvasW} strokeScale={strokeScale} />
     </View>
   );
 }
@@ -215,6 +331,7 @@ export function PenPalette({ color, onColor, onUndo, onClear, canUndo, labels }:
 }
 
 const styles = StyleSheet.create({
+  textBox: { position: 'absolute' },
   palette: {
     position: 'absolute', bottom: 12, alignSelf: 'center',
     flexDirection: 'row', alignItems: 'center', gap: 14,

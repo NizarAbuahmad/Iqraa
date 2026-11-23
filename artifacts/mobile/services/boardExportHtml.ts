@@ -26,12 +26,16 @@ import {
   BOARD_STEP,
   CANVAS_H,
   CANVAS_W,
+  TEXT_LINE_HEIGHT,
   axesGeometry,
   gridLines,
   localizeDigits,
+  parsePoints,
+  textDirection,
   type BoardBackground,
   type Segment,
 } from './whiteboardModel.ts';
+import type { BoardFileStroke } from './boardFile.ts';
 
 const escapeHtml = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -57,6 +61,31 @@ function paperSVG(background: BoardBackground, lang: string): string {
     })
     .join('');
   return grid + line(axes.xAxis, DECK_MUTED, 3) + line(axes.yAxis, DECK_MUTED, 3) + ticks;
+}
+
+/**
+ * A typed text item as SVG text, one `<text>` per line (SVG text does not
+ * wrap or break lines). The anchor is the text's top start corner; with
+ * `direction="rtl"`, `text-anchor="start"` grows the line leftwards from it,
+ * as on screen. Right-to-left lines get their foreign runs isolated, like the
+ * solution panel, before escaping. The colour was validated by `parseBoard`.
+ */
+function textSVG(s: BoardFileStroke): string {
+  const [at] = parsePoints(s.points);
+  if (!at || s.text === undefined) return '';
+  const rtl = textDirection(s.text) === 'rtl';
+  const x = at.x * CANVAS_W;
+  const top = at.y * CANVAS_W;
+  // First baseline: half the extra line height, then roughly the font's ascent.
+  const first = top + s.width * ((TEXT_LINE_HEIGHT - 1) / 2 + 0.95);
+  return s.text
+    .split('\n')
+    .map((lineText, i) => {
+      const shown = rtl ? isolateForeignRuns(lineText) : lineText;
+      const y = first + i * s.width * TEXT_LINE_HEIGHT;
+      return `<text x="${num(x)}" y="${num(y)}" font-size="${num(s.width)}" fill="${s.color}" direction="${rtl ? 'rtl' : 'ltr'}" text-anchor="start" xml:space="preserve">${escapeHtml(shown)}</text>`;
+    })
+    .join('');
 }
 
 /** An unchecked verdict is amber so it cannot be mistaken for the teal ✓. */
@@ -127,7 +156,9 @@ export function buildBoardHTML(content: unknown, title: string, isAr: boolean, s
       const strokes = page.strokes
         .map(
           s =>
-            `<polyline points="${scaleInkPoints(s.points, CANVAS_W)}" fill="none" stroke="${s.color}" stroke-width="${num(s.width)}" stroke-linecap="round" stroke-linejoin="round"/>`,
+            s.text !== undefined
+              ? textSVG(s)
+              : `<polyline points="${scaleInkPoints(s.points, CANVAS_W)}" fill="none" stroke="${s.color}" stroke-width="${num(s.width)}" stroke-linecap="round" stroke-linejoin="round"/>`,
         )
         .join('');
       const panel = page.solution && solutionLabels ? solutionSVG(page.solution, solutionLabels, isAr) : '';

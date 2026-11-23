@@ -16,7 +16,20 @@ import type { BoardSolution } from '@workspace/math-verify';
  * unit-agnostic: callers pass the touch, the eraser radius and `unit` (one
  * width unit expressed in point units) in the same units as the points.
  */
-export type Stroke = { color: string; points: string; /** Absent means DEFAULT_STROKE_WIDTH. */ width?: number };
+export type Stroke = {
+  color: string;
+  points: string;
+  /** Absent means DEFAULT_STROKE_WIDTH. For a text item, its font size in width units. */
+  width?: number;
+  /**
+   * Present: this item is typed text, not ink (board only — see «Text» below).
+   * `points` is then ONE pair, the top corner where the text starts (top-left
+   * for left-to-right text, top-right for right-to-left). Text lives in the
+   * same list as ink so undo, redo, clear, the eraser and saving treat both
+   * alike; anything drawing polylines must skip it (`isText`).
+   */
+  text?: string;
+};
 
 /** The slide pen's fixed width — what a stroke without `width` is drawn at. */
 export const DEFAULT_STROKE_WIDTH = 4;
@@ -86,6 +99,10 @@ function parsedOf(stroke: Stroke): Parsed {
  * pixel. `radius` is NOT scaled by `unit`: the eraser's own reach is fixed.
  */
 export function strokeHit(stroke: Stroke, x: number, y: number, radius: number, unit = 1): boolean {
+  if (isText(stroke)) {
+    const b = textBox(stroke, unit);
+    return x >= b.minX - radius && x <= b.maxX + radius && y >= b.minY - radius && y <= b.maxY + radius;
+  }
   const { pts, minX, maxX, minY, maxY } = parsedOf(stroke);
   if (pts.length === 0) return false;
   const reach = radius + ((stroke.width ?? DEFAULT_STROKE_WIDTH) / 2) * unit;
@@ -341,3 +358,112 @@ export function withSolution(page: Page, solution: BoardSolution | null): Page {
 
 /** Does ANY page carry a solution? (A solution is content even with no ink.) */
 export const docHasSolution = (doc: BoardDoc): boolean => doc.pages.some(p => p.solution !== undefined);
+
+// ── Text ────────────────────────────────────────────────────────────────────
+// Typed text on the board: the teacher picks «نص», taps the page and types. A
+// text item is a `Stroke` with `text` (see the type), so it sits in the page's
+// one list of items and undo / redo / clear / erase / save need nothing new.
+
+/** Font sizes in canvas units, one per `STROKE_WIDTHS` entry: the width picker sizes text too. */
+export const TEXT_SIZES = [28, 40, 60] as const;
+/** Characters (code points) one text item may hold. */
+export const MAX_TEXT_CHARS = 500;
+/**
+ * The box a text is taken to fill, as multiples of its font size: an average
+ * glyph advance and a line height. The box is an estimate — it is what the
+ * eraser and a tap test against, not what is drawn — so it errs wide.
+ */
+export const TEXT_ADVANCE = 0.6;
+export const TEXT_LINE_HEIGHT = 1.35;
+
+export const isText = (s: Stroke): s is Stroke & { text: string } => typeof s.text === 'string';
+
+/** The text size that goes with a pen width; a width not on the picker gets the middle size. */
+export function textSizeFor(width: number): number {
+  const i = (STROKE_WIDTHS as readonly number[]).indexOf(width);
+  return TEXT_SIZES[i >= 0 ? i : 1];
+}
+
+/**
+ * What a typed text becomes when stored: one line break kind, no other control
+ * characters, tabs as spaces, no blank space at either end, at most
+ * `MAX_TEXT_CHARS` code points. Idempotent — `parseBoard` refuses any text
+ * that this would change.
+ */
+export function cleanText(raw: string): string {
+  const cleaned = raw
+    .replace(/\r\n?/g, '\n')
+    .replace(/\t/g, ' ')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, '')
+    .trim();
+  const chars = Array.from(cleaned);
+  return chars.length > MAX_TEXT_CHARS ? chars.slice(0, MAX_TEXT_CHARS).join('').trim() : cleaned;
+}
+
+/** Right-to-left (Arabic or Hebrew letters) or left-to-right, from the first strong letter. Arabic-Indic digits are not letters. */
+export function textDirection(text: string): 'rtl' | 'ltr' {
+  for (const ch of text) {
+    const c = ch.codePointAt(0)!;
+    if ((c >= 0x0660 && c <= 0x0669) || (c >= 0x06f0 && c <= 0x06f9)) continue;
+    if ((c >= 0x0590 && c <= 0x08ff) || (c >= 0xfb1d && c <= 0xfdff) || (c >= 0xfe70 && c <= 0xfeff)) return 'rtl';
+    if (/\p{L}/u.test(ch)) return 'ltr';
+  }
+  return 'ltr';
+}
+
+const round5 = (n: number): number => Number(n.toFixed(5));
+/** The page in stored units: x across the width (0..1), y down it (0..height/width). */
+const PAGE_MAX_Y = CANVAS_H / CANVAS_W;
+const anchor = (x: number, y: number): string =>
+  `${round5(Math.min(1, Math.max(0, x)))},${round5(Math.min(PAGE_MAX_Y, Math.max(0, y)))}`;
+
+/** A text item at (x, y) in stored units, or null when nothing is left after `cleanText`. */
+export function makeText(raw: string, x: number, y: number, color: string, size: number): Stroke | null {
+  const text = cleanText(raw);
+  if (!text) return null;
+  return { color, width: size, points: anchor(x, y), text };
+}
+
+/** The same text with its anchor moved by (dx, dy) stored units, kept on the page. */
+export function moveText(item: Stroke, dx: number, dy: number): Stroke {
+  const [p] = parsePoints(item.points);
+  if (!p) return item;
+  return { ...item, points: anchor(p.x + dx, p.y + dy) };
+}
+
+/**
+ * The estimated box a text covers, in the points' units. `unit` is one width
+ * unit in those units, as for `strokeHit` (the board passes 1 / canvas width
+ * in canvas units — i.e. `strokeScale / canvasW`).
+ */
+export function textBox(item: Stroke, unit: number): { minX: number; maxX: number; minY: number; maxY: number } {
+  const [p] = parsePoints(item.points);
+  const at = p ?? { x: 0, y: 0 };
+  const size = (item.width ?? TEXT_SIZES[1]) * unit;
+  const lines = (item.text ?? '').split('\n');
+  const longest = Math.max(1, ...lines.map(l => Array.from(l).length));
+  const w = longest * size * TEXT_ADVANCE;
+  const h = lines.length * size * TEXT_LINE_HEIGHT;
+  const rtl = textDirection(item.text ?? '') === 'rtl';
+  return { minX: rtl ? at.x - w : at.x, maxX: rtl ? at.x : at.x + w, minY: at.y, maxY: at.y + h };
+}
+
+/** Index of the topmost (last drawn) text whose box holds (x, y), or -1. Ink is never picked. */
+export function textAt(strokes: Stroke[], x: number, y: number, unit: number): number {
+  for (let i = strokes.length - 1; i >= 0; i--) {
+    const s = strokes[i]!;
+    if (isText(s) && strokeHit(s, x, y, 0, unit)) return i;
+  }
+  return -1;
+}
+
+/** Replace (or with `null`, remove) the item at `index`. A bad index gives the same array back. */
+export function replaceStrokeAt(strokes: Stroke[], index: number, next: Stroke | null): Stroke[] {
+  if (!Number.isInteger(index) || index < 0 || index >= strokes.length) return strokes;
+  if (next === null) return strokes.filter((_, i) => i !== index);
+  return strokes.map((s, i) => (i === index ? next : s));
+}
+
+/** Does ANY page hold typed text? (Decides the saved file's version.) */
+export const docHasText = (doc: BoardDoc): boolean => doc.pages.some(p => p.board.strokes.some(isText));
