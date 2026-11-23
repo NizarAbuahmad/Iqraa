@@ -63,8 +63,13 @@ Checked 2026-10-22:
   and two on 2026-11-14, submitted to Play (submit runs 2–3). Which version is on users' phones is not
   known from here: a phone still on 1.5.0 gets no OTA from `main`, whose runtime is 1.6.0 (CLAUDE.md,
   «`app.json`'s `version` is the OTA compatibility key»). OTAs reach the `production` channel only when
-  published by hand (`mobile-update.yml`, `branch=production`); the latest is from `de31781` (run 1201,
-  2026-11-21).
+  published by hand (`mobile-update.yml`, `branch=production`); the latest is from `b8c096b` (run 1207,
+  2026-11-23).
+- **The AI chat «اسأل إقرأ» is hidden** (`IQRA_CHAT_ENABLED = false` in
+  `artifacts/mobile/services/features.ts`, #1535): on the web since deploy run 1022 and on 1.6.0 phones since
+  production OTA run 1207, both 2026-11-23. `/iqra` only hosts the change-lesson sheet; the chat's API route is
+  untouched and still answers direct calls. Set the flag to `true` to bring it back («The AI chat «اسأل إقرأ» is
+  hidden from the app» in the log).
 - **Every shipped build uses live AI.** `EXPO_PUBLIC_DEMO_MODE=false` is set for Android
   (`eas.json`, `mobile-update.yml`) and, since 2026-10-16, for the web build (`deploy.yml`).
   The code default in `demoMode.ts` is still demo mode; do not flip it without a decision
