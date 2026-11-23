@@ -45,6 +45,55 @@ undid and redid it, erased it, and in Arabic placed right-anchored Arabic text n
 PDF's look (its markup is tested, not printed), and how close the eraser's estimated box comes to a real glyph run in
 other fonts.
 
+## The games hub has a back arrow again when opened from inside the app — 2026-11-22
+
+Reported: «Iqrra games no back button». The `/play` hub passed `hideBack` to `CornerFrame` unconditionally, on
+the idea that it is only ever opened cold from a shared link. But the Tools tab's «الألعاب» card, two «ما الجديد»
+entries and the help search all push `/play`, and the hub is a full-screen stack page with no tab bar, so a
+signed-in teacher who opened it there could not get back.
+
+- `services/publicGames/hubBack.ts` `hubShowsBack({ canGoBack, signedIn })`: the arrow shows when there is
+  history, or when the user is signed in (with no history `goBack()` goes to `/`, their own landing tab). Only an
+  anonymous visitor on a cold link gets none, since `/` would bounce them to sign-in.
+- `app/play/index.tsx` uses it, so `CornerFrame`'s `hideBack` is now decided by that helper, not hard-coded.
+- `playHubBack.test.ts` pins the three cases and checks that the hub calls the helper and passes no bare `hideBack`.
+
+**Verified:** `pnpm run typecheck`; mobile `pnpm test` (9,544 tests, 0 failures); the new wiring test matches
+the old source, so it would have failed before this fix.
+**Not verified:** in a browser or on a device. The individual games were not touched; each already had a back
+button to the hub (`GameShell`).
+
+## The AI chat «اسأل إقرأ» is hidden from the app — 2026-11-22
+
+**Asked:** «Hide the chat feature from the app, it isn't working well». The AI assistant, not person-to-person
+messaging, which is untouched.
+
+- **One switch:** `IQRA_CHAT_ENABLED = false` in `artifacts/mobile/services/features.ts`, beside
+  `DOCUMENT_UPLOAD_ENABLED`. Setting it to `true` brings every entry point back; the chat screen, its API route and its
+  tests are unchanged.
+- **Hidden while it is off:** the desktop sidebar tab (`tabVisible`), Today's ask card on a phone (`PhoneToday`), the
+  desktop workspace's assistant panel (the main column takes the width), ⌘K «اسأل إقرأ عن …» (`buildCommands`), the
+  FAQ's «اسأل إقرأ» button, the lesson page's «اسأل إقرأ» button, the lesson shelf's question bank (its rows' only
+  action was «ask in chat», so a teacher now sees what a student sees: the external resources), the teacher tour's ask
+  step (5 steps instead of 6 on both layouts) and the two chat «ما الجديد» entries (`offeredWhatsNew`), so no one is
+  told about, or sent to, a screen they cannot use.
+- **Changing the lesson still works.** The lesson bar, Today's «تغيير الدرس» and ⌘K open the change-lesson sheet *on*
+  `/iqra`. With the chat off that route renders `LessonPickerOnlyScreen`: the sheet alone, no chat behind it. A pick
+  saves the app-wide lesson (`saveLessonPick`) and returns to `returnTo` (else Today); Cancel returns too. Anything
+  else landing on `/iqra` (an old link, a push) is sent to Today. Its confirm button no longer says «Ask Iqrra about»
+  in English or wears a chat icon while the chat is off (the Arabic «ابدأ التحضير» was already right).
+- **Tests:** `tabVisibility`, `tour`, `commandPalette` and `whatsNew` take the flag as an optional argument (default:
+  the constant), with a case each for off. `e2e/tests/tour.spec.ts` now expects «Step 5 of 5».
+
+**Verified:** `pnpm run typecheck`; mobile `pnpm test` (9,534 pass, 0 fail); all three `e2e/` specs against a
+throwaway Postgres. In a browser (desktop 1280 and phone 390, English): no «Ask Iqrra» or «Open chat» anywhere on
+Today or in the sidebar; «Change lesson» opens the sheet alone, Cancel returns to Today, a second open works, picking
+«Equation of a Circle» returns to Today showing it and survives a reload; `/iqra` typed in lands on Today.
+
+**Not verified:** Android (same code path, no device here); Arabic layout of the two screens touched (no new text
+except the English label); the API's chat route still answers anyone who calls it directly — this hides the feature,
+it does not switch the endpoint off.
+
 ## A 1.6.0 production build sent to Google Play for review — 2026-11-21
 
 After the chat fix (#1527) merged, the owner asked for a 1.6.0 production build and for it to go to Play for review.
