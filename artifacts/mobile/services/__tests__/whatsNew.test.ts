@@ -13,6 +13,7 @@ import {
   entryTime,
   newToolIds,
   newToolOpenedKey,
+  offeredWhatsNew,
   toolBadgeKey,
   toolIdsForPath,
   unseenFor,
@@ -351,4 +352,14 @@ test('every real entry’s toolId is a tool in the catalog, announced to teacher
     assert.ok(ids.has(e.toolId), `${e.id}: no tool ${e.toolId} in toolCatalog.ts`);
     assert.ok(e.roles.includes('teacher'), `${e.id} announces a tool but not to teachers`);
   }
+});
+
+test('with the chat off, entries that open the chat are not announced', () => {
+  const list: WhatsNewEntry[] = [
+    { id: 'chat', date: '2026-11-01', roles: ['teacher'], titleKey: 'whatsNewBadge', bodyKey: 'whatsNewBadge', route: '/iqra' },
+    { id: 'tool', date: '2026-11-01', roles: ['teacher'], titleKey: 'whatsNewBadge', bodyKey: 'whatsNewBadge', route: '/ai-tools/quiz' },
+    { id: 'plain', date: '2026-11-01', roles: ['teacher'], titleKey: 'whatsNewBadge', bodyKey: 'whatsNewBadge' },
+  ];
+  assert.deepEqual(offeredWhatsNew(list, false).map(e => e.id), ['tool', 'plain']);
+  assert.deepEqual(offeredWhatsNew(list, true).map(e => e.id), ['chat', 'tool', 'plain']);
 });
