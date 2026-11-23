@@ -10,6 +10,21 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The join-request notice is live on the API and on preview and production phones — 2026-11-23
+
+#1538 («The teacher is told when a student's class-code pick waits for them», below) merged as `681749c`.
+
+- **API:** deploy run 1025. `iqraa-api` passed its «Verify the deployed commit» step, and `/api/healthz/version`,
+  read by command afterwards, answered `681749c`, revision `iqraa-api-00565-ws2`. The traffic split was not read.
+  Migrations and the schema check passed; `iqraa-verifier` was skipped, since the merge does not touch it.
+- **Web:** deploy run 1025's `iqraa-web` job was still building the bundle when this was written.
+- **Phones:** `preview` got it from the merge's own run, Mobile OTA update run 1209. `production` was published
+  by hand, run 1210 (`branch=production`). Both succeeded, from `681749c`. Like every OTA since 1.6.0, it reaches
+  only 1.6.0 binaries.
+
+**Not verified:** a real join-request push arriving on a teacher's phone, and the bell's new row on the live web
+app.
+
 ## The teacher is told when a student's class-code pick waits for them — 2026-11-23
 
 **Asked:** «When parents or students joined through code the teacher shall receive a notification to approve the
