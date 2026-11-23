@@ -17,7 +17,7 @@ Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 - **API:** deploy run 1025. `iqraa-api` passed its «Verify the deployed commit» step, and `/api/healthz/version`,
   read by command afterwards, answered `681749c`, revision `iqraa-api-00565-ws2`. The traffic split was not read.
   Migrations and the schema check passed; `iqraa-verifier` was skipped, since the merge does not touch it.
-- **Web:** deploy run 1025's `iqraa-web` job was still building the bundle when this was written.
+- **Web:** deploy run 1025's `iqraa-web` job published to Cloudflare Pages and passed «Verify the deployed bundle» (12:11 UTC), so the bell's join-request rows are on `app.iqrra.com`.
 - **Phones:** `preview` got it from the merge's own run, Mobile OTA update run 1209. `production` was published
   by hand, run 1210 (`branch=production`). Both succeeded, from `681749c`. Like every OTA since 1.6.0, it reaches
   only 1.6.0 binaries.
