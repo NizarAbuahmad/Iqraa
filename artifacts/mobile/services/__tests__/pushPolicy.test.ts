@@ -64,6 +64,12 @@ describe('notification channels', () => {
     assert.ok(channelsFor(false).some(c => c.id === 'quiet'));
   });
 
+  it('creates the join-request channel for teachers only', () => {
+    assert.ok(!channelsFor(false).some(c => c.id === 'requests'), 'a student or parent');
+    assert.ok(channelsFor(false, true).some(c => c.id === 'requests'), 'a teacher');
+    assert.ok(channelsFor(true).some(c => c.id === 'requests'), 'a system admin');
+  });
+
   it('shows the content-report channel to system admins only', () => {
     assert.ok(!channelsFor(false).some(c => c.id === 'admin'));
     assert.ok(channelsFor(true).some(c => c.id === 'admin'));

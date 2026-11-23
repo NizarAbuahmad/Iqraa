@@ -8,6 +8,13 @@ describe('routeFromNotificationData', () => {
     assert.equal(routeFromNotificationData({ threadId: 't1' }), '/messaging/t1');
   });
 
+  it('opens the class for a join-request push, and only a real class id', () => {
+    const id = '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b';
+    assert.equal(routeFromNotificationData({ screen: 'class-link-requests', classGroupId: id }), `/classes/${id}`);
+    assert.equal(routeFromNotificationData({ screen: 'class-link-requests', classGroupId: '../admin' }), '/classes');
+    assert.equal(routeFromNotificationData({ screen: 'class-link-requests' }), '/classes');
+  });
+
   it('opens the admin report queue for an artifact-report push', () => {
     assert.equal(routeFromNotificationData({ screen: 'artifact-reports' }), '/admin/artifact-reports');
   });

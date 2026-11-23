@@ -51,10 +51,10 @@ let channelsReady: Promise<unknown> = Promise.resolve();
  * target SDK; it does have to exist before the prompt is shown, so
  * `askForPushPermission` waits for it.
  */
-export function ensureNotificationChannels(lang: 'ar' | 'en', isAdmin: boolean): Promise<unknown> {
+export function ensureNotificationChannels(lang: 'ar' | 'en', isAdmin: boolean, isTeacher: boolean): Promise<unknown> {
   if (Platform.OS !== 'android') return Promise.resolve();
   channelsReady = Promise.all(
-    channelsFor(isAdmin).map(c =>
+    channelsFor(isAdmin, isTeacher).map(c =>
       Notifications.setNotificationChannelAsync(c.id, {
         name: lang === 'ar' ? c.nameAr : c.nameEn,
         description: lang === 'ar' ? c.descriptionAr : c.descriptionEn,
