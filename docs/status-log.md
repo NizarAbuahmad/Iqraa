@@ -28,6 +28,20 @@ the old source, so it would have failed before this fix.
 **Not verified:** in a browser or on a device. The individual games were not touched; each already had a back
 button to the hub (`GameShell`).
 
+## The chat-hiding change is live on the web and on production phones — 2026-11-23
+
+#1535 («The AI chat «اسأل إقرأ» is hidden from the app», below) merged as `a2ca732`.
+
+- **Web:** Deploy run 1022 ran `iqraa-web` only (API, verifier and both schema jobs skipped, as the diff touched
+  none of them); «Publish to Cloudflare Pages» and «Verify the deployed bundle» passed.
+- **Android `preview`:** Mobile OTA update run 1205, on the merge.
+- **Android `production`:** published by hand, Mobile OTA update run 1207, from `main` at `b8c096b` — which also
+  carries #1534 (Games hub back arrow), merged after #1535.
+- **STATUS.md** «Mobile» names run 1207 as the latest production OTA, and a new line says the chat is hidden.
+
+**Not verified:** the live page itself (app.iqrra.com is not reachable from the cloud session that did this), and
+which phones have applied the update.
+
 ## The AI chat «اسأل إقرأ» is hidden from the app — 2026-11-22
 
 **Asked:** «Hide the chat feature from the app, it isn't working well». The AI assistant, not person-to-person
