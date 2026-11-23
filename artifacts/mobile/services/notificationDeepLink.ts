@@ -24,10 +24,20 @@ const SCREEN_ROUTES: Record<string, string> = {
   school: '/school',
 };
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function routeFromNotificationData(data: unknown): string | null {
   const threadId = threadIdFromNotificationData(data);
   if (threadId) return `/messaging/${threadId}`;
   if (typeof data !== 'object' || data === null) return null;
   const screen = (data as Record<string, unknown>).screen;
+  // A student's class-code pick waits for the teacher (api-server
+  // lib/joinRequestNotify.ts): open that class, whose Students tab — the one it
+  // opens on — carries the «طلبات الانضمام» banner. Only a real id goes into the
+  // path; anything else falls back to the class list.
+  if (screen === 'class-link-requests') {
+    const classId = (data as Record<string, unknown>).classGroupId;
+    return typeof classId === 'string' && UUID.test(classId) ? `/classes/${classId}` : '/classes';
+  }
   return typeof screen === 'string' && Object.hasOwn(SCREEN_ROUTES, screen) ? SCREEN_ROUTES[screen] : null;
 }

@@ -10,6 +10,73 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The teacher is told when a student's class-code pick waits for them — 2026-11-23
+
+**Asked:** «When parents or students joined through code the teacher shall receive a notification to approve the
+request». The owner chose to keep who waits as it is: only a student who picks a name off the shared CLASS code
+waits for approval (`claimNeedsApproval`, since 2026-10-24). A per-student code, and every parent, still link at
+once. Before this change nothing told the teacher a request existed. It sat in the «طلبات الانضمام» banner on the
+class's Students tab until they happened to open it, while the child's screen said the teacher had been asked.
+
+- **Push (API).** `lib/joinRequestNotify.ts` pushes every device of the class's teacher: «طلب انضمام جديد» /
+  «طلب باسم «…» في <class> — بانتظار موافقتك.» (`modules/notifications/joinRequestText.ts`, Arabic only like every
+  push). It goes on a new Android channel, `requests`, with `data { screen: "class-link-requests", classGroupId }`.
+  - Only a **new** request pushes. `linkRosterRowInTx` now tells `requested` (row inserted) from `pending` (the
+    same account re-entering the same name, which `onConflictDoNothing` leaves alone). Picking a different name is
+    a new request, and it does push.
+  - Both ways in push: `POST /auth/claim` and the code-only `POST /auth/redeem`.
+  - It is sent after the commit and before the answer, through `pushWithin` (Cloud Run CPU throttling), and never
+    throws.
+  - **One push per class per 10 minutes** (`JOIN_REQUEST_PUSH_WINDOW_MINUTES`). A teacher who writes the code on
+    the board gets thirty picks in five minutes: the first rings, and the rest wait in the banner and the bell, which
+    count them. It is measured from the class's other requests' `created_at`, so there is no new table.
+  - **Silent at night.** Between 22:00 and 07:00 Amman it goes to the `quiet` channel with `sound: null`, as family
+    pushes do (`joinRequestDelivery`; `PUSH_QUIET_HOURS=off` turns it off, as for them).
+  - It reads the teacher's class and device tokens with `systemDb`, because the joiner cannot see them. The file is
+    pinned in `systemDbFiles.test.ts`.
+  - `decideClaim` now returns `classGroupId` on a class-code resolution, so the push opens the class whose code was
+    used. A roster row can sit in several classes.
+- **Bell (API + app).** `GET /classes/link-requests` returns `{ total, classes: [{ classId, name, nameAr, count }] }`
+  for the teacher's live classes. It counts the same rows `/classes/:id/link-requests` lists: names already held by
+  a student account are left out, and `total` counts each request once. The route is declared before
+  `/classes/:id`.
+  - A teacher's `NotificationBell` polls it every minute (only when student accounts are on). It adds the count to
+    the bell's badge and leads the panel with one «طلبات الانضمام» row per class, each naming the class and opening
+    it (the class list shows no requests, so one row for all of them would lead nowhere useful).
+  - This is how a teacher on the web, which gets no push, hears of a request. The app-icon badge stays messages
+    only.
+  - Approving or rejecting in the banner refreshes the bell's count.
+- **App.** A new Android channel «طلبات الانضمام» (`requests`), created only for teachers and admins
+  (`channelsFor(isAdmin, isTeacher)`). `routeFromNotificationData` maps the push to `/classes/<id>`, and only when
+  the id is UUID-shaped; anything else goes to `/classes`. There is no native change, so `app.json` keeps its
+  version.
+- «ما الجديد» `join-request-notice` (teachers, 2026-11-23, opens `/classes`).
+
+**Verified** (local Postgres 16):
+- `joinRequestPush.db.test.ts` (14 tests):
+  - a pick pushes both of the teacher's devices on `requests`, and nobody else;
+  - re-entering the same name sends nothing, and a different name pushes again (once the window has passed);
+  - two picks within the window ring once, and both requests wait;
+  - a held `/auth/redeem` pushes; a per-student code, and a student already linked to the name re-entering the
+    class code, don't;
+  - an Expo 500 still answers 202, and the request is committed;
+  - the bell's count matches the class's own list, counts a child in two classes once in `total` and under both
+    classes, leaves out archived students and classes, drops after an approval, shows another teacher nothing, and
+    answers a student 403.
+- A code review before merge found the burst of pushes, the missing quiet hours and the one-row bell; all three
+  were fixed in this PR.
+- `rlsDiff.test.ts` gained a class-code pick and the bell read, compared with enforcement off and on: 202, then
+  200 with `total` 1 both ways, and the push comparison agrees.
+- Full api-server `pnpm test` with `REQUIRE_DB_TESTS=true`: 3,611 pass, 0 fail.
+- Mobile `pnpm test`: 9,553 tests; the only two failures were the terminology test catching «رمز الصف» / "class
+  code" in the first draft of the «ما الجديد» copy, fixed and re-run.
+- `@workspace/db` RLS suites: 76 pass.
+- `pnpm run typecheck`.
+
+**Not verified:** a real push on a phone (Expo was stubbed), or the bell row in a browser or on a device. The push
+is Arabic whatever the teacher's language, like every push here. A push arriving while the app is open does not
+refresh the bell at once; it catches up within a minute.
+
 ## The games hub has a back arrow again when opened from inside the app — 2026-11-22
 
 Reported: «Iqrra games no back button». The `/play` hub passed `hideBack` to `CornerFrame` unconditionally, on

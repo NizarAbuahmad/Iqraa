@@ -40,6 +40,14 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
+    id: 'join-request-notice',
+    date: '2026-11-23',
+    roles: ['teacher'],
+    titleKey: 'whatsNewJoinRequestsTitle',
+    bodyKey: 'whatsNewJoinRequestsBody',
+    route: '/classes',
+  },
+  {
     id: 'chat-stays-on-topic',
     date: '2026-11-21',
     roles: ['teacher'],
