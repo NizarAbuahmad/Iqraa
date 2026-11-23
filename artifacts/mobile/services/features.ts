@@ -25,6 +25,22 @@
  */
 export const DOCUMENT_UPLOAD_ENABLED = false;
 
+/**
+ * The AI assistant chat «اسأل إقرأ» (`app/(tabs)/iqra.tsx`).
+ *
+ * Off since 2026-11-22: it was not working well enough to offer. With it off,
+ * nothing in the app leads to the chat — the desktop sidebar tab, Today's ask
+ * card and the workspace's assistant panel, ⌘K «اسأل إقرأ», the FAQ button, the
+ * lesson page's and the shelf's «اسأل إقرأ», the tour's ask step and the chat's
+ * «ما الجديد» entries are all hidden. The `/iqra` route stays registered: it
+ * still hosts the app-wide change-lesson picker (the lesson bar, Today, ⌘K open
+ * it there), and anything else that lands on it is sent home.
+ *
+ * The chat itself, its API route and its tests are untouched. Flip this to
+ * `true` to restore every entry point.
+ */
+export const IQRA_CHAT_ENABLED = false;
+
 // ─── Served by the server, not baked into the build ──────────────────────────
 //
 // Everything above is a constant compiled into the bundle. Everything below is
