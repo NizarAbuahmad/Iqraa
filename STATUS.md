@@ -21,10 +21,9 @@ math answer keys (`artifacts/math-verifier`), RTL/Arabic-first UX.
 
 Checked 2026-10-22:
 
-- **API** `iqraa-api` (Cloud Run, europe-west1, project `iqraa-auth-507315`): commit
-  `2277f57` **(2026-10-25, from deploy run 801 — its «Verify the deployed commit» step passed; the
-  revision name and traffic split were not re-read)**. Last read by command, 2026-10-22: `9346b5f`,
-  revision `iqraa-api-00390-d4p`, 100% of traffic (`/api/healthz/version`).
+- **API** `iqraa-api` (Cloud Run, europe-west1, project `iqraa-auth-507315`): commit `681749c`,
+  revision `iqraa-api-00565-ws2`, read by command from `/api/healthz/version` on 2026-11-23 after deploy
+  run 1025 (its «Verify the deployed commit» step passed). The traffic split was not read.
 - **Site assistant «اسأل إقرأ»** (checked 2026-10-26 by command): `POST /api/site/ask` is live
   and the widget is on `www.iqrra.com` (`Site_Iqra`). The three starter questions are answered from
   fixed answers (`source: "curated"`); anything else goes to the AI path, capped by
@@ -63,8 +62,8 @@ Checked 2026-10-22:
   and two on 2026-11-14, submitted to Play (submit runs 2–3). Which version is on users' phones is not
   known from here: a phone still on 1.5.0 gets no OTA from `main`, whose runtime is 1.6.0 (CLAUDE.md,
   «`app.json`'s `version` is the OTA compatibility key»). OTAs reach the `production` channel only when
-  published by hand (`mobile-update.yml`, `branch=production`); the latest is from `b8c096b` (run 1207,
-  2026-11-23).
+  published by hand (`mobile-update.yml`, `branch=production`); the latest is from `681749c` (run 1210,
+  2026-11-23, the teacher's join-request notice, #1538). `preview` got the same commit from run 1209.
 - **The AI chat «اسأل إقرأ» is hidden** (`IQRA_CHAT_ENABLED = false` in
   `artifacts/mobile/services/features.ts`, #1535): on the web since deploy run 1022 and on 1.6.0 phones since
   production OTA run 1207, both 2026-11-23. `/iqra` only hosts the change-lesson sheet; the chat's API route is
