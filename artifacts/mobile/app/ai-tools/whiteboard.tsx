@@ -7,7 +7,7 @@ import { confirm } from '@/services/confirm';
 import { goBack } from '@/services/navigation';
 import { DECK_ACCENT, DECK_BG, DECK_CARD_BG } from '@/services/deckTheme';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
-import { BOARD_FILE_VERSION, boardFileOf, docOfFile, isBoardDirty, parseBoard, serializeBoard } from '@/services/boardFile';
+import { boardFileOf, docOfFile, isBoardDirty, parseBoard, serializeBoard } from '@/services/boardFile';
 import { PenCanvas } from '@/components/classroom/PenLayer';
 import { BOARD_PEN_COLORS, BOARD_PEN_LABEL_KEYS } from '@/services/penColors';
 import { boardScope } from '@/services/boardScope';
@@ -15,7 +15,8 @@ import { BoardBackground } from '@/components/classroom/BoardBackground';
 import { exportAsPDF } from '@/services/share';
 import { exportFilename } from '@/services/exportFilename';
 import { buildBoardHTML } from '@/services/boardExportHtml';
-import { BoardToolbar } from '@/components/classroom/BoardToolbar';
+import { BoardToolbar, type BoardTool } from '@/components/classroom/BoardToolbar';
+import { BoardTextDialog } from '@/components/classroom/BoardTextDialog';
 import { BoardSaveDialog } from '@/components/classroom/BoardSaveDialog';
 import { SolveDialog } from '@/components/classroom/SolveDialog';
 import { SolutionBlock } from '@/components/classroom/SolutionBlock';
@@ -48,7 +49,11 @@ import {
   fitCanvas,
   goToPage,
   hasInk,
+  isText,
   localizeDigits,
+  makeText,
+  replaceStrokeAt,
+  textSizeFor,
   removePage,
   redoBoard,
   undoBoard,
@@ -56,6 +61,7 @@ import {
   withSolution,
   type BoardBackground as BoardBackgroundKind,
   type BoardDoc,
+  type Stroke,
 } from '@/services/whiteboardModel';
 
 type Saved = { id: string; title: string; json: string };
@@ -81,6 +87,13 @@ type Saved = { id: string; title: string; json: string };
  * one at a time. The solution is saved with the board (file v2) and exported
  * with it; the block takes no touches, so ink passes straight through it.
  *
+ * The text tool («النص») types onto the page: a tap opens a dialog, and what is
+ * typed lands where the tap was, in the chosen colour and at the size that goes
+ * with the chosen width (`textSizeFor`). Tapping an existing text edits or
+ * deletes it; dragging one moves it. Text is an item in the page's stroke list
+ * (`isText`), so undo, clear, the eraser, saving (file v3) and the PDF all
+ * handle it with the ink.
+ *
  * A saved board that fails validation is refused with a message and the
  * screen stays blank; Save then creates a NEW material and never overwrites
  * the unreadable one.
@@ -101,7 +114,13 @@ export default function WhiteboardScreen() {
   const [doc, setDoc] = useState<BoardDoc>(EMPTY_DOC);
   const [color, setColor] = useState(BOARD_PEN_COLORS[0]!);
   const [width, setWidth] = useState(BOARD_DEFAULT_WIDTH);
-  const [erase, setErase] = useState(false);
+  const [tool, setTool] = useState<BoardTool>('pen');
+  /**
+   * The text dialog: where a new text goes (stored units), or the item being
+   * edited. The item is held by identity, not index, so the edit lands on that
+   * item even if the list was reordered meanwhile, and is dropped if it is gone.
+   */
+  const [textEdit, setTextEdit] = useState<null | { x: number; y: number; item: Stroke | null }>(null);
   const [area, setArea] = useState({ w: 0, h: 0 });
   const [loading, setLoading] = useState(!!params.savedId);
   const [saved, setSaved] = useState<Saved | null>(null);
@@ -136,6 +155,8 @@ export default function WhiteboardScreen() {
   askTitleRef.current = askTitle;
   const askSolveRef = useRef(askSolve);
   askSolveRef.current = askSolve;
+  const textEditRef = useRef(textEdit);
+  textEditRef.current = textEdit;
 
   // One confirm dialog at a time, shared by leave, clear and delete-page: a held
   // Escape key repeats, and each repeat would otherwise stack another dialog.
@@ -148,7 +169,7 @@ export default function WhiteboardScreen() {
   const dirty = useMemo(() => isBoardDirty(doc, saved?.json ?? null), [doc, saved]);
 
   const leave = useCallback(async () => {
-    if (busy.current || askTitleRef.current || askSolveRef.current) return;
+    if (busy.current || askTitleRef.current || askSolveRef.current || textEditRef.current) return;
     if (!isBoardDirty(docRef.current, savedRef.current?.json ?? null)) {
       goBack();
       return;
@@ -183,7 +204,7 @@ export default function WhiteboardScreen() {
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || askTitleRef.current || askSolveRef.current) return;
+      if (e.key !== 'Escape' || askTitleRef.current || askSolveRef.current || textEditRef.current) return;
       e.preventDefault();
       void leave();
     };
@@ -260,6 +281,47 @@ export default function WhiteboardScreen() {
       busy.current = false;
     }
   }, [t]);
+
+  /** Every change to the page's items goes through here, so the first-ink usage event fires for text too. */
+  const commitItems = useCallback((fn: (strokes: Stroke[]) => Stroke[]) => {
+    setDoc(d => updateCurrent(d, p => {
+      const next = fn(p.board.strokes);
+      if (next === p.board.strokes) return p;
+      if (firstInk(drawnReported.current, next.length > 0)) {
+        drawnReported.current = true;
+        trackWhiteboardDrawn(source);
+      }
+      return { ...p, board: commitStrokes(p.board, next) };
+    }));
+  }, [source]);
+
+  const onTextTap = useCallback((at: { x: number; y: number }, index: number) => {
+    if (busy.current || loading) return;
+    const item = index >= 0 ? currentPage(docRef.current).board.strokes[index] : undefined;
+    setTextEdit({ ...at, item: item && isText(item) ? item : null });
+  }, [loading]);
+
+  const onTextSubmit = useCallback((text: string) => {
+    const edit = textEditRef.current;
+    setTextEdit(null);
+    if (!edit) return;
+    commitItems(strokes => {
+      if (edit.item) {
+        const i = strokes.indexOf(edit.item);
+        return i < 0 || edit.item.text === text ? strokes : replaceStrokeAt(strokes, i, { ...edit.item, text });
+      }
+      const created = makeText(text, edit.x, edit.y, color, textSizeFor(width));
+      return created ? [...strokes, created] : strokes;
+    });
+  }, [color, commitItems, width]);
+
+  const onTextDelete = useCallback(() => {
+    const edit = textEditRef.current;
+    setTextEdit(null);
+    if (!edit?.item) return;
+    const target = edit.item;
+    commitItems(strokes => replaceStrokeAt(strokes, strokes.indexOf(target), null));
+  }, [commitItems]);
 
   const shownOf = useCallback((s: BoardSolution) => revealRef.current.get(s) ?? s.steps.length, []);
 
@@ -372,7 +434,7 @@ export default function WhiteboardScreen() {
   const persist = useCallback(async (title: string) => {
     if (saving.current) return;
     const r = serializeBoard(docRef.current);
-    const version = docHasSolution(docRef.current) ? BOARD_FILE_VERSION : 1;
+    const version = boardFileOf(docRef.current).version;
     if (!r.ok) {
       showToast(t('boardTooBig'));
       return;
@@ -412,7 +474,7 @@ export default function WhiteboardScreen() {
       // `r.json` is the snapshot that was written: ink added while the request
       // was in flight leaves the board dirty, as it should.
       setSaved({ id, title, json: r.json });
-      trackWhiteboardSaved({ pages: docRef.current.pages.length, first, withSolution: version === BOARD_FILE_VERSION });
+      trackWhiteboardSaved({ pages: docRef.current.pages.length, first, withSolution: docHasSolution(docRef.current) });
     } catch {
       // `saveItem`'s device-storage fallback can throw (quota); nothing was kept.
       showToast(t('boardSaveFailed'));
@@ -484,15 +546,11 @@ export default function WhiteboardScreen() {
           color={color}
           width={width}
           strokeScale={stage.scale > 0 ? stage.scale : 1}
-          erase={erase}
+          erase={tool === 'eraser'}
+          textMode={tool === 'text'}
+          onTextTap={onTextTap}
           active={!loading}
-          onChange={next => {
-            if (firstInk(drawnReported.current, next.length > 0)) {
-              drawnReported.current = true;
-              trackWhiteboardDrawn(source);
-            }
-            setDoc(d => updateCurrent(d, p => ({ ...p, board: commitStrokes(p.board, next) })));
-          }}
+          onChange={next => commitItems(() => next)}
         />
         {loading && (
           <View pointerEvents="none" style={styles.loading}>
@@ -508,8 +566,8 @@ export default function WhiteboardScreen() {
         onColor={setColor}
         width={width}
         onWidth={setWidth}
-        erase={erase}
-        onErase={setErase}
+        tool={tool}
+        onTool={setTool}
         canUndo={canUndo(page.board)}
         onUndo={() => setDoc(d => updateCurrent(d, p => ({ ...p, board: undoBoard(p.board) })))}
         canRedo={canRedo(page.board)}
@@ -549,6 +607,7 @@ export default function WhiteboardScreen() {
           close: t('close'),
           pen: t('penTool'),
           eraser: t('boardEraser'),
+          text: t('boardText'),
           undo: t('penUndo'),
           redo: t('penRedo'),
           clear: t('penClear'),
@@ -574,6 +633,25 @@ export default function WhiteboardScreen() {
         labels={{ title: t('boardSaveTitle'), nameLabel: t('boardSaveNameLabel'), save: t('boardSaveConfirm'), cancel: t('cancel') }}
         onSubmit={title => { setAskTitle(false); void persist(title); }}
         onCancel={() => setAskTitle(false)}
+      />
+      <BoardTextDialog
+        visible={textEdit !== null}
+        initialText={textEdit?.item?.text ?? ''}
+        editing={!!textEdit?.item}
+        isRTL={isRTL}
+        labels={{
+          addTitle: t('boardTextAddTitle'),
+          editTitle: t('boardTextEditTitle'),
+          fieldLabel: t('boardTextField'),
+          placeholder: t('boardTextPlaceholder'),
+          add: t('boardTextAdd'),
+          save: t('boardTextSave'),
+          remove: t('boardTextDelete'),
+          cancel: t('cancel'),
+        }}
+        onSubmit={onTextSubmit}
+        onDelete={onTextDelete}
+        onCancel={() => setTextEdit(null)}
       />
       <SolveDialog
         visible={askSolve}

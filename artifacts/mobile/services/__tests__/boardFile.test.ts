@@ -120,7 +120,7 @@ describe('parseBoard refuses', () => {
     ['null', null],
     ['an array', []],
     ['text that is not JSON', '{nope'],
-    ['a wrong version', mutate(b => { b.version = 3; })],
+    ['a wrong version', mutate(b => { b.version = 4; })],
     ['a missing version', mutate(b => { delete b.version; })],
     ['a wrong canvas width', mutate(b => { b.canvas.w = 100; })],
     ['a wrong canvas height', mutate(b => { b.canvas.h = 100; })],
@@ -227,8 +227,8 @@ describe('boards with a solution (version 2)', () => {
     assert.ok(plain.ok && solved.ok);
     if (!plain.ok || !solved.ok) return;
     assert.equal((JSON.parse(plain.json) as { version: number }).version, 1);
-    assert.equal((JSON.parse(solved.json) as { version: number }).version, BOARD_FILE_VERSION);
-    assert.equal(BOARD_FILE_VERSION, 2);
+    assert.equal((JSON.parse(solved.json) as { version: number }).version, 2);
+    assert.ok(BOARD_FILE_VERSION >= 2);
   });
 
   it('round-trips a solution, verified and unchecked, onto the right page', () => {

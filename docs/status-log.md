@@ -10,6 +10,41 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The whiteboard has a text tool — 2026-11-23
+
+**Reported:** «السبورة there is no text to add and write». The board had pen, eraser, paper and «حلّ مسألة», but no way
+to type.
+
+- **Tool.** «النص» sits between the pen and the eraser (`BoardTool` in `BoardToolbar.tsx`, which replaces the old
+  `erase` boolean). With it on, a tap opens `BoardTextDialog` (several lines; Enter is a new line) and the text lands
+  with its start corner at the tap: top-left for left-to-right text, top-right for right-to-left, decided by the first
+  strong letter (`textDirection`, Arabic-Indic digits are not letters). It takes the chosen colour, and the width
+  picker sets its size (`TEXT_SIZES` 28/40/60 canvas units, one per `STROKE_WIDTHS`). Tapping a text edits or deletes
+  it, and dragging it more than 6 px moves it.
+- **One list.** A text item is a `Stroke` with `text`, whose `points` is one anchor pair and whose `width` is the font
+  size, so undo, redo, clear, the eraser (`strokeHit` tests an estimated box: `TEXT_ADVANCE` × size per character,
+  `TEXT_LINE_HEIGHT` per line), first-ink tracking and dirty checks all handle it with no new state. **Anything that
+  draws polylines must skip `isText` items**: `StrokeLines` and the PDF do. Slides never create text, so the slide pen
+  is unchanged.
+- **Drawing.** On screen, text is React Native `Text` over the SVG (Almarai), each in a wide box so it never wraps.
+  That matches the PDF, where SVG text cannot wrap. In the PDF it is one `<text>` per line, escaped, with the solution
+  panel's foreign-run isolation for right-to-left lines.
+- **File v3.** A board is written at the lowest version that holds it: 1 for ink, 2 with a solution, 3 with text
+  (`BOARD_FILE_VERSION` is now 3). An app that has not updated refuses a v3 board whole instead of drawing each text as
+  a big dot. `parseBoard` accepts `text` only in v3, only already in `cleanText` form (no control characters except
+  line breaks, trimmed, ≤ `MAX_TEXT_CHARS` = 500 code points), non-empty, at a single anchor. `formState.boardVersion`
+  now records 1/2/3, and the save event's `withSolution` comes from `docHasSolution`.
+- **«ما الجديد»:** `whiteboard-text`, teachers, dated 2026-11-23.
+
+**Verified:** `boardText.test.ts` (new: cleaning, direction, sizes, box, hit, move, erase, undo, v3 round trip and
+refusals, export) and the existing board suites. The mobile suite and the monorepo typecheck pass. In Chromium against
+a local API and a throwaway database, a new teacher placed a two-line text, dragged it, opened it for editing,
+undid and redid it, erased it, and in Arabic placed right-anchored Arabic text next to a green, thick English line.
+
+**Not verified:** Android and iOS devices (RN `Text` there; the anchor and no-wrap box are the same code), the exported
+PDF's look (its markup is tested, not printed), and how close the eraser's estimated box comes to a real glyph run in
+other fonts.
+
 ## The games hub has a back arrow again when opened from inside the app — 2026-11-22
 
 Reported: «Iqrra games no back button». The `/play` hub passed `hideBack` to `CornerFrame` unconditionally, on
