@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 6: four lessons get book pages, five vocational ranges lose the unit-end page, 17 broken crops go — 2026-11-24
+
+`main` already has a Grade 6 page and figure pass (Arabic's one-lesson-off entries, English Lessons 10-12, three refiled figures).
+This is what a second read of the same books, by page image and extracted text, still found.
+
+**Book pages.** Four lessons had none although their pages lie in a neighbour's images, and now read them: science S1 u4_l1
+(p.82-85, through `rendered`), social S1 u3_l2 (p.59-61), u4_l1 (p.83-87) and u5_l1 (p.105-108; their first page, p.82 and p.104,
+has no image). Five vocational S1 ranges (u1_l3, u2_l2, u3_l2, u5_l2, u6_l2) end one page earlier: the last page was the
+career-guidance page that closes the unit.
+
+**Figures.** 17 cut or sliced crops and their PNGs are dropped (science S1 7, vocational S1 10): a plant-cell tile with its
+neighbour peeping in, lost labels, strips of the unit-opener, text slices, page furniture. 15 more that the audit also marked
+are clean partial pieces of a figure (one tile of a photo grid, one half) and stay, since the rest of the figure is kept.
+
+**Not done.**
+- Social S1 u2_l2 (p.36-40), u2_l3 (p.41-47), u4_l2 (p.88-94), u5_l3 (p.113-117) and social S2 u9_l1 (p.85-89) have no entry:
+  their pages straddle two image folders and `rendered` holds one. They need a re-render or a schema step.
+- Digital S1 and PE S1 ranges differ from `main` by their last page; `main` judged it otherwise, so they are left.
+- Maths S1 lessons whose own pages were never rendered (u1_l4, u1_l5, u3_l1, u3_l2, u3_l3, u3_l4) still have none, and no image
+  exists for any of unit 3.
+
+**Verified.** `curriculum verify` (0 errors); curriculum tests (936 pass; `r2.test.ts` fails here only because R2 variables are
+set); the whole mobile suite (9,574 pass, 0 fail, 10 skipped); `tsc --build`. **Not verified:** the pages and slides in a browser.
+
 ## Grade 10: every page of every served range read — nothing foreign inside, two known cut-offs confirmed — 2026-11-21
 
 «Grade 10 audit…» (2026-11-13) looked at the first and last page of each range. This pass opened **all 2,006 images of

@@ -7607,7 +7607,7 @@
   "kbl-g6-voc-s1-nccd-u1_l3": {
    "sourceId": "g6-voc-s1-student-book",
    "startPage": 19,
-   "endPage": 25,
+   "endPage": 24,
    "aspect": 0.75
   },
   "kbl-g6-voc-s1-nccd-u2_l1": {
@@ -7624,7 +7624,7 @@
   "kbl-g6-voc-s1-nccd-u2_l2": {
    "sourceId": "g6-voc-s1-student-book",
    "startPage": 36,
-   "endPage": 45,
+   "endPage": 44,
    "aspect": 0.75
   },
   "kbl-g6-voc-s1-nccd-u3_l1": {
@@ -7641,7 +7641,7 @@
   "kbl-g6-voc-s1-nccd-u3_l2": {
    "sourceId": "g6-voc-s1-student-book",
    "startPage": 55,
-   "endPage": 61,
+   "endPage": 60,
    "aspect": 0.75
   },
   "kbl-g6-voc-s1-nccd-u4_l1": {
@@ -7669,7 +7669,7 @@
   "kbl-g6-voc-s1-nccd-u5_l2": {
    "sourceId": "g6-voc-s1-student-book",
    "startPage": 78,
-   "endPage": 87,
+   "endPage": 86,
    "aspect": 0.75
   },
   "kbl-g6-voc-s1-nccd-u6_l1": {
@@ -7686,7 +7686,7 @@
   "kbl-g6-voc-s1-nccd-u6_l2": {
    "sourceId": "g6-voc-s1-student-book",
    "startPage": 97,
-   "endPage": 104,
+   "endPage": 103,
    "aspect": 0.75
   },
   "kbl-g6-voc-s2-nccd-u1_l1": {
@@ -14905,6 +14905,40 @@
    "startPage": 111,
    "endPage": 124,
    "aspect": 0.7586
+  },
+  "kbl-g6-science-s1-nccd-u4_l1": {
+   "sourceId": "g6-science-s1-student-book",
+   "startPage": 82,
+   "endPage": 85,
+   "aspect": 0.75,
+   "rendered": {
+    "dir": "kbl-g6-science-s1-nccd-u3_l2",
+    "startPage": 66,
+    "endPage": 85
+   }
+  },
+  "kbl-g6-social-s1-nccd-u3_l2": {
+   "sourceId": "g6-social-s1-student-book",
+   "startPage": 59,
+   "endPage": 61,
+   "aspect": 0.75,
+   "rendered": {
+    "dir": "kbl-g6-social-s1-nccd-u2_l3",
+    "startPage": 42,
+    "endPage": 61
+   }
+  },
+  "kbl-g6-social-s1-nccd-u4_l1": {
+   "sourceId": "g6-social-s1-student-book",
+   "startPage": 83,
+   "endPage": 87,
+   "aspect": 0.75
+  },
+  "kbl-g6-social-s1-nccd-u5_l1": {
+   "sourceId": "g6-social-s1-student-book",
+   "startPage": 105,
+   "endPage": 108,
+   "aspect": 0.75
   }
  }
 }
