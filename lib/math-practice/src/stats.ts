@@ -782,8 +782,11 @@ const grouped = (id: string, match: RegExp, grades: [number, number]) => T(id, m
     const tops = [...cls.entries()].sort((a, b) => b[1] - a[1]);
     if (tops.length < 3 || tops[0]![1] === tops[1]![1]) continue;
     const label = (a: number) => `${a}–${a + w - 1}`;
-    const head = `سُجّلت ${n} علامة: ${list(xs)}. نظّمها في فئات طول كل منها ${w}.`;
-    const headEn = `${n} marks were recorded: ${listEn(xs)}. They are grouped in classes of width ${w}.`;
+    // The first class is named: started at the smallest mark instead of at 0, the
+    // classes — and the modal class — come out differently (hand review of the
+    // ready-made sheets, 2026-11-20).
+    const head = `سُجّلت ${n} علامة: ${list(xs)}. نظّمها في فئات طول كل منها ${w}، أولاها ${label(lo)}.`;
+    const headEn = `${n} marks were recorded: ${listEn(xs)}. They are grouped in classes of width ${w}, the first being ${label(lo)}.`;
     const pickClass = [...cls.keys()][int(rng, 0, cls.size - 1)]!;
     if (rng() < 0.5) { const f = cls.get(pickClass)!; return { eq: list(xs), answer: String(f), wrongs: countOpts(f, [f + 1, f - 1, n - f, cls.size]), ar: `${head} ما تكرار الفئة ${label(pickClass)}؟`, en: `${headEn} What is the frequency of the class ${label(pickClass)}?` }; }
     const modal = tops[0]![0];
