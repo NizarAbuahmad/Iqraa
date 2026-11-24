@@ -59,6 +59,401 @@ Verified: `bookFigures`, `bookPage` and `lessonShelf` tests, the curriculum suit
 `gen_book_figure_assets.mjs` (the only diff is the two renamed keys). No «ما الجديد» entry: nothing a teacher operates
 changed.
 
+## A dead key now switches provider for chat, exams and grading too — 2026-11-21
+
+Second half of «Production runs Claude for documents …». That change covered the pooled generators only
+(`generateContent`); every other route still called `openai.chat.completions.create` itself, so an empty OpenAI
+balance would have failed chat, exam generation and the photo-marking scans with nothing behind them. Chosen with the
+owner after the Haiku 5.5 comparison (`provider-eval` run 9: Haiku 16/16 complete and Arabic 4/4, 2.2× cheaper on
+documents and 4× on chat, but 3–5× slower — documents 26 s against 8 s, chat 12.5 s against 5 s): for an emergency
+path price barely matters, so the backup is the model most trusted, Claude Sonnet 5.5, not the cheapest.
+
+**Changed.**
+
+- `lib/aiComplete.ts` (new): `completeAi` (a finished reply) and `openChatStream` (a streamed one) are now the only
+  doors to a model. The model id names the provider; an account error (`providerFallback.ts`) re-sends the request
+  once to the other provider's configured model; the result carries the model that ANSWERED, and every caller records
+  spend and names the response against it. OpenAI's full `usage` is kept, so cached-token pricing still works.
+- `lib/claudeMessages.ts` (new): OpenAI-shaped messages → a Claude request. System messages move to `system`;
+  empty text blocks are dropped (Claude rejects them); a `data:image/{jpeg,png,gif,webp};base64,…` photo becomes a
+  base64 image block, an `https` URL a url block, anything else (a HEIC photo, an SVG) an `UnsupportedImageError`.
+- `lib/claude.ts`: `completeWithClaude` takes a message list as well as one prompt; `streamWithClaude` (new) adapts
+  Claude's event stream to the chunk shape `pumpChatStream` already reads, forwards only text deltas, and fails the
+  stream on a refusal. It settles once the API has accepted the request, which is when a bad key shows, so the chat
+  route can still switch before it has sent its client a byte.
+- Moved onto the helper: `routes/chat.ts` (both shapes), `routes/evaluations.ts` (exam generation, worked steps,
+  scan-paper, scan-class-paper), `routes/attempts.ts` (scan-marks), `routes/generate.ts` (prompt-slides questions;
+  `/generate/solve` wraps its call in `withProviderFallback`), `lib/derivativeVerified.ts`.
+- **Left alone on purpose.** `completeOnce` in `routes/generate.ts` still calls OpenAI itself: `generateContent`
+  already wraps the whole pooled flow, so the pool is read and written under the model that answered. A fallback
+  inside the call would store one model's paper under the other's key. `routes/siteAsk.ts`, the public site
+  assistant, has no backup: a visitor watching a typing indicator cannot wait out a fallback.
+- `aiComplete.test.ts` ends with a guard that counts direct `openai.chat.completions.create(` calls per file and
+  fails on any not listed (generate.ts: 1, siteAsk.ts: 1). `scanRoutes.test.ts` finds «the model call» by the text
+  `completeAi(` now; its checks (guards before the call, no roster sent) are unchanged.
+
+**A review of the first version found five things, fixed in the same PR.**
+
+- *Spend under Claude.* Claude is never sent fewer than 16000 tokens (`CLAUDE_MIN_MAX_TOKENS`; thinking counts against
+  it), but chat's estimate for a turn with no usage figures (the client left, the stream failed) charged
+  `CHAT_MAX_TOKENS` (1200): up to 13× too little against `AI_STUDENT_BUDGET_USD` during a fallback. It now charges
+  `claudeMaxTokens(CHAT_MAX_TOKENS)` when the model is Claude. The same floor means chat's 1200-token reply cap does
+  not hold on the Claude path; the prompt's brevity is all that limits a fallback reply.
+- *Big exam papers.* `completeWithClaude` ran on a 120 s timeout with the SDK's two retries, so a 30-question paper
+  (24000-token ceiling) would time out three times and fail after about six minutes. A reply above the floor now gets
+  `claudeRequestOptions`: time in proportion to its ceiling (12 ms a token, capped at 280 s inside Cloud Run's 300 s
+  limit) and no retry. Ordinary calls keep the client's defaults.
+- *Photos.* Claude takes images up to 5 MB and rejects a `media_type` that disagrees with the bytes; the scan routes
+  accept about 6 MB and OpenAI never checked the label. `toImageBlock` now reads the type from the bytes (JPEG, PNG,
+  GIF, WebP; an unrecognised file keeps its label only if Claude reads that type) and refuses an image over 5 MB with a
+  message that names the size.
+- *Chat history starting with the assistant.* Claude answers 400 when the first message is not the user's, and
+  `messages.slice(-CHAT_HISTORY_TURNS)` can start with an assistant turn. `toClaudeRequest` drops leading assistant turns.
+- *Tests.* Nothing pinned «record against the model that answered» at any route, and the guard built its path with
+  `.pathname`, which breaks on Windows and on a path with a space. Source-level tests now require every
+  `recordUsage` in the moved routes to avoid `getGenerationModel` / `getChatModel`, and the chat and scan sites to take
+  the model from the completion (checked by breaking two sites on purpose: both were caught); the path uses
+  `fileURLToPath`; and a test asserts no options argument is sent to OpenAI when neither a timeout nor a retry count is set.
+
+**Verified.** `claudeMessages.test.ts` 14, `aiComplete.test.ts` 20, `claude.test.ts` 17 (the streaming adapter against
+the real SDK parsing server-sent events, including thinking left out, a refusal failing the stream, and a 401 thrown
+from the open call before any chunk). api-server 3066 / 3066 after `pnpm build`; typecheck clean.
+
+**Not verified.**
+
+- No request went to a real dead key, an empty balance or a live Claude stream; the error shapes are the SDKs'
+  documented `status` / `code`. No route-level test stands in for either provider (route tests run with live AI off),
+  so the six rewired call sites are covered by the helper's tests, the typechecker and the guard, not by an end-to-end
+  run.
+- Photo scans through Claude: the conversion is tested, Claude's reading of handwriting is not. A scan response is
+  `saved: false` (the teacher confirms), but nobody has compared the two providers on a real paper.
+- A 30-question exam paper written by Claude may still not finish inside Cloud Run's 300 s request limit; the
+  timeout is now sized to it, but no paper that large has been timed on Claude.
+- Latency: the app's chat gives up after 45 s of silence (`IDLE_TIMEOUT_MS`). Claude thinks before its first word and
+  the thinking is not forwarded, so a slow turn is silent for that long. Haiku finished whole chat replies in about
+  12 s; Sonnet 5.5 was not timed on chat.
+- The exam and chat answers a fallback writes are Sonnet-voiced, not the OpenAI model's; a teacher or student would
+  not be told.
+- Since 2026-11-22 the app hides the «اسأل إقرأ» chat screen («The AI chat «اسأل إقرأ» is hidden from the app»), so
+  chat's fallback protects the `/chat` route that older builds and direct callers still reach, not a screen a user
+  opens today. The exam, scan and prep paths are the ones a teacher meets.
+
+## Paper scan: a whole book's objectives always fit — 2026-11-20
+
+`POST /evaluations/scan-paper` reads the photos of an exam a teacher already handed out and fills the marks grid. It refused more than 100 objectives (`MAX_SETUP_OBJECTIVES`, `artifacts/api-server/src/modules/assessment/scanRequest.ts`). Three books have more: Grade 10 Islamic Education S2 (116), S1 (105) and Grade 7 S1 (102). A teacher who picked the whole book there, by hand or with the new «الكتاب كاملًا (كل الدروس)» row, got the generic `scanFailed` message, «تعذّرت قراءة الصورة. أدخل العلامات يدويًا.», which blames the photo. Nothing said why.
+
+**What changed:** the cap is now 200.
+- It was a sanity bound on the request body, not a model limit. The objectives reach the prompt only as an id-and-label list.
+- 200 ids are about 8 KB of body. At 116, the prompt grows by the labels, around 10–15k characters.
+- The output budget (`max_completion_tokens: 3000`) is unaffected: the model returns one row per question, not per objective.
+
+**Test:** `scanRequest.test.ts` now checks that every catalog book's whole objective list passes `parsePaperScanBody`. It also checks that the largest book is above 100, so the test cannot pass vacuously. It failed on `book-islamic-10-s1` (105) before the change. The existing over-the-cap case now sends 201.
+
+**Verified:**
+- api-server: `pnpm build` then `pnpm test`, 2,984 pass.
+- `pnpm run typecheck`.
+
+**Not verified:**
+- A live scan of a real 116-objective paper.
+- Whether the model maps questions to objectives as well from a list of 116 as from a short one. A teacher still checks every row before saving; the scan writes nothing.
+
+No «ما الجديد»: a scan that used to fail on three books now works, and there is nothing new to point at.
+
+## Exam builder: «الكتاب كاملًا (كل الدروس)» — a whole vocational English track in one tap — 2026-11-20
+
+Follow-up to «المسار كاملًا» below. That one changed `TopicSelector`, which the exam builder (`app/evaluations/new.tsx`) does not use: there a teacher picks a catalog book and ticks lessons. Each Grade 10 vocational English track is already its own catalog book there: `book-english-10-commerce`, `-agriculture`, `-hospitality` and `-industry`, with 30–31 objectives each. So an exam on the whole track was possible, but only by ticking every lesson one by one.
+
+**What changed:** a «الكتاب كاملًا (كل الدروس)» row heads the lesson list whenever a book has more than one lesson. It ticks every objective of the book; tapped again with everything ticked, it clears them. It works on every book, not only the tracks.
+- The logic is `toggleEverything` / `isEverythingSelected` in `services/objectiveLessons.ts`.
+- The server needed no change. `POST /evaluations` already takes any number of objectives, provided they all belong to the chosen book (`objectivesAreWithinBook`).
+- The track's «ما الجديد» entry (`g10-english-whole-track`, not shipped yet) now also tells teachers how to do it for an exam. Its date, and that of `g10-exams-humanities-pe`, moved to 2026-11-24, the day of the final merge from `main`.
+
+**Test:** `evaluationWholeBook.test.ts`, which failed before the helpers existed.
+- For each of the four track books, select-all ticks all of its objectives, and `objectivesAreWithinBook` accepts the ids.
+- The toggle clears a full selection and fills a partial one.
+- A book with nothing to pick is never "everything".
+
+**Verified:**
+- On the head merged with main (2026-11-20): mobile 9,368 pass, api-server 2,983 pass (after `pnpm build`), curriculum 937 pass plus `verify`.
+- `pnpm run typecheck`.
+
+**Not verified:**
+- The screen was not opened in a browser.
+- A live exam generated from a whole track (30 objectives).
+
+**Known limit, not new (fixed the same day, see «Paper scan: a whole book's objectives always fit» above):** the paper scan (`POST /evaluations/scan-paper`) refused more than 100 objectives (`MAX_SETUP_OBJECTIVES`). Three Islamic-education books have more: Grade 10 S2 (116), Grade 10 S1 (105) and Grade 7 S1 (102). On those, «الكتاب كاملًا» followed by a scan failed with the generic scan error, and so did ticking every lesson by hand.
+
+## Grade 10 vocational English: «المسار كاملًا» picks a whole track — 2026-11-17
+
+Follow-up to the track grouping in this PR. The four Grade 10 vocational English books (commerce, agriculture, hospitality, industrial) were kept out of «الكتاب كاملًا» and «الفصل الأول كاملًا» and listed under their own headings, but a teacher could only pick their units one at a time. Each track's heading now starts with «المسار كاملًا: القطاع التجاري» (and so on). It covers that track's units and nothing else.
+
+**How:** a 'book' scope may now name one track book, `ScopeSelection.bookId` (`services/scopeSelection.ts`). It is not a new scope kind.
+- `unitsInScope` returns that book's units. It returns none when the book is not a track of the picked grade and subject, so `parseScope` refuses that selection.
+- `scopeKey` is `book:<grade>:<subject>:<bookId>`. The plain book key is unchanged, so cached papers keep their keys.
+- `scopeFromKey` (`services/revisionScope.ts`) reads the four-part key.
+- `scopeLabel` / `revisionPhrase` say «المسار كاملًا: …» / «موضوعات مسار …».
+- `TopicSelector` adds the item under each track's heading, wherever the screen offers 'book'.
+
+The API needed no change. It treats `scope.scopeKey` as opaque (`scopeKeyOf`, `grounding.ts` caps it at 200 characters), and `scope.kind` is still `'book'`.
+
+**Where it shows:** the eight `/ai-tools` screens that offer the whole book: quiz, worksheet, lesson plan, activity, slides, lesson flow, classroom builder and game. The chat tab's lesson picker (`app/(tabs)/iqra.tsx`) also shows it, because it takes the default kinds and treats it as it treats «الكتاب كاملًا». The exam builder (`/evaluations/new`) has its own picker and does not get it. «ما الجديد»: `g10-english-whole-track`, which opens the quiz.
+
+**Test:** `englishTrackScope.test.ts`, two new cases.
+- A track scope covers exactly its 6 units. Its key differs from the book's, and its label, phrase, key round trip and `parseScope` round trip are pinned.
+- A track id on the English main book, or on maths, is refused, and so is an unknown book in a key.
+- Both cases failed before the change.
+
+**Verified:**
+- mobile: 9,324 pass.
+- `pnpm run typecheck`.
+
+**Not verified:** the picker was not opened in a browser. The new item is a `DropdownItem` like «الكتاب كاملًا», placed under the existing track heading.
+
+## Grade 10 maths «حل معادلات خاصة»: its worked example gives the book's one real root, not ±3i — 2026-11-17
+
+The last item from the Grade 10 review. Main's audit had already added the 2026 edition's first lesson, «حل معادلات خاصة», as `u1_l5`, with its five objectives, summary and exercises. One thing it carried over was wrong. The hand-written enrichment row `kbl-math-s2-1-1` (`services/knowledgeBase.ts`) gave the example «x³−2x²+9x−18=0: حلول x=2 و x=±3i». The book (math S1 p.9) factors it as (x−2)(x²+9) = 0 and says «لا يوجد حل حقيقي للمعادلة x²+9=0، فللمعادلة جذر واحد هو 2». Grade 10 works in real numbers only.
+
+**What changed:**
+- The example is rewritten, in Arabic and English, as the book works it: grouping, then factoring, then one real root.
+- Checked numerically: the real roots of x³−2x²+9x−18 are {2}, and of x⁶−3x³−40 are {2, ∛(−5)}. The second example was already right.
+- No other Grade 10 lesson text or offline bank item carries a complex root (searched).
+
+**Test:** `g10MathRealRoots.test.ts`. No Grade 10 maths KB lesson's summary, rules or examples may carry a complex root, and u1_l5's example must give the one real root. Both cases fail without the change.
+
+**Verified:**
+- mobile: 9,321 pass.
+- One run failed «Grade 1 maths difficulty, offline» in `earlyMathDifficulty.test.ts`. That file passes 5/5 alone and failed for Grade 4 once before; it is a flake in main's early-grade offline maths, outside this change.
+- `pnpm run typecheck`.
+
+**Still missing for u1_l5:**
+- **Figures:** `figure-lesson-map.json` still maps book lesson (1,1) to `null`. Mapping it would make crops reachable that were probably never uploaded to R2.
+- **Book pages:** `book-page-links.json` has none for the lesson.
+
+Both need the PDF and an R2 write token. Unchanged and still the owner's call: the two 2020-edition lessons, u1_l3 «تبسيط المقادير الأسية» and u1_l4 «حل المعادلة الأسية», whose ids are stored in Postgres.
+
+## Grade 10 English: the vocational tracks get their own picker headings and stay out of whole-semester scopes — 2026-11-15
+
+Grade 10's four vocational-English coursebooks (commerce, agriculture, hospitality, industry) are their own KB books, but they share `subjectId: 'english'`, grade 10 and semester 1 with the English book. Read from the code and confirmed by running it:
+- **Picker.** `getUnitsForSubjectGrade('english', 'grade-10')` returns 40 units. The topic picker grouped them by semester only, so «الفصل الأول» listed the book's 5 units followed by the tracks' 30, with nothing saying which track a unit came from.
+- **Wide scopes.** `unitsInScope` built «الفصل الأول كاملًا» and «الكتاب كاملًا» from the same list, so a full-semester English paper spanned all four tracks' content.
+- **Teaching plans.** «توزيع الدروس تلقائيًا» would append the tracks' 30 lessons to an English class's term.
+
+**What changed**
+- **`KBBook.track`** (`services/knowledgeBase.ts`) marks the four books, with an Arabic and English track name.
+- **New helpers:** `trackOfUnit`, `getMainUnitsForSubjectGrade` (units without track books) and `unitTitleWithTrack`.
+- **Wide scopes** (`services/scopeSelection.ts`): `unitsInScope` for `book` and `semester`, and `semestersAvailable`, use only the subject's own book. A track's unit or lesson can still be picked on its own.
+- **Topic picker:** the new `groupUnitsForPicker` keeps each semester of the subject's own book, then gives each track its own heading, «الفصل الأول · القطاع التجاري». `TopicSelector` uses it, and a selected track unit shows its track in the picker button. The topic string sent for grounding is unchanged.
+- **Teaching plans:** auto-scheduling uses only the main book. The plan's lesson list still shows track units for dating by hand, each led by its track name.
+
+**Test:** `englishTrackScope.test.ts`, 5 cases:
+- only these four books carry a track;
+- the picker groups and their order;
+- whole-semester and whole-book scopes hold 5 and 10 units;
+- a track unit is still pickable on its own;
+- mathematics is unchanged.
+
+Its scope case fails without the change.
+
+**Verified:** mobile 9,320 pass; `pnpm run typecheck`.
+
+**Not verified:** the picker in a browser or on a phone.
+
+**«ما الجديد»:** none. It corrects how existing content is listed and scoped, and adds no feature.
+
+**Not done:**
+- No «track as a whole» scope: a teacher of the commerce track picks its units one at a time.
+- The chat's knowledge search still ranks track lessons alongside the English book's.
+
+## English Word List: the parser stops at the list's end — no more Grammar Reference rows as vocabulary — 2026-11-15
+
+Main's Grade 10 audit (#1479) had already fixed the bigger half: the Grade 10 S1 lessons now come from the «LESSON nA» heading, not the `WL` count. What it left in place: `extract-english-vocabulary.ts` kept parsing after the Word List into the Grammar Reference and irregular-verbs pages. Those pages carry no `WL` marker, so their cells were filed under the last list's lesson as if they were words to drill: «She/It», «They must», «burned / or burnt», «understood».
+
+**Rows removed (43):**
+
+| Lesson | Rows |
+|---|---|
+| Grade 10 S1 u5_l6 | 15 |
+| Grade 9 S1 u5_l4 | 16 |
+| Grade 9 S2 u10_l4 | 10 |
+| Grade 8 S1 | 1 |
+| Grade 8 S2 | 1 |
+
+No row was added or moved.
+
+**What changed:** one rule. The section ends at the first page with no `WL` marker after it started.
+
+**Knock-ons, each pinned by a test:**
+- **Grade 9 S2 u10_l4 «القواعد» joins `GRAMMAR_ONLY_LESSONS`.** It has 3 real words and had passed the hub's word floor only on irregular-verb forms. Without it, its grammar unit pointed at no hub lesson and every grammar suite crashed.
+- **14 Arabic glosses** for the dropped rows are removed from `english_vocabulary_ar.json`.
+- **`REVIEWED_BY_EAR` drops `been` and `burned` (24 → 22).** They are recordings someone listened to on 2026-10-31, and no lesson plays them now.
+- **The G5 and G10 grammar review forms are regenerated.** «understood» is now listed as outside the vocabulary lists, for the teacher to approve.
+- **Drill corpus pin:** 1,838 words and 499 sentences become 1,795 and 493.
+- **New case in `englishVocabularyLessons.test.ts`:** it fails on main's data.
+
+**Not done:** main's extractor comment says Grade 9 S1 has the same marker mis-filing as Grade 10 had, and that it was deferred because it moves four Grade 9 grammar lessons. That is still open.
+
+**Verified:**
+- curriculum: 937 pass;
+- mobile: 9,315 pass;
+- `pnpm run typecheck`.
+
+## Grade 10 history, geography, civic and PE: teachers can make exams for them — 2026-11-13
+
+Found while checking whether the API's prompts use the new self-assessment field. They do, through the app's context: lesson explanations (`pregenerate.ts`) and every `/generate/*` route receive the grounding context as `additionalContext`.
+
+The exam (Evaluation) builder is different. It is scoped by **objectives**, and `getEvaluableBookIds()` lists only books that have at least one. These seven books have none, on purpose, because their books print no outcomes list: history S1/S2, geography S1/S2, civic S1/S2 and PE S1. They were therefore missing from the exam screen altogether; a teacher could not make an exam for them.
+
+**What changed (owner's choice: exam-only objectives)**
+- **New opt-in `examTargetsFromBook`** on `makeNccdCatalog` (`lib/curriculum/src/catalogs/nccdCatalog.ts`), set only on those seven builders, so grades 1–9 are untouched.
+  - For a lesson with no `objectives`, it emits exam-only outcomes into the browser lesson's `outcomes`.
+  - Their text is the lesson's own «أُقيِّمُ تعلُّمي» box where the book prints one (PE: 40 targets), or else its «الفكرة الرئيسة» (61 targets).
+  - The unit-level civic and history tables are not used here, because the book does not say which lesson a unit statement belongs to.
+- **Labelled and kept apart from real outcomes.**
+  - Each target carries `examTargetSource` (`'main-idea' | 'self-assessment'`, new optional field on `LearningOutcome`).
+  - Ids take a separate shape, `o-hist-s1-u1_l1-t-0`. If the book ever prints real outcomes, those would be minted as `…-u1_l1-0`, and an exam stored against a target can never resolve to new text.
+  - `objectives` stays empty, so the generator context still never calls these «النتاجات».
+- **Exam screen** (`app/evaluations/new.tsx`): when a book's objectives are targets, a line under the lesson picker says the book prints no outcomes, so the questions are built on «الفكرة الرئيسة» or «أُقيِّمُ تعلُّمي».
+- **«ما الجديد»:** a teacher entry, `g10-exams-humanities-pe`, linking to `/evaluations`.
+
+**Verified:**
+- all seven books now evaluable; 101 targets, no duplicate ids;
+- `examTargets.test.ts`: 5 cases; with targets switched off, 3 fail;
+- curriculum 929 pass, `verify` 0 errors;
+- mobile 9,230 pass;
+- api-server, build then test: 2,914 pass;
+- `pnpm run typecheck`.
+
+**Not verified:**
+- a live exam generated for one of these books. The model is given main-idea text as the «objective» it writes questions against, and nobody has read the result;
+- the screen itself in a browser.
+
+**Note:** Bloom's level is `'Understand'`, defaulted like every NCCD objective, so each target's competency is inferred from its wording.
+
+## Grade 10 civic, history S2 and PE: the books' self-assessment criteria reach the generator, labelled as such — 2026-11-13
+
+Third fix from the Grade 10 review. Grade 10 history, geography, civic and PE lessons have no `objectives`. Their catalogs say why, in `meta.known_gaps`: the books print no outcomes list, and PE's «أُقيِّمُ تعلُّمي» was deliberately not used «تجنُّبًا لتصنيفِ محتوًى تقييميٍّ على أنّهُ نتاجاتٌ منهجيّةٌ». The review proposed filling `objectives` from the self-assessment tables and the «الفكرة الرئيسة» box. Anything in `objectives` reaches the model as «النتاجات (من المنهاج الرسمي)», so that would have claimed outcomes the books do not print. The owner chose a separate field instead. The «الفكرة الرئيسة» box was already the lesson summary, so it stays as it was.
+
+**What changed**
+- **New optional field `self_assessment_ar`** (`lib/curriculum/src/catalogs/nccdCatalog.ts`).
+  - On a unit for a book that prints the table per unit: civic S1 (p43, p84), civic S2 (p25, 49, 69, 83, 99) and history S2 (p67, p93). The book does not say which statement belongs to which lesson, so none is assigned to a lesson.
+  - On a lesson for PE, whose box ends each lesson (40 statements).
+  - It reaches `KBLesson` as `selfAssessmentAr` / `unitSelfAssessmentAr`.
+- **`buildLessonBlock`** (`services/kbContext.ts`) prints the statements under «معايير التقويم الذاتي في كتاب الطالب … (ليست قائمة النتاجات الرسمية)», for this lesson or for the whole unit. `objectives` stays empty, so nothing new is labelled official.
+- **Each statement was checked against its page in the extracted text.**
+  - Civic: fuzzy line match, 0.83–1.0.
+  - History S2: read against the numbered tables, and kept in the book's order.
+  - PE: letter-composition match against each line, 0.93–1.0, because that text layer prints words in reverse order.
+  - Three civic S2 lines whose OCR cannot be read with confidence are left out and listed in that catalog's `known_gaps`: p25 item 7, p69 items 1 and 6.
+- **Test.** `selfAssessmentContext.test.ts`, 4 cases: civic unit-level, history S2, PE lesson-level, and biology as a control, which keeps its official outcomes and gets no criteria. It fails 3/4 without the `kbContext` change.
+
+**Verified:**
+- mobile suite: 9,221 pass, 0 fail, 10 skipped;
+- api-server, build then test: 2,913 pass;
+- curriculum: 915 pass, `verify` 0 errors;
+- `pnpm run typecheck`.
+
+**Not verified:**
+- a live-AI plan for these lessons;
+- the API's own prompts (`lessonTeachingPrompt`, the evaluation generator) do not read the new field; only the app's generator context does.
+
+**Not done:**
+- history S1 and geography print no self-assessment table, so they still have nothing beyond the main idea;
+- `verify --gaps` still lists these lessons as «no outcomes», which is true.
+
+## Grade 10 lesson content: wrong maths and chemistry text corrected from the books — 2026-11-13
+
+Second fix from the Grade 10 review, on the same branch as the figures fix below. Lessons get their summary, key concepts, terms and rules from hand-written rows in `artifacts/mobile/services/knowledgeBase.ts`, merged onto the NCCD lesson by title (`enrichLesson`). Several of those rows described a different lesson, or material the 2026 book does not teach. Each fix below was checked against the extracted book text (`lib/curriculum/src/data/extracted/`), with page numbers in code comments.
+
+**Chemistry**
+- **Bohr (S1 u1_l1).** The rules used E = −13.6/n² eV. The book never uses 13.6 or eV; it works Eₙ = −R_H/n² with R_H = 2.18 × 10⁻¹⁸ J, and |ΔE| = R_H(1/n₁² − 1/n₂²), on pp.16–18. Now in joules.
+- **Wave-mechanical model (u1_l2).** It carried Heisenberg and Pauli, which appear on no page of the book. It also carried Aufbau, Hund and the filling order, which are the next lesson (pp.30–31). It now has the book's content from pp.20–23: Schrödinger, the orbital, the four quantum numbers with the book's terms «الفرعي» and «المغزلي», n², 2n² and the sublevel capacities.
+- **Electronic configuration (u2_l1).** A new row, `kbl-chem-2-0`, gives this lesson Aufbau, Hund and the book's filling order. Its five terms carry definitions from the book's glossary (pp.75–76); before, they were empty.
+- **Chemical reactions (S2 u4_l1).** The filler concept «تطبيقات حياتية» is replaced by the lesson's own terms from p.10.
+- **Offline chemistry bank** (`lib/math-practice`). `ch-as-m1` and `ch-as-m3` and their worked steps are now in joules: −5.45 × 10⁻¹⁹ J and −2.42 × 10⁻¹⁹ J. Each distractor is a named slip (÷n, n ignored, the other level), computed, not typed. So is the `ch-as-m4` comparison. `chemistryBankDepth.test.ts` pins both keys.
+- **`catalog.ts` outcome `o-chem-2-1`.** It is merged onto the wave-model lesson but read «writes electron configurations for elements 1–36», which is the next lesson. Reworded to the quantum-number outcome the book states for this lesson; the id is kept. The superseded `lesson-chem-1` objective's formula was also corrected. That objective is not served, but it is the text a future copy would come from.
+
+**Maths**
+- **Composition and inverse (S2 u5_l3, u5_l4).** One merged row «تركيب الاقترانات والاقتران العكسي والاقتران الجذري», matched by prefix, gave the composition lesson the inverse content and left the inverse lesson with only its placeholder. It is split into two rows, following the book (p.25 and pp.32–41): one-to-one (not «تقابل»), the horizontal-line test, the identity function, and the radical function including odd roots.
+- **Unit circle (S1 u3_l1).** It described right-triangle ratios; the book lesson (p.66) is standard position and the unit circle.
+- **Graphs (u3_l3).** It taught amplitude, period changes and shifts, none of which is in the book. It now covers sin, cos and tan on [0°, 360°], as pp.82–87 do; tan is «غير معرّف» at 90° and 270°, the book's wording.
+- **Trig equations (u3_l4).** The general solution «+360°n» is gone; the book works within one rotation.
+- **Sectors (S1 u2_l2).** A sector was defined as bounded by two arcs; it is one arc and two radii (p.41). The radian content is gone, since the book uses degrees only.
+- **Law of sines (u4_l2).** The garbled «(ZZض)» and the ambiguous case, which the book does not treat, are replaced by its two cases (ASA/SAA and SSA, p.107).
+- **Tangent (S2 u6_l1).** «touches the curve at one point only» is false in general: the book's own figure shows a tangent crossing the cubic. Now defined by slope.
+- **Vectors (u7_l1).** The unit vector is not in the book, and equal vectors belong to the next lesson. Both are replaced by the p.80 terms.
+- **Grouped variance (u8_l3).** The lesson opened with the range. It now gives the book's grouped-table formulas (p.125).
+
+**Scope check.** A before/after snapshot of all 3,335 KB lessons differs in exactly these 14 Grade 10 lessons and nothing else, so no other grade shares a changed title.
+
+**Verified:**
+- mobile suite: 9,213 pass, 0 fail, 10 skipped;
+- api-server, build then test: 2,899 pass;
+- math-practice: 949 pass;
+- curriculum: 915 pass;
+- `pnpm run typecheck`.
+
+**Not verified:**
+- live-AI output for these lessons;
+- the screens themselves.
+
+**Left open:**
+- placeholder summaries remain for maths u4_l3, u4_l4, u5_l1, u5_l2, u8_l4, u8_l5 and the labs. The hand-written row for «قانون جيوب التمام» never matches the catalog's «قانون جيب التمام», and renaming a catalog title was left alone;
+- the 2020-edition maths lessons u1_l3 and u1_l4, and the missing «حل معادلات خاصة».
+
+## Grade 10 book figures: junk dropped, misplaced figures moved — 2026-11-13
+
+**Superseded on merge (2026-11-15).** A separate audit reached `main` first: «Grade 10 audit: right book pages and figures», PRs #1479/#1483. It checked every figure and page range as images against the printed books, which this entry could not do. When this branch merged `main`, the owner chose main's version for everything in `knowledge-base/`: figure indexes, PNGs, the figure-lesson map and book-page links. So `knowledge-base/` on this branch is identical to `main`, and the moves, detaches and `lesson: 0` lab entries below are no longer in effect. They are kept here only as the record of what was proposed.
+
+First fix from a Grade 10 review covering coverage, results and book images, across all 15 subjects. Six reviewers each took a subject group and opened all ≈700 Grade 10 figure crops. They checked every figure→lesson map entry and every book-page range against the extracted book text. This PR fixes only the figures that need no PDF.
+
+**What changed** (`knowledge-base/grade-10-*/figures/*/index.json`, `figure-lesson-map.json`, regenerated
+`bookFigureAssets.ts`):
+- **28 crops dropped** (PNG and index entry):
+  - unit badges «الوحدة 2/3», the NCCD logo, a cover crop, a unit-opener banner;
+  - text-only «أفكر / أتذكر / أتعلم / معلومة أساسية» callouts;
+  - single answer options of review MCQs (phys-s2 p052, p089c/d);
+  - review-page text columns (earth-s2 p023, p055, p085);
+  - blank numbered exercise maps (history-s1 p076, geo-s1 p051/p061b, geo-s2 p086/p088) and a half-map fragment (geo-s2 p077b).
+- **24 figures moved to the lesson they show:**
+  - Maths unit-test figures were all pinned to the unit's last lesson. Ten chord, sector and angle test items sat under «معادلة الدائرة»; they now go to chords (u2_l1), arcs and sectors (u2_l2) and inscribed angles (u2_l3). U4 and U6 test items moved likewise, and U8 test items now go to scatter (u8_l1), cumulative frequency (u8_l2) and Venn probability (u8_l4).
+  - bio-s2 stomata: «الفقاريات» → «النباتات الوعائية البذرية».
+  - earth-s1 star field → «ماهية النجوم»; binary stars → «الأنظمة النجمية».
+  - Chemistry S1 and physics S2 «تجربة استهلالية» figures (spectrum apparatus, sodium shells, slinky) go to their unit's lab lesson through three new `lesson: 0` map entries (`matchedBy: "manual"`). Before, two were served on the previous unit's last lesson.
+- **9 detached** (`lesson: null`; the crop stays, nothing serves it):
+  - maths project and test figures with no matching lesson (polar grid, clinometer, rotating disc, trucks);
+  - three English Culture Spot photos (tea, bagpipes) that were shown on the personal-statement and formal-letter writing lessons. S2 u10_l7 now has no figure, on purpose: no picture beats a wrong one.
+
+**Guards** (a scratch script, not committed). It refused to write unless `lesson_ranges()` (`scripts/verify_book_pages.py`) gave identical ranges for every book before and after, so book pages are untouched. It also refused if any lesson that had figures was left with none, except the one above. That check kept `history-s2/p091-v2`, a wrong-lesson blank timeline: it is the only page anchor for «زيغريد هونكه». Before writing, every dropped and moved crop was looked at on two contact sheets. Two proposed drops were kept as real images that need a recrop: `bio-s2/p011` and `geo-s2/p067b-v2`.
+
+**No R2 upload needed.** No key is added to `bookFigureAssets.ts`. Two figures that would have become reachable, `math-s1/p016` (GeoGebra lab) and `phys-s2/p009b` (spring balance), were left out, because they were never uploaded. Mapping them needs `upload-figures-r2` with a token that can write `iqraa-public`.
+
+**Verified:** mobile suite (9,213 pass, 0 fail, 10 skipped), curriculum tests (915 pass), `verify` 0 errors, `pnpm run typecheck`.
+**Not verified:** no crop was compared with the printed page, because the PDFs are not on disk and nccd.gov.jo and r2.dev are blocked from the session. Not seen in the running app.
+
+**Still open from the review** (separate PRs):
+- book-page ranges: Civic S1 shows every lesson the previous lesson's pages; `lesson_ranges()` lets a lesson swallow the next one when that lesson has no figure; History S2 and creative arts have no pages;
+- ≈140 crops to recrop and many missing figures, both needing the PDFs;
+- wrong hand-written KB content (maths summaries; chemistry Heisenberg/Pauli and eV vs J);
+- objectives for history, geography, civic and PE;
+- English S1 vocabulary filed on the wrong lessons;
+- the vocational-English tracks mixed into the English unit picker;
+- the 2026 maths lesson «حل معادلات خاصة» missing from the catalog;
+- the vocational books: Part 2 on file is the Grade 9 book.
+
+## The bell's push-driven refresh is live on phones — 2026-11-24
+
+#1540 («A join-request push refreshes the bell the moment it arrives», below) merged as `fab8870`.
+
+- **Phones:** `preview` got it from the merge's own Mobile OTA update run 1212. `production` was published by hand
+  in run 1213 (`branch=production`). Both ran from `fab8870` and succeeded. Like every OTA since 1.6.0, it
+  reaches only 1.6.0 binaries.
+- **Web:** deploy run 1027's `iqraa-web` job published the bundle to Cloudflare Pages and passed «Verify the
+  deployed bundle». The web gets no pushes, so its bell still polls every minute.
+- **API:** not deployed. Deploy run 1027 skipped `iqraa-api`, migrations, the schema check and `iqraa-verifier`,
+  since the merge touches none of them; the API stays on `681749c`.
+
+**Not verified:** a join-request push arriving on a teacher's phone with the app open.
+
 ## A join-request push refreshes the bell the moment it arrives — 2026-11-23
 
 Follow-up to «The teacher is told when a student's class-code pick waits for them» (#1538), whose «Not verified»

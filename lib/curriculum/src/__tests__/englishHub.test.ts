@@ -262,12 +262,15 @@ test('"robot" is رجل آلي, as a Grade 1 English teacher asked (2026-10-15)'
 
 const GRAMMAR_ONLY = [
   'kbl-g9-eng-s1-nccd-u2_l3', 'kbl-g9-eng-s1-nccd-u4_l7', 'kbl-g9-eng-s2-nccd-u7_l1', 'kbl-g9-eng-s2-nccd-u7_l2', 'kbl-g9-eng-s2-nccd-u8_l5', 'kbl-g9-eng-s2-nccd-u9_l3',
+  'kbl-g9-eng-s2-nccd-u10_l4',
   'kbl-eng-s1-nccd-u1_l5', 'kbl-eng-s1-nccd-u2_l4', 'kbl-eng-s1-nccd-u3_l4', 'kbl-eng-s1-nccd-u4_l4', 'kbl-eng-s1-nccd-u5_l3',
   'kbl-eng-s2-nccd-u6_l1', 'kbl-eng-s2-nccd-u6_l4', 'kbl-eng-s2-nccd-u7_l1', 'kbl-eng-s2-nccd-u7_l5', 'kbl-eng-s2-nccd-u8_l1',
   'kbl-eng-s2-nccd-u8_l6', 'kbl-eng-s2-nccd-u9_l1', 'kbl-eng-s2-nccd-u9_l4', 'kbl-eng-s2-nccd-u10_l1', 'kbl-eng-s2-nccd-u10_l3',
 ];
 
-test('twenty-one lessons are grammar-only (six in Grade 9; in Grade 10 Articles, the four Semester 1 grammar lessons with no Word List of their own, and the ten Semester 2 lessons): listed, under the word floor, and no other lesson is', () => {
+// Grade 9 S2 u10_l4 joined on 2026-11-15: it had passed the word floor only on irregular-verbs rows read from the page
+// after the Word List (extract-english-vocabulary.ts now stops at the Word List's end).
+test('twenty-two lessons are grammar-only (seven in Grade 9; in Grade 10 Articles, the four Semester 1 grammar lessons with no Word List of their own, and the ten Semester 2 lessons): listed, under the word floor, and no other lesson is', () => {
   assert.deepEqual([...GRAMMAR_ONLY_LESSONS], GRAMMAR_ONLY);
   const flagged = ENGLISH_HUB_LESSONS.filter(l => l.grammarOnly).map(l => l.id).sort();
   assert.deepEqual(flagged, [...GRAMMAR_ONLY].sort());

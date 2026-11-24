@@ -42,9 +42,13 @@ Checked 2026-10-22:
   for generation and for chat; **`AI_MODEL_DOCUMENTS=claude-sonnet-5-5` is set** (read back by the
   owner on 2026-11-21, with `ANTHROPIC_API_KEY` attached from Secret Manager), so lesson plans,
   worksheets, quizzes, slide decks and student lesson explanations are written by Claude. Since
-  2026-11-21 an expired key or empty balance on either provider switches every pooled generation
-  (`generateContent`) to the other one, logged as an error; chat, exams, grading and the other
-  direct OpenAI calls have no backup yet («Production runs Claude for documents» in the log); budgets `AI_BUDGET_USD=100` (raised from 50 by the
+  2026-11-21 an expired key or empty balance on either provider switches the request to the other
+  one, logged as an error: every pooled generation (`generateContent`), and — through
+  `lib/aiComplete.ts` — chat (streamed or not), exam generation, worked steps, the photo-marking
+  scans, prompt-slides questions, the whiteboard solver and the verified-derivative path. The
+  backup of an OpenAI model is `AI_MODEL_DOCUMENTS` (Claude Sonnet 5.5), of a Claude model the
+  OpenAI generation model; no new variable. Only the public site assistant (`siteAsk`) has none
+  («A dead key now switches provider» in the log); budgets `AI_BUDGET_USD=100` (raised from 50 by the
   owner on 2026-11-20, revision `iqraa-api-00551-pzt`, read back as `limitUsd: 100` from `/api/healthz/ai-budget`; it is
   set on the service, not in `deploy.yml`, and deploys keep it), per user `1`, per
   student `0.20` (a system admin can give one account its own limit on the admin Users screen —
@@ -62,8 +66,9 @@ Checked 2026-10-22:
   and two on 2026-11-14, submitted to Play (submit runs 2–3). Which version is on users' phones is not
   known from here: a phone still on 1.5.0 gets no OTA from `main`, whose runtime is 1.6.0 (CLAUDE.md,
   «`app.json`'s `version` is the OTA compatibility key»). OTAs reach the `production` channel only when
-  published by hand (`mobile-update.yml`, `branch=production`); the latest is from `681749c` (run 1210,
-  2026-11-23, the teacher's join-request notice, #1538). `preview` got the same commit from run 1209.
+  published by hand (`mobile-update.yml`, `branch=production`); the latest is from `fab8870` (run 1213,
+  2026-11-24, the bell refreshing when a join-request push arrives, #1540). `preview` got the same commit from
+  run 1212.
 - **The AI chat «اسأل إقرأ» is hidden** (`IQRA_CHAT_ENABLED = false` in
   `artifacts/mobile/services/features.ts`, #1535): on the web since deploy run 1022 and on 1.6.0 phones since
   production OTA run 1207, both 2026-11-23. `/iqra` only hosts the change-lesson sheet; the chat's API route is
