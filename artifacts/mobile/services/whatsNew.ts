@@ -48,6 +48,14 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
     route: '/evaluations',
   },
   {
+    id: 'library-maths-sheets-g1-9',
+    date: '2026-11-24',
+    roles: ['teacher'],
+    titleKey: 'whatsNewLibraryMathsSheetsTitle',
+    bodyKey: 'whatsNewLibraryMathsSheetsBody',
+    route: '/curriculum/resources',
+  },
+  {
     id: 'g10-english-whole-track',
     date: '2026-11-24',
     roles: ['teacher'],

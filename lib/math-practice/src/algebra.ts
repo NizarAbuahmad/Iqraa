@@ -719,7 +719,11 @@ const factorGeneral = topic('factor_general', /ثلاثيات الحدود ax.\+
  * difference of squares used to work out A² − B².
  */
 const factorSpecial = topic('factor_special', /^حالات خاصه من التحليل$/, [8, 8], ({ rng, diff }) => {
-  const a = int(rng, 1, 9), m = tier(diff) === 2 ? int(rng, 1, 4) : 1;
+  // `a` coprime to `m`, so the factors are complete: m = a = 3 keyed «9x² + 18x + 9»
+  // as «(3x + 3)²» rather than 9(x + 1)² (hand review of the ready-made sheets, 2026-11-20).
+  const m = tier(diff) === 2 ? int(rng, 1, 4) : 1;
+  const coprime = Array.from({ length: 9 }, (_, i) => i + 1).filter(n => gcd(n, m) === 1);
+  const a = pick(rng, coprime);
   const form = pick(rng, [0, 1, 2, 3]);
   if (form === 1) {
     const s = rng() < 0.5 ? 1 : -1;
