@@ -153,6 +153,34 @@ lesson now use «جمع المتجهات وطرحها».
 - Only the offline generator changed. The live path (`worksheetPromptAr/En`) is the model's, and production runs live
   AI, so a teacher sees this paper only when live generation is off or fails.
 
+## Grade 10: every page of every served range read — nothing foreign inside, two known cut-offs confirmed — 2026-11-21
+
+«Grade 10 audit…» (2026-11-13) looked at the first and last page of each range. This pass opened **all 2,006 images of
+the 346 served Grade 10 ranges** (six readers, one per group of subjects) for what that could not see: another lesson's
+pages, a unit opener, review, project, enrichment or glossary in the middle of a range. Printed page = PDF page in every
+book except English (PDF = printed + 2).
+
+**Result: no foreign page inside any range, in any subject.** Ranges start on the lesson's own opener and end on its own
+last page («مراجعة الدرس», «أقيّم تعلّمي», «أختبر معلوماتي», the closing exercises) in 336 of the 346; labs match their
+own pages; the re-pointed civic S1 ranges all show their own lesson. Honorifics on the Islamic pages (300 images) follow
+the right people everywhere. Nothing was changed. Since 2026-11-13 no Grade 10 page range or figure has changed
+(checked against the #1458 merge), and 25 lessons were added to the catalogs by «Grade 10 checked against its books, and
+corrected» — ten opening labs, maths u1_l5 and nine vocational S1 lessons — none with page images yet. All 37 maths
+lessons give offline questions; 111 sampled keys were read by hand, all right.
+
+**What it found, all already known:**
+- Cut by the 20-page cap, mid-lesson: digital S1 u1_l2, u1_l3, u1_l4 and S2 u4_l3; physics S1 u2_l1 (p56 unserved) and S2
+  u4_l2 (p38–41 unserved); civic S1 u2_l5 (75–79 of 75–82). The missing pages are in no image folder, so these need
+  re-rendering from the PDFs.
+- Start a page late: Arabic S1 u2_l2 (p38; its opener p37 is only in u2_l1's folder) and civic S2 u7_l1 (87–92; opener p86).
+- **Left on purpose:** chemistry S1 u2_l2 ends on p47, the full-page periodic table, after its own «مراجعة الدرس» (p46).
+  Review question 3 says «مستعينًا بالجدول الدوري», so the plate is the lesson's own reference, not another lesson's page.
+- Printed titles differ from the catalog only by a clause (Arabic S2 u9_l2 prints «أعبّرُ وأحاورُ»; Islamic S2 u1_l7 adds
+  «/الجيش العربي») — same lessons, not changed.
+
+**Not verified:** the pages beyond each range (not in the bucket); anything needing the PDFs; the pages on a phone.
+
+No «ما الجديد» entry: a record, not a change.
 ## Grade 3 review, the Grade 2 way: plans, activities, quick checks and live prompts for eight-year-olds — 2026-11-20
 
 The Grade 2 review (below, «Grade 2 review, the Grade 1 way… — 2026-11-15») repeated for Grade 3: 8 subjects, 254
