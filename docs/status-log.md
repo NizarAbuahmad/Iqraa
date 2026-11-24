@@ -10,6 +10,82 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 5 second pass: seven-digit numbers, a number line, mixed numbers added and subtracted, thousandths apart, ×10/100/1000, the 24-hour clock — 2026-11-24
+
+A second read of Grade 5 maths, on top of «Grade 5 audit: book pages, figures, contents…», «Grade 5 maths: offline questions
+for five more lessons, and the sizes Grade 5 names» and «Grade 5 review: the last three maths lessons…». The generators ran
+over all 318 lessons: each grounds by its own id, and all 52 maths lessons fill a ten-question quiz. Every question of every
+maths quiz was read against its lesson's NCCD objective and key concepts. Every key was right. (The audit script's 23 «wrong
+key» flags are its own: it reads «أكبر عدد يمكن تكوينه من الأرقام» as a sum and compares fractions as decimals.) Where a lesson
+did not ask its own skill, it was measured with the real lesson through `takeElementaryMath` (300 draws each), then fixed.
+Nine things, across twelve lessons:
+
+- **«مقارنة الأعداد وترتيبها» (S1 u1_l2) says «ضمن الملايين» and never drew seven digits** (5 and 6 digits; a fifth of its items
+  had one-digit stems from the digits question). Grade 5 now draws 100000–999999 at easy and up to 9999999 above
+  (`compareRange`), and the digits item builds six- and seven-digit numbers.
+- **«جمع الأعداد الكلية وطرحها» (u1_l3) says «ضمن 7 منازل»** and drew 5 and 6 digits (seven in 6 of 300). `ADD_MAX[5]` is now
+  9999999, so a sum stays within seven places and seven digits are drawn. Grade 6 keeps 999999.
+- **«الأعداد السالبة» (u1_l4) says «وأُعيّنه على خط الأعداد»** and never used a number line (0 of 300). `int_intro` now also asks
+  to move along the line («ابدأ من −5 وتحرّك 6 وحدات إلى اليمين»), which of two numbers lies to the left or right, the integer
+  between two numbers, and the number a point at a given distance from zero stands for. A comparison always holds a negative
+  number (17 of 300 items compared two positive numbers, «5 ___ 14»), and the temperature starts or ends below zero.
+- **«مقارنة الكسور والأعداد الكسرية وترتيبها» (u4_l2), «جمع الكسور» (u4_l3: «أجمع أعدادًا كسرية غير متشابهة») and «طرح
+  الكسور» (u4_l4: «أطرح الكسور والأعداد الكسرية») never drew a mixed number** (0 of 300 each). New in
+  `lib/math-practice/src/grade5b.ts`:
+  - `frac_compare_g5` reuses Grade 4's comparison (now `fracCompareDraft`, shared) with denominators up to 12.
+  - `frac_add_g5` and `frac_sub_g5` draw mixed numbers in about 55% of items, always with different denominators whose common
+    denominator stays one a pupil finds by listing multiples (at most 12, 24 and 30 by tier — «6 1/60» is not asked). The answer
+    is written in lowest terms and as a mixed number from one up. Kinds: the sum or difference, a story, the least common
+    denominator, the missing addend or subtrahend, and the classic slip («جمع سامر 5/8 + 1/3 فكتب 6/11»). Two in five mixed
+    subtractions need a regroup (`3 1/2 − 2 7/12`), and none is negative.
+- **«ضرب الكسور» (u4_l5) printed «3/8 × 2/2»** (29 of 300 had a factor equal to one). The two places that drew a/b and c/d
+  now keep both proper, as ÷ has since 2026-11-13.
+- **«أجزاء الألف» (u6_l1) and «التحويل بين الكسور والأعداد العشرية» (u6_l2) shared `frac_dec`:** the thousandths lesson asked
+  «7/50 على صورة عدد عشري» and the conversion lesson asked the place value of a digit (their 300-draw counts were the same
+  to within noise). `thousandths_g5` asks only about thousandths: a fraction over 1000 and its decimal, the place value of a
+  digit, standard and expanded form, the thousandths digit and how it is read («23 جزءًا من ألف»). `dec_convert_g5` only
+  converts, both ways, including mixed numbers («8.75 = 8 3/4») and denominators 2, 4, 5, 8, 10, 20, 25, 50, 100, 1000. Grades
+  4 and 6 are unchanged.
+- **«ضرب الأعداد العشرية وقسمتها» (u6_l7) says «في 10 و100 و1000, وأقسمها على…»** and drew decimal × decimal or ÷ a decimal in
+  three items of four («5.8 × 0.8»), which is Grade 6. `dec_shift_g5` multiplies and divides by 10, 100 and 1000: the product
+  and the quotient, the missing power, which way the point moves and by how many places, a price story and a unit conversion
+  (m ↔ cm, kg ↔ g, L ↔ mL). A decimal is never printed with a trailing zero.
+- **«الزمن» (u9_l3) has one key concept, «توقيت 24 ساعةً»** and wrote no time past 12:59. `time_24h_g5` converts both ways
+  between the 24-hour and the 12-hour clock (about 80% of times fall after noon, where they differ), finds a duration, an end
+  time and a start time across noon, and converts hours to minutes and minutes to seconds. It replaces `time_g45` for Grade 5;
+  Grade 4 has had `time_units_g4` since the Grade 4 pass, so `time_g45` served no one and is gone.
+- **«الانسحاب» (u8_l6) printed «و وحدتين إلى الأعلى»**: a conjunction before a word that starts with «و» is joined («ووحدتين»); a
+  count of three or more keeps its space.
+
+**Catches by existing tests.**
+- `tamyiz.test.ts` failed «بتوقيت 24 ساعة» in the new time stems: the book's own key concept is written «تَوْقيتُ 24 ساعَةً», and
+  the rule gives «24 ساعةً» and «12 ساعةً». The stems now say so.
+- `routing.test.ts`'s value parser could not read a mixed number, so it called «1 1/4» and «1 1/2» equal; it now parses them and
+  recomputes mixed-number keys as well.
+- The tests that pinned the old behaviour were updated: the translation test's «و وحدتين» pattern, the routing of «الزمن» in
+  Grades 4 and 5, and the geometry time check (Grades 4 and 5 now have tests of their own).
+
+Reading samples by hand caught, before the tests did, a pen that cost 80.59 dinars, a distractor «18.025» for 18/25, an
+«14 وحدات» (it is «14 وحدة») and a «between 18 and 20» in the negative-numbers lesson; all fixed.
+
+**Verified.**
+- `grade5SecondPass.test.ts` (13 tests) was written first, and all 13 failed. Every key is recomputed from the printed stem by
+  code that shares nothing with the generators. It also pins what each lesson must not ask: no place value in the conversion
+  lesson, no decimal factor in «ضرب الأعداد العشرية», at least half of the time items after noon, no comparison without a
+  negative number.
+- Planted bugs, each made a test fail: a mixed sum that loses a whole, a subtraction whose regroup adds one, noon read as
+  «0:30», and a decimal shift one place short.
+- `lib/math-practice` 1,497 pass; mobile `pnpm test` 9,563 pass, 0 fail, 10 skipped; `pnpm run typecheck` clean. The Grade 5 audit was
+  rerun over all 318 lessons.
+
+**Not done.**
+- The objectives and key concepts were the reference, not the printed pages, so the new kinds follow them rather than a book's
+  worked example (the PDFs are not in the repository). «توقيت 24 ساعة» is the one place a lesson's whole content is a key concept
+  rather than an objective.
+- «تقدير نواتج جمع الأعداد العشرية وطرحها» and «جمع الأعداد العشرية وطرحها» draw one and two places only, no thousandths.
+- Triangles are still named ABC across the bank (the convention).
+- Everything the earlier Grade 5 entries left for the PDFs.
+
 ## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
 
 Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured

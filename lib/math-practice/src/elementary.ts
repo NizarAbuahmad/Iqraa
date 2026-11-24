@@ -132,7 +132,8 @@ const DEFAULT_OPS: Record<number, ElementaryOp[]> = {
 };
 
 /** Largest operand for + and −, by grade, then scaled by difficulty. */
-const ADD_MAX: Record<number, number> = { 1: 20, 2: 999, 3: 9999, 4: 99999, 5: 999999, 6: 999999 };
+// Grade 5 «جمع الأعداد الكلية وطرحها» is «ضمن 7 منازل» (u1_l3): it drew 5 and 6 digits and 7 in 6 of 300 items (2026-11-24).
+const ADD_MAX: Record<number, number> = { 1: 20, 2: 999, 3: 9999, 4: 99999, 5: 9999999, 6: 999999 };
 /** Times tables for × and ÷ by grade (Grade 2 teaches 2–5). */
 const TABLE_MAX: Record<number, number> = { 1: 2, 2: 5, 3: 10, 4: 10, 5: 10, 6: 10 };
 /** The widest number a grade's place-value lesson names: G3 «ضمن الألوف», G4 «ضمن مئات الألوف», G5 «ضمن الملايين». */
@@ -675,6 +676,8 @@ function compareRange(grade: number, diff: DiffTier, max: number): [number, numb
   if (grade === 3) return [1000, 9999];
   // Grade 4 compares and orders «ضمن مئات الألوف» (u1_l2): it drew 0–99999 and showed 91 and 3206 (2026-11-21).
   if (grade === 4) return [10000, diff === 'easy' ? 99999 : 999999];
+  // Grade 5 «ضمن الملايين» (u1_l2): six and seven digits; it drew 5 and 6 and, in a third of its items, one-digit stems (2026-11-24).
+  if (grade === 5) return [100000, diff === 'easy' ? 999999 : 9999999];
   return [0, max];
 }
 
@@ -895,14 +898,15 @@ function fracMulKinds(base: Base, rng: Rng): ConcreteItem {
     case 2: {
       // Area of a rectangle with fraction sides.
       const [a, b, c, d] = [int(rng, 1, 4), int(rng, 5, 9), int(rng, 1, 4), int(rng, 2, 9)];
-      const [c2, d2] = c < d ? [c, d] : [1, d];
+      const [c2, d2] = c < d ? [c, d] : [1, d]; // never «2/2»: a factor equal to one is not the lesson
       return withText(fractionItem(base, `area:${a}/${b} × ${c2}/${d2}`, a * c2, b * d2, [`${a * c2}/${b + d2}`, frac(a * d2, b * c2), frac(a * d2 + c2 * b, b * d2)]),
         `قطعة قماش مستطيلة الشكل طولها ${a}/${b} م، وعرضها ${c2}/${d2} م. ما مساحتها بالمتر المربع؟`,
         `A rectangular piece of cloth is ${a}/${b} m long and ${c2}/${d2} m wide. What is its area in square metres?`, true);
     }
     default: {
-      // The missing factor.
-      const [a, b, c, d] = [int(rng, 1, 5), int(rng, 2, 9), int(rng, 1, 5), int(rng, 2, 9)];
+      // The missing factor — both fractions proper («3/8 × 2/2» was printed, Grade 5 review 2026-11-24).
+      const b = int(rng, 2, 9), d = int(rng, 2, 9);
+      const [a, c] = [int(rng, 1, Math.min(5, b - 1)), int(rng, 1, Math.min(5, d - 1))];
       const P = frac(a * c, b * d);
       const eq = `${a}/${b} × ؟ = ${P}`;
       return withText(fractionItem(base, eq, c, d, [P, frac(d, c), frac(c + 1, d), frac(c, d + 1)]),
@@ -1187,7 +1191,7 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       // (0–10 at easy and medium) never showed a two-digit number (review, 2026-11-15).
       // Grade 2 compares and orders numbers «ضمن 3 منازل»: an easy paper asked about «10، 6، 22، 20».
       const [lo, hi] = compareRange(grade, diff, max);
-      if (int(rng, 0, 3) > 0) return compareKinds(base, hi, rng, lo, grade === 4 ? 6 : 4);
+      if (int(rng, 0, 3) > 0) return compareKinds(base, hi, rng, lo, grade === 4 ? 6 : grade === 5 ? 7 : 4);
       const a = int(rng, lo, hi);
       const b = rng() < 0.15 ? a : int(rng, lo, hi);
       const sign = a > b ? '>' : a < b ? '<' : '=';
@@ -1294,7 +1298,9 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
     }
     case 'frac_mul': {
       if (int(rng, 0, 3) > 0) return fracMulKinds(base, rng);
-      const [a, b, c, d] = [int(rng, 1, 5), int(rng, 2, 9), int(rng, 1, 5), int(rng, 2, 9)];
+      // proper fractions, as in ÷: «4/9 × 4/4» was possible (Grade 5 review, 2026-11-24)
+      const b = int(rng, 2, 9), d = int(rng, 2, 9);
+      const a = int(rng, 1, Math.min(5, b - 1)), c = int(rng, 1, Math.min(5, d - 1));
       return fractionItem(base, `${a}/${b} × ${c}/${d}`, a * c, b * d, [
         `${a * c}/${b + d}`, `${a + c}/${b * d}`, frac(a * d, b * c), frac(a * c, b * d + 1),
       ]);
