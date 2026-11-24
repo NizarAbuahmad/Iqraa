@@ -153,6 +153,82 @@ lesson now use «جمع المتجهات وطرحها».
 - Only the offline generator changed. The live path (`worksheetPromptAr/En`) is the model's, and production runs live
   AI, so a teacher sees this paper only when live generation is off or fails.
 
+## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
+
+Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured
+2026-11-20, staff uploads aside). This fills the maths shelves.
+
+**What changed.**
+- **432 ready-made sheets**, one per maths lesson in grades 1–9 less the 15 held back below
+  (`lib/curriculum/src/data/premade_worksheets.json`, 460 with Grade 10's 28). `scripts/build-premade-sheets.ts` now takes `--grade grade-1`…`grade-10`: Grades
+  1–9 read their lessons from the knowledge base, grade names come from the catalog, `_lab` lessons and lessons the
+  bank does not cover (`mathBankCovers`; none today) are skipped. Same generator as Grade 10 (`MockAIService`,
+  medium, 10 questions), keys recorded `'bank'`. The 3 Grade 9 GeoGebra labs get none.
+- **The build is reproducible.** It claimed to be deterministic and was not: the generator draws with `Math.random`, so
+  a rebuild changed every number on every sheet, and a sheet read by hand was not the sheet that shipped. Each draw is
+  now seeded by sheet id and draw number (`seedFor`); a lesson built alone or among 30 others comes out identical.
+- **A «which one» item kept its choices only in a multiple-choice slot.** A worksheet files bank items as short
+  answer at random, and `formatItem` dropped the options there, so «أيّ وحدة أنسب لقياس طول الكتاب؟» printed
+  keyed «مشبك الورق» with nothing to pick from. Nine templates across grades 1, 5, 6, 8 and 9 did it. `formatItem`
+  now keeps a pick's options in every slot (`lib/math-practice/src/picks.ts`: «أيّ» in front of what it points at,
+  or «أنسب», and the key not in the text). This also changes teachers' own offline worksheets. **Not fixed:** the
+  offline quiz's short-answer and fill-in makers (`makeQuizSA_*`, `makeQuizFB_*` in `generators.ts`) still drop
+  options, as they did before.
+- **A build gate** (`services/premadeSheetGate.ts`, the same rule) re-draws a sheet with an unanswerable pick, up to
+  8 times, then refuses the lesson. On the final build it refused nothing. A first, broader rule ("mentions «الآتي»
+  or «هذه»") refused good sheets such as «ما العدد التالي للعدد 49؟»; the tests pin those as passing.
+- «ما الجديد» entry `library-maths-sheets-g1-9` for teachers.
+
+**Verified.** `picksShowChoices.test.ts` sweeps every template in `TOPICS` at every tier into every typed slot, Arabic
+and English; `premadeSheetGate.test.ts`; `premadeSheets.test.ts` now asserts every grade 1–9 has ≥ 25 maths sheets,
+each filed under a KB lesson with that lesson's title, and that every one of the 475 sheets passes the gate with a
+key per question. `pnpm run typecheck`; math-practice 1,433 pass; api-server 2,999 pass; curriculum 930 of 931 —
+`r2.test.ts` fails identically on untouched `main` in this environment (it asserts R2 is *not* configured).
+
+**Hand review.** Three independent reviewers worked every one of the 4,464 questions (grades 1–3, 4–6, 7–9). No key
+was arithmetically wrong. What it found, and what was done:
+- **One incomplete key:** Grade 8 «حلّل: 9x² + 18x + 9» keyed «(3x + 3)²». At the hard tier `factor_special` drew
+  `m` and `a` apart, so m = a = 3 left a common factor (also «9x² − 36 → (3x − 6)(3x + 6)»). `a` is now coprime to
+  `m`; `algebra.test.ts` asserts no bracket keeps a common factor.
+- **Unanswerable picks the first rule missed:** «أيّ البيانات العددية الآتية…» (two words before «الآتية») and
+  «في أيّ مجموعة / صندوق نضع…» (groups never shown). `picks.ts` now covers both, so they keep their options.
+- **15 sheets held back** (`HELD_BACK` in the build script, with the evidence per lesson): the lesson's skill is
+  missing or 3+ of 10 questions are another lesson's or grade's — e.g. «الضرب في 6 و9» with no ×9, «القسمة مع وجود
+  أصفار في الناتج» with no zero in any quotient, thousandths in Grade 4, «تمييز متوازي الأضلاع» asking what one
+  condition makes a parallelogram. Each is a bank generator to fix, then a re-run with `--only`.
+- **Kept, keys correct, to fix in the bank later:** «أجب بعدد كسري» where the answer is not a mixed number (g6
+  u2_l2–l4); least common denominator of unsimplified fractions (g6 u2_l1); «قدّر ناتج 18 ÷ 2» where the fact is
+  exact (g3 u8_l2); «أقل عدد من الكرات يجب إخراجه» read as drawing blind (g3 u12_l5, g4 u10_l4); a missing leading
+  digit that cannot change divisibility by 4 (g5 u3_l1); «مستطيل» for squares; «قطعة بيتزا» for a whole pizza;
+  combinations in Grade 8 «عدّ النواتج» (check the book); open questions with one keyed form («الحادية عشرة إلا
+  ثلثًا», «في الظهر»).
+- **Not checked:** coordinates written «(8 ، 4)» with Latin digits in an RTL line may render reversed (g5 u5_l2,
+  u8_l6, g6 u4_l1–l3) — look at one printed sheet.
+
+**Second pass, on the sheets that ship.** The first pass read a draw that the next build replaced (the build was not
+yet seeded), so the 432 seeded sheets were read again in full: 4,314 keys, no arithmetic error. Six generators made
+questions right by formula and wrong as questions; each is fixed at the source and pinned in
+`lib/math-practice/src/__tests__/sheetReviewFindings.test.ts` (or `picksShowChoices.test.ts`):
+- «ما القيمة المنزلية للرقم 6 في العدد 64.36؟» — the digit occurs twice (`dec_place` now asks only about a digit that
+  occurs once, as the whole-number version already did);
+- a square pyramid with slant height 3 cm on an 11 cm base — slant height is now over half the side;
+- the angle-bisector item keyed DC = 48 for sides 6, 24, 60 — `bd` is now drawn so the triangle exists;
+- «نظّمها في فئات طول كل منها 5» never named the first class — it now says «أولاها 0–4»;
+- «ما العمل الذي يأتي بعد … مباشرة؟» had no list — it lists four, like its sibling;
+- «أيّ تمثيل يُظهر العدد 35…؟» printed no models — `picks.ts` covers «أيّ تمثيل / نموذج».
+The rebuild after those fixes (and after merging `main`, whose Grade 1–3 bank changes also moved some sheets) changed
+41 sheets; every other sheet is byte-identical to what was read. The 41 were read again in full: 410 keys, none
+wrong, nothing unanswerable, and each of the six fixes seen in the output.
+
+**Not done.**
+- **Other subjects, grades 1–8.** The only built-in source is the QR codes printed in the books
+  (`scripts/scan_book_qr.py --fetch`), and `nccd.gov.jo` resets connections from this cloud environment (checked
+  2026-11-20). It needs a machine in Jordan. The offline generator has templates, not questions, for non-maths
+  subjects, so it cannot fill them honestly.
+- Bundle size: the manifest is now ~2.5× its Grade 10 size and is imported statically. The web entry bundle was
+  ~21 MB before this; splitting the manifest per grade is a follow-up.
+
+
 ## Grade 10: every page of every served range read — nothing foreign inside, two known cut-offs confirmed — 2026-11-21
 
 «Grade 10 audit…» (2026-11-13) looked at the first and last page of each range. This pass opened **all 2,006 images of

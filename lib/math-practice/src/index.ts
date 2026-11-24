@@ -34,6 +34,7 @@ import { ITEM_FOCUS, SPLIT_FAMILIES, focusForTitles, type LessonFocus } from './
 
 export type { LessonFocus } from './lessonFocus.ts';
 
+import { isUnlistedPick } from './picks.ts';
 export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
 export type { ChemFamily } from './chemistry.ts';
 export { subjectIdFromName } from './subjects.ts';
@@ -47,6 +48,7 @@ export type { Misstep } from './missteps.ts';
 export { detectElementaryOp, elementaryOpsForTitle } from './elementary.ts';
 export { topicFor } from './topics.ts';
 export { sameKind, stemFrame } from './stemFrame.ts';
+export { isPick, isUnlistedPick } from './picks.ts';
 export { difficultyLoad } from './earlyDifficulty.ts';
 
 export interface PracticeLesson {
@@ -791,6 +793,15 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
   const isAr = lang === 'ar';
   const stem = itemStem(item, isAr);
 
+  // A «which one» item whose choices are not in its text keeps its options in
+  // every slot. Filed as short answer it printed «أيّ وحدة أنسب لقياس طول
+  // الكتاب؟» keyed «مشبك الورق», with nothing to pick from and several right
+  // answers (`picks.ts`; found building the ready-made sheets, 2026-11-20).
+  if (type !== 'multiple_choice' && type !== 'true_false' && item.wrongs.length && isUnlistedPick(stem, item.answer)) {
+    const level = levelOptionShape(item.answer, item.wrongs);
+    return { text: stem, options: placeCorrect(level.correct, level.wrongs), answer: level.correct };
+  }
+
   if (type === 'word_problem') {
     if (item.kind === 'word' && (item.wordAr || item.wordEn)) {
       return { text: isAr ? (item.wordAr as string) : (item.wordEn as string), answer: item.answer };
@@ -851,6 +862,14 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
 
   // short_answer default
   return { text: stem, answer: item.answer };
+}
+
+/**
+ * One bank item as a question of the given type, exactly as a worksheet or quiz
+ * receives it. Exported for the tests that pin what a slot prints.
+ */
+export function formatConcreteItem(item: ConcreteItem, lang: Lang, type: QType): { text: string; options?: string[]; answer: string } {
+  return formatItem(item, lang, type);
 }
 
 /** The ask an item puts, whatever type it is formatted as — what kinds are counted on. */
