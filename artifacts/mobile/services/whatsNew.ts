@@ -40,6 +40,22 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
+    id: 'g10-english-whole-track',
+    date: '2026-11-24',
+    roles: ['teacher'],
+    titleKey: 'whatsNewG10EnglishTrackTitle',
+    bodyKey: 'whatsNewG10EnglishTrackBody',
+    route: '/ai-tools/quiz',
+  },
+  {
+    id: 'g10-exams-humanities-pe',
+    date: '2026-11-24',
+    roles: ['teacher'],
+    titleKey: 'whatsNewG10ExamTargetsTitle',
+    bodyKey: 'whatsNewG10ExamTargetsBody',
+    route: '/evaluations',
+  },
+  {
     id: 'join-request-notice',
     date: '2026-11-23',
     roles: ['teacher'],

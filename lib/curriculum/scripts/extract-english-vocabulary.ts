@@ -211,6 +211,9 @@ function wordsFrom(book: (typeof BOOKS)[number]): Row[] {
 
   for (const page of pagesOf(book.sourceId)) {
     if (isWordListPage(page)) inSection = true;
+    // The Word List ends at the first page with no `WL` marker: the Grammar Reference and the irregular-verbs table
+    // follow it, and parsing on filed their cells under the last list's lesson («She/It», «They must», «or learnt»).
+    else if (inSection) break;
     if (!inSection) continue;
 
     let buf = '';
