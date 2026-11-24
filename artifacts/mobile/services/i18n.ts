@@ -7,6 +7,7 @@
 import { arCountPhrase, arMarksPhrase, arQuestionsPhrase, enMarksPhrase } from './arCount.ts';
 import { formatMarks } from './studentAnswers.ts';
 import { NOTE_MAX, PHOTOS_MAX } from './homeworkSubmission.ts';
+import { arJoinRequestsLine, enJoinRequestsLine } from './linkRequests.ts';
 
 export type Lang = 'ar' | 'en';
 
@@ -3193,6 +3194,8 @@ const translations = {
     whatsNewBoardRedoBody: 'في «السبورة» زرّ «إعادة» بجانب «تراجع» لاسترجاع ما تراجعت عنه، وأربعة ألوان جديدة للقلم: الأزرق والأخضر والبرتقالي والبنفسجي. ولوحة تفتحها من «اليوم» أو «الأدوات» تُحفظ الآن مع صفّ الدرس ومادته فتجدها في «ملفاتي» تحت درسها.',
     whatsNewWhiteboardTitle: 'السبورة صارت بين الأدوات',
     whatsNewWhiteboardBody: 'افتح «السبورة» مباشرة من «الأدوات» ← «أثناء الحصة»، أو من «أدوات سريعة لهذا الدرس» في الصفحة الرئيسية، من غير أن تبدأ عرضًا أولًا. اكتب بالقلم، وأضف صفحات، ثم احفظها في «ملفاتي» أو صدّرها PDF.',
+    whatsNewJoinRequestsTitle: 'نخبرك عندما ينتظر طالب موافقتك',
+    whatsNewJoinRequestsBody: 'عندما يختار طالب اسمه من قائمة الصف برمز الربط، يصلك إشعار على هاتفك، ويظهر الطلب في الجرس أعلى التطبيق. اضغطه لتفتح الصف وتوافق على الطلب أو ترفضه.',
     whatsNewChatOnTopicTitle: 'المحادثة تجيب عن الموضوع الذي تسأل عنه',
     whatsNewChatOnTopicBody: 'اسأل «إقرأ» عن أي موضوع، فيجيبك عنه هو، لا عن الدرس المختار في أعلى التطبيق. ويبقى درسك المختار كما هو حتى تغيّره بنفسك، ويتابع «إقرأ» معك الموضوع الذي تتحدثان عنه.',
     whatsNewChatFreeTopicTitle: 'المحادثة تجهّز نشاطًا على أي موضوع',
@@ -3378,6 +3381,7 @@ const translations = {
     claimDeclined: 'لم يوافق المعلم على طلبك. تأكد من اسمك واختره من جديد، أو اسأل معلمك.',
     joinAnotherClassPending: 'أُرسل طلبك إلى المعلم. ستظهر الشعبة بعد موافقته.',
     linkRequestsTitle: 'طلبات الانضمام',
+    bellJoinRequests: (n: number, className: string) => arJoinRequestsLine(n, className),
     linkRequestsHint: 'هؤلاء الطلبة اختاروا أسماءهم برمز الربط. وافق إذا كان الحساب لصاحب الاسم.',
     linkRequestApprove: 'موافقة',
     linkRequestReject: 'رفض',
@@ -6848,6 +6852,8 @@ const translations = {
     whatsNewBoardRedoBody: 'The whiteboard has a Redo button beside Undo, to bring back what you just undid, and four new pen colours: blue, green, orange and purple. A board you open from Today or Tools is now saved with its lesson’s grade and subject, so it turns up under that lesson in My files.',
     whatsNewWhiteboardTitle: 'The whiteboard is now in Tools',
     whatsNewWhiteboardBody: 'Open the whiteboard straight from Tools → During class, or from “Quick tools for this lesson” on the home screen, without starting a presentation first. Write with the pen, add pages, then save the board to My files or export it as a PDF.',
+    whatsNewJoinRequestsTitle: 'We tell you when a student is waiting for you',
+    whatsNewJoinRequestsBody: 'When a student picks their name off the class list with the link code, you get a notification on your phone and the request shows in the bell at the top of the app. Tap it to open the class and approve or reject the request.',
     whatsNewChatOnTopicTitle: 'Chat answers the topic you ask about',
     whatsNewChatOnTopicBody: 'Ask Iqrra about any topic and it answers that topic, not the lesson selected at the top of the app. Your selected lesson stays as it is until you change it, and Iqrra keeps following the topic you are talking about.',
     whatsNewChatFreeTopicTitle: 'Chat makes an activity on any topic',
@@ -7029,6 +7035,7 @@ const translations = {
     claimDeclined: 'Your teacher did not approve that request. Check your name and pick it again, or ask your teacher.',
     joinAnotherClassPending: 'Your request was sent to the teacher. The class appears once they approve it.',
     linkRequestsTitle: 'Join requests',
+    bellJoinRequests: (n: number, className: string) => enJoinRequestsLine(n, className),
     linkRequestsHint: "These students picked their names with the link code. Approve if the account is the name's owner.",
     linkRequestApprove: 'Approve',
     linkRequestReject: 'Reject',

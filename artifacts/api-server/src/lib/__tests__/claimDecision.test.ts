@@ -78,7 +78,7 @@ describe("class join codes", () => {
 
   it("resolves a member name", async () => {
     const got = await decide({ ...inClass, requestedStudentId: "stu-1" });
-    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian", viaClassCode: true });
+    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian", viaClassCode: true, classGroupId: classGroup.id });
   });
 
   it("refuses an expired class code even when the name is a real member", async () => {
@@ -139,7 +139,7 @@ describe("one account per student", () => {
       isMember: async () => true,
       hasSelfLink: async () => true,
     });
-    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian", viaClassCode: true });
+    assert.deepEqual(got, { ok: true, studentId: "stu-1", relation: "guardian", viaClassCode: true, classGroupId: classGroup.id });
   });
 
   it("refuses a second parent on a name picked off the class list, with 409", async () => {

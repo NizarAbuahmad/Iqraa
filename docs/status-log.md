@@ -173,6 +173,170 @@ question without its drawing).
 see none of this in production yet: book items reach a paper only on the mock path or with
 `BOOK_ITEMS_LIVE=true`, which is off.
 
+## A join-request push refreshes the bell the moment it arrives — 2026-11-23
+
+Follow-up to «The teacher is told when a student's class-code pick waits for them» (#1538), whose «Not verified»
+noted that a push arriving while the app was open did not refresh the bell: the count caught up on the bell's
+next one-minute poll, behind the banner the phone had just shown.
+
+- `services/notificationDeepLink.ts` `queryKeysToRefresh(data)` says which cached queries an arriving push makes
+  stale. A `class-link-requests` push marks the bell's count (`linkRequestSummaryQueryKey`) and, for a UUID-shaped
+  `classGroupId`, that class's banner (`classLinkRequestsQueryKey`). Every other push marks nothing.
+- `services/pushTokens.ts` `registerNotificationTapHandler` now also adds `addNotificationReceivedListener`. It
+  invalidates those keys on the shared `queryClient`, tapped or not, and is removed with the tap listener on sign-out.
+- No «ما الجديد» entry: the bell already shows these requests; it now shows them sooner.
+
+**Verified:** `notificationDeepLink.test.ts` covers the keys for a join request, a malformed id and other pushes. It
+also reads `pushTokens.ts` to check the listener is wired, because that file imports `expo-notifications`, which
+`node --test` cannot load. `pnpm run typecheck`; mobile `pnpm test`: 9,557 tests, 0 failures.
+**Not verified:** on a device (a push arriving with the app in the foreground). On web there are no pushes, so the
+web bell still polls every minute.
+
+## The join-request notice is live on the API and on preview and production phones — 2026-11-23
+
+#1538 («The teacher is told when a student's class-code pick waits for them», below) merged as `681749c`.
+
+- **API:** deploy run 1025. `iqraa-api` passed its «Verify the deployed commit» step, and `/api/healthz/version`,
+  read by command afterwards, answered `681749c`, revision `iqraa-api-00565-ws2`. The traffic split was not read.
+  Migrations and the schema check passed; `iqraa-verifier` was skipped, since the merge does not touch it.
+- **Web:** deploy run 1025's `iqraa-web` job published to Cloudflare Pages and passed «Verify the deployed bundle» (12:11 UTC), so the bell's join-request rows are on `app.iqrra.com`.
+- **Phones:** `preview` got it from the merge's own run, Mobile OTA update run 1209. `production` was published
+  by hand, run 1210 (`branch=production`). Both succeeded, from `681749c`. Like every OTA since 1.6.0, it reaches
+  only 1.6.0 binaries.
+
+**Not verified:** a real join-request push arriving on a teacher's phone, and the bell's new row on the live web
+app.
+
+## The teacher is told when a student's class-code pick waits for them — 2026-11-23
+
+**Asked:** «When parents or students joined through code the teacher shall receive a notification to approve the
+request». The owner chose to keep who waits as it is: only a student who picks a name off the shared CLASS code
+waits for approval (`claimNeedsApproval`, since 2026-10-24). A per-student code, and every parent, still link at
+once. Before this change nothing told the teacher a request existed. It sat in the «طلبات الانضمام» banner on the
+class's Students tab until they happened to open it, while the child's screen said the teacher had been asked.
+
+- **Push (API).** `lib/joinRequestNotify.ts` pushes every device of the class's teacher: «طلب انضمام جديد» /
+  «طلب باسم «…» في <class> — بانتظار موافقتك.» (`modules/notifications/joinRequestText.ts`, Arabic only like every
+  push). It goes on a new Android channel, `requests`, with `data { screen: "class-link-requests", classGroupId }`.
+  - Only a **new** request pushes. `linkRosterRowInTx` now tells `requested` (row inserted) from `pending` (the
+    same account re-entering the same name, which `onConflictDoNothing` leaves alone). Picking a different name is
+    a new request, and it does push.
+  - Both ways in push: `POST /auth/claim` and the code-only `POST /auth/redeem`.
+  - It is sent after the commit and before the answer, through `pushWithin` (Cloud Run CPU throttling), and never
+    throws.
+  - **One push per class per 10 minutes** (`JOIN_REQUEST_PUSH_WINDOW_MINUTES`). A teacher who writes the code on
+    the board gets thirty picks in five minutes: the first rings, and the rest wait in the banner and the bell, which
+    count them. It is measured from the class's other requests' `created_at`, so there is no new table.
+  - **Silent at night.** Between 22:00 and 07:00 Amman it goes to the `quiet` channel with `sound: null`, as family
+    pushes do (`joinRequestDelivery`; `PUSH_QUIET_HOURS=off` turns it off, as for them).
+  - It reads the teacher's class and device tokens with `systemDb`, because the joiner cannot see them. The file is
+    pinned in `systemDbFiles.test.ts`.
+  - `decideClaim` now returns `classGroupId` on a class-code resolution, so the push opens the class whose code was
+    used. A roster row can sit in several classes.
+- **Bell (API + app).** `GET /classes/link-requests` returns `{ total, classes: [{ classId, name, nameAr, count }] }`
+  for the teacher's live classes. It counts the same rows `/classes/:id/link-requests` lists: names already held by
+  a student account are left out, and `total` counts each request once. The route is declared before
+  `/classes/:id`.
+  - A teacher's `NotificationBell` polls it every minute (only when student accounts are on). It adds the count to
+    the bell's badge and leads the panel with one «طلبات الانضمام» row per class, each naming the class and opening
+    it (the class list shows no requests, so one row for all of them would lead nowhere useful).
+  - This is how a teacher on the web, which gets no push, hears of a request. The app-icon badge stays messages
+    only.
+  - Approving or rejecting in the banner refreshes the bell's count.
+- **App.** A new Android channel «طلبات الانضمام» (`requests`), created only for teachers and admins
+  (`channelsFor(isAdmin, isTeacher)`). `routeFromNotificationData` maps the push to `/classes/<id>`, and only when
+  the id is UUID-shaped; anything else goes to `/classes`. There is no native change, so `app.json` keeps its
+  version.
+- «ما الجديد» `join-request-notice` (teachers, 2026-11-23, opens `/classes`).
+
+**Verified** (local Postgres 16):
+- `joinRequestPush.db.test.ts` (14 tests):
+  - a pick pushes both of the teacher's devices on `requests`, and nobody else;
+  - re-entering the same name sends nothing, and a different name pushes again (once the window has passed);
+  - two picks within the window ring once, and both requests wait;
+  - a held `/auth/redeem` pushes; a per-student code, and a student already linked to the name re-entering the
+    class code, don't;
+  - an Expo 500 still answers 202, and the request is committed;
+  - the bell's count matches the class's own list, counts a child in two classes once in `total` and under both
+    classes, leaves out archived students and classes, drops after an approval, shows another teacher nothing, and
+    answers a student 403.
+- A code review before merge found the burst of pushes, the missing quiet hours and the one-row bell; all three
+  were fixed in this PR.
+- `rlsDiff.test.ts` gained a class-code pick and the bell read, compared with enforcement off and on: 202, then
+  200 with `total` 1 both ways, and the push comparison agrees.
+- Full api-server `pnpm test` with `REQUIRE_DB_TESTS=true`: 3,611 pass, 0 fail.
+- Mobile `pnpm test`: 9,553 tests; the only two failures were the terminology test catching «رمز الصف» / "class
+  code" in the first draft of the «ما الجديد» copy, fixed and re-run.
+- `@workspace/db` RLS suites: 76 pass.
+- `pnpm run typecheck`.
+
+**Not verified:** a real push on a phone (Expo was stubbed), or the bell row in a browser or on a device. The push
+is Arabic whatever the teacher's language, like every push here. A push arriving while the app is open does not
+refresh the bell at once; it catches up within a minute.
+
+## The games hub has a back arrow again when opened from inside the app — 2026-11-22
+
+Reported: «Iqrra games no back button». The `/play` hub passed `hideBack` to `CornerFrame` unconditionally, on
+the idea that it is only ever opened cold from a shared link. But the Tools tab's «الألعاب» card, two «ما الجديد»
+entries and the help search all push `/play`, and the hub is a full-screen stack page with no tab bar, so a
+signed-in teacher who opened it there could not get back.
+
+- `services/publicGames/hubBack.ts` `hubShowsBack({ canGoBack, signedIn })`: the arrow shows when there is
+  history, or when the user is signed in (with no history `goBack()` goes to `/`, their own landing tab). Only an
+  anonymous visitor on a cold link gets none, since `/` would bounce them to sign-in.
+- `app/play/index.tsx` uses it, so `CornerFrame`'s `hideBack` is now decided by that helper, not hard-coded.
+- `playHubBack.test.ts` pins the three cases and checks that the hub calls the helper and passes no bare `hideBack`.
+
+**Verified:** `pnpm run typecheck`; mobile `pnpm test` (9,544 tests, 0 failures); the new wiring test matches
+the old source, so it would have failed before this fix.
+**Not verified:** in a browser or on a device. The individual games were not touched; each already had a back
+button to the hub (`GameShell`).
+
+## The chat-hiding change is live on the web and on production phones — 2026-11-23
+
+#1535 («The AI chat «اسأل إقرأ» is hidden from the app», below) merged as `a2ca732`.
+
+- **Web:** Deploy run 1022 ran `iqraa-web` only (API, verifier and both schema jobs skipped, as the diff touched
+  none of them); «Publish to Cloudflare Pages» and «Verify the deployed bundle» passed.
+- **Android `preview`:** Mobile OTA update run 1205, on the merge.
+- **Android `production`:** published by hand, Mobile OTA update run 1207, from `main` at `b8c096b` — which also
+  carries #1534 (Games hub back arrow), merged after #1535.
+- **STATUS.md** «Mobile» names run 1207 as the latest production OTA, and a new line says the chat is hidden.
+
+**Not verified:** the live page itself (app.iqrra.com is not reachable from the cloud session that did this), and
+which phones have applied the update.
+
+## The AI chat «اسأل إقرأ» is hidden from the app — 2026-11-22
+
+**Asked:** «Hide the chat feature from the app, it isn't working well». The AI assistant, not person-to-person
+messaging, which is untouched.
+
+- **One switch:** `IQRA_CHAT_ENABLED = false` in `artifacts/mobile/services/features.ts`, beside
+  `DOCUMENT_UPLOAD_ENABLED`. Setting it to `true` brings every entry point back; the chat screen, its API route and its
+  tests are unchanged.
+- **Hidden while it is off:** the desktop sidebar tab (`tabVisible`), Today's ask card on a phone (`PhoneToday`), the
+  desktop workspace's assistant panel (the main column takes the width), ⌘K «اسأل إقرأ عن …» (`buildCommands`), the
+  FAQ's «اسأل إقرأ» button, the lesson page's «اسأل إقرأ» button, the lesson shelf's question bank (its rows' only
+  action was «ask in chat», so a teacher now sees what a student sees: the external resources), the teacher tour's ask
+  step (5 steps instead of 6 on both layouts) and the two chat «ما الجديد» entries (`offeredWhatsNew`), so no one is
+  told about, or sent to, a screen they cannot use.
+- **Changing the lesson still works.** The lesson bar, Today's «تغيير الدرس» and ⌘K open the change-lesson sheet *on*
+  `/iqra`. With the chat off that route renders `LessonPickerOnlyScreen`: the sheet alone, no chat behind it. A pick
+  saves the app-wide lesson (`saveLessonPick`) and returns to `returnTo` (else Today); Cancel returns too. Anything
+  else landing on `/iqra` (an old link, a push) is sent to Today. Its confirm button no longer says «Ask Iqrra about»
+  in English or wears a chat icon while the chat is off (the Arabic «ابدأ التحضير» was already right).
+- **Tests:** `tabVisibility`, `tour`, `commandPalette` and `whatsNew` take the flag as an optional argument (default:
+  the constant), with a case each for off. `e2e/tests/tour.spec.ts` now expects «Step 5 of 5».
+
+**Verified:** `pnpm run typecheck`; mobile `pnpm test` (9,534 pass, 0 fail); all three `e2e/` specs against a
+throwaway Postgres. In a browser (desktop 1280 and phone 390, English): no «Ask Iqrra» or «Open chat» anywhere on
+Today or in the sidebar; «Change lesson» opens the sheet alone, Cancel returns to Today, a second open works, picking
+«Equation of a Circle» returns to Today showing it and survives a reload; `/iqra` typed in lands on Today.
+
+**Not verified:** Android (same code path, no device here); Arabic layout of the two screens touched (no new text
+except the English label); the API's chat route still answers anyone who calls it directly — this hides the feature,
+it does not switch the endpoint off.
+
 ## A 1.6.0 production build sent to Google Play for review — 2026-11-21
 
 After the chat fix (#1527) merged, the owner asked for a 1.6.0 production build and for it to go to Play for review.

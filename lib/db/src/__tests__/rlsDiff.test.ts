@@ -364,7 +364,7 @@ describe("turning row-level security on changes nothing a user can see or cause"
     await step("teacher adds a student to it", "teacher", "POST", `/classes/${c2?.id}/students`, { displayName: "New Kid" });
     await step("teacher edits a student", "teacher", "PATCH", `/students/${i.studentA}`, { teacherNote: "note" });
     await step("teacher logs a parent contact", "teacher", "POST", `/students/${i.studentA}/parent-contacts`, { kind: "missing-homework", channel: "copy" });
-    await step("teacher issues a join code", "teacher", "POST", `/classes/${i.classA}/join-code`);
+    const joined = await step("teacher issues a join code", "teacher", "POST", `/classes/${i.classA}/join-code`);
     // A parent claims a student with the teacher's code: the lookup runs before any link
     // exists, and the claim adds them to the class thread.
     const studentD = randomUUID();
@@ -383,6 +383,20 @@ describe("turning row-level security on changes nothing a user can see or cause"
     // again and would hide a claim that silently failed to add the student.
     const { rows: [members] } = await q("SELECT count(*)::int AS n FROM chat_participants WHERE thread_id = $1", [i.threadClass]);
     steps.push(`class thread members right after the claim: ${members?.n}`);
+    // A student picks a name off the CLASS code: held for the teacher, who is pushed
+    // (lib/joinRequestNotify.ts reads the teacher's class and devices, which the
+    // student cannot see) and counts it on the bell. A push that silently found no
+    // devices under enforcement shows up in the push comparison.
+    const studentF = randomUUID();
+    await q("INSERT INTO students (id, teacher_id, display_name) VALUES ($1, $2, 'Picked Name')", [studentF, i.teacherA]);
+    await q("INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)", [i.classA, studentF]);
+    const { rows: [picker] } = await q("INSERT INTO users (first_name, last_name, role) VALUES ('Picker', 'S', 'student') RETURNING id");
+    await publicStep("student picks a name off the class code", "POST", "/auth/claim", {
+      bearer: accessToken(picker!.id as string, "student"),
+      body: { claimCode: joined.json["joinCode"], studentId: studentF },
+    });
+    const waiting = await step("teacher reads the bell's join requests", "teacher", "GET", "/classes/link-requests");
+    steps.push(`join requests waiting: ${JSON.stringify(waiting.json["total"])}`);
     await step("teacher reissues a parent's login code", "teacher", "POST", `/students/${i.studentA}/links/${i.parentA}/login-code`);
     await step("teacher removes a student from the class", "teacher", "DELETE", `/classes/${i.classA}/students/${i.studentA}`);
     await step("teacher unlinks a parent", "teacher", "DELETE", `/students/${i.studentA}/links/${i.parentA}`);
