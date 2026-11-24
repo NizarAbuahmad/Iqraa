@@ -50,6 +50,7 @@ import {
 import type { AnswerKeyCheck } from "@workspace/math-verify";
 import { takeConcreteChem, takeConcreteMath, takeElementaryMath, takeG10LessonMath, type DiffTier } from "@workspace/math-practice";
 import { mockableTypes, QUESTION_TYPES } from "./questionTypes.ts";
+import { shuffleChoices } from "./choiceOrder.ts";
 // A runtime import, not a cycle: validator.ts takes `GeneratedQuestion` from
 // this file with `import type`, which is erased.
 import { DUPLICATE_THRESHOLD, promptOf, stemSimilarity } from "./validator.ts";
@@ -868,5 +869,8 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
     );
   }
 
-  return { questions, seed, unavailableTypes, shortfall: Math.max(0, shortfall), notes, bankContext };
+  // Shuffled here, on the paper's own seed, so replaying the seed replays the
+  // option order and the keyed ids too (the route shuffles only live output).
+  const shuffled = shuffleChoices(questions, mulberry32((seed ^ 0x9e3779b9) >>> 0));
+  return { questions: shuffled, seed, unavailableTypes, shortfall: Math.max(0, shortfall), notes, bankContext };
 }

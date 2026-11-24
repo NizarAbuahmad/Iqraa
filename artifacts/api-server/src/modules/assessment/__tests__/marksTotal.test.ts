@@ -100,4 +100,10 @@ describe("fitToTotal", () => {
     assert.deepEqual(out.marks, [1, 2, 3, 4]);
     assert.match(out.note ?? "", /20/);
   });
+
+  it("says so when fewer questions than asked for share the whole total", () => {
+    const out = fitToTotal([1, 2, 3], 0, 20, 10);
+    assert.equal(sum(out.marks), 20);
+    assert.match(out.note ?? "", /3 of the 10/);
+  });
 });

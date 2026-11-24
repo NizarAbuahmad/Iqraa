@@ -1207,9 +1207,10 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       generationParams["seed"] = result.seed;
     }
 
-    // Before the validator, so its answer-position warning speaks for what was
-    // left in the writer's order (a book item, options that point at each other).
-    const validation = validateGenerated(shuffleChoices(result.questions), {
+    // Before the validator, which counts answer positions only among what was
+    // left in its writer's order. The offline generator shuffles on its own seed
+    // (so `generationParams.seed` still replays the paper); live output here.
+    const validation = validateGenerated(live ? shuffleChoices(result.questions) : result.questions, {
       allowedObjectiveIds: evaluation.objectiveIds,
       allowedTypes: evaluation.assessmentTypes,
     });
@@ -1314,6 +1315,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         keyCheck.kept.map(k => k.question.marks),
         keep.reduce((s, q) => s + Number(q.marks), 0),
         evaluation.targetTotalMarks,
+        evaluation.targetQuestionCount,
       );
       if (fitted.note) generationNotes.push(fitted.note);
       if (evaluation.targetTotalMarks !== null) generationParams["targetTotalMarks"] = evaluation.targetTotalMarks;

@@ -123,4 +123,23 @@ describe("marks on a paper asked with a quota", () => {
     assert.equal(questions.length, 1);
     assert.equal(questions[0]!.marks, 3);
   });
+
+  it("move the model's rubric onto the fixed marks", () => {
+    const short = {
+      type: "short_answer",
+      objectiveId: "obj-1",
+      competencyKey: "critical_thinking",
+      marks: 2,
+      body: { prompt: "علّل: الاحتراق طارد للطاقة." },
+      expectedAnswer: { modelAnswer: "لأن…", keyConcepts: ["الروابط", "الطاقة"] },
+      rubric: { criteria: [{ label: "التعليل", marks: 2 }] },
+    };
+    const { questions } = parseGeneratedQuestions({ questions: [short] }, { ...REQ, assessmentTypes: ["short_answer"] }, { model: "m" });
+    assert.equal(questions[0]!.marks, 4);
+    assert.deepEqual((questions[0]!.rubric as { criteria: { marks: number }[] }).criteria.map(c => c.marks), [4]);
+  });
+
+  it("are said to bind the rubric too", () => {
+    assert.match(buildGenerationPrompt(REQ).user, /criteria marks add up to the question's marks/);
+  });
 });

@@ -101,10 +101,21 @@ export function fitToTotal(
   marks: readonly number[],
   kept: number,
   target: number | null | undefined,
+  /** The question count asked for: a shorter paper still shares the whole total, and is told so. */
+  requested?: number,
 ): { marks: number[]; note?: string } {
   if (target === null || target === undefined || marks.length === 0) return { marks: [...marks] };
   const scaled = scaleMarks(marks, target - kept);
-  if (scaled) return { marks: scaled };
+  if (scaled) {
+    return requested !== undefined && marks.length < requested
+      ? {
+        marks: scaled,
+        note:
+          `Only ${marks.length} of the ${requested} questions asked for were written, and they share the `
+          + `${target - kept} marks between them; a question you add by hand takes the paper past ${target}.`,
+      }
+      : { marks: scaled };
+  }
   return {
     marks: [...marks],
     note:

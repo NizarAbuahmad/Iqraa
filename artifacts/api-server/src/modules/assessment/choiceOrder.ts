@@ -16,7 +16,11 @@
  * - a textbook item (`aiMetadata.generator === "book"`), which stays in the
  *   book's printed order so a teacher can compare it with the book;
  * - a question whose options point at other options («جميع ما سبق», «أ و ب»,
- *   "all of the above"), which a shuffle would make wrong.
+ *   «كلاهما», "all of the above"), which a shuffle would make wrong.
+ *
+ * A question it shuffled carries `aiMetadata.choiceOrder: "shuffled"`: the
+ * validator's answer-position warning counts only the others, because five
+ * fairly shuffled questions put three keys in one place by chance ~41% of the time.
  */
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 
@@ -27,10 +31,10 @@ const POSITIONAL = [
   /ما\s*سبق/, // جميع ما سبق، لا شيء مما سبق، كل ما سبق
   /ما\s*ذُ?كِ?ر/,
   /(?:جميع|كل)\s+(?:الإجابات|الخيارات|البدائل)/,
-  /الإجابتان|الخياران/,
-  /(?:^|[\s(])[أبجده]\)?\s*و\s*\(?[أبجده](?:\)|\s|$)/,
-  /\bof the above\b/i,
-  /^\s*both\b/i,
+  /الإجابتان|الخياران|كلاهما|كلا\s*(?:الخيارين|الإجابتين)|ولا\s*واحد/,
+  /(?:^|[\s(])[أبجده]\)?\s*(?:و|أو)\s*\(?[أبجده](?:\)|\s|$)/,
+  /\b(?:of the above|of these)\b/i,
+  /^\s*(?:both|neither)\b/i,
   /\b[a-e]\)?\s*(?:and|&)\s*\(?[a-e]\b/i,
 ];
 
@@ -62,6 +66,7 @@ function shuffleOne(q: GeneratedQuestion, rng: () => number): GeneratedQuestion 
   });
   return {
     ...q,
+    aiMetadata: { ...q.aiMetadata, choiceOrder: "shuffled" },
     body: { ...q.body, options: shuffled },
     expectedAnswer: {
       ...q.expectedAnswer,

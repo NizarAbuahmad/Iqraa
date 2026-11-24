@@ -82,11 +82,23 @@ describe("shuffleChoices", () => {
       ["x", "y", "z", "أ و ب معًا"],
       ["x", "y", "z", "all of the above"],
       ["x", "y", "z", "a and b"],
+      ["x", "y", "z", "كلاهما صحيح"],
+      ["x", "y", "z", "كلا الخيارين"],
+      ["x", "y", "z", "أ أو ب"],
+      ["x", "y", "z", "none of these"],
+      ["x", "y", "z", "all of these"],
+      ["x", "y", "z", "neither"],
     ]) {
       const q = mcq(texts, [3]);
       const [out] = shuffleChoices([q], seeded(5));
       assert.deepEqual(out, q, texts.join(" | "));
     }
+  });
+
+  it("marks what it shuffled, so the position check can tell it from what it left", () => {
+    const [moved, kept] = shuffleChoices([mcq(["w", "x", "y", "z"], [0]), mcq(["x", "y", "z", "جميع ما سبق"], [3])], seeded(8));
+    assert.equal(moved!.aiMetadata["choiceOrder"], "shuffled");
+    assert.equal(kept!.aiMetadata["choiceOrder"], undefined);
   });
 
   it("leaves a textbook item in the book's own order", () => {

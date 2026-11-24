@@ -206,12 +206,14 @@ export function validateGenerated(
     }
   }
 
-  // 8d. The right multiple-choice answer mostly in one position. Generated
-  // options are shuffled before this runs (`choiceOrder.ts`), so this speaks for
-  // what was not: a textbook item, or options that point at each other.
+  // 8d. The right multiple-choice answer mostly in one position, among the
+  // questions whose options were NOT shuffled (`choiceOrder.ts` stamps the ones
+  // it shuffled): a textbook item, or options that point at each other.
   const positions: number[] = [];
   for (const q of accepted) {
     if (q.type !== "multiple_choice" || q.body["multiSelect"] === true) continue;
+    // A fair shuffle bunches by chance; only an order someone chose says anything.
+    if (q.aiMetadata["choiceOrder"] === "shuffled") continue;
     const options = q.body["options"];
     const key = q.expectedAnswer["optionIds"];
     if (!Array.isArray(options) || !Array.isArray(key) || key.length !== 1) continue;

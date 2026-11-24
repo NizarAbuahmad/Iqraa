@@ -23,7 +23,8 @@ kinds of unbalanced paper.
   questions, else `allocateQuestions(modelCount, difficulty)`; the top-up gets `remainingQuota(quota, written,
   missing)`. The prompt states the mix (only when there is no book block, which already does) and replaces
   «marks: a positive number…» with the fixed 1/2/3/4 per competency; the parser then sets every question's marks
-  from its competency (`MARKS_BY_COMPETENCY`), so a model that leaves marks out no longer loses the question.
+  from its competency (`MARKS_BY_COMPETENCY`), so a model that leaves marks out no longer loses the question,
+  and moves the model's rubric onto those marks (the prompt also says the criteria add up to them).
   Prompt version `exam-gen-9` (`exam-gen-9+book` with a book share). A request **without** `quota` is still
   exam-gen-8 byte for byte — `llmGeneratorPromptPin.test.ts` is unchanged and passes.
 - **A total the paper is out of.** `evaluations.target_total_marks` (migration `0032`, one nullable `integer`
@@ -32,13 +33,18 @@ kinds of unbalanced paper.
   what the teacher's own kept questions carry (`fitToTotal` / `scaleMarks` in `marksTotal.ts`: whole marks, at
   least one each, largest remainder, never a harder question below an easier one) and moves each rubric's
   criteria and levels with it (`scaleRubric`). When it cannot (fewer marks left than questions) the generator's
-  marks are kept and a note says so. The target is stored in `generationParams.targetTotalMarks`.
-- **Multiple-choice options are shuffled once, at generation** (`choiceOrder.ts`), before the validator, for
-  both generators. Ids keep their sequence and the key follows its text. Left in order: book items (so they
-  match the book) and options that point at each other («جميع ما سبق», «أ و ب», "all of the above").
+  marks are kept and a note says so; a note also says when fewer questions than asked for share the whole
+  total. The target is stored in `generationParams.targetTotalMarks`.
+- **Multiple-choice options are shuffled once, at generation** (`choiceOrder.ts`): live output in the route,
+  before the validator; offline output inside `generateMockEvaluation` on the paper's seed. Ids keep their
+  sequence and the key follows its text; a shuffled question carries `aiMetadata.choiceOrder: "shuffled"`. Left
+  in order: book items (so they match the book) and options that point at each other («جميع ما سبق», «أ و ب»,
+  «كلاهما», "all of the above").
 - **Three new validator warnings** (`validator.ts`, warnings only): a competency with **no** questions on a
   paper of 8 or more (the old check fired only at exactly one); true/false statements where the minority side
-  is under a quarter of 4 or more; more than half of 5 or more single-answer MCQs keyed to one position.
+  is under a quarter of 4 or more; more than half of 5 or more single-answer MCQs keyed to one position —
+  counting only questions NOT shuffled (a fair shuffle of 5 puts 3 in one place ~41% of the time, measured by
+  the review at 4,000 trials a size).
 
 **What changed (app).** The new-exam screen has «العلامة الكلية» (تلقائي, 10, 20, 25, 30, 40, 50, 60, 100;
 only totals at least the question count — `services/examTotal.ts`) for a generated exam; «تلقائي» sends nothing.
@@ -47,6 +53,10 @@ only totals at least the question count — `services/examTotal.ts`) for a gener
 **Verified.** New tests: `examQuota`, `choiceOrder`, `paperBalance`, `marksTotal` (api-server) and
 `examTotal` (mobile), each watched failing first; a 20,000-paper random check of `scaleMarks` (sum, minimum
 one, order) found nothing. `pnpm run typecheck`, api-server build + tests and mobile tests (see the PR).
+
+**Found, not fixed.** The offline generator's seed (`generationParams.seed`) has never replayed a banked
+question: `lib/math-practice` draws with `Math.random` (`index.ts`, `formatsBank.ts`). Only the template
+questions replay.
 
 **Not verified.** No live model was run: whether gpt-5.4-mini keeps to the stated mix is unmeasured — read the
 competency split of the first few live papers. The route wiring (quota into the request, shuffle, total inside

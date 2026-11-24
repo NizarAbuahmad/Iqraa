@@ -33,6 +33,7 @@ import {
   parseAnswerKeyCheck,
 } from "@workspace/math-verify";
 import { MARKS_BY_COMPETENCY, competencyForBlooms, type CompetencyKey } from "./competency.ts";
+import { scaleRubric } from "./marksTotal.ts";
 import type { BookSupplied } from "./bookQuestions.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { variationBlock } from "../../lib/variation.ts";
@@ -428,7 +429,8 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     "    the cognitive demand of THIS question, which is not the same as its objective's level.",
     "    A recall question about an application objective is knowledge.",
     req.quota
-      ? `  "marks": fixed by competency — ${COMPETENCY_ORDER.map(c => `${c} ${MARKS_BY_COMPETENCY[c]}`).join(", ")}`
+      ? `  "marks": fixed by competency — ${COMPETENCY_ORDER.map(c => `${c} ${MARKS_BY_COMPETENCY[c]}`).join(", ")}; `
+        + "a rubric's criteria marks add up to the question's marks"
       : '  "marks": a positive number, larger for questions that demand more work',
     '  "skill": a two-to-four word label for what it actually tests, or null',
     "",
@@ -636,7 +638,10 @@ export function parseGeneratedQuestions(
       type: type as QuestionType,
       body: visual ? { ...bodyRest, visual } : bodyRest,
       expectedAnswer: asRecord(q["expectedAnswer"]) ?? {},
-      rubric: asRecord(q["rubric"]),
+      // Asked with a quota the marks were fixed above, so a rubric the model
+      // wrote for its own number is moved onto them (a teacher marking by hand
+      // reads the criteria's marks beside the question's).
+      rubric: req.quota ? rubricOnMarks(asRecord(q["rubric"]), marks) : asRecord(q["rubric"]),
       objectiveId,
       competencyKey,
       difficulty: req.difficulty,
@@ -655,6 +660,14 @@ export function parseGeneratedQuestions(
   });
 
   return { questions, discarded, visualsDropped };
+}
+
+/** A rubric whose criteria add up to `marks`, from whatever they added up to. */
+function rubricOnMarks(rubric: Record<string, unknown> | null, marks: number): Record<string, unknown> | null {
+  const criteria = rubric?.["criteria"];
+  if (!rubric || !Array.isArray(criteria)) return rubric;
+  const sum = criteria.reduce((s: number, c) => s + (Number((c as Record<string, unknown>)?.["marks"]) || 0), 0);
+  return sum > 0 ? scaleRubric(rubric, sum, marks) : rubric;
 }
 
 export interface LlmGenerationResult extends ParseResult {

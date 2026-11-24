@@ -14,6 +14,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { GeneratedQuestion } from "../mockGenerator.ts";
 import { validateGenerated } from "../validator.ts";
+import { shuffleChoices } from "../choiceOrder.ts";
 import type { CompetencyKey } from "../competency.ts";
 
 let n = 0;
@@ -92,5 +93,16 @@ describe("the position of the right answer", () => {
   it("is quiet when the answers are spread", () => {
     const paper = [mcq(0), mcq(1), mcq(2), mcq(3), mcq(0), mcq(2)];
     assert.equal(warn(paper).some(w => w.includes("multiple-choice")), false);
+  });
+
+  it("is never warned about for options the generator shuffled", () => {
+    // Five shuffled questions put three keys in one place by chance ~41% of the
+    // time; the warning is for what was left in its writer's order.
+    for (let seed = 0; seed < 200; seed += 1) {
+      let x = seed + 1;
+      const rng = () => ((x = (x * 16807) % 2147483647) / 2147483647);
+      const paper = shuffleChoices([mcq(0), mcq(0), mcq(0), mcq(0), mcq(0)], rng);
+      assert.equal(warn(paper).some(w => w.includes("multiple-choice")), false, `seed ${seed}`);
+    }
   });
 });
