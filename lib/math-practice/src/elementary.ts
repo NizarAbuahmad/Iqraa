@@ -16,7 +16,7 @@ import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.t
 import { EARLY_CHOICE, EARLY_DRAWS, choosesByDifficulty, pickByDifficulty } from './earlyDifficulty.ts';
 
 export type ElementaryOp =
-  | 'add' | 'sub' | 'mul' | 'div' | 'compare' | 'place'
+  | 'add' | 'sub' | 'mul' | 'div' | 'compare' | 'compare_only' | 'order_only' | 'place'
   | 'frac' | 'frac_sub' | 'frac_mul' | 'frac_div' | 'frac_compare'
   | 'dec' | 'dec_sub' | 'dec_mul' | 'dec_div' | 'dec_compare'
   | 'percent';
@@ -65,7 +65,11 @@ export function elementaryOpsForTitle(title: string): ElementaryOp[] {
     if (/صحيحه/.test(t)) return [];
     if (/كسور|كسر|fraction/i.test(t)) return ['frac_compare'];
     if (/عشري|decimal/i.test(t)) return ['dec_compare'];
-    return /الاعداد|numbers/i.test(t) ? ['compare'] : [];
+    if (!/الاعداد|numbers/i.test(t)) return [];
+    // Grades 1–3 teach comparing and ordering as two lessons; Grades 4, 5 and 7 as one.
+    const compares = /مقارنه|compar/i.test(t);
+    const orders = /ترتيب|order/i.test(t);
+    return compares && orders ? ['compare'] : compares ? ['compare_only'] : ['order_only'];
   }
   // «النسبة المئوية والكسور…» converts (pct_conv); Grade 6 «النسبة المئوية من عدد» has its own generator (pct_of_g6),
   // since the shared op is a third conversions and grids
@@ -625,14 +629,17 @@ function divKinds(base: Base, b: number, q0: number, grade: number, diff: DiffTi
   }
 }
 
-function compareKinds(base: Base, max: number, rng: Rng, lo = 0): ConcreteItem {
+function compareKinds(base: Base, max: number, rng: Rng, lo = 0, maxDigits = 4): ConcreteItem {
   const show = (v: number) => String(v);
   const what = { ar: 'الأعداد', one: 'العدد', en: 'numbers' };
   const k = int(rng, 1, 3);
   if (k === 1) return orderItem(base, distinctInts(rng, 3, lo, max), show, rng() < 0.5, what);
   if (k === 2 || max < 100) return extremeItem(base, distinctInts(rng, 4, lo, max), show, rng() < 0.5, what);
-  // The greatest / least number made from given digits — place value deciding order.
-  const L = Math.min(4, String(max).length);
+  return digitsItem(base, Math.min(maxDigits, String(max).length), rng);
+}
+
+/** The greatest / least number made from given digits — place value deciding order. */
+function digitsItem(base: Base, L: number, rng: Rng): ConcreteItem {
   const digits = distinctInts(rng, L, 1, 9);
   const big = rng() < 0.5;
   const desc = [...digits].sort((x, y) => y - x);
@@ -643,6 +650,84 @@ function compareKinds(base: Base, max: number, rng: Rng, lo = 0): ConcreteItem {
     wrongStrs(key.join(''), [(big ? asc : desc).join(''), swap(key, L - 2), swap(key, 0)]),
     `ما ${big ? 'أكبر' : 'أصغر'} عدد يمكن تكوينه من الأرقام ${listAr(digits)}، إذا استُعمل كل رقم مرة واحدة؟`,
     `What is the ${big ? 'greatest' : 'least'} number you can make from the digits ${listEn(digits)}, using each digit once?`);
+}
+
+/**
+ * Grade 1's numbers have two places, so its digits question picks two of three
+ * digits: «ما أكبر عدد من منزلتين يمكن تكوينه من الأرقام 3، 7، 5…» is 75.
+ */
+function twoPlaceDigitsItem(base: Base, rng: Rng): ConcreteItem {
+  const digits = distinctInts(rng, 3, 1, 9);
+  const big = rng() < 0.5;
+  const [a, b, c] = [...digits].sort((x, y) => (big ? y - x : x - y)) as [number, number, number];
+  const key = `${a}${b}`;
+  return ask(base, `digits2:${big ? 'max' : 'min'}:${digits.join(',')}`, key,
+    wrongStrs(key, [`${b}${a}`, `${a}${c}`, `${c}${a}`]),
+    `ما ${big ? 'أكبر' : 'أصغر'} عدد من منزلتين يمكن تكوينه من الأرقام ${listAr(digits)}، إذا استُعمل كل رقم مرة واحدة على الأكثر؟`,
+    `What is the ${big ? 'greatest' : 'least'} two-digit number you can make from the digits ${listEn(digits)}, using each digit at most once?`);
+}
+
+/** The numbers a Grade 1–3 compare or order lesson names: G1 «ضمن منزلتين», G2 «ضمن 3 منازل», G3 «ضمن 4 منازل». */
+function compareRange(grade: number, diff: DiffTier, max: number): [number, number] {
+  if (grade === 1) return [10, G1_COMPARE_MAX[diff]];
+  if (grade === 2) return [100, 999];
+  // Grade 3 (u1_l3, u1_l4) showed 91 and 392 when it drew from 0 (2026-11-20).
+  if (grade === 3) return [1000, 9999];
+  // Grade 4 compares and orders «ضمن مئات الألوف» (u1_l2): it drew 0–99999 and showed 91 and 3206 (2026-11-21).
+  if (grade === 4) return [10000, diff === 'easy' ? 99999 : 999999];
+  return [0, max];
+}
+
+const shuffleInts = (rng: Rng, xs: number[]) => {
+  const ys = [...xs];
+  for (let i = ys.length - 1; i > 0; i--) { const j = int(rng, 0, i); [ys[i], ys[j]] = [ys[j]!, ys[i]!]; }
+  return ys;
+};
+
+/** «مقارنة الأعداد» alone: a sign between two numbers, the greatest / least of four, or the one past a bound. */
+function compareOnly(base: Base, lo: number, hi: number, rng: Rng): ConcreteItem {
+  const what = { ar: 'الأعداد', one: 'العدد', en: 'numbers' };
+  const r = rng();
+  if (r < 0.4) {
+    const a = int(rng, lo, hi);
+    const b = rng() < 0.15 ? a : int(rng, lo, hi);
+    const sign = a > b ? '>' : a < b ? '<' : '=';
+    return {
+      ...base, eq: `${a} ___ ${b}`, answer: sign,
+      wrongs: ['>', '<', '='].filter(s => s !== sign),
+      promptAr: `ضع الإشارة المناسبة (> أو < أو =):\n${a} ___ ${b}`,
+      promptEn: `Write the correct sign (>, < or =):\n${a} ___ ${b}`,
+    };
+  }
+  if (r < 0.7) return extremeItem(base, distinctInts(rng, 4, lo, hi), String, rng() < 0.5, what);
+  // Exactly one of four is past the bound; the bound itself is a distractor that is not.
+  const greater = rng() < 0.5;
+  const span = Math.max(3, Math.round((hi - lo) / 6));
+  const n = int(rng, lo + 2, hi - 2);
+  const key = greater ? int(rng, n + 1, Math.min(hi, n + span)) : int(rng, Math.max(lo, n - span), n - 1);
+  const others = greater ? distinctInts(rng, 3, Math.max(lo, n - span), n) : distinctInts(rng, 3, n, Math.min(hi, n + span));
+  const shown = shuffleInts(rng, [key, ...others]);
+  return ask(base, `${greater ? 'gt' : 'lt'}:${n}:${shown.join(',')}`, String(key), others.map(String),
+    `أيّ الأعداد الآتية ${greater ? 'أكبر' : 'أصغر'} من ${n}: ${listAr(shown)}؟`,
+    `Which of these numbers is ${greater ? 'greater' : 'less'} than ${n}: ${listEn(shown)}?`);
+}
+
+/** «ترتيب الأعداد» alone: order a list, name the number in a place of the order, or build the greatest / least number. */
+function orderOnly(base: Base, grade: number, lo: number, hi: number, hard: boolean, rng: Rng): ConcreteItem {
+  const r = rng();
+  if (r < 0.4) return orderItem(base, distinctInts(rng, hard ? 4 : 3, lo, hi), String, rng() < 0.5, { ar: 'الأعداد', en: 'numbers' });
+  if (r < 0.7) {
+    const values = distinctInts(rng, 4, lo, hi);
+    const up = rng() < 0.5;
+    const second = rng() < 0.5;
+    const sorted = [...values].sort((x, y) => (up ? x - y : y - x));
+    const key = sorted[second ? 1 : 2]!;
+    return ask(base, `nth:${up ? 'up' : 'down'}:${second ? 2 : 3}:${values.join(',')}`, String(key),
+      values.filter(v => v !== key).map(String),
+      `رتّب الأعداد الآتية ${up ? 'تصاعديًّا' : 'تنازليًّا'}، ثم اكتب العدد الذي يأتي ${second ? 'ثانيًا' : 'ثالثًا'}: ${listAr(values)}`,
+      `Order these numbers from ${up ? 'least to greatest' : 'greatest to least'}, then write the number that comes ${second ? 'second' : 'third'}: ${listEn(values)}`);
+  }
+  return grade === 1 ? twoPlaceDigitsItem(base, rng) : digitsItem(base, Math.min(4, String(hi).length), rng);
 }
 
 function placeKinds(base: Base, digits: number, rng: Rng): ConcreteItem {
@@ -1101,9 +1186,8 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       // Grade 1 compares and orders «ضمن منزلتين» (u2_l4, u2_l5): the add range
       // (0–10 at easy and medium) never showed a two-digit number (review, 2026-11-15).
       // Grade 2 compares and orders numbers «ضمن 3 منازل»: an easy paper asked about «10، 6، 22، 20».
-      // Grade 3 compares and orders «ضمن 4 منازل» (u1_l3, u1_l4): it showed 91 and 392 (2026-11-20).
-      const [lo, hi] = grade === 1 ? [10, G1_COMPARE_MAX[diff]] : grade === 2 ? [100, 999] : grade === 3 ? [1000, 9999] : [0, max];
-      if (int(rng, 0, 3) > 0) return compareKinds(base, hi, rng, lo);
+      const [lo, hi] = compareRange(grade, diff, max);
+      if (int(rng, 0, 3) > 0) return compareKinds(base, hi, rng, lo, grade === 4 ? 6 : 4);
       const a = int(rng, lo, hi);
       const b = rng() < 0.15 ? a : int(rng, lo, hi);
       const sign = a > b ? '>' : a < b ? '<' : '=';
@@ -1113,6 +1197,16 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
         promptAr: `ضع الإشارة المناسبة (> أو < أو =):\n${a} ___ ${b}`,
         promptEn: `Write the correct sign (>, < or =):\n${a} ___ ${b}`,
       };
+    }
+    // Grades 1–3 teach «مقارنة الأعداد» and «ترتيب الأعداد» as two lessons, and drew one mix
+    // for both (review, 2026-11-13): each now asks only its own skill.
+    case 'compare_only': {
+      const [lo, hi] = compareRange(grade, diff, max);
+      return compareOnly(base, lo, hi, rng);
+    }
+    case 'order_only': {
+      const [lo, hi] = compareRange(grade, diff, max);
+      return orderOnly(base, grade, lo, hi, diff === 'hard', rng);
     }
     case 'place': {
       // Grades 4 and 5 name a wider range («ضمن مئات الألوف», «ضمن الملايين»):

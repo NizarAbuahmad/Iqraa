@@ -19,7 +19,7 @@ import { Surface } from '@/components/ui/Surface';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { RosterError, approveLinkRequest, listLinkRequests, rejectLinkRequest, type LinkRequest } from '@/services/roster';
-import { classLinkRequestsQueryKey, classQueryKey } from '@/services/rosterQueryKeys';
+import { classLinkRequestsQueryKey, classQueryKey, linkRequestSummaryQueryKey } from '@/services/rosterQueryKeys';
 import { formatLinkedOn, linkDisplayName } from '@/services/rosterLinks';
 import { competingWarning } from '@/services/linkRequests';
 import { RADIUS, SPACE, TYPE } from '@/constants/theme';
@@ -76,6 +76,7 @@ export function LinkRequestsBanner({ classId }: { classId: string }) {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: classLinkRequestsQueryKey(classId) }),
           queryClient.invalidateQueries({ queryKey: classQueryKey(classId) }),
+          queryClient.invalidateQueries({ queryKey: linkRequestSummaryQueryKey }),
         ]);
       } finally {
         answering.current = false;

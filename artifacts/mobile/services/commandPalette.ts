@@ -12,6 +12,7 @@
  */
 import { WORKFLOW } from './toolCatalog.ts';
 import { tabHref } from './tabRoute.ts';
+import { IQRA_CHAT_ENABLED } from './features.ts';
 
 /**
  * The part of a `ToolDef` this file needs. Structural rather than the real
@@ -85,6 +86,8 @@ export function buildCommands(opts: {
   t: (key: string) => string;
   /** Tool sections; defaults to the shared catalog. */
   workflow?: { tools: ToolLike[] }[];
+  /** Whether «اسأل إقرأ» is offered; defaults to `IQRA_CHAT_ENABLED`. */
+  chatEnabled?: boolean;
 }): Command[] {
   const isAr = opts.lang === 'ar';
   const out: Command[] = [];
@@ -92,7 +95,7 @@ export function buildCommands(opts: {
   // Lesson-scoped first: whatever a teacher came here to do, it is almost
   // always about the lesson that is already loaded.
   if (opts.lessonTopic?.trim()) {
-    out.push({
+    if (opts.chatEnabled ?? IQRA_CHAT_ENABLED) out.push({
       id: 'lesson:ask',
       kind: 'lesson',
       label: isAr ? `اسأل إقرأ عن «${opts.lessonTopic}»` : `Ask Iqrra about “${opts.lessonTopic}”`,
