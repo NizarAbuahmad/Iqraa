@@ -23,6 +23,8 @@ const catalog = makeNccdCatalog({
   kbBookId: GEO_S1_BOOK_ID,
   browserBookId: GEO_S1_CURRICULUM_BOOK_ID,
   raw,
+  // The book prints no outcomes list — exam targets from what it does print.
+  examTargetsFromBook: true,
 });
 
 export const nccdGeoSem1: NccdCurriculumFile = catalog.curriculum;

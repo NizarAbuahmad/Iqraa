@@ -25,7 +25,7 @@ import type { ActivitySlide } from './AIService.ts';
 import type { KBLesson } from '../knowledgeBase.ts';
 import type { Lang, PracticeWQ } from './mathPractice.ts';
 import { distributeMinutes, type ActivityBlueprint, type ActivityBlueprintId } from './activityBlueprints.ts';
-import { WRITING_LIMIT, arabicLessonType, firstGradeContent, titleDetail, type EarlyGrade } from './lessonPlanFirstGrade.ts';
+import { ANSWER, WRITING_LIMIT, arabicLessonType, firstGradeContent, isPunctuation, titleDetail, type EarlyGrade } from './lessonPlanFirstGrade.ts';
 import type { LessonKind } from './lessonPlanKinds.ts';
 
 export interface FirstGradeActivityContext {
@@ -39,7 +39,7 @@ export interface FirstGradeActivityContext {
   variant?: number;
   /** A unit or semester review: its warm-up looks back over the units, not at «yesterday's lesson». */
   revision?: boolean;
-  /** Grade 1 (the default) or Grade 2 — see `EarlyGrade` in `lessonPlanFirstGrade.ts`. */
+  /** Grade 1 (the default), 2 or 3 — see `EarlyGrade` in `lessonPlanFirstGrade.ts`. */
   grade?: EarlyGrade;
 }
 
@@ -64,13 +64,19 @@ function gameRound(ctx: FirstGradeActivityContext): Pair {
         };
       }
       const detail = titleDetail(ctx.kb?.titleAr ?? t);
-      if ((ctx.grade ?? 1) === 2 && lesson.type === 'write' && detail) {
+      if (lesson.type === 'write' && isPunctuation(detail)) {
+        return {
+          ar: `سأقرأ جملة بلا علامات ترقيم، ويرفع الفريق بطاقة العلامة التي تحتاجها من «${detail}»، ثم يكتبها طفل من الفريق في موضعها على السبورة.`,
+          en: `I will read a sentence with no punctuation; the team holds up the card of the mark it needs from “${detail}”, then one child writes it in place on the board.`,
+        };
+      }
+      if ((ctx.grade ?? 1) >= 2 && lesson.type === 'write' && detail) {
         return {
           ar: `سأقول كلمة، ويرفع الفريق بطاقة «نعم» إذا كانت فيها «${detail}» وبطاقة «لا» إذا لم تكن، ثم يكتبها طفل من الفريق على السبورة.`,
           en: `I will say a word; the team holds up “yes” if it has “${detail}” and “no” if not, then one child from the team writes it on the board.`,
         };
       }
-      if ((ctx.grade ?? 1) === 2 && lesson.type === 'read') {
+      if ((ctx.grade ?? 1) >= 2 && lesson.type === 'read') {
         return {
           ar: `سأقرأ جملة من ${detail ? `نص «${detail}»` : 'النص'} وأتوقف قبل كلمة، ويكمل الفريق الكلمة بصوت واحد.`,
           en: `I will read a sentence from ${detail ? `“${detail}”` : 'the text'} and stop before a word; the team finishes it together.`,
@@ -110,6 +116,12 @@ function gameRound(ctx: FirstGradeActivityContext): Pair {
     case 'calc':
     default: {
       const q = spoken(ctx.practice[0]);
+      if ((ctx.grade ?? 1) === 3) {
+        return {
+          ar: `سأقرأ مسألة أو أكتبها على السبورة${q ? ` (مثل: «${q}»)` : ''}، ويحلّها الفريق معًا، ويكتب أحدهم الناتج على لوح الفريق ويرفعه.`,
+          en: `I will read or write a problem on the board${q ? ` (like: “${q}”)` : ''}; the team solves it together and one child writes the answer on the team board and holds it up.`,
+        };
+      }
       return {
         ar: `سأقرأ سؤالًا بصوت عالٍ${q ? ` (مثل: «${q}»)` : ''}، ويرفع الفريق بطاقة العدد الصحيح أو يُظهره بالأصابع.`,
         en: `I will read a question aloud${q ? ` (like: “${q}”)` : ''}, and the team holds up the right number card or shows it with fingers.`,
@@ -130,7 +142,7 @@ function handsOnTask(ctx: FirstGradeActivityContext): Pair {
           en: `Each child shapes the letter ${lesson.letter} with clay or string on paper, then traces it with a finger while saying its sound.`,
         };
       }
-      if ((ctx.grade ?? 1) === 2) {
+      if ((ctx.grade ?? 1) >= 2) {
         return {
           ar: 'يصنع كل طفل بطاقات لكلمات من الدرس، ويرتّبها في جملة قصيرة على ورقة ويلصقها، ثم يقرؤها لي ويكتبها تحتها.',
           en: 'Each child makes word cards from the lesson, arranges them into a short sentence on a sheet and sticks them down, then reads it to me and writes it underneath.',
@@ -147,6 +159,12 @@ function handsOnTask(ctx: FirstGradeActivityContext): Pair {
         en: 'Each child makes a picture card for a lesson word (draws and colours it), then holds it up and says the word.',
       };
     case 'calc':
+      if ((ctx.grade ?? 1) === 3) {
+        return {
+          ar: `يمثّل كل طفل مثالًا على «${t}» بالأدوات (قطع العشرات والمئات، أو مصفوفة من الأزرار، أو أشكال، أو شرائط كسور)، ثم يكتبه بالأرقام على لوحه، ويقارنه بما أكتبه على السبورة.`,
+          en: `Each child builds an example of “${t}” with materials (tens and hundreds blocks, a button array, shapes or fraction strips), writes it in numbers on their board, and checks it against what I write on the board.`,
+        };
+      }
       return {
         ar: `يمثّل كل طفل «${t}» بالمكعبات أو الحبات على الطاولة، ثم يعدّ ويقول الناتج، ويقارنه بما أمثّله أنا على السبورة.`,
         en: `Each child builds “${t}” with cubes or beads on the table, counts and says the answer, and checks it against what I show on the board.`,
@@ -222,6 +240,7 @@ function oneLesson(id: ActivityBlueprintId, ctx: FirstGradeActivityContext): Act
   const ar = ctx.lang === 'ar';
   const t = ctx.topic;
   const limit = WRITING_LIMIT[grade];
+  const say = ANSWER[grade];
   // The second tip carries the grade's writing limit (Grade 1 copies; Grade 2 writes a short sentence).
   const tip = (i: number) => {
     const k = (i + (ctx.variant ?? 0)) % TIPS.length;
@@ -243,12 +262,12 @@ function oneLesson(id: ActivityBlueprintId, ctx: FirstGradeActivityContext): Act
         steps: mk(ar ? [
           ['أعرض النموذج', c.show.ar],
           ['كل طفل يجرّب', c.alone.ar],
-          ['أمرّ على كل طفل', 'سأمرّ على الأطفال واحدًا واحدًا، وأسأل كل طفل سؤالًا قصيرًا عمّا يفعله، ويجيب بكلمة أو بإشارة.'],
+          ['أمرّ على كل طفل', `سأمرّ على الأطفال واحدًا واحدًا، وأسأل كل طفل سؤالًا قصيرًا عمّا يفعله، ويجيب ${say.ar}.`],
           ['يُري الطفل عمله', 'يرفع كل طفل عمله أو يُريه لي، وأمدح محاولته باسمه.'],
         ] : [
           ['I show the model', c.show.en],
           ['Each child tries', c.alone.en],
-          ['I visit each child', 'I will go round the children one by one and ask each a short question about what they are doing; they answer with a word or by pointing.'],
+          ['I visit each child', `I will go round the children one by one and ask each a short question about what they are doing; they answer ${say.en}.`],
           ['The child shows their work', 'Each child holds up or shows me their work, and I praise the try by name.'],
         ], [3, 4, 3, 2]),
         teacherTips: [tip(0), tip(1)],
@@ -421,7 +440,7 @@ export function firstGradeCheckPrompts(kind: LessonKind, topic: string, titleAr:
   if (kind === 'arabic') {
     const lesson = arabicLessonType(titleAr || topic);
     const detail = titleDetail(titleAr || topic);
-    if (grade === 2 && lesson.type === 'read') {
+    if (grade >= 2 && lesson.type === 'read') {
       const text = detail ? `نص «${detail}»` : 'النص';
       return out([
         [`من الشخصيات في ${text}؟ قولوا بصوت واحد.`, 'يسمّي الأطفال شخصيات النص.', `Who is in ${detail ? `“${detail}”` : 'the text'}? Say it together.`, 'The children name the characters.'],
@@ -429,7 +448,14 @@ export function firstGradeCheckPrompts(kind: LessonKind, topic: string, titleAr:
         ['أكملوا الجملة من النص: (أقرأ بدايتها وأتوقف)', 'يكمل الأطفال الجملة كما في النص.', 'Finish the sentence from the text: (I read its start and stop)', 'The children finish the sentence as in the text.'],
       ]);
     }
-    if (grade === 2 && lesson.type === 'write' && detail) {
+    if (lesson.type === 'write' && isPunctuation(detail)) {
+      return out([
+        [`أين نضع علامة الترقيم في هذه الجملة؟ أشيروا. (أكتب جملة بلا علامة)`, `يشير الأطفال إلى موضع العلامة الصحيح من «${detail}».`, `Where does the punctuation mark go in this sentence? Point. (I write a sentence with no mark)`, `The children point to where the right mark from “${detail}” goes.`],
+        ['ارفعوا بطاقة العلامة الصحيحة. (أقرأ جملة)', 'يرفع الأطفال بطاقة العلامة التي تحتاجها الجملة.', 'Hold up the right mark. (I read a sentence)', 'The children hold up the mark the sentence needs.'],
+        ['قولوا جملة نحتاج فيها إلى إحدى العلامتين.', 'جملة صحيحة تحتاج إحدى علامتي الدرس.', 'Say a sentence that needs one of the marks.', 'A right sentence that needs one of the lesson’s marks.'],
+      ]);
+    }
+    if (grade >= 2 && lesson.type === 'write' && detail) {
       return out([
         [`ارفعوا الإبهام إذا كانت الكلمة فيها «${detail}». (أقول كلمة)`, `الإبهام للأعلى للكلمات التي فيها «${detail}» فقط.`, `Thumbs up if the word has “${detail}”. (I say a word)`, `Thumbs up only for words with “${detail}”.`],
         ['أين تقع القاعدة في الكلمة؟ أشيروا إليها. (أكتب كلمة على السبورة)', 'يشير الأطفال إلى موضع القاعدة في الكلمة.', 'Where is the rule in the word? Point to it. (I write a word on the board)', 'The children point to where the rule is in the word.'],

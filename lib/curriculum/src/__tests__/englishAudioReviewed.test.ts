@@ -12,8 +12,9 @@ describe('REVIEWED_BY_EAR', () => {
       assert.match(etag, /^"[0-9a-f]{32}"$/, `${slug}: ${etag}`);
     }
   });
-  it('holds the 24 words heard on 2026-10-31, none twice', () => {
-    assert.equal(Object.keys(REVIEWED_BY_EAR).length, 24);
-    assert.equal(new Set(Object.values(REVIEWED_BY_EAR)).size, 24);
+  // 24 were heard on 2026-10-31; 'been' and 'burned' left on 2026-11-15 with the irregular-verbs rows they came from.
+  it('holds the 22 words heard on 2026-10-31 that the app still plays, none twice', () => {
+    assert.equal(Object.keys(REVIEWED_BY_EAR).length, 22);
+    assert.equal(new Set(Object.values(REVIEWED_BY_EAR)).size, 22);
   });
 });

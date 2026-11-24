@@ -902,6 +902,8 @@ describe('shapes, fractions, patterns: answers recomputed', () => {
     }
     for (const item of draws('angle_measure', 300)) {
       const p = item.promptAr!, n = nums(p), a = Number(item.answer.replace('°', ''));
+      // the protractor kinds (since 2026-11-21) recompute their keys in grade4SecondPass.test.ts
+      if (has(p, 'المنقلة')) continue;
       if (has(p, 'متجاورتان')) assert.equal(a, n[0]! + n[1]!); else if (has(p, 'على مستقيم')) assert.equal(a, 180 - n[0]!); else if (has(p, 'تتمم')) assert.equal(a, 90 - n[0]!); else assert.equal(a, n[0]! - n[1]!);
       assert.ok(a > 0);
     }

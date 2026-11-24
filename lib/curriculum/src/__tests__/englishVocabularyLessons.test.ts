@@ -30,3 +30,10 @@ test('the grammar lessons (4A) of units 2-4 print no Word List', () => {
     assert.equal(ENGLISH_VOCABULARY.filter(w => w.lessonId === S1(u, 4)).length, 0, `unit ${u} lesson 4`);
   }
 });
+
+test('nothing is read from the Grammar Reference and irregular-verbs pages after the Word List', () => {
+  // Those pages carry no `WL` marker, and parsing on filed their cells under the last list's lesson, in Grades 8-10.
+  for (const junk of ['She/It', 'I/You', 'or learnt', 'They must', 'withdrew', 'understood', 'burned']) {
+    assert.deepEqual(ENGLISH_VOCABULARY.filter(w => w.word === junk).map(w => w.lessonId), [], junk);
+  }
+});
