@@ -23,7 +23,8 @@ through `rendered`: science S2 u7_l1 (p.30) and u8_l1 (p.46-49), social S1 u2_l3
 their label, header bands, text slices). They and their PNGs are dropped; three clean partial pieces of a figure stay.
 
 **The «Grade 5» digital teacher guide is Grade 4's.** Its cover prints «المهارات الرقمية — الصف الرابع الأساسي - دليل المعلم»
-(sha256 differs from `g4-digital-s1-teacher-guide` only by the OCR run). Its passages were grounding Grade 5 digital lessons
+(both guides' extracted text open on that same Grade 4 cover: 91 pages each, 83,272 and 83,160 characters; the PDFs are not
+byte-identical, so it may be a re-scan or another copy of the Grade 4 guide). Its passages were grounding Grade 5 digital lessons
 in Grade 4 content. The source is now `conflict` with the Grade 4 guide, its extraction is removed and `extractionBlocked`
 records why, until the real Grade 5 guide is obtained.
 
