@@ -1658,10 +1658,17 @@ const decPlace: Topic = {
     }
     const raw = int(rng, 10 ** places + 1, 10 ** (places + 1) - 1) + int(rng, 1, 9) * 10 ** (places + 1);
     const s = fixedDec(raw, places);
-    const pos = int(rng, 1, places);
-    const idx = s.indexOf('.') + pos;
-    const digit = Number(s[idx]);
-    if (digit === 0) return decPlace.make({ rng, diff, grade: 4 });
+    // A decimal place whose digit is not 0 and occurs nowhere else in the number:
+    // «الرقم 6 في العدد 64.36» has two place values and no single answer
+    // (hand review of the ready-made sheets, 2026-11-20).
+    const digits = s.replace('.', '');
+    const usable = Array.from({ length: places }, (_, i) => i + 1).filter(p => {
+      const c = s[s.indexOf('.') + p]!;
+      return c !== '0' && digits.indexOf(c) === digits.lastIndexOf(c);
+    });
+    if (usable.length === 0) return decPlace.make({ rng, diff, grade: 4 });
+    const pos = pick(rng, usable);
+    const digit = Number(s[s.indexOf('.') + pos]);
     const ans = fmtDec(digit * 10 ** (places - pos), places);
     return {
       eq: s, answer: ans,
