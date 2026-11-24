@@ -84,6 +84,8 @@ import { resolveUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart, readUserPeriodSpendUsd } from "../lib/aiUsageLog.js";
 import { isUniqueViolation } from "../lib/pgErrors.js";
 import { parsePushPrefsPatch, readPushPrefs } from "../modules/notifications/pushPrefs.ts";
+import { notifyTeacherOfJoinRequest } from "../lib/joinRequestNotify.js";
+import { pushWithin } from "../lib/pushWithin.js";
 
 const router = Router();
 
@@ -338,13 +340,19 @@ async function hasAnyRosterLink(userId: string): Promise<boolean> {
 
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-type ClaimWriteOutcome = "linked" | "pending" | "taken" | "guardian_taken" | "guardian_limit" | "pending_limit";
+/**
+ * `requested` is a held claim whose request row was just made; `pending` is one
+ * already waiting (the same account entering the same code again). Both answer
+ * «waiting for the teacher»; only `requested` pushes the teacher.
+ */
+type ClaimWriteOutcome = "linked" | "requested" | "pending" | "taken" | "guardian_taken" | "guardian_limit" | "pending_limit";
+type ClaimRefusal = Exclude<ClaimWriteOutcome, "linked" | "requested" | "pending">;
 
 /**
  * What a refused claim answers. One table for `/claim` and `/redeem`, so the two
  * cannot word the same refusal differently — the app translates by `code`.
  */
-const CLAIM_REFUSALS: Record<Exclude<ClaimWriteOutcome, "linked" | "pending">, { error: string; code: string }> = {
+const CLAIM_REFUSALS: Record<ClaimRefusal, { error: string; code: string }> = {
   taken: { error: "This student is already linked to an account", code: "claim_already_linked" },
   guardian_taken: { error: "A parent account is already linked to this student", code: "claim_guardian_taken" },
   guardian_limit: {
@@ -452,17 +460,29 @@ async function linkRosterRowInTx(
     await tx
       .delete(rosterLinkRequests)
       .where(and(eq(rosterLinkRequests.userId, userId), ne(rosterLinkRequests.studentId, resolved.studentId)));
-    await tx
+    const [made] = await tx
       .insert(rosterLinkRequests)
       .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
-      .onConflictDoNothing();
-    return "pending";
+      .onConflictDoNothing()
+      .returning({ id: rosterLinkRequests.id });
+    return made ? "requested" : "pending";
   }
   await tx
     .insert(rosterLinks)
     .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
     .onConflictDoNothing();
   return "linked";
+}
+
+/**
+ * Tells the class's teacher a pick is waiting for them — after the request is
+ * committed and before the joiner is answered (lib/pushWithin.ts says why).
+ * Capped and never throwing, so a slow or failed push costs the joiner nothing.
+ */
+async function pushJoinRequest(resolved: Extract<ClaimResolution, { ok: true }>, userId: string): Promise<void> {
+  const classGroupId = resolved.classGroupId;
+  if (!classGroupId) return;
+  await pushWithin("join request", () => notifyTeacherOfJoinRequest({ studentId: resolved.studentId, classGroupId, userId }));
 }
 
 /**
@@ -1112,7 +1132,8 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
 
     const userId = req.user!.id;
     const outcome = await db.transaction(tx => linkRosterRowInTx(tx, userId, resolved));
-    if (outcome === "pending") {
+    if (outcome === "requested" || outcome === "pending") {
+      if (outcome === "requested") await pushJoinRequest(resolved, userId);
       const [row] = await db
         .select({ displayName: students.displayName })
         .from(students)
@@ -1462,7 +1483,7 @@ function codeAccountUser(user: typeof users.$inferSelect, hasRosterLink: boolean
 
 /** Thrown inside the redeem transaction to roll the new user back when the roster row turns out to be taken. */
 class RedeemRefused extends Error {
-  constructor(readonly outcome: Exclude<ClaimWriteOutcome, "linked" | "pending">) {
+  constructor(readonly outcome: ClaimRefusal) {
     super(outcome);
   }
 }
@@ -1557,6 +1578,7 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
     // `as boolean`: assigned inside the transaction callback, which control-flow
     // analysis does not follow, so a bare `false` initialiser narrows every read below to `false`.
     let held = false as boolean;
+    let requested = false as boolean;
     let user: typeof users.$inferSelect;
     try {
       user = await db.transaction(async tx => {
@@ -1581,8 +1603,9 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
         if (!created) throw new Error("Failed to create user");
 
         const outcome = await linkRosterRowInTx(tx, created.id, resolved);
-        if (outcome !== "linked" && outcome !== "pending") throw new RedeemRefused(outcome);
-        held = outcome === "pending";
+        if (outcome !== "linked" && outcome !== "requested" && outcome !== "pending") throw new RedeemRefused(outcome);
+        held = outcome !== "linked";
+        requested = outcome === "requested";
         return created;
       });
     } catch (err) {
@@ -1592,6 +1615,8 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
       }
       throw err;
     }
+
+    if (requested) await pushJoinRequest(resolved, user.id);
 
     if (resolved.relation === "self" && !held) {
       try {
