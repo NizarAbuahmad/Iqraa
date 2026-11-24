@@ -61,7 +61,9 @@ describe('the lesson decides the operation', () => {
     ['مُقارَنَةُ الكُسورِ وَالأَعْدادِ الكَسْرِيَّةِ وَتَرْتيبُها', 'frac_compare'],
     ['جمع الكسور', 'frac'],
     ['الْقيمَةُ الْمَنْزِلِيَة', 'place'],
-    ['مُقارَنَةُ الْأَعْدادِ', 'compare'],
+    ['مُقارَنَةُ الْأَعْدادِ', 'compare_only'],
+    ['تَرْتيبُ الْأَعْدادِ', 'order_only'],
+    ['مُقارَنَةُ الأَعْدادِ وَتَرْتيبُها', 'compare'],
     // Collecting data is not addition.
     ['جَمْعُ الْبَياناتِ وَتَنْظيمُها', null],
   ];
@@ -116,13 +118,15 @@ describe('numbers fit the grade', () => {
     }
   });
 
-  it('grade 1 never sees a three-digit number, and adds and compares within 20', () => {
+  // Grade 1 adds and subtracts within 20, but compares and orders «ضمن منزلتين»
+  // (objectives of u2_l4, u2_l5), so those two go to 99 (second pass, 2026-11-15).
+  it('grade 1 never sees a three-digit number, adds within 20 and compares within 99', () => {
     const rng = seeded(11);
     for (const title of ['الجمع', 'الطرح', 'مقارنة الأعداد', 'ترتيب الأعداد', 'القيمة المنزلية']) {
       for (let i = 0; i < 300; i++) {
         const item = makeElementaryItem(title, 1, (['easy', 'medium', 'hard'] as const)[i % 3], new Set(), rng);
         const stem = itemStem(item, true);
-        const limit = /منزلي/.test(title) ? 99 : 20;
+        const limit = /منزلي|مقارنة|ترتيب/.test(title) ? 99 : 20;
         for (const n of nums(stem)) assert.ok(n <= limit, `${title}: ${stem}`);
       }
     }
@@ -218,6 +222,17 @@ function solve(p: string): [string, number | string] {
     const ds = m[2]!;
     return ['digit', Number(ds[ds.length - 1 - PLACE.indexOf(m[1]!)])];
   }
+  if ((m = p.match(/^أيّ الأعداد الآتية (أكبر|أصغر) من (\d+):/))) {
+    const [bound, greater] = [Number(m[2]), m[1] === 'أكبر'];
+    const fits = listOf(p).filter(x => (greater ? value(x) > bound : value(x) < bound));
+    assert.equal(fits.length, 1, `exactly one fits: ${p}`);
+    return ['than', fits[0]!];
+  }
+  if ((m = p.match(/^رتّب الأعداد الآتية (تصاعديًّا|تنازليًّا)، ثم اكتب العدد الذي يأتي (ثانيًا|ثالثًا):/))) {
+    const xs = listOf(p).sort((x, y) => value(x) - value(y));
+    if (m[1] === 'تنازليًّا') xs.reverse();
+    return ['position', xs[m[2] === 'ثانيًا' ? 1 : 2]!];
+  }
   if (has('رتّب')) {
     const xs = listOf(p).sort((x, y) => value(x) - value(y));
     return ['order', (has('تصاعديًّا') ? xs : xs.reverse()).join('، ')];
@@ -228,7 +243,9 @@ function solve(p: string): [string, number | string] {
   }
   if (has('يمكن تكوينه من الأرقام')) {
     const ds = n.slice().sort((x, y) => x - y);
-    return ['digits', (has('أكبر') ? ds.reverse() : ds).join('')];
+    if (has('أكبر')) ds.reverse();
+    // Grade 1 builds a two-place number from two of three digits.
+    return ['digits', ds.slice(0, has('من منزلتين') ? 2 : ds.length).join('')];
   }
   if ((m = p.match(/^(?:أوجد العدد المجهول|أكمل بالعدد المناسب): (.+)$/))) {
     return [has('أكمل بالعدد المناسب') ? 'groups' : 'missing', solveMissing(m[1]!)];
@@ -298,8 +315,12 @@ describe('every kind of question: the key is recomputed from the printed stem', 
     ['ضرب الأعداد', 5, ['drill', 'missing', 'groups', 'word']],
     ['القسمة على 3', 2, ['drill', 'missing', 'fact', 'share', 'trays', 'repeat']],
     ['قسمة الأعداد', 4, ['drill', 'missing', 'fact', 'share', 'trays', 'ceil']],
-    ['مقارنة الأعداد', 1, ['sign', 'order', 'extreme']],
-    ['ترتيب الأعداد', 3, ['sign', 'order', 'extreme', 'digits']],
+    // Grades 1–3 teach comparing and ordering as two lessons; Grades 4–5 as one.
+    ['مقارنة الأعداد', 1, ['sign', 'extreme', 'than']],
+    ['ترتيب الأعداد', 1, ['order', 'position', 'digits']],
+    ['مقارنة الأعداد', 3, ['sign', 'extreme', 'than']],
+    ['ترتيب الأعداد', 3, ['order', 'position', 'digits']],
+    ['مقارنة الأعداد وترتيبها', 4, ['sign', 'order', 'extreme', 'digits']],
     ['القيمة المنزلية', 1, ['value', 'expand', 'digit', 'standard']],
     ['القيمة المنزلية', 5, ['value', 'expand', 'digit', 'standard']],
     ['مقارنة الكسور', 3, ['sign', 'order', 'extreme']],

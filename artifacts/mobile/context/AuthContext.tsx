@@ -14,6 +14,7 @@ import {
   awaitPendingRefresh,
 } from '@/services/apiClient';
 import { guardianFromApi, type GuardianStatus } from '@/services/guardianApproval';
+import { teacherProfileFrom, type TeacherProfile } from '@/services/teacherProfile';
 import { LEGAL_VERSION } from '@/constants/legal';
 import { trackEvent } from '@/services/analytics';
 import { fetchWithTimeout } from '@/services/fetchWithTimeout';
@@ -126,6 +127,11 @@ export interface User {
    * subject" (see `setup-subjects.tsx`'s initial state).
    */
   teachingAssignments?: TeachingAssignment[];
+  /**
+   * A teacher's optional «عنك» answers (services/teacherProfile.ts), each null
+   * until answered. Always all null for a student or parent — they are never asked.
+   */
+  teacherProfile?: TeacherProfile;
   // Legacy optional fields kept for profile screen compatibility
   phone?: string;
   school?: string;
@@ -241,6 +247,8 @@ interface AuthContextType {
     gradeIds?: string[];
     subjectIds?: string[];
     teachingAssignments?: TeachingAssignment[];
+    /** Teacher accounts only — the server refuses it from anyone else. */
+    teacherProfile?: Partial<TeacherProfile>;
   }) => Promise<void>;
   /** Throws with the server's own message (e.g. "too large", "not set up yet") on failure. */
   uploadAvatar: (dataUrl: string) => Promise<void>;
@@ -324,6 +332,7 @@ type ApiUser = {
   gradeIds?: string[];
   subjectIds?: string[];
   teachingAssignments?: TeachingAssignment[];
+  teacherProfile?: Partial<TeacherProfile> | null;
 };
 
 function toUser(apiUser: ApiUser): User {
@@ -343,6 +352,7 @@ function toUser(apiUser: ApiUser): User {
     gradeIds: apiUser.gradeIds ?? [],
     subjectIds: apiUser.subjectIds ?? [],
     teachingAssignments: apiUser.teachingAssignments ?? [],
+    teacherProfile: teacherProfileFrom(apiUser.teacherProfile),
     ...guardianFromApi(apiUser),
   };
 }
@@ -801,6 +811,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     gradeIds?: string[];
     subjectIds?: string[];
     teachingAssignments?: TeachingAssignment[];
+    teacherProfile?: Partial<TeacherProfile>;
   }) => {
     const updated = await apiJson<ApiUser>('/auth/users/profile', {
       method: 'PATCH',

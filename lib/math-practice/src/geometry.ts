@@ -50,7 +50,29 @@ const isIntPt = (c: [number, number]) => Number.isInteger(c[0]) && Number.isInte
 
 const perimeter = T('perimeter', /^المحيط$/, [3, 4], ({ rng, diff, grade }) => {
   const m = grade === 3 ? span(diff, 8, 12, 15) : span(diff, 15, 25, 40);
-  const k = pick(rng, grade >= 4 && diff !== 'easy' ? [0, 1, 2, 3] : [0, 1, 2]);
+  // Grade 4's objective is the perimeter of a «مربع أو مستطيل» and an estimate on a square grid (u9_l5):
+  // a third of its items were triangles, which are Grade 3's. It now asks a square or rectangle, the
+  // missing side, an L-shape cut from a rectangle, and a rectangle on a grid (2026-11-21).
+  if (grade >= 4) {
+    const g = pick(rng, diff === 'easy' ? [0, 1, 4, 5] : [0, 1, 2, 3, 4, 5]);
+    if (g === 2) {
+      const l = int(rng, 4, m), w = int(rng, 2, l - 1), P = 2 * (l + w);
+      return { eq: `${P}, ${l}`, answer: String(w), wrongs: pos(w, [P - l, P / 2 + l, P - 2 * l, w + l]), ar: `محيط مستطيل ${P} سم وطوله ${l} سم. ما عرضه؟`, en: `A rectangle has perimeter ${P} cm and length ${l} cm. What is its width?` };
+    }
+    if (g === 3) {
+      const s = int(rng, 2, m);
+      return { eq: `P ${4 * s}`, answer: String(s), wrongs: pos(s, [2 * s, 4 * s, s + 4, s * s, s + 1]), ar: `محيط مربع ${4 * s} سم. ما طول ضلعه؟`, en: `A square has perimeter ${4 * s} cm. What is its side?` };
+    }
+    if (g === 4) {
+      const l = int(rng, 5, m), w = int(rng, 4, l);
+      return { eq: `L ${l}, ${w}`, answer: String(2 * (l + w)), wrongs: pos(2 * (l + w), [l + w, l * w, 2 * l + w, 2 * (l + w) + 4, 2 * (l + w) - 4]), ar: `شكل على صورة حرف L، يمكن رسمه داخل مستطيل طوله ${l} سم وعرضه ${w} سم بعد قصّ مربع من إحدى زواياه. ما محيطه بالسنتيمتر؟`, en: `An L-shape fits inside a rectangle ${l} cm by ${w} cm after a square is cut from one corner. What is its perimeter, in cm?` };
+    }
+    if (g === 5) {
+      const l = int(rng, 3, 10), w = int(rng, 3, 10);
+      return { eq: `grid ${l}, ${w}`, answer: String(2 * (l + w)), wrongs: pos(2 * (l + w), [l + w, l * w, 2 * l + w, 2 * (l + w) + 2]), ar: `مستطيل مرسوم على شبكة مربعات، طوله ${l} مربعات وعرضه ${w} مربعات، وطول ضلع كل مربع 1 سم. ما محيطه بالسنتيمتر؟`, en: `A rectangle on a square grid is ${l} squares long and ${w} squares wide, each square 1 cm. What is its perimeter, in cm?` };
+    }
+  }
+  const k = pick(rng, grade >= 4 ? [0, 1] : [0, 1, 2]);
   if (k === 0) {
     const l = int(rng, 3, m), w = int(rng, 2, m - 1);
     const a = 2 * (l + w);
@@ -72,7 +94,12 @@ const perimeter = T('perimeter', /^المحيط$/, [3, 4], ({ rng, diff, grade }
 const area = T('area_rect', /^(?:المساحه|مساحه المستطيل)$/, [3, 4], ({ rng, diff, grade }) => {
   const m = grade === 3 ? span(diff, 6, 9, 12) : span(diff, 9, 15, 25);
   // 3: count unit squares, 4: a room's floor, 5 (Grade 4): compare a rectangle with a square.
-  const k = pick(rng, grade >= 4 ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4]);
+  const k = pick(rng, grade >= 4 ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4]);
+  if (k === 6) {
+    // «أستعمل شبكة المربعات لتقدير مساحة شكل» (u9_l6): full squares plus half the partial ones
+    const f = int(rng, 11, 40), p = pick(rng, [4, 6, 8, 10]), ans = f + p / 2;
+    return { eq: `est ${f}, ${p}`, answer: String(ans), wrongs: pos(ans, [f + p, f, ans + 1, ans - 1, f + 2 * p]), ar: `غُطّي شكل غير منتظم على شبكة مربعات بـ ${f} مربعًا كاملًا و ${p} مربعات غير كاملة. قدّر مساحته بالمربعات الوحدة، علمًا أن كل مربعين غير كاملين يُعدّان مربعًا واحدًا.`, en: `An irregular shape on a square grid covers ${f} whole squares and ${p} part squares. Estimate its area in unit squares, counting every two part squares as one.` };
+  }
   if (k === 0) {
     const l = int(rng, 2, m), w = int(rng, 2, m);
     return { eq: `${l}, ${w}`, answer: String(l * w), wrongs: pos(l * w, [2 * (l + w), l + w, l * w + l, l * w - w]), ar: `ما مساحة مستطيل طوله ${l} سم وعرضه ${w} سم (بالسنتيمتر المربع)؟`, en: `What is the area, in cm², of a rectangle ${l} cm long and ${w} cm wide?` };
@@ -97,6 +124,32 @@ const area = T('area_rect', /^(?:المساحه|مساحه المستطيل)$/, 
   }
   const l = int(rng, 3, m), w = int(rng, 2, m);
   return { eq: `${l * w}, ${l}`, answer: String(w), wrongs: pos(w, [l * w - l, l * w + l, l + w, l]), ar: `مساحة مستطيل ${l * w} سم² وطوله ${l} سم. ما عرضه؟`, en: `A rectangle has area ${l * w} cm² and length ${l} cm. What is its width?` };
+});
+
+/**
+ * Grade 3 «المساحة»: area as the unit squares a shape covers — counted in rows,
+ * added over a shape of two parts, compared, in cm² on squared paper, a missing
+ * row length, and floor tiles. The formula is the next lesson's («مساحة
+ * المستطيل», still `area_rect`). Rows 3–6 and 3–9 squares a row keep every
+ * counted noun in its 3–10 plural.
+ */
+const areaUnits = T('area_units_g3', /^المساحه$/, [3, 3], ({ rng }) => {
+  const r = int(rng, 3, 6), c = int(rng, 3, 9), A = r * c, k = pick(rng, [0, 1, 2, 3, 4, 5]);
+  const slips = [2 * (r + c), r + c, A + r, A - c];
+  if (k === 1) {
+    const r2 = int(rng, 3, 6), c2 = int(rng, 3, 9), t = A + r2 * c2;
+    return { eq: `${r} × ${c} + ${r2} × ${c2}`, answer: String(t), wrongs: pos(t, [A, r2 * c2, r + c + r2 + c2, (r + r2) * Math.max(c, c2), t + c]), ar: `شكل مرسوم على شبكة مربعات، يتكوّن من جزأين: في الجزء الأول ${r} صفوف، في كل صف ${c} مربعات، وفي الجزء الثاني ${r2} صفوف، في كل صف ${c2} مربعات. ما مساحة الشكل بالوحدات المربعة؟`, en: `A shape on a square grid has two parts: ${r} rows of ${c} squares, and ${r2} rows of ${c2} squares. What is its area in square units?` };
+  }
+  if (k === 2) {
+    let r2 = 0, c2 = 0;
+    do { r2 = int(rng, 3, 6); c2 = int(rng, 3, 9); } while (r2 * c2 === A);
+    const gap = Math.abs(A - r2 * c2);
+    return { eq: `|${r} × ${c} − ${r2} × ${c2}|`, answer: String(gap), wrongs: pos(gap, [A, r2 * c2, Math.abs(r + c - r2 - c2), A + r2 * c2, gap + r]), ar: `الشكل (أ) على شبكة مربعات فيه ${r} صفوف، في كل صف ${c} مربعات، والشكل (ب) فيه ${r2} صفوف، في كل صف ${c2} مربعات. بكم وحدة مربعة تزيد مساحة الشكل الأكبر على مساحة الشكل الأصغر؟`, en: `Shape A on a square grid has ${r} rows of ${c} squares; shape B has ${r2} rows of ${c2} squares. By how many square units is the larger area greater than the smaller?` };
+  }
+  if (k === 3) return { eq: `${r} × ${c} × 1 cm²`, answer: String(A), wrongs: pos(A, slips), ar: `رُسم مستطيل على ورق مربعات طول ضلع كل مربع فيه 1 سم، فغطّى ${r} صفوف، في كل صف ${c} مربعات. ما مساحة المستطيل بالسنتيمتر المربع؟`, en: `A rectangle drawn on 1 cm squared paper covers ${r} rows of ${c} squares. What is its area in square centimetres?` };
+  if (k === 4) return { eq: `${A} ÷ ${r}`, answer: String(c), wrongs: pos(c, [A - r, r, c + 1, c - 1, A]), ar: `شكل مستطيل مساحته ${A} من الوحدات المربعة، مرسوم على شبكة مربعات في ${r} صفوف متساوية. كم مربعًا في كل صف؟`, en: `A rectangle of area ${A} square units is drawn on a grid in ${r} equal rows. How many squares are in each row?` };
+  if (k === 5) return { eq: `${r} × ${c} tiles`, answer: String(A), wrongs: pos(A, slips), ar: `غُطّيت أرضية مستطيلة ببلاط مربع، فكان فيها ${r} صفوف، في كل صف ${c} بلاطات. كم بلاطة غطّت الأرضية؟`, en: `A rectangular floor is covered with square tiles: ${r} rows of ${c} tiles. How many tiles cover the floor?` };
+  return { eq: `grid ${r} × ${c}`, answer: String(A), wrongs: pos(A, slips), ar: `شكل مستطيل مرسوم على شبكة مربعات، فيه ${r} صفوف، في كل صف ${c} مربعات وحدة. كم مربع وحدة يغطي الشكل؟`, en: `A rectangle on a square grid has ${r} rows with ${c} unit squares in each. How many unit squares does it cover?` };
 });
 
 const composite = T('composite_L', /^محيط الشكل المركب ومساحته$/, [5, 5], ({ rng, diff }) => {
@@ -1507,31 +1560,35 @@ const bigAmount = (set: string, n: number) => (set === 'volume' ? `${n} ${tamyiz
 const bigTarget = (set: string) => (set === 'volume' ? 'لترات' : UNIT_WORDS[set]!.big);
 const bigMin = (set: string, min: number) => (set === 'volume' ? Math.max(3, min) : min);
 /** «كم غرامًا في 3 كغ و 250 غ؟» — a compound measure written in the small unit. */
-const unitCompound = (rng: Rng, diff: D, set: string): Draft => {
+/** `cap` keeps a lesson inside its grade's numbers (Grade 3 stays within 9999), options included. */
+const unitCompound = (rng: Rng, diff: D, set: string, cap = Infinity): Draft => {
   const [, , bigEn, smallEn, f] = UNIT_SETS[set]!, w = UNIT_WORDS[set]!;
-  const a = int(rng, bigMin(set, 1), span(diff, 5, 9, 15)), b = f === 100 ? int(rng, 1, 99) : 10 * int(rng, 1, 99);
-  return { eq: `${a}, ${b}`, answer: String(a * f + b), wrongs: pos(a * f + b, [a + b, a * f * b, a * 10 + b, (a * f + b) * 10, a * f - b]), ar: `كم ${w.acc} في ${bigAmount(set, a)} و ${b} ${w.small}؟`, en: `How many ${smallEn} are in ${a} ${bigEn} ${b} ${smallEn}?` };
+  const a = int(rng, bigMin(set, 1), Math.min(span(diff, 5, 9, 15), Math.floor((cap - 990) / f))), b = f === 100 ? int(rng, 1, 99) : 10 * int(rng, 1, 99);
+  return { eq: `${a}, ${b}`, answer: String(a * f + b), wrongs: pos(a * f + b, [a + b, a * f * b, a * 10 + b, (a * f + b) * 10, a * f - b, (a + 1) * f + b].filter(c => c <= cap)), ar: `كم ${w.acc} في ${bigAmount(set, a)} و ${b} ${w.small}؟`, en: `How many ${smallEn} are in ${a} ${bigEn} ${b} ${smallEn}?` };
 };
 /** A whole number of the big unit, less a part in the small unit: convert, then subtract. */
-const unitStory = (rng: Rng, diff: D, set: string): Draft => {
+const unitStory = (rng: Rng, diff: D, set: string, cap = Infinity): Draft => {
   const f = UNIT_SETS[set]![4];
-  const n = int(rng, bigMin(set, 2), span(diff, 5, 9, 15)), p = f === 100 ? 10 * int(rng, 1, 9) : 50 * int(rng, 1, 19);
+  const n = int(rng, bigMin(set, 2), Math.min(span(diff, 5, 9, 15), Math.floor((cap - f) / f))), p = f === 100 ? 10 * int(rng, 1, 9) : 50 * int(rng, 1, 19);
   const left = n * f - p;
   const [ar, en] = UNIT_WORDS[set]!.story(n, p);
-  return { eq: `left ${n}, ${p}`, answer: String(left), wrongs: pos(left, [n * f + p, n * f, n * f - 10 * p, (n - 1) * f, left + f / 10]), ar, en };
+  return { eq: `left ${n}, ${p}`, answer: String(left), wrongs: pos(left, [n * f + p, n * f, n * f - 10 * p, (n - 1) * f, left + f / 10].filter(c => c <= cap)), ar, en };
 };
+// Grade 3 (its only grade) works «ضمن الألوف»: it converted 18 km and offered 4860000 (2026-11-20).
+const G3_CAP = 9999;
 const convertGen = (id: string, match: RegExp, sets: string[], grades: [number, number]) => T(id, match, grades, ({ rng, diff }) => {
   const set = pick(rng, sets);
   const [, , bigEn, smallEn, f] = UNIT_SETS[set]!;
+  const fit = (cands: number[]) => cands.filter(c => c <= G3_CAP);
   // 0 big → small, 1 small → big; 2 a compound measure in the small unit, 3 what is left (real life).
   const k = pick(rng, [0, 1, 2, 3]);
-  if (k === 2) return unitCompound(rng, diff, set);
-  if (k === 3) return unitStory(rng, diff, set);
-  const n = int(rng, bigMin(set, 2), span(diff, 9, 25, 90));
-  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, [n * f * 10, (n * f) / 10, n + f, n * f / 100 | 0, n * 10]), ar: `حوّل ${bigAmount(set, n)} إلى ${UNIT_WORDS[set]!.small}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
-  const q = int(rng, 2, span(diff, 9, 25, 60));
+  if (k === 2) return unitCompound(rng, diff, set, G3_CAP);
+  if (k === 3) return unitStory(rng, diff, set, G3_CAP);
+  const n = int(rng, bigMin(set, 2), Math.min(span(diff, 9, 25, 90), Math.floor(G3_CAP / f)));
+  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, fit([n * f * 10, (n * f) / 10, n + f, n * f / 100 | 0, n * 10, (n - 1) * f])), ar: `حوّل ${bigAmount(set, n)} إلى ${UNIT_WORDS[set]!.small}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
+  const q = int(rng, 2, Math.min(span(diff, 9, 25, 60), Math.floor(G3_CAP / f)));
   const small = q * f;
-  return { eq: `${small}`, answer: String(q), wrongs: pos(q, [q * 10, small / 10, q * 100, q + 1, small]), ar: `حوّل ${small} ${UNIT_WORDS[set]!.small} إلى ${bigTarget(set)}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
+  return { eq: `${small}`, answer: String(q), wrongs: pos(q, fit([q * 10, small / 10, q * 100, q + 1, small])), ar: `حوّل ${small} ${UNIT_WORDS[set]!.small} إلى ${bigTarget(set)}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
 });
 
 /** The lesson names the quantity — length, mass or capacity — and only that quantity's units appear. */
@@ -1599,8 +1656,58 @@ const clockWords = T('time_words', /^قراءه الوقت/, [3, 3], ({ rng }) =
   return { eq: `${HOURS_AR[h]} ${word}`, answer: clock(h2, m2), wrongs: wrongsFrom(clock(h2, m2), [clock(...addMinutes(h, 0, -off)), clock(h, 0), clock(...addMinutes(h, 0, off + 5)), clock(...addMinutes(h, 0, off - 5))], j => clock(...addMinutes(h, 0, off + 5 * Math.abs(j) + 10))), ar: `كيف تُكتب الساعة «${HOURS_AR[h]} ${word}» بالأرقام؟`, en: `How is the time «${HOURS_AR[h]} ${word}» (Arabic wording) written in digits?` };
 });
 
+const TICK_AR = ['', 'الأولى', 'الثانية', 'الثالثة', 'الرابعة'];
+/**
+ * Grade 3 «الوقت بالدقائق» — reading the clock to the minute, which is the
+ * lesson's objective: the minute hand a few small marks past a number, counting
+ * on by fives then ones, the time read in words, and a few minutes later across
+ * the hour («4:63» is the slip). Until 2026-11-14 the lesson drew the elapsed-time
+ * questions of the lessons after it.
+ */
+const clockMinutes = T('clock_minutes_g3', /^الوقت بالدقائق$/, [3, 3], ({ rng }) => {
+  const h = int(rng, 1, 11), nx = h + 1, k = pick(rng, [0, 1, 2, 3]);
+  if (k === 0) {
+    const n = int(rng, 1, 11), s = int(rng, 1, 4), m = 5 * n + s;
+    return { eq: `${h}, ${n}+${s}`, answer: clock(h, m), wrongs: wrongsFrom(clock(h, m), [clock(h, n + s), clock(nx, m), clock(h, 5 * n - s), ...(n < 11 ? [clock(h, 5 * (n + 1) + s)] : [])], j => clock(h, (m + 5 * Math.abs(j)) % 60)), ar: `يشير عقرب الدقائق إلى التدريجة ${TICK_AR[s]} بعد العدد ${n}، ويقع عقرب الساعات بين العددين ${h} و ${nx}. ما الوقت؟ (بين كل عددين متتاليين على الساعة 5 تدريجات، كل تدريجة دقيقة واحدة)`, en: `The minute hand points to the ${['', 'first', 'second', 'third', 'fourth'][s]} small mark after ${n}, and the hour hand is between ${h} and ${nx}. What time is it? (each small mark is one minute)` };
+  }
+  if (k === 1) {
+    const n = int(rng, 2, 11), s = int(rng, 1, 4), m = 5 * n + s;
+    return { eq: `5 × ${n} + ${s}`, answer: String(m), wrongs: pos(m, [n + s, 5 * n, 5 * (n + s), 5 * n - s, 10 * n + s]), ar: `يعدّ فارس دقائق الساعة: عدّ بالخمسات من العدد 12 حتى العدد ${n}، ثم عدّ ${minAr(s)} أخرى. كم دقيقة مضت بعد بداية الساعة؟`, en: `Fares counts in fives from 12 to ${n}, then counts on ${s} more minute${s === 1 ? '' : 's'}. How many minutes past the hour is it?` };
+  }
+  if (k === 2) {
+    let m = 0;
+    do m = int(rng, 11, 59); while (m % 5 === 0);
+    const say = (hr: number, mm: number) => `${HOURS_AR[hr]} و ${minAr(mm)}`;
+    const swap = (m % 10) * 10 + Math.floor(m / 10);
+    const ans = say(h, m);
+    return { eq: clock(h, m), answer: ans, wrongs: wrongsFrom(ans, [say(nx, m), say(h, 60 - m), ...(swap < 60 && swap > 10 && swap !== m ? [say(h, swap)] : [])], j => say(h, ((m + 5 * Math.abs(j)) % 49) + 11)), ar: `كيف نقرأ الوقت ${clock(h, m)}؟`, en: `How do we read the time ${clock(h, m)} in Arabic words?` };
+  }
+  const m = int(rng, 52, 59), d = int(rng, 61 - m, 9), m2 = m + d - 60;
+  return { eq: `${clock(h, m)} + ${d}`, answer: clock(nx, m2), wrongs: wrongsFrom(clock(nx, m2), [`${h}:${m + d}`, clock(h, m2), clock(nx, m + d - 50)], j => clock(nx, m2 + Math.abs(j))), ar: `تشير الساعة إلى ${clock(h, m)}. إلى أي وقت تشير بعد ${minAr(d)}؟`, en: `A clock shows ${clock(h, m)}. What will it show ${d} minutes later?` };
+});
+
+/**
+ * Grade 3 «الفترات الزمنية (1)»: elapsed time in minutes within one hour — the
+ * lesson's own limit, which the shared elapsed-time generator ignored (it crossed
+ * hours and asked how many minutes are in «5 ساعات و 35 دقيقة»). How long, when it
+ * ended, when it started, and which of two activities was longer.
+ */
+const elapsedInHour = T('elapsed_hour_g3', /^الفترات الزمنيه \(1\)$/, [3, 3], ({ rng, diff }) => {
+  const h = int(rng, 1, 11), step = diff === 'easy' ? 5 : 1;
+  const span2 = () => { const a = step * int(rng, 0, Math.floor(40 / step)); const b = step * int(rng, Math.ceil((a + 5) / step), Math.floor(59 / step)); return [a, b] as const; };
+  const [m1, m2] = span2(), d = m2 - m1, k = pick(rng, [0, 1, 2, 3]);
+  if (k === 0) return { eq: `${clock(h, m2)} − ${clock(h, m1)}`, answer: String(d), wrongs: pos(d, [m2, m1 + m2, d + 10, d - 10, 60 - d]), ar: `بدأت حصة الرسم الساعة ${clock(h, m1)} وانتهت الساعة ${clock(h, m2)}. كم دقيقة استغرقت؟`, en: `An art class starts at ${clock(h, m1)} and ends at ${clock(h, m2)}. How many minutes does it last?` };
+  if (k === 1) return { eq: `${clock(h, m1)} + ${d}`, answer: clock(h, m2), wrongs: wrongsFrom(clock(h, m2), [clock(h, d), clock(h + 1, m2), ...(m1 >= d ? [clock(h, m1 - d)] : []), ...(m2 + 10 < 60 ? [clock(h, m2 + 10)] : [])], j => clock(h, (m2 + Math.abs(j)) % 60)), ar: `بدأ سامي حلّ واجبه الساعة ${clock(h, m1)}، واستمر ${minAr(d)}. متى انتهى؟`, en: `Sami starts his homework at ${clock(h, m1)} and works for ${d} minutes. When does he finish?` };
+  if (k === 2) return { eq: `${clock(h, m2)} − ${d}`, answer: clock(h, m1), wrongs: wrongsFrom(clock(h, m1), [clock(h, d), clock(h - 1 || 12, m1), ...(m2 + d < 60 ? [clock(h, m2 + d)] : []), clock(h, m1 + 5)], j => clock(h, (m1 + 5 * Math.abs(j) + 5) % 60)), ar: `انتهت مباراة الساعة ${clock(h, m2)}، وقد استمرت ${minAr(d)}. متى بدأت؟`, en: `A match ends at ${clock(h, m2)} after lasting ${d} minutes. When did it start?` };
+  let [a1, a2] = span2(), [b1, b2] = span2();
+  while (a2 - a1 === b2 - b1) [b1, b2] = span2();
+  const [lw, lf, lt, sw, sf, st] = a2 - a1 > b2 - b1 ? ['قراءة ليلى', a1, a2, 'رسم سامي', b1, b2] as const : ['رسم سامي', b1, b2, 'قراءة ليلى', a1, a2] as const;
+  const gap = (lt - lf) - (st - sf);
+  return { eq: `(${lt} − ${lf}) − (${st} − ${sf})`, answer: String(gap), wrongs: pos(gap, [lt - lf, st - sf, lt - st, gap + 5, gap + 10]), ar: `قرأت ليلى من الساعة ${clock(h, a1)} إلى الساعة ${clock(h, a2)}، ورسم أخوها سامي من الساعة ${clock(h, b1)} إلى الساعة ${clock(h, b2)}. بكم دقيقة تزيد مدة ${lw} على مدة ${sw}؟`, en: `Laila reads from ${clock(h, a1)} to ${clock(h, a2)}, and her brother Sami draws from ${clock(h, b1)} to ${clock(h, b2)}. By how many minutes is ${lw === 'قراءة ليلى' ? "Laila's reading" : "Sami's drawing"} longer than ${sw === 'قراءة ليلى' ? "Laila's reading" : "Sami's drawing"}?` };
+});
+
 export const GEOMETRY_TOPICS: readonly Topic[] = [
-  perimeter, area, composite, parallelogramArea, triangleArea, trapezoidArea, rectPrism,
+  perimeter, areaUnits, area, composite, parallelogramArea, triangleArea, trapezoidArea, rectPrism,
   circleParts, sector, circumference, circleArea, constructions,
   prismCylinderVolume, pyramidConeVolume, prismCylinderSurface, pyramidConeSurface, sphere,
   angleKind, lineAndPoint, triBySides, triByAngles,
@@ -1617,5 +1724,5 @@ export const GEOMETRY_TOPICS: readonly Topic[] = [
   convertGen('units_mass', /^الغرام والكيلوغرام$/, ['mass'], [3, 3]), convertGen('units_volume', /^اللتر والمليلتر$/, ['volume'], [3, 3]),
   unitsMixed('units_length', /^وحدات قياس الطول$/, ['length_m', 'length_km']), unitsMixed('units_mass_g45', /^وحدات قياس الكتله$/, ['mass']),
   unitsMixed('units_capacity', /^وحدات قياس السعه$/, ['volume']), unitsMixed('units_capacity_length', /^وحدات قياس السعه والطول$/, ['length_m', 'volume']),
-  timeGen('time_g3', /^(?:الوقت بالدقائق|الفترات الزمنيه)/, [3, 3]), timeGen('time_g45', /^الزمن$/, [4, 5]), clockWords,
+  timeGen('time_g3', /^الفترات الزمنيه \(2\)$/, [3, 3]), timeGen('time_g45', /^الزمن$/, [4, 5]), clockWords, clockMinutes, elapsedInHour,
 ];

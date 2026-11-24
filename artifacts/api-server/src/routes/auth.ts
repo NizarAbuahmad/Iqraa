@@ -23,7 +23,8 @@ import {
   passwordResetTokens,
 } from "@workspace/db";
 import { eq, and, asc, desc, gt, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
-import { authMiddleware, type AuthenticatedRequest } from "../middlewares/auth.js";
+import { authMiddleware, TEACHER_ROLES, type AuthenticatedRequest } from "../middlewares/auth.js";
+import { parseTeacherProfile, teacherProfileOf } from "../lib/teacherProfile.ts";
 import { logger } from "../lib/logger.js";
 import { createRateLimiter } from "../lib/rateLimit.js";
 import { emailKey } from "../lib/rateLimitKeys.js";
@@ -79,10 +80,12 @@ import { decideRoleSwitch } from "../lib/roleSwitch.js";
 import { normalizeShareCode } from "../modules/assessment/studentView.ts";
 import { extensionForAvatarMime, MAX_AVATAR_DATA_URL_LENGTH } from "../lib/avatarUpload.js";
 import { parseDataUrl } from "../lib/lessonMediaUpload.js";
-import { getUserBudgetLimitUsd } from "../lib/aiBudget.js";
+import { resolveUserBudgetLimitUsd } from "../lib/aiBudget.js";
 import { currentPeriodStart, readUserPeriodSpendUsd } from "../lib/aiUsageLog.js";
 import { isUniqueViolation } from "../lib/pgErrors.js";
 import { parsePushPrefsPatch, readPushPrefs } from "../modules/notifications/pushPrefs.ts";
+import { notifyTeacherOfJoinRequest } from "../lib/joinRequestNotify.js";
+import { pushWithin } from "../lib/pushWithin.js";
 
 const router = Router();
 
@@ -337,13 +340,19 @@ async function hasAnyRosterLink(userId: string): Promise<boolean> {
 
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-type ClaimWriteOutcome = "linked" | "pending" | "taken" | "guardian_taken" | "guardian_limit" | "pending_limit";
+/**
+ * `requested` is a held claim whose request row was just made; `pending` is one
+ * already waiting (the same account entering the same code again). Both answer
+ * «waiting for the teacher»; only `requested` pushes the teacher.
+ */
+type ClaimWriteOutcome = "linked" | "requested" | "pending" | "taken" | "guardian_taken" | "guardian_limit" | "pending_limit";
+type ClaimRefusal = Exclude<ClaimWriteOutcome, "linked" | "requested" | "pending">;
 
 /**
  * What a refused claim answers. One table for `/claim` and `/redeem`, so the two
  * cannot word the same refusal differently — the app translates by `code`.
  */
-const CLAIM_REFUSALS: Record<Exclude<ClaimWriteOutcome, "linked" | "pending">, { error: string; code: string }> = {
+const CLAIM_REFUSALS: Record<ClaimRefusal, { error: string; code: string }> = {
   taken: { error: "This student is already linked to an account", code: "claim_already_linked" },
   guardian_taken: { error: "A parent account is already linked to this student", code: "claim_guardian_taken" },
   guardian_limit: {
@@ -451,17 +460,29 @@ async function linkRosterRowInTx(
     await tx
       .delete(rosterLinkRequests)
       .where(and(eq(rosterLinkRequests.userId, userId), ne(rosterLinkRequests.studentId, resolved.studentId)));
-    await tx
+    const [made] = await tx
       .insert(rosterLinkRequests)
       .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
-      .onConflictDoNothing();
-    return "pending";
+      .onConflictDoNothing()
+      .returning({ id: rosterLinkRequests.id });
+    return made ? "requested" : "pending";
   }
   await tx
     .insert(rosterLinks)
     .values({ studentId: resolved.studentId, userId, relation: resolved.relation })
     .onConflictDoNothing();
   return "linked";
+}
+
+/**
+ * Tells the class's teacher a pick is waiting for them — after the request is
+ * committed and before the joiner is answered (lib/pushWithin.ts says why).
+ * Capped and never throwing, so a slow or failed push costs the joiner nothing.
+ */
+async function pushJoinRequest(resolved: Extract<ClaimResolution, { ok: true }>, userId: string): Promise<void> {
+  const classGroupId = resolved.classGroupId;
+  if (!classGroupId) return;
+  await pushWithin("join request", () => notifyTeacherOfJoinRequest({ studentId: resolved.studentId, classGroupId, userId }));
 }
 
 /**
@@ -1111,7 +1132,8 @@ router.post("/claim", authMiddleware, claimLimiter, async (req: AuthenticatedReq
 
     const userId = req.user!.id;
     const outcome = await db.transaction(tx => linkRosterRowInTx(tx, userId, resolved));
-    if (outcome === "pending") {
+    if (outcome === "requested" || outcome === "pending") {
+      if (outcome === "requested") await pushJoinRequest(resolved, userId);
       const [row] = await db
         .select({ displayName: students.displayName })
         .from(students)
@@ -1309,6 +1331,9 @@ router.post("/role", authMiddleware, roleSwitchLimiter, async (req: Authenticate
             // Only a change into student carries the confirmation (the decision
             // refused it otherwise), and it is recorded like a sign-up's.
             ...(decision.role === "student" && !guardianApprovalEnabled() ? { guardianConfirmedAt: new Date() } : {}),
+            // The optional «عنك» answers are a teacher's; a student or parent account (possibly a
+            // minor) must not carry them (lib/teacherProfile.ts).
+            ...(TEACHER_ROLES.includes(decision.role) ? {} : { gender: null, ageRange: null, governorate: null, yearsTeaching: null }),
           })
           .where(eq(users.id, req.user!.id));
         // A name picked off a class code waits for a teacher to answer it as THIS
@@ -1458,7 +1483,7 @@ function codeAccountUser(user: typeof users.$inferSelect, hasRosterLink: boolean
 
 /** Thrown inside the redeem transaction to roll the new user back when the roster row turns out to be taken. */
 class RedeemRefused extends Error {
-  constructor(readonly outcome: Exclude<ClaimWriteOutcome, "linked" | "pending">) {
+  constructor(readonly outcome: ClaimRefusal) {
     super(outcome);
   }
 }
@@ -1553,6 +1578,7 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
     // `as boolean`: assigned inside the transaction callback, which control-flow
     // analysis does not follow, so a bare `false` initialiser narrows every read below to `false`.
     let held = false as boolean;
+    let requested = false as boolean;
     let user: typeof users.$inferSelect;
     try {
       user = await db.transaction(async tx => {
@@ -1577,8 +1603,9 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
         if (!created) throw new Error("Failed to create user");
 
         const outcome = await linkRosterRowInTx(tx, created.id, resolved);
-        if (outcome !== "linked" && outcome !== "pending") throw new RedeemRefused(outcome);
-        held = outcome === "pending";
+        if (outcome !== "linked" && outcome !== "requested" && outcome !== "pending") throw new RedeemRefused(outcome);
+        held = outcome !== "linked";
+        requested = outcome === "requested";
         return created;
       });
     } catch (err) {
@@ -1588,6 +1615,8 @@ router.post("/redeem", redeemIpLimiter, redeemCodeLimiter, async (req, res) => {
       }
       throw err;
     }
+
+    if (requested) await pushJoinRequest(resolved, user.id);
 
     if (resolved.relation === "self" && !held) {
       try {
@@ -2437,6 +2466,8 @@ router.get("/me", authMiddleware, async (req: AuthenticatedRequest, res) => {
       gradeIds: user.gradeIds,
       subjectIds: user.subjectIds,
       teachingAssignments: user.teachingAssignments,
+      // A teacher's optional «عنك» answers (lib/teacherProfile.ts); all null for anyone else.
+      teacherProfile: teacherProfileOf(user),
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
       // Whether a parent must approve this student's account, and where the request stands. The app reads it on
@@ -2460,7 +2491,7 @@ router.get("/me/ai-usage", authMiddleware, async (req: AuthenticatedRequest, res
   const start = currentPeriodStart();
   res.json({
     spentUsd: await readUserPeriodSpendUsd(req.user!.id),
-    limitUsd: getUserBudgetLimitUsd(req.user!.role),
+    limitUsd: await resolveUserBudgetLimitUsd(req.user!.id, req.user!.role),
     resetsAt: new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1)).toISOString(),
   });
 });
@@ -2514,7 +2545,7 @@ const VALID_SUBJECT_IDS = new Set(SUBJECTS.map(s => s.id));
 // PATCH /users/profile
 router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
-    const { preferredLanguage, firstName, lastName, gradeIds, subjectIds, teachingAssignments } = req.body as {
+    const { preferredLanguage, firstName, lastName, gradeIds, subjectIds, teachingAssignments, teacherProfile } = req.body as {
       preferredLanguage?: string;
       firstName?: string;
       lastName?: string;
@@ -2523,9 +2554,24 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
       subjectIds?: unknown;
       /** Per-grade pairs from /setup-subjects. Takes priority over the flat ids below. */
       teachingAssignments?: unknown;
+      /** A teacher's optional «عنك» answers — see lib/teacherProfile.ts. */
+      teacherProfile?: unknown;
     };
 
     const updates: Record<string, unknown> = {};
+    // Never asked of a student or parent (either may be a minor), so never taken from one.
+    if (teacherProfile !== undefined) {
+      if (!TEACHER_ROLES.includes(req.user!.role)) {
+        res.status(403).json({ error: "Only a teacher account has these profile fields" });
+        return;
+      }
+      const parsedProfile = parseTeacherProfile(teacherProfile);
+      if (!parsedProfile.ok) {
+        res.status(400).json({ error: parsedProfile.error });
+        return;
+      }
+      Object.assign(updates, parsedProfile.updates);
+    }
     // Allow-listed: this string is stored verbatim and echoed on every
     // `/auth/me`, so it must not be free text.
     if (preferredLanguage !== undefined) {
@@ -2578,6 +2624,7 @@ router.patch("/users/profile", authMiddleware, async (req: AuthenticatedRequest,
       gradeIds: updated.gradeIds,
       subjectIds: updated.subjectIds,
       teachingAssignments: updated.teachingAssignments,
+      teacherProfile: teacherProfileOf(updated),
       createdAt: updated.createdAt,
     });
   } catch (err) {

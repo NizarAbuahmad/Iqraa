@@ -101,8 +101,8 @@ describe('what a Grade 1 activity is made of', () => {
 });
 
 describe('other grades keep their activities', () => {
-  it('a Grade 2 and a Grade 10 activity are the all-grades one', () => {
-    for (const grade of ['grade-2', 'grade-10']) {
+  it('a Grade 4 and a Grade 10 activity are the all-grades one (Grades 2 and 3 have the early-grade ones since 2026-11-15 and 2026-11-20)', () => {
+    for (const grade of ['grade-4', 'grade-10']) {
       const l = KB_LESSONS.find(x => { const b = getBookForLesson(x); return b?.gradeId === grade && b.subjectId === 'arabic'; })!;
       const b = getBookForLesson(l)!;
       const a = buildOfflineActivity({ grade: b.gradeId, subject: 'arabic', lessonId: l.id, topic: l.titleAr, language: 'arabic', activityType: 'individual' } as AIRequest);

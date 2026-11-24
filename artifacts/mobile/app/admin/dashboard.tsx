@@ -4,6 +4,8 @@
  * evaluations). Deliberately doesn't try to rebuild PostHog's own
  * screen-by-screen/trace analytics here — see STATUS.md — it links out to
  * the PostHog project for that instead of duplicating a second pipeline.
+ * Coarse time per app area, the frequent users and the teacher breakdowns are
+ * on app/admin/insights.tsx (system admins), from our own `usage_minutes`.
  *
  * Role-gated client-side (redirect away from a screen a non-admin shouldn't
  * see) — the real enforcement is server-side: GET /admin/usage-summary and
@@ -266,12 +268,16 @@ export default function AdminDashboardScreen() {
             <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 10, marginHorizontal: 20, marginBottom: 16 }}>
               {([
                 ['/admin/moderation', 'flag-outline', 'بلاغات الرسائل', 'Message reports'],
+                ['/admin/insights', 'analytics-outline', 'رؤى المستخدمين', 'User insights'],
                 ['/admin/artifact-reports', 'document-text-outline', 'بلاغات المحتوى', 'Content reports'],
                 ['/admin/users', 'people-outline', 'المستخدمون والحظر', 'Users & blocking'],
                 ['/admin/schools', 'business-outline', 'المدارس', 'Schools'],
                 ['/admin/signups', 'mail-outline', 'البريد المجمّع', 'Collected emails'],
                 ['/admin/ai-costs', 'cash-outline', 'تكاليف الذكاء الاصطناعي', 'AI costs'],
-              ] as const).filter(([href]) => href !== '/admin/schools' || user?.role === 'system_admin').map(([href, icon, ar, en]) => (
+              ] as const)
+                // Schools and insights span every school: the server answers them for a system admin only.
+                .filter(([href]) => (href !== '/admin/schools' && href !== '/admin/insights') || user?.role === 'system_admin')
+                .map(([href, icon, ar, en]) => (
                 <Pressable
                   key={href}
                   onPress={() => router.push(href as any)}

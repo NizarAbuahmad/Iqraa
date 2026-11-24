@@ -1,5 +1,5 @@
 /**
- * Pre-generate default worksheets, lesson plans and lesson explanations into
+ * Pre-generate default worksheets, lesson plans, quizzes and lesson explanations into
  * the shared pool.
  *
  * The first teacher to ask for a lesson waits 7–14 s for the model; everyone
@@ -78,10 +78,9 @@
  * which retires the row. The next `--go --only=lesson-teaching` then generates
  * a new variant for that lesson.
  *
- * ponytail: grade 10 maths (worksheets and plans) and grade 10 maths +
- * chemistry (explanations). Other grades/subjects are the `SCOPE` and
- * `TEACHING_SCOPES` lines; other option combinations only if teachers turn out
- * to change the defaults a lot (the pool's hit rate says).
+ * ponytail: grade 10 maths and chemistry (worksheets, plans and explanations).
+ * Other grades/subjects are the `SCOPES` list; other option combinations only if
+ * teachers turn out to change the defaults a lot (the pool's hit rate says).
  */
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -93,15 +92,16 @@ import { resolveGeneratorGrounding } from '../services/kbContext.ts';
 import {
   buildLessonPlanRequest,
   buildLessonTeachingRequest,
+  buildQuizRequest,
   buildWorksheetRequest,
   groundLessonPlanTopic,
 } from '../services/generatorRequests.ts';
 
 type Scope = { gradeNameAr: string; subjectName: string };
 
-const SCOPE: Scope = { gradeNameAr: 'الصف العاشر', subjectName: 'Mathematics' };
-const TEACHING_SCOPES: Scope[] = [
-  SCOPE,
+/** Grade 10, the pilot's two subjects. Worksheets, lesson plans and student explanations all cover both. */
+const SCOPES: Scope[] = [
+  { gradeNameAr: 'الصف العاشر', subjectName: 'Mathematics' },
   { gradeNameAr: 'الصف العاشر', subjectName: 'Chemistry' },
 ];
 /**
@@ -124,7 +124,7 @@ const reviewPath = flag('review') ?? 'pregen-review.json';
 const approvePath = flag('approve');
 const force = args.includes('--force');
 
-const KINDS = ['worksheet', 'lesson-plan', 'lesson-teaching'] as const;
+const KINDS = ['worksheet', 'lesson-plan', 'quiz', 'lesson-teaching'] as const;
 export type Kind = (typeof KINDS)[number];
 
 /** The value of `--name=value`, or undefined when the flag is absent or has no `=`. */
@@ -190,10 +190,10 @@ function* lessonsIn(scope: Scope) {
   }
 }
 
-/** Every worksheet and lesson-plan call the default form would make. Exported for the test. */
+/** Every worksheet, lesson-plan and quiz call the default form would make. Exported for the test. */
 export function plannedCalls(): Call[] {
   const calls: Call[] = [];
-  for (const { grade, subject, topic } of lessonsIn(SCOPE)) {
+  for (const { grade, subject, topic } of SCOPES.flatMap(scope => [...lessonsIn(scope)])) {
     const common = { gradeName: grade.nameAr, subjectName: subject.name, topic, lang: 'ar' as const };
     const worksheetForm = {
       ...common, difficulty: 'easy' as const, numQuestions: 10,
@@ -202,6 +202,15 @@ export function plannedCalls(): Call[] {
     calls.push({
       kind: 'worksheet', lesson: topic,
       body: buildWorksheetRequest(worksheetForm, resolveGeneratorGrounding(topic, 'ar')) as unknown as Record<string, unknown>,
+    });
+    // The quiz screen's defaults: «عادي» (easy), 20 minutes, 20 marks, 10 questions, three types.
+    const quizForm = {
+      ...common, duration: 20, totalMarks: 20, numQuestions: 10, difficulty: 'easy' as const,
+      questionTypes: ['multiple_choice', 'true_false', 'short_answer'] as ('multiple_choice' | 'true_false' | 'short_answer')[],
+    };
+    calls.push({
+      kind: 'quiz', lesson: topic,
+      body: buildQuizRequest(quizForm, resolveGeneratorGrounding(topic, 'ar')) as unknown as Record<string, unknown>,
     });
     const planForm = {
       ...common, durationMinutes: 45, teachingStyle: 'direct' as const,
@@ -218,7 +227,7 @@ export function plannedCalls(): Call[] {
 /** One `lesson-teaching` call per lesson — the body Slides Maker sends. Exported for the test. */
 export function plannedTeachingCalls(): Call[] {
   const calls: Call[] = [];
-  for (const scope of TEACHING_SCOPES) {
+  for (const scope of SCOPES) {
     for (const { grade, subject, topic } of lessonsIn(scope)) {
       calls.push({
         kind: 'lesson-teaching', lesson: topic,
