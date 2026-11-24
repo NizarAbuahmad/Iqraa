@@ -90,11 +90,17 @@ export interface LlmSupplied extends BookSupplied {
 const hasSupplied = (req: LlmGenerationRequest): req is LlmGenerationRequest & { supplied: LlmSupplied } =>
   req.supplied !== undefined && req.supplied.count > 0;
 
-/** The prompt version to record for a paper made from `req`: the block changes the text, so it changes the version. */
-export function generationPromptVersion(req: Pick<LlmGenerationRequest, "supplied">): string {
-  return req.supplied !== undefined && req.supplied.count > 0
-    ? `${GENERATION_PROMPT_VERSION}+book`
-    : GENERATION_PROMPT_VERSION;
+/**
+ * The version of a prompt that states the competency mix and fixes the marks
+ * (`quota` on the request). Kept apart from `GENERATION_PROMPT_VERSION` because a
+ * request without a quota is still exactly the exam-gen-8 prompt.
+ */
+export const QUOTA_PROMPT_VERSION = "exam-gen-9";
+
+/** The prompt version to record for a paper made from `req`: each block changes the text, so it changes the version. */
+export function generationPromptVersion(req: Pick<LlmGenerationRequest, "supplied" | "quota">): string {
+  const base = req.quota ? QUOTA_PROMPT_VERSION : GENERATION_PROMPT_VERSION;
+  return req.supplied !== undefined && req.supplied.count > 0 ? `${base}+book` : base;
 }
 
 export interface LlmGenerationRequest {
@@ -134,6 +140,16 @@ export interface LlmGenerationRequest {
    * the model is told counts, never the book's stems.
    */
   supplied?: LlmSupplied;
+  /**
+   * How many questions of each competency the model writes; sums to `count`
+   * (`allocateQuestions`, or `remainingQuota` for a top-up). With it the prompt
+   * states the mix and the fixed marks per competency (`MARKS_BY_COMPETENCY`),
+   * and the parser gives every question its competency's marks. When `supplied`
+   * is set its own `newByCompetency` is the mix, so only the marks line is added.
+   *
+   * Absent, the prompt and parsing are exactly exam-gen-8's.
+   */
+  quota?: Record<CompetencyKey, number>;
 }
 
 /**
@@ -291,6 +307,10 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     const toWrite = COMPETENCY_ORDER.reduce((n, c) => n + (req.supplied.newByCompetency[c] ?? 0), 0);
     if (toWrite !== req.count) throw new Error("supplied.newByCompetency must sum to count");
   }
+  if (req.quota) {
+    const toWrite = COMPETENCY_ORDER.reduce((n, c) => n + (req.quota![c] ?? 0), 0);
+    if (toWrite !== req.count) throw new Error("quota must sum to count");
+  }
   const arabic = req.language !== "en";
   const contracts = req.assessmentTypes
     .map(t => `- ${t}: ${TYPE_CONTRACTS[t] ?? "{}"}`)
@@ -374,6 +394,14 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     `Write ${req.count} questions.`,
     "",
     ...(hasSupplied(req) ? suppliedBlock(req.supplied, req.count) : []),
+    // The book block above already gives the mix when the book supplies questions.
+    ...(req.quota && !hasSupplied(req)
+      ? [
+        "Write exactly this many questions of each competency (competencyKey below), so every one is measured "
+          + `by at least two where the count allows: ${COMPETENCY_ORDER.map(c => `${c} ${req.quota![c] ?? 0}`).join(", ")}.`,
+        "",
+      ]
+      : []),
     "Objectives (use these ids verbatim):",
     objectives,
     "",
@@ -399,7 +427,9 @@ export function buildGenerationPrompt(req: LlmGenerationRequest): {
     '  "competencyKey": one of knowledge | understanding | application | critical_thinking —',
     "    the cognitive demand of THIS question, which is not the same as its objective's level.",
     "    A recall question about an application objective is knowledge.",
-    '  "marks": a positive number, larger for questions that demand more work',
+    req.quota
+      ? `  "marks": fixed by competency — ${COMPETENCY_ORDER.map(c => `${c} ${MARKS_BY_COMPETENCY[c]}`).join(", ")}`
+      : '  "marks": a positive number, larger for questions that demand more work',
     '  "skill": a two-to-four word label for what it actually tests, or null',
     "",
     // The stem stays Arabic for the class; this is the same maths in the only
@@ -552,9 +582,6 @@ export function parseGeneratedQuestions(
     const body = asRecord(q["body"]);
     if (!body) return drop("body is missing");
 
-    const marks = Number(q["marks"]);
-    if (!Number.isFinite(marks) || marks <= 0) return drop("marks must be a positive number");
-
     const competencyRaw = String(q["competencyKey"] ?? "");
     const competencyKey = COMPETENCIES.includes(competencyRaw as CompetencyKey)
       ? (competencyRaw as CompetencyKey)
@@ -562,6 +589,12 @@ export function parseGeneratedQuestions(
       // competency.ts on why demand is not inherited — but it beats dropping a
       // question that is otherwise sound over one missing string.
       : competencyForBlooms(objective.effectiveBloomsLevel);
+
+    // Asked with a quota, the marks are the competency's own (the prompt says
+    // so): the level is marks-weighted on that scale, and a model's own numbers
+    // would put one paper on a scale no other paper uses.
+    const marks = req.quota ? MARKS_BY_COMPETENCY[competencyKey] : Number(q["marks"]);
+    if (!Number.isFinite(marks) || marks <= 0) return drop("marks must be a positive number");
 
     const skill = typeof q["skill"] === "string" && q["skill"].trim() ? q["skill"].trim() : null;
 

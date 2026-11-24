@@ -233,6 +233,8 @@ export async function createEvaluation(input: {
   objectiveIds: string[];
   assessmentTypes: QuestionType[];
   targetQuestionCount: number;
+  /** The total the generated paper is scaled to; absent keeps what its questions add up to. */
+  targetTotalMarks?: number;
   difficulty: Difficulty;
   titleAr?: string;
 }): Promise<Evaluation> {

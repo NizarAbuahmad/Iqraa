@@ -145,6 +145,13 @@ export const evaluations = pgTable(
 
     difficulty: text("difficulty").$type<Difficulty>().notNull().default("standard"),
     targetQuestionCount: integer("target_question_count").notNull().default(10),
+    /**
+     * The total the teacher wants the paper out of (20, 40, 100…), or null to
+     * keep what the generated questions add up to. Generation scales the
+     * generated questions' marks to it (`marksTotal.ts`); a later edit to one
+     * question's marks changes `totalMarks` and not this.
+     */
+    targetTotalMarks: integer("target_total_marks"),
     assessmentTypes: jsonb("assessment_types").$type<QuestionType[]>().notNull().default([]),
     language: text("language").notNull().default("ar"),
 

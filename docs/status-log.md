@@ -10,6 +10,50 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Exams: the live prompt states the competency mix and marks, a teacher picks the total, options are shuffled — 2026-11-24
+
+From a review of the evaluation generator (2026-11-13): a live paper with no textbook share — every
+production paper while `BOOK_ITEMS_LIVE` is off — was told only «a balanced paper» and «marks: a positive
+number», multiple-choice options went out in the order the model wrote them, and the validator missed three
+kinds of unbalanced paper.
+
+**What changed (API).**
+- **Competency quota and fixed marks on every live paper.** `LlmGenerationRequest.quota` (per-competency
+  counts summing to `count`). The route always passes one: the book's `newByCompetency` when the book supplies
+  questions, else `allocateQuestions(modelCount, difficulty)`; the top-up gets `remainingQuota(quota, written,
+  missing)`. The prompt states the mix (only when there is no book block, which already does) and replaces
+  «marks: a positive number…» with the fixed 1/2/3/4 per competency; the parser then sets every question's marks
+  from its competency (`MARKS_BY_COMPETENCY`), so a model that leaves marks out no longer loses the question.
+  Prompt version `exam-gen-9` (`exam-gen-9+book` with a book share). A request **without** `quota` is still
+  exam-gen-8 byte for byte — `llmGeneratorPromptPin.test.ts` is unchanged and passes.
+- **A total the paper is out of.** `evaluations.target_total_marks` (migration `0032`, one nullable `integer`
+  column — additive). `POST /evaluations` takes `targetTotalMarks` (whole number, from the question count to
+  200; 400 `target_total_marks` otherwise). Generation scales the generated questions' marks to the total minus
+  what the teacher's own kept questions carry (`fitToTotal` / `scaleMarks` in `marksTotal.ts`: whole marks, at
+  least one each, largest remainder, never a harder question below an easier one) and moves each rubric's
+  criteria and levels with it (`scaleRubric`). When it cannot (fewer marks left than questions) the generator's
+  marks are kept and a note says so. The target is stored in `generationParams.targetTotalMarks`.
+- **Multiple-choice options are shuffled once, at generation** (`choiceOrder.ts`), before the validator, for
+  both generators. Ids keep their sequence and the key follows its text. Left in order: book items (so they
+  match the book) and options that point at each other («جميع ما سبق», «أ و ب», "all of the above").
+- **Three new validator warnings** (`validator.ts`, warnings only): a competency with **no** questions on a
+  paper of 8 or more (the old check fired only at exactly one); true/false statements where the minority side
+  is under a quarter of 4 or more; more than half of 5 or more single-answer MCQs keyed to one position.
+
+**What changed (app).** The new-exam screen has «العلامة الكلية» (تلقائي, 10, 20, 25, 30, 40, 50, 60, 100;
+only totals at least the question count — `services/examTotal.ts`) for a generated exam; «تلقائي» sends nothing.
+«ما الجديد» entry `exam-total-marks`.
+
+**Verified.** New tests: `examQuota`, `choiceOrder`, `paperBalance`, `marksTotal` (api-server) and
+`examTotal` (mobile), each watched failing first; a 20,000-paper random check of `scaleMarks` (sum, minimum
+one, order) found nothing. `pnpm run typecheck`, api-server build + tests and mobile tests (see the PR).
+
+**Not verified.** No live model was run: whether gpt-5.4-mini keeps to the stated mix is unmeasured — read the
+competency split of the first few live papers. The route wiring (quota into the request, shuffle, total inside
+the write transaction) has no route-level test; the db tests were not run here. The new screen field was
+typechecked, not looked at in a browser. Generation warnings, old and new, still reach an Arabic teacher in
+English (`app/evaluations/[id]/index.tsx` prints them as sent).
+
 ## Grade 3 review, the Grade 2 way: plans, activities, quick checks and live prompts for eight-year-olds — 2026-11-20
 
 The Grade 2 review (below, «Grade 2 review, the Grade 1 way… — 2026-11-15») repeated for Grade 3: 8 subjects, 254

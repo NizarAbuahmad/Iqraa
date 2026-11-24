@@ -40,6 +40,14 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
+    id: 'exam-total-marks',
+    date: '2026-11-24',
+    roles: ['teacher'],
+    titleKey: 'whatsNewExamTotalTitle',
+    bodyKey: 'whatsNewExamTotalBody',
+    route: '/evaluations',
+  },
+  {
     id: 'g10-english-whole-track',
     date: '2026-11-24',
     roles: ['teacher'],

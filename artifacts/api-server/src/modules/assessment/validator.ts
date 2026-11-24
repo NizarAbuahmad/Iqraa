@@ -16,6 +16,10 @@ import { stemFrame } from "@workspace/math-practice";
 import { hasSentence, sameAsk } from "@workspace/exam-paper";
 import { QUESTION_TYPES } from "./questionTypes.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
+import { COMPETENCY_KEYS } from "./competency.ts";
+
+/** Two per competency: the length from which `allocateQuestions` seeds all four. */
+const SEED_EVERY_COMPETENCY_FROM = 2 * COMPETENCY_KEYS.length;
 
 export interface ValidationIssue {
   index: number;
@@ -168,6 +172,59 @@ export function validateGenerated(
     if (n < 2) {
       warnings.push(
         `Competency "${competency}" has only ${n} question — too few to report a score from`,
+      );
+    }
+  }
+
+  // 8b. A competency with no questions at all. Check 8 only sees competencies
+  // that are present, so one the writer skipped entirely went unmentioned. From
+  // eight questions `allocateQuestions` seeds every competency with two, so a
+  // paper that long has room for each; a shorter one may leave one out.
+  if (accepted.length >= SEED_EVERY_COMPETENCY_FROM) {
+    for (const competency of COMPETENCY_KEYS) {
+      if (!byCompetency.has(competency)) {
+        warnings.push(
+          `Competency "${competency}" has no questions — the paper cannot report a score for it`,
+        );
+      }
+    }
+  }
+
+  // 8c. True/false statements nearly all one way. The prompt asks for about
+  // half false; a paper where they are all true is answered by guessing "true".
+  const tfValues = accepted
+    .filter(q => q.type === "true_false" && typeof q.expectedAnswer["value"] === "boolean")
+    .map(q => q.expectedAnswer["value"] as boolean);
+  if (tfValues.length >= 4) {
+    const trues = tfValues.filter(Boolean).length;
+    const falses = tfValues.length - trues;
+    if (Math.min(trues, falses) * 4 < tfValues.length) {
+      const [count, word] = trues >= falses ? [trues, "true"] : [falses, "false"];
+      warnings.push(
+        `${count} of ${tfValues.length} true/false statements are ${word} — a student who always answers «${word === "true" ? "صح" : "خطأ"}» passes them`,
+      );
+    }
+  }
+
+  // 8d. The right multiple-choice answer mostly in one position. Generated
+  // options are shuffled before this runs (`choiceOrder.ts`), so this speaks for
+  // what was not: a textbook item, or options that point at each other.
+  const positions: number[] = [];
+  for (const q of accepted) {
+    if (q.type !== "multiple_choice" || q.body["multiSelect"] === true) continue;
+    const options = q.body["options"];
+    const key = q.expectedAnswer["optionIds"];
+    if (!Array.isArray(options) || !Array.isArray(key) || key.length !== 1) continue;
+    const at = options.findIndex(o => (o as { id?: unknown })?.id === key[0]);
+    if (at >= 0) positions.push(at);
+  }
+  if (positions.length >= 5) {
+    const tally = new Map<number, number>();
+    for (const p of positions) tally.set(p, (tally.get(p) ?? 0) + 1);
+    const [top, count] = [...tally.entries()].reduce((a, b) => (b[1] > a[1] ? b : a));
+    if (count * 2 > positions.length) {
+      warnings.push(
+        `${count} of ${positions.length} multiple-choice answers are option ${top + 1} — a student could guess the position`,
       );
     }
   }

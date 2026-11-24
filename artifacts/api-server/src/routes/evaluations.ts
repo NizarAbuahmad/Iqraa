@@ -61,6 +61,8 @@ import {
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
 import { inPaperOrder } from "../modules/assessment/paperOrder";
+import { shuffleChoices } from "../modules/assessment/choiceOrder.ts";
+import { fitToTotal, scaleRubric } from "../modules/assessment/marksTotal.ts";
 import { FIRST_GRADE_DEFAULT_TYPES, evaluationTypesForGrade } from "@workspace/exam-paper";
 import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import {
@@ -215,6 +217,8 @@ const NOT_AI_GENERATABLE: readonly QuestionType[] = ["read_aloud", "dictation"];
 const GENERATABLE_TYPES = ALL_TYPES.filter(t => !NOT_AI_GENERATABLE.includes(t));
 const DIFFICULTIES: Difficulty[] = ["basic", "standard", "advanced"];
 const MAX_QUESTIONS = 50;
+/** The largest total a teacher may ask a paper to be out of. */
+const MAX_TARGET_TOTAL = 200;
 
 /**
  * How long a published exam's link stays open, from the most recent publish.
@@ -379,6 +383,20 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
+    // Optional. Whole marks, at least one per question (`marksTotal.ts`).
+    const rawTotal = req.body?.targetTotalMarks;
+    const targetTotalMarks = rawTotal === undefined || rawTotal === null || rawTotal === "" ? null : Number(rawTotal);
+    if (
+      targetTotalMarks !== null
+      && (!Number.isInteger(targetTotalMarks) || targetTotalMarks < count || targetTotalMarks > MAX_TARGET_TOTAL)
+    ) {
+      res.status(400).json({
+        error: `The paper's total must be a whole number from ${count} (one mark a question) to ${MAX_TARGET_TOTAL}`,
+        code: "target_total_marks",
+      });
+      return;
+    }
+
     const [defaultScale] = await db
       .select({ id: levelScales.id })
       .from(levelScales)
@@ -412,6 +430,7 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
         objectiveIds,
         difficulty,
         targetQuestionCount: count,
+        targetTotalMarks,
         assessmentTypes: requestedTypes,
         // English is examined in English whatever the app's UI language.
         language: book.subjectId === "english" ? "en" : trimmed(req.body?.language) || "ar",
@@ -980,17 +999,23 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             ),
           }
         : undefined;
+      // How many of each competency the model writes, and with it the fixed
+      // marks per competency: the book's quota when the book supplies questions,
+      // otherwise the paper's own target mix (`allocateQuestions`).
+      const quota = supplied?.newByCompetency
+        ?? allocateQuestions(modelCount, evaluation.difficulty);
       // One value for the usage rows and the stored params: every batch of this
-      // paper (first, retry, top-up) carries the same `supplied` or none.
-      const promptVersion = generationPromptVersion({ supplied });
+      // paper (first, retry, top-up) carries the same `supplied` or none, and a quota.
+      const promptVersion = generationPromptVersion({ supplied, quota });
 
-      // `count` defaults to the model's share; the top-up below passes what is missing
-      // and a `suppliedFor` whose quota is rescaled to that count.
+      // `count` defaults to the model's share; the top-up below passes what is missing,
+      // the quota rescaled to it, and a `suppliedFor` whose quota is rescaled the same way.
       const runLlm = (
         avoidList: readonly string[],
         insistent: boolean,
         count = modelCount,
         suppliedFor: LlmSupplied | undefined = supplied,
+        quotaFor: Record<CompetencyKey, number> = quota,
       ) => generateWithModel(
         {
           objectives,
@@ -1003,6 +1028,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           avoid: avoidList,
           insistent,
           ...(suppliedFor ? { supplied: suppliedFor } : {}),
+          quota: suppliedFor?.newByCompetency ?? quotaFor,
         },
         async prompt => {
           const completion = await completeAi({
@@ -1085,6 +1111,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
               // The prompt then says the quota is what remains of the model's share.
               alreadyWritten: llm.questions.length,
             },
+            remainingQuota(quota, llm.questions, missing),
           );
           llm.questions.push(...more.questions);
           llm.notes.push(...more.notes);
@@ -1180,7 +1207,9 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       generationParams["seed"] = result.seed;
     }
 
-    const validation = validateGenerated(result.questions, {
+    // Before the validator, so its answer-position warning speaks for what was
+    // left in the writer's order (a book item, options that point at each other).
+    const validation = validateGenerated(shuffleChoices(result.questions), {
       allowedObjectiveIds: evaluation.objectiveIds,
       allowedTypes: evaluation.assessmentTypes,
     });
@@ -1279,6 +1308,16 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           .where(eq(evaluationQuestions.id, q.id));
       }
 
+      // The teacher's chosen total, met by the generated questions alone: the
+      // teacher's own questions keep the marks they gave them.
+      const fitted = fitToTotal(
+        keyCheck.kept.map(k => k.question.marks),
+        keep.reduce((s, q) => s + Number(q.marks), 0),
+        evaluation.targetTotalMarks,
+      );
+      if (fitted.note) generationNotes.push(fitted.note);
+      if (evaluation.targetTotalMarks !== null) generationParams["targetTotalMarks"] = evaluation.targetTotalMarks;
+
       if (keyCheck.kept.length > 0) {
         await tx.insert(evaluationQuestions).values(
           keyCheck.kept.map(({ question: q, verification }, i) => ({
@@ -1287,12 +1326,13 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             type: q.type,
             body: q.body,
             expectedAnswer: q.expectedAnswer,
-            rubric: q.rubric,
+            // Its criteria carry marks on the question's scale, so they follow it.
+            rubric: scaleRubric(q.rubric, q.marks, fitted.marks[i]!),
             objectiveId: q.objectiveId,
             competencyKey: q.competencyKey,
             skill: q.skill,
             difficulty: q.difficulty,
-            marks: q.marks.toFixed(2),
+            marks: fitted.marks[i]!.toFixed(2),
             gradingMode: q.gradingMode as never,
             source: "ai" as const,
             // The column the schema has described since Phase 3 and nothing
