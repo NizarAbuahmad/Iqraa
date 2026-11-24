@@ -10,6 +10,33 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 5: eight lessons get their book pages, fifteen broken science crops go, a Grade 4 guide stops grounding Grade 5 — 2026-11-24
+
+A parallel audit already put Grade 5's page ranges and science figures right («Grade 5 audit: right book pages and science
+figures»). This is what a second read of the same books, by page image and extracted text, found still missing on `main`.
+
+**Book pages.** Eight lessons had no «صفحة الكتاب» although their pages lie inside a neighbour's images. They now read them
+through `rendered`: science S2 u7_l1 (p.30) and u8_l1 (p.46-49), social S1 u2_l3 (p.39) and u3_l2 (p.58-59), social S2 u5_l2
+(p.14-17), u6_l2 (p.32-33), u6_l3 (p.42-44) and u7_l3 (p.63-65).
+
+**Figures.** 15 science crops are cut or sliced (the p.36 vertebrate ovals with slivers of their neighbours, leaf tiles that lost
+their label, header bands, text slices). They and their PNGs are dropped; three clean partial pieces of a figure stay.
+
+**The «Grade 5» digital teacher guide is Grade 4's.** Its cover prints «المهارات الرقمية — الصف الرابع الأساسي - دليل المعلم»
+(both guides' extracted text open on that same Grade 4 cover: 91 pages each, 83,272 and 83,160 characters; the PDFs are not
+byte-identical, so it may be a re-scan or another copy of the Grade 4 guide). Its passages were grounding Grade 5 digital lessons
+in Grade 4 content. The source is now `conflict` with the Grade 4 guide, its extraction is removed and `extractionBlocked`
+records why, until the real Grade 5 guide is obtained.
+
+**Not done.**
+- Two lessons start one page earlier than `main` says (social S1 u1_l3 at p.21, social S2 u7_l2 at p.59). The opener page sits in
+  the neighbouring folder, and `rendered` holds one contiguous folder per lesson, so they need a re-render or a schema step.
+- Arabic S1 u2_l5 and u4_l5 end one page before `main`'s range (a game page). `main` judged it otherwise, so it is left.
+- Grade 5 English: the books print 12 lessons a unit against the catalog's two. That changes lesson ids, so it waits for the owner.
+
+**Verified.** `curriculum verify` (0 errors); curriculum tests (936 pass; `r2.test.ts` fails here only because R2 variables are
+set); the whole mobile suite (9,574 pass, 0 fail, 10 skipped); `tsc --build`. **Not verified:** the pages and slides in a browser.
+
 ## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
 
 Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured
@@ -114,6 +141,7 @@ lessons give offline questions; 111 sampled keys were read by hand, all right.
 **Not verified:** the pages beyond each range (not in the bucket); anything needing the PDFs; the pages on a phone.
 
 No «ما الجديد» entry: a record, not a change.
+
 ## Grade 3 review, the Grade 2 way: plans, activities, quick checks and live prompts for eight-year-olds — 2026-11-20
 
 The Grade 2 review (below, «Grade 2 review, the Grade 1 way… — 2026-11-15») repeated for Grade 3: 8 subjects, 254
