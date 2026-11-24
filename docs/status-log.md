@@ -10,6 +10,55 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+
+## Grade 3 review, third pass: two science crops trimmed to their picture, numbered pictures in the book's order — 2026-11-21
+
+A re-run of the Grade 3 review on today's `main`, after the two earlier reviews, the Grade 3 second pass
+(NizarAbuahmad/Iqraa#1505) and the compare/order fix (NizarAbuahmad/Iqraa#1499). It covered the catalogs, the three
+figure books (science S1 and S2, social studies S2), the page links and the maths.
+
+**Fixed (figures only; no code):**
+- `g3-science-s1 p026c-v2` (the water food web, «الْكائِناتُ الْحَيَّةُ في بيئاتِها») carried the book's «أتحقق» question and
+  the printed page number «26». It is trimmed to the diagram and is now `p026c-v3.png`; its `rect` is updated to match.
+- `g3-science-s2 p033` (the island photo, «الْأَرْضُ») was the page top: the green banner, a paragraph that stopped
+  mid-sentence, and the photo. It is cropped to the photo and is now `p033-v2.png`. Both new names follow the repo's
+  `-vN` convention, so a plain `upload-figures-r2` sends them and nothing is served stale from the bucket.
+- Order inside a page: figures on one page keep their index order (`bookFigures.ts` sorts by `pdfPage` only). Two
+  sets the book **numbers** came out as 2, 1, 4, 3, 6, 5 (science S2, the six hazard photos on p68) and 2, 1, 7
+  (social S2, p22). Their index entries are reordered to the book's numbering. Only numbered sets were touched:
+  right-to-left geometry is the wrong rule in general (the log → crane → carpenter pictures on social p31 are already in
+  story order and RTL would break them), and a code change would reorder the LTR English books too.
+
+**Checked and unchanged:**
+- All 15 Grade 3 catalogs load into the app with their file counts: 254 lessons (maths 32 + 38, science 7 + 6, Islamic
+  12 + 12, Arabic 25 + 25, social 10 + 9, English 10 + 10, Creative Arts 30, PE 14 + 14).
+- Figures: 77 served, equal to the asset list; no orphan PNGs, no index entry without a PNG, no figure mapped to a
+  lesson of another subject or semester. The book's own numbering restarts in the S2 books (book unit 1 is catalog
+  unit 4) and the map handles it. The 6 figures with no lesson are the three front-matter pictures on page 3 of each
+  science book. I looked at all 77 on contact sheets.
+- Maths: an invariant sweep of the offline generators over the 70 lessons at three difficulties (8,400 items) found no
+  empty stem, no empty key, no duplicate option and no key missing from its options.
+
+**Not done, and why:**
+- **No book text is extracted for Grade 3** (`lib/curriculum/src/data/extracted/` has none, against 40 files for
+  Grade 4), so the live model grounds a Grade 3 lesson on its catalog entry alone. For Arabic that is the title
+  (no objectives, main idea or vocabulary: «title-only» by the catalog's own declaration); for Islamic studies the title
+  and a main idea. The student books are in the owner's Drive; extraction needs a machine that can download them
+  (`docs/adding-a-book.md`, tracks A and B).
+- **«صفحة الكتاب» has no pages for 94 of 254 lessons**: maths S1 (all 32) and 20 of S2, science S1 (all 7) and 5 of 6
+  in S2, 2 of 10 social S1 and 7 of 9 social S2, all 20 English, and one Creative Arts. The page links were verified on
+  2026-10-01; filling them means rendering the pages from the PDFs and uploading them to R2.
+- The offline question banks cover maths only; every other Grade 3 subject answers «No offline question bank» with live
+  AI off, by design (`questionBankPolicy`).
+- Not fixable from the crops: slivers of a neighbouring picture at the edge of a few social S2 figures, the book's own
+  pink trial-edition watermark, and the page-number badge printed on the two paired photos on science S2 p56.
+- **Step for whoever has R2 access:** `pnpm --filter @workspace/curriculum run upload-figures-r2` (no `--force`) to
+  put `p026c-v3.png` and `p033-v2.png` in the bucket. Until then those two figures show nothing in a deck.
+
+Verified: `bookFigures`, `bookPage` and `lessonShelf` tests, the curriculum suite (931) and `verify` (0 errors),
+`gen_book_figure_assets.mjs` (the only diff is the two renamed keys). No «ما الجديد» entry: nothing a teacher operates
+changed.
+
 ## Grade 4 second pass: division with a remainder and with zeros, tenths and hundredths apart, mixed numbers compared, six digits, a protractor — 2026-11-21
 
 A second read of Grade 4 maths, on top of «Grade 4 review: reflection on the book's square grid…», «Grade 4, second pass:
