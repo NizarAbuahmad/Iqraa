@@ -34,9 +34,11 @@ describe('the extracted corpus', () => {
     // Grade 10 S1, Grade 9 S1 and S2, Grade 8 S1 (since 2026-10-25) and Grade 8 S2 (since 2026-10-28):
     // 730 + 390 + 399 words, 72 + 35 + 35 lessons, 237 + 147 + 115 sentences. Grade 6 (since 2026-10-31) adds 319
     // words on 8 lessons — the activity book's unit Wordlists, no sentences.
-    assert.equal(ENGLISH_VOCABULARY.length, 1838);
+    // 1838 → 1795 words and 499 → 493 sentences on 2026-11-15: the parser stops at the end of the Word List, so 43
+    // rows read off the Grammar Reference / irregular-verbs pages ("She/It", "or learnt", "They must") are gone.
+    assert.equal(ENGLISH_VOCABULARY.length, 1795);
     assert.equal(new Set(ENGLISH_VOCABULARY.map(w => w.lessonId)).size, 150);
-    assert.equal(ENGLISH_VOCABULARY.filter(w => w.sentence).length, 499);
+    assert.equal(ENGLISH_VOCABULARY.filter(w => w.sentence).length, 493);
   });
 
   it('never carries a phonetic mark into a headword', () => {

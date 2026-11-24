@@ -55,6 +55,13 @@ export type NccdLesson = {
   periods: number | null;
   objectives: string[];
   vocabulary: NccdVocab[];
+  /**
+   * The lesson's own self-assessment box as the book prints it (e.g. PE's
+   * «أُقيِّمُ تعلُّمي»). Deliberately NOT `objectives`: those reach the model
+   * as «النتاجات (من المنهاج الرسمي)», and a self-assessment table is not the
+   * book's outcomes list. Absent where the book prints none.
+   */
+  self_assessment_ar?: string[];
 };
 
 export type NccdUnit = {
@@ -66,6 +73,12 @@ export type NccdUnit = {
   total_periods: number | null;
   prior_knowledge: string[];
   lessons: NccdLesson[];
+  /**
+   * The unit's end-of-unit self-assessment table («أقيّم نفسي ذاتيًّا…»), in
+   * the book's order. Unit-level because the book prints it per unit; which
+   * statement belongs to which lesson is not printed, so it is not guessed.
+   */
+  self_assessment_ar?: string[];
 };
 
 export type NccdCurriculumFile = {
@@ -101,6 +114,10 @@ export type NccdKbLesson = {
   keyTerms: Array<{ ar: string; en: string; definitionAr: string; definitionEn: string }>;
   objectives: string[];
   periods: number | null;
+  /** `NccdLesson.self_assessment_ar`, when the book prints one per lesson. */
+  selfAssessmentAr?: string[];
+  /** `NccdUnit.self_assessment_ar` of the lesson's unit, when printed per unit. */
+  unitSelfAssessmentAr?: string[];
 };
 
 /** Shape compatible with Unit / Lesson in curriculumData.ts */
@@ -133,6 +150,8 @@ export type NccdBrowserLesson = {
     descriptionAr: string;
     bloomsLevel: 'Understand';
     skills: string[];
+    /** See `LearningOutcome.examTargetSource` in catalog.ts. */
+    examTargetSource?: 'main-idea' | 'self-assessment';
   }>;
 };
 
@@ -161,9 +180,32 @@ export function makeNccdCatalog(opts: {
   /** Book id in curriculumData.BOOKS (browser id space). */
   browserBookId: string;
   raw: unknown;
+  /**
+   * For a book that prints no outcomes list, give each lesson without
+   * `objectives` exam-only targets taken from what the book DOES print for
+   * that lesson: its own self-assessment box when it has one, otherwise its
+   * «الفكرة الرئيسة». Without them the book has no objective at all, and an
+   * evaluation — which is scoped by objectives — cannot target it
+   * (`getEvaluableBookIds`). They live only in the browser lesson's
+   * `outcomes`, tagged `examTargetSource`; `objectives` stays empty, so the
+   * generator context still never calls them «النتاجات». Unit-level
+   * self-assessment tables are not used here: the book does not say which
+   * lesson a unit statement belongs to. Opt-in per book.
+   */
+  examTargetsFromBook?: boolean;
 }): NccdCatalog {
   const { scope, kbBookId, browserBookId } = opts;
   const curriculum = opts.raw as NccdCurriculumFile;
+
+  const examTargetsFor = (
+    lesson: NccdLesson,
+  ): Array<{ text: string; source: 'main-idea' | 'self-assessment' }> => {
+    if (!opts.examTargetsFromBook) return [];
+    const own = (lesson.self_assessment_ar ?? []).filter(s => s.trim());
+    if (own.length > 0) return own.map(text => ({ text, source: 'self-assessment' as const }));
+    const idea = lesson.main_idea_ar?.trim();
+    return idea ? [{ text: idea, source: 'main-idea' as const }] : [];
+  };
 
   const unitKbId = (jsonUnitId: string): string => makeUnitKbId(scope, jsonUnitId);
   const lessonKbId = (jsonLessonId: string): string => makeLessonKbId(scope, jsonLessonId);
@@ -208,6 +250,8 @@ export function makeNccdCatalog(opts: {
           keyTerms: vocab.map(v => ({ ar: v.ar, en: v.en, definitionAr: '', definitionEn: '' })),
           objectives: [...objectives],
           periods: lesson.periods ?? null,
+          ...(lesson.self_assessment_ar?.length ? { selfAssessmentAr: [...lesson.self_assessment_ar] } : {}),
+          ...(u.self_assessment_ar?.length ? { unitSelfAssessmentAr: [...u.self_assessment_ar] } : {}),
         });
       }
     }
@@ -256,14 +300,27 @@ export function makeNccdCatalog(opts: {
           // so `objectives.ts` reports these as derived rather than authored —
           // the distinction three subjects lost on 2026-09-03 by being absent
           // from that check.
-          outcomes: objectives.map((o, i) => ({
-            id: objectiveId(scope, lesson.id, i),
-            lessonId: lKbId,
-            description: o,
-            descriptionAr: o,
-            bloomsLevel: 'Understand' as const,
-            skills: [] as string[],
-          })),
+          outcomes: objectives.length > 0
+            ? objectives.map((o, i) => ({
+              id: objectiveId(scope, lesson.id, i),
+              lessonId: lKbId,
+              description: o,
+              descriptionAr: o,
+              bloomsLevel: 'Understand' as const,
+              skills: [] as string[],
+            }))
+            : examTargetsFor(lesson).map((target, i) => ({
+              // `-t` keeps these ids apart from `objectiveId(scope, lesson.id, i)`,
+              // which real outcomes would take if the book ever prints them:
+              // an exam stored against a target must never resolve to new text.
+              id: objectiveId(scope, `${lesson.id}-t`, i),
+              lessonId: lKbId,
+              description: target.text,
+              descriptionAr: target.text,
+              bloomsLevel: 'Understand' as const,
+              skills: [] as string[],
+              examTargetSource: target.source,
+            })),
         });
       }
     }
