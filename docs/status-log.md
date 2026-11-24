@@ -95,6 +95,531 @@ book pages, which the repo does not hold as text.
 
 No «ما الجديد» entry: these correct what existing generators write for Grade 3.
 
+## A join-request push refreshes the bell the moment it arrives — 2026-11-23
+
+Follow-up to «The teacher is told when a student's class-code pick waits for them» (#1538), whose «Not verified»
+noted that a push arriving while the app was open did not refresh the bell: the count caught up on the bell's
+next one-minute poll, behind the banner the phone had just shown.
+
+- `services/notificationDeepLink.ts` `queryKeysToRefresh(data)` says which cached queries an arriving push makes
+  stale. A `class-link-requests` push marks the bell's count (`linkRequestSummaryQueryKey`) and, for a UUID-shaped
+  `classGroupId`, that class's banner (`classLinkRequestsQueryKey`). Every other push marks nothing.
+- `services/pushTokens.ts` `registerNotificationTapHandler` now also adds `addNotificationReceivedListener`. It
+  invalidates those keys on the shared `queryClient`, tapped or not, and is removed with the tap listener on sign-out.
+- No «ما الجديد» entry: the bell already shows these requests; it now shows them sooner.
+
+**Verified:** `notificationDeepLink.test.ts` covers the keys for a join request, a malformed id and other pushes. It
+also reads `pushTokens.ts` to check the listener is wired, because that file imports `expo-notifications`, which
+`node --test` cannot load. `pnpm run typecheck`; mobile `pnpm test`: 9,557 tests, 0 failures.
+**Not verified:** on a device (a push arriving with the app in the foreground). On web there are no pushes, so the
+web bell still polls every minute.
+
+## The join-request notice is live on the API and on preview and production phones — 2026-11-23
+
+#1538 («The teacher is told when a student's class-code pick waits for them», below) merged as `681749c`.
+
+- **API:** deploy run 1025. `iqraa-api` passed its «Verify the deployed commit» step, and `/api/healthz/version`,
+  read by command afterwards, answered `681749c`, revision `iqraa-api-00565-ws2`. The traffic split was not read.
+  Migrations and the schema check passed; `iqraa-verifier` was skipped, since the merge does not touch it.
+- **Web:** deploy run 1025's `iqraa-web` job published to Cloudflare Pages and passed «Verify the deployed bundle» (12:11 UTC), so the bell's join-request rows are on `app.iqrra.com`.
+- **Phones:** `preview` got it from the merge's own run, Mobile OTA update run 1209. `production` was published
+  by hand, run 1210 (`branch=production`). Both succeeded, from `681749c`. Like every OTA since 1.6.0, it reaches
+  only 1.6.0 binaries.
+
+**Not verified:** a real join-request push arriving on a teacher's phone, and the bell's new row on the live web
+app.
+
+## The teacher is told when a student's class-code pick waits for them — 2026-11-23
+
+**Asked:** «When parents or students joined through code the teacher shall receive a notification to approve the
+request». The owner chose to keep who waits as it is: only a student who picks a name off the shared CLASS code
+waits for approval (`claimNeedsApproval`, since 2026-10-24). A per-student code, and every parent, still link at
+once. Before this change nothing told the teacher a request existed. It sat in the «طلبات الانضمام» banner on the
+class's Students tab until they happened to open it, while the child's screen said the teacher had been asked.
+
+- **Push (API).** `lib/joinRequestNotify.ts` pushes every device of the class's teacher: «طلب انضمام جديد» /
+  «طلب باسم «…» في <class> — بانتظار موافقتك.» (`modules/notifications/joinRequestText.ts`, Arabic only like every
+  push). It goes on a new Android channel, `requests`, with `data { screen: "class-link-requests", classGroupId }`.
+  - Only a **new** request pushes. `linkRosterRowInTx` now tells `requested` (row inserted) from `pending` (the
+    same account re-entering the same name, which `onConflictDoNothing` leaves alone). Picking a different name is
+    a new request, and it does push.
+  - Both ways in push: `POST /auth/claim` and the code-only `POST /auth/redeem`.
+  - It is sent after the commit and before the answer, through `pushWithin` (Cloud Run CPU throttling), and never
+    throws.
+  - **One push per class per 10 minutes** (`JOIN_REQUEST_PUSH_WINDOW_MINUTES`). A teacher who writes the code on
+    the board gets thirty picks in five minutes: the first rings, and the rest wait in the banner and the bell, which
+    count them. It is measured from the class's other requests' `created_at`, so there is no new table.
+  - **Silent at night.** Between 22:00 and 07:00 Amman it goes to the `quiet` channel with `sound: null`, as family
+    pushes do (`joinRequestDelivery`; `PUSH_QUIET_HOURS=off` turns it off, as for them).
+  - It reads the teacher's class and device tokens with `systemDb`, because the joiner cannot see them. The file is
+    pinned in `systemDbFiles.test.ts`.
+  - `decideClaim` now returns `classGroupId` on a class-code resolution, so the push opens the class whose code was
+    used. A roster row can sit in several classes.
+- **Bell (API + app).** `GET /classes/link-requests` returns `{ total, classes: [{ classId, name, nameAr, count }] }`
+  for the teacher's live classes. It counts the same rows `/classes/:id/link-requests` lists: names already held by
+  a student account are left out, and `total` counts each request once. The route is declared before
+  `/classes/:id`.
+  - A teacher's `NotificationBell` polls it every minute (only when student accounts are on). It adds the count to
+    the bell's badge and leads the panel with one «طلبات الانضمام» row per class, each naming the class and opening
+    it (the class list shows no requests, so one row for all of them would lead nowhere useful).
+  - This is how a teacher on the web, which gets no push, hears of a request. The app-icon badge stays messages
+    only.
+  - Approving or rejecting in the banner refreshes the bell's count.
+- **App.** A new Android channel «طلبات الانضمام» (`requests`), created only for teachers and admins
+  (`channelsFor(isAdmin, isTeacher)`). `routeFromNotificationData` maps the push to `/classes/<id>`, and only when
+  the id is UUID-shaped; anything else goes to `/classes`. There is no native change, so `app.json` keeps its
+  version.
+- «ما الجديد» `join-request-notice` (teachers, 2026-11-23, opens `/classes`).
+
+**Verified** (local Postgres 16):
+- `joinRequestPush.db.test.ts` (14 tests):
+  - a pick pushes both of the teacher's devices on `requests`, and nobody else;
+  - re-entering the same name sends nothing, and a different name pushes again (once the window has passed);
+  - two picks within the window ring once, and both requests wait;
+  - a held `/auth/redeem` pushes; a per-student code, and a student already linked to the name re-entering the
+    class code, don't;
+  - an Expo 500 still answers 202, and the request is committed;
+  - the bell's count matches the class's own list, counts a child in two classes once in `total` and under both
+    classes, leaves out archived students and classes, drops after an approval, shows another teacher nothing, and
+    answers a student 403.
+- A code review before merge found the burst of pushes, the missing quiet hours and the one-row bell; all three
+  were fixed in this PR.
+- `rlsDiff.test.ts` gained a class-code pick and the bell read, compared with enforcement off and on: 202, then
+  200 with `total` 1 both ways, and the push comparison agrees.
+- Full api-server `pnpm test` with `REQUIRE_DB_TESTS=true`: 3,611 pass, 0 fail.
+- Mobile `pnpm test`: 9,553 tests; the only two failures were the terminology test catching «رمز الصف» / "class
+  code" in the first draft of the «ما الجديد» copy, fixed and re-run.
+- `@workspace/db` RLS suites: 76 pass.
+- `pnpm run typecheck`.
+
+**Not verified:** a real push on a phone (Expo was stubbed), or the bell row in a browser or on a device. The push
+is Arabic whatever the teacher's language, like every push here. A push arriving while the app is open does not
+refresh the bell at once; it catches up within a minute.
+
+## The games hub has a back arrow again when opened from inside the app — 2026-11-22
+
+Reported: «Iqrra games no back button». The `/play` hub passed `hideBack` to `CornerFrame` unconditionally, on
+the idea that it is only ever opened cold from a shared link. But the Tools tab's «الألعاب» card, two «ما الجديد»
+entries and the help search all push `/play`, and the hub is a full-screen stack page with no tab bar, so a
+signed-in teacher who opened it there could not get back.
+
+- `services/publicGames/hubBack.ts` `hubShowsBack({ canGoBack, signedIn })`: the arrow shows when there is
+  history, or when the user is signed in (with no history `goBack()` goes to `/`, their own landing tab). Only an
+  anonymous visitor on a cold link gets none, since `/` would bounce them to sign-in.
+- `app/play/index.tsx` uses it, so `CornerFrame`'s `hideBack` is now decided by that helper, not hard-coded.
+- `playHubBack.test.ts` pins the three cases and checks that the hub calls the helper and passes no bare `hideBack`.
+
+**Verified:** `pnpm run typecheck`; mobile `pnpm test` (9,544 tests, 0 failures); the new wiring test matches
+the old source, so it would have failed before this fix.
+**Not verified:** in a browser or on a device. The individual games were not touched; each already had a back
+button to the hub (`GameShell`).
+
+## The chat-hiding change is live on the web and on production phones — 2026-11-23
+
+#1535 («The AI chat «اسأل إقرأ» is hidden from the app», below) merged as `a2ca732`.
+
+- **Web:** Deploy run 1022 ran `iqraa-web` only (API, verifier and both schema jobs skipped, as the diff touched
+  none of them); «Publish to Cloudflare Pages» and «Verify the deployed bundle» passed.
+- **Android `preview`:** Mobile OTA update run 1205, on the merge.
+- **Android `production`:** published by hand, Mobile OTA update run 1207, from `main` at `b8c096b` — which also
+  carries #1534 (Games hub back arrow), merged after #1535.
+- **STATUS.md** «Mobile» names run 1207 as the latest production OTA, and a new line says the chat is hidden.
+
+**Not verified:** the live page itself (app.iqrra.com is not reachable from the cloud session that did this), and
+which phones have applied the update.
+
+## The AI chat «اسأل إقرأ» is hidden from the app — 2026-11-22
+
+**Asked:** «Hide the chat feature from the app, it isn't working well». The AI assistant, not person-to-person
+messaging, which is untouched.
+
+- **One switch:** `IQRA_CHAT_ENABLED = false` in `artifacts/mobile/services/features.ts`, beside
+  `DOCUMENT_UPLOAD_ENABLED`. Setting it to `true` brings every entry point back; the chat screen, its API route and its
+  tests are unchanged.
+- **Hidden while it is off:** the desktop sidebar tab (`tabVisible`), Today's ask card on a phone (`PhoneToday`), the
+  desktop workspace's assistant panel (the main column takes the width), ⌘K «اسأل إقرأ عن …» (`buildCommands`), the
+  FAQ's «اسأل إقرأ» button, the lesson page's «اسأل إقرأ» button, the lesson shelf's question bank (its rows' only
+  action was «ask in chat», so a teacher now sees what a student sees: the external resources), the teacher tour's ask
+  step (5 steps instead of 6 on both layouts) and the two chat «ما الجديد» entries (`offeredWhatsNew`), so no one is
+  told about, or sent to, a screen they cannot use.
+- **Changing the lesson still works.** The lesson bar, Today's «تغيير الدرس» and ⌘K open the change-lesson sheet *on*
+  `/iqra`. With the chat off that route renders `LessonPickerOnlyScreen`: the sheet alone, no chat behind it. A pick
+  saves the app-wide lesson (`saveLessonPick`) and returns to `returnTo` (else Today); Cancel returns too. Anything
+  else landing on `/iqra` (an old link, a push) is sent to Today. Its confirm button no longer says «Ask Iqrra about»
+  in English or wears a chat icon while the chat is off (the Arabic «ابدأ التحضير» was already right).
+- **Tests:** `tabVisibility`, `tour`, `commandPalette` and `whatsNew` take the flag as an optional argument (default:
+  the constant), with a case each for off. `e2e/tests/tour.spec.ts` now expects «Step 5 of 5».
+
+**Verified:** `pnpm run typecheck`; mobile `pnpm test` (9,534 pass, 0 fail); all three `e2e/` specs against a
+throwaway Postgres. In a browser (desktop 1280 and phone 390, English): no «Ask Iqrra» or «Open chat» anywhere on
+Today or in the sidebar; «Change lesson» opens the sheet alone, Cancel returns to Today, a second open works, picking
+«Equation of a Circle» returns to Today showing it and survives a reload; `/iqra` typed in lands on Today.
+
+**Not verified:** Android (same code path, no device here); Arabic layout of the two screens touched (no new text
+except the English label); the API's chat route still answers anyone who calls it directly — this hides the feature,
+it does not switch the endpoint off.
+
+## A 1.6.0 production build sent to Google Play for review — 2026-11-21
+
+After the chat fix (#1527) merged, the owner asked for a 1.6.0 production build and for it to go to Play for review.
+
+- **Build.** Mobile Android build run 11 (`profile: production`) from `main` at `de31781`: EAS build
+  `735f7858-a355-486c-be10-5c4bf999b62c`, version 1.6.0, versionCode 15 (EAS took the next code itself,
+  `appVersionSource: "remote"`), status `FINISHED` with an `.aab`.
+- **Submit.** Mobile Android submit to Play run 4, `send_for_review: true` (submit profile `production-review`):
+  the build check, the upload and the key deletion all passed. This sends the release for review at once, so any
+  store-listing edit drafted in Play Console did not go with it.
+- **OTA.** The same commit was published to the `production` update channel by hand (Mobile OTA update run 1201).
+- **STATUS.md** «Mobile» no longer says the installed binary is 1.5.0: 1.6.0 production builds have existed since
+  2026-11-13 (versionCode 12) and were submitted on 2026-11-14 (submit runs 2–3), which that line had not caught up with.
+
+**Not verified:** Google's review result and the rollout, and which version is installed on any user's phone.
+
+## Chat answers the topic asked about; the picked lesson stays put — 2026-11-21
+
+**Reported:** «chat when the user asks for a specific topic it keeps changing… is that because of the topic selected
+on top of the app», after several earlier fixes («Fixed 2026-08-13 — changing the lesson mid-chat didn't take»,
+«The chat answers before it asks…», «The chat answers teachers, on the web too», «Chat builds material on a topic the
+curriculum does not have»). Each of those patched one path; the two causes below were left.
+
+**Cause 1: a picked lesson was a leash.** A lesson picked from the top bar or the change-lesson sheet is pinned
+`hard`, and `shouldReuseActiveLesson` reused a hard pin for every teaching question the keyword search was not
+*confident* about. Confidence is a property of the search, not of the question. Measured with the app's own functions
+and «تركيب الاقترانات» picked: «اشرح لي المتجهات» (vectors 35.5, not a confident single-subject hit), «ما هي الدالة
+الأسية», «اشرح لي المصفوفات», «سؤال عن الجذور», «كيف أدير صفًا مزعجًا؟» and «اختبار قصير عن الاحتمالات» all went
+to the model with «تركيب الاقترانات» as the textbook («استخدمه أساسًا لإجابتك»). A soft (restored) pin did not do
+this, so it hit exactly the teachers who had picked a lesson.
+
+**Cause 2: two lessons in one field.** A confident hit on another lesson hard-pinned it as the chat's lesson
+(`pendingHardPin`, and the offline assistant's `memoryPatch`). The chat's card moved; the top bar, Today and the
+sidebar card (which read the saved pick) did not. Every later question was then pulled to the new lesson by cause 1.
+
+**What changed.**
+- **`activeLessonReuse`** (`services/lessonCopilot.ts`; `shouldReuseActiveLesson` wraps it) returns `ground`,
+  `background` or `none`. A lesson grounds a turn only when the message names no topic of its own (a bare ask, a
+  refinement, a short follow-up) or the message's own search points at it (`searchSupportsLesson`,
+  `services/kbContext.ts`: scored ≥ `KB_SUGGEST_SCORE` and no confident hit names another lesson). Pin strength no
+  longer overrides a message that names a topic. `background` is a lesson the teacher picked plus words nothing in
+  the curriculum matches («كيف أبدأ الحصة», «كيف أدير صفًا مزعجًا؟»): the live model gets the existing «اربط إجابتك به
+  فقط إن كان السؤال عنه» line and no textbook block, and the offline assistant, which has no model, still answers from
+  the lesson. «أضف…» counts as a follow-up only when the search does not point elsewhere («اشرح المتجهات وأضف أمثلة»
+  names its topic).
+- **The selected lesson and the conversation's lesson are kept apart** (`services/chatLessonFocus.ts`,
+  `ChatSessionMemory.conversation`). `sendMessage` reads `conversationView(sessionMemory)` and writes every update
+  through `commitConversation`, so a question about another lesson moves the conversation (follow-ups use it) and
+  never the card. A question on a topic of its own that grounded on no lesson takes the conversation off the
+  lesson it was on (`leavesLesson`): «اشرح لي المتجهات» (not a confident hit) and then «أعطني أمثلة عليه» used to be
+  about the card's lesson. The selected lesson changes only through the sheet (which also saves the app-wide pick),
+  a deep link from a lesson, or «إلغاء التثبيت»; `pinLesson` and a free-topic pick in the sheet reset the
+  conversation. «خلينا نتكلم عن…» leaves the lesson for the conversation only and no longer clears `teachingCtx`.
+  While the conversation is on another lesson, what it makes (`generatedResources`, `discussedArtifacts`,
+  `lastGeneratedResource`, the prep fields) is kept on `conversation.record`, so it does not tick the card's lesson
+  or turn a starter chip («اجعل الاختبار أصعب») onto another lesson's quiz. Chips under a reply act on the reply's
+  lesson; the card's buttons, the starter chips and the «+» menu act on the card's. `background` is only for the
+  lesson the teacher picked, never one the conversation moved to (the prompt calls it «الدرس المختار في التطبيق»).
+  A lesson the teacher cleared, or the conversation left, is picked up again by a confident hit on it.
+- **A pointer is not a topic** (`topicFromQuery`, `services/ai/artifactTopic.ts`). «ورقة عمل عليه» returned the topic
+  «عليه»: a worksheet titled «عليه», built as a free topic. «أعطني أمثلة عليه» searched «عليه», which matches «موسى
+  عليه السلام» (Islamic education, 12), read as another subject and dropped the lesson. A topic made only of pointer
+  words («عليه», «عنها», «أكثر», «آخر», «إضافية», "more", "it") and follow-up nouns («أمثلة», «مثال», «تمارين», «حل»)
+  is now `''`, like «هذا الدرس» already was; one that also names something («اشرح المتجهات أكثر», «quiz on IT») is
+  unchanged. Such a
+  message is a bare follow-up in the gate and gets the conversation's lesson alone (`withActiveLesson`).
+- A bare ask for material ignores the KB-subject guard, as a bare teach ask already did: «ورقة عمل» ranks English
+  «طرق العمل» at 38, which used to drop even a picked lesson.
+- «ما الجديد»: `chat-stays-on-topic` (teachers, `/iqra`).
+
+**Verified.**
+- Tests written first and watched failing: `lessonPinGate.test.ts` (the measured questions above on the real KB:
+  `none` for a named other topic, `background` for unmatched words under a picked lesson and `none` under a restored
+  one, `ground` for a question about the lesson, a bare ask and a follow-up, including «أعطني أمثلة عليه» with the
+  conversation on «قانون جيب التمام»), `chatLessonFocus.test.ts` (8 cases: the card keeps the pick, the conversation
+  follows, returning clears it, a switch, a cleared lesson, preparation, re-picking), `artifactTopic.test.ts`
+  (pointer-only topics, and named topics that keep their name). The older gate suites (`teachMeAsk`,
+  `gradeDetection`, `topicSwitch`, `subjectDetection`) pass unchanged. `pnpm run typecheck`; mobile `pnpm test`
+  (after the review fixes: 9,540 tests, 9,530 pass, 0 fail, 10 skipped).
+- **In a browser:** a live-mode web build (`EXPO_PUBLIC_DEMO_MODE=false`), desktop 1366×860, every `/api` call stubbed
+  and each `/chat` body captured. «تركيب الاقترانات» picked by deep link, then: «اشرح لي المتجهات» → no lesson in the
+  context (before: «تركيب الاقترانات» as the textbook); «كيف أدير صفًا مزعجًا؟» → the «only if» line naming it, no
+  textbook; «اشرح قانون جيب التمام» → grounded on it; «أعطني أمثلة عليه» and «حل مثال عليه» → «قانون جيب التمام»;
+  «ما هي الدالة الأسية» → no lesson. After all of it, the chat card and the sidebar's «الدرس الحالي» both still read
+  «تركيب الاقترانات».
+- **A code review** (a separate reviewer agent, given the goal and the diff) found, on the pure functions: the
+  two-turn case above, material made on the conversation's lesson ticking the card's, the starter chips refining
+  another lesson's quiz, `background` applied to a lesson the teacher never picked, a cleared lesson losing the
+  conversation, a free-topic pick in the sheet keeping the old conversation, and «IT» read as "it". Each is fixed
+  and has a test (`chatLessonFocus.test.ts` «review findings», `leavesLesson`, `lessonPinGate.test.ts`, «IT» in
+  `artifactTopic.test.ts`). The browser pass was rerun after the fixes, now with «اشرح لي المتجهات» → «أعطني أمثلة عليه»
+  (no lesson in the context, where the first version sent «تركيب الاقترانات») and «كيف أدير صفًا مزعجًا؟» while the
+  conversation was on «قانون جيب التمام» (no lesson, not «background» on a lesson the teacher never picked).
+
+**Not verified / left.**
+- No live model answered: the replies were stubbed. Whether a model given no textbook answers «اشرح لي المتجهات»
+  from the curriculum's angle is not measured. The vectors lesson scores 35.5 but is not sent, because
+  `liveChatGrounding` does not trust a top hit with another subject within half its score; that rule is unchanged.
+- Not driven on a phone or in demo mode. In demo mode a teaching question the search cannot place no longer gets the
+  picked lesson unless it is `background` (picked + nothing matched), so the offline assistant answers fewer
+  "elsewhere" questions from the card's lesson, by design.
+- `classifyChatIntent` reads «أمثلة أكثر» as ambiguous and asks to clarify; not changed here.
+
+## The quiz request tells the API when no lesson grounds the topic — 2026-11-21
+
+Found while moving the quiz request into `buildQuizRequest` («Pool prefill: a default-form quiz per Grade 10 lesson»):
+the quiz screen built its body from four of `groundingRequestFields`' five fields and dropped `grounding: 'none'`, so
+it never sent the marker that «The API no longer attaches a book to a topic the app found no lesson for» (2026-11-20)
+gave every other generator. A quiz for a topic no lesson in the picked grade and subject covers (a free topic from
+chat, a title only another grade has) could therefore still get another lesson's book pages from the API, which
+matches the title across the whole catalog when the request carries no unit.
+
+**Changed.** `buildQuizRequest` now passes `grounding: 'none'` through when the lesson grounding says no lesson grounds
+the topic, and only then. A grounded body is exactly what it was, so **every pooled quiz key, and every quiz the prefill
+plans, is unchanged**; the requests that change are the ungrounded ones, whose prompt loses the wrong book pages (their
+pool key moves with it: the server keys on the body after grounding). A wide scope (unit, semester, book) still takes
+its `grounding` from `scopeRequestFields`, spread over the builder last.
+
+**Verified.** `generatorRequests.test.ts`: the quiz joined the existing «every builder adds it when ungrounded, and only
+then» test, which failed first (the quiz returned no marker for the free topic and, in the same test, a grounded quiz
+gains no field), and a wide scope (null grounding) sets none itself. Related suites (`pregenerate`, `generatorScreens`) and
+`pnpm run typecheck`; mobile `pnpm test`.
+
+**Not verified.** A live quiz for a free topic (the API side was not exercised: it is the 2026-11-20 change, whose own
+note says no model call was made), and the quiz screen in a browser.
+
+## Pool prefill: a default-form quiz per Grade 10 lesson — 2026-11-21
+
+`scripts/pregenerate.ts` now plans a quiz for every Grade 10 maths and chemistry lesson beside the worksheet and the
+lesson plan: a dry run reads **204 calls** (51 each of worksheet, lesson plan, quiz and student explanation), worst case
+$10.20 at the script's $0.05-a-call estimate. A quiz is stored under the quiz screen's defaults: «عادي» (easy),
+20 minutes, 20 marks, 10 questions, multiple choice + true/false + short answer.
+
+**Why a refactor came with it.** The quiz screen spelled its request out inline, so a script could not send the same
+body, and the pool only answers a body that hashes the same. The request is now `buildQuizRequest`
+(`services/generatorRequests.ts`), called by the screen (the wide scope's fields still spread over it, last) and by the
+script, like the worksheet, lesson plan and activity. `quiz.tsx` lost its inline literal and two imports.
+
+**Verified.** `generatorRequests.test.ts` (the builder: form, trimmed topic, every lesson field from the one grounding,
+no lesson fields for a wide scope, regenerate) and `pregenerate.test.ts` (a quiz per lesson in both subjects, one per
+lesson id, the defaults above; and a source guard that the screen calls `buildQuizRequest` and that its initial indices
+are the ones the prefill assumes) failed first, then passed. **The screen's request is unchanged:** a throwaway test
+rebuilt the old inline body from the previous `quiz.tsx` and compared it with the builder's over 137 lessons (all of
+Grade 10 maths and chemistry plus every 40th lesson), both languages, regenerate on and off, grounded and wide:
+1,096 bodies, all identical on the wire. Not kept, because it would only compare the builder with a copy of
+itself. `pnpm run typecheck`; mobile `pnpm test` 9,486 pass, 0 fail.
+
+**Running it.** Production writes quizzes with Claude Sonnet 5.5 (`AI_MODEL_DOCUMENTS=claude-sonnet-5-5`), so a
+quiz is about $0.05 and the 51 about $2.60; rotate the Anthropic key first (the one in use expires 2026-11-22): with a dead
+key a run falls back to OpenAI and fills the pool under that model's key, where Claude's teachers never look.
+
+**Not verified.** The quiz screen on a device or in a browser (the request is identical, but the file changed); a
+live run of the quiz prefill; that a teacher's default quiz then hits the pool; the quality of the stored quizzes
+(each is served to every teacher who asks, answer key included: read a few after a run).
+
+**Found, left alone (fixed the same day: «The quiz request tells the API when no lesson grounds the topic»).** `groundingRequestFields` can add `grounding: 'none'` (no lesson grounds the topic: the API then
+must not attach a book by title). The quiz screen never sent it: it copies four of the helper's fields and drops that
+one, so a quiz for a topic no lesson covers can still get another lesson's book pages from the API. The builder keeps
+that behaviour, since the refactor was not meant to change a request. A one-line fix would add `...noLessonField(...)`
+to the builder; it changes the pool key of those requests, so it is its own change.
+
+## Production runs Claude for documents (STATUS.md said it did not); a dead key now switches provider — 2026-11-21
+
+`STATUS.md` «Live config» said `AI_MODEL_DOCUMENTS` was **unset**, while the 2026-11-03 entry
+(«lesson-teaching now runs on the documents model») said Claude Sonnet 5.5 ran in production. An
+Anthropic Console email that a key expires on 2026-11-22 raised the question of which was true.
+
+**Verified.** The owner read the live service in Cloud Shell on 2026-11-21:
+`gcloud run services describe iqraa-api … --format="value(spec.template.spec.containers[0].env)"` shows
+`AI_MODEL_DOCUMENTS=claude-sonnet-5-5` and `ANTHROPIC_API_KEY` as a `secretKeyRef` (`latest`). So lesson plans,
+worksheets, quizzes, slide decks and `lesson-teaching` (`DOCUMENT_KINDS` in `aiBudget.ts`) go to Claude. Chat,
+evaluations, grading, homework, activities and infographics stay on OpenAI.
+
+**Not verified.** Whether the expiring key («Agents test») is the one in the `ANTHROPIC_API_KEY` secret, and the
+date `AI_MODEL_DOCUMENTS` was set.
+
+**The gap this closes.** `usableModel` (`lib/aiBudget.ts`) skips Claude only when `ANTHROPIC_API_KEY` is
+*unset*. A key that was set but expired, revoked or on an empty balance was used anyway, and every one of those
+five kinds answered with the generation error until the secret had a new version — and the same held the other
+way for OpenAI's own empty balance.
+
+**Changed.**
+
+- `lib/providerFallback.ts` (new): `isProviderAccountError` — 401, 402, 403, 404, OpenAI's 429
+  `insufficient_quota`, Anthropic's 400 «credit balance», and `ClaudeNotConfiguredError`; **not** a plain 429,
+  5xx, 529, a refusal or a malformed reply, which the other provider would not fix and which would double the
+  spend on busy days. `fallbackModelFor` — Claude is backed by `getGenerationModel()`; OpenAI by
+  `AI_MODEL_DOCUMENTS` when that is a Claude id and the key is set, so no new variable. `withProviderFallback`
+  switches once, never back, and logs «AI provider refused the account — answering with the other provider» at
+  error level.
+- `routes/generate.ts`: `generateContent` resolves the model and runs the pooled flow (now
+  `generateContentWith`) through `withProviderFallback`. The whole flow re-runs under the backup's model, so the
+  pool is read and the artifact stored under the backup's key — a fallback artifact never poses as the other
+  model's — and the caps are asked again for the call actually made. That covers every `/generate/*` kind that
+  goes through it: the five document kinds, homework, activities and the rest.
+- `scripts/provider-eval.ts`: prices for `claude-sonnet-5-5` ($2/$10) and `claude-haiku-5-5` ($0.10/$0.50), so a
+  run against them reports cost.
+
+**Verified.** `providerFallback.test.ts`, 14 tests: which errors switch and which do not, the model each side
+falls back to, one switch and never back, the original error rethrown when there is no backup, and that
+`generateContent` still calls `withProviderFallback`. api-server 3017 / 3017 after `pnpm build`; typecheck clean.
+
+**Not verified.** No request has been made against a real expired key or an empty balance: the error shapes are
+the SDKs' documented `status` / `code`, not ones captured from production. Not covered: chat (streaming), the
+exam generator and grading (`evaluations.ts`, `attempts.ts`), `siteAsk`, the verified-derivative path and `solve`,
+which call the OpenAI client directly — an empty OpenAI balance still fails those. The backup writes in another
+model's voice; the quality of OpenAI-written documents is the 2026-10-23 comparison's (it lost 14 of 16).
+
+**Found while rotating (same day): a trailing comma failed a whole lesson plan.** With the old key back, Claude
+answered but `/generate/lesson-plan` returned 500, logged «Expected double-quoted property name in JSON at position
+3844 (line 33 column 5)»: a comma before a closing brace. `parseRepairing` (`lib/generationShape.ts`) already doubled
+stray backslashes after a failed strict parse; it now also drops a comma that stands right before `}` or `]` outside a
+string (`dropTrailingCommas`, which tracks strings and escapes, so a «, }» in the text is kept). Valid JSON is still
+parsed untouched. Four tests in `generationShape.test.ts`, three of which failed first. Not verified against the actual
+reply, which is not logged; only its error message and position were. Also on the way: the first new key saved
+(secret version 3) was rejected with `401 invalid x-api-key`, so the service was pinned back to version 2.
+
+Rotating the key is still the fix; the fallback only keeps the screens working meanwhile. Rotation is
+`gcloud secrets versions add ANTHROPIC_API_KEY` plus `gcloud run services update iqraa-api
+--update-secrets=ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest`; the instant rollback is
+`--remove-env-vars=AI_MODEL_DOCUMENTS`.
+
+## `earlyMathDifficulty.test.ts` draws the same papers on every run — 2026-11-21
+
+**Why.** The mobile suite failed once on CI (and once on a first local run, not captured) on a change that did not
+touch it: «Grade 2 … most lessons are clearly harder at «صعب», with «متوسط» between», the lesson «السنتيمتر» in the
+out-of-order list. The test draws 12 random five-question papers per lesson and checks means against fixed bounds
+(medium within 5% of the range between easy and hard), with `Math.random` unseeded, so a lesson with little spread
+lands outside them on an unlucky draw.
+
+**Measured.** The same test with 84 different seeds: **1 failed (seed 51), with the same lesson and the same
+assertion as CI**, and 83 passed. So about one run in eighty fails, on code that has not changed.
+
+**Changed.** The file seeds `Math.random` (mulberry32, the generator `classroomWideScope.test.ts` already uses) while
+its suites are defined, which is where the papers are drawn, and restores it afterwards. `SEED` is fixed at
+`0x2f6e2b1`. Nothing else in the test or in the generators changed.
+
+**Verified.** The same seed run twice gives an identical fingerprint of every mean drawn (the seeding really covers
+the draws); seed 51 fails both times it is run, so the failure is now reproducible rather than occasional; the
+committed seed passes (8 of 8); `pnpm run typecheck`.
+
+**Not verified / the catch.** A seed is one fixed set of draws, not a statement about every draw: the lesson that
+failed sits close to a bound, and a change to a Grade 1–4 generator can move another one across it. That now shows as a
+failure to read (the message names the lesson), not as a flake. Do not respond by changing `SEED` until it passes. The
+bounds were set from unseeded runs and were not revisited.
+
+## Pool prefill: Grade 10 chemistry worksheets and lesson plans — 2026-11-21
+
+`artifacts/mobile/scripts/pregenerate.ts` filled the shared pool with default-form worksheets and lesson plans
+for Grade 10 **maths** only; chemistry had student explanations and nothing else, so a chemistry teacher's first
+request for a lesson always paid for a model call. The script now plans both for Grade 10 chemistry too: one
+`SCOPES` list (maths, chemistry) feeds the worksheet, lesson-plan and lesson-teaching plans. A dry run reads
+**153 calls** (51 worksheets, 51 lesson plans, 51 explanations; it was 119), worst case $7.65 at the script's
+$0.05-a-call estimate. A call the pool already holds answers fast and is not counted, so a re-run costs only the new
+lessons.
+
+**Verified:** `pregenerate.test.ts` — the new test failed first («expected Chemistry worksheet calls, got 0»), then
+passed; it also pins one call per lesson id, and the existing default-form test now accepts both subjects. The
+screens' defaults (normal → `easy`, 10 questions, multiple choice + short answer, 45 minutes, direct) were read in
+`worksheet.tsx` and `lesson-plan.tsx`, not run. `pnpm run typecheck`.
+
+**Not verified:** a live run (none was made; it needs a login and spends money — command in the PR), that a
+teacher's chemistry request then hits the pool, or the quality of the stored chemistry worksheets: they are served to
+every teacher who asks, and nobody has read them. The per-account allowance (`AI_USER_BUDGET_USD`, reset to `1` by
+every API deploy) is what actually stops a run: give the dedicated account its own limit on the admin Users screen
+first. **Corrected 2026-11-21, same day:** this entry first said a call costs roughly $0.01 and that
+`AI_MODEL_DOCUMENTS` was still to be decided. Neither held: production already runs `AI_MODEL_DOCUMENTS=claude-sonnet-5-5`
+(«Production runs Claude for documents», above), so worksheets, lesson plans and quizzes are written by Claude Sonnet 5.5
+($2/$10 per million tokens, adaptive thinking), which is closer to the script's $0.05 a call than to $0.01. The run is
+**about $2.60 for each kind of 51**, so give the account at least $10. No «ما الجديد»: nothing a user sees changes.
+
+## Whiteboard: redo, four more pen colours, and a board from Today is filed under its lesson — 2026-11-21
+
+Follow-up to «The whiteboard has a card of its own…». Three things a teacher at the board meets.
+
+- **Redo.** `BoardState` gains `future` (`services/whiteboardModel.ts`): `undoBoard` pushes the strokes it
+  leaves onto it, `redoBoard` takes them back, and any commit that changes the board (a stroke, an erase, a
+  clear) empties it, so drawing after an undo discards what was undone. History is per page, as undo was, and
+  undo plus redo together stay within `HISTORY_LIMIT`. A saved board stores strokes only, so nothing in the file
+  changes. The toolbar has a Redo button beside Undo; a reopened board starts with no history either way.
+- **Pen colours.** The board offers seven: the three it had, in the same order, then blue `#2563EB`, green
+  `#15803D`, orange `#EA580C`, purple `#7C3AED` (`services/penColors.ts`, new and pure). The slide and book-page
+  pens stay at three. `penColors.test.ts` holds the board's set to at least 3:1 on the white paper and ΔE2000 10
+  between every pair, and round-trips a stroke in a new colour through save and reopen. `boardFile.ts` already
+  accepted any hex, so an older client opens a board drawn in the new colours.
+- **Filing.** A board opened from Today's quick tools or the Tools tab arrives with the lesson's `gradeIdx` and
+  `subjectIdx` and no names, and was saved with an empty grade and subject (the limit named in the previous
+  entry). `services/boardScope.ts` now resolves them to the picker names, the way the generator screens save;
+  the presentation's own names still win, an index the list cannot honour is absent (never index 0, which is
+  Mathematics), and a bare topic is filed under nothing, as before.
+
+Verified: `whiteboardModel.test.ts` (redo order, cleared by a new commit, redo of a clear and of an erase, the
+history bound, per page), `penColors.test.ts`, `boardScope.test.ts` (including a real lesson's positions and a
+chemistry lesson, which must not land on index 0), `boardFile` and `boardExportHtml` tests; mobile `pnpm test`
+(9,475 pass, 0 fail); `pnpm run typecheck`. In Chromium against a local API and Postgres, opening the board from
+Today's quick tools with a new teacher account: seven swatches; Redo disabled on a fresh board, enabled after two
+undos, and three strokes went to one and back to two; a stroke after an undo disabled Redo again; the saved
+row read subject «Mathematics», grade «Grade 10». The toolbar was looked at on desktop and at 390 px in Arabic.
+
+Not verified: touch input on a real phone or Android, and the keyboard (there is no Ctrl+Z / Ctrl+Y on the
+board; only the buttons). Known limits: undo and redo arrows are not mirrored in right-to-left, as undo never
+was; a board saved before this change keeps its empty grade and subject.
+
+## Cost review: cached input tokens are recorded, and a hidden tab stops polling — 2026-11-20
+
+From a review of what the app costs to run (OpenAI about three quarters of it, by the app's own estimate:
+$48.66 by 2026-11-20; Cloud Run and Neon about $10 each, both estimates). Two small changes, neither of which
+changes what a model is asked or what it answers.
+
+- **Cached input tokens are recorded.** OpenAI serves a repeated prompt prefix from its own cache and bills it
+  below the input rate; chat sends up to 24,000 characters of book text on every turn, so later turns of a
+  conversation are likely mostly cached. The ledger priced and stored every input token alike. New column
+  `ai_generations.cached_prompt_tokens` (migration `0031`, additive, default 0), filled by `recordUsage` from
+  `usage.prompt_tokens_details.cached_tokens` (`cachedPromptTokensOf`, `lib/aiBudget.ts`); `GET /admin/ai-costs`
+  returns the sum in `totals` and `byModel`, and the admin AI costs screen shows it as a count and a share of
+  input. **The cost estimate and the caps are unchanged**: they still bill every input token at the full rate,
+  because no cached-input rate was read from the provider's price list (the pricing pages are not reachable
+  from a cloud session). To price them, add a cached rate per model to `PRICING_PER_MILLION_USD` once it has
+  been read there. Claude calls report none (that path sets no cache breakpoints).
+- **A timer skips its turn when the app is not in front.** `usePollingRefresh` (the unread badge in the tab
+  layout, notifications, a message thread, settings, the guardian waiting screen) kept fetching every 10-20 s
+  in a browser tab behind another one, for as long as the tab stayed open, which also keeps Neon from scaling
+  to zero. It now asks `isInFront` (`services/foreground.ts`, shared with the usage heartbeat, which already
+  had the rule inline). Coming back to the tab or the app still loads at once, as before.
+
+**Looked at and not done:** dropping the fields prompts ask the model to echo (`grade`, `subject`, `duration`…),
+listed as outstanding in `docs/ai-cost-savings-plan.md`. Counted in the prompts, it is three to six short
+fields, some 20-40 output tokens of a 1,300+ token artifact (about $0.0001 a call), and a prompt edit changes
+the prompt version, which empties the shared pool for those kinds. It would cost more than it saves.
+
+**Verified:** `aiBudget.test.ts` (the cached count is read, clamped to the prompt, zero when absent or bad, and
+written while the cost line still prices every input token), `foreground.test.ts` (web follows the tab, a phone
+the app state; both hooks call it), each seen failing first; `pnpm run typecheck`; api-server `pnpm build` and
+`pnpm test`; mobile `pnpm test`.
+
+**Not verified:** a live completion (no model call was made, so no real `cached_tokens` value was seen, and the
+size of the overstatement is unknown until the admin page has a few days of rows); the admin screen in a
+browser; the polling change in a browser tab or on a phone; any change in Neon's compute hours. No «ما الجديد»:
+nothing a teacher, student or parent sees changes.
+## A unit's theme reaches the model: the «Let's Explore!» quiz report — 2026-11-21
+
+A teacher reported a Grade 5 English quiz for «هيا نستكشف!» (artifact report, «الشرح والأسئلة لا يطابق محتوى الدرس»). The
+questions were about explorers, compasses and drivers. The unit is about **space** («Talking about space; using big
+numbers.», `general_idea_ar` in `iqra_curriculum_g5_english_sem1.json`).
+
+- **Root cause.** The unit's theme was never put in a prompt. `serializeLessonContext` (one lesson) and
+  `resolveScopeGrounding` (a unit / semester / book) carried the unit *title*, the lesson's grammar point and, in the
+  digest, only the first three vocabulary words («Sun; star; rocket»). A model given «Let's Explore!» and `will/won't`
+  reads «explore» in its everyday sense. Measured with a probe on the built context before the change; the digest
+  had no line containing «space».
+- **Fix.** `KBUnit.generalIdea` (from `makeNccdCatalog`, every NCCD-built book) is printed as «Unit theme (stay on it…)» /
+  «موضوع الوحدة…» by `unitThemeLine` in both builders, and the digest's concepts go from 3 to 8 words per lesson (the
+  digest's own tiering still drops detail before lessons if it runs over budget).
+- **Same hole elsewhere.** Every NCCD-built book with a printed unit theme and every model-bound generator, since all of
+  them ground through these two functions. Offline generators build from the lesson's own data and were not touched.
+- **Verified.** `unitTheme.test.ts` (new; unit digest and single lesson both say «space», no line when a book prints no
+  theme); full mobile suite 9453 pass / 0 fail; `pnpm run typecheck` clean.
+- **Not verified.** No live model run, so that a real paper now stays on space is expected, not observed. The pooled
+  artifact the teacher reported stays served until an admin approves the report (retiring it is a moderation action,
+  not part of this change), and other pooled papers made before this keep their old content.
+
 ## Grades 1–3: «مقارنة الأعداد» and «ترتيب الأعداد» ask their own skill — 2026-11-20
 
 The Grade 3 review found the two lessons drew the same mix: both titles routed to the one `compare` op in
@@ -1096,6 +1621,40 @@ into a unit test, summary or glossary.
   pass, plus `r2.test.ts`, which fails only because this environment has R2 configured.
 
 **Not run:** live AI, anything needing the PDFs.
+
+## The web publish tries a failed Cloudflare call again — 2026-11-13
+
+On 2026-11-13 two merges in a row built the web bundle and then failed to publish it. Deploy run #949 (PR #1438, 15:32 UTC)
+and #950 (PR #1433, 15:48 UTC) both shipped their API and ran their migrations, but `iqraa-web` died at «Publish to
+Cloudflare Pages» about four seconds in, before any upload: `GET /accounts/…/pages/projects/iqraa-web → 503 Service
+Unavailable`, «no healthy upstream», from Cloudflare's own API. Nothing in the repo was wrong. The workflow had no retry,
+so the live site kept the previous bundle until run #951 (16:03 UTC, a later merge that contains both PRs) published at
+16:07 UTC: about 28 minutes behind for #1438's web changes and 17 for #1433's. A quiet hour would have made it much longer,
+because only a later merge ships it.
+
+**What changed.** The publish step in `.github/workflows/deploy.yml` (`web` job) now runs `wrangler pages deploy` up to
+five times, waiting 30, 60, 120 and 240 s between attempts (7.5 minutes at most; the job's timeout is 20 and the verify step
+after it needs about 2). Any failure is retried, not only a 5xx, on purpose: telling them apart would mean parsing wrangler's
+output, and a real failure such as a bad token now costs 7.5 minutes before the same red X. Each failed attempt prints a
+`::warning::` and the last prints `::error::`. The command is unchanged. A newer push still cancels the job
+(`cancel-in-progress`), which is right: the newer run builds and publishes the newer commit.
+
+**Verified.** The step's real `run:` text was taken out of `deploy.yml` and run against stand-ins for `pnpm` and `sleep`
+(not committed; CI does not run shell tests): with a healthy Cloudflare it makes one call and no waits; after two 503s it
+succeeds on the third call having waited 30 and 60 s; after four 503s it succeeds on the fifth having waited 30, 60, 120
+and 240 s; with Cloudflare down throughout it makes five calls, waits 30, 60, 120 and 240 s (none after the last), prints
+the `::error::` line and exits 1; and every call has the exact arguments it had before. Red first: against the old step the
+two-503 and four-503 cases failed (one call, exit 1) and the healthy case passed. The workflow still parses and the
+step order is unchanged.
+
+**Not verified / limits.** It has not run against a real Cloudflare failure; the first outage is the first real test.
+**It covers a short outage, not a long one.** If Cloudflare was down continuously from 15:39 to 16:06 UTC (27 minutes), 7.5
+minutes of retries would not have saved #949 or #950; it helps only if the failures were intermittent, which the logs do
+not say (two runs 16 minutes apart both failed, then #951 passed). A longer wait does not fit this job's 20-minute budget;
+covering a long outage would need a delayed re-run of the failed web job (the pattern in `deploy-rerun-stalled.yml`), which
+is not built. I did not read wrangler's source: the step relies only on a failed attempt publishing nothing and a repeat
+attempt deploying the same files, not on wrangler skipping files it already uploaded.
+
 ## Grade 1 review: coverage, generated results, book images — 2026-11-13
 
 A review of Grade 1 (all 8 subjects, 15 books, 279 lessons) against three asks: every subject covered, the right

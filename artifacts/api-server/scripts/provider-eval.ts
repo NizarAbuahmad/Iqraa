@@ -213,6 +213,12 @@ const ANTHROPIC_PRICING: Record<string, Pricing> = {
   "claude-opus-5": { input: 5, output: 25 },
   "claude-sonnet-5": { input: 3, output: 15 },
   "claude-haiku-4-5": { input: 1, output: 5 },
+  // Added 2026-11-21 from the Claude API model table (cached 2026-11-03), not
+  // checked against a bill. Sonnet 5.5 is what AI_MODEL_DOCUMENTS runs in
+  // production; Haiku 5.5's rate is for prompts up to 100K tokens ($0.50/$2.50
+  // beyond), which every prompt here is.
+  "claude-sonnet-5-5": { input: 2, output: 10 },
+  "claude-haiku-5-5": { input: 0.1, output: 0.5 },
 };
 
 function openaiCompatible(

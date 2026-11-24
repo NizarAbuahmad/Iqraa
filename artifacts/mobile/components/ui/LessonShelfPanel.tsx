@@ -16,6 +16,7 @@ import {
 } from '@/services/lessonShelf';
 import { displayTitle, kindLabel, type SupportResource } from '@/services/mathSupportResources';
 import type { TranslationKey } from '@/services/i18n';
+import { IQRA_CHAT_ENABLED } from '@/services/features';
 
 const EXTERNAL_KIND_KEY: Record<ExternalResourceKind, TranslationKey> = {
   text: 'extKindText',
@@ -56,7 +57,9 @@ export function LessonShelfPanel({ lessonId, accent }: Props) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const { user } = useAuth();
-  const showBank = isTeacherRole(user?.role);
+  // Its rows' only action is «اسأل إقرأ», so while the chat is off
+  // (`IQRA_CHAT_ENABLED`) a teacher sees what a student sees.
+  const showBank = isTeacherRole(user?.role) && IQRA_CHAT_ENABLED;
   const [showSemester, setShowSemester] = useState(false);
 
   const shelf = useMemo(

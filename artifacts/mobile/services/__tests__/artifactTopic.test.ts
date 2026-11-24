@@ -219,3 +219,34 @@ describe('a reference to the picked lesson names no topic', () => {
     assert.equal(topicFromQuery('quiz on this lesson of Newton'), 'this lesson of Newton');
   });
 });
+
+// «ورقة عمل عليه», «أعطني أمثلة عليه», «مثال آخر» point back at what the chat is
+// talking about. Left as a topic, «عليه» titled a worksheet and was built as a
+// free topic, and the search matched it to «موسى عليه السلام» (Islamic
+// education, 12), which read as another subject and dropped the conversation's
+// lesson (2026-11-21, «Chat answers the topic asked about…» in the log).
+describe('a pointer back at the conversation names no topic', () => {
+  for (const q of [
+    'ورقة عمل عليه', 'اختبار عليه', 'أعطني أمثلة عليه', 'اعطني تمارين عليها',
+    'حل مثال عليه', 'مثال آخر', 'أمثلة أكثر', 'أسئلة إضافية عنه', 'give me more examples on it',
+  ]) {
+    it(`«${q}»`, () => assert.equal(topicFromQuery(q), ''));
+  }
+
+  it('a named topic with the same words keeps its name', () => {
+    assert.equal(topicFromQuery('اشرح المتجهات أكثر').includes('المتجهات'), true);
+    assert.equal(topicFromQuery('ورقة عمل عن المتجهات'), 'المتجهات');
+    assert.equal(topicFromQuery('اشرح المتجهات وأضف أمثلة عليها').includes('المتجهات'), true);
+  });
+
+  it('the generic nouns alone, with no pointer, are left as they were', () => {
+    assert.equal(topicFromQuery('أمثلة'), 'أمثلة');
+  });
+});
+
+describe('«IT» is a subject, not a pointer', () => {
+  it('keeps "IT" as the topic', () => {
+    assert.equal(topicFromQuery('quiz on IT'), 'IT');
+    assert.equal(topicFromQuery('اختبار في IT').includes('IT'), true);
+  });
+});
