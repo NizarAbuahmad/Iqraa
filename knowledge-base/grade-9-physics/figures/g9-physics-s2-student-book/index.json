@@ -242,22 +242,6 @@
       "lessonStartPage": 18
     },
     {
-      "file": "p026-v2.png",
-      "sourceId": "g9-physics-s2-student-book",
-      "pdfPage": 26,
-      "rect": [
-        69.2,
-        65.3,
-        544.6,
-        259.0
-      ],
-      "unit": 4,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 18
-    },
-    {
       "file": "p027-v2.png",
       "sourceId": "g9-physics-s2-student-book",
       "pdfPage": 27,

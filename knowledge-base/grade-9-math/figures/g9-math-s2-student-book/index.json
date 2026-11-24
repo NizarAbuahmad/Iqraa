@@ -322,22 +322,6 @@
    "lessonStartPage": 69
   },
   {
-   "file": "p082-v2.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 82,
-   "rect": [
-    0.0,
-    29.0,
-    179.0,
-    209.0
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Solving Radical Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 79
-  },
-  {
    "file": "p083-v2.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 83,
@@ -362,38 +346,6 @@
     496.4,
     206.8,
     623.0
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Solving Radical Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 79
-  },
-  {
-   "file": "p087b.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 87,
-   "rect": [
-    159.3,
-    321.0,
-    302.6,
-    396.8
-   ],
-   "unit": 6,
-   "lesson": 3,
-   "lessonTitleEn": "Solving Radical Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 79
-  },
-  {
-   "file": "p087c.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 87,
-   "rect": [
-    275.7,
-    321.0,
-    419.0,
-    396.8
    ],
    "unit": 6,
    "lesson": 3,
@@ -578,22 +530,6 @@
    "lessonStartPage": 120
   },
   {
-   "file": "p124-v2.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 124,
-   "rect": [
-    61.0,
-    563.0,
-    439.7,
-    727.2
-   ],
-   "unit": 8,
-   "lesson": 1,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": 120
-  },
-  {
    "file": "p141.png",
    "sourceId": "g9-math-s2-student-book",
    "pdfPage": 141,
@@ -720,22 +656,6 @@
    "lessonTitleEn": null,
    "lessonTitleAr": null,
    "lessonStartPage": 144
-  },
-  {
-   "file": "p153b-v2.png",
-   "sourceId": "g9-math-s2-student-book",
-   "pdfPage": 153,
-   "rect": [
-    140.0,
-    434.0,
-    425.5,
-    619.2
-   ],
-   "unit": 8,
-   "lesson": 4,
-   "lessonTitleEn": "Probabilities and Venn Diagrams",
-   "lessonTitleAr": null,
-   "lessonStartPage": 153
   },
   {
    "file": "p153c-v2.png",
