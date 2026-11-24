@@ -73,6 +73,21 @@ caught odd distractors («0.810», «5.0») in the conversion lesson, now filter
 - Everything the earlier Grade 4 entries left for the PDFs.
 
 No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+
+## The bell's push-driven refresh is live on phones — 2026-11-24
+
+#1540 («A join-request push refreshes the bell the moment it arrives», below) merged as `fab8870`.
+
+- **Phones:** `preview` got it from the merge's own Mobile OTA update run 1212. `production` was published by hand
+  in run 1213 (`branch=production`). Both ran from `fab8870` and succeeded. Like every OTA since 1.6.0, it
+  reaches only 1.6.0 binaries.
+- **Web:** deploy run 1027's `iqraa-web` job published the bundle to Cloudflare Pages and passed «Verify the
+  deployed bundle». The web gets no pushes, so its bell still polls every minute.
+- **API:** not deployed. Deploy run 1027 skipped `iqraa-api`, migrations, the schema check and `iqraa-verifier`,
+  since the merge touches none of them; the API stays on `681749c`.
+
+**Not verified:** a join-request push arriving on a teacher's phone with the app open.
+
 ## A join-request push refreshes the bell the moment it arrives — 2026-11-23
 
 Follow-up to «The teacher is told when a student's class-code pick waits for them» (#1538), whose «Not verified»
