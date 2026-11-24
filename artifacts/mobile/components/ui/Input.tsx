@@ -106,7 +106,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     minHeight: 50,
   },
-  input: { fontSize: 15, paddingHorizontal: 14, paddingVertical: 12 },
+  // Web: `minWidth: 0` lets the `<input>` shrink inside a narrow row (it kept its
+  // built-in 20-character width and ran past the border of the half-width name
+  // fields on sign-up), and the row's border is the focus ring, so the browser's
+  // own outline around the bare `<input>` is turned off. See inputWebLayout.test.ts.
+  input: { fontSize: 15, paddingHorizontal: 14, paddingVertical: 12, minWidth: 0, outlineStyle: 'none' as never },
   leftIcon: { marginLeft: 12 },
   rightIcon: { marginRight: 12 },
   rightIconBtn: { paddingRight: 12, padding: 4 },

@@ -10,6 +10,27 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Web: text fields no longer spill past their border — 2026-11-24
+
+Reported from Safari on sign-up: focusing «اسم العائلة» drew a square box hanging off the left of the rounded field.
+
+**Cause.** react-native-web renders `Input` (`components/ui/Input.tsx`) as an `<input size="20">` in a flex row. A
+flex item's `min-width` is `auto`, so the `<input>` kept its built-in ~20-character width in a row narrower than that:
+the first- and last-name fields, which share one line, ran 112px and 80px past their borders (Chromium, 1000px wide).
+The browser's own focus outline is drawn round the `<input>`, not the row, so focus made the overflow visible. The
+row already shows focus with its `colors.primary` border, so that outline was a second, misplaced ring on every
+field, full-width ones too.
+
+**What changed.** `styles.input` gets `minWidth: 0` and `outlineStyle: 'none'`. This applies to every screen using
+`Input`. Focus is still shown by the row's border and background.
+
+**Verified.** The built web app in Chromium at 1000px and 390px: all five sign-up fields overflow by 0px, and the
+focused last-name field shows only the teal border (screenshots compared before and after). `inputWebLayout.test.ts`
+reads the style, which is all the node runner can do. Typecheck and the mobile suite pass.
+
+**Not verified.** Safari itself: there is no WebKit here. Safari's AutoFill contacts button (the person icon it adds
+to name fields) is Safari's own and stays; it now sits inside the field.
+
 ## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
 
 Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured
