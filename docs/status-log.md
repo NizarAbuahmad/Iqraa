@@ -10,6 +10,25 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Timetable: «إعداد الحصص» says what each box is — 2026-11-24
+
+A teacher reported the period-setup dialog (`/schedule`, gear icon) as confusing: each row was a time box, a bare
+«45» and a tick, with no word saying which was the start, which the length, or that the tick saves.
+
+**What changed** (`app/schedule/index.tsx`, `PeriodRow` / `PeriodsEditorModal`; copy in `services/i18n.ts`).
+- One line under the title says what to do, and that times are on the 24-hour clock («الواحدة ظهرًا تُكتب
+  13:00») — `TIME_RE` only takes 00–23, so a teacher typing 1:00 for the afternoon got 1 am.
+- Each box has a label above it: «تبدأ الساعة» and «المدة (دقيقة)».
+- Once a row holds a valid time it shows the period's span, «من 11:00 إلى 11:45» (`endTime`).
+- A saved row that has not been touched shows «محفوظة» instead of a dimmed tick; once edited, the button reads «احفظ».
+  The add button wears a plus, not a tick. Buttons are at least 40 px tall; the bin has a label.
+- The dialog now sits in a `KeyboardSafeView`, as every `<Modal>` holding a text input should (CLAUDE.md).
+
+**Verified.** Typecheck; mobile `pnpm test`. Looked at in a production web build (`build:web`) with the API answers
+stubbed in Playwright: Arabic and English, light and dark, 1280 px and a 390 px phone. Hours stay to the left of
+minutes in both languages. **Not checked:** on an Android or iOS device; with the real API.
+No «ما الجديد» entry: wording and labels in an existing dialog, nothing new to find.
+
 ## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
 
 Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured
