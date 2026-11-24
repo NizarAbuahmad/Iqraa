@@ -194,38 +194,6 @@
       "lessonStartPage": 10
     },
     {
-      "file": "p021.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 21,
-      "rect": [
-        53.9,
-        431.1,
-        200.1,
-        585.7
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
-      "file": "p021b-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 21,
-      "rect": [
-        228.0,
-        398.9,
-        368.8,
-        572.0
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
       "file": "p021c-v2.png",
       "sourceId": "g8-science-s2-student-book",
       "pdfPage": 21,
@@ -402,38 +370,6 @@
       "lessonStartPage": 46
     },
     {
-      "file": "p050-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 50,
-      "rect": [
-        92.0,
-        483.7,
-        448.0,
-        666.0
-      ],
-      "unit": 2,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 46
-    },
-    {
-      "file": "p050b-v2.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 50,
-      "rect": [
-        414.0,
-        526.0,
-        545.0,
-        660.0
-      ],
-      "unit": 2,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 46
-    },
-    {
       "file": "p051-v2.png",
       "sourceId": "g8-science-s2-student-book",
       "pdfPage": 51,
@@ -458,22 +394,6 @@
         87.0,
         188.0,
         241.4
-      ],
-      "unit": 2,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 54
-    },
-    {
-      "file": "p055b.png",
-      "sourceId": "g8-science-s2-student-book",
-      "pdfPage": 55,
-      "rect": [
-        54.0,
-        276.7,
-        197.0,
-        398.6
       ],
       "unit": 2,
       "lesson": 2,

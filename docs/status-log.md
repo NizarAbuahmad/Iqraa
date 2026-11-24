@@ -10,6 +10,33 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 8: two Arabic lessons get their pages, 45 broken crops go, digital S1's missing unit is on record — 2026-11-24
+
+`main` already has a Grade 8 audit and a parallel figure review. A second read of the books by page image found this still missing.
+
+**Book pages.** Arabic S2 u8_l1 (p.60-63) and u8_l5 (p.79-83) had none although their pages lie in neighbours' images; they now
+read them through `rendered`. Digital S2 u3_l4 ends on p.99 (was 101) and vocational S2 u10_l2 on p.129 (was 130): the rest was
+the unit summary and the next unit's opener.
+
+**Figures.** 45 crops and their PNGs are dropped: 35 cut or sliced (the half-seen beakers and U-tubes, hexagon collages cut at the
+edge, opener banners with a sliced text box), 6 that are no figure and 4 duplicates (English S2 5, maths S2 5, science S1 10,
+science S2 5, social S1 1, social S2 4, vocational S1 5, vocational S2 10). Seven clean partial pieces the audit also marked stay,
+and two crops that `bookFigures.test.ts` pins stay too (the ion pieces on science S2 p.71, and the unit-8 opening photo, English
+S2 p.28; its three tile crops are dropped).
+
+**Digital skills S1 very probably lacks its second unit.** The catalog has one unit of four lessons; unit 1 ends with its summary and
+questions at p.87-91 of a 187-page book, and semester 2 starts at unit 3. Pages 92-187 have no image, so no lessons were added by
+guess. Recorded in that catalog's `known_gaps`.
+
+**Not done.**
+- Lessons whose first page sits in the previous lesson's image folder cannot be expressed with `rendered` (one folder per lesson):
+  Arabic S1 u1_l5 (opens p.25) and u5_l4 (p.123-128), Arabic S2 u7_l4 (p.46), and English 1A of S1 unit 2 (p.16) and S2 units 7 and 8
+  (p.18, p.28), whose exercises work from that opener photo. They need a re-render or a schema step.
+- Financial literacy and PE have no semester 2 in the catalog, and no Grade 8 book has extracted text.
+
+**Verified.** `curriculum verify` (0 errors); curriculum tests (936 pass; `r2.test.ts` fails here only because R2 variables are
+set); the whole mobile suite (9,587 pass, 0 fail, 10 skipped); `tsc --build`. **Not verified:** the pages and slides in a browser.
+
 ## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
 
 Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured
