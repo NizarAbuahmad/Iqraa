@@ -175,8 +175,8 @@ describe('Grade 5: each maths lesson asks about its own objective', () => {
   it('«أجزاء الألف» is place value to thousandths; «التحويل…» converts', () => {
     assert.equal(topicFor('أَجْزاءُ الأَلْفِ', 5)?.id, 'thousandths_g5');
     assert.equal(topicFor('التَّحْويلُ بَيْنَ الكُسورِ وَالأَعْدادِ الْعَشْرِيَّةِ', 5)?.id, 'frac_dec');
-    // Grade 4's tenths and hundredths lessons keep their pool
-    assert.equal(topicFor('أَجْزاءُ المِئَةِ', 4)?.id, 'frac_dec');
+    // Grade 4's hundredths lesson is not Grade 5's thousandths (it has its own generator on main since 2026-11-21)
+    assert.notEqual(topicFor('أَجْزاءُ المِئَةِ', 4)?.id, 'thousandths_g5');
     const kinds = new Set<string>();
     for (const { item, stem } of lesson('أَجْزاءُ الأَلْفِ')) {
       assert.doesNotMatch(stem, /على صورة/, `a conversion is the next lesson's: ${stem}`);

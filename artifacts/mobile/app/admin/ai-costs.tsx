@@ -23,7 +23,7 @@ const ADMIN_ROLES = ['school_admin', 'system_admin'];
 type Costs = {
   from: string;
   to: string;
-  totals: { calls: number; hits: number; costUsd: number; promptTokens: number; completionTokens: number };
+  totals: { calls: number; hits: number; costUsd: number; promptTokens: number; cachedPromptTokens?: number; completionTokens: number };
   byDay: { day: string; calls: number; costUsd: number }[];
   byKind: { kind: string; calls: number; hits: number; costUsd: number; p50Ms: number | null; p95Ms: number | null }[];
   byModel: { model: string; calls: number; costUsd: number; promptTokens: number; completionTokens: number }[];
@@ -34,6 +34,9 @@ type Costs = {
 const usd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
 const secs = (ms: number | null) => (ms == null ? '—' : `${(ms / 1000).toFixed(1)}s`);
 const k = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
+/** «12.3k (41%)»; a dash from an API that does not report it yet. */
+const cachedShare = (cached: number | undefined, prompt: number) =>
+  cached === undefined ? '—' : prompt > 0 ? `${k(cached)} (${Math.round((cached / prompt) * 100)}%)` : k(cached);
 
 export default function AdminAiCostsScreen() {
   const colors = useColors();
@@ -96,6 +99,13 @@ export default function AdminAiCostsScreen() {
                 <StatCard label={ar ? 'الطلبات' : 'Calls'} value={data.totals.calls} colors={colors} />
                 <StatCard label={ar ? 'من المخزن (مجانًا)' : 'Cache hits (free)'} value={data.totals.hits} colors={colors} />
                 <StatCard label={ar ? 'رموز الإدخال' : 'Input tokens'} value={k(data.totals.promptTokens)} colors={colors} />
+                {/* Billed below the input rate, while the cost above counts them at the full rate:
+                    a large share here means the provider's invoice is lower than this page. */}
+                <StatCard
+                  label={ar ? 'إدخال مخزَّن مؤقتًا (أرخص)' : 'Cached input (cheaper)'}
+                  value={cachedShare(data.totals.cachedPromptTokens, data.totals.promptTokens)}
+                  colors={colors}
+                />
                 <StatCard label={ar ? 'رموز الإخراج' : 'Output tokens'} value={k(data.totals.completionTokens)} colors={colors} />
                 <StatCard
                   label={ar ? 'متوسط التكلفة للطلب' : 'Avg cost per call'}

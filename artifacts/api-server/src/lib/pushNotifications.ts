@@ -43,7 +43,8 @@ function expoPushUrl(): string {
  * An id the device has not created still arrives, in Android's catch-all
  * channel, so an older app version is not cut off. `homework` and `exams` are
  * the family pushes of spec Part 4; `quiet` is where any family push goes
- * between 22:00 and 07:00 Amman (modules/notifications/quietHours.ts).
+ * between 22:00 and 07:00 Amman (modules/notifications/quietHours.ts);
+ * `requests` is the teacher's «طلب انضمام» (lib/joinRequestNotify.ts).
  */
 export const PUSH_CHANNEL = {
   messages: "messages",
@@ -52,6 +53,8 @@ export const PUSH_CHANNEL = {
   homework: "homework",
   exams: "exams",
   quiet: "quiet",
+  /** A student's pick off the class code is waiting for the teacher (lib/joinRequestNotify.ts). */
+  requests: "requests",
 } as const;
 
 export interface ExpoPushMessage {

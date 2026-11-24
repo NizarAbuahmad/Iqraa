@@ -109,7 +109,7 @@ import {
 import { extractJSON } from "../lib/generationShape.ts";
 import { groundingForObjectives } from "../lib/grounding.ts";
 import { claimGeneration, releaseBeforeResponding } from "../lib/generationClaim.ts";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { completeAi } from "../lib/aiComplete.ts";
 import { recommendationsFor } from "../modules/assessment/recommend";
 import {
   buildScanPrompt,
@@ -580,10 +580,9 @@ router.post("/evaluations/scan-paper", scanLimiter, async (req: AuthenticatedReq
     const prompt = buildPaperScanPrompt(
       found.map(o => ({ id: o.id, label: o.descriptionAr || o.description })),
     );
-    const model = getGenerationModel();
-    const completion = await openai.chat.completions.create({
-      model,
-      max_completion_tokens: 3000,
+    const completion = await completeAi({
+      model: getGenerationModel(),
+      maxTokens: 3000,
       messages: [
         { role: "system", content: prompt.system },
         {
@@ -595,6 +594,9 @@ router.post("/evaluations/scan-paper", scanLimiter, async (req: AuthenticatedReq
         },
       ],
     });
+    // The model that answered, which an expired key on the first provider can make
+    // the other one: spend is recorded, and the response named, against it.
+    const model = completion.model;
     recordUsage(completion.usage, model, {
       kind: "quiz",
       promptVersion: "scan-paper-1",
@@ -602,7 +604,7 @@ router.post("/evaluations/scan-paper", scanLimiter, async (req: AuthenticatedReq
     });
 
     const parsed = parsePaperScanResponse(
-      extractJSON(completion.choices[0]?.message?.content ?? "{}"),
+      extractJSON(completion.text ?? "{}"),
       found.map(o => o.id),
     );
     // `saved: false` is stated in the response so a client cannot present these
@@ -1003,27 +1005,29 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           ...(suppliedFor ? { supplied: suppliedFor } : {}),
         },
         async prompt => {
-          const model = getGenerationModel();
-          const completion = await openai.chat.completions.create({
-            model,
+          const completion = await completeAi({
+            model: getGenerationModel(),
             // Room for a full paper of questions with options and rubrics. A
             // truncated response parses to something plausible, which is worse
             // than an error.
             // Scaled to the paper: 30 questions with options and rubrics do not
             // fit the 8000 that suits ten, and reasoning tokens bill against it.
-            max_completion_tokens: Math.min(24000, Math.max(8000, 2000 + 700 * evaluation.targetQuestionCount)),
+            maxTokens: Math.min(24000, Math.max(8000, 2000 + 700 * evaluation.targetQuestionCount)),
             messages: [
               { role: "system", content: prompt.system },
               { role: "user", content: prompt.user },
             ],
           });
+          // The model that answered, not the one asked for: a paper written by the
+          // other provider after a dead key must not be recorded as the first's.
+          const model = completion.model;
           recordUsage(completion.usage, model, {
             kind: "quiz",
             promptVersion,
             userId: req.user!.id,
           });
           return {
-            parsed: extractJSON(completion.choices[0]?.message?.content ?? "{}"),
+            parsed: extractJSON(completion.text ?? "{}"),
             model,
           };
         },
@@ -2145,7 +2149,7 @@ router.post("/evaluations/:id/worked-steps", aiLimiter, async (req: Authenticate
     const todo = (await liveQuestions(evaluation.id)).filter(q => needsWorkedSteps(q, isAr));
     if (todo.length > 0) assertLiveModeEnabled();
 
-    const model = getGenerationModel();
+    const askedModel = getGenerationModel();
     let missed = 0;
     // ponytail: five at a time keeps a 20-question paper near one model call's
     // latency per batch; a background job if papers grow past the request timeout.
@@ -2155,20 +2159,20 @@ router.post("/evaluations/:id/worked-steps", aiLimiter, async (req: Authenticate
           assertBudgetAvailable();
           await assertUserQuotaAvailable(req.user!.id);
           try {
-            const completion = await openai.chat.completions.create({
-              model,
-              max_completion_tokens: WORKED_STEPS_TOKENS,
+            const completion = await completeAi({
+              model: askedModel,
+              maxTokens: WORKED_STEPS_TOKENS,
               messages: [
                 { role: "system", content: workedStepsSystemPrompt(isAr) },
                 { role: "user", content: workedStepsPrompt(stepsProblemText(q)!, correctAnswerText(q, isAr)!, isAr) },
               ],
             });
-            recordUsage(completion.usage, model, {
+            recordUsage(completion.usage, completion.model, {
               kind: "solve",
               promptVersion: "worked-steps-1",
               userId: req.user!.id,
             });
-            const steps = parseWorkedSteps(extractJSON(completion.choices[0]?.message?.content ?? "{}"));
+            const steps = parseWorkedSteps(extractJSON(completion.text ?? "{}"));
             if (!steps) {
               missed++;
               return;
@@ -2563,10 +2567,9 @@ router.post(
       const roster = await scanRoster(evaluation);
 
       const prompt = buildScanPrompt(questions, { readName: true });
-      const model = getGenerationModel();
-      const completion = await openai.chat.completions.create({
-        model,
-        max_completion_tokens: 1500,
+      const completion = await completeAi({
+        model: getGenerationModel(),
+        maxTokens: 1500,
         messages: [
           { role: "system", content: prompt.system },
           {
@@ -2578,13 +2581,14 @@ router.post(
           },
         ],
       });
+      const model = completion.model;
       recordUsage(completion.usage, model, {
         kind: "quiz",
         promptVersion: "scan-class-paper-1",
         userId: req.user!.id,
       });
 
-      const raw = extractJSON(completion.choices[0]?.message?.content ?? "{}");
+      const raw = extractJSON(completion.text ?? "{}");
       const parsed = parseScanResponse(raw, questions);
       const nameRead = parseNameRead(raw);
       res.json({

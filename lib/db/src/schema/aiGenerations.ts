@@ -59,6 +59,10 @@ export const aiGenerations = pgTable(
      */
     artifactId: text("artifact_id"),
     promptTokens: integer("prompt_tokens").notNull().default(0),
+    /** The part of `promptTokens` the provider served from its prompt cache
+     *  (billed below the input rate). A measurement: `costUsd` does not use it.
+     *  Zero for rows written before this column existed. */
+    cachedPromptTokens: integer("cached_prompt_tokens").notNull().default(0),
     completionTokens: integer("completion_tokens").notNull().default(0),
     /** Estimated, from aiBudget's pricing table — not billing-accurate. */
     costUsd: numeric("cost_usd", { precision: 12, scale: 6 }).notNull().default("0"),

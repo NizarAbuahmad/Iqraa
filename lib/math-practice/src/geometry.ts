@@ -50,7 +50,29 @@ const isIntPt = (c: [number, number]) => Number.isInteger(c[0]) && Number.isInte
 
 const perimeter = T('perimeter', /^المحيط$/, [3, 4], ({ rng, diff, grade }) => {
   const m = grade === 3 ? span(diff, 8, 12, 15) : span(diff, 15, 25, 40);
-  const k = pick(rng, grade >= 4 && diff !== 'easy' ? [0, 1, 2, 3] : [0, 1, 2]);
+  // Grade 4's objective is the perimeter of a «مربع أو مستطيل» and an estimate on a square grid (u9_l5):
+  // a third of its items were triangles, which are Grade 3's. It now asks a square or rectangle, the
+  // missing side, an L-shape cut from a rectangle, and a rectangle on a grid (2026-11-21).
+  if (grade >= 4) {
+    const g = pick(rng, diff === 'easy' ? [0, 1, 4, 5] : [0, 1, 2, 3, 4, 5]);
+    if (g === 2) {
+      const l = int(rng, 4, m), w = int(rng, 2, l - 1), P = 2 * (l + w);
+      return { eq: `${P}, ${l}`, answer: String(w), wrongs: pos(w, [P - l, P / 2 + l, P - 2 * l, w + l]), ar: `محيط مستطيل ${P} سم وطوله ${l} سم. ما عرضه؟`, en: `A rectangle has perimeter ${P} cm and length ${l} cm. What is its width?` };
+    }
+    if (g === 3) {
+      const s = int(rng, 2, m);
+      return { eq: `P ${4 * s}`, answer: String(s), wrongs: pos(s, [2 * s, 4 * s, s + 4, s * s, s + 1]), ar: `محيط مربع ${4 * s} سم. ما طول ضلعه؟`, en: `A square has perimeter ${4 * s} cm. What is its side?` };
+    }
+    if (g === 4) {
+      const l = int(rng, 5, m), w = int(rng, 4, l);
+      return { eq: `L ${l}, ${w}`, answer: String(2 * (l + w)), wrongs: pos(2 * (l + w), [l + w, l * w, 2 * l + w, 2 * (l + w) + 4, 2 * (l + w) - 4]), ar: `شكل على صورة حرف L، يمكن رسمه داخل مستطيل طوله ${l} سم وعرضه ${w} سم بعد قصّ مربع من إحدى زواياه. ما محيطه بالسنتيمتر؟`, en: `An L-shape fits inside a rectangle ${l} cm by ${w} cm after a square is cut from one corner. What is its perimeter, in cm?` };
+    }
+    if (g === 5) {
+      const l = int(rng, 3, 10), w = int(rng, 3, 10);
+      return { eq: `grid ${l}, ${w}`, answer: String(2 * (l + w)), wrongs: pos(2 * (l + w), [l + w, l * w, 2 * l + w, 2 * (l + w) + 2]), ar: `مستطيل مرسوم على شبكة مربعات، طوله ${l} مربعات وعرضه ${w} مربعات، وطول ضلع كل مربع 1 سم. ما محيطه بالسنتيمتر؟`, en: `A rectangle on a square grid is ${l} squares long and ${w} squares wide, each square 1 cm. What is its perimeter, in cm?` };
+    }
+  }
+  const k = pick(rng, grade >= 4 ? [0, 1] : [0, 1, 2]);
   if (k === 0) {
     const l = int(rng, 3, m), w = int(rng, 2, m - 1);
     const a = 2 * (l + w);
@@ -72,7 +94,12 @@ const perimeter = T('perimeter', /^المحيط$/, [3, 4], ({ rng, diff, grade }
 const area = T('area_rect', /^(?:المساحه|مساحه المستطيل)$/, [3, 4], ({ rng, diff, grade }) => {
   const m = grade === 3 ? span(diff, 6, 9, 12) : span(diff, 9, 15, 25);
   // 3: count unit squares, 4: a room's floor, 5 (Grade 4): compare a rectangle with a square.
-  const k = pick(rng, grade >= 4 ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4]);
+  const k = pick(rng, grade >= 4 ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4]);
+  if (k === 6) {
+    // «أستعمل شبكة المربعات لتقدير مساحة شكل» (u9_l6): full squares plus half the partial ones
+    const f = int(rng, 11, 40), p = pick(rng, [4, 6, 8, 10]), ans = f + p / 2;
+    return { eq: `est ${f}, ${p}`, answer: String(ans), wrongs: pos(ans, [f + p, f, ans + 1, ans - 1, f + 2 * p]), ar: `غُطّي شكل غير منتظم على شبكة مربعات بـ ${f} مربعًا كاملًا و ${p} مربعات غير كاملة. قدّر مساحته بالمربعات الوحدة، علمًا أن كل مربعين غير كاملين يُعدّان مربعًا واحدًا.`, en: `An irregular shape on a square grid covers ${f} whole squares and ${p} part squares. Estimate its area in unit squares, counting every two part squares as one.` };
+  }
   if (k === 0) {
     const l = int(rng, 2, m), w = int(rng, 2, m);
     return { eq: `${l}, ${w}`, answer: String(l * w), wrongs: pos(l * w, [2 * (l + w), l + w, l * w + l, l * w - w]), ar: `ما مساحة مستطيل طوله ${l} سم وعرضه ${w} سم (بالسنتيمتر المربع)؟`, en: `What is the area, in cm², of a rectangle ${l} cm long and ${w} cm wide?` };
@@ -1533,31 +1560,35 @@ const bigAmount = (set: string, n: number) => (set === 'volume' ? `${n} ${tamyiz
 const bigTarget = (set: string) => (set === 'volume' ? 'لترات' : UNIT_WORDS[set]!.big);
 const bigMin = (set: string, min: number) => (set === 'volume' ? Math.max(3, min) : min);
 /** «كم غرامًا في 3 كغ و 250 غ؟» — a compound measure written in the small unit. */
-const unitCompound = (rng: Rng, diff: D, set: string): Draft => {
+/** `cap` keeps a lesson inside its grade's numbers (Grade 3 stays within 9999), options included. */
+const unitCompound = (rng: Rng, diff: D, set: string, cap = Infinity): Draft => {
   const [, , bigEn, smallEn, f] = UNIT_SETS[set]!, w = UNIT_WORDS[set]!;
-  const a = int(rng, bigMin(set, 1), span(diff, 5, 9, 15)), b = f === 100 ? int(rng, 1, 99) : 10 * int(rng, 1, 99);
-  return { eq: `${a}, ${b}`, answer: String(a * f + b), wrongs: pos(a * f + b, [a + b, a * f * b, a * 10 + b, (a * f + b) * 10, a * f - b]), ar: `كم ${w.acc} في ${bigAmount(set, a)} و ${b} ${w.small}؟`, en: `How many ${smallEn} are in ${a} ${bigEn} ${b} ${smallEn}?` };
+  const a = int(rng, bigMin(set, 1), Math.min(span(diff, 5, 9, 15), Math.floor((cap - 990) / f))), b = f === 100 ? int(rng, 1, 99) : 10 * int(rng, 1, 99);
+  return { eq: `${a}, ${b}`, answer: String(a * f + b), wrongs: pos(a * f + b, [a + b, a * f * b, a * 10 + b, (a * f + b) * 10, a * f - b, (a + 1) * f + b].filter(c => c <= cap)), ar: `كم ${w.acc} في ${bigAmount(set, a)} و ${b} ${w.small}؟`, en: `How many ${smallEn} are in ${a} ${bigEn} ${b} ${smallEn}?` };
 };
 /** A whole number of the big unit, less a part in the small unit: convert, then subtract. */
-const unitStory = (rng: Rng, diff: D, set: string): Draft => {
+const unitStory = (rng: Rng, diff: D, set: string, cap = Infinity): Draft => {
   const f = UNIT_SETS[set]![4];
-  const n = int(rng, bigMin(set, 2), span(diff, 5, 9, 15)), p = f === 100 ? 10 * int(rng, 1, 9) : 50 * int(rng, 1, 19);
+  const n = int(rng, bigMin(set, 2), Math.min(span(diff, 5, 9, 15), Math.floor((cap - f) / f))), p = f === 100 ? 10 * int(rng, 1, 9) : 50 * int(rng, 1, 19);
   const left = n * f - p;
   const [ar, en] = UNIT_WORDS[set]!.story(n, p);
-  return { eq: `left ${n}, ${p}`, answer: String(left), wrongs: pos(left, [n * f + p, n * f, n * f - 10 * p, (n - 1) * f, left + f / 10]), ar, en };
+  return { eq: `left ${n}, ${p}`, answer: String(left), wrongs: pos(left, [n * f + p, n * f, n * f - 10 * p, (n - 1) * f, left + f / 10].filter(c => c <= cap)), ar, en };
 };
+// Grade 3 (its only grade) works «ضمن الألوف»: it converted 18 km and offered 4860000 (2026-11-20).
+const G3_CAP = 9999;
 const convertGen = (id: string, match: RegExp, sets: string[], grades: [number, number]) => T(id, match, grades, ({ rng, diff }) => {
   const set = pick(rng, sets);
   const [, , bigEn, smallEn, f] = UNIT_SETS[set]!;
+  const fit = (cands: number[]) => cands.filter(c => c <= G3_CAP);
   // 0 big → small, 1 small → big; 2 a compound measure in the small unit, 3 what is left (real life).
   const k = pick(rng, [0, 1, 2, 3]);
-  if (k === 2) return unitCompound(rng, diff, set);
-  if (k === 3) return unitStory(rng, diff, set);
-  const n = int(rng, bigMin(set, 2), span(diff, 9, 25, 90));
-  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, [n * f * 10, (n * f) / 10, n + f, n * f / 100 | 0, n * 10]), ar: `حوّل ${bigAmount(set, n)} إلى ${UNIT_WORDS[set]!.small}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
-  const q = int(rng, 2, span(diff, 9, 25, 60));
+  if (k === 2) return unitCompound(rng, diff, set, G3_CAP);
+  if (k === 3) return unitStory(rng, diff, set, G3_CAP);
+  const n = int(rng, bigMin(set, 2), Math.min(span(diff, 9, 25, 90), Math.floor(G3_CAP / f)));
+  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, fit([n * f * 10, (n * f) / 10, n + f, n * f / 100 | 0, n * 10, (n - 1) * f])), ar: `حوّل ${bigAmount(set, n)} إلى ${UNIT_WORDS[set]!.small}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
+  const q = int(rng, 2, Math.min(span(diff, 9, 25, 60), Math.floor(G3_CAP / f)));
   const small = q * f;
-  return { eq: `${small}`, answer: String(q), wrongs: pos(q, [q * 10, small / 10, q * 100, q + 1, small]), ar: `حوّل ${small} ${UNIT_WORDS[set]!.small} إلى ${bigTarget(set)}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
+  return { eq: `${small}`, answer: String(q), wrongs: pos(q, fit([q * 10, small / 10, q * 100, q + 1, small])), ar: `حوّل ${small} ${UNIT_WORDS[set]!.small} إلى ${bigTarget(set)}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
 });
 
 /** The lesson names the quantity — length, mass or capacity — and only that quantity's units appear. */

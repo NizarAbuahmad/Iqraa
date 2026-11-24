@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -13,6 +13,7 @@ import { bookPagesForLesson } from '@/services/bookFigures';
 import { getLessonById } from '@/services/curriculumData';
 import { canFullscreen, toggleFullscreen } from '@/services/presentationUtils';
 import { goBack } from '@/services/navigation';
+import { firstInk, trackClassPenUsed } from '@/services/classUsage';
 import { PEN_COLORS, PenCanvas, PenPalette, type Stroke } from '@/components/classroom/PenLayer';
 
 /**
@@ -32,6 +33,14 @@ export default function BookPageScreen() {
   const [penOn, setPenOn] = useState(false);
   const [penColor, setPenColor] = useState(PEN_COLORS[0]!);
   const [ink, setInk] = useState<Stroke[]>([]);
+  const penReported = useRef(false);
+  const onInk = (next: Stroke[]) => {
+    if (firstInk(penReported.current, next.length > 0)) {
+      penReported.current = true;
+      trackClassPenUsed('book_page');
+    }
+    setInk(next);
+  };
 
   useEffect(() => {
     if (!pages) router.replace('/(tabs)' as never);
@@ -79,7 +88,7 @@ export default function BookPageScreen() {
               accessibilityLabel={t('bookPageNumber', pages.page + i)}
             />
           ))}
-          <PenCanvas strokes={ink} color={penColor} active={penOn} onChange={setInk} />
+          <PenCanvas strokes={ink} color={penColor} active={penOn} onChange={onInk} />
         </ScrollView>
         {penOn && (
           <PenPalette

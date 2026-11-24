@@ -16,6 +16,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import {
+  cachedPromptTokensOf,
   getChatModel,
   getDocumentModel,
   getGenerationModel,
@@ -423,5 +424,37 @@ describe("withUserAiSlot", () => {
     release();
     await Promise.all([a, b]);
     assert.equal(await withUserAiSlot("u1", async () => 3), 3);
+  });
+});
+
+describe("cachedPromptTokensOf", () => {
+  it("reads the cached count from an OpenAI usage object", () => {
+    assert.equal(cachedPromptTokensOf({ prompt_tokens: 9000, prompt_tokens_details: { cached_tokens: 7680 } }), 7680);
+  });
+
+  it("is zero when the provider reports none", () => {
+    assert.equal(cachedPromptTokensOf({ prompt_tokens: 9000 }), 0);
+    assert.equal(cachedPromptTokensOf({ prompt_tokens: 9000, prompt_tokens_details: null }), 0);
+    assert.equal(cachedPromptTokensOf(null), 0);
+  });
+
+  it("never exceeds the prompt, and a bad number is zero", () => {
+    assert.equal(cachedPromptTokensOf({ prompt_tokens: 100, prompt_tokens_details: { cached_tokens: 500 } }), 100);
+    assert.equal(cachedPromptTokensOf({ prompt_tokens: 100, prompt_tokens_details: { cached_tokens: -5 } }), 0);
+    assert.equal(cachedPromptTokensOf({ prompt_tokens: 100, prompt_tokens_details: { cached_tokens: Number.NaN } }), 0);
+  });
+
+  it("is written to the ledger and leaves the cost estimate alone", () => {
+    // The cached count is a measurement only. Pricing it needs a cached-input
+    // rate read from the provider's price list; until one is in the table the
+    // guard keeps billing every input token at the full rate, which can only
+    // trip the cap early.
+    const src = readFileSync(new URL("../aiBudget.ts", import.meta.url), "utf8");
+    const body = /export function recordUsage\(([\s\S]*?)\n}/.exec(src);
+    assert.ok(body, "recordUsage not found — has it been renamed?");
+    assert.match(body[1]!, /cachedPromptTokens: cachedPromptTokensOf\(usage\)/);
+    assert.match(body[1]!, /\(promptTokens \/ 1_000_000\) \* input/, "cost must still price every input token");
+    const log = readFileSync(new URL("../aiUsageLog.ts", import.meta.url), "utf8");
+    assert.match(log, /cachedPromptTokens: row\.cachedPromptTokens \?\? 0/);
   });
 });

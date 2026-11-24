@@ -10,7 +10,7 @@
  *
  * Free of react-native so `node --test` can load it.
  */
-import { curriculumObjectivesFor, nccdUnitId, resolveGeneratorGrounding } from './kbContext.ts';
+import { curriculumObjectivesFor, nccdUnitId, resolveGeneratorGrounding, unitThemeLine } from './kbContext.ts';
 import { getLessonsForUnit, type KBLesson } from './knowledgeBase.ts';
 import { lessonsInScope, scopeKey, scopeLabel, unitsInScope, type ScopeKind, type ScopeSelection } from './scopeSelection.ts';
 
@@ -46,7 +46,9 @@ function lessonLines(l: KBLesson, isAr: boolean, tier: Tier): string[] {
   const outcomes = curriculumObjectivesFor(l).slice(0, tier === 'full' ? 3 : 1);
   if (outcomes.length) out.push(`  ${isAr ? 'النتاجات' : 'Outcomes'}: ${outcomes.join(sep)}`);
   if (tier === 'full') {
-    const concepts = (isAr ? l.keyConceptsAr : l.keyConceptsEn).slice(0, 3);
+    // A vocabulary lesson's "concepts" are its word list, and three words
+    // (Sun; star; rocket) do not say what the unit teaches. Eight do.
+    const concepts = (isAr ? l.keyConceptsAr : l.keyConceptsEn).slice(0, 8);
     if (concepts.length) out.push(`  ${isAr ? 'المفاهيم' : 'Concepts'}: ${concepts.join(sep)}`);
   }
   return out;
@@ -59,6 +61,8 @@ function render(sel: ScopeSelection, lang: 'ar' | 'en', total: number, tier: Tie
   ];
   for (const unit of unitsInScope(sel)) {
     lines.push('', `${isAr ? 'الوحدة' : 'Unit'}: ${isAr ? unit.titleAr : unit.titleEn}`);
+    const theme = unitThemeLine(unit.generalIdea, isAr);
+    if (theme) lines.push(theme);
     for (const l of getLessonsForUnit(unit.id)) lines.push(...lessonLines(l, isAr, tier));
   }
   return lines;

@@ -272,15 +272,18 @@ const countUpDown = T('count_up_down', /^العد تصاعديا وتنازلي�
 });
 
 const skipCount = (id: string, match: RegExp, grades: [number, number], steps: (g: number) => number[], top: (g: number) => number) => T(id, match, grades, ({ rng, grade }) => {
-  const s = pick(rng, steps(grade)), start = s * int(rng, 0, Math.max(5, Math.floor(top(grade) / s / 3)));
+  // Grade 3 counts «بالعشرات والمئات والألوف» from any number within the thousands
+  // («3427، 3437، 3447»); it used to skip by 3, 7 or 25 from a multiple (2026-11-20).
+  const s = pick(rng, steps(grade));
+  const start = grade === 3 ? int(rng, 100, 9999 - 5 * s) : s * int(rng, 0, Math.max(5, Math.floor(top(grade) / s / 3)));
   const seq = [0, 1, 2, 3, 4].map(i => start + i * s);
   const k = pick(rng, [0, 1, 2, 3]);
-  if (k === 2) return { eq: seq.slice(0, 4).join(', '), answer: String(s), wrongs: ints(s, [s * 2, s + 1, s * 10, s - 1, s + 2]), ar: `ما مقدار القفزة في العدّ: ${seq.slice(0, 4).join('، ')}؟`, en: `What is the size of each jump in the count ${seq.slice(0, 4).join(', ')}?` };
+  if (k === 2) return { eq: seq.slice(0, 4).join(', '), answer: String(s), wrongs: ints(s, [s * 2, s + 1, s * 10, s - 1, s + 2, s / 10].filter(v => Number.isInteger(v) && v <= 9999)), ar: `ما مقدار القفزة في العدّ: ${seq.slice(0, 4).join('، ')}؟`, en: `What is the size of each jump in the count ${seq.slice(0, 4).join(', ')}?` };
   if (k === 3) {
     // jumps along a number line, inside the numbers the grade works with
     const limit = grade === 1 ? 100 : grade === 2 ? 999 : 9999, j = int(rng, 3, 5);
     const a = start + j * s <= limit ? start : 0, r = a + j * s;
-    return { eq: `${a}, ${s}, ${j}`, answer: String(r), wrongs: ints(r, [r + s, r - s, a + j, a + s]), ar: `ابدأ من ${a} على خط الأعداد واقفز ${j} قفزات، طول كل قفزة ${s}. عند أي عدد تصل؟`, en: `Start at ${a} on a number line and take ${j} jumps of ${s}. Which number do you reach?` };
+    return { eq: `${a}, ${s}, ${j}`, answer: String(r), wrongs: ints(r, [r + s, r - s, a + j, a + s, r - 2 * s].filter(v => v >= 0 && v <= limit)), ar: `ابدأ من ${a} على خط الأعداد واقفز ${j} قفزات، طول كل قفزة ${s}. عند أي عدد تصل؟`, en: `Start at ${a} on a number line and take ${j} jumps of ${s}. Which number do you reach?` };
   }
   const down = k === 1, order = down ? seq.slice().reverse() : seq;
   const hole = int(rng, 3, 4);
@@ -430,7 +433,8 @@ const mentalG1 = (id: string, match: RegExp, add: boolean) => T(id, match, [1, 1
   const d = k === 2 ? 20 : 10;
   const r = add ? n + (k === 2 ? 20 : 10) : n - (k === 2 ? 20 : 10);
   if (k === 0 || k === 2) return { eq: `${n}, ${d}`, answer: String(r), wrongs: ints(r, [add ? r + 10 : r - 10, add ? n + 1 : n - 1, r + 1, r - 1]), ar: `${n} ${add ? '+' : '−'} ${d} = ___`, en: `${n} ${add ? '+' : '−'} ${d} = ___` };
-  const m = add ? int(rng, 1, 70) : int(rng, 21, 99), r9 = add ? m + 9 : m - 9;
+  // a two-digit number and 9 (the objective's «عدد من منزلتين مع عدد من منزلة واحدة»): it once drew «8 + 9»
+  const m = add ? int(rng, 10, 70) : int(rng, 21, 99), r9 = add ? m + 9 : m - 9;
   return { eq: `${m}, 9`, answer: String(r9), wrongs: ints(r9, [add ? m + 10 : m - 10, add ? m + 8 : m - 8, r9 + 2, r9 - 2]), ar: `${m} ${add ? '+' : '−'} 9 = ___ (فكّر: ${add ? 'أضف 10 ثم انقص 1' : 'انقص 10 ثم أضف 1'})`, en: `${m} ${add ? '+' : '−'} 9 = ___ (think: ${add ? 'add 10 then take away 1' : 'take away 10 then add 1'})` };
 });
 
@@ -553,10 +557,16 @@ const PLANE: Array<[string, number]> = [['المثلث', 3], ['المربع', 4]
 /** Grade 1 names only these (book unit 8); the pentagon and hexagon are later. */
 const PLANE_G1: Array<[string, number]> = [['المثلث', 3], ['المربع', 4], ['المستطيل', 4]];
 const G1_SHAPE_NAMES = ['المثلث', 'المربع', 'المستطيل', 'الدائرة'];
-/** Things in a classroom and a home, and the flat shape each looks like. */
+/**
+ * Things in a classroom and a home, and the flat shape each looks like. No thing may carry its shape's name:
+ * «قطعة الجبنة المثلثة» and «بلاطة الأرض المربعة» gave the answer away (Grade 1 review, 2026-11-20), as
+ * «كرة القدم» did for the solids.
+ */
 const LOOKS_LIKE: Array<[string, string, string]> = [
-  ['باب الصف', 'المستطيل', 'the classroom door'], ['ساعة الحائط', 'الدائرة', 'the wall clock'], ['قطعة الجبنة المثلثة', 'المثلث', 'a triangle of cheese'],
-  ['بلاطة الأرض المربعة', 'المربع', 'a square floor tile'], ['عجلة الدراجة', 'الدائرة', 'a bicycle wheel'], ['السبورة', 'المستطيل', 'the board'],
+  ['باب الصف', 'المستطيل', 'the classroom door'], ['السبورة', 'المستطيل', 'the board'], ['الدفتر', 'المستطيل', 'an exercise book'],
+  ['ساعة الحائط', 'الدائرة', 'the wall clock'], ['عجلة الدراجة', 'الدائرة', 'a bicycle wheel'], ['الصحن', 'الدائرة', 'a plate'],
+  ['قطعة البيتزا', 'المثلث', 'a slice of pizza'], ['شماعة الملابس', 'المثلث', 'a coat hanger'], ['إشارة التحذير المرورية', 'المثلث', 'a warning road sign'],
+  ['لوحة الشطرنج', 'المربع', 'a chessboard'], ['وجه حجر النرد', 'المربع', 'a face of a dice'],
 ];
 const planeShapes = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, grade }) => {
   if (grade === 1 && id === 'plane_shapes') {
@@ -568,7 +578,19 @@ const planeShapes = (id: string, match: RegExp, grades: [number, number]) => T(i
     return { eq: thing, answer: shape, wrongs: G1_SHAPE_NAMES.filter(x => x !== shape), ar: `أي شكل يشبه ${thing}؟`, en: `Which shape does ${thingEn} look like?` };
   }
   if (grade === 1) {
-    const k1 = pick(rng, [0, 1, 2, 3]);
+    const k1 = pick(rng, [0, 1, 2, 3, 4, 5, 6]);
+    // added 2026-11-20: the lesson held 8 questions and could not fill a ten-question quiz
+    if (k1 === 4) {
+      // the sides of two shapes together
+      const [[a, ca], [b, cb]] = shuffle(rng, PLANE_G1).slice(0, 2) as [[string, number], [string, number]], t = ca + cb;
+      return { eq: `${ca} + ${cb}`, answer: String(t), wrongs: ints(t, [t + 1, t - 1, ca, cb, 2 * ca]), ar: `كم ضلعًا ${li(a)} و${li(b)} معًا؟`, en: `How many sides do the ${a} and the ${b} have together?` };
+    }
+    if (k1 === 5) {
+      // which of two shapes has more sides: the triangle against a four-sided one
+      const four = pick(rng, ['المربع', 'المستطيل']), first = rng() < 0.5;
+      return { eq: `3 < 4`, answer: four, wrongs: ['المثلث', 'الدائرة', 'كلاهما'], ar: `أيّ الشكلين له أضلاع أكثر: ${first ? `المثلث أم ${four}` : `${four} أم المثلث`}؟`, en: `Which has more sides: the triangle or the ${four}?` };
+    }
+    if (k1 === 6) return { eq: '4 =', answer: 'المربع', wrongs: ['المثلث', 'المستطيل', 'الدائرة'], ar: 'أي شكل له 4 أضلاع متساوية في الطول؟', en: 'Which shape has 4 sides of equal length?' };
     if (k1 === 2) return { eq: '3', answer: 'المثلث', wrongs: ['المربع', 'المستطيل', 'الدائرة'], ar: 'أي شكل له 3 أضلاع و 3 رؤوس؟', en: 'Which shape has 3 sides and 3 vertices?' };
     if (k1 === 3) return { eq: '0', answer: 'الدائرة', wrongs: ['المثلث', 'المربع', 'المستطيل'], ar: 'أي شكل ليس له أضلاع ولا رؤوس؟', en: 'Which shape has no sides and no vertices?' };
     const [nm1, c1] = pick(rng, PLANE_G1);
@@ -637,8 +659,13 @@ const geoPattern = T('geo_pattern', /^الانماط الهندسيه$/, [1, 4],
 
 const halfQuarter = (id: string, match: RegExp, name: 'نصف' | 'ربع') => T(id, match, [1, 1], ({ rng }) => {
   // no «ما العدد الذي نصفه …؟» (k 3): that is multiplication, which Grade 1 does not do
-  const d = name === 'نصف' ? 2 : 4, q = int(rng, 1, name === 'نصف' ? 10 : 5), n = d * q, k = pick(rng, [0, 0, 1, 2]);
+  // 4–6 added 2026-11-20: «الربع» held 8 questions and could not fill a ten-question quiz
+  const d = name === 'نصف' ? 2 : 4, q = int(rng, 1, name === 'نصف' ? 10 : 5), n = d * q, k = pick(rng, name === 'نصف' ? [0, 0, 1, 2, 4, 5] : [0, 0, 1, 2, 4, 5, 6]);
   const nameEn = name === 'نصف' ? 'half' : 'a quarter';
+  const parts = name === 'نصف' ? 'جزأين متطابقين' : '4 أجزاء متطابقة';
+  if (k === 4) return { eq: `1/${d}`, answer: name, wrongs: [name === 'نصف' ? 'ربع' : 'نصف', 'الكل', 'ضعف'], ar: `قُسّمت كعكة إلى ${parts}. ماذا يسمّى كل جزء منها؟`, en: `A cake is cut into ${d} equal parts. What is each part called?` };
+  if (k === 5) return { eq: `${d} − 1`, answer: String(d - 1), wrongs: ints(d - 1, [d, 1, d + 1, d - 2 || 3]), ar: `قُسّمت كعكة إلى ${parts}، وأُكل منها ${name} واحد. كم ${name === 'نصف' ? 'نصفًا' : 'ربعًا'} بقي؟`, en: `A cake is cut into ${d} equal parts and one ${name === 'نصف' ? 'half' : 'quarter'} is eaten. How many are left?` };
+  if (k === 6) return { eq: '2/4 = 1/2', answer: '2', wrongs: ['4', '1', '3'], ar: 'كم ربعًا في النصف؟', en: 'How many quarters make a half?' };
   if (k === 2) {
     // a share of a few balls: 4–10 of them, so «كرات» is the right plural
     const qq = name === 'نصف' ? int(rng, 2, 5) : int(rng, 1, 2), m = d * qq;
@@ -806,9 +833,10 @@ const mentalMultiples = (id: string, match: RegExp, add: boolean, grade: number)
   }
   let a = 0, b = 0;
   // Grade 2 works within three places, so 900 + 600 is out of reach there
-  do { a = int(rng, 1, 9); b = int(rng, 1, 9); } while (add ? grade === 2 && place === 100 && a + b > 9 : a <= b);
+  // …and Grade 3 within four, so 9000 + 3000 is out of reach there (2026-11-20)
+  do { a = int(rng, 1, 9); b = int(rng, 1, 9); } while (add ? ((grade === 2 && place === 100) || (grade === 3 && place === 1000)) && a + b > 9 : a <= b);
   const x = a * place, y = b * place, r = add ? x + y : x - y;
-  return { eq: `${x}, ${y}`, answer: String(r), wrongs: ints(r, [r * 10, r / 10, add ? x - y : x + y, r + place].filter(v => grade > 2 || v <= 999)), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
+  return { eq: `${x}, ${y}`, answer: String(r), wrongs: ints(r, [r * 10, r / 10, add ? x - y : x + y, r + place].filter(v => v <= (grade === 2 ? 999 : 9999))), ar: `${x} ${op} ${y} = ___`, en: `${x} ${op} ${y} = ___` };
 });
 
 /**
@@ -1176,7 +1204,25 @@ const lineRelations = (id: string, match: RegExp, grade: number) => T(id, match,
 });
 
 const angleArithmetic = T('angle_measure', /^قياس الزوايا ورسمها$/, [4, 4], ({ rng }) => {
-  const a = 5 * int(rng, 2, 16), b = 5 * int(rng, 1, 15), k = pick(rng, [0, 1, 2, 3]);
+  const a = 5 * int(rng, 2, 16), b = 5 * int(rng, 1, 15), k = pick(rng, [0, 1, 2, 3, 4, 5, 6, 7]);
+  // «أستعمل المنقلة لرسم الزاوية وقياسها بالدرجات»: half the items read and draw with a protractor
+  // (a reading from 0, from another mark, the two scales, where to mark an angle) — it only added and
+  // subtracted angles before (2026-11-21).
+  if (k >= 4) {
+    const x = 5 * int(rng, 2, 34), deg = (v: number) => `${v}°`;
+    if (k === 4) return { eq: `read ${x}`, answer: deg(x), wrongs: wrongsFrom(deg(x), [deg(180 - x), deg(x + 10), deg(x - 10)], j => deg(x + 5 * Math.abs(j))), ar: `وُضعت المنقلة على زاوية بحيث ينطبق أحد ضلعيها على العدد 0، ويمرّ الضلع الآخر بالعدد ${x} على التدريج نفسه. ما قياس الزاوية؟`, en: `A protractor is placed on an angle with one arm on 0 and the other arm through ${x} on the same scale. What is the measure of the angle?` };
+    if (k === 5) {
+      let lo = 5 * int(rng, 1, 15), hi = lo + 5 * int(rng, 2, 15);
+      if (hi > 175) { hi = 175; lo = Math.min(lo, 100); }
+      const d = hi - lo;
+      return { eq: `marks ${lo}, ${hi}`, answer: deg(d), wrongs: wrongsFrom(deg(d), [deg(hi + lo), deg(hi), deg(lo)], j => deg(d + 5 * Math.abs(j))), ar: `ينطبق ضلعا زاوية على المنقلة عند العددين ${lo} و ${hi} على التدريج نفسه. ما قياس الزاوية؟`, en: `The arms of an angle lie on a protractor at ${lo} and ${hi} on the same scale. What is the angle?` };
+    }
+    if (k === 6) {
+      const ac = 5 * int(rng, 2, 17), both = rng() < 0.5 ? [ac, 180 - ac] : [180 - ac, ac];
+      return { eq: `scales ${ac}`, answer: deg(ac), wrongs: wrongsFrom(deg(ac), [deg(180 - ac), deg(90 - ac > 0 ? 90 - ac : 10), deg(ac + 10)], j => deg(ac + 5 * Math.abs(j))), ar: `قرأ طالب قياس زاوية حادة على المنقلة فكانت القراءتان على التدريجين ${both[0]}° و ${both[1]}°. ما قياس الزاوية؟`, en: `A pupil read an acute angle on both scales of a protractor and got ${both[0]}° and ${both[1]}°. What is its measure?` };
+    }
+    return { eq: `draw ${x}`, answer: deg(x), wrongs: wrongsFrom(deg(x), [deg(180 - x), deg(x + 10), deg(x - 10)], j => deg(x + 5 * Math.abs(j))), ar: `لرسم زاوية قياسها ${x}° بالمنقلة بعد وضع مركزها على رأس الزاوية وقاعدتها على أحد الضلعين، عند أي عدد على التدريج الذي يبدأ من الصفر نعلّم النقطة؟`, en: `To draw a ${x}° angle with a protractor, centred on the vertex with its base on one arm, which number on the scale that starts at 0 do you mark?` };
+  }
   if (k === 0) { const s = a + b; return { eq: `${a}, ${b}`, answer: `${s}°`, wrongs: wrongsFrom(`${s}°`, [`${Math.abs(a - b)}°`, `${s + 10}°`, `${180 - s > 0 ? 180 - s : 5}°`], j => `${s + 5 * Math.abs(j)}°`), ar: `رُسمت زاويتان متجاورتان قياسهما ${a}° و ${b}°. ما قياس الزاوية الكلية؟`, en: `Two adjacent angles measure ${a}° and ${b}°. What is the total angle?` }; }
   if (k === 1) { const x = 5 * int(rng, 2, 17); return { eq: `${x}`, answer: `${180 - x}°`, wrongs: wrongsFrom(`${180 - x}°`, [`${90 - x > 0 ? 90 - x : 10}°`, `${x}°`, `${360 - x}°`], j => `${180 - x + 5 * Math.abs(j)}°`), ar: `زاوية على مستقيم قياسها ${x}°. ما قياس الزاوية المجاورة لها على المستقيم نفسه؟`, en: `An angle on a straight line measures ${x}°. What does the angle next to it on the same line measure?` }; }
   if (k === 2) { const x = 5 * int(rng, 2, 17); return { eq: `${x}`, answer: `${90 - x}°`, wrongs: wrongsFrom(`${90 - x}°`, [`${180 - x}°`, `${x}°`, `${90 + x}°`], j => `${90 - x + 5 * Math.abs(j)}°`), ar: `زاوية قياسها ${x}° تتمم زاوية قائمة. ما قياس الزاوية المتمّمة؟`, en: `An angle of ${x}° is placed next to another to make a right angle. What does the other measure?` }; }
@@ -1349,7 +1395,9 @@ const hourTime = (id: string, match: RegExp, half: boolean) => T(id, match, [1, 
   }
   // reading the time, not elapsed time: the half hour said aloud, shown on a digital clock
   if (k === 2) return { eq: `${h}:30`, answer: `${h}:30`, wrongs: wrongsFrom(`${h}:30`, [`${h}:00`, `${h % 12 + 1}:30`, `${(h + 10) % 12 + 1}:30`, `6:${String(h * 5).padStart(2, '0')}`], j => `${(h + Math.abs(j)) % 12 + 1}:30`), ar: `الساعة الآن ${HOUR_W[h - 1]} والنصف. كيف تعرض الساعة الرقمية هذا الوقت؟`, en: `It is half past ${h}. How does a digital clock show this time?` };
-  return { eq: `${h}:00`, answer: `${h}:30`, wrongs: wrongsFrom(`${h}:30`, [`${h}:00`, `${h % 12 + 1}:00`, `${h}:15`, `${h % 12 + 1}:30`], k => `${(h + Math.abs(k)) % 12 + 1}:30`), ar: `الساعة الآن ${h}:00. ما الوقت بعد نصف ساعة؟`, en: `It is ${h}:00 now. What time will it be in half an hour?` };
+  // where the hour hand is at half past — until 2026-11-20 this asked «ما الوقت بعد نصف ساعة؟», elapsed time, which is Grade 3's
+  const pair = (x: number) => `${x} و ${x % 12 + 1}`;
+  return { eq: `${h}:30 hour hand`, answer: pair(h), wrongs: wrongsFrom(pair(h), [pair((h + 10) % 12 + 1), pair(h % 12 + 1), `${h} و 6`], j => pair((h + 2 + Math.abs(j)) % 12 + 1)), ar: `الساعة الآن ${h}:30. بين أي عددين يقع عقرب الساعات؟`, en: `It is ${h}:30. Between which two numbers is the hour hand?` };
 });
 
 /** «ربع ساعة / نصف ساعة / ثلاثة أرباع الساعة», or «10 دقائق / 25 دقيقة» off the quarter hours. */
@@ -1805,7 +1853,7 @@ export const EARLY_TOPICS: readonly Topic[] = [
   hundreds('hundreds_a', /^المئات$/), hundreds('hundreds_b', /^الاعداد ضمن ثلاث منازل$/), readWrite, thousands,
   evenOdd('even_odd_g1', /^الاعداد الزوجيه والاعداد الفرديه$/, 1), evenOdd('even_odd_g2', /^الاعداد الزوجيه والاعداد الفرديه$/, 2),
   numberChart, countUpDown,
-  skipCount('skip_g1', /^العد القفزي$/, [1, 1], () => [2, 5, 10], () => 60), skipCount('skip_g3', /^العد القفزي$/, [3, 3], () => [3, 4, 6, 7, 8, 9, 10, 25, 50, 100, 1000], () => 400),
+  skipCount('skip_g1', /^العد القفزي$/, [1, 1], () => [2, 5, 10], () => 60), skipCount('skip_g3', /^العد القفزي$/, [3, 3], () => [10, 100, 1000], () => 9999),
   skipCount('skip_g2', /^العد بالواحدات والعشرات والمئات$/, [2, 2], () => [1, 10, 100], () => 600),
   beforeAfter('before_after_g1', /^العدد السابق والعدد التالي$/, 1), beforeAfter('before_after_g2', /^العدد السابق والعدد التالي$/, 2),
   nearestTen, numberLineAdd('line_add', /^الجمع باستعمال خط الاعداد$/, true), numberLineAdd('line_sub', /^الطرح باستعمال خط الاعداد$/, false),

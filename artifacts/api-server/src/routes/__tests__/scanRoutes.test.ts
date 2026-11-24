@@ -46,7 +46,8 @@ for (const [name, body] of Object.entries(ROUTES)) {
     });
 
     it("checks live mode, budget and quota before the model is called", () => {
-      const call = body.indexOf("openai.chat.completions.create(");
+      // `completeAi` is the one door to a model (lib/aiComplete.ts); it picks the provider.
+      const call = body.indexOf("completeAi(");
       assert.notEqual(call, -1, "no model call found");
       for (const guard of ["assertLiveModeEnabled(", "assertBudgetAvailable(", "assertUserQuotaAvailable("]) {
         const at = body.indexOf(guard);
@@ -77,7 +78,8 @@ describe("route-specific refusals", () => {
 
   it("scan-class-paper never sends the roster to the model", () => {
     const body = ROUTES["POST /evaluations/:id/scan-class-paper"];
-    const call = body.indexOf("openai.chat.completions.create(");
+    const call = body.indexOf("completeAi(");
+    assert.notEqual(call, -1, "no model call found");
     const model = body.slice(call, body.indexOf("});", call));
     assert.doesNotMatch(model, /roster/);
   });

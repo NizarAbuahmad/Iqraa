@@ -1,0 +1,1 @@
+ALTER TABLE "ai_generations" ADD COLUMN "cached_prompt_tokens" integer DEFAULT 0 NOT NULL;

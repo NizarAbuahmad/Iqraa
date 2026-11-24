@@ -76,6 +76,9 @@ export const GRAMMAR_ONLY_LESSONS: readonly string[] = [
   'kbl-g9-eng-s2-nccd-u7_l2',
   'kbl-g9-eng-s2-nccd-u8_l5',
   'kbl-g9-eng-s2-nccd-u9_l3',
+  // Grammar, 3 real words: its other "words" were the irregular-verbs table after the Word List (burned, learned…),
+  // which the parser no longer reads (extract-english-vocabulary.ts).
+  'kbl-g9-eng-s2-nccd-u10_l4',
   'kbl-eng-s1-nccd-u1_l5',
   // Grade 10 semester 1's grammar lessons 4A and the Future Continuous lesson: the Word List's WLu.n markers are a
   // running count per unit, not lesson numbers (extract-english-vocabulary.ts), so these lessons once carried the

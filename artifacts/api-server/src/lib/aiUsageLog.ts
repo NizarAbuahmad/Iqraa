@@ -43,6 +43,8 @@ export type GenerationRecord = {
    *  regeneration reads to find a variant this teacher has not seen. */
   artifactId?: string | null;
   promptTokens: number;
+  /** The part of `promptTokens` the provider served from its prompt cache. */
+  cachedPromptTokens?: number;
   completionTokens: number;
   costUsd: number;
   /** Wall time of the model call, when the caller timed it. */
@@ -95,6 +97,7 @@ export async function recordGeneration(row: GenerationRecord): Promise<void> {
       cacheStatus: row.cacheStatus,
       artifactId: row.artifactId ?? null,
       promptTokens: row.promptTokens,
+      cachedPromptTokens: row.cachedPromptTokens ?? 0,
       completionTokens: row.completionTokens,
       costUsd: row.costUsd.toFixed(6),
       durationMs: row.durationMs ?? null,

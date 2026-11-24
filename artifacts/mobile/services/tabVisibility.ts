@@ -8,14 +8,24 @@
  * chat leaves the phone tab bar. Its route stays registered (hidden), so every
  * `router.push('/iqra')` still lands; Today's ask card is the way in. Desktop
  * keeps the chat in the sidebar beside Today.
+ *
+ * Since 2026-11-22 the chat is off everywhere (`IQRA_CHAT_ENABLED` in
+ * features.ts), so it leaves the desktop sidebar too.
  */
-export type TabName = 'index' | 'iqra' | 'school' | 'curriculum' | 'ai-tools' | 'notifications' | 'profile';
-export type NavContext = { isTeacher: boolean; isDesktop: boolean };
+import { IQRA_CHAT_ENABLED } from './features.ts';
 
-export function tabVisible(name: TabName, { isTeacher, isDesktop }: NavContext): boolean {
+export type TabName = 'index' | 'iqra' | 'school' | 'curriculum' | 'ai-tools' | 'notifications' | 'profile';
+export type NavContext = {
+  isTeacher: boolean;
+  isDesktop: boolean;
+  /** Whether the AI chat is offered at all; defaults to `IQRA_CHAT_ENABLED`. */
+  chatEnabled?: boolean;
+};
+
+export function tabVisible(name: TabName, { isTeacher, isDesktop, chatEnabled = IQRA_CHAT_ENABLED }: NavContext): boolean {
   switch (name) {
     case 'index': return isTeacher;
-    case 'iqra': return isTeacher && isDesktop;
+    case 'iqra': return isTeacher && isDesktop && chatEnabled;
     case 'school': return !isTeacher;
     case 'ai-tools': return isTeacher;
     case 'curriculum':
