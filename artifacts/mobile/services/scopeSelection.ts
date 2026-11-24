@@ -13,9 +13,11 @@
  */
 import {
   getLessonsForUnit,
+  getMainUnitsForSubjectGrade,
   getUnitsForSubjectGrade,
   hasKBContent,
   KB_BOOKS,
+  trackOfUnit,
   type KBLesson,
   type KBUnit,
 } from './knowledgeBase.ts';
@@ -33,10 +35,23 @@ export type ScopeSelection = {
   semester?: Semester;
   /** kind 'lesson': the KB lesson id — never a title. */
   lessonId?: string;
+  /**
+   * kind 'book' only: one track book of this grade+subject (`KBBook.track`) —
+   * «المسار كاملًا», e.g. Grade 10's commerce English. Absent, 'book' is the
+   * subject's own book.
+   */
+  bookId?: string;
 };
 
 /** What the picker offers today. A screen that names no kinds gets exactly this. */
 export const LEGACY_SCOPE_KINDS: readonly ScopeKind[] = ['lesson', 'unit', 'book'];
+
+/** The track book a 'book' selection names, when it is one of this grade+subject's tracks. */
+function trackBookOf(sel: ScopeSelection) {
+  if (sel.kind !== 'book' || !sel.bookId) return undefined;
+  const book = KB_BOOKS.find(b => b.id === sel.bookId);
+  return book?.track && book.gradeId === sel.gradeId && book.subjectId === sel.subjectId ? book : undefined;
+}
 
 function semesterOf(unit: KBUnit): Semester {
   return (KB_BOOKS.find(b => b.id === unit.bookId)?.semester ?? 1) as Semester;
@@ -45,11 +60,16 @@ function semesterOf(unit: KBUnit): Semester {
 /** The units a selection covers, in book order (semester 1 first). */
 export function unitsInScope(sel: ScopeSelection): KBUnit[] {
   const units = getUnitsForSubjectGrade(sel.subjectId, sel.gradeId);
+  // A whole book or semester is the subject's own book: Grade 10 English's
+  // «الفصل الأول كاملًا» used to span its 5 units AND the four vocational
+  // tracks' 30 (`KBBook.track`). A track's unit or lesson is still pickable.
+  const main = getMainUnitsForSubjectGrade(sel.subjectId, sel.gradeId);
   switch (sel.kind) {
     case 'book':
-      return units;
+      if (sel.bookId) return trackBookOf(sel) ? units.filter(u => u.bookId === sel.bookId) : [];
+      return main;
     case 'semester':
-      return units.filter(u => semesterOf(u) === sel.semester);
+      return main.filter(u => semesterOf(u) === sel.semester);
     case 'unit':
       return units.filter(u => u.id === sel.unitId);
     case 'lesson':
@@ -66,7 +86,7 @@ export function lessonsInScope(sel: ScopeSelection): KBLesson[] {
 /** The semesters this grade+subject has a book for. */
 export function semestersAvailable(gradeId: string, subjectId: string): Semester[] {
   const seen = new Set<Semester>();
-  for (const u of getUnitsForSubjectGrade(subjectId, gradeId)) seen.add(semesterOf(u));
+  for (const u of getMainUnitsForSubjectGrade(subjectId, gradeId)) seen.add(semesterOf(u));
   return ([1, 2] as const).filter(s => seen.has(s));
 }
 
@@ -93,7 +113,7 @@ export function availableKinds(
 export function scopeKey(sel: ScopeSelection): string {
   switch (sel.kind) {
     case 'book':
-      return `book:${sel.gradeId}:${sel.subjectId}`;
+      return sel.bookId ? `book:${sel.gradeId}:${sel.subjectId}:${sel.bookId}` : `book:${sel.gradeId}:${sel.subjectId}`;
     case 'semester':
       if (sel.semester !== 1 && sel.semester !== 2) throw new Error('scopeKey: semester scope without a semester');
       return `sem:${sel.gradeId}:${sel.subjectId}:${sel.semester}`;
@@ -114,8 +134,11 @@ export function scopeKey(sel: ScopeSelection): string {
 export function scopeLabel(sel: ScopeSelection, lang: 'ar' | 'en'): string {
   const isAr = lang === 'ar';
   switch (sel.kind) {
-    case 'book':
+    case 'book': {
+      const track = trackBookOf(sel)?.track;
+      if (track) return isAr ? `المسار كاملًا: ${track.titleAr}` : `Entire ${track.titleEn}`;
       return isAr ? 'الكتاب كاملًا' : 'Entire book';
+    }
     case 'semester':
       if (isAr) return sel.semester === 2 ? 'الفصل الثاني كاملًا' : 'الفصل الأول كاملًا';
       return `Entire semester ${sel.semester === 2 ? 2 : 1}`;
@@ -141,10 +164,40 @@ export function parseScope(raw: unknown): ScopeSelection | null {
   if (typeof r.unitId === 'string') sel.unitId = r.unitId;
   if (r.semester === 1 || r.semester === 2) sel.semester = r.semester;
   if (typeof r.lessonId === 'string') sel.lessonId = r.lessonId;
+  if (sel.kind === 'book' && typeof r.bookId === 'string') sel.bookId = r.bookId;
   try {
     scopeKey(sel);
   } catch {
     return null;
   }
   return lessonsInScope(sel).length > 0 ? sel : null;
+}
+
+/** One heading of the unit picker: a semester of the subject's own book, or one track's units. */
+export type UnitPickerGroup = {
+  semester: Semester;
+  /** Set for a track's group (`KBBook.track`); absent for the subject's own book. */
+  track?: { titleAr: string; titleEn: string };
+  units: KBUnit[];
+};
+
+/**
+ * The unit picker's groups: each semester of the subject's own book (S1 then
+ * S2), then each track book under its own heading. Grouping by semester alone
+ * put Grade 10 English's four vocational tracks' 30 units, unlabelled, under
+ * «الفصل الأول» next to the book's own 5.
+ */
+export function groupUnitsForPicker(units: KBUnit[]): UnitPickerGroup[] {
+  const groups: UnitPickerGroup[] = [];
+  for (const sem of [1, 2] as const) {
+    const own = units.filter(u => !trackOfUnit(u) && semesterOf(u) === sem);
+    if (own.length > 0) groups.push({ semester: sem, units: own });
+  }
+  const trackBooks: string[] = [];
+  for (const u of units) if (trackOfUnit(u) && !trackBooks.includes(u.bookId)) trackBooks.push(u.bookId);
+  for (const bookId of trackBooks) {
+    const list = units.filter(u => u.bookId === bookId);
+    groups.push({ semester: semesterOf(list[0]!), track: trackOfUnit(list[0]!), units: list });
+  }
+  return groups;
 }

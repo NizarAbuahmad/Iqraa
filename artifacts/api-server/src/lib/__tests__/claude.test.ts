@@ -19,7 +19,10 @@ import {
   CLAUDE_MIN_MAX_TOKENS,
   ClaudeNotConfiguredError,
   ClaudeRefusalError,
+  claudeMaxTokens,
+  claudeRequestOptions,
   completeWithClaude,
+  streamWithClaude,
 } from "../claude.ts";
 
 type Seen = { url: string; headers: IncomingMessage["headers"]; body: Record<string, any> };
@@ -28,6 +31,8 @@ let server: Server;
 let client: Anthropic;
 let seen: Seen[] = [];
 let reply: Record<string, unknown> = {};
+/** Server-sent events for a `stream: true` request, as [event name, payload] pairs. */
+let streamEvents: Array<[string, Record<string, unknown>]> = [];
 
 const message = (over: Record<string, unknown> = {}) => ({
   id: "msg_test",
@@ -46,7 +51,14 @@ before(async () => {
     let raw = "";
     req.on("data", (c) => (raw += c));
     req.on("end", () => {
-      seen.push({ url: req.url ?? "", headers: req.headers, body: JSON.parse(raw || "{}") });
+      const body = JSON.parse(raw || "{}");
+      seen.push({ url: req.url ?? "", headers: req.headers, body });
+      if (body.stream) {
+        res.writeHead(200, { "content-type": "text/event-stream" });
+        for (const [event, data] of streamEvents) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+        res.end();
+        return;
+      }
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify(reply));
     });
@@ -60,11 +72,12 @@ after(() => new Promise<void>((r) => server.close(() => r())));
 
 afterEach(() => {
   seen = [];
+  streamEvents = [];
   reply = message();
   delete process.env.AI_CLAUDE_EFFORT;
 });
 
-const call = (over: Partial<Parameters<typeof completeWithClaude>[0]> = {}) =>
+const call = (over: Partial<{ model: string; system: string; user: string; maxTokens: number }> = {}) =>
   completeWithClaude(
     { model: "claude-sonnet-5-5", system: "SYS", user: "USER", maxTokens: 8000, ...over },
     { client },
@@ -150,5 +163,156 @@ describe("completeWithClaude — no key", () => {
     } finally {
       if (saved !== undefined) process.env.ANTHROPIC_API_KEY = saved;
     }
+  });
+});
+
+
+describe("completeWithClaude — a whole message list", () => {
+  it("sends the list as given, with a photo as an image block, instead of one user prompt", async () => {
+    await completeWithClaude(
+      {
+        model: "claude-sonnet-5-5",
+        system: "SYS",
+        maxTokens: 1500,
+        messages: [
+          { role: "user", content: "q1" },
+          { role: "assistant", content: "a1" },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "read it" },
+              { type: "image", source: { type: "base64", media_type: "image/png", data: "QUJD" } },
+            ],
+          },
+        ],
+      },
+      { client },
+    );
+    assert.deepEqual(seen[0]!.body.messages, [
+      { role: "user", content: "q1" },
+      { role: "assistant", content: "a1" },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "read it" },
+          { type: "image", source: { type: "base64", media_type: "image/png", data: "QUJD" } },
+        ],
+      },
+    ]);
+  });
+});
+
+const sse = {
+  start: (input = 42, output = 1): [string, Record<string, unknown>] => [
+    "message_start",
+    { type: "message_start", message: message({ content: [], usage: { input_tokens: input, output_tokens: output } }) },
+  ],
+  text: (text: string, index = 0): [string, Record<string, unknown>] => [
+    "content_block_delta",
+    { type: "content_block_delta", index, delta: { type: "text_delta", text } },
+  ],
+  thinking: (thinking: string): [string, Record<string, unknown>] => [
+    "content_block_delta",
+    { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking } },
+  ],
+  end: (output: number, stop_reason = "end_turn", extra: Record<string, unknown> = {}): Array<[string, Record<string, unknown>]> => [
+    ["message_delta", { type: "message_delta", delta: { stop_reason, stop_sequence: null, ...extra }, usage: { output_tokens: output } }],
+    ["message_stop", { type: "message_stop" }],
+  ],
+};
+
+async function collect(it: AsyncIterable<any>) {
+  const out: any[] = [];
+  for await (const c of it) out.push(c);
+  return out;
+}
+
+describe("streamWithClaude", () => {
+  it("asks for a stream with the same thinking and effort as a finished reply", async () => {
+    streamEvents = [sse.start(), sse.text("hi"), ...sse.end(5)];
+    await collect(await streamWithClaude({ model: "claude-sonnet-5-5", system: "SYS", maxTokens: 900, messages: [{ role: "user", content: "q" }] }, { client }));
+    const body = seen[0]!.body;
+    assert.equal(body.stream, true);
+    assert.equal(body.system, "SYS");
+    assert.deepEqual(body.thinking, { type: "adaptive" });
+    assert.deepEqual(body.output_config, { effort: "medium" });
+    assert.equal(body.max_tokens, CLAUDE_MIN_MAX_TOKENS);
+  });
+
+  it("forwards each text delta in the chunk shape the chat pump reads, then the usage", async () => {
+    streamEvents = [sse.start(100, 1), sse.text("مر"), sse.text("حبا"), ...sse.end(7)];
+    const chunks = await collect(
+      await streamWithClaude({ model: "claude-sonnet-5-5", system: "S", maxTokens: 900, messages: [{ role: "user", content: "q" }] }, { client }),
+    );
+    assert.deepEqual(
+      chunks.map((c) => c.choices?.[0]?.delta?.content).filter(Boolean),
+      ["مر", "حبا"],
+    );
+    assert.deepEqual(chunks.at(-1), { choices: [], usage: { prompt_tokens: 100, completion_tokens: 7 } });
+  });
+
+  it("never forwards the model's thinking", async () => {
+    streamEvents = [sse.start(), sse.thinking("secret working"), sse.text("answer"), ...sse.end(3)];
+    const chunks = await collect(
+      await streamWithClaude({ model: "claude-sonnet-5-5", system: "S", maxTokens: 900, messages: [{ role: "user", content: "q" }] }, { client }),
+    );
+    assert.ok(!JSON.stringify(chunks).includes("secret working"));
+    assert.equal(chunks[0].choices[0].delta.content, "answer");
+  });
+
+  it("fails the stream on a refusal rather than ending it as if the answer were finished", async () => {
+    streamEvents = [sse.start(), sse.text("partial"), ...sse.end(3, "refusal", { stop_details: { type: "refusal", category: "bio", explanation: null } })];
+    await assert.rejects(
+      collect(await streamWithClaude({ model: "claude-sonnet-5-5", system: "S", maxTokens: 900, messages: [{ role: "user", content: "q" }] }, { client })),
+      (err: unknown) => err instanceof ClaudeRefusalError && err.category === "bio",
+    );
+  });
+
+  it("throws from the open call, before any chunk, when the key is not accepted", async () => {
+    // The point of settling at accept time: the chat route can still switch
+    // provider because nothing has gone to its own client yet.
+    const bad = createServer((_req, res) => {
+      res.writeHead(401, { "content-type": "application/json" });
+      res.end(JSON.stringify({ type: "error", error: { type: "authentication_error", message: "invalid x-api-key" } }));
+    });
+    await new Promise<void>((r) => bad.listen(0, "127.0.0.1", r));
+    const badClient = new Anthropic({ apiKey: "nope", baseURL: `http://127.0.0.1:${(bad.address() as AddressInfo).port}`, maxRetries: 0 });
+    try {
+      await assert.rejects(
+        streamWithClaude({ model: "claude-sonnet-5-5", system: "S", maxTokens: 900, messages: [{ role: "user", content: "q" }] }, { client: badClient }),
+        (err: any) => err.status === 401,
+      );
+    } finally {
+      await new Promise<void>((r) => bad.close(() => r()));
+    }
+  });
+});
+
+
+describe("claudeMaxTokens and claudeRequestOptions", () => {
+  it("claudeMaxTokens is the ceiling a call is really sent with: never under the floor, never cutting a caller that asks for more", () => {
+    // Chat asks for 1200. Claude is sent 16000, so spend estimates must use this, not the 1200.
+    assert.equal(claudeMaxTokens(1200), CLAUDE_MIN_MAX_TOKENS);
+    assert.equal(claudeMaxTokens(24000), 24000);
+  });
+
+  it("leaves an ordinary call on the client's defaults", () => {
+    assert.equal(claudeRequestOptions(400), undefined);
+    assert.equal(claudeRequestOptions(CLAUDE_MIN_MAX_TOKENS), undefined);
+  });
+
+  it("gives a long reply (a big exam paper) more than the two-minute default, no retry, and never more than Cloud Run allows", () => {
+    // A retry cannot fit in the 300 s request limit, and the 120 s default cuts a
+    // 24000-token paper off before it is written.
+    const big = claudeRequestOptions(24000)!;
+    assert.equal(big.maxRetries, 0);
+    assert.ok(big.timeout! > 120_000, "longer than the default");
+    assert.ok(big.timeout! < 300_000, "inside Cloud Run's request limit");
+    assert.ok(claudeRequestOptions(20000)!.timeout! < big.timeout!, "scales with the ceiling");
+  });
+
+  it("a long call still reaches the API as an ordinary request", async () => {
+    await completeWithClaude({ model: "claude-sonnet-5-5", system: "S", user: "U", maxTokens: 24000 }, { client });
+    assert.equal(seen[0]!.body.max_tokens, 24000);
   });
 });
