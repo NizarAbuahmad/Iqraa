@@ -41,6 +41,7 @@ import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { greetingKey } from '@/services/greeting';
 import { readableOn } from '@/services/readableColor';
+import { IQRA_CHAT_ENABLED } from '@/services/features';
 
 const START_CLASS_COLOR = palette.live;
 const ON_NAVY = '#FFFFFF';
@@ -294,6 +295,8 @@ export function PhoneToday() {
             </View>
           </Entrance>
 
+          {/* Hidden while the chat is off (`IQRA_CHAT_ENABLED`): it only leads there. */}
+          {IQRA_CHAT_ENABLED ? (
           <Entrance index={section++}>
             {/* Hands off rather than holding its own thread: one conversation per
                 teacher, and it lives in the chat. Sending opens it with the
@@ -354,6 +357,7 @@ export function PhoneToday() {
             </Surface>
             </TourTarget>
           </Entrance>
+          ) : null}
 
           <Entrance index={section++}>
             <View style={s.group}>

@@ -33,6 +33,13 @@ export type ClaimResolution =
        * under the row lock — see `hasGuardianLink`.
        */
       viaClassCode: boolean;
+      /**
+       * The class whose code was used — set only when `viaClassCode`. A held
+       * request is about a class, and the roster row may sit in several of the
+       * teacher's classes, so the teacher's push opens this one
+       * (lib/joinRequestNotify.ts).
+       */
+      classGroupId?: string;
     }
   | { ok: false; status: number; error: string; code: ClaimErrorCode };
 
@@ -137,7 +144,9 @@ export async function decideClaim(input: ClaimInput): Promise<ClaimResolution> {
   // above; a per-student code from the teacher may add another.
   if (relation === "self" && (await input.hasSelfLink(target))) return ALREADY_LINKED;
 
-  return { ok: true, studentId: target, relation, viaClassCode };
+  return viaClassCode
+    ? { ok: true, studentId: target, relation, viaClassCode, classGroupId: classGroup!.id }
+    : { ok: true, studentId: target, relation, viaClassCode };
 }
 
 /**

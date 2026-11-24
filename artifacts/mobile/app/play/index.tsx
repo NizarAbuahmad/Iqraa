@@ -24,6 +24,7 @@ import { PLAY_GAME_GRADES, gradeBandLabel, type PlayGameId } from '@/services/pu
 import { readableOn } from '@/services/readableColor';
 import { ELEMENTS_ACCENT } from '@/components/publicGames/ElementsGame';
 import { ChipGroup } from '@/components/generator/ChipGroup';
+import { hubShowsBack } from '@/services/publicGames/hubBack';
 import { SPACE, TYPE } from '@/constants/theme';
 import {
   NO_FILTER, PLAY_FILTER_GRADES, PLAY_SUBJECTS, filterGames, hubFilterParams, parseHubFilter,
@@ -98,7 +99,11 @@ export default function PlayHubScreen() {
   ];
 
   return (
-    <CornerFrame title={t('playHubTitle')} subtitle={t('playHubSubtitle')} hideBack>
+    <CornerFrame
+      title={t('playHubTitle')}
+      subtitle={t('playHubSubtitle')}
+      hideBack={!hubShowsBack({ canGoBack: router.canGoBack(), signedIn: !!user })}
+    >
       <View style={styles.filters}>
         <ChipGroup
           label={t('playFilterSubject')}
