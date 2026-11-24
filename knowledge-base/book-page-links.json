@@ -10147,7 +10147,7 @@
   "kbl-g8-digital-s2-nccd-u3_l4": {
    "sourceId": "g8-digital-s2-student-book",
    "startPage": 82,
-   "endPage": 101,
+   "endPage": 99,
    "aspect": 0.7586
   },
   "kbl-g8-digital-s2-nccd-u4_l1": {
@@ -11585,7 +11585,7 @@
   "kbl-g8-voc-s2-nccd-u10_l2": {
    "sourceId": "g8-voc-s2-student-book",
    "startPage": 120,
-   "endPage": 130,
+   "endPage": 129,
    "aspect": 0.75
   },
   "kbl-g8-voc-s2-nccd-u1_l1": {
@@ -14905,6 +14905,28 @@
    "startPage": 111,
    "endPage": 124,
    "aspect": 0.7586
+  },
+  "kbl-g8-arabic-s2-nccd-u8_l1": {
+   "sourceId": "arabic-8-s2-student-book",
+   "startPage": 60,
+   "endPage": 63,
+   "aspect": 0.75,
+   "rendered": {
+    "dir": "kbl-g8-arabic-s2-nccd-u7_l5",
+    "startPage": 51,
+    "endPage": 63
+   }
+  },
+  "kbl-g8-arabic-s2-nccd-u8_l5": {
+   "sourceId": "arabic-8-s2-student-book",
+   "startPage": 79,
+   "endPage": 83,
+   "aspect": 0.75,
+   "rendered": {
+    "dir": "kbl-g8-arabic-s2-nccd-u8_l4",
+    "startPage": 79,
+    "endPage": 83
+   }
   }
  }
 }

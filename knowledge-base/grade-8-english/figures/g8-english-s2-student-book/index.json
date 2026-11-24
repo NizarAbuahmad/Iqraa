@@ -82,54 +82,6 @@
       "lessonStartPage": null
     },
     {
-      "file": "p028b.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 28,
-      "rect": [
-        268.5,
-        555.1,
-        610.1,
-        841.8
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p028c.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 28,
-      "rect": [
-        -0.0,
-        261.1,
-        311.7,
-        550.3
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p028d.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 28,
-      "rect": [
-        312.6,
-        276.9,
-        609.8,
-        554.8
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
       "file": "p035.png",
       "sourceId": "g8-english-s2-student-book",
       "pdfPage": 35,
@@ -138,22 +90,6 @@
         348.3,
         309.8,
         656.7
-      ],
-      "unit": 3,
-      "lesson": 6,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p035c.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 35,
-      "rect": [
-        -15.2,
-        573.1,
-        644.7,
-        924.1
       ],
       "unit": 3,
       "lesson": 6,
@@ -205,22 +141,6 @@
       ],
       "unit": 3,
       "lesson": 7,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p047c.png",
-      "sourceId": "g8-english-s2-student-book",
-      "pdfPage": 47,
-      "rect": [
-        14.2,
-        641.6,
-        623.8,
-        870.3
-      ],
-      "unit": 4,
-      "lesson": 6,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": null
