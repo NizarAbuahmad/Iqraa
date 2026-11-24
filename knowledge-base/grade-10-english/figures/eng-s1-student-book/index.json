@@ -146,22 +146,6 @@
       "lessonStartPage": null
     },
     {
-      "file": "p033.png",
-      "sourceId": "eng-s1-student-book",
-      "pdfPage": 33,
-      "rect": [
-        14.1,
-        691.1,
-        623.6,
-        870.4
-      ],
-      "unit": 3,
-      "lesson": 5,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
       "file": "p035.png",
       "sourceId": "eng-s1-student-book",
       "pdfPage": 35,

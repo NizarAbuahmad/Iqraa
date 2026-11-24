@@ -18,22 +18,6 @@
    "lessonStartPage": 10
   },
   {
-   "file": "p011.png",
-   "sourceId": "bio-s2-student-book",
-   "pdfPage": 11,
-   "rect": [
-    130.1,
-    0,
-    623.6,
-    258.2
-   ],
-   "unit": 3,
-   "lesson": 5,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": 10
-  },
-  {
    "file": "p011b.png",
    "sourceId": "bio-s2-student-book",
    "pdfPage": 11,
