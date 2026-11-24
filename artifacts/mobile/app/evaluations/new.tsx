@@ -53,7 +53,7 @@ import { confirm } from '@/services/confirm';
 import { pickMarkSheetPhotos } from '@/services/documents/pick';
 import { blankMarkCount, gridFromScan, totalMismatch } from '@/services/paperScan';
 import { scanErrorKey } from '@/services/scanErrors';
-import { groupObjectivesByLesson } from '@/services/objectiveLessons';
+import { groupObjectivesByLesson, isEverythingSelected, toggleEverything } from '@/services/objectiveLessons';
 import { selectionForGrade, typesOffered } from '@/services/evaluationTypes';
 import { BackButton } from '@/components/ui/BackButton';
 
@@ -292,6 +292,12 @@ export default function NewEvaluationScreen() {
       return next;
     });
   }, []);
+
+  // «الكتاب كاملًا»: a Grade 10 vocational English track is its own book here,
+  // so this is how a teacher sets an exam on the whole track in one tap.
+  const toggleWholeBook = useCallback(() => {
+    setSelectedObjectives(prev => toggleEverything(prev, objectives));
+  }, [objectives]);
 
   const toggleObjective = useCallback((id: string) => {
     setSelectedObjectives(prev => {
@@ -577,7 +583,26 @@ export default function NewEvaluationScreen() {
             <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
               {t('selectLessonsHint')}
             </Text>
+            {/* Exam-only targets (examTargetsFromBook): say what the questions
+                are built on, since these are not the book's outcomes. */}
+            {objectives.some(o => o.examTargetSource) && (
+              <Text style={[styles.hint, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: align }]}>
+                {t('evalTargetsFromBookNote')}
+              </Text>
+            )}
             <View style={[styles.checkboxGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {lessonGroups.length > 1 && (
+                <View style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, marginBottom: 8, paddingBottom: 4 }}>
+                  <CheckboxRow
+                    label={t('evalWholeBook')}
+                    checked={isEverythingSelected(selectedObjectives, objectives)}
+                    onToggle={toggleWholeBook}
+                    accent={ACCENT}
+                    colors={colors}
+                    isRTL={isRTL}
+                  />
+                </View>
+              )}
               {lessonGroups.map((g, i) => {
                 const ids = g.objectives.map(o => o.id);
                 return (

@@ -976,6 +976,17 @@ at once, but phones keep the old 45 s limit until the production OTA
 (`gh workflow run mobile-update.yml -f branch=production`). A deck takes 30-40 s on
 Claude, so switching first would time it out on a phone that has not updated yet.
 
+**A key that stops working** (expired, revoked, or an empty Anthropic balance) no longer fails
+those documents: since 2026-11-21 `generateContent` answers with the OpenAI model instead
+(`lib/providerFallback.ts`), and logs «AI provider refused the account — answering with the
+other provider» at error level on every such request. That line in the logs means rotate the
+key or add funds; the fallback only keeps the screens working meanwhile. It runs the other
+way too: an empty OpenAI balance sends chat, exam generation, the photo-marking scans and the
+other prep tools to Claude Sonnet 5.5 (`lib/aiComplete.ts`). The backup model is read from
+`AI_MODEL_DOCUMENTS`, so the rollback below (`--remove-env-vars=AI_MODEL_DOCUMENTS`) also
+removes the backup: with it gone, a dead OpenAI key fails chat and exams again. The public
+site assistant has no backup either way.
+
 **Roll back** with `--remove-env-vars=AI_MODEL_DOCUMENTS`: instant, no deploy. Pooled
 artifacts are keyed by model, so what OpenAI wrote and what Claude writes never mix.
 

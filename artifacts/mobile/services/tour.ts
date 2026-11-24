@@ -11,6 +11,7 @@
  */
 import type { TranslationKey } from './i18n.ts';
 import { isHomePath } from './tabVisibility.ts';
+import { IQRA_CHAT_ENABLED } from './features.ts';
 import {
   needsGradeSetup,
   needsGuardianApproval,
@@ -99,7 +100,7 @@ const step =(id: string, targetId: string | null, titleKey: TranslationKey, body
 /** `tab-x` on a phone, `nav-x` on the desktop sidebar: the same destination, a different element. */
 const nav = (layout: TourLayout, name: string) => `${layout === 'phone' ? 'tab' : 'nav'}-${name}`;
 
-export function stepsFor(role: TourRole, layout: TourLayout): TourStep[] {
+export function stepsFor(role: TourRole, layout: TourLayout, chatEnabled: boolean = IQRA_CHAT_ENABLED): TourStep[] {
   switch (role) {
     case 'teacher':
       return [
@@ -107,7 +108,10 @@ export function stepsFor(role: TourRole, layout: TourLayout): TourStep[] {
         step('lesson', 'today-lesson', 'tourLessonTitle', 'tourLessonBody'),
         step('prep', 'today-prep', 'tourPrepTitle', 'tourPrepBody'),
         // Phone: the ask card sits on Today, below the fold. Desktop: it is the sidebar's chat.
-        step('ask', layout === 'phone' ? 'today-ask' : 'nav-iqra', 'tourAskTitle', 'tourAskBody'),
+        // Neither exists while the chat is off (`IQRA_CHAT_ENABLED`).
+        ...(chatEnabled
+          ? [step('ask', layout === 'phone' ? 'today-ask' : 'nav-iqra', 'tourAskTitle', 'tourAskBody')]
+          : []),
         step('tools', nav(layout, 'ai-tools'), 'tourToolsTitle', 'tourToolsBody'),
         step('profile', nav(layout, 'profile'), 'tourProfileTitle', 'tourProfileBody'),
       ];

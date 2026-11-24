@@ -604,6 +604,33 @@ export type GenerationDetail = {
   durationMs?: number | null;
 };
 
+/** What a provider reports for one completion; OpenAI adds the cached part of the prompt. */
+export type ProviderUsage = {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  prompt_tokens_details?: { cached_tokens?: number } | null;
+};
+
+/**
+ * How many of a completion's input tokens the provider served from its prompt
+ * cache (OpenAI does this on its own for a repeated prefix, such as a chat's
+ * system prompt and book context on every turn after the first).
+ *
+ * Recorded, not priced. Those tokens are billed below the standard input rate,
+ * so `costUsd` overstates a turn that has them; the admin AI costs page shows
+ * the share so the estimate can be read against the provider's invoice. Pricing
+ * them needs a cached-input rate per model read from the provider's price list;
+ * until one is in the table, every input token is billed here at the full rate,
+ * which can only trip a cap early.
+ *
+ * Never more than the prompt, and a bad number is zero.
+ */
+export function cachedPromptTokensOf(usage: ProviderUsage | undefined | null): number {
+  const cached = usage?.prompt_tokens_details?.cached_tokens;
+  if (typeof cached !== "number" || !Number.isFinite(cached) || cached <= 0) return 0;
+  return Math.min(Math.floor(cached), Math.max(0, usage?.prompt_tokens ?? 0));
+}
+
 /**
  * Call once per completion, after a successful response, to add its cost to
  * the running total, and to record the row behind it.
@@ -614,7 +641,7 @@ export type GenerationDetail = {
  * whichever direction the two prices differ.
  */
 export function recordUsage(
-  usage: { prompt_tokens?: number; completion_tokens?: number } | undefined | null,
+  usage: ProviderUsage | undefined | null,
   model: string,
   detail?: GenerationDetail,
 ): void {
@@ -648,6 +675,7 @@ export function recordUsage(
     cacheStatus: detail.cacheStatus ?? "miss",
     artifactId: detail.artifactId ?? null,
     promptTokens,
+    cachedPromptTokens: cachedPromptTokensOf(usage),
     completionTokens,
     costUsd: cost,
     durationMs: detail.durationMs ?? null,

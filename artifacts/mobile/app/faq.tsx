@@ -34,6 +34,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { HelpVideoShelf } from '@/components/help/HelpVideoShelf';
 import { goBack } from '@/services/navigation';
+import { IQRA_CHAT_ENABLED } from '@/services/features';
 import {
   FAQ_CATEGORIES,
   FAQ_ENTRIES,
@@ -386,6 +387,7 @@ export default function FaqScreen() {
               {t('faqStillBody')}
             </Text>
             <View style={[styles.stillActions, { flexDirection: rowDir }]}>
+              {IQRA_CHAT_ENABLED ? (
               <Pressable
                 onPress={() => router.push('/iqra')}
                 accessibilityRole="button"
@@ -397,6 +399,7 @@ export default function FaqScreen() {
                 <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.primaryForeground} />
                 <Text style={[styles.ctaText, { color: colors.primaryForeground }]}>{t('faqAskIqra')}</Text>
               </Pressable>
+              ) : null}
               <Pressable
                 onPress={() => router.push('/suggest-feature')}
                 accessibilityRole="button"

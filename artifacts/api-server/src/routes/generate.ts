@@ -62,6 +62,8 @@ import {
   type GenerationDetail,
 } from "../lib/aiBudget.ts";
 import { ClaudeRefusalError, completeWithClaude } from "../lib/claude.ts";
+import { withProviderFallback } from "../lib/providerFallback.ts";
+import { completeAi } from "../lib/aiComplete.ts";
 import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
 import { withGrounding, type Grounding } from "../lib/grounding.ts";
 import { PROMPT_VERSION, generationKeys, hasBookFigures, normalizeText, promptVersionFor, scopeKeyOf } from "../lib/generationKey.ts";
@@ -344,8 +346,20 @@ async function refusalFromCaps(
  */
 async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
   assertLiveModeEnabled();
-  const { kind, body, userId } = args;
-  const model = args.model ?? getDocumentModel(kind);
+  const model = args.model ?? getDocumentModel(args.kind);
+  // An expired key or an empty balance on one provider answers with the other
+  // (lib/providerFallback.ts). The whole pooled flow re-runs under the backup's
+  // model, so its pool is read and its artifact stored under its own key, and
+  // the caps are asked again for the call that is actually made.
+  return withProviderFallback(
+    model,
+    (m) => generateContentWith({ ...args, model: m }),
+    { kind: args.kind, userId: args.userId },
+  );
+}
+
+async function generateContentWith(args: GenerateArgs & { model: string }): Promise<GenerateResult> {
+  const { kind, body, userId, model } = args;
   const keys = generationKeys(kind, model, body);
   const regenerate = body.regenerate === true;
   const detail = { kind, promptVersion: promptVersionFor(kind), userId, ...keys };
@@ -1081,24 +1095,24 @@ generateRouter.post('/generate/prompt-slides/questions', async (req: Authenticat
     await assertUserQuotaAvailable(req.user?.id);
     assertBudgetAvailable();
 
-    const model = getChatModel();
     const body = { ...reqBody, prompt };
-    const completion = await openai.chat.completions.create({
-      model,
-      max_completion_tokens: QUESTIONS_TOKENS,
+    const completion = await completeAi({
+      model: getChatModel(),
+      maxTokens: QUESTIONS_TOKENS,
       messages: [
         { role: "system", content: systemPrompt(isAr) },
         { role: "user", content: isAr ? questionsPromptAr(body) : questionsPromptEn(body) },
       ],
     });
-    recordUsage(completion.usage, model, {
+    // The model that answered: after a dead key on the first provider, the other one.
+    recordUsage(completion.usage, completion.model, {
       kind: "prompt-slides-questions", promptVersion: PROMPT_VERSION,
       userId: req.user?.id, artifactId: null,
     });
 
     let questions: ReturnType<typeof parseQuestions> = [];
     try {
-      questions = parseQuestions(extractJSON(completion.choices[0]?.message?.content ?? "{}"));
+      questions = parseQuestions(extractJSON(completion.text ?? "{}"));
     } catch {
       // Unparseable means no questions, not an error — see this route's header.
       questions = [];
@@ -1144,11 +1158,21 @@ generateRouter.post('/generate/solve', async (req: AuthenticatedRequest, res) =>
       complete: async (userPrompt) => {
         const refusal = await refusalFromCaps(userId);
         if (refusal) throw refusal.error;
-        const done = await completeOnce({
-          kind: 'solve', model, systemPrompt: solveSystemPrompt(isAr), userPrompt,
-          maxCompletionTokens: SOLVE_TOKENS, detail,
-        });
-        recordUsage(done.usage, model, { ...detail, artifactId: null, durationMs: done.durationMs });
+        // Not pooled, so the fallback is just this one call; `answeredBy` is what
+        // spend is recorded against once the other provider has answered it.
+        let answeredBy = model;
+        const done = await withProviderFallback(
+          model,
+          (m) => {
+            answeredBy = m;
+            return completeOnce({
+              kind: 'solve', model: m, systemPrompt: solveSystemPrompt(isAr), userPrompt,
+              maxCompletionTokens: SOLVE_TOKENS, detail,
+            });
+          },
+          { kind: 'solve', userId },
+        );
+        recordUsage(done.usage, answeredBy, { ...detail, artifactId: null, durationMs: done.durationMs });
         return done.parsed;
       },
       relate: relateAnswerKey,

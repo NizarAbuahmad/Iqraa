@@ -733,11 +733,52 @@ function parseRepairing(text: string): unknown {
     return JSON.parse(text);
   } catch (err) {
     // Valid escapes are consumed as pairs, so «\\alpha» keeps its one literal backslash.
-    const repaired = text.replace(
+    const escaped = text.replace(
       /\\(["\\/bfnrt]|u[0-9a-fA-F]{4})|\\/g,
       (m, ok) => (ok ? m : "\\\\"),
     );
+    const repaired = dropTrailingCommas(escaped);
     if (repaired === text) throw err;
     return JSON.parse(repaired);
   }
+}
+
+/**
+ * Remove a comma that stands right before a closing `}` or `]`, outside strings.
+ *
+ * A model writing a long object sometimes leaves one behind («"x": 1,\n    }»),
+ * which `JSON.parse` rejects with «Expected double-quoted property name» — seen
+ * in production 2026-11-21 on a Claude lesson plan, a 500 for a plan that was
+ * otherwise whole. Walks the text tracking string state (and escapes inside
+ * strings), so a «, }» the model wrote as Arabic or English prose is never
+ * touched. Only runs after a strict parse has failed.
+ */
+export function dropTrailingCommas(text: string): string {
+  let out = "";
+  let inString = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      out += ch;
+      if (ch === "\\") {
+        out += text[i + 1] ?? "";
+        i++;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      out += ch;
+      continue;
+    }
+    if (ch === ",") {
+      let j = i + 1;
+      while (j < text.length && /\s/.test(text[j])) j++;
+      if (text[j] === "}" || text[j] === "]") continue;
+    }
+    out += ch;
+  }
+  return out;
 }

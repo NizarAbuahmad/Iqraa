@@ -12,9 +12,9 @@ export const REVIEWED_BY_EAR: Record<string, string> = {
   'a-cough': '"3294e8b472434d9609b6233f0f058df3"',
   'aunt': '"caeb679376e6b6910a3842b051bd00ea"',
   'ball': '"75b4a5b372bb9725fabd20df0c334ac0"',
-  'been': '"6706352234a1f229dc362ab8bee0e45c"',
+  // 'been' and 'burned' were also heard on 2026-10-31 and dropped on 2026-11-15: they came from the irregular-verbs
+  // table the Word List parser used to read past (extract-english-vocabulary.ts), so no lesson plays them now.
   'boat': '"1aa2f9016947e43aa8b24c458af6074c"',
-  'burned': '"e2bedafaa625b86fcef1945ffdb08093"',
   'cheap': '"e38d1f26570ddacf48e7ed4376fd481a"',
   'chill': '"c73eb620118147c5c1498d5b58e801e5"',
   'fancy': '"ef11e155ab7706c5cdbbc66385165bb0"',

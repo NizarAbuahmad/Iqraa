@@ -1204,7 +1204,25 @@ const lineRelations = (id: string, match: RegExp, grade: number) => T(id, match,
 });
 
 const angleArithmetic = T('angle_measure', /^قياس الزوايا ورسمها$/, [4, 4], ({ rng }) => {
-  const a = 5 * int(rng, 2, 16), b = 5 * int(rng, 1, 15), k = pick(rng, [0, 1, 2, 3]);
+  const a = 5 * int(rng, 2, 16), b = 5 * int(rng, 1, 15), k = pick(rng, [0, 1, 2, 3, 4, 5, 6, 7]);
+  // «أستعمل المنقلة لرسم الزاوية وقياسها بالدرجات»: half the items read and draw with a protractor
+  // (a reading from 0, from another mark, the two scales, where to mark an angle) — it only added and
+  // subtracted angles before (2026-11-21).
+  if (k >= 4) {
+    const x = 5 * int(rng, 2, 34), deg = (v: number) => `${v}°`;
+    if (k === 4) return { eq: `read ${x}`, answer: deg(x), wrongs: wrongsFrom(deg(x), [deg(180 - x), deg(x + 10), deg(x - 10)], j => deg(x + 5 * Math.abs(j))), ar: `وُضعت المنقلة على زاوية بحيث ينطبق أحد ضلعيها على العدد 0، ويمرّ الضلع الآخر بالعدد ${x} على التدريج نفسه. ما قياس الزاوية؟`, en: `A protractor is placed on an angle with one arm on 0 and the other arm through ${x} on the same scale. What is the measure of the angle?` };
+    if (k === 5) {
+      let lo = 5 * int(rng, 1, 15), hi = lo + 5 * int(rng, 2, 15);
+      if (hi > 175) { hi = 175; lo = Math.min(lo, 100); }
+      const d = hi - lo;
+      return { eq: `marks ${lo}, ${hi}`, answer: deg(d), wrongs: wrongsFrom(deg(d), [deg(hi + lo), deg(hi), deg(lo)], j => deg(d + 5 * Math.abs(j))), ar: `ينطبق ضلعا زاوية على المنقلة عند العددين ${lo} و ${hi} على التدريج نفسه. ما قياس الزاوية؟`, en: `The arms of an angle lie on a protractor at ${lo} and ${hi} on the same scale. What is the angle?` };
+    }
+    if (k === 6) {
+      const ac = 5 * int(rng, 2, 17), both = rng() < 0.5 ? [ac, 180 - ac] : [180 - ac, ac];
+      return { eq: `scales ${ac}`, answer: deg(ac), wrongs: wrongsFrom(deg(ac), [deg(180 - ac), deg(90 - ac > 0 ? 90 - ac : 10), deg(ac + 10)], j => deg(ac + 5 * Math.abs(j))), ar: `قرأ طالب قياس زاوية حادة على المنقلة فكانت القراءتان على التدريجين ${both[0]}° و ${both[1]}°. ما قياس الزاوية؟`, en: `A pupil read an acute angle on both scales of a protractor and got ${both[0]}° and ${both[1]}°. What is its measure?` };
+    }
+    return { eq: `draw ${x}`, answer: deg(x), wrongs: wrongsFrom(deg(x), [deg(180 - x), deg(x + 10), deg(x - 10)], j => deg(x + 5 * Math.abs(j))), ar: `لرسم زاوية قياسها ${x}° بالمنقلة بعد وضع مركزها على رأس الزاوية وقاعدتها على أحد الضلعين، عند أي عدد على التدريج الذي يبدأ من الصفر نعلّم النقطة؟`, en: `To draw a ${x}° angle with a protractor, centred on the vertex with its base on one arm, which number on the scale that starts at 0 do you mark?` };
+  }
   if (k === 0) { const s = a + b; return { eq: `${a}, ${b}`, answer: `${s}°`, wrongs: wrongsFrom(`${s}°`, [`${Math.abs(a - b)}°`, `${s + 10}°`, `${180 - s > 0 ? 180 - s : 5}°`], j => `${s + 5 * Math.abs(j)}°`), ar: `رُسمت زاويتان متجاورتان قياسهما ${a}° و ${b}°. ما قياس الزاوية الكلية؟`, en: `Two adjacent angles measure ${a}° and ${b}°. What is the total angle?` }; }
   if (k === 1) { const x = 5 * int(rng, 2, 17); return { eq: `${x}`, answer: `${180 - x}°`, wrongs: wrongsFrom(`${180 - x}°`, [`${90 - x > 0 ? 90 - x : 10}°`, `${x}°`, `${360 - x}°`], j => `${180 - x + 5 * Math.abs(j)}°`), ar: `زاوية على مستقيم قياسها ${x}°. ما قياس الزاوية المجاورة لها على المستقيم نفسه؟`, en: `An angle on a straight line measures ${x}°. What does the angle next to it on the same line measure?` }; }
   if (k === 2) { const x = 5 * int(rng, 2, 17); return { eq: `${x}`, answer: `${90 - x}°`, wrongs: wrongsFrom(`${90 - x}°`, [`${180 - x}°`, `${x}°`, `${90 + x}°`], j => `${90 - x + 5 * Math.abs(j)}°`), ar: `زاوية قياسها ${x}° تتمم زاوية قائمة. ما قياس الزاوية المتمّمة؟`, en: `An angle of ${x}° is placed next to another to make a right angle. What does the other measure?` }; }
