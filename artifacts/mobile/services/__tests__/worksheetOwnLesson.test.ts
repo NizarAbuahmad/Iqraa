@@ -53,7 +53,10 @@ describe('«قانون الجيوب» fills its own paper', () => {
 
   it('the instructions promise a half-solved question only when there is one', async () => {
     // «جمع المتجهات وطرحها» has one solved item of its own: a worked example and no «مثال نكمله».
-    const w = await make('جمع المتجهات وطرحها', 6, ['short_answer']);
+    // By id: the title alone grounds to another grade's lesson of the same name.
+    const w = await aiService.generateWorksheet({
+      ...G10, topic: 'جمع المتجهات وطرحها', lessonId: 'kbl-math-s2-nccd-u7_l2', numQuestions: 6, questionTypes: ['short_answer'],
+    } as AIRequest);
     assert.ok(w.workedExample, 'the lesson has a worked example');
     assert.ok(!w.sections.some(s => s.title === 'مثال نكمله'));
     assert.doesNotMatch(w.instructions, /أكمل الحل/);
