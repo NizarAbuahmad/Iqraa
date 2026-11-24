@@ -182,6 +182,16 @@ branch's main idea, objective and vocabulary, and adds a `known_gaps` line for
 the audit's page reading (pp. 71-76). The entry below keeps social S1's three
 titles and S2 u8_l1 as they were, for exact-title grounding; this branch
 renamed them to the book's printed wording, and the merge keeps the renames.
+
+**A cap the English split outgrew (found at the 2026-11-24 merge).**
+`MAX_SETUP_OBJECTIVES` (`scanRequest.ts`) bounds the objective ids one paper-scan
+setup may carry and must hold any one book's whole list; `scanRequest.test.ts`
+checks every book. With twelve lessons per Grade 5 English unit,
+`book-english-5-s1` has 328 objectives and S2 332, over the 200 the cap was
+raised to for Grade 10 Islamic. The test caught it before it shipped; the cap is
+now 400 (about 20% headroom). Nothing in the app mirrors the number, and the
+`/evaluations/meta/evaluable` route only counts objectives. Without this, the
+exam builder's «الكتاب كاملًا» scan would have been refused for both books.
 ## Grade 3 review, the Grade 2 way: plans, activities, quick checks and live prompts for eight-year-olds — 2026-11-20
 
 The Grade 2 review (below, «Grade 2 review, the Grade 1 way… — 2026-11-15») repeated for Grade 3: 8 subjects, 254

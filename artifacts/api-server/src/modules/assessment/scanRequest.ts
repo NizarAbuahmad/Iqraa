@@ -23,9 +23,11 @@ export const MAX_SETUP_TOTAL_CHARS = 10_000_000;
  * prompt as an id + label list. It must hold any one book's whole list, which
  * the exam builder's «الكتاب كاملًا (كل الدروس)» sends. At 100 it refused
  * Grade 10 Islamic Education S2 (116 objectives), S1 (105) and Grade 7 S1
- * (102). `scanRequest.test.ts` checks every book fits.
+ * (102). At 200 it refused Grade 5 English S1 (328) and S2 (332), once each
+ * unit carried the book's own twelve lessons instead of two. `scanRequest.test.ts`
+ * checks every book fits, so the next split that outgrows this fails there.
  */
-export const MAX_SETUP_OBJECTIVES = 200;
+export const MAX_SETUP_OBJECTIVES = 400;
 
 export interface ScanRefusal {
   status: number;
