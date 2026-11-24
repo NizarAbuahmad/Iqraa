@@ -18,7 +18,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { apiJson } from '@/services/apiClient';
 import { confirm } from '@/services/confirm';
-import { routeFromNotificationData } from '@/services/notificationDeepLink';
+import { queryKeysToRefresh, routeFromNotificationData } from '@/services/notificationDeepLink';
+import { queryClient } from '@/services/queryClient';
 import { channelsFor, pushPromptDecision } from '@/services/pushPolicy';
 
 /** Set once our explanation has been shown on this device, accepted or not. */
@@ -182,6 +183,13 @@ export function syncAppBadge(count: number): void {
   Notifications.setBadgeCountAsync(Math.max(0, count)).catch(() => {});
 }
 
+/** Marks stale whatever an arriving push is news for (queryKeysToRefresh), so open screens refetch now. */
+function refreshForNotification(notification: Notifications.Notification): void {
+  for (const queryKey of queryKeysToRefresh(notification.request.content.data)) {
+    void queryClient.invalidateQueries({ queryKey: [...queryKey] });
+  }
+}
+
 function navigateFromNotificationResponse(response: Notifications.NotificationResponse): void {
   const route = routeFromNotificationData(response.notification.request.content.data);
   if (route) router.push(route as never);
@@ -222,7 +230,13 @@ export function registerNotificationTapHandler(): () => void {
   const subscription = Notifications.addNotificationResponseReceivedListener(
     navigateFromNotificationResponse,
   );
-  return () => subscription.remove();
+  // A push that arrives while the app is open: refresh what it is about (the
+  // bell's join-request count), so the bell agrees with the banner at once.
+  const arrivals = Notifications.addNotificationReceivedListener(refreshForNotification);
+  return () => {
+    subscription.remove();
+    arrivals.remove();
+  };
 }
 
 export async function unregisterPushToken(): Promise<void> {

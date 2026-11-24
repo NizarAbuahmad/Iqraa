@@ -10,6 +10,25 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A join-request push refreshes the bell the moment it arrives — 2026-11-23
+
+Follow-up to «The teacher is told when a student's class-code pick waits for them» (#1538), whose «Not verified»
+noted that a push arriving while the app was open did not refresh the bell: the count caught up on the bell's
+next one-minute poll, behind the banner the phone had just shown.
+
+- `services/notificationDeepLink.ts` `queryKeysToRefresh(data)` says which cached queries an arriving push makes
+  stale. A `class-link-requests` push marks the bell's count (`linkRequestSummaryQueryKey`) and, for a UUID-shaped
+  `classGroupId`, that class's banner (`classLinkRequestsQueryKey`). Every other push marks nothing.
+- `services/pushTokens.ts` `registerNotificationTapHandler` now also adds `addNotificationReceivedListener`. It
+  invalidates those keys on the shared `queryClient`, tapped or not, and is removed with the tap listener on sign-out.
+- No «ما الجديد» entry: the bell already shows these requests; it now shows them sooner.
+
+**Verified:** `notificationDeepLink.test.ts` covers the keys for a join request, a malformed id and other pushes. It
+also reads `pushTokens.ts` to check the listener is wired, because that file imports `expo-notifications`, which
+`node --test` cannot load. `pnpm run typecheck`; mobile `pnpm test`: 9,557 tests, 0 failures.
+**Not verified:** on a device (a push arriving with the app in the foreground). On web there are no pushes, so the
+web bell still polls every minute.
+
 ## The join-request notice is live on the API and on preview and production phones — 2026-11-23
 
 #1538 («The teacher is told when a student's class-code pick waits for them», below) merged as `681749c`.
