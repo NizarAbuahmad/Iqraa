@@ -10,6 +10,70 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 4 second pass: division with a remainder and with zeros, tenths and hundredths apart, mixed numbers compared, six digits, a protractor — 2026-11-21
+
+A second read of Grade 4 maths, on top of «Grade 4 review: reflection on the book's square grid…», «Grade 4, second pass:
+generator output, page ends…» and «Grade 4 maths: offline questions for the two «خطة حل المسألة» lessons». The generators
+ran over all 313 lessons: each grounds by its own id, and all 50 maths lessons fill a ten-question quiz. Every question of
+every maths quiz was read against its lesson's NCCD objective. Every key was right. (The audit script's ten «wrong key» flags
+are its own: it reads «أكبر عدد يمكن تكوينه من الأرقام» as a sum, «أقرب عشرة آلاف» as «عشرة», fractions as decimals and
+«2 كم و 860 م» as zero.) Where a lesson did not ask its own skill, it was measured with the real lesson through
+`takeElementaryMath` (300 draws each), then fixed. Nine things, across twelve lessons:
+
+- **«قسمة الأعداد» (u3_l3) and «القسمة مع وجود أصفار في الناتج» (u3_l4) drew one bank.** u3_l3's objectives are «من دون باقٍ»
+  and «مع باقٍ», yet 0 of 300 items had a remainder. u3_l4 asked «174 ÷ 6 = 29», which has no zero. Two new generators in
+  `lib/math-practice/src/grade4b.ts`:
+  - `div_g4`: three digits by one, 40% or more with a remainder. It asks the quotient, the remainder, a shelves story, the
+    number from «الخارج والباقي», and the missing number.
+  - `div_zeros_g4`: every quotient holds a zero, and half have it in the middle (103, 207). It asks the quotient, how many
+    zeros, the digit in a place, the answer a pupil wrote with the zero left out («حلّ سامر 720 ÷ 4 فكتب 18»), a story and
+    the missing number.
+- **«أجزاء العشرة», «أجزاء المئة» and «التحويل بين الكسور والأعداد العشرية» (u7_l1, l2, l4) shared `frac_dec`.** The tenths
+  lesson asked «0.25» and «1/25»; the conversion lesson asked place values. Now `tenths_g4` (one place, denominator 10: the
+  fraction and the decimal, standard form, the tenths digit, how it is read, a number line), `hundredths_g4` (two places: the
+  same, plus expanded form) and `dec_convert_g4` (conversions only, both ways, mixed numbers too). Grades 5–6
+  («أجزاء الألف») keep `frac_dec`.
+- **«مقارنة الكسور والأعداد الكسرية وترتيبها» (u6_l4) never drew a mixed number** (0 of 300). `frac_compare_g4` draws them in
+  about 60% of its items: a sign (including «2 1/2 ___ 5/2», which is «=»), the greatest or least, and an order; two in five
+  mixed sets share their whole part, so the fraction decides.
+- **«مقارنة الأعداد وترتيبها» (u1_l2) says «ضمن مئات الألوف» and never drew six digits.** It drew from 0 to 99999 and showed 91
+  and 3206. Grade 4 now draws 10000–99999 at easy and 10000–999999 above (`compareRange`), and the digits item builds
+  five- and six-digit numbers.
+- **«تقدير المجموع والفرق» (u1_l4)** drew 2–4 digits and rounded to tens and hundreds only, though u1_l3 rounds to 10000 and
+  u1_l5 adds within six places. Grade 4 now draws 4, 5 and 6 digits by tier, rounds to 100, 1000 or 10000, and keeps a
+  sum and its estimate under a million. This size comes from the objectives, not a printed example.
+- **«الزمن» (u9_l4) asked start and end times**, which are Grade 3's «الفترات الزمنية». `time_units_g4` converts: hours to
+  minutes, minutes to seconds, days to hours, weeks to days, years to months, both ways, mixed measures and a story. Grade 5's
+  «الزمن» keeps `time_g45`.
+- **«المحيط» (u9_l5) is «المربع أو المستطيل»; a third of its items were triangles.** Grade 4 now asks a rectangle, a square, a
+  missing side (of a rectangle or a square), an L-shape cut from a rectangle, and a rectangle on a square grid. Grade 3 keeps its triangle.
+- **«المساحة» (u9_l6) says «أستعمل شبكة المربعات لتقدير مساحة شكل»** and never estimated. A new kind gives whole and part squares
+  and states the rule («كل مربعين غير كاملين يُعدّان مربعًا واحدًا»), so it does not rely on a convention the pupil may not know.
+- **«قياس الزوايا ورسمها» (u5_l2) says «أستعمل المنقلة»** and only added and subtracted angles. Four kinds now read and draw
+  with a protractor: a reading from 0, from another mark, the two scales of one acute angle, and where to mark an angle.
+
+**A catch by an existing test.** `tamyiz.test.ts` failed «720 قطعة» in the new zeros story: from 100 up, only exact hundreds and
+the last digits 1–2 take the genitive; 720 takes «720 قطعةً». The story now says «720 قطعةً من الحلوى». Reading samples by hand also
+caught odd distractors («0.810», «5.0») in the conversion lesson, now filtered to values a pupil would write.
+
+**Verified.**
+- `grade4SecondPass.test.ts` (14 tests) was written first, and 13 of them failed. Every key is recomputed from the printed stem by
+  code that shares nothing with the generators. It also pins what each lesson must not ask: no decimal past one place in the
+  tenths lesson, no place value in the conversion lesson, no clock time in «الزمن», no triangle in Grade 4's «المحيط».
+- Four existing tests pinned the old Grade 4 behaviour and now read the new: the angle checker (`early.test.ts`) skips the
+  protractor items, which the new file checks; `geometry.test.ts` for the perimeter stems, the area estimate and the count of area
+  kinds (6 to 7); and the routing «الزمن» (Grade 4: `time_units_g4`, Grade 5: `time_g45`).
+- `lib/math-practice` passes 1,478 tests, the full mobile suite (9,530) and `pnpm run typecheck`. The Grade 4 audit was rerun
+  over all 313 lessons.
+- About a hundred sampled questions were read by hand and their keys checked.
+
+**Not done.**
+- The objectives were the reference, so the wording of the new kinds follows them, not a printed page.
+- «تقريب الأعداد» still draws about half its items at tens. «الأعداد العشرية» (u7_l3) and «الأعداد العشرية والنقود» (u7_l5) were not changed.
+- Everything the earlier Grade 4 entries left for the PDFs.
+
+No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+
 ## A dead key now switches provider for chat, exams and grading too — 2026-11-21
 
 Second half of «Production runs Claude for documents …». That change covered the pooled generators only
