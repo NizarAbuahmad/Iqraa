@@ -9,6 +9,7 @@
  * stopped being true once the Arabic side needed 4 more of them.
  */
 
+import { gradeAr, subjectAr } from "./promptLabels.ts";
 import { revisionClauseAr, revisionClauseEn } from './revision.ts';
 import { firstGradeClauseAr, firstGradeClauseEn } from './firstGrade.ts';
 
@@ -84,7 +85,7 @@ function quickCheckCount(b: any): number {
 
 function quickCheckPromptAr(b: any): string {
   const n = quickCheckCount(b);
-  return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "تحقق سريع" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
+  return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "تحقق سريع" لمادة ${subjectAr(b.subject)}، الصف ${gradeAr(b.grade)}، موضوع "${b.topic}".
 المدة: ${b.duration} دقيقة | الصعوبة: ${b.difficulty} | الهدف: ${b.teachingGoal}
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
 
@@ -203,7 +204,7 @@ export function classroomPromptAr(b: any): string {
   }
 
   if (actType === 'bingo') {
-    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "بينجو المصطلحات" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
+    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "بينجو المصطلحات" لمادة ${subjectAr(b.subject)}، الصف ${gradeAr(b.grade)}، موضوع "${b.topic}".
 المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
 
@@ -245,7 +246,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
   }
 
   if (actType === 'relay') {
-    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "سباق التتابع" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
+    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "سباق التتابع" لمادة ${subjectAr(b.subject)}، الصف ${gradeAr(b.grade)}، موضوع "${b.topic}".
 المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
 
@@ -290,7 +291,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
   }
 
   if (actType === 'error-detective') {
-    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "المحقق الرياضي" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
+    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "المحقق الرياضي" لمادة ${subjectAr(b.subject)}، الصف ${gradeAr(b.grade)}، موضوع "${b.topic}".
 المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
 
@@ -325,7 +326,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
   }
 
   if (actType === 'gallery-walk') {
-    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "جولة المعارض" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
+    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "جولة المعارض" لمادة ${subjectAr(b.subject)}، الصف ${gradeAr(b.grade)}، موضوع "${b.topic}".
 المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
 
@@ -359,7 +360,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
   }
 
   if (actType === 'exit-ticket') {
-    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "غلق الدرس" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
+    return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "غلق الدرس" لمادة ${subjectAr(b.subject)}، الصف ${gradeAr(b.grade)}، موضوع "${b.topic}".
 المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
 
@@ -397,7 +398,7 @@ ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.addition
   // deck is actually built from.
   const challengeCount = Math.floor((b.duration ?? 20) / 4);
 
-  return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "تحدي الهروب" لمادة ${b.subject}، الصف ${b.grade}، موضوع "${b.topic}".
+  return `أنت مصمم أنشطة صفية تفاعلية. أنشئ نشاط "تحدي الهروب" لمادة ${subjectAr(b.subject)}، الصف ${gradeAr(b.grade)}، موضوع "${b.topic}".
 المدة: ${b.duration} دقيقة | الصعوبة: ${diffs[b.difficulty] ?? b.difficulty} | التجميع: ${groups[b.groupType] ?? b.groupType} | الهدف: ${goals[b.teachingGoal] ?? b.teachingGoal}
 ${b.additionalContext ? `\nمحتوى الكتاب المدرسي:\n${b.additionalContext}` : ''}
 
