@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, uuid, integer, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, uuid, integer, jsonb, index, doublePrecision, date } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { schools } from "./schools";
@@ -58,6 +58,20 @@ export const users = pgTable("users", {
   suspendedAt: timestamp("suspended_at", { withTimezone: true }),
   /** Shown to the suspended person. Without it they only see a door that stopped opening. */
   suspendedReason: text("suspended_reason").notNull().default(""),
+  /**
+   * This account's own monthly AI allowance in USD, set by a system_admin
+   * (`PUT /admin/users/:id/ai-budget`). Null means the role's default
+   * (`AI_USER_BUDGET_USD` / `AI_STUDENT_BUDGET_USD`). A column, not an env var:
+   * every API deploy resets those vars, and a per-person list in deploy.yml
+   * would put users' emails in a public repo.
+   */
+  aiBudgetUsd: doublePrecision("ai_budget_usd"),
+  /**
+   * Last Amman calendar day (YYYY-MM-DD) `aiBudgetUsd` applies, inclusive. From
+   * the next day the account is back on its role default with no one having to
+   * remember to clear it. Null = no end date.
+   */
+  aiBudgetUntil: date("ai_budget_until", { mode: "string" }),
   /**
    * When this teacher confirmed their school holds the parental consent that
    * lets them enter student information here — see `lib/rosterConsent.ts`.
@@ -143,6 +157,18 @@ export const users = pgTable("users", {
    * `PUT /auth/me/push-preferences`, which merges with `||` in SQL.
    */
   pushPrefs: jsonb("push_prefs").$type<Partial<Record<"homework" | "exams" | "results", boolean>>>().notNull().default({}),
+  /**
+   * A teacher's optional «عنك» answers, for the admin insights page
+   * (docs/superpowers/specs/2026-11-19-admin-user-insights-design.md). Each is
+   * one value from a closed list (api-server `lib/teacherProfile.ts`) or null
+   * for "not answered". Set only through `PATCH /auth/users/profile`, which
+   * refuses them from a student or parent account — they are never asked of
+   * anyone who may be a minor.
+   */
+  gender: text("gender"), // 'male' | 'female' | 'unspecified'
+  ageRange: text("age_range"), // '20-29' | '30-39' | '40-49' | '50+'
+  governorate: text("governorate"), // one of Jordan's 12, by id
+  yearsTeaching: text("years_teaching"), // '0-2' | '3-5' | '6-10' | '11+'
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastLogin: timestamp("last_login", { withTimezone: true }),
 }, t => [index("users_school_idx").on(t.schoolId)]);

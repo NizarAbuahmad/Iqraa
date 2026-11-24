@@ -21,10 +21,9 @@ math answer keys (`artifacts/math-verifier`), RTL/Arabic-first UX.
 
 Checked 2026-10-22:
 
-- **API** `iqraa-api` (Cloud Run, europe-west1, project `iqraa-auth-507315`): commit
-  `2277f57` **(2026-10-25, from deploy run 801 — its «Verify the deployed commit» step passed; the
-  revision name and traffic split were not re-read)**. Last read by command, 2026-10-22: `9346b5f`,
-  revision `iqraa-api-00390-d4p`, 100% of traffic (`/api/healthz/version`).
+- **API** `iqraa-api` (Cloud Run, europe-west1, project `iqraa-auth-507315`): commit `681749c`,
+  revision `iqraa-api-00565-ws2`, read by command from `/api/healthz/version` on 2026-11-23 after deploy
+  run 1025 (its «Verify the deployed commit» step passed). The traffic split was not read.
 - **Site assistant «اسأل إقرأ»** (checked 2026-10-26 by command): `POST /api/site/ask` is live
   and the widget is on `www.iqrra.com` (`Site_Iqra`). The three starter questions are answered from
   fixed answers (`source: "curated"`); anything else goes to the AI path, capped by
@@ -40,17 +39,41 @@ Checked 2026-10-22:
   first item under *Open*. The schema deploys as migrations (19 files in
   `lib/db/migrations`, `0018` applied by deploy run 801 on 2026-10-25); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
-  for generation and for chat (`AI_MODEL_DOCUMENTS`, which would move lesson plans,
-  worksheets, quizzes and slide decks to Claude Sonnet 5.5, is **unset**: the code is in,
-  the secret and the switch are Nizar's — «Claude writes the documents» in the log); budgets `AI_BUDGET_USD=50`, per user `1`, per
-  student `0.20`; `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`.
+  for generation and for chat; **`AI_MODEL_DOCUMENTS=claude-sonnet-5-5` is set** (read back by the
+  owner on 2026-11-21, with `ANTHROPIC_API_KEY` attached from Secret Manager), so lesson plans,
+  worksheets, quizzes, slide decks and student lesson explanations are written by Claude. Since
+  2026-11-21 an expired key or empty balance on either provider switches the request to the other
+  one, logged as an error: every pooled generation (`generateContent`), and — through
+  `lib/aiComplete.ts` — chat (streamed or not), exam generation, worked steps, the photo-marking
+  scans, prompt-slides questions, the whiteboard solver and the verified-derivative path. The
+  backup of an OpenAI model is `AI_MODEL_DOCUMENTS` (Claude Sonnet 5.5), of a Claude model the
+  OpenAI generation model; no new variable. Only the public site assistant (`siteAsk`) has none
+  («A dead key now switches provider» in the log); budgets `AI_BUDGET_USD=100` (raised from 50 by the
+  owner on 2026-11-20, revision `iqraa-api-00551-pzt`, read back as `limitUsd: 100` from `/api/healthz/ai-budget`; it is
+  set on the service, not in `deploy.yml`, and deploys keep it), per user `1`, per
+  student `0.20` (a system admin can give one account its own limit on the admin Users screen —
+  `users.ai_budget_usd`, optionally ending after `ai_budget_until`; deploys do not reset it; two of the owner's
+  accounts have $20 since 2026-11-20); `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`. **These caps are the app's own
+  tracking, not money:** the OpenAI account must hold the credit. On 2026-11-20 its balance ran out and every live
+  call failed while the app showed sample content (see «OpenAI credit ran out» in the log).
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».
-- **Mobile:** `app.json` version `1.6.0` once the screen-recording PR merges (bumped 2026-10-29 for
-  PostHog session replay's native module); **the installed production binary is still `1.5.0`**, so
-  OTAs published from `main` stop reaching it until a 1.6.0 build is made and installed. An OTA
-  update only reaches a binary with the same version (CLAUDE.md, «`app.json`'s `version` is the OTA
-  compatibility key»).
+- **Mobile:** `app.json` version `1.6.0` (bumped 2026-10-29 for PostHog session replay's native
+  module). **Latest production build (2026-11-21): 1.6.0, versionCode 15**, EAS build
+  `735f7858-a355-486c-be10-5c4bf999b62c`, from `main` at `de31781` (Mobile Android build run 11), **sent
+  to Google Play for review** (Mobile Android submit run 4, «send for review», success). Google's review
+  outcome and the rollout were not checked. Earlier 1.6.0 production builds: versionCode 12 (2026-11-13)
+  and two on 2026-11-14, submitted to Play (submit runs 2–3). Which version is on users' phones is not
+  known from here: a phone still on 1.5.0 gets no OTA from `main`, whose runtime is 1.6.0 (CLAUDE.md,
+  «`app.json`'s `version` is the OTA compatibility key»). OTAs reach the `production` channel only when
+  published by hand (`mobile-update.yml`, `branch=production`); the latest is from `fab8870` (run 1213,
+  2026-11-24, the bell refreshing when a join-request push arrives, #1540). `preview` got the same commit from
+  run 1212.
+- **The AI chat «اسأل إقرأ» is hidden** (`IQRA_CHAT_ENABLED = false` in
+  `artifacts/mobile/services/features.ts`, #1535): on the web since deploy run 1022 and on 1.6.0 phones since
+  production OTA run 1207, both 2026-11-23. `/iqra` only hosts the change-lesson sheet; the chat's API route is
+  untouched and still answers direct calls. Set the flag to `true` to bring it back («The AI chat «اسأل إقرأ» is
+  hidden from the app» in the log).
 - **Every shipped build uses live AI.** `EXPO_PUBLIC_DEMO_MODE=false` is set for Android
   (`eas.json`, `mobile-update.yml`) and, since 2026-10-16, for the web build (`deploy.yml`).
   The code default in `demoMode.ts` is still demo mode; do not flip it without a decision
@@ -81,8 +104,9 @@ Checked 2026-10-22:
 - 2026-11-13 — Grade 8 audit: no quotable extracted text, so live generation is ungrounded for all 358 lessons (needs the PDFs); 49 lessons still lack book pages (PE, maths S2, Arabic S2, social) («Grade 8 audit…» in the log). Its four maths lessons with no offline questions were served the same day («Grade 8 maths…»)
 - 2026-11-13 — Grade 7 audit: Grade 7 has no extracted book text, so live generation is ungrounded for all 397 lessons (needs the PDFs); 24 creative-arts and social lessons still lack book pages; the English S2 figures p027/p043 wait for an upload and remap («Grade 7 audit…» in the log)
 - 2026-11-13 — Grade 6 audit: 49 lessons have no book pages until their right pages are re-rendered from the PDFs (`knowledge-base/g6-book-pages-to-render.json`, command in the log; NCCD and the private bucket were unreachable from the sandbox), and social, vocational and Arabic grounding text is reversed or scrambled and needs `extract-text --force --ocr` («Grade 6 audit: every lesson's book pages…» in the log)
-- 2026-11-14 — Grade 3 audit: unit-end pages trimmed and science figures checked; maths S1, science, most of social and some Arabic/arts pages still need rendering from the PDFs («Grade 3 audit…» in the log)
-- 2026-11-14 — Grade 2 audit: three PE page ranges trimmed and one PE title fixed; Grades 2–3 regrouping lessons get their own maths generators; only Islamic and PE have book pages, the rest need the PDFs («Grade 2 audit…» in the log)
+- 2026-11-14 — Grade 3 audit: unit-end pages trimmed and science figures checked; maths S1, science, most of social and some Arabic/arts pages still need rendering from the PDFs («Grade 3 audit…» in the log). Since 2026-11-14 the time, area, estimating-division, equivalent-fraction and place-value lessons ask about their own objective («Grade 3 review: six maths lessons…»)
+- 2026-11-14 — Grade 2 audit: three PE page ranges trimmed and one PE title fixed; Grades 2–3 regrouping lessons get their own maths generators; only Islamic and PE have book pages, the rest need the PDFs («Grade 2 audit…» in the log). Since 2026-11-15 fifteen maths lessons (place value, comparing, ordering, subtracting, the number line, the four data lessons, the tables, unit fractions of a set, forming equal groups, telling time, centimetres) ask about their own objective («Grade 2 review: fifteen maths lessons…»)
+- 2026-11-14 — Grade 1 audit: 22 page ranges end on their own last page, two Arabic titles fixed; Islamic S1 u2_l1 and four unmapped lessons need a re-render («Grade 1 audit…» in the log). Since 2026-11-20 all 66 maths lessons give a full offline quiz («Grade 1 review: the last three thin maths lessons…»)
 - 2026-11-13 — Grade 4 audit: unit-end page spill fixed and figures checked against the page images; maths S2 u9_l4–l6, most of PE, vocational and social S2, and science/English/digital/arts still need pages rendered from the PDFs («Grade 4 audit…» in the log)
 - 2026-11-13 — Grade 4 review: lessons complete in all 17 books; what needs the PDFs or a decision (re-OCR social/vocational text, PE has no book text, books with no figure crops — maths, Arabic, Islamic and PE have them now and vocational S2, social and arts gained some; English, digital and the science gaps still need the PDFs, book pages to re-render) is listed in «Grade 4 review: every book's lessons are in…» in the log
 - 2026-10-31 — Homework submissions record their author (migration `0022`)
@@ -112,7 +136,7 @@ Checked 2026-10-22:
   running, and whether masking hides their photos is unverified, like every other screen. The
   teacher's screens are reached from the tracked class page, so on the web a Contentsquare
   recording is usually already running when they open and only the body-level mask protects the
-  photos; Android replay has `maskAllImages` true. The policy (`LEGAL_VERSION` 2026-10-31.d now; its recording text dates from 2026-10-30) was written by a model and **not reviewed by a
+  photos; Android replay has `maskAllImages` true. The policy (`LEGAL_VERSION` 2026-11-19 now; its recording text dates from 2026-10-30, its «time in the app» and optional-teacher-details lines from 2026-11-19, «Admin user insights» in the log) was written by a model and **not reviewed by a
   lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
   and the Contentsquare plan shows a 200K sessions a month cap.
   Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.

@@ -49,7 +49,8 @@ import type { GuardianUserLike } from './guardianApproval.ts';
  * teacher's host screen is `/ai-tools/classroom/live-host`, which stays private.
  */
 // `/guardian`: a parent opens the approval link from an email on a device where nobody is signed in.
-const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english', '/suggest-feature', '/live', '/guardian'];
+// `/m` is a teacher's material opened from its share link (app/m/[code].tsx): no account needed.
+const PUBLIC_ROUTES = ['/take', '/legal', '/play', '/curriculum/english', '/suggest-feature', '/live', '/guardian', '/m'];
 
 export function isPublicRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;

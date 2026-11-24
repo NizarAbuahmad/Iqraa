@@ -10,6 +10,7 @@
 // through esbuild, and Node's resolver does not guess extensions.
 import { verifyDerivative } from "./mathVerifierClient.ts";
 import { PROMPT_VERSION } from "./generationKey.ts";
+import { completeAi } from "./aiComplete.ts";
 import {
   assertBudgetAvailable,
   assertLiveModeEnabled,
@@ -210,10 +211,9 @@ async function callLlm(userId?: string | null): Promise<LlmContract> {
   assertLiveModeEnabled();
   await assertUserQuotaAvailable(userId);
   assertBudgetAvailable();
-  const { openai } = await import("@workspace/integrations-openai-ai-server");
-  const completion = await openai.chat.completions.create({
+  const completion = await completeAi({
     model: getGenerationModel(),
-    max_completion_tokens: 400,
+    maxTokens: 400,
     messages: [
       { role: "system", content: SYSTEM },
       {
@@ -231,12 +231,12 @@ async function callLlm(userId?: string | null): Promise<LlmContract> {
   // land with a null user, `readUserPeriodSpendUsd` cannot see them, and this —
   // the route that can issue more completions per request than any other —
   // would be the one workload that escaped AI_USER_BUDGET_USD entirely.
-  recordUsage(completion.usage, getGenerationModel(), {
+  recordUsage(completion.usage, completion.model, {
     kind: "derivative-verified",
     promptVersion: PROMPT_VERSION,
     userId,
   });
-  const raw = completion.choices[0]?.message?.content ?? "{}";
+  const raw = completion.text ?? "{}";
   return extractJSON(raw) as LlmContract;
 }
 

@@ -17,7 +17,7 @@ const stroke = (points: string, extra: Partial<Stroke> = {}): Stroke => ({ color
 
 const docOf = (...pages: Array<[BoardBackground, Stroke[]]>): BoardDoc => ({
   current: 0,
-  pages: pages.map(([background, strokes]) => ({ background, board: { strokes, past: [] } })),
+  pages: pages.map(([background, strokes]) => ({ background, board: { strokes, past: [], future: [] } })),
 });
 
 /** `n` plausible points, ~12 characters each. */
@@ -61,7 +61,7 @@ describe('serializeBoard / parseBoard round trip', () => {
   });
 
   it('boardFileOf never includes undo history', () => {
-    const d: BoardDoc = { current: 0, pages: [{ background: 'blank', board: { strokes: [], past: [[stroke('0,0 1,1')]] } }] };
+    const d: BoardDoc = { current: 0, pages: [{ background: 'blank', board: { strokes: [], past: [[stroke('0,0 1,1')]], future: [] } }] };
     assert.equal(JSON.stringify(boardFileOf(d)).includes('past'), false);
   });
 });
@@ -194,7 +194,7 @@ describe('isBoardDirty', () => {
     const r = serializeBoard(inked);
     assert.ok(r.ok);
     if (!r.ok) return;
-    const moved: BoardDoc = { current: 0, pages: [{ background: 'blank', board: { strokes: inked.pages[0]!.board.strokes, past: [[]] } }] };
+    const moved: BoardDoc = { current: 0, pages: [{ background: 'blank', board: { strokes: inked.pages[0]!.board.strokes, past: [[]], future: [] } }] };
     assert.equal(isBoardDirty(moved, r.json), false);
   });
 
@@ -218,7 +218,7 @@ describe('boards with a solution (version 2)', () => {
   });
   const docWith = (s: BoardSolution | null): BoardDoc => ({
     current: 0,
-    pages: [withSolution({ background: 'grid', board: { strokes: [stroke('0.1,0.2 0.3,0.4')], past: [] } }, s), blankPage()],
+    pages: [withSolution({ background: 'grid', board: { strokes: [stroke('0.1,0.2 0.3,0.4')], past: [], future: [] } }, s), blankPage()],
   });
 
   it('writes version 2 only when some page has a solution', () => {

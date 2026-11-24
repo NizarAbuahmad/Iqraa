@@ -49,6 +49,7 @@ import {
 } from '@/services/classGame';
 import { AwardRow, PodiumView, ScoreStrip, ScoreboardView } from '@/components/classroom/GameBoard';
 import { trackEvent } from '@/services/analytics';
+import { firstInk, trackClassPenUsed } from '@/services/classUsage';
 import { buildGameDeckFromSlides, canPlayAsGame } from '@/services/classDeck';
 import { createLiveGame } from '@/services/liveGameApi';
 import { LIVE_DEFAULT_SECONDS, LIVE_MIN_QUESTIONS, deckLang, liveQuestionsFromDeck } from '@/services/liveGame';
@@ -1438,6 +1439,7 @@ export default function PresentationScreen() {
   const [penOn, setPenOn] = useState(false);
   const [penColor, setPenColor] = useState(PEN_COLORS[0]!);
   const [ink, setInk] = useState<Record<number, Stroke[]>>({});
+  const penReported = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const celebrationAnim = useRef(new Animated.Value(0)).current;
   const celebrationScale = useRef(new Animated.Value(0.5)).current;
@@ -1804,7 +1806,13 @@ export default function PresentationScreen() {
   // content — the body, the options, and the hint and answer beneath them.
   const slideRTL = slideIsRTL(slide, isRTL);
   const slideInk = ink[slideIndex] ?? [];
-  const setSlideInk = (next: Stroke[]) => setInk(all => ({ ...all, [slideIndex]: next }));
+  const setSlideInk = (next: Stroke[]) => {
+    if (firstInk(penReported.current, next.length > 0)) {
+      penReported.current = true;
+      trackClassPenUsed('slides');
+    }
+    setInk(all => ({ ...all, [slideIndex]: next }));
+  };
 
   // Format timer MM:SS
   const mm = Math.floor(timerSec / 60).toString().padStart(2, '0');
@@ -2260,7 +2268,7 @@ export default function PresentationScreen() {
           <Pressable
             onPress={() => router.push({
               pathname: '/ai-tools/whiteboard',
-              params: { topic: activity?.lesson ?? '', subject: activity?.subject ?? '', grade: activity?.grade ?? '' },
+              params: { topic: activity?.lesson ?? '', subject: activity?.subject ?? '', grade: activity?.grade ?? '', from: 'presentation' },
             } as never)}
             style={styles.actionBtn}
             hitSlop={8}

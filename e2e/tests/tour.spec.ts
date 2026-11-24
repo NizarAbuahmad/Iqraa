@@ -5,8 +5,8 @@ import { pinLocale, signUpAndVerify } from "../helpers/journey";
 /**
  * The first-run tour, as a brand-new teacher meets it, against the real API:
  *
- *   sign up → verify → pick subjects (no tour over that screen) → land on
- *   Today → the tour opens → walk it → it does not come back → Profile →
+ *   sign up → verify → pick subjects (no tour over that screen) → skip the
+ *   optional «About you» → land on Today → the tour opens → walk it → it does not come back → Profile →
  *   «Replay the tour» → it does.
  *
  * What the unit tests cannot say is that the tour is only ever drawn over a
@@ -36,17 +36,23 @@ test("a new teacher is walked through Today once, and can replay it", async ({ b
     await page.getByText("Grade 10", { exact: true }).click();
     await page.getByText("Mathematics", { exact: true }).click();
     await page.getByText("Show my curriculum", { exact: true }).click();
-    await expect(page).not.toHaveURL(/setup-subjects/);
+    // A new teacher is offered the optional «About you» questions once (app/teacher-profile.tsx),
+    // with no tour over them; skipping goes on to Today.
+    await expect(page).toHaveURL(/teacher-profile/);
+    await expect(tour).toHaveCount(0);
+    await page.getByText("Skip", { exact: true }).click();
+    await expect(page).not.toHaveURL(/setup-subjects|teacher-profile/);
     await expect(tour.getByText(/^Step 1 of \d+$/)).toBeVisible();
   });
 
   await test.step("Next walks every step, and the last one says Done", async () => {
-    // Bounded: a teacher's tour is six steps; ten means Next never reaches Done.
+    // Bounded: a teacher's tour is five steps; ten means Next never reaches Done.
     for (let i = 0; i < 10 && (await next.count()) > 0; i++) await next.click();
-    // The last step is "Step 6 of 6" — a window this size shows the sidebar flavour,
-    // six steps. A button that merely says Done would also be there if every middle
-    // step had been dropped, so the count has to say all of them were reached.
-    await expect(tour.getByText("Step 6 of 6", { exact: true })).toBeVisible();
+    // The last step is "Step 5 of 5" — a window this size shows the sidebar flavour,
+    // five steps (six while the AI chat is on: `IQRA_CHAT_ENABLED` adds its ask step).
+    // A button that merely says Done would also be there if every middle step had
+    // been dropped, so the count has to say all of them were reached.
+    await expect(tour.getByText("Step 5 of 5", { exact: true })).toBeVisible();
     await done.click();
     await expect(tour).toHaveCount(0);
   });

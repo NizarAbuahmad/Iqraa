@@ -20,8 +20,10 @@
  * build) rather than a faster interval.
  */
 import { useCallback, useEffect, useRef } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+
+import { isInFront } from '@/services/foreground';
 
 export const DEFAULT_POLL_MS = 20000;
 
@@ -40,7 +42,18 @@ export function usePollingRefresh(load: () => void | Promise<void>, intervalMs =
         void loadRef.current();
       };
 
-      const timer = setInterval(run, intervalMs);
+      // A tab behind another one, or an app in the background, skips its turn:
+      // nobody is looking, and the calls kept the API and the database awake.
+      // Coming back runs the load at once (the listener below), so nothing is
+      // stale by the time it is seen.
+      const timer = setInterval(() => {
+        const inFront = isInFront({
+          os: Platform.OS,
+          visibilityState: typeof document === 'undefined' ? undefined : document.visibilityState,
+          appState: AppState.currentState,
+        });
+        if (inFront) run();
+      }, intervalMs);
       const subscription = AppState.addEventListener('change', state => {
         // Only on the way back in. Refetching as the app leaves would be work
         // nobody is looking at.

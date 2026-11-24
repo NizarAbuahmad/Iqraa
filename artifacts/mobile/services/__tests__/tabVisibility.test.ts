@@ -15,7 +15,15 @@ test('a teacher on a phone: Today, Library, Tools, Messages, Profile — the cha
 });
 
 test('a teacher on desktop keeps the chat in the sidebar beside Today', () => {
-  assert.deepEqual(shown({ isTeacher: true, isDesktop: true }), ['index', 'iqra', 'curriculum', 'ai-tools', 'notifications', 'profile']);
+  assert.deepEqual(shown({ isTeacher: true, isDesktop: true, chatEnabled: true }), ['index', 'iqra', 'curriculum', 'ai-tools', 'notifications', 'profile']);
+});
+
+test('with the chat off, no device shows its tab', () => {
+  for (const isDesktop of [false, true]) {
+    for (const isTeacher of [false, true]) {
+      assert.equal(tabVisible('iqra', { isTeacher, isDesktop, chatEnabled: false }), false);
+    }
+  }
 });
 
 test('a parent or student sees School, Library, Messages, Profile on any device', () => {

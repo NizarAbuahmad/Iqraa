@@ -49,6 +49,7 @@ import {
   formatLessonPlanText,
   shareAsText,
 } from '@/services/share';
+import { shareToastKey } from '@/services/shareText';
 import { exportFilename } from '@/services/exportFilename';
 import { AiSourceBadge } from '@/components/ui/AiSourceBadge';
 import { Button } from '@/components/ui/Button';
@@ -243,10 +244,11 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
 
   const handleShareText = async () => {
     if (!result) return;
-    await shareAsText(
+    const key = shareToastKey(await shareAsText(
       formatLessonPlanText(result, exportTitle, exportMeta, lang === 'ar'),
       exportTitle,
-    );
+    ));
+    if (key) showToast(t(key));
   };
 
   const handleCopy = async () => {
@@ -580,7 +582,7 @@ export function LessonPrepPanel({ lessonId, accent, autoGenerate = true }: Props
         loadingSlides={loadingSlides}
         labels={{
           title: t('exportTitle'),
-          shareLabel: t('exportShare'), shareSub: t('exportShareSub'),
+          shareLabel: t('exportShareText'), shareSub: t('exportShareTextSub'),
           copyLabel: t('exportCopy'), copySub: t('exportCopySub'),
           pdfLabel: t('exportPDF'), pdfSub: t('exportPDFSub'),
           wordLabel: t('exportWord'), wordSub: t('exportWordSub'),

@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   assertApproveAlone,
   assertReviewFileFree,
@@ -27,7 +29,7 @@ test('pregenerate plans a worksheet and a lesson plan per lesson, in the default
     const b = c.body as Record<string, unknown>;
     assert.equal(b.contextSource, 'curriculum', c.lesson);
     assert.equal(b.language, 'arabic');
-    assert.equal(b.subject, 'Mathematics');
+    assert.ok(['Mathematics', 'Chemistry'].includes(b.subject as string), `${c.lesson}: ${String(b.subject)}`);
     assert.equal(b.grade, 'الصف العاشر');
     assert.ok(b.lessonId, `no lessonId for ${c.lesson}`);
     assert.ok(b.additionalContext, `no curriculum context for ${c.lesson}`);
@@ -36,11 +38,65 @@ test('pregenerate plans a worksheet and a lesson plan per lesson, in the default
       assert.equal(b.numQuestions, 10);
       assert.deepEqual(b.questionTypes, ['multiple_choice', 'short_answer']);
       assert.equal(b.difficulty, 'easy');
-    } else {
+    } else if (c.kind === 'lesson-plan') {
       assert.equal(b.duration, 45);
       assert.equal(b.teachingStyle, 'direct');
     }
+    // A quiz has its own test below: its form is different (20 minutes, 20 marks).
   }
+});
+
+// Chemistry teachers open the same default forms. The pool only hits for a body that
+// matches, so a subject missing here is a subject whose first teacher still waits and pays.
+test('pregenerate plans chemistry worksheets and lesson plans as well as maths', () => {
+  const calls = plannedCalls();
+  for (const subject of ['Mathematics', 'Chemistry']) {
+    for (const kind of ['worksheet', 'lesson-plan'] as const) {
+      const n = calls.filter(c => c.kind === kind && (c.body as Record<string, unknown>).subject === subject).length;
+      assert.ok(n >= 10, `expected ${subject} ${kind} calls, got ${n}`);
+    }
+  }
+  // One of each per lesson id: a lesson planned twice is a call paid for twice.
+  const ids = calls.map(c => `${c.kind}:${(c.body as Record<string, unknown>).lessonId}`);
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+// A quiz is the default of a screen teachers open as often as the worksheet. These pin the bits of the
+// body that decide whether the pool matches, and that the screen cannot drift from what is pre-generated.
+test('pregenerate plans a default-form quiz per lesson, in both subjects', () => {
+  const quizzes = plannedCalls().filter(c => c.kind === 'quiz');
+  for (const subject of ['Mathematics', 'Chemistry']) {
+    const n = quizzes.filter(c => (c.body as Record<string, unknown>).subject === subject).length;
+    assert.ok(n >= 10, `expected ${subject} quiz calls, got ${n}`);
+  }
+  const ids = quizzes.map(c => (c.body as Record<string, unknown>).lessonId);
+  assert.equal(new Set(ids).size, ids.length, 'one quiz per lesson id');
+  for (const c of quizzes) {
+    const b = c.body as Record<string, unknown>;
+    assert.equal(b.contextSource, 'curriculum', c.lesson);
+    assert.equal(b.language, 'arabic');
+    assert.equal(b.grade, 'الصف العاشر');
+    assert.ok(b.lessonId && b.additionalContext, c.lesson);
+    assert.equal(b.topic, c.lesson);
+    // The quiz screen's defaults: difficulty tab «عادي» (easy), 20 minutes, 20 marks, 10 questions, three types.
+    assert.equal(b.difficulty, 'easy');
+    assert.equal(b.duration, 20);
+    assert.equal(b.totalMarks, 20);
+    assert.equal(b.numQuestions, 10);
+    assert.deepEqual(b.questionTypes, ['multiple_choice', 'true_false', 'short_answer']);
+  }
+});
+
+test('the quiz screen and the prefill build the request with one function', () => {
+  const screen = readFileSync(join(import.meta.dirname, '..', '..', 'app', 'ai-tools', 'quiz.tsx'), 'utf8');
+  assert.match(screen, /buildQuizRequest\(/, 'the screen must build its request with buildQuizRequest, or the pool misses');
+  assert.doesNotMatch(screen, /lessonFields\?\.additionalContext/, 'the screen spells the quiz body out again');
+  // The defaults the prefill assumes are the screen's own initial indices.
+  assert.match(screen, /readIndexParam\(params\.durationIdx, DURATION_OPTIONS\.length, 2\)/);
+  assert.match(screen, /readIndexParam\(params\.marksIdx, MARKS_OPTIONS\.length, 1\)/);
+  assert.match(screen, /readIndexParam\(params\.numQIdx, NUM_Q_OPTIONS\.length, 2\)/);
+  assert.match(screen, /readIndexParam\(params\.diffIdx, DIFFICULTY_IDS\.length, 0\)/);
+  assert.match(screen, /new Set\(\['multiple_choice', 'true_false', 'short_answer'\]\)/);
 });
 
 import { getLessonById as getBrowserLessonById } from '../curriculumData.ts';
@@ -72,9 +128,9 @@ test('the lesson-teaching prefill sends the lesson\'s own id, once per lesson, i
   }
 });
 
-test('plannedCalls is unchanged: maths worksheet + lesson plan only', () => {
+test('plannedCalls plans worksheets, lesson plans and quizzes, and nothing else', () => {
   const kinds = new Set(plannedCalls().map(c => c.kind));
-  assert.deepEqual([...kinds].sort(), ['lesson-plan', 'worksheet']);
+  assert.deepEqual([...kinds].sort(), ['lesson-plan', 'quiz', 'worksheet']);
 });
 
 const V1 = '11111111-1111-4111-8111-111111111111';

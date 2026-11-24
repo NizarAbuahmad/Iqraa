@@ -33,7 +33,7 @@ import { buildFirstGradeActivity, firstGradeCheckSlides } from './activityFirstG
 import { buildLessonStyleBlueprint, type LessonDocContext } from './lessonPlanBlueprints.ts';
 import { revisionPlanFromRequest } from './lessonPlanRevision.ts';
 import { arPrefixed, lessonKindFor, type LessonKind } from './lessonPlanKinds.ts';
-import { firstGradePlan, isFirstGradeLesson } from './lessonPlanFirstGrade.ts';
+import { earlyGradeOf, firstGradePlan } from './lessonPlanFirstGrade.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
 import { classifyVerifiableTopic } from './verifyMathGuards.ts';
 import { QUIZ_TYPE_ORDER } from '../quizPaper.ts';
@@ -1119,12 +1119,13 @@ export function buildOfflineActivity(req: AIRequest, variant = 0, probe?: Revisi
         : [];
 
   const subjectForKind = (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject;
-  // Grade 1 is six-year-olds learning to read: each format has its own Grade 1
+  // Grades 1 to 3 are six- to eight-year-olds: each format has its own early-grade
   // version (`activityFirstGrade.ts`), a unit or semester review included (its
-  // composite lesson sits in a real Grade 1 unit, so the book still decides).
-  const blueprint = isFirstGradeLesson(kb, req.grade)
+  // composite lesson sits in a real unit, so the book still decides).
+  const early = earlyGradeOf(kb, req.grade);
+  const blueprint = early
     ? buildFirstGradeActivity(isActivityBlueprintId(actType) ? actType : 'group', {
-      topic, lang, kb, practice, duration, variant, revision: !!rev,
+      topic, lang, kb, practice, duration, variant, revision: !!rev, grade: early,
       kind: lessonKindFor((kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined),
     })
     : buildActivityBlueprint(actType, {
@@ -1132,6 +1133,7 @@ export function buildOfflineActivity(req: AIRequest, variant = 0, probe?: Revisi
       // The lesson's own subject id, else the caller's name — see `handsOnKind`.
       // A revision's composite lesson sits in a real unit, so this is the scope's.
       subject: subjectForKind,
+      objective: req.objectives,
     });
 
   const activity = plainActivity({
@@ -1387,8 +1389,9 @@ export class MockAIService extends AIService {
     // A Grade 1 plan built from the teacher's own file: the Grade 1 plan, carrying
     // the file — named in the materials and the opening, its example in the
     // modelling step, its objectives when it states them.
-    if (docs.present && isFirstGradeLesson(null, req.grade)) {
-      const g1 = firstGradePlan({ topic, kb: null, lang, kind, style, duration: dur, variant, customObjectives: req.objectives });
+    const earlyDoc = docs.present ? earlyGradeOf(null, req.grade) : null;
+    if (earlyDoc) {
+      const g1 = firstGradePlan({ topic, kb: null, lang, kind, style, duration: dur, variant, customObjectives: req.objectives, grade: earlyDoc });
       const ar = lang === 'ar';
       return {
         title: ar ? `${topic} – خطة درس` : `${topic} – Lesson Plan`,
@@ -1466,8 +1469,10 @@ export class MockAIService extends AIService {
     // Grade 1 is six-year-olds learning to read: a plan of its own, every field
     // of it, instead of the paragraph-and-exit-ticket plan below (see
     // `lessonPlanFirstGrade.ts`).
-    if (isFirstGradeLesson(kb, req.grade)) {
-      const g1 = firstGradePlan({ topic, kb, lang, kind, style, duration: dur, variant, customObjectives: req.objectives });
+    // Grades 2 and 3 use the same plans, each with its own content and writing (`EarlyGrade`).
+    const earlyPlan = earlyGradeOf(kb, req.grade);
+    if (earlyPlan) {
+      const g1 = firstGradePlan({ topic, kb, lang, kind, style, duration: dur, variant, customObjectives: req.objectives, grade: earlyPlan });
       return {
         title: lang === 'ar' ? `${topic} – خطة درس` : `${topic} – Lesson Plan`,
         grade: req.grade, subject: req.subject, duration: dur,
@@ -2224,9 +2229,10 @@ export class MockAIService extends AIService {
 
       // Grade 1, no bank: spoken prompts answered all together — never «explain
       // in your own words» on a board (`activityFirstGrade.ts`).
-      if (isFirstGradeLesson(kb, req.grade)) {
+      const earlyCheck = earlyGradeOf(kb, req.grade);
+      if (earlyCheck) {
         const g1Kind = lessonKindFor((kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined);
-        const g1Slides = firstGradeCheckSlides(g1Kind, topic, kb?.titleAr ?? topic, isAr ? 'ar' : 'en');
+        const g1Slides = firstGradeCheckSlides(g1Kind, topic, kb?.titleAr ?? topic, isAr ? 'ar' : 'en', earlyCheck);
         return {
           activityName: isAr ? `تحقق سريع – ${topic}` : `Quick Check – ${topic}`,
           activityType: 'quick-check',

@@ -14,7 +14,9 @@ import {
   buildAdaptationsDirective,
   figureCountForLesson,
   getUnitPriorKnowledge,
+  groundingRequestFields,
   nccdUnitId,
+  noLessonField,
   resolveGeneratorGrounding,
   type GeneratorGrounding,
 } from './kbContext.ts';
@@ -61,10 +63,66 @@ export function buildWorksheetRequest(form: WorksheetForm, grounding: GeneratorG
     unitId: nccdUnitId(grounding.lesson?.unitId),
     lessonId: grounding.lesson?.id,
     bookFigureCount: figureCountForLesson(grounding.lesson?.id),
+    // No lesson in this scope: the API must not find one by the title.
+    ...noLessonField(grounding.grounded),
     contextSource: 'curriculum' as const,
     ...regenerationFields(form.regenerate === true, form.previous),
     includePriorReview: usePrior,
     priorKnowledge: usePrior ? unitPrior : undefined,
+  };
+}
+
+export type QuizForm = {
+  gradeName: string;
+  /** English subject name — the string the generators branch on. */
+  subjectName: string;
+  topic: string;
+  lang: Lang;
+  duration: number;
+  totalMarks: number;
+  questionTypes: NonNullable<AIRequest['questionTypes']>;
+  numQuestions: number;
+  difficulty: NonNullable<AIRequest['difficulty']>;
+  regenerate?: boolean;
+  previous?: unknown;
+};
+
+/**
+ * The quiz screen's request, and the one `scripts/pregenerate.ts` pre-generates: the
+ * shared pool only answers a body that matches, so the two must not spell it twice.
+ *
+ * `grounding` is the lesson the screen resolved in its picked scope; null for a wide
+ * scope (unit, semester, book), whose own fields the caller spreads over this one.
+ */
+export function buildQuizRequest(form: QuizForm, grounding: GeneratorGrounding | null): AIRequest {
+  // Every field from that one grounding — never the title again (`groundingRequestFields`).
+  const lessonFields = grounding ? groundingRequestFields(grounding) : undefined;
+  return {
+    // Localised: this string is carried into generated content verbatim —
+    // the Arabic worksheet header printed «الصف: Grade 10». `grade` is never
+    // compared anywhere, only displayed and passed through, so translating it
+    // is safe. `subject` is deliberately left in English: it feeds
+    // isMathContext and ~30 other call sites.
+    grade: form.gradeName,
+    subject: form.subjectName,
+    topic: form.topic.trim(),
+    language: form.lang === 'ar' ? 'arabic' : 'english',
+    duration: form.duration,
+    totalMarks: form.totalMarks,
+    questionTypes: form.questionTypes,
+    numQuestions: form.numQuestions,
+    difficulty: form.difficulty,
+    additionalContext: lessonFields?.additionalContext,
+    unitId: lessonFields?.unitId,
+    lessonId: lessonFields?.lessonId,
+    bookFigureCount: lessonFields?.bookFigureCount,
+    // No lesson in this scope: the API must not find one by the title. Only the lesson path
+    // decides it here; a wide scope's own fields (`scopeRequestFields`) carry theirs.
+    ...(lessonFields?.grounding ? { grounding: lessonFields.grounding } : {}),
+    // Curriculum-derived, so the artifact may be shared with any teacher
+    // who asks the same question — see AIRequest.contextSource.
+    contextSource: 'curriculum',
+    ...regenerationFields(form.regenerate === true, form.previous),
   };
 }
 
@@ -76,11 +134,14 @@ export function buildWorksheetRequest(form: WorksheetForm, grounding: GeneratorG
  */
 export function scopeRequestFields(
   g: ScopeGrounding,
-): Pick<AIRequest, 'scope' | 'additionalContext' | 'contextSource'> {
+): Pick<AIRequest, 'scope' | 'additionalContext' | 'contextSource' | 'grounding'> {
   if (g.kind === 'lesson') return {};
   return {
     scope: g.grounded ? { kind: g.kind, scopeKey: g.scopeKey, unitIds: g.unitIds } : undefined,
     additionalContext: (g.grounded ? g.context : g.ungroundedNote) || undefined,
+    // A scope with no lessons: its topic is a label («الفصل الأول كاملًا»),
+    // never a title to match.
+    ...noLessonField(g.grounded),
     contextSource: 'curriculum',
   };
 }
@@ -137,6 +198,7 @@ export function buildLessonPlanRequest(form: LessonPlanForm, grounding: Generato
     unitId: nccdUnitId(grounding.lesson?.unitId),
     lessonId: grounding.lesson?.id,
     bookFigureCount: figureCountForLesson(grounding.lesson?.id),
+    ...noLessonField(grounding.grounded),
     // Objectives, adaptations and prior-topic notes are all free text the
     // teacher typed, and all three are carried into the plan verbatim. A
     // plan built from any of them is that teacher's and is never pooled;
@@ -191,6 +253,7 @@ export function buildLessonTeachingRequest(
     additionalContext: grounding.grounded ? grounding.context : grounding.ungroundedNote,
     unitId: nccdUnitId(grounding.lesson?.unitId),
     lessonId: grounding.lesson?.id,
+    ...noLessonField(grounding.grounded),
     contextSource: 'curriculum' as const,
     ...regen,
   };
@@ -229,6 +292,7 @@ export function buildActivityRequest(form: ActivityForm, grounding: GeneratorGro
     unitId: nccdUnitId(grounding.lesson?.unitId),
     lessonId: grounding.lesson?.id,
     bookFigureCount: figureCountForLesson(grounding.lesson?.id),
+    ...noLessonField(grounding.grounded),
     // A typed objective is the teacher's own words, and they end up inside
     // the generated activity — so that request is theirs alone and never
     // enters the shared pool. Picking a lesson and generating does.

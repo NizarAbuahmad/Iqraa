@@ -54,6 +54,8 @@ export const CONCEPTS = {
   /** The public games hub. */
   games: { icon: 'game-controller-outline', color: '#15803D', glyph: 'games' },
   classroom: { icon: 'grid-outline', color: '#3F6212' },
+  /** The board tool and a saved board (`MATERIAL_CONCEPT.board`): slate, the neutral. */
+  whiteboard: { icon: 'easel-outline', color: '#475569' },
   'parent-msg': { icon: 'mail-outline', color: '#A21CAF' },
   'lesson-flow': { icon: 'git-branch-outline', color: '#4D7C0F' },
   'prompt-slides': { icon: 'sparkles-outline', color: '#1D4ED8' },

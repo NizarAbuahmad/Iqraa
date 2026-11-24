@@ -70,7 +70,10 @@ describe('geometry generators: answers recomputed from the stem', () => {
   it('perimeter and area of plane figures', () => {
     for (const item of draws('perimeter')) {
       const n = nums(item.promptAr!);
-      const want = has(item.promptAr!, 'ما عرضه') ? n[0]! / 2 - n[1]! : has(item.promptAr!, 'مربع') ? 4 * n[0]! : has(item.promptAr!, 'مثلث') ? n[0]! + n[1]! + n[2]! : 2 * (n[0]! + n[1]!);
+      const p0 = item.promptAr!;
+      // Grade 4 (since 2026-11-21): an L cut from a rectangle and a rectangle on a grid keep 2(l + w);
+      // «محيط مربع 24 سم. ما طول ضلعه؟» asks the side. grade4SecondPass.test.ts pins each stem.
+      const want = has(p0, 'ما عرضه') ? n[0]! / 2 - n[1]! : has(p0, 'ما طول ضلعه') ? n[0]! / 4 : has(p0, 'حرف L') || has(p0, 'شبكة') ? 2 * (n[0]! + n[1]!) : has(p0, 'مربع') ? 4 * n[0]! : has(p0, 'مثلث') ? n[0]! + n[1]! + n[2]! : 2 * (n[0]! + n[1]!);
       assert.equal(Number(item.answer), want, item.promptAr);
       if (has(item.promptAr!, 'مثلث')) assert.ok(n[0]! + n[1]! > n[2]! && n[0]! + n[2]! > n[1]! && n[1]! + n[2]! > n[0]!, `impossible triangle: ${item.promptAr}`);
     }
@@ -79,7 +82,8 @@ describe('geometry generators: answers recomputed from the stem', () => {
     for (const item of draws('area_rect')) {
       const p = item.promptAr!, n = nums(p);
       let want: number;
-      if (has(p, 'تزيد')) { saw('area_rect', 'compare'); want = n[0]! * n[1]! - n[2]! ** 2; assert.ok(want > 0, p); }
+      if (has(p, 'غير منتظم')) { saw('area_rect', 'estimate'); want = n[0]! + n[1]! / 2; } // full squares + half the part squares
+      else if (has(p, 'تزيد')) { saw('area_rect', 'compare'); want = n[0]! * n[1]! - n[2]! ** 2; assert.ok(want > 0, p); }
       else if (has(p, 'ما عرضه')) { saw('area_rect', 'width'); want = n[0]! / n[1]!; }
       else if (has(p, 'صفوف')) { saw('area_rect', 'grid'); want = n[0]! * n[1]!; }
       else if (has(p, 'غرفة')) { saw('area_rect', 'room'); want = n[0]! * n[1]!; }
@@ -119,7 +123,8 @@ describe('geometry generators: answers recomputed from the stem', () => {
       else if (has(p, 'حجم')) { saw('prism_rect', 'volume'); assert.equal(Number(item.answer), n[0]! * n[1]! * n[2]!, p); }
       else { saw('prism_rect', 'surface'); assert.equal(Number(item.answer), 2 * (n[0]! * n[1]! + n[0]! * n[2]! + n[1]! * n[2]!), p); }
     }
-    const want = { area_rect: 6, composite_L: 4, area_parallelogram: 4, area_triangle: 4, area_trapezoid: 4, prism_rect: 5 };
+    // area_rect: six kinds, plus the Grade 4 estimate on a grid (since 2026-11-21)
+    const want = { area_rect: 7, composite_L: 4, area_parallelogram: 4, area_triangle: 4, area_trapezoid: 4, prism_rect: 5 };
     for (const [id, k] of Object.entries(want)) assert.equal(kinds[id]?.size, k, `${id} kinds drawn: ${[...(kinds[id] ?? [])]}`);
   });
 
@@ -1103,7 +1108,10 @@ describe('geometry routing', () => {
     ['تطابق المثلثات (SSS, SAS, HL)', 8, 'congruence_a'], ['تطابق المثلثات (ASA, AAS)', 8, 'congruence_b'], ['نظرية فيثاغورس', 8, 'pythagoras'],
     ['المستوى الإحداثي', 5, 'coord_plane_g5'], ['المستوى الإحداثي', 6, 'coord_plane_g6'], ['الدوران', 7, 'rotate'], ['التمدد', 8, 'dilate_g8'],
     ['المسافة في المستوى الإحداثي', 9, 'distance_plane'], ['النسب المثلثية', 9, 'trig_ratios'], ['الاتجاه من الشمال (Bearing)', 10, 'bearing'],
-    ['المتر والسنتيمتر', 3, 'units_m'], ['الزمن', 4, 'time_g45'], ['الفترات الزمنية (1)', 3, 'time_g3'], ['قراءة الوقت باستعمال (و، إلا)', 3, 'time_words'],
+    ['المتر والسنتيمتر', 3, 'units_m'], ['الزمن', 4, 'time_units_g4'], ['الزمن', 5, 'time_g45'], ['الفترات الزمنية (1)', 3, 'elapsed_hour_g3'],
+    // Grade 3's three time lessons and two area lessons each draw their own since 2026-11-14 (grade3Objectives.test.ts)
+    ['الفترات الزمنية (2)', 3, 'time_g3'], ['الوقت بالدقائق', 3, 'clock_minutes_g3'],
+    ['المساحة', 3, 'area_units_g3'], ['مساحة المستطيل', 3, 'area_rect'], ['المساحة', 4, 'area_rect'], ['قراءة الوقت باستعمال (و، إلا)', 3, 'time_words'],
     // lessons that stay refused: no generator is about them
     // («رسم الأشكال ثلاثية الأبعاد» is Grade 8 only since 2026-11-13: g8Lessons.test.ts;
     // «التطابق» is Grade 7 only since 2026-11-13: g7Lessons.test.ts;

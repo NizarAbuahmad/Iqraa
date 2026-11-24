@@ -60,7 +60,7 @@ export function MathDrillGame({ initial }: { initial: DrillConfig }) {
 
   const share = () => {
     shareAsText(drillShareUrl(config), t(TITLES[config.op]))
-      .then(how => setCopied(how === 'copied'))
+      .then(how => setCopied(how !== 'shared'))
       .catch(() => {});
   };
 
