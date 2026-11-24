@@ -10,6 +10,168 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 10: every page of every served range read — nothing foreign inside, two known cut-offs confirmed — 2026-11-21
+
+«Grade 10 audit…» (2026-11-13) looked at the first and last page of each range. This pass opened **all 2,006 images of
+the 346 served Grade 10 ranges** (six readers, one per group of subjects) for what that could not see: another lesson's
+pages, a unit opener, review, project, enrichment or glossary in the middle of a range. Printed page = PDF page in every
+book except English (PDF = printed + 2).
+
+**Result: no foreign page inside any range, in any subject.** Ranges start on the lesson's own opener and end on its own
+last page («مراجعة الدرس», «أقيّم تعلّمي», «أختبر معلوماتي», the closing exercises) in 336 of the 346; labs match their
+own pages; the re-pointed civic S1 ranges all show their own lesson. Honorifics on the Islamic pages (300 images) follow
+the right people everywhere. Nothing was changed. Since 2026-11-13 no Grade 10 page range or figure has changed
+(checked against the #1458 merge), and 25 lessons were added to the catalogs by «Grade 10 checked against its books, and
+corrected» — ten opening labs, maths u1_l5 and nine vocational S1 lessons — none with page images yet. All 37 maths
+lessons give offline questions; 111 sampled keys were read by hand, all right.
+
+**What it found, all already known:**
+- Cut by the 20-page cap, mid-lesson: digital S1 u1_l2, u1_l3, u1_l4 and S2 u4_l3; physics S1 u2_l1 (p56 unserved) and S2
+  u4_l2 (p38–41 unserved); civic S1 u2_l5 (75–79 of 75–82). The missing pages are in no image folder, so these need
+  re-rendering from the PDFs.
+- Start a page late: Arabic S1 u2_l2 (p38; its opener p37 is only in u2_l1's folder) and civic S2 u7_l1 (87–92; opener p86).
+- **Left on purpose:** chemistry S1 u2_l2 ends on p47, the full-page periodic table, after its own «مراجعة الدرس» (p46).
+  Review question 3 says «مستعينًا بالجدول الدوري», so the plate is the lesson's own reference, not another lesson's page.
+- Printed titles differ from the catalog only by a clause (Arabic S2 u9_l2 prints «أعبّرُ وأحاورُ»; Islamic S2 u1_l7 adds
+  «/الجيش العربي») — same lessons, not changed.
+
+**Not verified:** the pages beyond each range (not in the bucket); anything needing the PDFs; the pages on a phone.
+
+No «ما الجديد» entry: a record, not a change.
+## Grade 3 review, the Grade 2 way: plans, activities, quick checks and live prompts for eight-year-olds — 2026-11-20
+
+The Grade 2 review (below, «Grade 2 review, the Grade 1 way… — 2026-11-15») repeated for Grade 3: 8 subjects, 254
+lessons. The Grade 3 books in the repo carry titles only (no lesson text), so the level below is set from the
+lesson titles, the maths banks (`lib/math-practice`, numbers within 9999) and the curriculum's usual Grade 3
+expectations, not read off the pages.
+
+**Swept.** The offline plan (three styles) and the six activity formats, for all 254 lessons. Every lesson got the
+all-grades templates:
+- «اكتب من ذاكرتك — الدفاتر مغلقة», a claim to defend, a debate, teams betting points, a written summary, «برّر» and an
+  individual worksheet with a "worked example": all 254;
+- a 3-2-1 exit card in about half the plans; a concept map in 143; «فقرة قصيرة (٤–٥ جمل)» in Arabic and a
+  five-sentence paragraph for homework;
+- a controlled experiment in all 13 science lessons.
+
+**Offline (`artifacts/mobile`).**
+- **Grade 3 now uses the early-grade plans, activities, quick check and review** (`EarlyGrade` is 1, 2 or 3), at its
+  own level. Grade 1's content (counting cubes, colouring, answering with a word or a finger) is too young for
+  multiplication, division, fractions and angles, so:
+  - **Maths, science, social studies and English have Grade 3 content** (`thirdGradeContent`). Maths models an
+    example with materials or a drawing (an array, a number line, a shape), writes the same steps in numbers, and each
+    child solves three examples on a small board. Science predicts, observes, tries it with simple tools and records
+    in a two-column table, then writes two sentences, one starting «لأنّ…»; no controlled experiment, no variables.
+    Social studies reads the book's short sentences with a picture or a map and answers two questions in sentences.
+    English reads and writes the lesson words and a short sentence.
+  - **Arabic follows the book's strands with two or three sentences of the child's own** (`thirdGradeArabic`): a
+    reading lesson reads its text by name and answers two questions in sentences; a spelling lesson writes four words
+    by its rule and two sentences. **A punctuation lesson works in sentences** («أكتب (علامتا الترقيم (:) و(؛))»,
+    `isPunctuation`), in the plan, the game and the quick check: the marks are not "in words".
+  - **Islamic education**: a surah is recited and one verse's meaning written in a sentence; any other lesson answers
+    two questions in sentences and names one thing the child will do (`thirdGradeRecitation`). Grade 1 colours a picture.
+  - **A child answers in a sentence** (`ANSWER`), not "a word or by pointing", in the plan and the individual activity.
+  - Every assessment and the activities' writing tip end with the Grade 3 limit: «ولا تزيد الكتابة على جملتين أو ثلاث جمل
+    قصيرة يكتبها الطفل بنفسه.» (`WRITING_LIMIT`).
+  - A Grade 3 unit or semester review is the early-grade review, and each child solves an example or writes two
+    sentences from each unit.
+  - Movement and the arts keep the shared early-grade content (done, not written).
+- **`titleDetail` reads to the last closing bracket.** «أكتب (علامتا الترقيم (:) و(؛))» had been read as «علامتا الترقيم
+  (:» and printed into «كلمات فيها «علامتا الترقيم (:»».
+- **The review's principle line follows the grade.** It said «لا يكتب فيها إلا حرفًا أو كلمة أو عددًا» for every early
+  grade, contradicting the Grade 2 review's own sentence-writing step two lines above. Grade 1 keeps it; Grades 2 and
+  3 say what they write (`REVIEW_PRINCIPLE_AR`).
+- Measured again over all 254 lessons: every phrase above → 0; no template leak.
+
+**Live (`artifacts/api-server`).**
+- **A Grade 3 clause** (`firstGrade.ts`, `isThirdGrade`; «الصف الثالث الثانوي» is not Grade 3) for every use the Grade 1
+  and 2 clauses cover. It says:
+  - reading is a short book text answered in sentences, and writing is two or three sentences of the child's own;
+  - "why?" is answered in one sentence starting «لأنّ…», and a simple prediction checked by observing is fine;
+  - no long paragraphs, summaries, debates, defending a claim, written exit tickets or controlled experiments with
+    variables, and a problem is two steps at most;
+  - by subject, Arabic's strands (a spelling rule or a punctuation mark), and maths within 9999 with the facts to 10.
+
+  `firstGradeClause*` picks the clause by grade (`clauseGradeOf`), so it reaches the plan, worksheet, homework, quiz,
+  activity, lesson explanation, Prompt Slides, classroom, infographic and evaluation prompts. The evaluation's Grade 1
+  type notes stay Grade 1's.
+- **The pool key gains `thirdGrade: "2026-11-20"`** for a Grade 3 request of those kinds, so nothing pooled under the
+  grade-blind prompt is served to one. Grade 2 and Grade 4 keys are unchanged, pinned by literal keys computed from
+  the code before the change. Two earlier tests pinned a Grade 3 lesson-plan key as "unchanged"
+  (`secondGradePrompts.test.ts`, `earlyGradeDifficulty.test.ts`); they now pin Grade 4's.
+
+**Verified.**
+- `thirdGradePlans.test.ts` (mobile, 11 tests) runs every Grade 3 lesson through the plan in three styles, the six
+  formats and the quick check. It checks for none of the phrases above, no Grade 1 counting in maths, science, social
+  studies or English, the teacher's first-person voice and the Grade 3 limit. It also pins maths, science, Islamic
+  education, the Arabic strands, the punctuation lesson and the review. On the old generators all 11 fail.
+- `thirdGradePrompts.test.ts` (API) checks the clause in each builder for Grade 3 only, and the keys.
+- `pnpm run typecheck`; api-server `build` + `test` (3,004 pass); the mobile suite (9,451 pass, 10 skipped).
+- Tests that pinned Grade 3 as all-grades now pin Grade 4 (`secondGradePlans.test.ts`, `activityFirstGrade.test.ts`).
+  `lessonPlanKinds.test.ts` and `lessonPlanVariants.test.ts` sampled the first lesson of each subject, which for
+  science, social studies and PE was a Grade 3 lesson; they now sample from Grade 4 up, since they test the
+  all-grades plan kinds.
+- One full mobile run failed `earlyMathDifficulty.test.ts` (Grade 3 «خواص الضرب» not between easy and hard). It
+  passed on the next three runs, with and without this change: the maths banks draw at random, and this change does
+  not touch them.
+
+**Not verified:** a live model's Grade 3 output; the Arabic wording by a native reader; the level against the Grade 3
+book pages, which the repo does not hold as text.
+
+**Still open.**
+- Grade 3 evaluations keep every question type.
+- Grade 4 keeps the all-grades templates; it was not swept.
+
+No «ما الجديد» entry: these correct what existing generators write for Grade 3.
+
+
+## Grade 3 review, third pass: two science crops trimmed to their picture, numbered pictures in the book's order — 2026-11-21
+
+A re-run of the Grade 3 review on today's `main`, after the two earlier reviews, the Grade 3 second pass
+(NizarAbuahmad/Iqraa#1505) and the compare/order fix (NizarAbuahmad/Iqraa#1499). It covered the catalogs, the three
+figure books (science S1 and S2, social studies S2), the page links and the maths.
+
+**Fixed (figures only; no code):**
+- `g3-science-s1 p026c-v2` (the water food web, «الْكائِناتُ الْحَيَّةُ في بيئاتِها») carried the book's «أتحقق» question and
+  the printed page number «26». It is trimmed to the diagram and is now `p026c-v3.png`; its `rect` is updated to match.
+- `g3-science-s2 p033` (the island photo, «الْأَرْضُ») was the page top: the green banner, a paragraph that stopped
+  mid-sentence, and the photo. It is cropped to the photo and is now `p033-v2.png`. Both new names follow the repo's
+  `-vN` convention, so a plain `upload-figures-r2` sends them and nothing is served stale from the bucket.
+- Order inside a page: figures on one page keep their index order (`bookFigures.ts` sorts by `pdfPage` only). Two
+  sets the book **numbers** came out as 2, 1, 4, 3, 6, 5 (science S2, the six hazard photos on p68) and 2, 1, 7
+  (social S2, p22). Their index entries are reordered to the book's numbering. Only numbered sets were touched:
+  right-to-left geometry is the wrong rule in general (the log → crane → carpenter pictures on social p31 are already in
+  story order and RTL would break them), and a code change would reorder the LTR English books too.
+
+**Checked and unchanged:**
+- All 15 Grade 3 catalogs load into the app with their file counts: 254 lessons (maths 32 + 38, science 7 + 6, Islamic
+  12 + 12, Arabic 25 + 25, social 10 + 9, English 10 + 10, Creative Arts 30, PE 14 + 14).
+- Figures: 77 served, equal to the asset list; no orphan PNGs, no index entry without a PNG, no figure mapped to a
+  lesson of another subject or semester. The book's own numbering restarts in the S2 books (book unit 1 is catalog
+  unit 4) and the map handles it. The 6 figures with no lesson are the three front-matter pictures on page 3 of each
+  science book. I looked at all 77 on contact sheets.
+- Maths: an invariant sweep of the offline generators over the 70 lessons at three difficulties (8,400 items) found no
+  empty stem, no empty key, no duplicate option and no key missing from its options.
+
+**Not done, and why:**
+- **No book text is extracted for Grade 3** (`lib/curriculum/src/data/extracted/` has none, against 40 files for
+  Grade 4), so the live model grounds a Grade 3 lesson on its catalog entry alone. For Arabic that is the title
+  (no objectives, main idea or vocabulary: «title-only» by the catalog's own declaration); for Islamic studies the title
+  and a main idea. The student books are in the owner's Drive; extraction needs a machine that can download them
+  (`docs/adding-a-book.md`, tracks A and B).
+- **«صفحة الكتاب» has no pages for 94 of 254 lessons**: maths S1 (all 32) and 20 of S2, science S1 (all 7) and 5 of 6
+  in S2, 2 of 10 social S1 and 7 of 9 social S2, all 20 English, and one Creative Arts. The page links were verified on
+  2026-10-01; filling them means rendering the pages from the PDFs and uploading them to R2.
+- The offline question banks cover maths only; every other Grade 3 subject answers «No offline question bank» with live
+  AI off, by design (`questionBankPolicy`).
+- Not fixable from the crops: slivers of a neighbouring picture at the edge of a few social S2 figures, the book's own
+  pink trial-edition watermark, and the page-number badge printed on the two paired photos on science S2 p56.
+- **Step for whoever has R2 access:** `pnpm --filter @workspace/curriculum run upload-figures-r2` (no `--force`) to
+  put `p026c-v3.png` and `p033-v2.png` in the bucket. Until then those two figures show nothing in a deck.
+
+Verified: `bookFigures`, `bookPage` and `lessonShelf` tests, the curriculum suite (931) and `verify` (0 errors),
+`gen_book_figure_assets.mjs` (the only diff is the two renamed keys). No «ما الجديد» entry: nothing a teacher operates
+changed.
+
 ## Grade 4 second pass: division with a remainder and with zeros, tenths and hundredths apart, mixed numbers compared, six digits, a protractor — 2026-11-21
 
 A second read of Grade 4 maths, on top of «Grade 4 review: reflection on the book's square grid…», «Grade 4, second pass:
