@@ -183,43 +183,78 @@ function PeriodRow({ period, isNew, onSave, onDelete, isRTL, colors, t }: {
   const validDuration = /^\d{1,3}$/.test(duration) && durationNum >= 1 && durationNum <= 480;
   const dirty = time !== period.startTime || duration !== String(period.durationMinutes);
   const canSave = validTime && validDuration && (isNew || dirty);
+  const align = isRTL ? 'right' : 'left';
+  const fieldLabel = { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align } as const;
+  // A saved period whose fields are untouched has nothing to save: say it is
+  // saved rather than show a dimmed tick that reads as "something is wrong".
+  const showSaved = !isNew && !dirty;
 
   return (
     <View style={{ gap: 6, paddingBottom: 10, borderBottomWidth: isNew ? 0 : 1, borderBottomColor: colors.border }}>
-      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: isRTL ? 'right' : 'left' }}>
-        {t('schedulePeriodNumber', period.periodNumber)}
-      </Text>
-      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'center' }}>
-        <TimeField hours={hours} minutes={minutes} onHours={setHours} onMinutes={setMinutes} colors={colors} />
-        <TextInput
-          value={duration}
-          onChangeText={raw => { const v = toLatinDigits(raw); if (v === '' || /^\d{1,3}$/.test(v)) setDuration(v); }}
-          placeholder={t('scheduleDuration')}
-          placeholderTextColor={colors.mutedForeground}
-          keyboardType="number-pad"
-          maxLength={3}
-          style={[styles.smallInput, { width: 60, borderColor: colors.border, color: colors.foreground }]}
-        />
-        <Pressable
-          onPress={() => onSave(period.periodNumber, { startTime: time, durationMinutes: durationNum })}
-          disabled={!canSave}
-          accessibilityRole="button"
-          accessibilityLabel={isNew ? t('scheduleAddPeriod') : t('save')}
-          style={{
-            opacity: canSave ? 1 : 0.35, padding: 8, borderRadius: 8, backgroundColor: ACCENT_FILL,
-            flexDirection: 'row', alignItems: 'center', gap: 6,
-          }}
-        >
-          <Ionicons name="checkmark" size={16} color="#fff" />
-          {/* A bare tick is the only thing that saves a period, and the modal's one
-              labelled button used to be «Cancel»: a typed time was thrown away.
-              The row that adds a period says so. */}
-          {isNew ? (
-            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('scheduleAddPeriod')}</Text>
-          ) : null}
-        </Pressable>
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+        <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
+          {t('schedulePeriodNumber', period.periodNumber)}
+        </Text>
+        {/* The end time the teacher would otherwise work out in their head —
+            and the quickest check that the hours went into the right box. */}
+        {validTime && validDuration ? (
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 13, textAlign: align }}>
+            {t('schedulePeriodRange', time, endTime(time, durationNum))}
+          </Text>
+        ) : null}
+      </View>
+      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <View style={{ gap: 4 }}>
+          <Text style={fieldLabel}>{t('scheduleStartsAt')}</Text>
+          <TimeField hours={hours} minutes={minutes} onHours={setHours} onMinutes={setMinutes} colors={colors} />
+        </View>
+        <View style={{ gap: 4 }}>
+          <Text style={fieldLabel}>{t('scheduleMinutes')}</Text>
+          <TextInput
+            value={duration}
+            onChangeText={raw => { const v = toLatinDigits(raw); if (v === '' || /^\d{1,3}$/.test(v)) setDuration(v); }}
+            placeholder="45"
+            placeholderTextColor={colors.mutedForeground}
+            keyboardType="number-pad"
+            maxLength={3}
+            selectTextOnFocus
+            accessibilityLabel={t('scheduleDuration')}
+            style={[styles.smallInput, { width: 72, borderColor: colors.border, color: colors.foreground }]}
+          />
+        </View>
+        {showSaved ? (
+          <View style={{ minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 4 }}>
+            <Ionicons name="checkmark-circle" size={16} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{t('schedulePeriodSaved')}</Text>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => onSave(period.periodNumber, { startTime: time, durationMinutes: durationNum })}
+            disabled={!canSave}
+            accessibilityRole="button"
+            accessibilityLabel={isNew ? t('scheduleAddPeriod') : t('save')}
+            aria-disabled={!canSave}
+            style={{
+              opacity: canSave ? 1 : 0.35, minHeight: 40, paddingHorizontal: 12, borderRadius: 8, backgroundColor: ACCENT_FILL,
+              flexDirection: 'row', alignItems: 'center', gap: 6,
+            }}
+          >
+            {/* Each row saves on its own button, and the modal's one other button
+                («تم») only closes it — so the button names what it does. */}
+            <Ionicons name={isNew ? 'add' : 'checkmark'} size={16} color="#fff" />
+            <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>
+              {isNew ? t('scheduleAddPeriod') : t('save')}
+            </Text>
+          </Pressable>
+        )}
         {!isNew ? (
-          <Pressable onPress={() => onDelete(period.periodNumber)} hitSlop={8}>
+          <Pressable
+            onPress={() => onDelete(period.periodNumber)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('remove')}
+            style={{ minHeight: 40, justifyContent: 'center', paddingHorizontal: 4 }}
+          >
             <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
           </Pressable>
         ) : null}
@@ -245,14 +280,18 @@ function PeriodsEditorModal({ visible, schoolName, schoolLabel, periods, onClose
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardSafeView>
       <View style={styles.modalBackdrop}>
         <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-          <View style={{ gap: 2 }}>
+          <View style={{ gap: 4 }}>
             <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', textAlign: align }]}>
               {t('schedulePeriodsTitle')}
             </Text>
             <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, textAlign: align }}>
               {`${schoolLabel} · ${t('scheduleSchoolHint')}`}
+            </Text>
+            <Text style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align }}>
+              {t('schedulePeriodsIntro')}
             </Text>
           </View>
           <ScrollView style={{ maxHeight: 340 }} contentContainerStyle={{ gap: 10 }}>
@@ -282,6 +321,7 @@ function PeriodsEditorModal({ visible, schoolName, schoolLabel, periods, onClose
           </View>
         </View>
       </View>
+      </KeyboardSafeView>
     </Modal>
   );
 }
