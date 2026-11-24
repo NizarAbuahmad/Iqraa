@@ -41,6 +41,7 @@ import { normalizeArabic } from './arabic.ts';
 import { bankTagsForUnit, itemsForUnitTags, usePolicy, type BankUsePolicy } from './bank.ts';
 import { getObjectivesForUnit } from './objectives.ts';
 import { LESSONS, UNITS } from './catalog.ts';
+import { objectivesFromTeacherGuide } from './catalogs/nccdCatalog.ts';
 import type { CurriculumSource, SourceAuthority } from './sources.ts';
 
 const extractedDir = path.join(
@@ -344,7 +345,13 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
 
   // Objectives and vocabulary are what the catalog knows about this unit, and
   // they are the strongest available description of what its pages say.
-  const objectives = getObjectivesForUnit(unitId);
+  // Objectives copied from a teacher guide are the guide's own wording, which
+  // it reprints on the outcome page, the teaching notes and every unit plan:
+  // searching with them finds the guide, not the lesson's student-book pages
+  // (Grade 5 Islamic, 27 → 3 of 37 lessons). Such a unit is searched as it was
+  // before it had objectives. See `objectivesFromTeacherGuide`.
+  const guideObjectives = objectivesFromTeacherGuide(unitId);
+  const objectives = guideObjectives ? [] : getObjectivesForUnit(unitId);
   // Some books print no learning outcomes at all (Grade 9 Islamic Studies,
   // history, geography, civics, PE), so their units have no objectives. A
   // caller that passes no `terms` and no lesson — a unit/semester/book paper,
@@ -368,16 +375,20 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
   // outcomes these are the only terms there are, and a one-word title alone
   // can never reach the two matches a page needs.
   const lesson = queryLesson(query);
-  const lessonTerms = lesson
-    ? [
-      ...queryTerms([lesson.titleAr], 3),
-      ...queryTerms([
-        ...lesson.keywordsAr,
-        ...lesson.objectivesAr,
-        ...lesson.outcomes.flatMap(o => [o.descriptionAr, ...(o.skills ?? [])]),
-      ]),
-    ]
+  const ownWords = lesson
+    ? [...queryTerms([lesson.titleAr], 3), ...queryTerms(lesson.keywordsAr)]
     : [];
+  // A page needs two matched terms, so a lesson whose title and vocabulary give
+  // fewer — «حق التملّك» is «التملك» alone, «حق» being too short — would get
+  // nothing. Its guide outcomes then stay in: the guide's page for this lesson
+  // is a better answer than none.
+  const outcomeWords = lesson && (!guideObjectives || new Set(ownWords).size < 2)
+    ? queryTerms([
+      ...lesson.objectivesAr,
+      ...lesson.outcomes.flatMap(o => [o.descriptionAr, ...(o.skills ?? [])]),
+    ])
+    : [];
+  const lessonTerms = [...ownWords, ...outcomeWords];
   const weight = new Map<string, number>(unitTerms.map(t => [t, 1]));
   for (const t of lessonTerms) weight.set(t, LESSON_WEIGHT);
   const terms = [...weight.keys()];

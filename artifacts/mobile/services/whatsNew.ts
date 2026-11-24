@@ -121,6 +121,14 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
     route: '/teacher-profile',
   },
   {
+    id: 'g5-english-twelve-lessons',
+    date: '2026-11-13',
+    roles: ['teacher'],
+    titleKey: 'whatsNewG5EnglishLessonsTitle',
+    bodyKey: 'whatsNewG5EnglishLessonsBody',
+    route: '/curriculum/browse',
+  },
+  {
     id: 'g10-vocational-curriculum',
     date: '2026-11-13',
     roles: ['teacher'],

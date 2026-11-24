@@ -8,13 +8,16 @@
     "semester_covered": 2,
     "schema_version": "1.0",
     "source_books": [
-      "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني (g5-english-s2-pupils-book, Jordan Team Together series, Pearson/York Press)"
+      "كتاب الطالب لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني (g5-eng-s2-student-book, Jordan Team Together series, Pearson/York Press)",
+      "دليل المعلم لمادة اللغة الإنجليزية للصف الخامس الفصل الثاني (g5-eng-s2-teacher-guide) — read 2026-11-13 for the lesson structure only"
     ],
-    "provenance_note": "Read directly from the PDF via PyMuPDF on 2026-09-16 — clean extraction, same as Semester 1 (iqra_curriculum_g5_english_sem1.json). Unit titles, page numbers, vocabulary, grammar structures and skill descriptors were taken from the book's own 'Scope and sequence' table (pp. 4-5).",
+    "provenance_note": "Read directly from the PDF via PyMuPDF on 2026-09-16 — clean extraction, same as Semester 1 (iqra_curriculum_g5_english_sem1.json). Unit titles, page numbers, vocabulary, grammar structures and skill descriptors were taken from the book's own 'Scope and sequence' table (pp. 4-5). Lesson structure, titles and aims: the teacher's guide, read lesson by lesson on 2026-11-13 (see known_gaps).",
     "known_gaps": [
-      "Same shape as Semester 1: unit-level real content (not title-only), but each unit's internal page-by-page lesson count was not verified, so every unit here is split into exactly two lessons — Vocabulary & Grammar, and Listening & Speaking.",
-      "Units are numbered 6-10, continuing Semester 1's 1-5, matching the book's own cover and contents page.",
-      "Excluded as supplementary, non-core material: the 'Bo's Learning Club' boosters, 'Festivals' pages (Youth Service Day, World Heritage Day), 'Solve it', and the 'Grammar reference' appendix."
+      "Since 2026-11-13 every unit carries the book's own lessons, read lesson by lesson from the teacher's guide (Objectives block and heading of each lesson): Welcome back = 3 lessons, each main unit = 12 (1 PB Vocabulary, 2 AB Vocabulary, 3 PB Story, 4 AB Story, 5 PB Grammar, 6 AB Grammar, 7 PB Vocabulary and Grammar with the song, 8 AB Vocabulary and Grammar, 9 Culture + project, 10 English in action + Pronunciation, 11 Reading, 12 Listening, Speaking and Writing). `order` is the book lesson number. The ids are NOT: u*_l1 and u*_l2 were the old two lessons and their ids are persisted, so u*_l1 = book Lesson 1 (Vocabulary) and u*_l2 = book Lesson 12 (Welcome back: Lesson 3), and the new u*_l3…u*_l12 are book Lessons 2–11 (Welcome back: u*_l3 = Lesson 2). Objective ids are positional and stored with exam questions, so u*_l1/u*_l2 keep their original objectives first and the lesson's own aims follow. u*_l1 keeps the whole unit's word list (it is the English corner lesson and the grammar unit is keyed on it); each later lesson names the words it introduces in its objectives (\"New words: …\") rather than in `vocabulary`, so the corner still has one lesson per unit.",
+      "Units are numbered 6-10 here, continuing Semester 1's 1-5. This does NOT match the book: its contents page prints Welcome back (W), then 5 Animals in danger, 6 Staying healthy, 7 Curtain up!, 8 Let's get creative! — so the book's Unit 5 is u7 here, and the book's 'Unit 6' is u8 (corrected 2026-11-13; this line used to say the numbering matched the book).",
+      "Excluded as supplementary, non-core material: the 'Bo's Learning Club' boosters, the cross-curricular spreads (Art: What do landscape paintings look like?; Social Studies: How are the continents different?), 'Festivals' pages (Youth Service Day, World Heritage Day), 'Solve it', and the 'Grammar reference' appendix.",
+      "Vocabulary corrected 2026-11-13: 'fit'/'unfit' were listed twice in u8_l1 (as vocabulary and as pronunciation words) and the second pair was removed. The u10 pronunciation set also prints 'seeing' and 'watching'; they are named in u10_l1's objectives rather than added as vocabulary, because every vocabulary word is drilled and voiced in the English corner.",
+      "Story titles: only Unit 1's story prints a title in the extracted text («Watch out for the cat!»); the other stories are titled from the teacher's guide's own plot summary. Songs without a printed title are identified by their first or chorus line."
     ]
   },
   "units": [
@@ -31,12 +34,19 @@
         {
           "id": "u6_l1",
           "order": 1,
-          "title_ar": "المفردات والقواعد",
-          "title_en": "Vocabulary & Grammar",
-          "main_idea_ar": "Past simple. Example: I learnt how to cook. What did you do, Katy?",
+          "title_ar": "المفردات: الهوايات",
+          "title_en": "Vocabulary: Hobbies",
+          "main_idea_ar": "Lesson aims: to revise hobbies and technology; to recall the characters with a story.",
           "periods": null,
           "objectives": [
-            "Past simple — e.g. I learnt how to cook. What did you do, Katy?"
+            "Past simple — e.g. I learnt how to cook. What did you do, Katy?",
+            "Lesson aims: to revise hobbies and technology; to recall the characters with a story.",
+            "Follow the sequence of events in a short, simple cartoon story with familiar key words",
+            "Identify specific information in a simple story, if guided by questions",
+            "Follow the sequence of events in a simple story told slowly and clearly",
+            "Act out parts of a picture story, using simple actions and words",
+            "Text: The return of the Discovery Team! (PB pp.4–5; AB pp.2–3; TG pp.22–25)",
+            "New words: bake a cake, do experiments, fix toys, juggle, make a pizza, throw a ball."
           ],
           "vocabulary": [
             {
@@ -106,16 +116,39 @@
           ]
         },
         {
-          "id": "u6_l2",
+          "id": "u6_l3",
           "order": 2,
-          "title_ar": "الاستماع والتحدث",
-          "title_en": "Listening & Speaking",
-          "main_idea_ar": "Following the sequence of events in a simple story or narrative; extracting factual information from short, simple dialogues or stories about past events; identifying the context of short, simple dialogues related to familiar everyday situations.",
+          "title_ar": "القواعد: الماضي البسيط",
+          "title_en": "Grammar: Past simple",
+          "main_idea_ar": "Lesson aims: to review the Past simple.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to review the Past simple.",
+            "Identify specific information in a simple story, if guided by questions",
+            "Extract factual information from short dialogues or stories about past events",
+            "Write about past activities using simple language, given a model",
+            "Talk about past events or experiences, using simple language",
+            "Grammar: Past simple: I learnt how to cook. / What did you do, Katy? / I didn’t do much."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u6_l2",
+          "order": 3,
+          "title_ar": "المفردات: التكنولوجيا",
+          "title_en": "Vocabulary: Technology",
+          "main_idea_ar": "Lesson aims: to recall types of technology.",
           "periods": null,
           "objectives": [
             "Following the sequence of events in a simple story or narrative.",
             "Extracting factual information from short, simple dialogues or stories about past events.",
-            "Identifying the context of short, simple dialogues related to familiar everyday situations."
+            "Identifying the context of short, simple dialogues related to familiar everyday situations.",
+            "Lesson aims: to recall types of technology.",
+            "Understand short, simple descriptions of objects, if supported by pictures",
+            "Recognise familiar key words and phrases in short, basic descriptions",
+            "Repeat phrases and short sentences, if spoken slowly and clearly",
+            "Describe common everyday objects, using simple language",
+            "New words: call, computer, email, keyboard, letter, mobile phone, smartwatch, study, tablet, telephone."
           ],
           "vocabulary": []
         }
@@ -134,13 +167,18 @@
         {
           "id": "u7_l1",
           "order": 1,
-          "title_ar": "المفردات والقواعد",
-          "title_en": "Vocabulary & Grammar",
-          "main_idea_ar": "Past continuous; past continuous vs past simple. Examples: The shark was looking for small sea animals. I was watching the koalas when the lion escaped.",
+          "title_ar": "المفردات: الحيوانات البحرية",
+          "title_en": "Vocabulary: Sea animals",
+          "main_idea_ar": "Lesson aims: to learn and use sea animals vocabulary.",
           "periods": null,
           "objectives": [
             "Past continuous — e.g. The shark was looking for small sea animals.",
-            "Past continuous vs past simple — e.g. I was watching the koalas when the lion escaped."
+            "Past continuous vs past simple — e.g. I was watching the koalas when the lion escaped.",
+            "Lesson aims: to learn and use sea animals vocabulary.",
+            "Repeat single words, if spoken slowly and clearly",
+            "Take part in basic games that use fixed expressions or rhymes",
+            "Understand short, simple descriptions of animals, if supported by pictures",
+            "New words: dolphin, jellyfish, lobster, octopus, oyster, ray, seahorse, seal, shark, squid, turtle, whale."
           ],
           "vocabulary": [
             {
@@ -258,17 +296,196 @@
           ]
         },
         {
-          "id": "u7_l2",
+          "id": "u7_l3",
           "order": 2,
-          "title_ar": "الاستماع والتحدث",
-          "title_en": "Listening & Speaking",
-          "main_idea_ar": "Following the sequence of events in a simple story or narrative, if told slowly and clearly; identifying basic factual information in short, simple dialogues or stories on familiar everyday topics, if spoken slowly and clearly; identifying specific information in short, simple dialogues, if there is some repetition and rephrasing; understanding some details in longer dialogues on familiar everyday topics, if guided by questions or prompts.",
+          "title_ar": "تدريب على المفردات: الحيوانات البحرية",
+          "title_en": "Vocabulary practice: Sea animals",
+          "main_idea_ar": "Lesson aims: to learn and use sea animals vocabulary.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use sea animals vocabulary.",
+            "Label simple pictures on familiar topics by copying single words",
+            "Write simple factual descriptions of animals (e.g. habitat, abilities), given prompts or a model"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l4",
+          "order": 3,
+          "title_ar": "القصة: كيس بيض وسمكة القرش المتشمّس",
+          "title_en": "Story: An egg case and a basking shark",
+          "main_idea_ar": "Lesson aims: to listen to, analyse and act a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to listen to, analyse and act a story.",
+            "Follow the sequence of events in a short, simple cartoon story with familiar key words",
+            "Identify specific information in a simple story, if guided by questions",
+            "Act out parts of a picture story, using simple actions and words",
+            "Follow the sequence of events in a simple story told slowly and clearly",
+            "New words: endangered.",
+            "Story (PB pp. 10–11): whale watching — a basking shark and an egg case; value: I am careful not to harm animals; finding out whether a sea animal lays eggs or has live babies."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l5",
+          "order": 4,
+          "title_ar": "تدريب على القصة: كيس بيض وسمكة القرش المتشمّس",
+          "title_en": "Story practice: An egg case and a basking shark",
+          "main_idea_ar": "Lesson aims: to review a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to review a story.",
+            "Identify specific information in a simple story, if guided by questions",
+            "Understand the main themes of a simplified story",
+            "Understand the correct sequence of events in a simple story or dialogue"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l6",
+          "order": 5,
+          "title_ar": "القواعد: الماضي المستمر",
+          "title_en": "Grammar: Past continuous",
+          "main_idea_ar": "Lesson aims: to learn and use the Past continuous.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use the Past continuous.",
+            "Identify specific information in a simple story, if guided by questions",
+            "Identify basic factual information in short, simple dialogues on everyday topics",
+            "Talk about an event in the past using fixed expressions, given a model",
+            "Grammar: Past continuous: What was the shark doing? The shark was looking for small sea animals. It wasn’t looking for big fish."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l7",
+          "order": 6,
+          "title_ar": "تدريب على القواعد: الماضي المستمر",
+          "title_en": "Grammar practice: Past continuous",
+          "main_idea_ar": "Lesson aims: to learn and use the Past continuous.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use the Past continuous.",
+            "Extract factual information from short dialogues about past events, guided by questions",
+            "Write about past activities using simple language, given a model",
+            "Grammar: Past continuous: Was Jaber buying a toy seal? No, he wasn’t. He was buying a toy dolphin."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l8",
+          "order": 7,
+          "title_ar": "المفردات والقواعد: حيوانات اليابسة؛ الماضي المستمر والماضي البسيط",
+          "title_en": "Vocabulary and Grammar: Land animals; Past continuous and Past simple",
+          "main_idea_ar": "Lesson aims: to learn and use land animals vocabulary; to compare the Past continuous and the Past simple; to learn and sing a song.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use land animals vocabulary; to compare the Past continuous and the Past simple; to learn and sing a song.",
+            "Recognise familiar words and phrases in short, simple songs",
+            "Repeat single words, if spoken slowly and clearly",
+            "Sing a basic song from memory",
+            "Talk about an event in the past using fixed expressions, given a model",
+            "Grammar: Past continuous vs Past simple: I was watching the koalas when the lion escaped! I wasn’t watching the lion!",
+            "Text: Song (no printed title): ‘I was walking along the path through the hills, / When seven gorillas jumped out of the trees …’ (PB p.13; TG pp.40–41)",
+            "New words: camel, gorilla, koala, lion, panda, parrot, polar bear, rhino.",
+            "Song: 'I was walking along the path through the hills' — the past continuous with when (PB p. 13)."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l9",
+          "order": 8,
+          "title_ar": "تدريب على المفردات والقواعد: حيوانات اليابسة؛ الماضي المستمر والماضي البسيط",
+          "title_en": "Vocabulary and Grammar practice: Land animals; Past continuous and Past simple",
+          "main_idea_ar": "Lesson aims: to learn and use land animals vocabulary; to review the Past continuous and the Past simple.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use land animals vocabulary; to review the Past continuous and the Past simple.",
+            "Label simple pictures on familiar topics by copying single words",
+            "Sing a basic song from memory",
+            "Talk about an event in the past using fixed expressions, given a model",
+            "Grammar: Past continuous and Past simple: The lions were drinking when we drove past."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l10",
+          "order": 9,
+          "title_ar": "الثقافة: الجمعية الملكية لمنع القسوة على الحيوانات (RSPCA)",
+          "title_en": "Culture: The RSPCA",
+          "main_idea_ar": "Lesson aims: to learn about the RSPCA (Royal Society for the Prevention of Cruelty to Animals).",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn about the RSPCA (Royal Society for the Prevention of Cruelty to Animals).",
+            "Get the gist of short, simple texts on familiar topics, if supported by pictures",
+            "Extract specific information in short texts on familiar topics",
+            "Express opinions on familiar topics, using simple language",
+            "Project: make and present a spider diagram about an animal protection organisation",
+            "Text: Helping animals for nearly 200 years! (PB p.14; AB p.10; TG pp.42–43)",
+            "New words: wildlife, in trouble, injured, rescue, recover.",
+            "Culture (PB p. 14): the RSPCA, a British animal protection organisation; project: a spider diagram about an animal protection organisation (e.g. the Humane Center for Animal Welfare in Jordan)."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l11",
+          "order": 10,
+          "title_ar": "الإنجليزية في الاستخدام: تذكير شخص بفعل شيء",
+          "title_en": "English in action: Reminding someone to do something",
+          "main_idea_ar": "Lesson aims: to learn to remind someone to do something; to identify and use the prefix dis- to infer meaning.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn to remind someone to do something; to identify and use the prefix dis- to infer meaning.",
+            "Understand some details in short, simple dialogues, if supported by pictures",
+            "Identify basic factual information in short, simple dialogues",
+            "Talk about everyday activities, using simple language",
+            "Say simple tongue twisters (the prefix dis-)",
+            "Grammar: Function: Remember to change the cat’s food and water every day. / Don’t forget to clean the bowls every day. / I promise to look after my cat!",
+            "New words: appear/disappear, like/dislike, agree/disagree, connect/disconnect.",
+            "Pronunciation: the prefix dis- (appear/disappear, like/dislike, agree/disagree, connect/disconnect) — the tongue twister 'The whale appears in the morning' (PB p. 15).",
+            "English in action (PB p. 15): reminding someone to do something — Remember to change the cat's food and water every day. Don't forget to clean the bowls."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l12",
+          "order": 11,
+          "title_ar": "القراءة: أنقذوا حيتان البيلوغا!",
+          "title_en": "Reading: Save the beluga whales!",
+          "main_idea_ar": "Lesson aims: to read and analyse an article about whales.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to read and analyse an article about whales.",
+            "Get the gist of short, simple texts on familiar topics, if supported by pictures",
+            "Identify the main topic of each paragraph, with prompts or questions",
+            "Express opinions on familiar topics, using simple language",
+            "Say briefly what they like or dislike about a text",
+            "Text: Save the beluga whales! (PB p.16; AB p.12; TG pp.46–47)",
+            "New words: save, ocean, emergency, frightened, calming, reach.",
+            "Reading (PB p. 16): the article 'Save the beluga whales!'."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u7_l2",
+          "order": 12,
+          "title_ar": "الاستماع والتحدث والكتابة: حيوان مهدَّد بالانقراض",
+          "title_en": "Listening, Speaking and Writing: An animal in danger",
+          "main_idea_ar": "Lesson aims: to understand a listening task; to talk about an animal in danger; to write about an animal in danger.",
           "periods": null,
           "objectives": [
             "Following the sequence of events in a simple story or narrative, if told slowly and clearly.",
             "Identifying basic factual information in short, simple dialogues or stories on familiar everyday topics.",
             "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing.",
-            "Understanding some details in longer dialogues on familiar everyday topics, if guided by questions or prompts."
+            "Understanding some details in longer dialogues on familiar everyday topics, if guided by questions or prompts.",
+            "Lesson aims: to understand a listening task; to talk about an animal in danger; to write about an animal in danger.",
+            "Scan a simple text to find specific information",
+            "Identify specific information in short dialogues with some repetition",
+            "Describe where an animal lives in a simple way",
+            "Write simple factual descriptions of animals, given prompts or a model",
+            "Text: Basking sharks (model text) (PB p.17; AB p.13; TG pp.48–49)",
+            "Writing (PB p. 17): a factual text about an animal in danger in Jordan, using headings (where it lives, what it eats, what it does, why it is in danger)."
           ],
           "vocabulary": []
         }
@@ -287,13 +504,18 @@
         {
           "id": "u8_l1",
           "order": 1,
-          "title_ar": "المفردات والقواعد",
-          "title_en": "Vocabulary & Grammar",
-          "main_idea_ar": "should/shouldn't; infinitive of purpose. Examples: You should go to the doctor's! You shouldn't go to school. He went to the supermarket to buy fruit.",
+          "title_ar": "المفردات: الأمراض",
+          "title_en": "Vocabulary: Illnesses",
+          "main_idea_ar": "Lesson aims: to learn and use illnesses vocabulary.",
           "periods": null,
           "objectives": [
             "should/shouldn't — e.g. You should go to the doctor's! You shouldn't go to school.",
-            "Infinitive of purpose — e.g. He went to the supermarket to buy fruit."
+            "Infinitive of purpose — e.g. He went to the supermarket to buy fruit.",
+            "Lesson aims: to learn and use illnesses vocabulary.",
+            "Repeat single words, if spoken slowly and clearly",
+            "Repeat phrases and short sentences, if spoken slowly and clearly",
+            "Describe basic symptoms to a doctor, using gestures to support the meaning",
+            "New words: a cold, a cough, a headache, a high temperature, a rash, a runny nose, a sore throat, a stomach ache, a toothache, an earache, dizzy, sick."
           ],
           "vocabulary": [
             {
@@ -385,14 +607,6 @@
               "en": "unbalanced"
             },
             {
-              "ar": "لائق بدنيًا",
-              "en": "fit"
-            },
-            {
-              "ar": "غير لائق بدنيًا",
-              "en": "unfit"
-            },
-            {
               "ar": "منتظم",
               "en": "regular"
             },
@@ -419,16 +633,195 @@
           ]
         },
         {
-          "id": "u8_l2",
+          "id": "u8_l3",
           "order": 2,
-          "title_ar": "الاستماع والتحدث",
-          "title_en": "Listening & Speaking",
-          "main_idea_ar": "Following the sequence of events in a simple story or narrative, if told slowly and clearly; identifying basic factual information in short, simple dialogues or stories on familiar everyday topics; identifying specific information in short, simple dialogues, if there is some repetition and rephrasing.",
+          "title_ar": "تدريب على المفردات: الأمراض",
+          "title_en": "Vocabulary practice: Illnesses",
+          "main_idea_ar": "Lesson aims: to learn and use illnesses vocabulary.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use illnesses vocabulary.",
+            "Label simple pictures on familiar topics by copying single words"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l4",
+          "order": 3,
+          "title_ar": "القصة: حامد يذهب إلى الطبيب",
+          "title_en": "Story: Hamed goes to the doctor’s",
+          "main_idea_ar": "Lesson aims: to listen to, analyse and act a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to listen to, analyse and act a story.",
+            "Follow the sequence of events in a short, simple cartoon story with familiar key words",
+            "Identify specific information in a simple story, if guided by questions",
+            "Act out parts of a picture story, using simple actions and words",
+            "Follow the sequence of events in a simple story told slowly and clearly",
+            "New words: hospital, ambulance.",
+            "Story (PB pp. 20–21): Hamed feels ill and visits Dr Aladib, who takes his temperature; value: I help my friends when they are ill; designing a doctor's waiting room."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l5",
+          "order": 4,
+          "title_ar": "تدريب على القصة: حامد يذهب إلى الطبيب",
+          "title_en": "Story practice: Hamed goes to the doctor’s",
+          "main_idea_ar": "Lesson aims: to review a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to review a story.",
+            "Identify specific information in a simple story, if guided by questions",
+            "Understand the main themes of a simplified story",
+            "Understand the correct sequence of events in a simple story or dialogue"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l6",
+          "order": 5,
+          "title_ar": "القواعد: should وshouldn’t لتقديم النصيحة",
+          "title_en": "Grammar: should/shouldn’t for advice",
+          "main_idea_ar": "Lesson aims: to learn and use should/shouldn’t.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use should/shouldn’t.",
+            "Identify specific information in a simple story, if guided by questions",
+            "Identify basic factual information in short, simple dialogues on everyday topics",
+            "Repeat phrases and short sentences, if spoken slowly and clearly",
+            "Give simple advice, using fixed expressions",
+            "Grammar: should/shouldn’t: You should go to the doctor’s! / You shouldn’t go to school! / Should I take some medicine? Yes, you should. / No, you shouldn’t.",
+            "New words: take some medicine, put cream on it, sit down, not scratch it, not go swimming, blow your nose, go home."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l7",
+          "order": 6,
+          "title_ar": "تدريب على القواعد: should وshouldn’t",
+          "title_en": "Grammar practice: should/shouldn’t",
+          "main_idea_ar": "Lesson aims: to revise the use of should/shouldn’t.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to revise the use of should/shouldn’t.",
+            "Identify basic factual information in short, simple dialogues on everyday topics",
+            "Understand basic language about common symptoms and illnesses",
+            "Write simple sentences about familiar things, given prompts or a model",
+            "Grammar: should/shouldn’t: Adel should take some medicine. He shouldn’t eat hard food."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l8",
+          "order": 7,
+          "title_ar": "المفردات والقواعد: أنماط الحياة الصحية؛ المصدر للتعبير عن الغرض",
+          "title_en": "Vocabulary and Grammar: Healthy lifestyles; infinitive of purpose",
+          "main_idea_ar": "Lesson aims: to learn and use healthy lifestyle vocabulary; to learn and use the infinitive of purpose; to learn and sing a song.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use healthy lifestyle vocabulary; to learn and use the infinitive of purpose; to learn and sing a song.",
+            "Recognise familiar words and phrases in short, simple songs",
+            "Repeat single words, if spoken slowly and clearly",
+            "Sing a basic song from memory",
+            "Talk about everyday activities, using simple language",
+            "Grammar: Infinitive of purpose: He went to the supermarket to buy fruit. / I’m running to be fit and healthy.",
+            "Text: Song (no printed title), with the lines ‘I wasn’t very healthy, / But I wanted to be fit.’ (PB p.23; TG pp.60–61)",
+            "New words: do exercise, eat a balanced diet, eat junk food, fit, healthy, relax, unfit, unhealthy.",
+            "Song: 'I wasn't very healthy, but I wanted to be fit' (PB p. 23)."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l9",
+          "order": 8,
+          "title_ar": "تدريب على المفردات والقواعد: أنماط الحياة الصحية؛ المصدر للتعبير عن الغرض",
+          "title_en": "Vocabulary and Grammar practice: Healthy lifestyles; infinitive of purpose",
+          "main_idea_ar": "Lesson aims: to learn and use healthy lifestyle vocabulary; to learn and use the infinitive of purpose.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use healthy lifestyle vocabulary; to learn and use the infinitive of purpose.",
+            "Label simple pictures on familiar topics by copying single words",
+            "Write simple sentences about familiar things, given prompts or a model",
+            "Grammar: Infinitive of purpose: He’s eating more fruit to have a healthy diet."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l10",
+          "order": 9,
+          "title_ar": "الثقافة: يوم الغذاء الصحي",
+          "title_en": "Culture: Healthy Food Day",
+          "main_idea_ar": "Lesson aims: to learn about Healthy Food Day.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn about Healthy Food Day.",
+            "Get the gist of short, simple texts on familiar topics, if supported by pictures",
+            "Extract specific information in short texts on familiar topics",
+            "Express opinions on familiar topics, using simple language",
+            "Project: plan, write about and present a healthy lunch made from local food",
+            "Text: Healthy Food Day! (PB p.24; AB p.18; TG pp.62–63)",
+            "New words: surprise, local, chef, share, teamwork.",
+            "Culture (PB p. 24): Healthy Food Day in Jordanian primary schools; project: making a healthy lunch for Healthy Lunch Day."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l11",
+          "order": 10,
+          "title_ar": "الإنجليزية في الاستخدام: عند الطبيب",
+          "title_en": "English in action: At the doctor’s",
+          "main_idea_ar": "Lesson aims: to learn to talk at the doctor’s; to identify and use the prefixes un- and ir- to infer meaning.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn to talk at the doctor’s; to identify and use the prefixes un- and ir- to infer meaning.",
+            "Understand some details in short, simple dialogues, if supported by pictures",
+            "Identify basic factual information in short, simple dialogues",
+            "Express opinions on familiar topics, using simple language",
+            "Act out a short dialogue or role play, given prompts",
+            "Grammar: Function: What’s the matter? I’m feeling sick. / Where does it hurt? / When did you start feeling sick? / You shouldn’t go to school. You should rest.",
+            "New words: balanced/unbalanced, healthy/unhealthy, fit/unfit, regular/irregular, resistible/irresistible, responsible/irresponsible.",
+            "Pronunciation: the prefixes un- and ir- (balanced/unbalanced, healthy/unhealthy, fit/unfit, regular/irregular, resistible/irresistible, responsible/irresponsible) (PB p. 25).",
+            "English in action (PB p. 25): at the doctor's — What's the matter? I'm feeling sick. Where does it hurt? You should rest."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l12",
+          "order": 11,
+          "title_ar": "القراءة: أهم خمس نصائح للحفاظ على الصحة!",
+          "title_en": "Reading: Top 5 tips on how to stay healthy!",
+          "main_idea_ar": "Lesson aims: to read and analyse an article giving health tips.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to read and analyse an article giving health tips.",
+            "Identify key information in short factual texts from the headings and illustrations",
+            "Get the gist of short, simple texts on familiar topics, if supported by pictures",
+            "Scan a simple text to find specific information",
+            "Text: Top 5 tips on how to stay healthy! (PB p.26; AB p.20; TG pp.66–67)",
+            "New words: sleep tight, portions, calm, top tip, out and about.",
+            "Reading (PB p. 26): 'Top 5 tips on how to stay healthy!'."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u8_l2",
+          "order": 12,
+          "title_ar": "الاستماع والتحدث والكتابة: الحفاظ على اللياقة والصحة",
+          "title_en": "Listening, Speaking and Writing: Staying fit and healthy",
+          "main_idea_ar": "Lesson aims: to understand a listening task; to talk about staying healthy and relaxing; to write a description about staying fit and healthy.",
           "periods": null,
           "objectives": [
             "Following the sequence of events in a simple story or narrative, if told slowly and clearly.",
             "Identifying basic factual information in short, simple dialogues or stories on familiar everyday topics.",
-            "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing."
+            "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing.",
+            "Lesson aims: to understand a listening task; to talk about staying healthy and relaxing; to write a description about staying fit and healthy.",
+            "Scan a simple text to find specific information",
+            "Identify specific information in short dialogues with some repetition",
+            "Talk about everyday activities, using simple language",
+            "Write short, simple texts on familiar topics in linked sentences",
+            "Text: Staying fit and healthy (by Nadia, model text) (PB p.27; AB p.21; TG pp.68–69)",
+            "Writing (PB p. 27): a description of how you stay fit and healthy, using brackets to give extra information."
           ],
           "vocabulary": []
         }
@@ -447,12 +840,16 @@
         {
           "id": "u9_l1",
           "order": 1,
-          "title_ar": "المفردات والقواعد",
-          "title_en": "Vocabulary & Grammar",
-          "main_idea_ar": "Present perfect. Examples: I've read Alice's Adventures in Wonderland. I haven't seen the film. He's seen Alice's costume somewhere, but he hasn't found it.",
+          "title_ar": "المفردات: المسرح",
+          "title_en": "Vocabulary: The theatre",
+          "main_idea_ar": "Lesson aims: to learn and use theatre words.",
           "periods": null,
           "objectives": [
-            "Present perfect — e.g. I've read Alice's Adventures in Wonderland. I haven't seen the film."
+            "Present perfect — e.g. I've read Alice's Adventures in Wonderland. I haven't seen the film.",
+            "Lesson aims: to learn and use theatre words.",
+            "Repeat single words, if spoken slowly and clearly",
+            "Take part in basic games that use fixed expressions or rhymes",
+            "New words: act, audience, backstage, cast, cheer, costumes, curtain, director, lighting, props, scenery, stage."
           ],
           "vocabulary": [
             {
@@ -570,16 +967,193 @@
           ]
         },
         {
-          "id": "u9_l2",
+          "id": "u9_l3",
           "order": 2,
-          "title_ar": "الاستماع والتحدث",
-          "title_en": "Listening & Speaking",
-          "main_idea_ar": "Following the sequence of events in a simple story or narrative, if told slowly and clearly; identifying basic factual information in short, simple dialogues or stories on familiar everyday topics; identifying specific information in short, simple dialogues, if there is some repetition and rephrasing.",
+          "title_ar": "تدريب على المفردات: المسرح",
+          "title_en": "Vocabulary practice: The theatre",
+          "main_idea_ar": "Lesson aims: to learn and use theatre words.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use theatre words.",
+            "Label simple pictures on familiar topics by copying single words"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l4",
+          "order": 3,
+          "title_ar": "القصة: تجهيز المسرح للمسرحية المدرسية",
+          "title_en": "Story: Getting the stage ready for the school play",
+          "main_idea_ar": "Lesson aims: to listen to, analyse and act a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to listen to, analyse and act a story.",
+            "Follow the sequence of events in a short, simple cartoon story with familiar key words",
+            "Identify specific information in a simple story, if guided by questions",
+            "Act out parts of a picture story, using simple actions and words",
+            "Follow the sequence of events in a simple story told slowly and clearly",
+            "New words: steps, heavy, push.",
+            "Story (PB pp. 34–35): rehearsing the school play Alice's Adventures in Wonderland — the scenery that nearly falls; value: I work well together with my friends."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l5",
+          "order": 4,
+          "title_ar": "تدريب على القصة: تجهيز المسرح للمسرحية المدرسية",
+          "title_en": "Story practice: Getting the stage ready for the school play",
+          "main_idea_ar": "Lesson aims: to review a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to review a story.",
+            "Understand the main themes of a simplified story",
+            "Understand the correct sequence of events in a simple story",
+            "Identify specific information in a simple story, if guided by questions",
+            "Write about past activities using simple language, given a model"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l6",
+          "order": 5,
+          "title_ar": "القواعد: المضارع التام",
+          "title_en": "Grammar: Present perfect",
+          "main_idea_ar": "Lesson aims: to learn and use the Present perfect.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use the Present perfect.",
+            "Identify specific information in a simple story, if guided by questions",
+            "Identify basic factual information in short, simple dialogues on everyday topics",
+            "Repeat phrases and short sentences, if spoken slowly and clearly",
+            "Talk about past events or experiences, using simple language",
+            "Grammar: Present perfect: I’ve read Alice’s Adventures in Wonderland. / I haven’t seen the film."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l7",
+          "order": 6,
+          "title_ar": "تدريب على القواعد: المضارع التام",
+          "title_en": "Grammar practice: Present perfect",
+          "main_idea_ar": "Lesson aims: to learn and use the Present perfect.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use the Present perfect.",
+            "Identify activities that happened in the past in short, simple dialogues",
+            "Write about past activities using simple language, given a model",
+            "Grammar: Present perfect: My friends and I haven’t eaten junk food for ages."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l8",
+          "order": 7,
+          "title_ar": "المفردات والقواعد: الترفيه؛ أسئلة المضارع التام مع ever",
+          "title_en": "Vocabulary and Grammar: Entertainment; Present perfect questions with ever",
+          "main_idea_ar": "Lesson aims: to learn and use entertainment vocabulary; to learn and use Present perfect questions with ever; to learn and sing a song.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use entertainment vocabulary; to learn and use Present perfect questions with ever; to learn and sing a song.",
+            "Recognise familiar words and phrases in short, simple songs",
+            "Repeat phrases and short sentences, if spoken slowly and clearly",
+            "Sing a basic song from memory",
+            "Talk about past events or experiences, using simple language",
+            "Grammar: Present perfect questions with ever: Have you ever been to a festival? Yes, I have. / No, I haven’t. / Has she ever sung in a musical? Yes, she has. / No, she hasn’t.",
+            "Text: Song (no printed title): ‘I love music and entertainment, / I love singing and laughing, too! …’ (PB p.37; TG pp.88–89)",
+            "New words: classical music, comic, concert, country music, festival, musical, poem, puppet show."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l9",
+          "order": 8,
+          "title_ar": "تدريب على المفردات والقواعد: الترفيه؛ أسئلة المضارع التام مع ever",
+          "title_en": "Vocabulary and Grammar practice: Entertainment; Present perfect questions with ever",
+          "main_idea_ar": "Lesson aims: to learn and use entertainment vocabulary; to learn and use Present perfect questions with ever.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use entertainment vocabulary; to learn and use Present perfect questions with ever.",
+            "Label simple pictures on familiar topics by copying single words",
+            "Write about past activities using simple language, given a model",
+            "Grammar: Present perfect questions with ever: Has Reem ever read a comic? Yes, she has."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l10",
+          "order": 9,
+          "title_ar": "الثقافة: مسارح مشهورة",
+          "title_en": "Culture: Famous theatres",
+          "main_idea_ar": "Lesson aims: to learn about theatres; to make a poster for a show.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn about theatres; to make a poster for a show.",
+            "Get the gist of short, simple texts on familiar topics and scan them for specific information",
+            "Express opinions on familiar topics, using simple language",
+            "Write simple facts about a topic on a planning sheet",
+            "Project: create a poster to advertise a new show, given a model",
+            "Text: Have you ever been to the theatre? (PB p.38; AB p.28; TG pp.90–91)",
+            "New words: rebuilt.",
+            "Culture (PB p. 38): 'Have you ever been to the theatre?' — the Majestic Theatre on Broadway, the Roman Theatre in Amman, the Haya Cultural Centre; project: a poster for a new show."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l11",
+          "order": 10,
+          "title_ar": "الإنجليزية في الاستخدام: وصف الملابس",
+          "title_en": "English in action: Describing clothes",
+          "main_idea_ar": "Lesson aims: to learn to describe clothes; to identify and use the suffix -ful to infer meaning.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn to describe clothes; to identify and use the suffix -ful to infer meaning.",
+            "Understand some details in short, simple dialogues, if supported by pictures",
+            "Identify basic factual information in short, simple dialogues",
+            "Express opinions on familiar topics, using simple language",
+            "Act out a short dialogue or role play, given prompts",
+            "Grammar: Function: The trousers are too long. / The T-shirt is too small. / Try on this T-shirt.",
+            "New words: cheerful, thankful, playful, fearful, peaceful, forgetful, careful, hopeful.",
+            "Pronunciation: the suffix -ful (cheerful, thankful, playful, fearful, peaceful, forgetful, careful, hopeful) (PB p. 39).",
+            "English in action (PB p. 39): describing clothes — The trousers are too long. The T-shirt is too small. Try on this T-shirt."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l12",
+          "order": 11,
+          "title_ar": "القراءة: مسرحية «Yousuf in the mountains»",
+          "title_en": "Reading: Yousuf in the mountains (a play)",
+          "main_idea_ar": "Lesson aims: to read and analyse part of a play.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to read and analyse part of a play.",
+            "Identify key information in short texts from the headings and illustrations",
+            "Follow simple stories with basic dialogue and simple narrative",
+            "Identify key parts of a simple story (beginning, middle, end)",
+            "Text: Yousuf in the mountains (PB p.40; AB p.30; TG pp.94–95)",
+            "New words: stick, ride, search, running, chase, wolf, drop.",
+            "Reading (PB p. 40): the play 'Yousuf in the mountains' (scenes and stage directions)."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u9_l2",
+          "order": 12,
+          "title_ar": "الاستماع والتحدث والكتابة: نهاية للمسرحية",
+          "title_en": "Listening, Speaking and Writing: An ending for the play",
+          "main_idea_ar": "Lesson aims: to understand a listening task; to discuss what happens next in a play; to write the ending to the play in Lesson 11.",
           "periods": null,
           "objectives": [
             "Following the sequence of events in a simple story or narrative, if told slowly and clearly.",
             "Identifying basic factual information in short, simple dialogues or stories on familiar everyday topics.",
-            "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing."
+            "Identifying specific information in short, simple dialogues, if there is some repetition and rephrasing.",
+            "Lesson aims: to understand a listening task; to discuss what happens next in a play; to write the ending to the play in Lesson 11.",
+            "Scan a simple text and identify specific information in a simple story",
+            "Identify specific information in short dialogues with some repetition",
+            "Say briefly what they think will happen next in a simple story or play",
+            "Write a simple story describing the main events, if supported by pictures",
+            "Text: Scene 4: On the road (model ending to ‘Yousuf in the mountains’) (PB p.41; AB p.31; TG pp.96–97)",
+            "Writing (PB p. 41): your own ending to the play, with stage directions in brackets."
           ],
           "vocabulary": []
         }
@@ -598,13 +1172,17 @@
         {
           "id": "u10_l1",
           "order": 1,
-          "title_ar": "المفردات والقواعد",
-          "title_en": "Vocabulary & Grammar",
-          "main_idea_ar": "Present perfect with ever/never; is/are made of. Examples: Have you ever made chocolates? Yes, I have./No, I haven't. She's never used the oven before. What is it made of? It's made of plastic.",
+          "title_ar": "المفردات: الأجهزة المنزلية",
+          "title_en": "Vocabulary: Household appliances",
+          "main_idea_ar": "Lesson aims: to learn and use household appliance words.",
           "periods": null,
           "objectives": [
             "Present perfect with ever/never — e.g. Have you ever made chocolates? Yes, I have./No, I haven't.",
-            "is/are made of — e.g. What is it made of? It's made of plastic. What are they made of? They're made of gold!"
+            "is/are made of — e.g. What is it made of? It's made of plastic. What are they made of? They're made of gold!",
+            "Lesson aims: to learn and use household appliance words.",
+            "Repeat single words, if spoken slowly and clearly",
+            "Ask a range of questions in guessing games to find the answer",
+            "New words: coffee machine, cooker, dishwasher, freezer, fridge, kettle, microwave, oven, sewing machine, toaster, vacuum cleaner, washing machine."
           ],
           "vocabulary": [
             {
@@ -718,16 +1296,192 @@
           ]
         },
         {
-          "id": "u10_l2",
+          "id": "u10_l3",
           "order": 2,
-          "title_ar": "الاستماع والتحدث",
-          "title_en": "Listening & Speaking",
-          "main_idea_ar": "Following the sequence of events in a simple story or narrative, if told slowly and clearly; identifying basic factual information in short, simple dialogues or stories on familiar everyday topics; identifying people in their immediate surroundings or in pictures from a short, simple description of where they are and what they are doing.",
+          "title_ar": "تدريب على المفردات: الأجهزة المنزلية",
+          "title_en": "Vocabulary practice: Household appliances",
+          "main_idea_ar": "Lesson aims: to learn and use household appliance words.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use household appliance words.",
+            "Label simple pictures on familiar topics by copying single words"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l4",
+          "order": 3,
+          "title_ar": "القصة: صنع الشوكولاتة للجدة",
+          "title_en": "Story: Making chocolates for Granny",
+          "main_idea_ar": "Lesson aims: to listen to, analyse and act a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to listen to, analyse and act a story.",
+            "Follow the sequence of events in a short, simple cartoon story with familiar key words",
+            "Understand the order in which events happen in a story",
+            "Act out parts of a picture story, using simple actions and words",
+            "Follow the sequence of events in a simple story told slowly and clearly",
+            "New words: paper cases, melt, jug, decorations.",
+            "Story (PB pp. 44–45): making chocolates for Granny with the microwave — a mess and a new idea; value: I am kind to people."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l5",
+          "order": 4,
+          "title_ar": "تدريب على القصة: صنع الشوكولاتة للجدة",
+          "title_en": "Story practice: Making chocolates for Granny",
+          "main_idea_ar": "Lesson aims: to review a story.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to review a story.",
+            "Identify specific information in a simple story, if guided by questions",
+            "Understand the main themes of a simplified story",
+            "Understand the correct sequence of events in a simple story or dialogue"
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l6",
+          "order": 5,
+          "title_ar": "القواعد: المضارع التام مع ever وnever",
+          "title_en": "Grammar: Present perfect with ever and never",
+          "main_idea_ar": "Lesson aims: to learn and use the Present perfect with ever and never.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use the Present perfect with ever and never.",
+            "Identify specific information in a simple story, if guided by questions",
+            "Repeat phrases and short sentences, if spoken slowly and clearly",
+            "Talk about past events or experiences, using simple language",
+            "Grammar: Present perfect with ever/never: Have you ever made chocolates? Yes, I have. / No, I haven’t. / She’s never used the oven before."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l7",
+          "order": 6,
+          "title_ar": "تدريب على القواعد: المضارع التام مع ever وnever",
+          "title_en": "Grammar practice: Present perfect with ever and never",
+          "main_idea_ar": "Lesson aims: to learn and use the Present perfect with ever and never.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use the Present perfect with ever and never.",
+            "Identify activities that happened in the past in short, simple dialogues",
+            "Write simple sentences about familiar things, given prompts or a model",
+            "Grammar: Present perfect with ever: Has Lama ever used a vacuum cleaner? No, she hasn’t."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l8",
+          "order": 7,
+          "title_ar": "المفردات والقواعد: المواد؛ is/are made of",
+          "title_en": "Vocabulary and Grammar: Materials; is/are made of",
+          "main_idea_ar": "Lesson aims: to learn and use materials vocabulary; to learn and use is/are made of; to learn and sing a song.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use materials vocabulary; to learn and use is/are made of; to learn and sing a song.",
+            "Recognise familiar words and phrases in short, simple songs",
+            "Repeat single words and short phrases, if spoken slowly and clearly",
+            "Sing a basic song from memory",
+            "Ask questions in guessing games to find the answer",
+            "Grammar: is/are made of: What is it made of? It’s made of plastic. / What are they made of? They’re made of gold!",
+            "Text: Song (no printed title): ‘Look at that chair! / What is it made of? / It’s made of leather, / Bright, purple leather! …’ (PB p.47; TG pp.108–109)",
+            "New words: cotton, gold, leather, metal, paper, plastic, rubber, silver.",
+            "Song: 'Look at that chair! What is it made of?' (PB p. 47)."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l9",
+          "order": 8,
+          "title_ar": "تدريب على المفردات والقواعد: المواد؛ is/are made of",
+          "title_en": "Vocabulary and Grammar practice: Materials; is/are made of",
+          "main_idea_ar": "Lesson aims: to learn and use materials vocabulary; to learn and use is/are made of.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn and use materials vocabulary; to learn and use is/are made of.",
+            "Label simple pictures on familiar topics by copying single words",
+            "Write simple sentences about familiar things, given prompts or a model",
+            "Grammar: is/are made of: What are the shorts made of? They’re made of cotton."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l10",
+          "order": 9,
+          "title_ar": "الثقافة: الحِرف الأردنية التقليدية",
+          "title_en": "Culture: Traditional Jordanian crafts",
+          "main_idea_ar": "Lesson aims: to learn about traditional Jordanian crafts.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn about traditional Jordanian crafts.",
+            "Get the gist of short, simple texts and extract specific information",
+            "Guess the meaning of unknown words in simple texts from the context",
+            "Describe basic differences between two pictures and express opinions, using simple language",
+            "Project: make a class book about traditional crafts",
+            "Text: Handmade in Jordan (PB p.48; AB p.36; TG pp.110–111)",
+            "New words: crafts, handmade, weaving, tents, wool, sheep, berries.",
+            "Culture (PB p. 48): 'Handmade in Jordan' — traditional crafts such as weaving rugs and carpets; project: a class book about traditional crafts."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l11",
+          "order": 10,
+          "title_ar": "الإنجليزية في الاستخدام: توضيح أن شيئًا ما لا يعمل",
+          "title_en": "English in action: Explaining that something doesn’t work",
+          "main_idea_ar": "Lesson aims: to learn to explain that something doesn’t work; to learn and practise two- and three-syllable words with the correct stress.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to learn to explain that something doesn’t work; to learn and practise two- and three-syllable words with the correct stress.",
+            "Understand some details in short, simple dialogues, if supported by pictures",
+            "Identify basic factual information in short, simple dialogues",
+            "Express opinions on familiar topics, using simple language",
+            "Act out a short dialogue or role play, given prompts",
+            "Grammar: Function: It doesn’t work. / Can you help me/us? / Let’s ask him. / You need to turn it on. (subject and object pronouns: I – me, we – us, they – them)",
+            "New words: begin, contain, decide, enjoy, recommend, understand, entertain, seeing, watching.",
+            "Pronunciation: stress in two- and three-syllable verbs and -ing forms (begin, contain, decide, enjoy, recommend, understand, entertain, seeing, watching) (PB p. 49).",
+            "English in action (PB p. 49): explaining that something doesn't work — Can you help me? It doesn't work. You need to turn it on."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l12",
+          "order": 11,
+          "title_ar": "القراءة: اختراعات جاءت بالصدفة!",
+          "title_en": "Reading: Accidental inventions!",
+          "main_idea_ar": "Lesson aims: to read and analyse an article about accidental inventions.",
+          "periods": null,
+          "objectives": [
+            "Lesson aims: to read and analyse an article about accidental inventions.",
+            "Get the gist of short, simple texts on familiar topics, if supported by pictures",
+            "Scan a simple text and extract factual details",
+            "Find relevant Internet texts on a topic and extract the most important information for a school project",
+            "Express opinions on familiar topics, using simple language",
+            "Text: Accidental inventions! (PB p.50; AB p.38; TG pp.114–115)",
+            "New words: accidental, engineer, seeds, hooks, loops, farmer, goats, coffee.",
+            "Reading (PB p. 50): 'Accidental inventions!' (the microwave, coffee, Velcro)."
+          ],
+          "vocabulary": []
+        },
+        {
+          "id": "u10_l2",
+          "order": 12,
+          "title_ar": "الاستماع والتحدث والكتابة: الأجهزة في المنزل",
+          "title_en": "Listening, Speaking and Writing: Machines at home",
+          "main_idea_ar": "Lesson aims: to understand a listening task; to talk about what machines you have used this week; to write a personal account of machines in your home.",
           "periods": null,
           "objectives": [
             "Following the sequence of events in a simple story or narrative, if told slowly and clearly.",
             "Identifying basic factual information in short, simple dialogues or stories on familiar everyday topics.",
-            "Identifying people in their immediate surroundings or in pictures from a short, simple description of where they are and what they are doing."
+            "Identifying people in their immediate surroundings or in pictures from a short, simple description of where they are and what they are doing.",
+            "Lesson aims: to understand a listening task; to talk about what machines you have used this week; to write a personal account of machines in your home.",
+            "Identify people in pictures from a short, simple description of where they are and what they are doing",
+            "Talk about past events or experiences, using simple language",
+            "Write short, simple texts on familiar topics in linked sentences",
+            "Text: The most useful things at home (by Nada, model text) (PB p.51; AB p.39; TG pp.116–117)",
+            "Writing (PB p. 51): a personal account of the most useful machines at home, using exclamation marks."
           ],
           "vocabulary": []
         }

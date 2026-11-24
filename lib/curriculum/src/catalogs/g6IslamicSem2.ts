@@ -2,12 +2,17 @@
  * Grade 6 Islamic Education (التربية الإسلامية) — Semester 2 (NCCD student book).
  * Source of truth: data/iqra_curriculum_g6_islamic_sem2.json
  *
- * **Title-only**, like the Grade 6 Arabic books: the structure is carried from
- * the student book's table of contents, and no learning outcomes, glossary or
- * main idea are transcribed. Every unit and lesson therefore answers true to
- * the predicates below, which `catalog.ts` folds into `isBrowserUnitTitleOnly` /
- * `isBrowserLessonTitleOnly`, so the UI says "title confirmed, no per-lesson
- * objectives yet" rather than rendering a lesson that merely looks empty.
+ * **Flagged title-only, but objectives are filled.** The structure is carried
+ * from the student book's table of contents. Since 2026-11-13 every lesson's
+ * `objectives` are the rows of the «نتاجات التعلم» self-assessment table the
+ * book prints at the end of each lesson (86 statements over all 21 lessons,
+ * unvowelled, read from the pdf-parse text; see the JSON's `known_gaps`). No
+ * glossary or main idea is transcribed. Every unit and lesson still answers
+ * true to the predicates below, which `catalog.ts` folds into
+ * `isBrowserUnitTitleOnly` / `isBrowserLessonTitleOnly`, so the UI still says
+ * "title confirmed, no per-lesson objectives yet". That badge now understates
+ * this book; whether to narrow the predicates is the owner's decision, not
+ * made here.
  *
  * The lesson page does print an introductory paragraph that would serve as
  * `main_idea_ar`. It is deliberately not transcribed: pdf-parse drops the

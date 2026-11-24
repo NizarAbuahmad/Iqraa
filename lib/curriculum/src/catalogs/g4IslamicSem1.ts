@@ -8,9 +8,19 @@
  * the book gives them none), but no unit prints a general-idea or
  * prior-knowledge box, and no lesson prints a bilingual term-pairs box —
  * this is NCCD's own Arabic-native Islamic-studies text, not one of this
- * grade's HarperCollins-translated math/science books. `objectives`,
+ * grade's HarperCollins-translated math/science books.
  * `prior_knowledge`, `general_idea_ar` and `vocabulary` are therefore empty
  * throughout; see the JSON's known_gaps.
+ *
+ * `objectives` and `periods` come from the teacher guide
+ * (g4-islamic-s1-teacher-guide), not the student book, which prints no
+ * outcomes: each lesson's «نتاجات التعلم» block and «الزمن المقترح لتنفيذ
+ * الدرس» line, headed «الدرس n: <title>» in student-book order, cross-checked
+ * against the «مخطط الوحدة» table (same outcome counts; where the plan words
+ * an outcome differently the lesson page wins — listed in provenance_note).
+ * `total_periods` stays null: the plan's «المجموع» figures are lost in the
+ * extraction, so the lesson sums cannot be checked against them. Same
+ * convention as g5IslamicSem1. Added 2026-11-13.
  *
  * Only the twenty-two numbered lessons are carried, matching the printed
  * table of contents exactly: 4 units, 6+6+5+5 lessons. The unit/lesson order

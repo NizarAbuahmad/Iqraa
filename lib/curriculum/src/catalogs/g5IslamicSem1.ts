@@ -5,13 +5,20 @@
  * Unlike g6IslamicSem1 (title-only, because pdf-parse dropped the assimilated
  * lam in that book's text), this book reads cleanly through PyMuPDF, so its
  * content is actually transcribed rather than deferred. Every lesson prints
- * a «الفِكْرَةُ الرَّئيسَةُ» box (three tilawah/tajweed-application lessons
- * excepted — the book gives them none), but no unit prints a general-idea or
+ * a «الفِكْرَةُ الرَّئيسَةُ» box (the one tilawah lesson u1_l3 excepted —
+ * the book gives it none), but no unit prints a general-idea or
  * prior-knowledge box, and no lesson prints a bilingual term-pairs box —
  * unlike this grade's HarperCollins-translated math/science books, this one
  * is NCCD's own Arabic-native Islamic-studies text and simply isn't shaped
- * that way. `objectives`, `prior_knowledge`, `general_idea_ar` and
- * `vocabulary` are therefore empty throughout; see the JSON's known_gaps.
+ * that way. `prior_knowledge`, `general_idea_ar` and `vocabulary` are
+ * therefore empty throughout; see the JSON's known_gaps.
+ *
+ * `objectives`, `periods` and `total_periods` come from the teacher guide
+ * (g5-islamic-s1-teacher-guide), not the student book, which prints no
+ * outcomes: each lesson's «نتاجات التعلم» block and «الزمن المقترح لتنفيذ
+ * الدرس» line, headed «الدرس n: <title>» in student-book order, cross-checked
+ * against the «مخطط الوحدة» table (same outcomes; unit totals match). Same
+ * convention as g10IslamicSem1. Added 2026-11-13.
  *
  * Only the eighteen numbered lessons are carried, matching the printed table
  * of contents exactly: 4 units, 4+5+4+5 lessons. The unit/lesson order was

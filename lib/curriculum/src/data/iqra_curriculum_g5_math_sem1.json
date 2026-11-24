@@ -14,7 +14,7 @@
   "known_gaps": [
    "periods و total_periods فارِغَةٌ (null) لِكُلِّ الدُّروسِ وَالوَحَداتِ: عَدَدُ الحِصَصِ لا يُطْبَعُ في كِتابِ الطّالِبِ، وَدَليلُ المُعَلِّمِ لِلْفَصْلِ الأَوَّلِ (g5-math-s1-teacher-guide) اسْتُخْرِجَ نَصًّا خامًا فَقَطْ وَلَمْ يُطابَقْ مَعَ هذا الكَتالوج بَعْدُ.",
    "title_en لِكُلِّ وَحْدَةٍ وَدَرْسٍ تَرْجَمَةٌ، لا نَصٌّ مَطْبوعٌ.",
-   "vocabulary[].en يَحْمِلُ المُقابِلَ الإِنْجِليزِيَّ حَيْثُ يَطْبَعُهُ الكِتابُ صَراحَةً بَيْنَ قَوْسَيْنِ داخِلَ المَتْنِ (millions period، negative number، doubling، halving، compatible numbers، remainder، divisibility rules، prime factorization، factor tree، common factors، greatest common factor، multiple، square number، perfect square، mixed number، proper fraction، improper fraction، comparing، reciprocals، statistical question، non statistical question، coordinate plane، x-axis، y-axis، origin، order pair، x-coordinate، y-coordinate، line graph، double bar graph)؛ وَحَيْثُ لا يُؤَكَّدُ طَبْعُهُ في المَقْطَعِ المَقْروءِ (المُضاعَفاتُ المُشْتَرَكَةُ، المُضاعَفُ المُشْتَرَكُ الأَصْغَرُ، الجَذْرُ التَّرْبيعِيُّ) يَتَكَرَّرُ المُصْطَلَحُ العَرَبِيُّ، عَلى نَحْوِ ما فَعَلَ g6MathSem1.",
+   "vocabulary[].en يَحْمِلُ المُقابِلَ الإِنْجِليزِيَّ حَيْثُ يَطْبَعُهُ الكِتابُ صَراحَةً بَيْنَ قَوْسَيْنِ داخِلَ المَتْنِ (millions period، negative number، doubling، halving، compatible numbers، remainder، divisibility rules، prime factorization، factor tree، common factors، greatest common factor، multiple، square number، perfect square، mixed number، proper fraction، improper fraction، comparing، reciprocals، statistical question، non statistical question، coordinate plane، x-axis، y-axis، origin، order pair، x-coordinate، y-coordinate، line graph، double bar graph، common multiples، lowest common multiple، square root)؛ الثَّلاثَةُ الأَخيرَةُ أُضيفَتْ في 2026-11-13 بَعْدَ رُؤْيَتِها مَطْبوعَةً بَيْنَ قَوْسَيْنِ في ص 65 وَ 69 مِنْ نَصِّ الكِتابِ المُسْتَخْرَجِ، وَكانَتْ قَبْلَها تُكَرِّرُ المُصْطَلَحَ العَرَبِيَّ.",
    "main_idea_ar فارِغَةٌ لِكُلِّ الدُّروسِ: هذا الكِتابُ أَيْضًا لا يَطْبَعُ صُنْدوقَ «الفِكْرَةُ الرَّئيسَةُ» بَلْ «فِكْرَةُ الدَّرْسِ»، وَهُوَ قائِمَةُ النَّتاجاتِ نَفْسُها، فَوُضِعَتْ في objectives وَلَمْ تُكَرَّرْ هُنا، عَلى نَحْوِ ما فَعَلَ g6MathSem1.",
    "الدُّروسُ u1_l2 وَ u1_l3 وَ u1_l5 وَ u2_l3 وَ u2_l4 وَ u4_l3 وَ u4_l4 وَ u4_l5 بِلا مُصْطَلَحاتٍ: لَمْ يُشاهَدْ صُنْدوقُ «المُصْطَلَحاتُ» عَلى صَفَحاتِ افْتِتاحِها في المَقْطَعِ المَقْروءِ؛ هذا لا يَنْفي وُجودَهُ، فَقَطْ لَمْ يُؤَكَّدْ."
   ]
@@ -259,8 +259,8 @@
      ],
      "vocabulary": [
       { "ar": "المُضاعَفُ", "en": "multiple" },
-      { "ar": "المُضاعَفاتُ المُشْتَرَكَةُ", "en": "المُضاعَفاتُ المُشْتَرَكَةُ" },
-      { "ar": "المُضاعَفُ المُشْتَرَكُ الأَصْغَرُ (م. م. أ)", "en": "المُضاعَفُ المُشْتَرَكُ الأَصْغَرُ" }
+      { "ar": "المُضاعَفاتُ المُشْتَرَكَةُ", "en": "common multiples" },
+      { "ar": "المُضاعَفُ المُشْتَرَكُ الأَصْغَرُ (م. م. أ)", "en": "lowest common multiple" }
      ]
     },
     {
@@ -276,7 +276,7 @@
      "vocabulary": [
       { "ar": "مُرَبَّعُ العَدَدِ", "en": "square number" },
       { "ar": "المُرَبَّعُ الكامِلُ", "en": "perfect square" },
-      { "ar": "الجَذْرُ التَّرْبيعِيُّ", "en": "الجَذْرُ التَّرْبيعِيُّ" }
+      { "ar": "الجَذْرُ التَّرْبيعِيُّ", "en": "square root" }
      ]
     }
    ]
