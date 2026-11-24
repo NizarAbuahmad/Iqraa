@@ -22,14 +22,21 @@ function seeded(seed: number) {
 
 /** A counted noun written as a dual carries no digit: «في كل صف شجرتان» is two trees. */
 const DUAL = 'شجرتان|قلمان|مربعان|بيضتان|طالبَين|مدرستَين|ديناران|كتابان|بطاقتان|لتران|كعكتان|تفاحتان|طالبان';
-const TOKEN = new RegExp(`\\d+(?:\\.\\d+)?(?:/\\d+)?|${DUAL}`, 'g');
-/** The numbers of a stem in reading order: whole, decimal, «a/b» as its value, a dual as 2. */
+const TOKEN = new RegExp(`\\d+ \\d+/\\d+(?![\\d/])|\\d+(?:\\.\\d+)?(?:/\\d+)?|${DUAL}`, 'g');
+/** The numbers of a stem in reading order: whole, decimal, «a/b» and a mixed «w a/b» as its value, a dual as 2. */
 const tokens = (s: string) => s.match(TOKEN) ?? [];
 const value = (s: string): number => {
   if (new RegExp(`^(?:${DUAL})$`).test(s)) return 2;
   const t = s.replace(/%$/, '');
+  const mixed = t.match(/^(\d+) (\d+)\/(\d+)$/);
+  if (mixed) return Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
   const [n, d] = t.split('/').map(Number);
   return d === undefined ? n! : n! / d;
+};
+/** «2 1/2 + 3 1/6»: two mixed numbers and an operation (Grade 5, 2026-11-20). */
+const evalMixed = (e: string) => {
+  const [a, op, b] = e.split(/ ([+−]) /) as [string, string, string];
+  return op === '+' ? value(a) + value(b) : value(a) - value(b);
 };
 const nums = (s: string) => tokens(s).map(value);
 
@@ -153,7 +160,7 @@ describe('question formats', () => {
 });
 
 describe('fraction addition distractors', () => {
-  const value = (s: string) => { const [n, d] = s.split('/').map(Number); return d === undefined ? n! : n! / d; };
+  // the file's `value`: a Grade 5 answer can be a mixed number, «5 2/3»
   it('never offers a second option equal in value to the answer', () => {
     for (let i = 0; i < 2000; i++) {
       const item = makeElementaryItem('جمع الكسور', 4 + (i % 3), 'medium', new Set());
@@ -203,6 +210,7 @@ function solve(p: string): [string, number | string] {
   const has = (w: string) => p.includes(w);
   let m: RegExpMatchArray | null;
   if ((m = p.match(/^أوجد ناتج: (.+)$/))) return ['drill', evalExpr(m[1]!)];
+  if ((m = p.match(/^أوجد ناتج (.+)، واكتبه في أبسط صورة\.$/))) return ['drill', evalMixed(m[1]!)];
   if (has('ضع الإشارة المناسبة')) {
     const [l, r] = nums(p.split('\n')[1]!);
     return ['sign', l! > r! ? '>' : l! < r! ? '<' : '='];
@@ -278,6 +286,8 @@ function solve(p: string): [string, number | string] {
   if (has('اقسم العدد')) return ['shift', n[0]! / n[1]!];
   if (has('العددين العشريين')) return ['dd', n[0]! * n[1]!];
   if (has('على العدد العشري')) return ['dd', n[0]! / n[1]!];
+  if (has('ثمن القلم الواحد')) return ['pens', n[0]! * n[1]!];
+  if (has('ثمن الدفتر الواحد')) return ['notebooks', n[1]! / n[0]!];
   if (has('اشترى') && has('ثمن الكيلوغرام الواحد')) return ['kg', n[1]! / n[0]!];
   if (has('ثمن الكيلوغرام الواحد')) return ['kg', n[0]! * n[1]!];
   if (has('كم مرة نطرح')) return ['repeat', n[1]! / n[0]!];
@@ -287,7 +297,7 @@ function solve(p: string): [string, number | string] {
   if (has('في كل صف') || has('في كل علبة')) return ['word', n[0]! * n[1]!];
   if (has('يزيد')) return ['more', n[0]! - n[1]!];
   if (has('بقي')) return ['take', n[0]! - n[1]!];
-  if (has('أصبح') || has('في اليومين') || has('في الأسبوعين') || has('دفعت') || has('أكلاه معًا') || has('كم كيلوغرامًا اشترت')) {
+  if (has('أصبح') || has('في اليومين') || has('في الأسبوعين') || has('دفعت') || has('أكلاه معًا') || has('كم كيلوغرامًا اشترت') || has('كتلة الخاتمين') || has('مشوا في الرحلة')) {
     return ['word', n[0]! + n[1]!];
   }
   throw new Error(`no solver for: ${p}`);
@@ -334,7 +344,8 @@ describe('every kind of question: the key is recomputed from the printed stem', 
     ['قسمة الكسور', 5, ['drill', 'recip', 'cups', 'bywhole']],
     ['مقارنة الأعداد العشرية وترتيبها', 4, ['sign', 'order', 'extreme']],
     ['جمع الأعداد العشرية وطرحها', 5, ['drill', 'missing', 'word', 'take']],
-    ['ضرب الأعداد العشرية وقسمتها', 5, ['drill', 'shift', 'dd', 'kg']],
+    // Grade 5 multiplies and divides by 10, 100, 1000 only (review, 2026-11-20)
+    ['ضرب الأعداد العشرية وقسمتها', 5, ['shift', 'missing', 'pens', 'notebooks']],
     ['النسبة المئوية', 6, ['drill', 'pfrac', 'grid', 'pword']],
   ];
   for (const [title, grade, kinds] of CASES) {

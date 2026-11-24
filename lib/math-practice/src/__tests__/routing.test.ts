@@ -108,6 +108,9 @@ describe('primary lessons: the ops come from the title', () => {
 
 describe('the new primary items are right', () => {
   const value = (s: string) => {
+    // a Grade 5 sum or difference can be a mixed number, «5 2/3» (2026-11-20)
+    const mixed = s.match(/^(\d+) (\d+)\/(\d+)$/);
+    if (mixed) return Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
     const [n, d] = s.split('/').map(Number);
     return d === undefined ? n! : n! / d;
   };

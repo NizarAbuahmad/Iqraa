@@ -1618,7 +1618,50 @@ const unitsMixed = (id: string, match: RegExp, sets: string[]) => T(id, match, [
 const clock = (h: number, m: number) => `${h}:${String(m).padStart(2, '0')}`;
 const addMinutes = (h: number, m: number, d: number): [number, number] => { const t = ((h * 60 + m + d) % 720 + 720) % 720; const hh = Math.floor(t / 60); return [hh === 0 ? 12 : hh, t % 60]; };
 
-const timeGen = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, diff }) => {
+/**
+ * Grade 5 «الزمن» (S2 u9_l3, pp. 108–113): «أحسب الوقت بوحداته المختلفة», vocabulary «توقيت 24 ساعة». The book writes
+ * a.m./p.m., converts to and from the 24-hour clock («11:51 a.m.», «21:50»), times a period that crosses noon or
+ * midnight («10:20 p.m. حتى 12:07 a.m.») and writes hours as days and hours («142 h = … day, … h»). Until 2026-11-20
+ * the lesson drew only Grade 4's minutes within a morning.
+ */
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const ampm = (H: number, m: number) => `${H % 12 === 0 ? 12 : H % 12}:${pad2(m)} ${H < 12 ? 'a.m.' : 'p.m.'}`;
+const daysAr = (n: number) => (n === 1 ? 'يوم واحد' : n === 2 ? 'يومان' : `${n} ${tamyiz(n, 'أيام', 'يومًا', 'يوم')}`);
+const hoursNom = (n: number) => (n === 1 ? 'ساعة واحدة' : n === 2 ? 'ساعتان' : `${n} ${tamyiz(n, 'ساعات', 'ساعةً', 'ساعة')}`);
+const daysAndHours = (d: number, h: number) => `${daysAr(d)} و ${hoursNom(h)}`;
+function time24(rng: Rng, diff: 'easy' | 'medium' | 'hard'): Draft {
+  const k = pick(rng, [0, 1, 2, 3]);
+  const H = int(rng, 0, 23), m = int(rng, 0, 59);
+  if (k === 0) { // a.m./p.m. → 24-hour
+    const ans = `${pad2(H)}:${pad2(m)}`;
+    const wrong12 = `${pad2(H % 12 === 0 ? 12 : H % 12)}:${pad2(m)}`;
+    return { eq: `to24 ${ampm(H, m)}`, answer: ans, wrongs: wrongsFrom(ans, [wrong12, `${pad2((H + 12) % 24)}:${pad2(m)}`, `${pad2((H + 1) % 24)}:${pad2(m)}`, `${pad2(H)}:${pad2((m + 10) % 60)}`], j => `${pad2((H + 2 + Math.abs(j)) % 24)}:${pad2(m)}`), ar: `حوّل الوقت ${ampm(H, m)} إلى التوقيت 24 ساعةً.`, en: `Write ${ampm(H, m)} on the 24-hour clock.` };
+  }
+  if (k === 1) { // 24-hour → a.m./p.m.
+    const ans = ampm(H, m);
+    const other = `${H % 12 === 0 ? 12 : H % 12}:${pad2(m)} ${H < 12 ? 'p.m.' : 'a.m.'}`;
+    return { eq: `from24 ${pad2(H)}:${pad2(m)}`, answer: ans, wrongs: wrongsFrom(ans, [other, `${H}:${pad2(m)} ${H < 12 ? 'a.m.' : 'p.m.'}`, ampm((H + 1) % 24, m)], j => ampm((H + 2 + Math.abs(j)) % 24, m)), ar: `تُكتب الساعة ${pad2(H)}:${pad2(m)} بالتوقيت 24 ساعةً. ما الوقت نفسه بنظام a.m. و p.m.؟`, en: `${pad2(H)}:${pad2(m)} is on the 24-hour clock. What is it with a.m. or p.m.?` };
+  }
+  if (k === 2) { // a period across noon or across midnight, in minutes
+    const midnight = rng() < 0.5;
+    const start = (midnight ? int(rng, 20, 23) : int(rng, 8, 11)) * 60 + int(rng, 0, 59);
+    const len = (diff === 'easy' ? 15 : 1) * int(rng, diff === 'easy' ? 4 : 50, diff === 'easy' ? 16 : 240);
+    let end = start + len;
+    const crossAt = midnight ? 24 * 60 : 12 * 60;
+    if (end <= crossAt) end = crossAt + (end % 60) + 5; // it must cross: an a.m. start and a p.m. end, or the other way
+    const d = end - start;
+    const e = end % (24 * 60);
+    const [s1, e1] = [ampm(Math.floor(start / 60), start % 60), ampm(Math.floor(e / 60), e % 60)];
+    return { eq: `${s1} → ${e1}`, answer: String(d), wrongs: pos(d, [d + 60, d - 60, 720 - d > 0 ? 720 - d : d + 120, d + 10]), ar: `بدأت رحلة الساعة ${s1}، وانتهت الساعة ${e1} من اليوم نفسه أو اليوم التالي. كم دقيقة استغرقت الرحلة؟`, en: `A trip started at ${s1} and ended at ${e1}, the same day or the next. How many minutes did it take?` };
+  }
+  // hours as days and hours
+  const dd = int(rng, 1, diff === 'hard' ? 9 : 5), hh = int(rng, 1, 23), n = dd * 24 + hh;
+  const ans = daysAndHours(dd, hh);
+  return { eq: `${n} h`, answer: ans, wrongs: wrongsFrom(ans, [daysAndHours(dd + 1, hh), daysAndHours(dd, 24 - hh), daysAndHours(Math.floor(n / 60) || 1, n % 60 || 1)].filter(w => w !== ans), j => daysAndHours(dd + 1 + Math.abs(j), hh)), ar: `حوّل ${n} ${tamyiz(n, 'ساعات', 'ساعةً', 'ساعة')} إلى أيام وساعات.`, en: `Write ${n} hours as days and hours.` };
+}
+
+const timeGen = (id: string, match: RegExp, grades: [number, number]) => T(id, match, grades, ({ rng, diff, grade }) => {
+  if (grade === 5 && rng() < 0.6) return time24(rng, diff);
   const k = pick(rng, diff === 'easy' ? [0, 1] : [0, 1, 2]);
   const step = diff === 'easy' ? 5 : 1;
   const h = int(rng, 1, 11), m = step * int(rng, 0, Math.floor(59 / step));
