@@ -10,6 +10,21 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Arabic prompts name the grade once — 2026-11-24
+
+Every live Arabic prompt that names a grade read «لمادة الرياضيات للصف الصف السابع». The app sends the grade as its
+Arabic name («الصف السابع»), and twelve prompt lines put another «للصف» in front of it: the lesson plan, worksheet,
+homework, quiz, activity and infographic prompts, and the seven classroom-activity prompts.
+
+**What changed.** `lib/promptLabels.ts` has `gradeAr` (drops the leading «الصف ») and `subjectAr` (a catalog subject's
+Arabic name from its English name or id, otherwise as sent). The twelve lines use them. Some screens already send the
+subject in Arabic; those pass through unchanged, and a screen that still sends the English name now reads in Arabic.
+Nothing else in the prompts moves, so the pooled-artifact key (which never hashes this text) is unchanged.
+
+**Verified.** `promptLabels.test.ts` (11 cases: the two helpers, and nine Arabic prompts read «لمادة الرياضيات» and
+«السابع» once); api-server `pnpm build` and `pnpm test` (3,089 pass); `tsc --build`. **Not verified:** a live model's
+output with the new wording.
+
 ## Grade 3 review, the Grade 2 way: plans, activities, quick checks and live prompts for eight-year-olds — 2026-11-20
 
 The Grade 2 review (below, «Grade 2 review, the Grade 1 way… — 2026-11-15») repeated for Grade 3: 8 subjects, 254
