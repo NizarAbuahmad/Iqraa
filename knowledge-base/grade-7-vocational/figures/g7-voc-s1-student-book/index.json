@@ -866,22 +866,6 @@
       "lessonStartPage": 75
     },
     {
-      "file": "p078b-v2.png",
-      "sourceId": "g7-voc-s1-student-book",
-      "pdfPage": 78,
-      "rect": [
-        63.0,
-        375.0,
-        549.1,
-        590.3
-      ],
-      "unit": 5,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 75
-    },
-    {
       "file": "p079-v2.png",
       "sourceId": "g7-voc-s1-student-book",
       "pdfPage": 79,

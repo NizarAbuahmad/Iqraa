@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 7: social studies S2 u8_l1 gets its pages, eleven ranges end on their last page, 11 broken crops go — 2026-11-24
+
+`main` already corrected most of Grade 7's page ranges. A second read of the books by page image found this still missing.
+
+**Book pages.** Social studies S2 u8_l1 had none although its pages (p.34-37) lie in u7_l3's images; it now reads them through
+`rendered`. Eleven ranges ran past their lesson into the unit's end matter and now stop on the last page:
+- digital S1 u2_l6 (113-120, was 113-132) and digital S2 u4_l3 (113-126, was 113-132): the unit summary and the next unit's pages;
+- maths S2 u6_l2, u7_l1, u7_l3 and u7_l5: the concept-activity page that leads into the next lesson;
+- vocational S1 u1_l2, u2_l2, u4_l2, u5_l3 and u7_l1: the career-guidance page that closes the unit.
+
+**Figures.** 11 crops and their PNGs are dropped: six that are no figure (a whole reading article, margin strips, a unit-opener
+page), four cut or sliced, and one duplicate (English S1 3, finlit S2 2, science S1 2, science S2 2, social S1 1, vocational S1 1).
+One clean partial piece the audit also marked stays.
+
+**Not done.**
+- Arabic S2 u6_l4 opens on p.19, which sits in the previous lesson's folder; `rendered` holds one folder per lesson, so it
+  needs a re-render or a schema step.
+- Arabic S1 u2_l5 and u3_l5, digital S1 u1_l5, digital S2 u3_l4 and the PE ranges differ from `main` only by the last page(s);
+  `main` judged them otherwise, so they are left.
+- Grade 7 English has no page images, and no Grade 7 book has extracted text, so the live model gets no book passages.
+
+**Verified.** `curriculum verify` (0 errors); curriculum tests (936 pass; `r2.test.ts` fails here only because R2 variables are
+set); the whole mobile suite (9,574 pass, 0 fail, 10 skipped); `tsc --build`. **Not verified:** the pages and slides in a browser.
+
 ## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
 
 Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured
@@ -84,6 +108,7 @@ wrong, nothing unanswerable, and each of the six fixes seen in the output.
   subjects, so it cannot fill them honestly.
 - Bundle size: the manifest is now ~2.5× its Grade 10 size and is imported statically. The web entry bundle was
   ~21 MB before this; splitting the manifest per grade is a follow-up.
+
 
 
 ## Grade 10: every page of every served range read — nothing foreign inside, two known cut-offs confirmed — 2026-11-21
