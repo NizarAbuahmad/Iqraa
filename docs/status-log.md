@@ -85,6 +85,23 @@ since then one item's working would answer the other on the same page. Practice 
 (`grade10.ts`), so these items are what its worked example, half-solved question and «مسألة حياتية» print; before
 them it had one solved item, and no half-solved question.
 
+**Inverse function: eight new bank items** (`if-e1` … `if-w1`, focus `inverse`, 2026-11-24), each with checked working
+in the book's method (write y = f(x), swap x and y, solve for y):
+- easy: undoing an addition (`x − 5`) and a multiplication (`x/3`);
+- medium: two-step linear functions, one with a negative slope (`4x + 1`, `(5 − x)/2`), and a value of f⁻¹ found
+  by solving f(x) = 7 (`f⁻¹(7) = 3`);
+- hard: a cube (`∛(x − 2)`), and x² + 1 restricted to x ≥ 0, whose inverse `√(x − 1)` has domain x ≥ 1 (the
+  working says why the positive root and why that domain);
+- a story: a taxi fare f(d) = 0.5d + 2 turned round to f⁻¹(c) = 2c − 4, and the distance for 7 dinars (10 km).
+
+The distractors are the usual slips: the operation not undone (`x + 5`, `3x`), the order of undoing reversed
+(`(x + 1)/4`), the reciprocal taken for the inverse (`1/(x + 5)`), f(7) given for f⁻¹(7), the root taken before
+the subtraction (`∛x − 2`), and the wrong domain. `lessonFocus.test.ts` reads each printed formula, turns it into a
+function and checks that it undoes f at several points (a value answer must be the x that f sends to the value
+asked), so the key on the page is what is checked, not a copy of it. Before these the lesson had one solved item,
+so its worksheet had a worked example and no half-solved question. The tests that used it as their one-item
+lesson now use «جمع المتجهات وطرحها».
+
 **Fixed after an independent review of the first commit:**
 - **Instructions.** They promised «أكمل الحل في السؤال الأول» whenever there was a worked example. A lesson with one
   solved item of its own («قانون جيب التمام», «الاقتران العكسي») gets no half-solved question, so the line now
@@ -123,8 +140,8 @@ them it had one solved item, and no half-solved question.
     probability and trigonometry lessons as well. The bank's lesson ranking now decides practice only for a topic
     that is not a book title (a typed topic, or an objective's wording from the API's evaluation generator), and
     the tests use such topics. The worked example and the half-solved question still come from the bank for every
-    lesson, so the lesson tags still decide those: «الاقتران العكسي» and «جمع المتجهات وطرحها» have one solved item
-    each, a worked example and no half-solved question.
+    lesson, so the lesson tags still decide those: «جمع المتجهات وطرحها» has one solved item,
+    so a worked example and no half-solved question («الاقتران العكسي» had the same until its items below).
 - **Offline worksheets with «مسألة حياتية» ticked** now say the real-life problem could not be added for every lesson
   without a story of its own. That is every chemistry lesson, and every maths family but `exp_eq`, `linear_quad`,
   `algebra` and the law of sines. The notice's wording («…أو لا تكفي أسئلة البنك لهذا الدرس») fits only loosely.

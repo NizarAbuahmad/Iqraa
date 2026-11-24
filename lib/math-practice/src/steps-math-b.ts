@@ -546,6 +546,104 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'So f⁻¹(x) = (x+6)/2',
     ],
   },
+  'if-e1': {
+    ar: ['نكتب y = x + 5', 'نبدّل x و y: x = y + 5', 'نحلّ لـ y: y = x − 5', 'إذن f⁻¹(x) = x − 5'],
+    en: ['Write y = x + 5', 'Swap x and y: x = y + 5', 'Solve for y: y = x − 5', 'So f⁻¹(x) = x − 5'],
+  },
+  'if-e2': {
+    ar: ['نكتب y = 3x', 'نبدّل x و y: x = 3y', 'نقسم الطرفين على 3: y = x/3', 'إذن f⁻¹(x) = x/3'],
+    en: ['Write y = 3x', 'Swap x and y: x = 3y', 'Divide both sides by 3: y = x/3', 'So f⁻¹(x) = x/3'],
+  },
+  'if-m1': {
+    ar: [
+      'نكتب y = (x − 1)/4',
+      'نبدّل x و y: x = (y − 1)/4',
+      'نضرب الطرفين في 4: 4x = y − 1',
+      'نضيف 1 إلى الطرفين: y = 4x + 1',
+      'إذن f⁻¹(x) = 4x + 1',
+    ],
+    en: [
+      'Write y = (x − 1)/4',
+      'Swap x and y: x = (y − 1)/4',
+      'Multiply both sides by 4: 4x = y − 1',
+      'Add 1 to both sides: y = 4x + 1',
+      'So f⁻¹(x) = 4x + 1',
+    ],
+  },
+  'if-m2': {
+    ar: [
+      'نكتب y = 5 − 2x',
+      'نبدّل x و y: x = 5 − 2y',
+      'ننقل الحدود: 2y = 5 − x',
+      'نقسم الطرفين على 2: y = (5 − x)/2',
+      'إذن f⁻¹(x) = (5 − x)/2',
+    ],
+    en: [
+      'Write y = 5 − 2x',
+      'Swap x and y: x = 5 − 2y',
+      'Rearrange: 2y = 5 − x',
+      'Divide both sides by 2: y = (5 − x)/2',
+      'So f⁻¹(x) = (5 − x)/2',
+    ],
+  },
+  'if-m3': {
+    ar: [
+      'f⁻¹(7) هو العدد x الذي يحقق f(x) = 7',
+      'نحلّ: 2x + 1 = 7',
+      '2x = 6، فيكون x = 3',
+      'نتحقق: f(3) = 2(3) + 1 = 7، إذن f⁻¹(7) = 3',
+    ],
+    en: [
+      'f⁻¹(7) is the number x with f(x) = 7',
+      'Solve: 2x + 1 = 7',
+      '2x = 6, so x = 3',
+      'Check: f(3) = 2(3) + 1 = 7, so f⁻¹(7) = 3',
+    ],
+  },
+  'if-h1': {
+    ar: [
+      'نكتب y = x³ + 2',
+      'نبدّل x و y: x = y³ + 2',
+      'نطرح 2 من الطرفين: y³ = x − 2',
+      'نأخذ الجذر التكعيبي: y = ∛(x − 2)',
+      'إذن f⁻¹(x) = ∛(x − 2)',
+    ],
+    en: [
+      'Write y = x³ + 2',
+      'Swap x and y: x = y³ + 2',
+      'Subtract 2 from both sides: y³ = x − 2',
+      'Take the cube root: y = ∛(x − 2)',
+      'So f⁻¹(x) = ∛(x − 2)',
+    ],
+  },
+  'if-h2': {
+    ar: [
+      'مع x ≥ 0 يكون f واحدًا لواحد، ومداه f(x) ≥ 1',
+      'نكتب y = x² + 1 ثم نبدّل x و y: x = y² + 1',
+      'y² = x − 1، و y ≥ 0 لأنها من مجال f، فنأخذ الجذر الموجب: y = √(x − 1)',
+      'مجال الاقتران العكسي هو مدى f، إذن f⁻¹(x) = √(x − 1)، x ≥ 1',
+    ],
+    en: [
+      'For x ≥ 0, f is one-to-one, and its range is f(x) ≥ 1',
+      'Write y = x² + 1, then swap x and y: x = y² + 1',
+      'y² = x − 1, and y ≥ 0 because it comes from the domain of f, so take the positive root: y = √(x − 1)',
+      'The domain of the inverse is the range of f, so f⁻¹(x) = √(x − 1), x ≥ 1',
+    ],
+  },
+  'if-w1': {
+    ar: [
+      'نكتب c = 0.5d + 2، حيث c الأجرة',
+      'نحلّ لـ d: 0.5d = c − 2، فيكون d = 2(c − 2) = 2c − 4',
+      'إذن f⁻¹(c) = 2c − 4، وهو المسافة بالكيلومترات التي أجرتها c دينارًا',
+      'f⁻¹(7) = 2(7) − 4 = 10، إذن المسافة = 10 كم',
+    ],
+    en: [
+      'Write c = 0.5d + 2, where c is the fare',
+      'Solve for d: 0.5d = c − 2, so d = 2(c − 2) = 2c − 4',
+      'So f⁻¹(c) = 2c − 4: the distance in km whose fare is c dinars',
+      'f⁻¹(7) = 2(7) − 4 = 10, so the distance is 10 km',
+    ],
+  },
   'f-h1': {
     ar: ['نعوّض n = 5 في a_n = 3n − 1', 'a_5 = 3(5) − 1 = 15 − 1', 'إذن a_5 = 14'],
     en: ['Substitute n = 5 into a_n = 3n − 1', 'a_5 = 3(5) − 1 = 15 − 1', 'So a_5 = 14'],

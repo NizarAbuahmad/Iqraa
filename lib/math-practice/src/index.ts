@@ -650,6 +650,23 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'f-m1', family: 'functions', diff: 'medium', eq: 'f(x)=x², g(x)=x+1, (f∘g)(2)', answer: '9', wrongs: ['5', '4', '3'], promptAr: 'f(x)=x² و g(x)=x+1. أوجد (f∘g)(2).', promptEn: 'f(x)=x², g(x)=x+1. Find (f∘g)(2).' },
   { id: 'f-m2', family: 'functions', diff: 'medium', eq: 'f(x)=2x−6, f⁻¹', answer: 'f⁻¹(x) = (x+6)/2', wrongs: ['2x+6', 'x/2 − 6', '6 − 2x'], promptAr: 'أوجد الاقتران العكسي لـ f(x) = 2x − 6.', promptEn: 'Find the inverse of f(x) = 2x − 6.' },
   { id: 'f-h1', family: 'functions', diff: 'hard', eq: 'a_n = 3n − 1', answer: 'a_5 = 14', wrongs: ['15', '12', '8'], promptAr: 'متتالية حسابية a_n = 3n − 1. أوجد a_5.', promptEn: 'Arithmetic sequence a_n = 3n − 1. Find a_5.' },
+  // «الاقتران العكسي» on its own: undoing an addition and a multiplication, then
+  // two-step linear functions (one with a negative slope), a value of f⁻¹ read
+  // without finding it first, a cube, a square with its domain restricted, and
+  // a taxi fare turned round. Every key is checked by undoing f with it
+  // (`lessonFocus.test.ts`).
+  { id: 'if-e1', family: 'functions', diff: 'easy', eq: 'f(x)=x+5, f⁻¹', answer: 'f⁻¹(x) = x − 5', wrongs: ['f⁻¹(x) = x + 5', 'f⁻¹(x) = 5 − x', 'f⁻¹(x) = 1/(x + 5)'], promptAr: 'أوجد الاقتران العكسي للاقتران f(x) = x + 5.', promptEn: 'Find the inverse of f(x) = x + 5.' },
+  { id: 'if-e2', family: 'functions', diff: 'easy', eq: 'f(x)=3x, f⁻¹', answer: 'f⁻¹(x) = x/3', wrongs: ['f⁻¹(x) = 3x', 'f⁻¹(x) = 1/(3x)', 'f⁻¹(x) = x − 3'], promptAr: 'أوجد الاقتران العكسي للاقتران f(x) = 3x.', promptEn: 'Find the inverse of f(x) = 3x.' },
+  { id: 'if-m1', family: 'functions', diff: 'medium', eq: 'f(x)=(x−1)/4, f⁻¹', answer: 'f⁻¹(x) = 4x + 1', wrongs: ['f⁻¹(x) = 4x − 1', 'f⁻¹(x) = (x + 1)/4', 'f⁻¹(x) = 4/(x − 1)'], promptAr: 'أوجد الاقتران العكسي للاقتران f(x) = (x − 1)/4.', promptEn: 'Find the inverse of f(x) = (x − 1)/4.' },
+  { id: 'if-m2', family: 'functions', diff: 'medium', eq: 'f(x)=5−2x, f⁻¹', answer: 'f⁻¹(x) = (5 − x)/2', wrongs: ['f⁻¹(x) = (x − 5)/2', 'f⁻¹(x) = 5 + 2x', 'f⁻¹(x) = (x + 5)/2'], promptAr: 'أوجد الاقتران العكسي للاقتران f(x) = 5 − 2x.', promptEn: 'Find the inverse of f(x) = 5 − 2x.' },
+  { id: 'if-m3', family: 'functions', diff: 'medium', eq: 'f(x)=2x+1, f⁻¹(7)', answer: 'f⁻¹(7) = 3', wrongs: ['f⁻¹(7) = 15', 'f⁻¹(7) = 4', 'f⁻¹(7) = 1/15'], promptAr: 'إذا كان f(x) = 2x + 1، فأوجد f⁻¹(7).', promptEn: 'If f(x) = 2x + 1, find f⁻¹(7).' },
+  { id: 'if-h1', family: 'functions', diff: 'hard', eq: 'f(x)=x³+2, f⁻¹', answer: 'f⁻¹(x) = ∛(x − 2)', wrongs: ['f⁻¹(x) = ∛x − 2', 'f⁻¹(x) = (x − 2)³', 'f⁻¹(x) = 1/(x³ + 2)'], promptAr: 'أوجد الاقتران العكسي للاقتران f(x) = x³ + 2.', promptEn: 'Find the inverse of f(x) = x³ + 2.' },
+  { id: 'if-h2', family: 'functions', diff: 'hard', eq: 'f(x)=x²+1, x≥0, f⁻¹', answer: 'f⁻¹(x) = √(x − 1)، x ≥ 1', wrongs: ['f⁻¹(x) = √x − 1، x ≥ 0', 'f⁻¹(x) = √(x + 1)، x ≥ −1', 'f⁻¹(x) = (x − 1)²، x ≥ 1'], promptAr: 'أوجد الاقتران العكسي للاقتران f(x) = x² + 1 حيث x ≥ 0، واذكر مجاله.', promptEn: 'Find the inverse of f(x) = x² + 1 for x ≥ 0, and state its domain.' },
+  {
+    id: 'if-w1', family: 'functions', diff: 'hard', eq: 'taxi f(d)=0.5d+2, f⁻¹(7)', answer: 'المسافة = 10 كم', wrongs: ['المسافة = 5.5 كم', 'المسافة = 18 كم', 'المسافة = 14 كم'], kind: 'word', story: true,
+    wordAr: 'أجرة سيارة بالدينار f(d) = 0.5d + 2، حيث d المسافة بالكيلومترات. أوجد الاقتران العكسي f⁻¹ وبيّن ماذا يعني، ثم استعمله لإيجاد المسافة التي أجرتها 7 دنانير.',
+    wordEn: 'A taxi fare in dinars is f(d) = 0.5d + 2, where d is the distance in km. Find the inverse f⁻¹ and say what it means, then use it to find the distance whose fare is 7 dinars.',
+  },
   // ── Sequences ──
   { id: 'q-e1', family: 'sequences', diff: 'easy', eq: 'a_n = 2n + 1, a_4', answer: 'a_4 = 9', wrongs: ['7', '8', '10'], promptAr: 'متتالية حدّها العام a_n = 2n + 1. أوجد a_4.', promptEn: 'A sequence has general term a_n = 2n + 1. Find a_4.' },
   { id: 'q-e2', family: 'sequences', diff: 'easy', eq: '5, 9, 13, ...', answer: 'd = 4', wrongs: ['3', '5', '9'], promptAr: 'متتالية حسابية: 5 ، 9 ، 13 ، … ما أساسها (الفرق المشترك)؟', promptEn: 'Arithmetic sequence: 5, 9, 13, … What is the common difference?' },

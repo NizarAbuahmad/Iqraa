@@ -52,8 +52,8 @@ describe('«قانون الجيوب» fills its own paper', () => {
   });
 
   it('the instructions promise a half-solved question only when there is one', async () => {
-    // «الاقتران العكسي» has one solved item of its own: a worked example and no «مثال نكمله».
-    const w = await make('الاقتران العكسي', 6, ['short_answer']);
+    // «جمع المتجهات وطرحها» has one solved item of its own: a worked example and no «مثال نكمله».
+    const w = await make('جمع المتجهات وطرحها', 6, ['short_answer']);
     assert.ok(w.workedExample, 'the lesson has a worked example');
     assert.ok(!w.sections.some(s => s.title === 'مثال نكمله'));
     assert.doesNotMatch(w.instructions, /أكمل الحل/);

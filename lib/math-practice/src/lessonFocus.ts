@@ -85,6 +85,14 @@ export const ITEM_FOCUS: Record<string, LessonFocus> = {
   'f-e2': 'function_values',
   'f-m1': 'composition',
   'f-m2': 'inverse',
+  'if-e1': 'inverse',
+  'if-e2': 'inverse',
+  'if-m1': 'inverse',
+  'if-m2': 'inverse',
+  'if-m3': 'inverse',
+  'if-h1': 'inverse',
+  'if-h2': 'inverse',
+  'if-w1': 'inverse',
   // An arithmetic sequence filed under functions: no functions lesson takes it as its own.
   'f-h1': 'arith_sequence',
 

@@ -101,10 +101,10 @@ describe('the worked example is the lesson\'s own', () => {
   });
 
   it('runs out rather than leave the lesson', () => {
-    // «الاقتران العكسي» has one item of its own: one worked example, then none.
+    // «جمع المتجهات وطرحها» has one item of its own: one worked example, then none.
     const session = new Set<string>();
-    assert.ok(takeSolvedMath('الاقتران العكسي', null, 'medium', 'ar', session));
-    assert.equal(takeSolvedMath('الاقتران العكسي', null, 'medium', 'ar', session), null);
+    assert.ok(takeSolvedMath('جمع المتجهات وطرحها', null, 'medium', 'ar', session));
+    assert.equal(takeSolvedMath('جمع المتجهات وطرحها', null, 'medium', 'ar', session), null);
   });
 
   it('practice takes the lesson\'s own items first, within the tier asked', () => {
@@ -123,8 +123,69 @@ describe('the worked example is the lesson\'s own', () => {
   it('the tier still comes first, so a one-item lesson does not open every paper', () => {
     // The inverse function has one bank item, and it is medium: an easy slot takes
     // an easy one. (A typed topic: the book's own title now has a generator.)
-    const q = takeConcreteMath('short_answer', 'إيجاد الاقتران العكسي لاقتران خطي', null, 'easy', 'ar', 4, new Set(), false)!;
-    assert.doesNotMatch(q.text, /العكسي/);
+    const q = takeConcreteMath('short_answer', 'إيجاد جمع المتجهات', null, 'easy', 'ar', 4, new Set(), false)!;
+    assert.doesNotMatch(q.text, /u \+ v/);
+  });
+});
+
+describe('«الاقتران العكسي» has a lesson\'s worth of items, every key checked', () => {
+  const own = () => MATH_BANK.filter(i => i.focus === 'inverse');
+  // Each item's f, and where to test it. A formula answer («f⁻¹(x) = …») is read
+  // as printed and must undo f there; a value answer must be the x that f sends
+  // to the value asked for.
+  const F: Record<string, { f: (x: number) => number; xs: number[]; at?: number }> = {
+    'f-m2': { f: x => 2 * x - 6, xs: [-3, 0, 2.5, 7] },
+    'if-e1': { f: x => x + 5, xs: [-4, 0, 3] },
+    'if-e2': { f: x => 3 * x, xs: [-2, 0, 5] },
+    'if-m1': { f: x => (x - 1) / 4, xs: [-3, 1, 9] },
+    'if-m2': { f: x => 5 - 2 * x, xs: [-1, 0, 4] },
+    'if-m3': { f: x => 2 * x + 1, xs: [], at: 7 },
+    'if-h1': { f: x => x ** 3 + 2, xs: [-2, 0, 1.5, 3] },
+    'if-h2': { f: x => x * x + 1, xs: [0, 0.5, 2, 6] },
+    'if-w1': { f: d => 0.5 * d + 2, xs: [], at: 7 },
+  };
+  /** The printed formula after «=», as a function of x: «(5 − x)/2», «∛(x − 2)», «√(x − 1)، x ≥ 1». */
+  const formula = (answer: string) => {
+    const rhs = answer.split('=')[1]!.split('،')[0]!.trim()
+      .replace(/−/g, '-').replace(/∛/g, 'Math.cbrt').replace(/√/g, 'Math.sqrt')
+      .replace(/(\d)(x|\()/g, '$1*$2');
+    return new Function('x', `return ${rhs};`) as (x: number) => number;
+  };
+  const value = (answer: string) => Number(answer.split('=').pop()!.replace(/[^0-9.]/g, ''));
+
+  it('lists every item of the lesson', () => {
+    assert.deepEqual(own().map(i => i.id).sort(), Object.keys(F).sort());
+  });
+
+  it('every key undoes its function', () => {
+    for (const [id, { f, xs, at }] of Object.entries(F)) {
+      const answer = item(id).answer;
+      if (at !== undefined) {
+        assert.ok(Math.abs(f(value(answer)) - at) < 1e-9, `${id}: f(${value(answer)}) is not ${at}`);
+        continue;
+      }
+      const inv = formula(answer);
+      for (const x of xs) {
+        assert.ok(Math.abs(inv(f(x)) - x) < 1e-9, `${id}: «${answer}» does not undo f at x = ${x}`);
+      }
+    }
+  });
+
+  it('enough for a worksheet, in every tier, with a story, every one with working', () => {
+    assert.ok(own().length >= 8, `${own().length} items`);
+    for (const tier of ['easy', 'medium', 'hard'] as const) assert.ok(own().some(i => i.diff === tier), `no ${tier} item`);
+    assert.ok(own().some(i => i.story), 'no real-life story');
+    for (const i of own()) assert.ok(stepsFor(i.id), `${i.id} has no working`);
+  });
+
+  it('studies only its own lesson', () => {
+    for (const tier of ['easy', 'medium', 'hard'] as const) {
+      for (let k = 0; k < 20; k++) {
+        const s = takeSolvedMath('الاقتران العكسي', null, tier, 'ar', new Set());
+        assert.ok(s);
+        assert.equal(item(s.id).focus, 'inverse', `got ${s.id}: ${s.problem}`);
+      }
+    }
   });
 });
 
