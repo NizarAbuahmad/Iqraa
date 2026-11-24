@@ -943,6 +943,13 @@ export interface LearningOutcome {
   descriptionAr: string;
   bloomsLevel: 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create';
   skills: string[];
+  /**
+   * Set only on an exam-only target for a book that prints no outcomes list
+   * (`examTargetsFromBook` in catalogs/nccdCatalog.ts): the text is the lesson's
+   * «الفكرة الرئيسة» or its printed self-assessment box, not an official outcome.
+   * Absent on every real outcome.
+   */
+  examTargetSource?: 'main-idea' | 'self-assessment';
 }
 
 // ─── Grades ───────────────────────────────────────────────────────────────────
@@ -5628,13 +5635,13 @@ const _HARDCODED_LESSONS: Lesson[] = [
     estimatedDuration: 45,
     objectives: [
       "State the postulates of Bohr's model",
-      'Calculate energy levels using E = −13.6/n² eV',
+      'Calculate energy levels using Eₙ = −R_H/n², R_H = 2.18 × 10⁻¹⁸ J',
       'Explain the line emission spectrum of hydrogen',
       'Distinguish between absorption and emission spectra',
     ],
     objectivesAr: [
       'يذكر مسلّمات نموذج بور',
-      'يحسب مستويات الطاقة باستخدام E = −13.6/n²',
+      'يحسب مستويات الطاقة باستخدام Eₙ = −R_H/n² حيث R_H = 2.18 × 10⁻¹⁸ J',
       'يفسر الطيف الخطي لانبعاث الهيدروجين',
       'يميز بين طيفَي الامتصاص والانبعاث',
     ],
@@ -5668,7 +5675,10 @@ const _HARDCODED_LESSONS: Lesson[] = [
     teacherNotes: 'Use 3D orbital models or interactive software. Have students practice writing configurations for the first 20 elements.',
     teacherNotesAr: 'استخدم النماذج ثلاثية الأبعاد للأفلاك. دع الطلاب يتدربون على كتابة التوزيع الإلكتروني لأول 20 عنصرًا.',
     outcomes: [
-      { id: 'o-chem-2-1', lessonId: 'lesson-chem-2', description: 'Students write correct electron configurations for elements 1-36', descriptionAr: 'يكتب الطلاب التوزيعات الإلكترونية الصحيحة للعناصر 1-36', bloomsLevel: 'Apply', skills: ['Pattern recognition'] },
+      // Merged onto «النموذج الميكانيكي الموجي» by title. Writing configurations
+      // is the NEXT book lesson (chem S1 pp.30–31), so this outcome is the
+      // quantum-number one the book states for this lesson (p.20).
+      { id: 'o-chem-2-1', lessonId: 'lesson-chem-2', description: 'Students use the four quantum numbers to describe an electron’s main level, sublevel, orbital and spin', descriptionAr: 'يستعمل الطلاب أعداد الكم الأربعة لوصف المستوى الرئيس والمستوى الفرعي والفلك واتجاه الغزل للإلكترون', bloomsLevel: 'Apply', skills: ['Pattern recognition'] },
     ],
   },
   {

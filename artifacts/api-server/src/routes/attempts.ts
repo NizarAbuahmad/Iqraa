@@ -60,7 +60,7 @@ import {
 } from "../lib/aiBudget.ts";
 import { writeTeacherMark } from "../lib/teacherEntry.ts";
 import { extractJSON } from "../lib/generationShape.ts";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { completeAi } from "../lib/aiComplete.ts";
 
 const router = Router();
 // Path-scoped — see the note in roster.ts and evaluations.ts. This router
@@ -377,10 +377,9 @@ router.post("/attempts/:id/scan-marks", aiLimiter, async (req: AuthenticatedRequ
     }));
 
     const prompt = buildScanPrompt(questions);
-    const model = getGenerationModel();
-    const completion = await openai.chat.completions.create({
-      model,
-      max_completion_tokens: 1500,
+    const completion = await completeAi({
+      model: getGenerationModel(),
+      maxTokens: 1500,
       messages: [
         { role: "system", content: prompt.system },
         {
@@ -392,6 +391,8 @@ router.post("/attempts/:id/scan-marks", aiLimiter, async (req: AuthenticatedRequ
         },
       ],
     });
+    // The model that answered: after a dead key on the first provider this is the other one.
+    const model = completion.model;
     recordUsage(completion.usage, model, {
       kind: "quiz",
       promptVersion: "scan-marks-1",
@@ -399,7 +400,7 @@ router.post("/attempts/:id/scan-marks", aiLimiter, async (req: AuthenticatedRequ
     });
 
     const parsed = parseScanResponse(
-      extractJSON(completion.choices[0]?.message?.content ?? "{}"),
+      extractJSON(completion.text ?? "{}"),
       questions,
     );
 

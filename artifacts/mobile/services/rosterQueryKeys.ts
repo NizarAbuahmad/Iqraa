@@ -14,3 +14,5 @@ export const classQueryKey = (id: string) => ['class', id] as const;
 
 /** Route-scoped: the students waiting on the teacher's yes in one class. */
 export const classLinkRequestsQueryKey = (id: string) => ['classLinkRequests', id] as const;
+/** Every class's waiting requests, counted — the bell's row. Invalidated with any class's list. */
+export const linkRequestSummaryQueryKey = ['linkRequestSummary'] as const;

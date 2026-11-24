@@ -483,7 +483,35 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm dlx wrangler@3.90.0 pages deploy artifacts/mobile/dist --project-name=iqraa-web --branch=main
+        run: |
+          # Cloudflare's API is the one thing here we do not control, and it
+          # answers 503 «no healthy upstream» now and then. On 2026-11-13 it did
+          # that to two merges in a row (runs #949 and #950): the bundle built,
+          # the publish died in 4 s on its first request, and the live site
+          # stayed on the previous commit until a later merge shipped it (28 and
+          # 17 minutes). So a failed publish is tried again, waiting 30, 60, 120
+          # and 240 s between the five attempts (7.5 min at most; the job has 20).
+          #
+          # Any failure is retried, not only a 5xx: telling them apart would mean
+          # parsing wrangler's output, and the price of retrying a real failure
+          # (a bad token) is 7.5 minutes before the same red X. Trying again is
+          # harmless: every attempt deploys the same files, and a failed one
+          # published nothing. A newer push cancels this job (cancel-in-progress
+          # above), which is what we want: it builds and publishes the newer
+          # commit anyway.
+          delay=30
+          for attempt in 1 2 3 4 5; do
+            if pnpm dlx wrangler@3.90.0 pages deploy artifacts/mobile/dist --project-name=iqraa-web --branch=main; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "::warning::wrangler pages deploy failed (attempt $attempt of 5); trying again in ${delay}s"
+              sleep "$delay"
+              delay=$((delay * 2))
+            fi
+          done
+          echo "::error::wrangler pages deploy failed 5 times in a row; the live site is still on the previous commit."
+          exit 1
 
       - name: Verify the deployed bundle
         run: |

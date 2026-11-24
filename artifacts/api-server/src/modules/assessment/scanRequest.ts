@@ -18,7 +18,14 @@ export const MAX_SCAN_IMAGE_CHARS = 8_000_000;
 export const MAX_SETUP_IMAGES = 4;
 /** Under `express.json`'s 12MB ceiling (app.ts), with room for the rest of the body. */
 export const MAX_SETUP_TOTAL_CHARS = 10_000_000;
-export const MAX_SETUP_OBJECTIVES = 100;
+/**
+ * A sanity bound on the body, not a model limit: the objectives reach the
+ * prompt as an id + label list. It must hold any one book's whole list, which
+ * the exam builder's «الكتاب كاملًا (كل الدروس)» sends. At 100 it refused
+ * Grade 10 Islamic Education S2 (116 objectives), S1 (105) and Grade 7 S1
+ * (102). `scanRequest.test.ts` checks every book fits.
+ */
+export const MAX_SETUP_OBJECTIVES = 200;
 
 export interface ScanRefusal {
   status: number;
