@@ -233,7 +233,7 @@ describe('the three sciences carry figures', () => {
     'kbl-biology-s1-nccd-u3_l3': 3,
     'kbl-biology-s2-nccd-u3_l6': 12,
     'kbl-earth-science-s1-nccd-u1_l1': 3, // 4 until the Grade 10 audit dropped the rock cycle missing its left third
-    'kbl-earth-science-s2-nccd-u3_l2': 8,
+    'kbl-earth-science-s2-nccd-u3_l2': 6, // 8 until the second Grade 10 read dropped the wind figures cut into two crops each and a review column
   };
 
   for (const [lessonId, floor] of Object.entries(FLOOR)) {

@@ -386,22 +386,6 @@
    "lessonStartPage": 34
   },
   {
-   "file": "p038.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 38,
-   "rect": [
-    408.5,
-    116.0,
-    564.1,
-    329.4
-   ],
-   "unit": 2,
-   "lesson": 1,
-   "lessonTitleEn": "Chords, Diameters and Tangents of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 34
-  },
-  {
    "file": "p038b-v2.png",
    "sourceId": "math-s1-student-book",
    "pdfPage": 38,
@@ -634,22 +618,6 @@
     473.1,
     171.7,
     546.2
-   ],
-   "unit": 2,
-   "lesson": 2,
-   "lessonTitleEn": "Arcs and Sectors",
-   "lessonTitleAr": null,
-   "lessonStartPage": 41
-  },
-  {
-   "file": "p043-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 43,
-   "rect": [
-    43.0,
-    199.0,
-    129.0,
-    273.9
    ],
    "unit": 2,
    "lesson": 2,
@@ -922,22 +890,6 @@
     397.9,
     270.0,
     493.5
-   ],
-   "unit": 2,
-   "lesson": 3,
-   "lessonTitleEn": "Angles in a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 47
-  },
-  {
-   "file": "p047d.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 47,
-   "rect": [
-    47.2,
-    617.2,
-    140.6,
-    726.9
    ],
    "unit": 2,
    "lesson": 3,
@@ -1554,22 +1506,6 @@
    "lessonStartPage": 66
   },
   {
-   "file": "p073b.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 73,
-   "rect": [
-    301.3,
-    577.2,
-    473.0,
-    676.0
-   ],
-   "unit": 3,
-   "lesson": 1,
-   "lessonTitleEn": "Trigonometric Ratios",
-   "lessonTitleAr": null,
-   "lessonStartPage": 66
-  },
-  {
    "file": "p074b-v2.png",
    "sourceId": "math-s1-student-book",
    "pdfPage": 74,
@@ -1634,22 +1570,6 @@
    "lessonStartPage": 74
   },
   {
-   "file": "p079b.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 79,
-   "rect": [
-    408.1,
-    557.6,
-    548.5,
-    660.6
-   ],
-   "unit": 3,
-   "lesson": 2,
-   "lessonTitleEn": "Trigonometric Ratios for Angles between 0º and 360º",
-   "lessonTitleAr": null,
-   "lessonStartPage": 74
-  },
-  {
    "file": "p080-v2.png",
    "sourceId": "math-s1-student-book",
    "pdfPage": 80,
@@ -1658,22 +1578,6 @@
     390.2,
     338.0,
     511.4
-   ],
-   "unit": 3,
-   "lesson": 2,
-   "lessonTitleEn": "Trigonometric Ratios for Angles between 0º and 360º",
-   "lessonTitleAr": null,
-   "lessonStartPage": 74
-  },
-  {
-   "file": "p081-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 81,
-   "rect": [
-    36.0,
-    415.0,
-    172.0,
-    535.2
    ],
    "unit": 3,
    "lesson": 2,
@@ -1874,22 +1778,6 @@
    "lessonStartPage": 82
   },
   {
-   "file": "p090.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 90,
-   "rect": [
-    422.3,
-    121.4,
-    562.8,
-    248.1
-   ],
-   "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 88
-  },
-  {
    "file": "p092-v2.png",
    "sourceId": "math-s1-student-book",
    "pdfPage": 92,
@@ -1914,38 +1802,6 @@
     531.6,
     283.1,
     662.3
-   ],
-   "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 88
-  },
-  {
-   "file": "p095-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 95,
-   "rect": [
-    290.0,
-    373.0,
-    510.6,
-    652.3
-   ],
-   "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 88
-  },
-  {
-   "file": "p095b.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 95,
-   "rect": [
-    52.3,
-    373.1,
-    267.6,
-    607.3
    ],
    "unit": 3,
    "lesson": 4,

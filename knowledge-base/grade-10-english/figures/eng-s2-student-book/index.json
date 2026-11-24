@@ -66,38 +66,6 @@
       "lessonStartPage": null
     },
     {
-      "file": "p022.png",
-      "sourceId": "eng-s2-student-book",
-      "pdfPage": 22,
-      "rect": [
-        2.8,
-        593.7,
-        300.9,
-        870.3
-      ],
-      "unit": 2,
-      "lesson": 4,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
-      "file": "p022b.png",
-      "sourceId": "eng-s2-student-book",
-      "pdfPage": 22,
-      "rect": [
-        300.4,
-        593.4,
-        609.7,
-        870.4
-      ],
-      "unit": 2,
-      "lesson": 4,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": null
-    },
-    {
       "file": "p025.png",
       "sourceId": "eng-s2-student-book",
       "pdfPage": 25,

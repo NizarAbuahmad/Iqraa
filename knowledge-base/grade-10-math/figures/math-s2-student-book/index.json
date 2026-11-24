@@ -210,38 +210,6 @@
    "lessonStartPage": 25
   },
   {
-   "file": "p031.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 31,
-   "rect": [
-    33.2,
-    459.0,
-    282.4,
-    592.8
-   ],
-   "unit": 5,
-   "lesson": 3,
-   "lessonTitleEn": "Composition of Functions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 25
-  },
-  {
-   "file": "p031b-v2.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 31,
-   "rect": [
-    298.0,
-    465.0,
-    494.2,
-    575.0
-   ],
-   "unit": 5,
-   "lesson": 3,
-   "lessonTitleEn": "Composition of Functions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 25
-  },
-  {
    "file": "p032b.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 32,
@@ -498,22 +466,6 @@
    "lessonStartPage": 56
   },
   {
-   "file": "p058b.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 58,
-   "rect": [
-    435.0,
-    217.5,
-    557.1,
-    310.8
-   ],
-   "unit": 6,
-   "lesson": 1,
-   "lessonTitleEn": "Estimating Slope",
-   "lessonTitleAr": null,
-   "lessonStartPage": 56
-  },
-  {
    "file": "p058c.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 58,
@@ -642,22 +594,6 @@
    "lessonStartPage": 63
   },
   {
-   "file": "p065.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 65,
-   "rect": [
-    420.9,
-    359.6,
-    542.9,
-    461.1
-   ],
-   "unit": 6,
-   "lesson": 2,
-   "lessonTitleEn": "Differentiation",
-   "lessonTitleAr": null,
-   "lessonStartPage": 63
-  },
-  {
    "file": "p069.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 69,
@@ -770,38 +706,6 @@
    "lessonStartPage": 80
   },
   {
-   "file": "p082-v2.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 82,
-   "rect": [
-    50.0,
-    69.0,
-    439.0,
-    257.2
-   ],
-   "unit": 7,
-   "lesson": 1,
-   "lessonTitleEn": "Vectors in the Coordinate Plane",
-   "lessonTitleAr": null,
-   "lessonStartPage": 80
-  },
-  {
-   "file": "p082b.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 82,
-   "rect": [
-    435.0,
-    363.5,
-    557.1,
-    470.2
-   ],
-   "unit": 7,
-   "lesson": 1,
-   "lessonTitleEn": "Vectors in the Coordinate Plane",
-   "lessonTitleAr": null,
-   "lessonStartPage": 80
-  },
-  {
    "file": "p084c-v2.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 84,
@@ -866,38 +770,6 @@
    "lessonStartPage": 80
   },
   {
-   "file": "p087c.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 87,
-   "rect": [
-    127.0,
-    549.9,
-    258.9,
-    634.1
-   ],
-   "unit": 7,
-   "lesson": 1,
-   "lessonTitleEn": "Vectors in the Coordinate Plane",
-   "lessonTitleAr": null,
-   "lessonStartPage": 80
-  },
-  {
-   "file": "p087d.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 87,
-   "rect": [
-    286.4,
-    549.9,
-    418.4,
-    634.1
-   ],
-   "unit": 7,
-   "lesson": 1,
-   "lessonTitleEn": "Vectors in the Coordinate Plane",
-   "lessonTitleAr": null,
-   "lessonStartPage": 80
-  },
-  {
    "file": "p090-v2.png",
    "sourceId": "math-s2-student-book",
    "pdfPage": 90,
@@ -912,22 +784,6 @@
    "lessonTitleEn": "Adding and Subtracting Vectors",
    "lessonTitleAr": null,
    "lessonStartPage": 88
-  },
-  {
-   "file": "p096b.png",
-   "sourceId": "math-s2-student-book",
-   "pdfPage": 96,
-   "rect": [
-    435.0,
-    623.7,
-    557.1,
-    731.8
-   ],
-   "unit": 7,
-   "lesson": 3,
-   "lessonTitleEn": "Scalar Product",
-   "lessonTitleAr": null,
-   "lessonStartPage": 96
   },
   {
    "file": "p099.png",

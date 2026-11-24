@@ -10,6 +10,29 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 10: 46 broken or non-figure crops go — 2026-11-24
+
+`main` already has a Grade 10 audit (right book pages and figures, the English Life Skills photos, chemistry's unit covers). A
+second read of every Grade 10 crop by eye found its page ranges already right and these crops still there.
+
+**Figures.** 46 crops and their PNGs are dropped: 26 cut or sliced (a force diagram cut through the hand, split panels of the same
+figure with their caption on another crop, a graph with a sliver of its neighbour), 16 that are no figure (student-work cards, a
+text-only «أفكر» box, opener banners) and 4 duplicates. By book: biology S1 1, S2 1, chemistry S2 1, earth science S2 7, English S1 1,
+S2 2, maths S1 9, S2 9, physics S2 15. Five more that the audit marked are clean partial pieces of a figure and stay.
+
+**Tests.** Two assertions follow the dropped crops, as their own comments allow for a reviewer's deletions: the earth-science S2
+u3_l2 floor in `bookFigures.test.ts` goes from 8 to 6 (the two wind figures cut into two crops each, and a review column), and the
+revision deck's second biology figure in `revisionDeck.test.ts` is now `p011-v2` (`p010` had its caption and panel texts sliced).
+
+**Not done.**
+- Lessons whose first page sits in the previous lesson's image folder cannot be expressed with `rendered`, which holds one folder
+  per lesson: Arabic S1 u2_l2 (opens p.37) and civics S2 u7_l1 (p.86).
+- Biology and earth science print opening experiments the catalogs do not list; chemistry and physics list theirs as `uN_lab`.
+- Art, history S2 and most of geography S2 have no page images.
+
+**Verified.** `curriculum verify` (0 errors); curriculum tests (936 pass; `r2.test.ts` fails here only because R2 variables are
+set); the whole mobile suite (9,587 pass, 0 fail, 10 skipped); `tsc --build`. **Not verified:** the pages and slides in a browser.
+
 ## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
 
 Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured
