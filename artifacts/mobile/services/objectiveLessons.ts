@@ -58,3 +58,22 @@ export function groupObjectivesByLesson<T extends ObjectiveLessonInfo>(
   }
   return [...groups.values()];
 }
+
+/** Every objective id of a book, in catalog order. */
+export function allObjectiveIds(objectives: readonly { id: string }[]): string[] {
+  return objectives.map(o => o.id);
+}
+
+/** True when the book has objectives and every one of them is ticked. */
+export function isEverythingSelected(selected: ReadonlySet<string>, objectives: readonly { id: string }[]): boolean {
+  return objectives.length > 0 && objectives.every(o => selected.has(o.id));
+}
+
+/**
+ * The exam builder's «الكتاب كاملًا» row: everything off when everything is
+ * on, otherwise everything on. In the exam builder a Grade 10 vocational
+ * English track is its own book, so this is also «the whole track».
+ */
+export function toggleEverything(selected: ReadonlySet<string>, objectives: readonly { id: string }[]): Set<string> {
+  return isEverythingSelected(selected, objectives) ? new Set() : new Set(allObjectiveIds(objectives));
+}

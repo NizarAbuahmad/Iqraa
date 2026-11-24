@@ -629,13 +629,13 @@ function divKinds(base: Base, b: number, q0: number, grade: number, diff: DiffTi
   }
 }
 
-function compareKinds(base: Base, max: number, rng: Rng, lo = 0): ConcreteItem {
+function compareKinds(base: Base, max: number, rng: Rng, lo = 0, maxDigits = 4): ConcreteItem {
   const show = (v: number) => String(v);
   const what = { ar: 'الأعداد', one: 'العدد', en: 'numbers' };
   const k = int(rng, 1, 3);
   if (k === 1) return orderItem(base, distinctInts(rng, 3, lo, max), show, rng() < 0.5, what);
   if (k === 2 || max < 100) return extremeItem(base, distinctInts(rng, 4, lo, max), show, rng() < 0.5, what);
-  return digitsItem(base, Math.min(4, String(max).length), rng);
+  return digitsItem(base, Math.min(maxDigits, String(max).length), rng);
 }
 
 /** The greatest / least number made from given digits — place value deciding order. */
@@ -673,6 +673,8 @@ function compareRange(grade: number, diff: DiffTier, max: number): [number, numb
   if (grade === 2) return [100, 999];
   // Grade 3 (u1_l3, u1_l4) showed 91 and 392 when it drew from 0 (2026-11-20).
   if (grade === 3) return [1000, 9999];
+  // Grade 4 compares and orders «ضمن مئات الألوف» (u1_l2): it drew 0–99999 and showed 91 and 3206 (2026-11-21).
+  if (grade === 4) return [10000, diff === 'easy' ? 99999 : 999999];
   return [0, max];
 }
 
@@ -1185,7 +1187,7 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       // (0–10 at easy and medium) never showed a two-digit number (review, 2026-11-15).
       // Grade 2 compares and orders numbers «ضمن 3 منازل»: an easy paper asked about «10، 6، 22، 20».
       const [lo, hi] = compareRange(grade, diff, max);
-      if (int(rng, 0, 3) > 0) return compareKinds(base, hi, rng, lo);
+      if (int(rng, 0, 3) > 0) return compareKinds(base, hi, rng, lo, grade === 4 ? 6 : 4);
       const a = int(rng, lo, hi);
       const b = rng() < 0.15 ? a : int(rng, lo, hi);
       const sign = a > b ? '>' : a < b ? '<' : '=';
