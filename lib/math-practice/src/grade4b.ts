@@ -171,12 +171,13 @@ interface Num { n: number; d: number; w: number }
 const numStr = (x: Num) => (x.w > 0 ? `${x.w} ${x.n}/${x.d}` : `${x.n}/${x.d}`);
 const numVal = (x: Num) => x.w + x.n / x.d;
 
-const fracCompareG4 = T('frac_compare_g4', /^مقارنه الكسور والاعداد الكسريه وترتيبها$/, ({ rng, diff }) => {
+/** The comparison items of Grades 4 and 5 (Grade 5: «ضمن …» wider denominators, review 2026-11-24). */
+export function fracCompareDraft(rng: Rng, diff: D, maxDen: number): Draft {
   const useMixed = rng() < 0.6;
   // two in five mixed sets share one whole part, so the fraction decides: «3 1/4 ___ 3 2/5»
   const sharedWhole = useMixed && rng() < 0.4, whole = int(rng, 1, 5);
   const one = (): Num => {
-    const d = int(rng, 2, span(diff, 8, 10, 12)), n = int(rng, 1, d - 1);
+    const d = int(rng, 2, maxDen), n = int(rng, 1, d - 1);
     if (!useMixed) return { n, d, w: 0 };
     if (sharedWhole) return { n, d, w: whole };
     // mostly mixed; now and then an improper fraction written as one
@@ -205,7 +206,8 @@ const fracCompareG4 = T('frac_compare_g4', /^مقارنه الكسور والا�
   const perms = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]].map(p => p.map(i => xs[i]!).map(numStr).join('، '));
   const ans = order.map(numStr).join('، ');
   return { eq: xs.map(numStr).join(', '), answer: ans, wrongs: shuffle(rng, perms.filter(x => x !== ans)).slice(0, 3), ar: `رتّب ${noun[1]} الآتية ${asc ? 'تصاعديًّا' : 'تنازليًّا'}: ${xs.map(numStr).join('، ')}`, en: `Order these ${asc ? 'from least to greatest' : 'from greatest to least'}: ${xs.map(numStr).join(', ')}` };
-});
+}
+const fracCompareG4 = T('frac_compare_g4', /^مقارنه الكسور والاعداد الكسريه وترتيبها$/, ({ rng, diff }) => fracCompareDraft(rng, diff, span(diff, 8, 10, 12)));
 
 // ─── «الزمن»: converting units of time ───────────────────────────────────────────────────
 

@@ -37,6 +37,8 @@ const names = (rng: Rng, ans: string, all: string[]) => shuffle(rng, all.filter(
 const minAr = (n: number) => (n === 1 ? 'دقيقة واحدة' : n === 2 ? 'دقيقتين' : n <= 10 ? `${n} دقائق` : `${n} دقيقة`);
 const hourAr = (n: number) => (n === 1 ? 'ساعة واحدة' : n === 2 ? 'ساعتين' : n <= 10 ? `${n} ساعات` : `${n} ساعة`);
 const unitAr = (n: number) => (n === 1 ? 'وحدة واحدة' : n === 2 ? 'وحدتين' : n <= 10 ? `${n} وحدات` : `${n} وحدة`);
+/** «و» before a count: «ووحدتين» is written joined, «و 5 وحدات» is not (Grade 5 review, 2026-11-24: «و وحدتين»). */
+const andUnitAr = (n: number) => (n <= 2 ? `و${unitAr(n)}` : `و ${unitAr(n)}`);
 const unitEn = (n: number) => (n === 1 ? '1 unit' : `${n} units`);
 const span = (diff: D, a: number, b: number, c: number) => (diff === 'easy' ? a : diff === 'medium' ? b : c);
 /** Signed whole-number options that never offer 0. */
@@ -1097,12 +1099,12 @@ const translate = (id: string, match: RegExp, grade: number) => T(id, match, [gr
   const ans: [number, number] = [x + dx, y + dy];
   // 0 the image; 1 the point before the translation, from its image; 2 the translation itself, from a point and its image.
   const k = pick(rng, [0, 1, 2]);
-  if (k === 1) return { eq: `pre ${pt(...ans)}, ${dx}, ${dy}`, answer: pt(x, y), wrongs: ptOpts([x, y], ([[ans[0] + dx, ans[1] + dy], [ans[0] - dy, ans[1] - dx], [x, ans[1]], [ans[0], y]] as Array<[number, number]>).filter(c => grade !== 5 || (c[0] > 0 && c[1] > 0))), ar: `بعد انسحاب ${unitAr(Math.abs(dx))} إلى ${hDir} و ${unitAr(Math.abs(dy))} إلى ${vDir} وصلت النقطة A إلى الموقع ${pt(...ans)}. أين كانت النقطة A قبل الانسحاب؟`, en: `After a translation of ${unitEn(Math.abs(dx))} ${hDirEn} and ${unitEn(Math.abs(dy))} ${vDirEn}, point A is at ${pt(...ans)}. Where was A before the translation?` };
+  if (k === 1) return { eq: `pre ${pt(...ans)}, ${dx}, ${dy}`, answer: pt(x, y), wrongs: ptOpts([x, y], ([[ans[0] + dx, ans[1] + dy], [ans[0] - dy, ans[1] - dx], [x, ans[1]], [ans[0], y]] as Array<[number, number]>).filter(c => grade !== 5 || (c[0] > 0 && c[1] > 0))), ar: `بعد انسحاب ${unitAr(Math.abs(dx))} إلى ${hDir} ${andUnitAr(Math.abs(dy))} إلى ${vDir} وصلت النقطة A إلى الموقع ${pt(...ans)}. أين كانت النقطة A قبل الانسحاب؟`, en: `After a translation of ${unitEn(Math.abs(dx))} ${hDirEn} and ${unitEn(Math.abs(dy))} ${vDirEn}, point A is at ${pt(...ans)}. Where was A before the translation?` };
   if (k === 2) {
-    const say = (h: number, v: number) => `${unitAr(Math.abs(h))} إلى ${h >= 0 ? 'اليمين' : 'اليسار'} و ${unitAr(Math.abs(v))} إلى ${v >= 0 ? 'الأعلى' : 'الأسفل'}`;
+    const say = (h: number, v: number) => `${unitAr(Math.abs(h))} إلى ${h >= 0 ? 'اليمين' : 'اليسار'} ${andUnitAr(Math.abs(v))} إلى ${v >= 0 ? 'الأعلى' : 'الأسفل'}`;
     return { eq: `move ${pt(x, y)}, ${pt(...ans)}`, answer: say(dx, dy), wrongs: wrongsFrom(say(dx, dy), [say(-dx, -dy), say(dy, dx), say(-dx, dy), say(dx, -dy)], j => say(dx + Math.sign(dx) * Math.abs(j), dy)), ar: `انسحبت النقطة ${pt(x, y)} فكانت صورتها ${pt(...ans)}. بكم وحدة انسحبت أفقيًا ورأسيًا، وفي أي اتجاه؟`, en: `The point ${pt(x, y)} was translated to ${pt(...ans)}. By how many units did it move across and up or down, and in which directions?` };
   }
-  return { eq: pt(x, y), answer: pt(...ans), wrongs: ptOpts(ans, ([[x - dx, y - dy], [x + dy, y + dx], [x + dx, y], [x, y + dy], [x - dx, y + dy]] as Array<[number, number]>).filter(c => grade !== 5 || (c[0] > 0 && c[1] > 0))), ar: `انسحبت النقطة ${pt(x, y)} بمقدار ${unitAr(Math.abs(dx))} إلى ${hDir} و ${unitAr(Math.abs(dy))} إلى ${vDir}. ما إحداثيات صورتها؟`, en: `The point ${pt(x, y)} is translated ${unitEn(Math.abs(dx))} ${hDirEn} and ${unitEn(Math.abs(dy))} ${vDirEn}. What are the coordinates of its image?` };
+  return { eq: pt(x, y), answer: pt(...ans), wrongs: ptOpts(ans, ([[x - dx, y - dy], [x + dy, y + dx], [x + dx, y], [x, y + dy], [x - dx, y + dy]] as Array<[number, number]>).filter(c => grade !== 5 || (c[0] > 0 && c[1] > 0))), ar: `انسحبت النقطة ${pt(x, y)} بمقدار ${unitAr(Math.abs(dx))} إلى ${hDir} ${andUnitAr(Math.abs(dy))} إلى ${vDir}. ما إحداثيات صورتها؟`, en: `The point ${pt(x, y)} is translated ${unitEn(Math.abs(dx))} ${hDirEn} and ${unitEn(Math.abs(dy))} ${vDirEn}. What are the coordinates of its image?` };
 });
 
 const reflectAxes = T('reflect_axes', /^الانعكاس في المستوي الاحداثي$/, [6, 6], ({ rng }) => {
@@ -1724,5 +1726,5 @@ export const GEOMETRY_TOPICS: readonly Topic[] = [
   convertGen('units_mass', /^الغرام والكيلوغرام$/, ['mass'], [3, 3]), convertGen('units_volume', /^اللتر والمليلتر$/, ['volume'], [3, 3]),
   unitsMixed('units_length', /^وحدات قياس الطول$/, ['length_m', 'length_km']), unitsMixed('units_mass_g45', /^وحدات قياس الكتله$/, ['mass']),
   unitsMixed('units_capacity', /^وحدات قياس السعه$/, ['volume']), unitsMixed('units_capacity_length', /^وحدات قياس السعه والطول$/, ['length_m', 'volume']),
-  timeGen('time_g3', /^الفترات الزمنيه \(2\)$/, [3, 3]), timeGen('time_g45', /^الزمن$/, [4, 5]), clockWords, clockMinutes, elapsedInHour,
+  timeGen('time_g3', /^الفترات الزمنيه \(2\)$/, [3, 3]), clockWords, clockMinutes, elapsedInHour,
 ];

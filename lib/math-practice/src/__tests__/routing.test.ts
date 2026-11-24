@@ -108,16 +108,18 @@ describe('primary lessons: the ops come from the title', () => {
 
 describe('the new primary items are right', () => {
   const value = (s: string) => {
+    const mixedN = s.match(/^(\d+) (\d+)\/(\d+)$/); // «1 1/4», Grade 5 adds and subtracts mixed numbers
+    if (mixedN) return Number(mixedN[1]) + Number(mixedN[2]) / Number(mixedN[3]);
     const [n, d] = s.split('/').map(Number);
     return d === undefined ? n! : n! / d;
   };
   const near = (a: number, b: number) => Math.abs(a - b) < 1e-9;
 
   function recompute(eq: string): number | null {
-    const f = eq.match(/^(\d+)\/(\d+) ([+−×÷]) (\d+)\/(\d+)$/);
+    const N = '(\\d+ \\d+\\/\\d+|\\d+\\/\\d+)';
+    const f = eq.match(new RegExp(`^${N} ([+−×÷]) ${N}$`));
     if (f) {
-      const [a, b, op, c, d] = [Number(f[1]), Number(f[2]), f[3], Number(f[4]), Number(f[5])];
-      const x = a / b, y = c / d;
+      const x = value(f[1]!), y = value(f[3]!), op = f[2];
       return op === '+' ? x + y : op === '−' ? x - y : op === '×' ? x * y : x / y;
     }
     const m = eq.match(/^([\d.]+) ([+−×÷]) ([\d.]+)$/);

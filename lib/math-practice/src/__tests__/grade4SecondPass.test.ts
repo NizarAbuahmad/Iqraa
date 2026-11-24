@@ -63,7 +63,7 @@ describe('Grade 4 second pass (review, 2026-11-21): each lesson asks its own ski
       ['التحويل بين الكسور والأعداد العشرية', 'dec_convert_g4'],
       ['مقارنة الكسور والأعداد الكسرية وترتيبها', 'frac_compare_g4'], ['الزمن', 'time_units_g4'],
     ] as const) assert.equal(topicFor(title, 4)?.id, id, title);
-    assert.equal(topicFor('الزمن', 5)?.id, 'time_g45');
+    assert.equal(topicFor('الزمن', 5)?.id, 'time_24h_g5');
     assert.notEqual(topicFor('قسمة الأعداد', 5)?.id, 'div_g4');
     assert.equal(topicFor('أجزاء المئة', 5)?.id, 'frac_dec');
   });

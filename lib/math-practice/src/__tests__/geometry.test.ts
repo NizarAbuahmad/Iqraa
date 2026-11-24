@@ -662,11 +662,11 @@ describe('geometry generators: answers recomputed from the stem', () => {
       } else if (has(p, 'طول صورة')) { saw('reflect_line', 'keeps length'); assert.equal(Number(item.answer), n[0], p); }
       else { saw('reflect_line', 'keeps'); assert.equal(item.answer, 'أطوال الأضلاع وقياسات الزوايا', p); }
     }
-    /** «3 وحدات إلى اليمين و وحدتين إلى الأسفل» → [3, −2]. */
+    /** «3 وحدات إلى اليمين ووحدتين إلى الأسفل» → [3, −2]. */
     const UNITS = '(وحدة واحدة|وحدتين|\\d+ وحدات|\\d+ وحدة)';
     const count = (s: string) => (s === 'وحدة واحدة' ? 1 : s === 'وحدتين' ? 2 : Number(s.match(/\d+/)![0]));
     const move = (s: string) => {
-      const m = s.match(new RegExp(`${UNITS} إلى (اليمين|اليسار) و ${UNITS} إلى (الأعلى|الأسفل)`))!;
+      const m = s.match(new RegExp(`${UNITS} إلى (اليمين|اليسار) ?و ?${UNITS} إلى (الأعلى|الأسفل)`))!;
       return [(m[2] === 'اليمين' ? 1 : -1) * count(m[1]!), (m[4] === 'الأعلى' ? 1 : -1) * count(m[3]!)] as const;
     };
     for (const id of ['translate_g5', 'translate_g6']) for (const item of draws(id)) {
@@ -1046,7 +1046,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
     }
     const min = (s: string) => { const [h, m] = s.split(':').map(Number); return h! * 60 + m!; };
     const wrap = (t: number) => ((t % 720) + 720) % 720;
-    for (const id of ['time_g3', 'time_g45']) for (const item of draws(id)) {
+    for (const id of ['time_g3']) for (const item of draws(id)) { // Grades 4 and 5 have their own («الزمن», grade4SecondPass / grade5SecondPass)
       const p = item.promptAr!;
       const clocks = p.match(/\d+:\d\d/g) ?? [];
       if (has(p, 'متى انتهى')) assert.equal(wrap(min(item.answer)), wrap(min(clocks[0]!) + nums(p.replace(/\d+:\d\d/g, ''))[0]!), p);
@@ -1108,7 +1108,7 @@ describe('geometry routing', () => {
     ['تطابق المثلثات (SSS, SAS, HL)', 8, 'congruence_a'], ['تطابق المثلثات (ASA, AAS)', 8, 'congruence_b'], ['نظرية فيثاغورس', 8, 'pythagoras'],
     ['المستوى الإحداثي', 5, 'coord_plane_g5'], ['المستوى الإحداثي', 6, 'coord_plane_g6'], ['الدوران', 7, 'rotate'], ['التمدد', 8, 'dilate_g8'],
     ['المسافة في المستوى الإحداثي', 9, 'distance_plane'], ['النسب المثلثية', 9, 'trig_ratios'], ['الاتجاه من الشمال (Bearing)', 10, 'bearing'],
-    ['المتر والسنتيمتر', 3, 'units_m'], ['الزمن', 4, 'time_units_g4'], ['الزمن', 5, 'time_g45'], ['الفترات الزمنية (1)', 3, 'elapsed_hour_g3'],
+    ['المتر والسنتيمتر', 3, 'units_m'], ['الزمن', 4, 'time_units_g4'], ['الزمن', 5, 'time_24h_g5'], ['الفترات الزمنية (1)', 3, 'elapsed_hour_g3'],
     // Grade 3's three time lessons and two area lessons each draw their own since 2026-11-14 (grade3Objectives.test.ts)
     ['الفترات الزمنية (2)', 3, 'time_g3'], ['الوقت بالدقائق', 3, 'clock_minutes_g3'],
     ['المساحة', 3, 'area_units_g3'], ['مساحة المستطيل', 3, 'area_rect'], ['المساحة', 4, 'area_rect'], ['قراءة الوقت باستعمال (و، إلا)', 3, 'time_words'],

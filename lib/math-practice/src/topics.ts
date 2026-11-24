@@ -21,6 +21,7 @@ import { PROPORTION_TOPICS } from './proportion.ts';
 import { EARLY_TOPICS } from './early.ts';
 import { G10_LESSON_TOPICS } from './grade10.ts';
 import { G4_LESSON_TOPICS } from './grade4b.ts';
+import { G5_LESSON_TOPICS } from './grade5b.ts';
 import { G10_TOPICS } from './g10.ts';
 import { G8_TOPICS } from './g8.ts';
 import { G7_TOPICS } from './g7.ts';
@@ -1045,14 +1046,19 @@ const intIntro: Topic = {
   id: 'int_intro', match: /الاعداد السالبه/, grades: [5, 5],
   make({ rng, diff }) {
     const m = span(diff, 5);
-    const k = int(rng, 0, 2);
+    // «أُعيّنه على خط الأعداد» (u1_l4): the number line is half of the lesson, and was none of the items (review, 2026-11-24).
+    const k = pick(rng, [0, 1, 2, 3, 4, 5, 6]);
+    /** «3 وحدات» up to ten, «14 وحدة» after it. */
+    const units = (n: number) => `${n} ${n <= 10 ? 'وحدات' : 'وحدة'}`;
     if (k === 0) {
       const a = int(rng, 1, m);
       const ans = signed(-a);
       return { eq: `${a}`, answer: ans, wrongs: wrongsFrom(ans, [String(a), `${a + 1}`, signed(-(a + 1))]), ar: `ما العدد المقابل للعدد ${a}؟`, en: `What is the opposite of ${a}?` };
     }
     if (k === 1) {
-      const t = nz(rng, m); const up = int(rng, 1, m) * (rng() < 0.5 ? 1 : -1);
+      // the lesson is about the numbers below zero: the start or the result is one of them
+      let t = nz(rng, m), up = int(rng, 1, m) * (rng() < 0.5 ? 1 : -1);
+      if (t > 0 && t + up > 0) { t = -t; up = Math.abs(up); }
       const ans = signed(t + up);
       return {
         eq: `${signed(t)} ${up >= 0 ? '+' : '−'} ${Math.abs(up)}`, answer: ans,
@@ -1061,10 +1067,52 @@ const intIntro: Topic = {
         en: `The temperature was ${signed(t)}° and then ${up >= 0 ? 'rose' : 'fell'} by ${Math.abs(up)}°. What is it now?`,
       };
     }
-    const a = nz(rng, m); let b = nz(rng, m);
-    if (a === b) b = -b;
-    const ans = a < b ? '<' : '>';
-    return { eq: `${signed(a)} ___ ${signed(b)}`, answer: ans, wrongs: ['>', '<', '='].filter(s => s !== ans), ar: `ضع الإشارة المناسبة (> أو < أو =):\n${signed(a)} ___ ${signed(b)}`, en: `Write the correct sign (>, < or =):\n${signed(a)} ___ ${signed(b)}` };
+    if (k === 2) {
+      // a comparison needs a negative number: «5 ___ 14» is the Grade 3 lesson
+      let a = nz(rng, m), b = nz(rng, m);
+      if (a > 0 && b > 0) b = -b;
+      if (a === b) b = -b;
+      const ans = a < b ? '<' : '>';
+      return { eq: `${signed(a)} ___ ${signed(b)}`, answer: ans, wrongs: ['>', '<', '='].filter(x => x !== ans), ar: `ضع الإشارة المناسبة (> أو < أو =):\n${signed(a)} ___ ${signed(b)}`, en: `Write the correct sign (>, < or =):\n${signed(a)} ___ ${signed(b)}` };
+    }
+    if (k === 3) {
+      // walk along the line
+      const a = nz(rng, m), n = int(rng, 3, m), right = rng() < 0.5, ans = signed(a + (right ? n : -n));
+      return {
+        eq: `${signed(a)} ${right ? '+' : '−'} ${n}`, answer: ans,
+        wrongs: wrongsFrom(ans, [signed(a + (right ? -n : n)), signed(-(a + (right ? n : -n))), signed(a)]),
+        ar: `على خط الأعداد، ابدأ من العدد ${signed(a)} وتحرّك ${units(n)} إلى ${right ? 'اليمين' : 'اليسار'}. عند أي عدد تصل؟`,
+        en: `On a number line, start at ${signed(a)} and move ${n} units to the ${right ? 'right' : 'left'}. Which number do you reach?`,
+      };
+    }
+    if (k === 4) {
+      // which of two numbers lies to the left (is smaller) or to the right (is greater)
+      let a = nz(rng, m), b = nz(rng, m);
+      if (a > 0 && b > 0) b = -b;
+      if (a === b) b = -b;
+      const left = rng() < 0.5, ans = signed(left ? Math.min(a, b) : Math.max(a, b));
+      return {
+        eq: `${signed(a)}, ${signed(b)} ${left ? 'left' : 'right'}`, answer: ans, wrongs: wrongsFrom(ans, [signed(left ? Math.max(a, b) : Math.min(a, b)), signed(-(left ? Math.min(a, b) : Math.max(a, b))), '0']),
+        ar: `أيّ العددين الآتيين يقع إلى ${left ? 'يسار' : 'يمين'} الآخر على خط الأعداد: ${signed(a)} أم ${signed(b)}؟`,
+        en: `Which of the two numbers lies to the ${left ? 'left' : 'right'} of the other on a number line: ${signed(a)} or ${signed(b)}?`,
+      };
+    }
+    if (k === 5) {
+      // the integer between two numbers two apart
+      const a = int(rng, -m - 1, 0), ans = signed(a + 1); // from below zero up to zero
+      return {
+        eq: `${signed(a)} < ? < ${signed(a + 2)}`, answer: ans, wrongs: wrongsFrom(ans, [signed(a), signed(a + 2), signed(-(a + 1)), signed(a + 3)].filter(x => x !== ans)),
+        ar: `ما العدد الصحيح الذي يقع بين ${signed(a)} و ${signed(a + 2)} على خط الأعداد؟`,
+        en: `Which integer lies between ${signed(a)} and ${signed(a + 2)} on a number line?`,
+      };
+    }
+    // read a point from its distance to zero
+    const n = int(rng, 3, m), left = rng() < 0.7, ans = signed(left ? -n : n);
+    return {
+      eq: `A ${left ? '−' : '+'}${n}`, answer: ans, wrongs: wrongsFrom(ans, [signed(left ? n : -n), String(n + 1), signed(left ? -(n + 1) : n + 1), signed(left ? -(n - 1) : n - 1)]),
+      ar: `تبعد النقطة A ${units(n)} عن الصفر إلى ${left ? 'اليسار' : 'اليمين'} على خط الأعداد. ما العدد الذي تمثله النقطة؟`,
+      en: `Point A is ${n} units from zero, to the ${left ? 'left' : 'right'} on a number line. Which number does it represent?`,
+    };
   },
 };
 
@@ -2659,6 +2707,7 @@ const chooseOpG2: Topic = {
 /** Specific titles first; the more general patterns after. */
 export const TOPICS: readonly Topic[] = [
   ...G4_LESSON_TOPICS,
+  ...G5_LESSON_TOPICS,
   roundDec, roundWhole, estSumDec,
   estSum('est_sum', /تقدير.*(?:مجموع|فرق)/, 'both'), estSum('est_add', /تقدير.*جمع/, 'add'), estSum('est_sub', /تقدير.*طرح/, 'sub'),
   estProd, estQuot, tensMul, tensDiv,
