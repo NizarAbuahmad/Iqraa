@@ -187,6 +187,64 @@ router.post("/classes", async (req: AuthenticatedRequest, res) => {
   }
 });
 
+/**
+ * How many class-code picks wait for this teacher, per live class — the bell's
+ * «طلبات الانضمام» row (components/ui/NotificationBell.tsx), so a teacher on the
+ * web, who gets no push, still hears of them. The same rows `/classes/:id/link-requests`
+ * lists, counted: a name already held by a student account is left out there and here.
+ * `total` counts requests, not class rows — a child in two of the teacher's
+ * classes is one request shown under both. Declared before `/classes/:id`,
+ * which would otherwise take `link-requests` for a class id.
+ */
+router.get("/classes/link-requests", async (req: AuthenticatedRequest, res) => {
+  try {
+    const teacherId = req.user!.id;
+    const rows = await db
+      .select({
+        requestId: rosterLinkRequests.id,
+        studentId: rosterLinkRequests.studentId,
+        classId: classGroups.id,
+        name: classGroups.name,
+        nameAr: classGroups.nameAr,
+      })
+      .from(rosterLinkRequests)
+      .innerJoin(students, eq(students.id, rosterLinkRequests.studentId))
+      .innerJoin(classMemberships, eq(classMemberships.studentId, students.id))
+      .innerJoin(
+        classGroups,
+        and(
+          eq(classGroups.id, classMemberships.classGroupId),
+          eq(classGroups.teacherId, teacherId),
+          isNull(classGroups.archivedAt),
+        ),
+      )
+      .innerJoin(users, eq(users.id, rosterLinkRequests.userId))
+      .where(and(eq(students.teacherId, teacherId), isNull(students.archivedAt), eq(users.role, "student")));
+
+    const taken = rows.length === 0
+      ? []
+      : await db
+          .select({ studentId: rosterLinks.studentId })
+          .from(rosterLinks)
+          .where(and(inArray(rosterLinks.studentId, [...new Set(rows.map(r => r.studentId))]), eq(rosterLinks.relation, "self")));
+    const takenIds = new Set(taken.map(t => t.studentId));
+    const open = rows.filter(r => !takenIds.has(r.studentId));
+
+    const byClass = new Map<string, { classId: string; name: string; nameAr: string; count: number }>();
+    for (const r of open) {
+      const entry = byClass.get(r.classId) ?? { classId: r.classId, name: r.name, nameAr: r.nameAr, count: 0 };
+      entry.count += 1;
+      byClass.set(r.classId, entry);
+    }
+    res.json({
+      total: new Set(open.map(r => r.requestId)).size,
+      classes: [...byClass.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    });
+  } catch (err) {
+    failRoster(res, err, "count link requests", "Failed to load join requests");
+  }
+});
+
 router.get("/classes/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params["id"] as string;

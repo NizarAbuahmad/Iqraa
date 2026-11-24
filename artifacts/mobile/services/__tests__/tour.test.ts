@@ -78,8 +78,8 @@ test('replay goes to the home tab by the href the app’s own redirects use', ()
 
 // ─── steps ──────────────────────────────────────────────────────────────────
 
-const ids =(role: Parameters<typeof stepsFor>[0], layout: Parameters<typeof stepsFor>[1]) =>
-  stepsFor(role, layout).map(s => s.targetId);
+const ids =(role: Parameters<typeof stepsFor>[0], layout: Parameters<typeof stepsFor>[1], chatEnabled = true) =>
+  stepsFor(role, layout, chatEnabled).map(s => s.targetId);
 
 test('teacher phone: welcome, the lesson, the prep board, the ask card, then two tabs', () => {
   assert.deepEqual(ids('teacher', 'phone'), [null, 'today-lesson', 'today-prep', 'today-ask', 'tab-ai-tools', 'tab-profile']);
@@ -87,6 +87,11 @@ test('teacher phone: welcome, the lesson, the prep board, the ask card, then two
 
 test('teacher desktop: the same story pointed at the sidebar, not the tab bar', () => {
   assert.deepEqual(ids('teacher', 'desktop'), [null, 'today-lesson', 'today-prep', 'nav-iqra', 'nav-ai-tools', 'nav-profile']);
+});
+
+test('with the chat off, the teacher tour skips the ask step on both layouts', () => {
+  assert.deepEqual(ids('teacher', 'phone', false), [null, 'today-lesson', 'today-prep', 'tab-ai-tools', 'tab-profile']);
+  assert.deepEqual(ids('teacher', 'desktop', false), [null, 'today-lesson', 'today-prep', 'nav-ai-tools', 'nav-profile']);
 });
 
 test('student and parent point at their tabs (phone) or sidebar rows (desktop)', () => {

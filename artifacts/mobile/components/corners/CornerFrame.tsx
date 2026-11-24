@@ -45,7 +45,7 @@ type Props = {
   eyebrow?: string;
   /** Replaces the back button's default (`goBack()`, which falls back to `/`). Public pages need their own fallback. */
   onBack?: () => void;
-  /** The games hub is an entry point with nowhere to go back to. */
+  /** For a page with nowhere to go back to: the games hub opened cold by an anonymous visitor (`hubShowsBack`). */
   hideBack?: boolean;
   /** Pass `'handled'` on screens with text inputs, so a tap on a button does not first just close the keyboard. */
   keyboardShouldPersistTaps?: 'always' | 'never' | 'handled';

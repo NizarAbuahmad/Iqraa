@@ -7,6 +7,7 @@
 import { arCountPhrase, arHomeworkPhrase, arMarksPhrase, arQuestionsPhrase, enMarksPhrase } from './arCount.ts';
 import { formatMarks } from './studentAnswers.ts';
 import { NOTE_MAX, PHOTOS_MAX } from './homeworkSubmission.ts';
+import { arJoinRequestsLine, enJoinRequestsLine } from './linkRequests.ts';
 
 export type Lang = 'ar' | 'en';
 
@@ -2456,6 +2457,8 @@ const translations = {
     selectAtLeastOneObjective: 'اختر درسًا واحدًا على الأقل',
     selectLessonsLabel: (n: string) => `الدروس (${n})`,
     selectLessonsHint: 'اختر درسًا واحدًا على الأقل',
+    evalWholeBook: 'الكتاب كاملًا (كل الدروس)',
+    evalTargetsFromBookNote: 'لا يطبع هذا الكتاب قائمة نتاجات، فتُبنى أسئلة الاختبار على «الفكرة الرئيسة» لكل درس أو على معايير «أُقيِّمُ تعلُّمي» المطبوعة في آخره.',
     assessmentTypesLabel: 'أنواع الأسئلة',
     evalShowAllBooks: (n: string) => `عرض كل الكتب (${n})`,
     evalShowMyBooks: 'كتبي فقط',
@@ -3205,6 +3208,10 @@ const translations = {
     whatsNewPlayBody: 'في «ألعاب إقرأ» ست ألعاب جديدة: «ضد الكلمة» و«جمع الكلمة» و«أيّ عدد؟» و«قارن الكسور» و«صلب، سائل أم غاز؟» و«محافظات الأردن». اختر المادة والصف لتجد ما يناسبك.',
     whatsNewGamesUpgradeTitle: 'ألعاب أغنى: شرح وأصوات وأفضل نتيجة',
     whatsNewGamesUpgradeBody: 'في ألعاب الأسئلة تظهر بعد الإجابة جملة تشرح السبب في كثير منها، وتصدر أصوات خفيفة ويهتز الهاتف قليلًا، وزر السماعة يكتمها. ويحفظ التطبيق أفضل نتيجة لك ويتيح لك إعادة الأسئلة التي أخطأت فيها. وتعرض «محافظات الأردن» خريطة بعد كل إجابة.',
+    whatsNewG10EnglishTrackTitle: 'مسار الإنجليزي المهني كاملًا',
+    whatsNewG10EnglishTrackBody: 'لكتب الإنجليزي المهنية في الصف العاشر (التجاري والزراعي والضيافة والصناعي) خيار «المسار كاملًا» في قائمة الوحدات: تُعِدّ منه اختبارًا قصيرًا أو ورقة عمل أو خطة أو عرضًا يشمل وحدات المسار كلها، بدل اختيارها وحدةً وحدة. وفي إنشاء الامتحان اختر كتاب المسار ثم «الكتاب كاملًا (كل الدروس)».',
+    whatsNewG10ExamTargetsTitle: 'اختبارات للتاريخ والجغرافيا والتربية الوطنية والرياضية',
+    whatsNewG10ExamTargetsBody: 'يمكنك الآن إنشاء اختبار لكتب الصف العاشر في التاريخ والجغرافيا والتربية الوطنية والمدنية والتربية الرياضية. هذه الكتب لا تطبع قائمة نتاجات، فتُبنى الأسئلة على «الفكرة الرئيسة» لكل درس، وفي التربية الرياضية على معايير «أُقيِّمُ تعلُّمي».',
     whatsNewParentCodesTitle: 'رموز أولياء الأمور لكل الصف',
     whatsNewParentCodesBody: 'من صفحة الصف، افتح «رموز أولياء الأمور لكل الطلبة»: أنشئ الرموز الناقصة بضغطة واحدة، وأرسل لكل عائلة رمز ابنها أو ابنتها، أو اطبع بطاقة لكل طالب لتوزّعها. الرموز التي وزّعتها من قبل تبقى صالحة.',
     whatsNewParentSchoolTitle: 'المدرسة أولًا، ومشاريع أبنائك',
@@ -3213,6 +3220,8 @@ const translations = {
     whatsNewBoardRedoBody: 'في «السبورة» زرّ «إعادة» بجانب «تراجع» لاسترجاع ما تراجعت عنه، وأربعة ألوان جديدة للقلم: الأزرق والأخضر والبرتقالي والبنفسجي. ولوحة تفتحها من «اليوم» أو «الأدوات» تُحفظ الآن مع صفّ الدرس ومادته فتجدها في «ملفاتي» تحت درسها.',
     whatsNewWhiteboardTitle: 'السبورة صارت بين الأدوات',
     whatsNewWhiteboardBody: 'افتح «السبورة» مباشرة من «الأدوات» ← «أثناء الحصة»، أو من «أدوات سريعة لهذا الدرس» في الصفحة الرئيسية، من غير أن تبدأ عرضًا أولًا. اكتب بالقلم، وأضف صفحات، ثم احفظها في «ملفاتي» أو صدّرها PDF.',
+    whatsNewJoinRequestsTitle: 'نخبرك عندما ينتظر طالب موافقتك',
+    whatsNewJoinRequestsBody: 'عندما يختار طالب اسمه من قائمة الصف برمز الربط، يصلك إشعار على هاتفك، ويظهر الطلب في الجرس أعلى التطبيق. اضغطه لتفتح الصف وتوافق على الطلب أو ترفضه.',
     whatsNewChatOnTopicTitle: 'المحادثة تجيب عن الموضوع الذي تسأل عنه',
     whatsNewChatOnTopicBody: 'اسأل «إقرأ» عن أي موضوع، فيجيبك عنه هو، لا عن الدرس المختار في أعلى التطبيق. ويبقى درسك المختار كما هو حتى تغيّره بنفسك، ويتابع «إقرأ» معك الموضوع الذي تتحدثان عنه.',
     whatsNewChatFreeTopicTitle: 'المحادثة تجهّز نشاطًا على أي موضوع',
@@ -3426,6 +3435,7 @@ const translations = {
     claimDeclined: 'لم يوافق المعلم على طلبك. تأكد من اسمك واختره من جديد، أو اسأل معلمك.',
     joinAnotherClassPending: 'أُرسل طلبك إلى المعلم. ستظهر الشعبة بعد موافقته.',
     linkRequestsTitle: 'طلبات الانضمام',
+    bellJoinRequests: (n: number, className: string) => arJoinRequestsLine(n, className),
     linkRequestsHint: 'هؤلاء الطلبة اختاروا أسماءهم برمز الربط. وافق إذا كان الحساب لصاحب الاسم.',
     linkRequestApprove: 'موافقة',
     linkRequestReject: 'رفض',
@@ -6181,6 +6191,8 @@ const translations = {
     selectAtLeastOneObjective: 'Select at least one lesson',
     selectLessonsLabel: (n: string) => `Lessons (${n})`,
     selectLessonsHint: 'Select at least one lesson',
+    evalWholeBook: 'Entire book (all lessons)',
+    evalTargetsFromBookNote: 'This book prints no list of learning outcomes, so the exam questions are built on each lesson’s main idea («الفكرة الرئيسة») or on the self-assessment criteria printed at its end.',
     assessmentTypesLabel: 'Question types',
     evalDifficultyLabel: 'Level',
     evalShowAllBooks: (n: string) => `Show all books (${n})`,
@@ -6902,6 +6914,10 @@ const translations = {
     whatsNewPlayBody: 'Iqrra Games has six new games: opposites, plurals, which number, compare fractions, solid, liquid or gas, and the governorates of Jordan. Pick a subject and a grade to find the right one.',
     whatsNewGamesUpgradeTitle: 'Richer games: explanations, sounds and your best score',
     whatsNewGamesUpgradeBody: 'In the question games, many now explain why after you answer, with soft sounds and a light vibration on phones; the speaker button mutes them. The app keeps your best score and lets you retry the questions you missed. The governorates game shows a map after each answer.',
+    whatsNewG10EnglishTrackTitle: 'A whole vocational English track',
+    whatsNewG10EnglishTrackBody: 'The Grade 10 vocational English books (commerce, agriculture, hospitality, industrial) now have «Entire … track» in the unit list: make a quiz, worksheet, plan or slides from every unit of the track at once, instead of one unit at a time. For an exam, pick the track’s book and «Entire book (all lessons)».',
+    whatsNewG10ExamTargetsTitle: 'Exams for history, geography, civic and PE',
+    whatsNewG10ExamTargetsBody: 'You can now create an exam for the Grade 10 history, geography, civic education and physical education books. These books print no list of learning outcomes, so the questions are built on each lesson’s main idea («الفكرة الرئيسة»), and in PE on its «أُقيِّمُ تعلُّمي» criteria.',
     whatsNewParentCodesTitle: 'Parent codes for the whole class',
     whatsNewParentCodesBody: 'On a class page, open “Every student’s parent code”: create the missing codes in one tap, send each family its own child’s code, or print a slip per student to hand out. Codes you already gave out keep working.',
     whatsNewParentSchoolTitle: 'School first, and your children’s projects',
@@ -6910,6 +6926,8 @@ const translations = {
     whatsNewBoardRedoBody: 'The whiteboard has a Redo button beside Undo, to bring back what you just undid, and four new pen colours: blue, green, orange and purple. A board you open from Today or Tools is now saved with its lesson’s grade and subject, so it turns up under that lesson in My files.',
     whatsNewWhiteboardTitle: 'The whiteboard is now in Tools',
     whatsNewWhiteboardBody: 'Open the whiteboard straight from Tools → During class, or from “Quick tools for this lesson” on the home screen, without starting a presentation first. Write with the pen, add pages, then save the board to My files or export it as a PDF.',
+    whatsNewJoinRequestsTitle: 'We tell you when a student is waiting for you',
+    whatsNewJoinRequestsBody: 'When a student picks their name off the class list with the link code, you get a notification on your phone and the request shows in the bell at the top of the app. Tap it to open the class and approve or reject the request.',
     whatsNewChatOnTopicTitle: 'Chat answers the topic you ask about',
     whatsNewChatOnTopicBody: 'Ask Iqrra about any topic and it answers that topic, not the lesson selected at the top of the app. Your selected lesson stays as it is until you change it, and Iqrra keeps following the topic you are talking about.',
     whatsNewChatFreeTopicTitle: 'Chat makes an activity on any topic',
@@ -7117,6 +7135,7 @@ const translations = {
     claimDeclined: 'Your teacher did not approve that request. Check your name and pick it again, or ask your teacher.',
     joinAnotherClassPending: 'Your request was sent to the teacher. The class appears once they approve it.',
     linkRequestsTitle: 'Join requests',
+    bellJoinRequests: (n: number, className: string) => enJoinRequestsLine(n, className),
     linkRequestsHint: "These students picked their names with the link code. Approve if the account is the name's owner.",
     linkRequestApprove: 'Approve',
     linkRequestReject: 'Reject',

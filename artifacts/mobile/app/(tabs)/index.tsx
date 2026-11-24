@@ -54,6 +54,7 @@ import { PhoneToday } from '@/components/today/PhoneToday';
 import { TourTarget } from '@/components/tour/TourTarget';
 import { SPACE } from '@/constants/theme';
 import { readableOn } from '@/services/readableColor';
+import { IQRA_CHAT_ENABLED } from '@/services/features';
 
 const START_CLASS_COLOR = palette.live;
 const SIDE_PANEL_WIDTH = 356;
@@ -333,6 +334,8 @@ function LessonWorkspace() {
         </ScrollView>
 
         {/* ─── Assistant panel ───────────────────────────────────── */}
+        {/* Hidden while the chat is off (`IQRA_CHAT_ENABLED`): every control in it leads there. */}
+        {IQRA_CHAT_ENABLED ? (
         <View style={[s.side, surface]}>
           <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 9 }]}>
             <IqraaMark size={28} tone="soft" />
@@ -394,6 +397,7 @@ function LessonWorkspace() {
             <Text style={[s.openChat, { color: colors.primary, textAlign: align }]}>{t('homeOpenChat')} {align === 'right' ? '←' : '→'}</Text>
           </Pressable>
         </View>
+        ) : null}
       </View>
       <Celebrate visible={today.prepJustReady} size="small" message={t('celebratePrepReady')} onDone={today.clearPrepJustReady} />
     </View>

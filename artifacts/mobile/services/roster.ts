@@ -11,6 +11,7 @@ import { apiFetch } from './apiClient.ts';
 import { trackEvent } from './analytics.ts';
 import { parseClaimResponse, type ClaimResult } from './claimResult.ts';
 import type { PendingClaim } from './claimWaiting.ts';
+import type { LinkRequestSummary } from './linkRequests.ts';
 import type { AddLabResourceBody, AddResourceBody, ClassResource } from './classResources.ts';
 import type { RosterLink } from './rosterLinks.ts';
 import { normalizeClassCodes, type ClassCode } from './parentCodes.ts';
@@ -499,6 +500,13 @@ export async function listLinkRequests(classId: string): Promise<LinkRequest[]> 
     'Loading join requests',
   );
   return data.requests.map(r => ({ ...r, codeSignup: r.codeSignup === true }));
+}
+
+/** What waits for this teacher across their live classes — the bell's «طلبات الانضمام» row. */
+export async function getLinkRequestSummary(): Promise<LinkRequestSummary> {
+  const res = await apiFetch('/classes/link-requests');
+  const data = await readJson<LinkRequestSummary>(res, 'Loading join requests');
+  return { total: data.total ?? 0, classes: Array.isArray(data.classes) ? data.classes : [] };
 }
 
 /** Link the waiting account as the student's own. 409 `claim_already_linked` when the name already has one. */

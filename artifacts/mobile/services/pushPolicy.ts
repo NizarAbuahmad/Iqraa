@@ -5,7 +5,7 @@
  * cannot load (see CLAUDE.md).
  */
 
-export type PushChannelId = 'messages' | 'results' | 'reminders' | 'admin' | 'homework' | 'exams' | 'quiet';
+export type PushChannelId = 'messages' | 'results' | 'reminders' | 'admin' | 'homework' | 'exams' | 'quiet' | 'requests';
 
 export interface PushChannel {
   id: PushChannelId;
@@ -17,6 +17,8 @@ export interface PushChannel {
   descriptionEn: string;
   /** Only created for system admins — nobody else is ever sent to it. */
   adminOnly?: boolean;
+  /** Only created for teacher accounts (system admins included) — nobody else is ever sent to it. */
+  teacherOnly?: boolean;
 }
 
 /**
@@ -79,6 +81,17 @@ export const PUSH_CHANNELS: readonly PushChannel[] = [
     descriptionEn: 'School notifications that arrive between 10 pm and 7 am, without sound',
   },
   {
+    // A student picked a name off the class code and waits for the teacher
+    // (api-server lib/joinRequestNotify.ts); a tap opens that class.
+    id: 'requests',
+    importance: 'high',
+    nameAr: 'طلبات الانضمام',
+    nameEn: 'Join requests',
+    descriptionAr: 'عندما ينتظر طالب اختار اسمه برمز الربط موافقتك',
+    descriptionEn: 'When a student who picked their name with the link code is waiting for your approval',
+    teacherOnly: true,
+  },
+  {
     id: 'admin',
     importance: 'default',
     nameAr: 'بلاغات المحتوى',
@@ -89,8 +102,8 @@ export const PUSH_CHANNELS: readonly PushChannel[] = [
   },
 ];
 
-export function channelsFor(isAdmin: boolean): PushChannel[] {
-  return PUSH_CHANNELS.filter(c => isAdmin || !c.adminOnly);
+export function channelsFor(isAdmin: boolean, isTeacher = false): PushChannel[] {
+  return PUSH_CHANNELS.filter(c => (isAdmin || !c.adminOnly) && (isTeacher || isAdmin || !c.teacherOnly));
 }
 
 export type PushPromptDecision = 'register' | 'explain' | 'open-settings' | 'skip';

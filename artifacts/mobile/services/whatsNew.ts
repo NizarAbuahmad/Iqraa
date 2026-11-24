@@ -15,6 +15,7 @@
 import type { TranslationKey } from './i18n.ts';
 import { TOUR_MAX_AGE_DAYS, TOUR_SINCE, isTourHome, tourRoleOf, type TourRole, type TourUserLike } from './tour.ts';
 import { needsGradeSetup, needsGuardianApproval, needsRosterClaim, needsTeacherSetup } from './routeGating.ts';
+import { IQRA_CHAT_ENABLED } from './features.ts';
 
 export type WhatsNewEntry = {
   /** Never reused or renamed: it is what a device remembers as seen. */
@@ -38,6 +39,30 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
+  {
+    id: 'g10-english-whole-track',
+    date: '2026-11-24',
+    roles: ['teacher'],
+    titleKey: 'whatsNewG10EnglishTrackTitle',
+    bodyKey: 'whatsNewG10EnglishTrackBody',
+    route: '/ai-tools/quiz',
+  },
+  {
+    id: 'g10-exams-humanities-pe',
+    date: '2026-11-24',
+    roles: ['teacher'],
+    titleKey: 'whatsNewG10ExamTargetsTitle',
+    bodyKey: 'whatsNewG10ExamTargetsBody',
+    route: '/evaluations',
+  },
+  {
+    id: 'join-request-notice',
+    date: '2026-11-23',
+    roles: ['teacher'],
+    titleKey: 'whatsNewJoinRequestsTitle',
+    bodyKey: 'whatsNewJoinRequestsBody',
+    route: '/classes',
+  },
   {
     id: 'chat-stays-on-topic',
     date: '2026-11-21',
@@ -197,8 +222,21 @@ export function whatsNewSeenKey(userId: string): string {
 /** What storage answered: the ids seen, or `'all'` when it could not be read (never nag). */
 export type SeenIds = readonly string[] | 'all';
 
+/**
+ * The entries the app may announce. An entry whose «جرّبها» opens the AI chat is
+ * dropped while the chat is off (`IQRA_CHAT_ENABLED`): it would announce a
+ * feature nobody can reach, and its button would land on a screen that sends
+ * them home.
+ */
+export function offeredWhatsNew(
+  entries: readonly WhatsNewEntry[] = WHATS_NEW,
+  chatEnabled: boolean = IQRA_CHAT_ENABLED,
+): WhatsNewEntry[] {
+  return entries.filter(e => chatEnabled || !(e.route === '/iqra' || e.route?.startsWith('/iqra?')));
+}
+
 /** Every entry for a role whose day has come, newest first — the Profile screen's list. */
-export function entriesFor(role: TourRole, now: number, entries: readonly WhatsNewEntry[] = WHATS_NEW): WhatsNewEntry[] {
+export function entriesFor(role: TourRole, now: number, entries: readonly WhatsNewEntry[] = offeredWhatsNew()): WhatsNewEntry[] {
   return entries
     .filter(e => e.roles.includes(role) && entryTime(e.date) <= now)
     .sort((a, b) => entryTime(b.date) - entryTime(a.date));

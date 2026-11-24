@@ -7,7 +7,8 @@
  * controlled experiment, Arabic and social studies wrote paragraphs, and 148 lessons drew
  * a concept map. Grade 2 now has the early-grade versions (`lessonPlanFirstGrade.ts`,
  * `activityFirstGrade.ts`) with its own Arabic strands and writing: a word or a short
- * sentence where Grade 1 copies one. Grade 3 keeps the all-grades ones.
+ * sentence where Grade 1 copies one. Grade 3 has its own level since 2026-11-20
+ * (`thirdGradePlans.test.ts`); Grade 4 keeps the all-grades ones.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -57,7 +58,7 @@ describe('which lessons are Grade 2', () => {
     assert.equal(earlyGradeOf(G2[0]!), 2);
     assert.equal(earlyGradeOf(getLessonById('kbl-g1-arabic-s1-nccd-u1_l6')!), 1);
     for (const g of ['الصف الثاني', 'الصَّفُّ الثَّانِي', 'Grade 2', 'grade-2']) assert.equal(earlyGradeOf(null, g), 2, g);
-    for (const g of ['الصف الثالث', 'الصف الثاني عشر', 'Grade 12', '']) assert.equal(earlyGradeOf(null, g), null, g);
+    for (const g of ['الصف الرابع', 'الصف الثاني عشر', 'Grade 12', '']) assert.equal(earlyGradeOf(null, g), null, g);
   });
 });
 
@@ -179,13 +180,13 @@ describe('a Grade 2 review (unit or semester)', () => {
   });
 });
 
-describe('Grade 3 keeps the all-grades plan and activities', () => {
-  it('a Grade 3 Arabic plan and activity are not the early-grade ones', async () => {
-    const l = KB_LESSONS.find(x => { const b = getBookForLesson(x); return b?.gradeId === 'grade-3' && b.subjectId === 'arabic'; })!;
+describe('Grade 4 keeps the all-grades plan and activities', () => {
+  it('a Grade 4 Arabic plan and activity are not the early-grade ones', async () => {
+    const l = KB_LESSONS.find(x => { const b = getBookForLesson(x); return b?.gradeId === 'grade-4' && b.subjectId === 'arabic'; })!;
     const b = getBookForLesson(l)!;
-    const p = await aiService.generateLessonPlan({ grade: 'الصف الثالث', subject: b.subjectId, topic: l.titleAr, lessonId: l.id, language: 'arabic', duration: 45, teachingStyle: 'direct' } as AIRequest);
+    const p = await aiService.generateLessonPlan({ grade: 'الصف الرابع', subject: b.subjectId, topic: l.titleAr, lessonId: l.id, language: 'arabic', duration: 45, teachingStyle: 'direct' } as AIRequest);
     assert.doesNotMatch(p.assessment, G2_LIMIT);
-    const a = buildOfflineActivity({ grade: 'الصف الثالث', subject: 'arabic', lessonId: l.id, topic: l.titleAr, language: 'arabic', activityType: 'individual' } as AIRequest);
+    const a = buildOfflineActivity({ grade: 'الصف الرابع', subject: 'arabic', lessonId: l.id, topic: l.titleAr, language: 'arabic', activityType: 'individual' } as AIRequest);
     assert.doesNotMatch(a.groupSize, /كل طفل مع أشيائه/);
   });
 });

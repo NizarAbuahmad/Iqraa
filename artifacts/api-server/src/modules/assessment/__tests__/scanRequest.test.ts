@@ -11,6 +11,7 @@ import {
   classScanGate,
   parsePaperScanBody,
 } from "../scanRequest.ts";
+import { BOOKS, getObjectivesForBook } from "@workspace/curriculum";
 
 const PHOTO = "data:image/jpeg;base64,AAAA";
 
@@ -79,6 +80,20 @@ describe("parsePaperScanBody", () => {
       assert.equal(res.ok, false, JSON.stringify(objectiveIds));
       if (!res.ok) assert.equal(res.refusal.code, "bad_objectives");
     }
+  });
+
+  it("accepts every objective of any one book", () => {
+    // The exam builder's «الكتاب كاملًا (كل الدروس)» sends a whole book's
+    // objectives. With a cap of 100, Grade 10 Islamic Education S2 (116), S1
+    // (105) and Grade 7 S1 (102) could not be scanned whole.
+    let largest = 0;
+    for (const book of BOOKS) {
+      const objectiveIds = getObjectivesForBook(book.id).map(o => o.id);
+      if (objectiveIds.length === 0) continue;
+      largest = Math.max(largest, objectiveIds.length);
+      assert.ok(parsePaperScanBody({ images: [PHOTO], objectiveIds }).ok, `${book.id}: ${objectiveIds.length} objectives`);
+    }
+    assert.ok(largest > 100, "the largest book is the one that used to be refused");
   });
 
   it("de-duplicates and trims objective ids", () => {
