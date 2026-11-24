@@ -10,6 +10,14 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Admin users filters: confirmed on Android — 2026-11-24
+
+Docs only. «Admin users list: filter by channel (web / app) and by new or returning» (#1409) said its
+«هذا الشهر» chip fix had not been seen on an Android phone, where the clipping was reported. It has now:
+after the `production` OTA of 2026-11-05 (Mobile OTA update run 41992984527, commit 705b18e), the admin
+reported on their own Android phone that «هذا الشهر» shows in full and the «انضم عبر» and «المستخدمون» filter
+rows work. That entry is updated to say so. **Verified:** by that report only; no device was driven from here.
+
 ## A join-request push refreshes the bell the moment it arrives — 2026-11-23
 
 Follow-up to «The teacher is told when a student's class-code pick waits for them» (#1538), whose «Not verified»
@@ -3940,10 +3948,11 @@ now made unable to wrap at all: `FilterChip` (`components/admin/widgets.tsx`) se
 printing «…»). `adminFilterChip.test.ts` pins both props; it fails on the old source. Separately, at
 360px on web the search box would not shrink below a web `<input>`'s default width and pushed
 «المحظورون فقط» off the left edge; it now has `minWidth: 0`. Both seen fixed in a web build at 360
-and 430px (the label's `scrollWidth` equals its `clientWidth`). **Not** seen on an Android phone,
-which is where the clipping was reported.
+and 430px (the label's `scrollWidth` equals its `clientWidth`). **On Android (added 2026-11-24):**
+confirmed on the admin's own phone after the 2026-11-05 `production` OTA (run 41992984527, commit
+705b18e): «هذا الشهر» shows in full and both filter rows work — see «Admin users filters: confirmed on Android».
 
-**Not verified / limits.** Not looked at on an Android device. `last_login` is stamped only at sign-in, not on token
+**Not verified / limits.** `last_login` is stamped only at sign-in, not on token
 refresh, so someone who stays signed in and only browses is not "returning" unless they generated or saved
 something — the same blind spot the daily-activity chart documents. No «ما الجديد» entry: the screen is admin-only and
 those entries reach only teacher/student/parent roles.
