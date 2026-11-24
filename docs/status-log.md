@@ -10,6 +10,85 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## A dead key now switches provider for chat, exams and grading too — 2026-11-21
+
+Second half of «Production runs Claude for documents …». That change covered the pooled generators only
+(`generateContent`); every other route still called `openai.chat.completions.create` itself, so an empty OpenAI
+balance would have failed chat, exam generation and the photo-marking scans with nothing behind them. Chosen with the
+owner after the Haiku 5.5 comparison (`provider-eval` run 9: Haiku 16/16 complete and Arabic 4/4, 2.2× cheaper on
+documents and 4× on chat, but 3–5× slower — documents 26 s against 8 s, chat 12.5 s against 5 s): for an emergency
+path price barely matters, so the backup is the model most trusted, Claude Sonnet 5.5, not the cheapest.
+
+**Changed.**
+
+- `lib/aiComplete.ts` (new): `completeAi` (a finished reply) and `openChatStream` (a streamed one) are now the only
+  doors to a model. The model id names the provider; an account error (`providerFallback.ts`) re-sends the request
+  once to the other provider's configured model; the result carries the model that ANSWERED, and every caller records
+  spend and names the response against it. OpenAI's full `usage` is kept, so cached-token pricing still works.
+- `lib/claudeMessages.ts` (new): OpenAI-shaped messages → a Claude request. System messages move to `system`;
+  empty text blocks are dropped (Claude rejects them); a `data:image/{jpeg,png,gif,webp};base64,…` photo becomes a
+  base64 image block, an `https` URL a url block, anything else (a HEIC photo, an SVG) an `UnsupportedImageError`.
+- `lib/claude.ts`: `completeWithClaude` takes a message list as well as one prompt; `streamWithClaude` (new) adapts
+  Claude's event stream to the chunk shape `pumpChatStream` already reads, forwards only text deltas, and fails the
+  stream on a refusal. It settles once the API has accepted the request, which is when a bad key shows, so the chat
+  route can still switch before it has sent its client a byte.
+- Moved onto the helper: `routes/chat.ts` (both shapes), `routes/evaluations.ts` (exam generation, worked steps,
+  scan-paper, scan-class-paper), `routes/attempts.ts` (scan-marks), `routes/generate.ts` (prompt-slides questions;
+  `/generate/solve` wraps its call in `withProviderFallback`), `lib/derivativeVerified.ts`.
+- **Left alone on purpose.** `completeOnce` in `routes/generate.ts` still calls OpenAI itself: `generateContent`
+  already wraps the whole pooled flow, so the pool is read and written under the model that answered. A fallback
+  inside the call would store one model's paper under the other's key. `routes/siteAsk.ts`, the public site
+  assistant, has no backup: a visitor watching a typing indicator cannot wait out a fallback.
+- `aiComplete.test.ts` ends with a guard that counts direct `openai.chat.completions.create(` calls per file and
+  fails on any not listed (generate.ts: 1, siteAsk.ts: 1). `scanRoutes.test.ts` finds «the model call» by the text
+  `completeAi(` now; its checks (guards before the call, no roster sent) are unchanged.
+
+**A review of the first version found five things, fixed in the same PR.**
+
+- *Spend under Claude.* Claude is never sent fewer than 16000 tokens (`CLAUDE_MIN_MAX_TOKENS`; thinking counts against
+  it), but chat's estimate for a turn with no usage figures (the client left, the stream failed) charged
+  `CHAT_MAX_TOKENS` (1200): up to 13× too little against `AI_STUDENT_BUDGET_USD` during a fallback. It now charges
+  `claudeMaxTokens(CHAT_MAX_TOKENS)` when the model is Claude. The same floor means chat's 1200-token reply cap does
+  not hold on the Claude path; the prompt's brevity is all that limits a fallback reply.
+- *Big exam papers.* `completeWithClaude` ran on a 120 s timeout with the SDK's two retries, so a 30-question paper
+  (24000-token ceiling) would time out three times and fail after about six minutes. A reply above the floor now gets
+  `claudeRequestOptions`: time in proportion to its ceiling (12 ms a token, capped at 280 s inside Cloud Run's 300 s
+  limit) and no retry. Ordinary calls keep the client's defaults.
+- *Photos.* Claude takes images up to 5 MB and rejects a `media_type` that disagrees with the bytes; the scan routes
+  accept about 6 MB and OpenAI never checked the label. `toImageBlock` now reads the type from the bytes (JPEG, PNG,
+  GIF, WebP; an unrecognised file keeps its label only if Claude reads that type) and refuses an image over 5 MB with a
+  message that names the size.
+- *Chat history starting with the assistant.* Claude answers 400 when the first message is not the user's, and
+  `messages.slice(-CHAT_HISTORY_TURNS)` can start with an assistant turn. `toClaudeRequest` drops leading assistant turns.
+- *Tests.* Nothing pinned «record against the model that answered» at any route, and the guard built its path with
+  `.pathname`, which breaks on Windows and on a path with a space. Source-level tests now require every
+  `recordUsage` in the moved routes to avoid `getGenerationModel` / `getChatModel`, and the chat and scan sites to take
+  the model from the completion (checked by breaking two sites on purpose: both were caught); the path uses
+  `fileURLToPath`; and a test asserts no options argument is sent to OpenAI when neither a timeout nor a retry count is set.
+
+**Verified.** `claudeMessages.test.ts` 14, `aiComplete.test.ts` 20, `claude.test.ts` 17 (the streaming adapter against
+the real SDK parsing server-sent events, including thinking left out, a refusal failing the stream, and a 401 thrown
+from the open call before any chunk). api-server 3066 / 3066 after `pnpm build`; typecheck clean.
+
+**Not verified.**
+
+- No request went to a real dead key, an empty balance or a live Claude stream; the error shapes are the SDKs'
+  documented `status` / `code`. No route-level test stands in for either provider (route tests run with live AI off),
+  so the six rewired call sites are covered by the helper's tests, the typechecker and the guard, not by an end-to-end
+  run.
+- Photo scans through Claude: the conversion is tested, Claude's reading of handwriting is not. A scan response is
+  `saved: false` (the teacher confirms), but nobody has compared the two providers on a real paper.
+- A 30-question exam paper written by Claude may still not finish inside Cloud Run's 300 s request limit; the
+  timeout is now sized to it, but no paper that large has been timed on Claude.
+- Latency: the app's chat gives up after 45 s of silence (`IDLE_TIMEOUT_MS`). Claude thinks before its first word and
+  the thinking is not forwarded, so a slow turn is silent for that long. Haiku finished whole chat replies in about
+  12 s; Sonnet 5.5 was not timed on chat.
+- The exam and chat answers a fallback writes are Sonnet-voiced, not the OpenAI model's; a teacher or student would
+  not be told.
+- Since 2026-11-22 the app hides the «اسأل إقرأ» chat screen («The AI chat «اسأل إقرأ» is hidden from the app»), so
+  chat's fallback protects the `/chat` route that older builds and direct callers still reach, not a screen a user
+  opens today. The exam, scan and prep paths are the ones a teacher meets.
+
 ## Paper scan: a whole book's objectives always fit — 2026-11-20
 
 `POST /evaluations/scan-paper` reads the photos of an exam a teacher already handed out and fills the marks grid. It refused more than 100 objectives (`MAX_SETUP_OBJECTIVES`, `artifacts/api-server/src/modules/assessment/scanRequest.ts`). Three books have more: Grade 10 Islamic Education S2 (116), S1 (105) and Grade 7 S1 (102). A teacher who picked the whole book there, by hand or with the new «الكتاب كاملًا (كل الدروس)» row, got the generic `scanFailed` message, «تعذّرت قراءة الصورة. أدخل العلامات يدويًا.», which blames the photo. Nothing said why.
@@ -311,6 +390,7 @@ First fix from a Grade 10 review covering coverage, results and book images, acr
 - the vocational-English tracks mixed into the English unit picker;
 - the 2026 maths lesson «حل معادلات خاصة» missing from the catalog;
 - the vocational books: Part 2 on file is the Grade 9 book.
+
 ## The bell's push-driven refresh is live on phones — 2026-11-24
 
 #1540 («A join-request push refreshes the bell the moment it arrives», below) merged as `fab8870`.
