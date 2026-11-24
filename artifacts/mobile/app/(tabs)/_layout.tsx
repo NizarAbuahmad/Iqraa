@@ -228,8 +228,8 @@ function ClassicTabLayout() {
   // Android channels, named in the app's language — see services/pushPolicy.ts.
   const isSystemAdmin = user?.role === 'system_admin';
   useEffect(() => {
-    if (user) void ensureNotificationChannels(lang, isSystemAdmin);
-  }, [user, lang, isSystemAdmin]);
+    if (user) void ensureNotificationChannels(lang, isSystemAdmin, isTeacher);
+  }, [user, lang, isSystemAdmin, isTeacher]);
 
   const tabEntries = buildTabEntries(isTeacher, isDesktop, unread);
 
