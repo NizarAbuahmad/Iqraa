@@ -10,6 +10,29 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 9: 38 broken or non-figure crops go — 2026-11-24
+
+`main` already has a Grade 9 audit («Grade 9 audit: right book pages and figures», and the English between-units pages). A second
+read of every Grade 9 crop by eye found its page ranges already right and these crops still there.
+
+**Figures.** 38 crops and their PNGs are dropped: 28 cut or sliced (a car with the right edge of «KE» cut off, an electrolyte
+diagram whose labels are cut at the bottom, a graph with a sliver of the one above it, body-text slices at the top of an
+illustration) and 10 that are no figure (a student-work note card, a text-only «أفكر» box). By book: biology S1 2, S2 6, chemistry
+S2 2, earth science S1 3, S2 1, English S1 1, geography S1 1, S2 1, maths S1 7, S2 5, physics S1 8, S2 1. Five more that the audit
+marked are clean partial pieces of a figure (one half whose other half is kept) and stay.
+
+**Not done.**
+- Lessons whose first page sits in the previous lesson's image folder cannot be expressed with `rendered`, which holds one folder
+  per lesson: Arabic S2 u8_l5 (p.75-78) and u9_l1 (p.82-84), and English S2 u6_l7 (p.14-15), u7_l7 (p.26-27) and u8_l1 (p.28-29).
+  They need a re-render or a schema step.
+- Vocational and art have no page images, figures or text; six subjects have no extracted text, so the live model gets no book
+  passages for them.
+- Maths S2 unit 5 prints a GeoGebra lab (p.18) and two concept-activity pages (p.30, p.39) that the catalog does not list, while
+  maths S1 lists its labs as lessons.
+
+**Verified.** `curriculum verify` (0 errors); curriculum tests (936 pass; `r2.test.ts` fails here only because R2 variables are
+set); the whole mobile suite (9,587 pass, 0 fail, 10 skipped); `tsc --build`. **Not verified:** the pages and slides in a browser.
+
 ## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
 
 Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured

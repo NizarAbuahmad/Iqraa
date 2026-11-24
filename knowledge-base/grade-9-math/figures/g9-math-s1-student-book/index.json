@@ -18,22 +18,6 @@
    "lessonStartPage": 8
   },
   {
-   "file": "p016-v2.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 16,
-   "rect": [
-    245.0,
-    409.0,
-    342.0,
-    485.0
-   ],
-   "unit": 1,
-   "lesson": 1,
-   "lessonTitleEn": "Sets and Intervals",
-   "lessonTitleAr": null,
-   "lessonStartPage": 8
-  },
-  {
    "file": "p028.png",
    "sourceId": "g9-math-s1-student-book",
    "pdfPage": 28,
@@ -274,22 +258,6 @@
    "lessonStartPage": 42
   },
   {
-   "file": "p048-v2.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 48,
-   "rect": [
-    72.9,
-    63.0,
-    439.0,
-    231.6
-   ],
-   "unit": 2,
-   "lesson": 1,
-   "lessonTitleEn": "Functions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 42
-  },
-  {
    "file": "p050b-v2.png",
    "sourceId": "g9-math-s1-student-book",
    "pdfPage": 50,
@@ -410,22 +378,6 @@
     124.2,
     433.2,
     263.5
-   ],
-   "unit": 2,
-   "lesson": 2,
-   "lessonTitleEn": "Interpreting Graphs",
-   "lessonTitleAr": null,
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p063.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 63,
-   "rect": [
-    69.6,
-    72.2,
-    288.6,
-    215.3
    ],
    "unit": 2,
    "lesson": 2,
@@ -618,38 +570,6 @@
     166.2,
     211.2,
     268.5
-   ],
-   "unit": 2,
-   "lesson": 3,
-   "lessonTitleEn": "Quadratic Function",
-   "lessonTitleAr": null,
-   "lessonStartPage": 64
-  },
-  {
-   "file": "p074b.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 74,
-   "rect": [
-    113.3,
-    527.7,
-    274.8,
-    644.9
-   ],
-   "unit": 2,
-   "lesson": 3,
-   "lessonTitleEn": "Quadratic Function",
-   "lessonTitleAr": null,
-   "lessonStartPage": 64
-  },
-  {
-   "file": "p074c-v2.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 74,
-   "rect": [
-    333.0,
-    532.1,
-    487.0,
-    641.0
    ],
    "unit": 2,
    "lesson": 3,
@@ -1314,22 +1234,6 @@
    "lessonStartPage": 132
   },
   {
-   "file": "p141b.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 141,
-   "rect": [
-    32.5,
-    392.5,
-    248.7,
-    527.3
-   ],
-   "unit": 4,
-   "lesson": 1,
-   "lessonTitleEn": "Distance in the Coordinate Plane",
-   "lessonTitleAr": null,
-   "lessonStartPage": 132
-  },
-  {
    "file": "p146.png",
    "sourceId": "g9-math-s1-student-book",
    "pdfPage": 146,
@@ -1370,22 +1274,6 @@
     79.4,
     215.5,
     236.3
-   ],
-   "unit": 4,
-   "lesson": 2,
-   "lessonTitleEn": "Distance between a Point and a Line",
-   "lessonTitleAr": null,
-   "lessonStartPage": 142
-  },
-  {
-   "file": "p150b.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 150,
-   "rect": [
-    206.4,
-    369.0,
-    403.0,
-    554.9
    ],
    "unit": 4,
    "lesson": 2,
