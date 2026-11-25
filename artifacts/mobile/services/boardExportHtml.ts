@@ -17,7 +17,7 @@
  * Free of react-native so `node --test` can load it.
  */
 import type { BoardSolution } from '@workspace/math-verify';
-import { parseBoard } from './boardFile.ts';
+import { parseBoard, type BoardFileText } from './boardFile.ts';
 import { DECK_ACCENT, DECK_BORDER, DECK_MUTED, DECK_TEXT } from './deckTheme.ts';
 import { isolateForeignRuns, mathLineToUnicode } from './mathRender.ts';
 import { scaleInkPoints } from './penInk.ts';
@@ -26,6 +26,7 @@ import {
   BOARD_STEP,
   CANVAS_H,
   CANVAS_W,
+  TEXT_LINE_HEIGHT,
   axesGeometry,
   gridLines,
   localizeDigits,
@@ -57,6 +58,34 @@ function paperSVG(background: BoardBackground, lang: string): string {
     })
     .join('');
   return grid + line(axes.xAxis, DECK_MUTED, 3) + line(axes.yAxis, DECK_MUTED, 3) + ticks;
+}
+
+/**
+ * The page's typed texts as SVG, one `<text>` per line, drawn over the ink. A line is placed from
+ * its item's start edge (`x` is the left edge of an English item, the right edge of an Arabic one),
+ * so it needs no measuring and cannot wrap: what runs past the page is clipped, as on the screen.
+ * `text-anchor` is always `start`: it is relative to the line's own direction, so with `direction="rtl"`
+ * the start IS the right edge (`end` would hang the line's left edge from `x` and push an Arabic line
+ * off the page — caught by rendering the export, not by a string test).
+ * The baseline of a line is one font size below its top, the same box the screen's text fills.
+ * Arabic lines isolate their foreign runs (numbers, Latin) like the solution does, so «5 + 3 = 8»
+ * inside an Arabic line is not laid out reversed. Everything typed is escaped; the colour was
+ * validated as hex and every number is computed here.
+ */
+function textsSVG(texts: readonly BoardFileText[]): string {
+  return texts
+    .map(t =>
+      t.text
+        .split('\n')
+        .map((lineText, i) => {
+          if (lineText.trim() === '') return '';
+          const shown = t.rtl ? isolateForeignRuns(lineText) : lineText;
+          const y = t.y + t.size * (1 + i * TEXT_LINE_HEIGHT);
+          return `<text x="${num(t.x)}" y="${num(y)}" font-size="${num(t.size)}" fill="${t.color}" direction="${t.rtl ? 'rtl' : 'ltr'}" text-anchor="start" xml:space="preserve">${escapeHtml(shown)}</text>`;
+        })
+        .join(''),
+    )
+    .join('');
 }
 
 /** An unchecked verdict is amber so it cannot be mistaken for the teal ✓. */
@@ -135,7 +164,7 @@ export function buildBoardHTML(content: unknown, title: string, isAr: boolean, s
       const label = `${localizeDigits(String(i + 1), lang)} / ${localizeDigits(String(total), lang)}`;
       return `<div class="slide">
   <div class="bar"><span class="title">${safeTitle}</span><span class="num">${label}</span></div>
-  <div class="page"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}" direction="ltr" style="direction:ltr">${paperSVG(page.background, lang)}${panel ?? ''}${strokes}</svg></div>
+  <div class="page"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}" direction="ltr" style="direction:ltr">${paperSVG(page.background, lang)}${panel ?? ''}${strokes}${textsSVG(page.texts ?? [])}</svg></div>
 </div>`;
     })
     .join('\n');

@@ -22,6 +22,7 @@ describe('class usage events', () => {
       'whiteboard_solved',
       'whiteboard_saved',
       'whiteboard_exported',
+      'whiteboard_text_added',
       'classroom_activity_started',
       'class_pen_used',
     ]);
@@ -54,7 +55,7 @@ describe('the screens report what they do', () => {
   const calls: [string[], string[]][] = [
     [['app', 'ai-tools', 'whiteboard.tsx'], [
       'trackWhiteboardOpened(', 'trackWhiteboardDrawn(', 'trackWhiteboardSolved(',
-      'trackWhiteboardSaved(', 'trackWhiteboardExported(',
+      'trackWhiteboardSaved(', 'trackWhiteboardExported(', 'trackWhiteboardText(',
     ]],
     [['app', 'ai-tools', 'classroom', 'builder.tsx'], ['trackClassroomActivityStarted(']],
     [['app', 'ai-tools', 'classroom', 'presentation.tsx'], ["trackClassPenUsed('slides')", "from: 'presentation'"]],
