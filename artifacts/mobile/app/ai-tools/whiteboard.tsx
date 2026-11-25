@@ -13,6 +13,7 @@ import { BOARD_PEN_COLORS, BOARD_PEN_LABEL_KEYS } from '@/services/penColors';
 import { boardScope } from '@/services/boardScope';
 import { BoardBackground } from '@/components/classroom/BoardBackground';
 import { exportAsPDF } from '@/services/share';
+import { shareMaterialLink } from '@/services/materialShareAction';
 import { exportFilename } from '@/services/exportFilename';
 import { buildBoardHTML } from '@/services/boardExportHtml';
 import { BoardToolbar, type BoardTool } from '@/components/classroom/BoardToolbar';
@@ -452,6 +453,24 @@ export default function WhiteboardScreen() {
     else setAskTitle(true);
   }, [loading, persist]);
 
+  // The link shows the SAVED board, so an unsaved or edited one is saved first: asking
+  // for the title when there is none yet, and otherwise telling the teacher why nothing opened.
+  const onShare = useCallback(async () => {
+    if (loading || saving.current) return;
+    const current = savedRef.current;
+    if (!current) {
+      showToast(t('boardShareSaveFirst'));
+      setAskTitle(true);
+      return;
+    }
+    if (isBoardDirty(docRef.current, current.json)) {
+      showToast(t('boardShareSaveFirst'));
+      return;
+    }
+    const key = await shareMaterialLink(current.id, current.title, lang === 'ar');
+    if (key) showToast(t(key));
+  }, [lang, loading, showToast, t]);
+
   // From the in-memory document, so a board can be exported before it is saved.
   // `buildBoardHTML` validates what it is given, so a bug in `boardFileOf`
   // cannot put anything unchecked into the markup.
@@ -611,6 +630,7 @@ export default function WhiteboardScreen() {
         saveDirty={dirty}
         saveBusy={saveBusy}
         onExport={onExport}
+        onShare={onShare}
         canExport={!loading && (docHasInk(doc) || docHasSolution(doc))}
         exportBusy={exportBusy}
         onSolve={() => void onOpenSolve()}
@@ -641,6 +661,7 @@ export default function WhiteboardScreen() {
           deletePage: t('boardDeletePage'),
           save: t('boardSave'),
           exportPdf: t('boardExportPdf'),
+          shareLink: t('boardShareLink'),
           solve: t('boardSolve'),
           solveNext: t('solveNextStep'),
           solveHideAll: t('solveHideAll'),

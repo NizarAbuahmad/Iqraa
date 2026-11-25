@@ -11,6 +11,34 @@ header — one section per PR: what changed, what was verified, what was **not**
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
 
+
+## Whiteboard: share a board by link (2026-11-25)
+
+A saved board can now be shared the way a paper is: the link icon in the whiteboard's toolbar
+makes a `/m/CODE` link, anyone opens it without an account, and the teacher stops it from
+«موادي» like any other.
+
+- **Server.** The share route no longer refuses `type: "board"` (`routes/workspace.ts`). The public
+  read serves a board through `sharedPublicContent` (`lib/materialShare.ts`) instead of
+  `studentCopy`: the student-copy rule blanks every `answer` and drops every `solution`, which
+  would empty a board whose solved problem is what the class was shown. The owner's `formState`
+  still never leaves, and a teacher's «save a copy» makes a new `board` row without the owner's notes.
+- **App.** `BoardViewer` (`components/classroom/BoardViewer.tsx`) draws a board read only from the
+  whiteboard's own pieces (background, `SolutionBlock` fully revealed, `PenCanvas` inactive,
+  `TextLayer` mode none), validated with `parseBoard`, one page at a time. `workspace/view.tsx` renders it
+  for a shared board, exports it with `buildBoardHTML`, and a teacher's saved copy reopens in the
+  whiteboard. The whiteboard's link icon shares the SAVED board: an unsaved or edited one is told to
+  save first (the link shows the last saved version), and a board with no title yet opens the save dialog.
+- **Verified.** api-server: `sharedMaterial.db.test.ts` (board shared whole for visitor and teacher,
+  no `formState`, copy is a board, stop = 404 and a re-share is a new code, only the owner) and
+  `materialShare.test.ts` against a real database; mobile `boardShare.test.ts` (wiring read from
+  source). In Chromium: a teacher placed text, drew, added a page, saved, shared; a signed-out
+  visitor at phone width saw the text and stroke and paged to page 2; a teacher's «Save to my files»
+  opened the copy in the whiteboard.
+- **Not verified / limits.** A board's PDF from the shared page was not opened. A board edited and
+  saved after sharing changes what the existing link shows (same as a paper). No telemetry event for
+  sharing a board (the pinned list in `classUsage.ts` is unchanged).
+
 ## A placed text can be moved, recoloured and resized — 2026-11-25
 
 The limit the text-tool entry named («cannot be moved, resized or recoloured after it is placed»).
