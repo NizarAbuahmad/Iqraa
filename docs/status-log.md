@@ -10,11 +10,35 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Parents: «المدرسة» first, a quick look at each child, a read-only view of a handed-in project, every parent code of a class in one place, and a parent's tick for a child with no account — 2026-11-20
+## Parents: «المدرسة» first, a quick look at each child, a read-only view of a handed-in project, every parent code of a class in one place, a parent's tick for a child with no account, and the child's answer review — 2026-11-20
 
-Five changes from a review of the parent side (the first four written 2026-11-13, the fifth 2026-11-20).
+Six changes from a review of the parent side (the first four written 2026-11-13, the fifth 2026-11-20, the sixth 2026-11-25).
 
 **What changed.**
+- **A parent opens the child's answer review** (2026-11-25). A parent saw a released result as a level, a mark and
+  the four competencies, and could not see which questions went wrong. The review was turned off for parents
+  (`guardianExamRow` set `review: false`) only because it was read through `/student/…`. New `GET
+  /parent/exams/:id/review?child=<key>` reads the same paper through the same loader (`lib/answerReviewRead.ts`) under
+  the same rule (`studentReviewReady`: the exam is closed, results are released, and the teacher turned the review
+  on). So a parent sees it exactly when the child can, and never earlier. Only that child's roster rows are
+  searched, so a sibling in the same class stays apart. A key that is not this parent's child, a missing key and a
+  paper not ready are one 404. «نتائج أبنائي» shows «راجع الإجابات والحلول» under such a result. The review screen
+  names the child and calls the answer «الإجابة المُقدَّمة», not «إجابتك».
+  **The teacher's switch now covers parents, and says so.** The switch, its confirm dialog and both notes under it
+  (`showSolutionsBtn`, `hideSolutionsBtn`, `showSolutionsConfirm`, `solutionsShownNote`, `solutionsHiddenNote`) said
+  students only. They now name parents too, and a teachers' «ما الجديد» entry (`teacher-answers-reach-parents`) says
+  it. **An exam whose review a teacher turned on before this merged becomes readable by that class's parents**, under
+  wording that named students only. Nothing could be keyed to "turned on after", because the switch keeps no date.
+  **Not done, on purpose: a per-topic summary for parents.** `attempt_results.objective_scores` holds a per-objective
+  breakdown, but `sanitizeResultForStudent` and `components/StudentResultCard.tsx` both record that it is "a
+  diagnostic for the teacher". Showing it to families reverses that, which is the owner's decision.
+  **A row-level-security hole found on the way, and fixed.** The worked steps sit on `evaluation_questions`, which
+  the policies keep teacher-only because that table holds the answer key. The student's review route read them on
+  the student's own connection. With `RLS_ENFORCE` on, every student's review lost its steps (`steps: null`) with
+  status 200 and no error logged; the RLS diff compared only statuses for these steps, so it could not have seen it.
+  The loader now reads the steps on `systemDb`, only after the review gate holds, only for the question ids in the
+  caller's own sitting, and only that column. It is pinned in `systemDbFiles.test.ts` with that reason.
+  `rlsDiff.test.ts` now reads both reviews and logs the steps each one got.
 - **A parent ticks homework for a child with no student account** (the owner's call, 2026-11-20). Until now an item
   whose class held no student account for the child could be ticked by nobody, so it showed only its date; a young
   child is often in exactly that position, and the parent is the one checking. New `PUT/DELETE

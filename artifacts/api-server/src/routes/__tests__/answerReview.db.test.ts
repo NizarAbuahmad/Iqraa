@@ -3,6 +3,10 @@
  * the whole risk — a key reaching a student while the exam is still open,
  * before results are released, after the teacher hid it, to another student,
  * or as the raw `expectedAnswer` instead of display text.
+ *
+ * Since 2026-11-25 a parent opens the same paper (`GET /parent/exams/:id/review`),
+ * so the parent is held to the same rule: never earlier than the child, never
+ * another family's child, and a sibling's paper only under that sibling's key.
  */
 import { after, before, it } from "node:test";
 import assert from "node:assert/strict";
@@ -11,7 +15,7 @@ import { describeDb } from "../../test-support/gate.ts";
 import { setupTestDb, type TestDb } from "../../test-support/testDb.ts";
 import { startServer, type TestServer } from "../../test-support/startServer.ts";
 import { call } from "../../test-support/http.ts";
-import { seedFamilyWorld, type FamilyWorld } from "../../test-support/seedFamilies.ts";
+import { CHILDREN, seedFamilyWorld, type FamilyWorld } from "../../test-support/seedFamilies.ts";
 import { EX_TITLES, seedExams, type ExamWorld } from "../../test-support/seedExams.ts";
 
 const BODY = {
@@ -33,6 +37,23 @@ describeDb("answer review over HTTP, against a real database", () => {
     const r = await call(on, "GET", "/student/exams", userId);
     assert.equal(r.status, 200, on.logs().slice(-1500));
     return (r.json.exams as { title: string; review: boolean }[]).find(e => e.title === EX_TITLES.exReleased);
+  };
+  const parentReview = (userId: string, child: string) =>
+    call(on, "GET", `/parent/exams/${examId}/review?child=${encodeURIComponent(child)}`, userId);
+  /** The parent's child key for one child, as «المدرسة» and the results screen read it. */
+  const keyOf = async (userId: string, name: string): Promise<string> => {
+    const r = await call(on, "GET", "/parent/exams", userId);
+    assert.equal(r.status, 200, on.logs().slice(-1500));
+    const child = (r.json.children as { key: string; displayName: string }[]).find(c => c.displayName === name);
+    assert.ok(child, `${name} is one of this parent's children`);
+    return child.key;
+  };
+  const parentRow = async (userId: string, name: string) => {
+    const r = await call(on, "GET", "/parent/exams", userId);
+    const child = (r.json.children as { displayName: string; exams: { title: string; review: boolean }[] }[]).find(
+      c => c.displayName === name && c.exams.some(e => e.title === EX_TITLES.exReleased),
+    );
+    return child?.exams.find(e => e.title === EX_TITLES.exReleased);
   };
   const setShown = (shown: boolean) => call(on, "POST", `/evaluations/${examId}/solutions`, w.users.t1, { shown });
 
@@ -75,6 +96,8 @@ describeDb("answer review over HTTP, against a real database", () => {
     assert.equal(r.json.code, "not_closed");
     assert.equal((await rowFor(w.users.studentA))?.review, false);
     assert.equal((await reviewFor(w.users.studentA)).status, 404);
+    assert.equal((await parentRow(w.users.parentA, CHILDREN.sara))?.review, false);
+    assert.equal((await parentReview(w.users.parentA, await keyOf(w.users.parentA, CHILDREN.sara))).status, 404);
   });
 
   it("hands the student their paper as text once the closed exam's answers are shown", async () => {
@@ -94,6 +117,30 @@ describeDb("answer review over HTTP, against a real database", () => {
     assert.ok(!r.text.includes("optionIds"), "neither the raw key nor the raw response leaves");
   });
 
+  it("hands the child's parent the same paper, under the child's key", async () => {
+    assert.equal((await parentRow(w.users.parentA, CHILDREN.sara))?.review, true);
+    const mine = await reviewFor(w.users.studentA);
+    const r = await parentReview(w.users.parentA, await keyOf(w.users.parentA, CHILDREN.sara));
+    assert.equal(r.status, 200, on.logs().slice(-1500));
+    assert.deepEqual(r.json, mine.json, "exactly what the child sees");
+    assert.deepEqual(r.json.items[0].steps, STEPS);
+    assert.ok(!r.text.includes("optionIds"));
+  });
+
+  it("is never another child's paper", async () => {
+    // Adam sat the same exam, but his paper still has a question to mark: his key opens nothing,
+    // and above all not his sister's paper from the same class.
+    assert.equal((await parentReview(w.users.parentA, await keyOf(w.users.parentA, CHILDREN.adam))).status, 404);
+    // Another family's parent, with Sara's key in hand.
+    const saraKey = await keyOf(w.users.parentA, CHILDREN.sara);
+    assert.equal((await parentReview(w.users.parentB, saraKey)).status, 404);
+    assert.equal((await parentReview(w.users.parentA, "")).status, 404, "a missing key");
+    assert.equal((await parentReview(w.users.parentA, "not-a-child")).status, 404);
+    // The route is the parent's: a student or a teacher is refused by role.
+    assert.equal((await parentReview(w.users.studentA, saraKey)).status, 403);
+    assert.equal((await parentReview(w.users.t1, saraKey)).status, 403);
+  });
+
   it("is the student's own paper only", async () => {
     assert.equal((await reviewFor(w.users.studentB)).status, 404);
     assert.equal((await reviewFor(w.users.parentA)).status, 403);
@@ -110,6 +157,9 @@ describeDb("answer review over HTTP, against a real database", () => {
   it("goes dark when the teacher hides it, and when the exam is re-published", async () => {
     assert.equal((await setShown(false)).status, 200);
     assert.equal((await reviewFor(w.users.studentA)).status, 404);
+    const saraKey = await keyOf(w.users.parentA, CHILDREN.sara);
+    assert.equal((await parentReview(w.users.parentA, saraKey)).status, 404, "hidden from the parent too");
+    assert.equal((await parentRow(w.users.parentA, CHILDREN.sara))?.review, false);
 
     assert.equal((await setShown(true)).status, 200);
     assert.equal((await reviewFor(w.users.studentA)).status, 200);
@@ -117,5 +167,6 @@ describeDb("answer review over HTTP, against a real database", () => {
     assert.equal(pub.status, 200, pub.text);
     assert.equal(pub.json.evaluation.showSolutionsToStudent, false);
     assert.equal((await reviewFor(w.users.studentA)).status, 404);
+    assert.equal((await parentReview(w.users.parentA, saraKey)).status, 404);
   });
 });

@@ -193,8 +193,11 @@ export function sortStudentExams(rows: readonly StudentExamRow[]): StudentExamRo
  * `studentExamRow`'s, unchanged. What a parent never gets is the link: the
  * exam is the child's to sit, and `/take/:code` would let whoever opens it
  * pick the child's name.
+ *
+ * The answer review (`review`) stays as the child's: since 2026-11-25 a parent
+ * opens the same paper through `GET /parent/exams/:id/review`, under the same
+ * rule and the teacher's same switch.
  */
 export function guardianExamRow(row: StudentExamRow): StudentExamRow {
-  // The review is read through /student/…, which a parent cannot reach.
-  return { ...row, shareCode: null, review: false };
+  return { ...row, shareCode: null };
 }

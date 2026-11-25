@@ -794,6 +794,8 @@ describe("API mount order", { skip: built ? false : "run `pnpm build` first" }, 
   it("guards a parent's view of their children's exams", async () => {
     const theirs = await fetch(`${base}/parent/exams`);
     assert.equal(theirs.status, 401, "/parent/exams must require a token");
+    const review = await fetch(`${base}/parent/exams/00000000-0000-0000-0000-000000000000/review?child=x`);
+    assert.equal(review.status, 401, "/parent/exams/:id/review must require a token");
   });
 
   it("guards the family schedule, for both roles", async () => {

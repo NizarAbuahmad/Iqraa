@@ -265,6 +265,7 @@ export default function MyExamsScreen() {
                             retaking={retaking === exam.evaluationId}
                             onRetake={() => void onRetake(exam)}
                             parentView={isParent}
+                            child={isParent && group.name ? { key: group.key, name: group.name } : undefined}
                             colors={colors}
                             isRTL={isRTL}
                             lang={lang}
@@ -406,7 +407,7 @@ function ProgressCard({
 }
 
 function ExamRow({
-  exam, open, onPress, canRetake, retaking, onRetake, parentView, colors, isRTL, lang, t,
+  exam, open, onPress, canRetake, retaking, onRetake, parentView, child, colors, isRTL, lang, t,
 }: {
   exam: MyExam;
   open: boolean;
@@ -417,6 +418,11 @@ function ExamRow({
   onRetake: () => void;
   /** «نتائج أبنائي»: the same row, laid out for a parent (no link, plain-language status). */
   parentView: boolean;
+  /**
+   * A parent's row: the child it belongs to, so «راجع إجابات الاختبار» opens that child's paper
+   * (`GET /parent/exams/:id/review?child=`). `key` is the group's child key, `name` titles the screen.
+   */
+  child?: { key: string; name: string };
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   lang: 'ar' | 'en';
@@ -522,9 +528,15 @@ function ExamRow({
         </View>
       ) : null}
     </Pressable>
-    {exam.review ? (
+    {/* A parent's row opens the child's paper, under the same teacher switch; never without knowing whose it is. */}
+    {exam.review && (!parentView || child) ? (
       <Pressable
-        onPress={() => router.push({ pathname: '/exam-review/[id]', params: { id: exam.evaluationId } } as never)}
+        onPress={() =>
+          router.push({
+            pathname: '/exam-review/[id]',
+            params: child ? { id: exam.evaluationId, child: child.key, name: child.name } : { id: exam.evaluationId },
+          } as never)
+        }
         accessibilityRole="button"
         style={[
           styles.retakeBar,
@@ -533,7 +545,7 @@ function ExamRow({
       >
         <Ionicons name="school-outline" size={ICON.lg} color={ACCENT} />
         <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
-          {t('reviewOpenBtn')}
+          {t(parentView ? 'reviewOpenBtnChild' : 'reviewOpenBtn')}
         </Text>
         <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={ACCENT} />
       </Pressable>

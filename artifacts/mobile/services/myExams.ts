@@ -46,6 +46,18 @@ export interface ChildExams {
   exams: MyExam[];
 }
 
+/**
+ * Where the review is read. A student reads their own; a parent (since 2026-11-25) reads
+ * the child's by the child key the results screen groups by — the server answers the
+ * same paper under the same rule, and one 404 for a key that is not theirs.
+ */
+export function examReviewPath(evaluationId: string, childKey?: string | null): string {
+  const id = encodeURIComponent(evaluationId);
+  return childKey
+    ? `/parent/exams/${id}/review?child=${encodeURIComponent(childKey)}`
+    : `/student/exams/${id}/review`;
+}
+
 export const MY_EXAM_STATE_KEY = {
   available: 'myExamsStateAvailable',
   in_progress: 'myExamsStateInProgress',

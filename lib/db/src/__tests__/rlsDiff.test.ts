@@ -463,6 +463,24 @@ describe("turning row-level security on changes nothing a user can see or cause"
     await step("parent ticks for a child who has a student account", "parent", "PUT", `/parent/homework/${hwPlain}/done?child=${i.studentA}`);
     await step("parent ticks for a child with no student account", "parent", "PUT", `/parent/homework/${hwPlain}/done?child=${noAccountKid}`);
 
+    // ── The answer review, read by the student and by their parent (since 2026-11-25) ──
+    // The worked steps sit on evaluation_questions, which row-level security keeps teacher-only (it holds the key).
+    // Read on the caller's connection they came back empty with enforcement on, and nothing errored — the status
+    // stayed 200. So each line here carries the steps it got, not only the status. The child key is studentA's own
+    // id: its only roster row (the parent tick above uses the same).
+    await q("UPDATE evaluation_questions SET worked_steps = $2::jsonb WHERE id = $1", [i.questionA, JSON.stringify(["step one", "step two"])]);
+    await q("UPDATE evaluations SET status = 'closed', release_results_to_student = true, show_solutions_to_student = true WHERE id = $1", [i.evalA]);
+    await q("UPDATE attempts SET submitted_at = coalesce(submitted_at, now()) WHERE id = $1", [i.attemptA]);
+    await q("UPDATE attempt_results SET is_provisional = false WHERE attempt_id = $1", [i.attemptA]);
+    for (const [name, who, url] of [
+      ["student reads the answer review", "student", `/student/exams/${i.evalA}/review`],
+      ["parent reads the child's answer review", "parent", `/parent/exams/${i.evalA}/review?child=${i.studentA}`],
+    ] as const) {
+      const reply = await step(name, who, "GET", url);
+      const items = (reply.json["items"] as { steps: unknown }[] | undefined) ?? [];
+      steps.push(`${name} - steps: ${JSON.stringify(items.map(it => it.steps))}`);
+    }
+
     await new Promise(r => setTimeout(r, 800)); // fire-and-forget work (push, group line) finishes after the response
     return { steps, cleanup: f.cleanup, teacherPrefix: prefix, state: await fingerprint(i) };
   }

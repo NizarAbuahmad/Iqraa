@@ -6,6 +6,11 @@
  * at all is the server's decision (`modules/assessment/answerReview.ts`): a
  * closed exam, released results, and the teacher's «اعرض الإجابات». The
  * answers arrive as display text; this screen only lays them out.
+ *
+ * A parent opens the same screen for a child (since 2026-11-25), from «نتائج أبنائي»,
+ * with `child` (the child key) and `name`: the paper is read through
+ * `/parent/exams/:id/review`, the title names the child, and «إجابتك» becomes
+ * «الإجابة المُقدَّمة» — the parent did not sit it.
  */
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -15,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { getExamReview, type ExamReview, type ExamReviewItem } from '@/services/studentExam';
+import { firstParam } from '@/services/teacherSubmissions';
 import { questionText } from '@/services/evaluationQuestionText';
 import type { EvaluationQuestion } from '@/services/evaluations';
 import { isolateForeignRuns } from '@/services/mathRender';
@@ -42,19 +48,23 @@ export default function ExamReviewScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; child?: string; name?: string }>();
+  const id = firstParam(params.id);
+  // Present only when a parent opened it for a child.
+  const child = firstParam(params.child) || null;
+  const childName = firstParam(params.name) || '';
   const [review, setReview] = useState<ExamReview | null>(null);
   const [error, setError] = useState('');
 
   const load = () => {
     if (!id) return;
     setError('');
-    getExamReview(id)
+    getExamReview(id, child)
       .then(setReview)
       .catch(e => setError(apiErrorMessage(e, 'reviewLoadFailed', t)));
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(load, [id]);
+  useEffect(load, [id, child]);
 
   const title = review ? (lang === 'ar' ? review.titleAr || review.title : review.title || review.titleAr) : '';
 
@@ -63,7 +73,7 @@ export default function ExamReviewScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <BackButton color={colors.foreground} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title, textAlign: align }}>
-          {t('reviewTitle')}
+          {child ? t('reviewTitleChild', childName) : t('reviewTitle')}
         </Text>
         {title ? (
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 4, textAlign: align }}>
@@ -86,7 +96,7 @@ export default function ExamReviewScreen() {
           <ActivityIndicator color={ACCENT} style={{ marginTop: 40 }} />
         ) : (
           review.items.map(item => (
-            <ReviewCard key={item.questionId} item={item} colors={colors} isRTL={isRTL} isAr={lang === 'ar'} t={t} />
+            <ReviewCard key={item.questionId} item={item} colors={colors} isRTL={isRTL} isAr={lang === 'ar'} parent={Boolean(child)} t={t} />
           ))
         )}
       </ScrollView>
@@ -95,12 +105,14 @@ export default function ExamReviewScreen() {
 }
 
 function ReviewCard({
-  item, colors, isRTL, isAr, t,
+  item, colors, isRTL, isAr, parent, t,
 }: {
   item: ExamReviewItem;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   isAr: boolean;
+  /** Read by a parent: the answer is the child's, not "yours". */
+  parent: boolean;
   t: ReturnType<typeof useLanguage>['t'];
 }) {
   const align = isRTL ? 'right' : 'left';
@@ -139,7 +151,7 @@ function ReviewCard({
         {text || '—'}
       </Text>
 
-      {item.type === 'read_aloud' ? null : row('reviewYourAnswer', item.yourAnswer, colors.foreground)}
+      {item.type === 'read_aloud' ? null : row(parent ? 'reviewGivenAnswer' : 'reviewYourAnswer', item.yourAnswer, colors.foreground)}
       {item.correctAnswer ? row('reviewCorrectAnswer', item.correctAnswer, palette.success) : null}
 
       {item.steps ? (

@@ -123,7 +123,13 @@ describe("studentExamRow", () => {
     assert.equal(rowOf(exam({ ...shown, paper: true }), sat, RESULT, NOW).review, false, "a paper exam has no questions");
     assert.equal(rowOf(exam(shown), sat, { ...RESULT, isProvisional: true }, NOW).review, false);
     assert.equal(rowOf(exam(shown), null, null, NOW).review, false, "never sat");
-    assert.equal(guardianExamRow(rowOf(exam(shown), sat, RESULT, NOW)).review, false, "the review route is the student's");
+    // Since 2026-11-25 a parent opens the same review (GET /parent/exams/:id/review), under the same rule.
+    assert.equal(guardianExamRow(rowOf(exam(shown), sat, RESULT, NOW)).review, true, "a parent sees the child's review");
+    assert.equal(
+      guardianExamRow(rowOf(exam({ ...shown, showSolutionsToStudent: false }), sat, RESULT, NOW)).review,
+      false,
+      "and never before the child can",
+    );
   });
 
   it("never hands out the link of a closed exam", () => {

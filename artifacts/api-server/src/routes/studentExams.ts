@@ -52,7 +52,7 @@ import { examVisibleTo } from "../modules/assessment/audience.ts";
 import { assignedStudentsByEvaluation } from "../lib/evaluationAudience.ts";
 import { guardianLinkedStudents, selfLinkedStudentIds } from "../lib/familyAccess.ts";
 import { paperExamIdsFromFlags } from "../modules/assessment/paperExam.ts";
-import { reviewItems, studentReviewReady, type ReviewQuestion } from "../modules/assessment/answerReview.ts";
+import { loadAnswerReview } from "../lib/answerReviewRead.ts";
 import { groupChildren } from "../modules/family/children.ts";
 import {
   guardianExamRow,
@@ -510,67 +510,12 @@ router.get("/student/exams/:evaluationId/review", async (req: AuthenticatedReque
       });
       return;
     }
-    const studentIds = await selfLinkedStudentIds(req.user!.id);
-    const evaluationId = req.params["evaluationId"] as string;
-    const notReady = () => {
+    const review = await loadAnswerReview(await selfLinkedStudentIds(req.user!.id), req.params["evaluationId"] as string);
+    if (!review) {
       res.status(404).json({ code: "no_review", error: "There is no answer review for this exam." });
-    };
-    if (studentIds.length === 0) {
-      notReady();
       return;
     }
-
-    const [row] = await db
-      .select({ attempt: attempts, evaluation: evaluations, result: attemptResults })
-      .from(attempts)
-      .innerJoin(evaluations, eq(evaluations.id, attempts.evaluationId))
-      .leftJoin(attemptResults, eq(attemptResults.attemptId, attempts.id))
-      .where(
-        and(
-          eq(attempts.evaluationId, evaluationId),
-          inArray(attempts.studentId, studentIds),
-          isNotNull(attempts.submittedAt),
-        ),
-      )
-      .limit(1);
-    if (
-      !row ||
-      !studentReviewReady({
-        status: row.evaluation.status,
-        released: row.evaluation.releaseResultsToStudent,
-        solutionsShown: row.evaluation.showSolutionsToStudent,
-        result: row.result ?? undefined,
-      })
-    ) {
-      notReady();
-      return;
-    }
-
-    const snapshot = (row.attempt.questionSnapshot as ReviewQuestion[]) ?? [];
-    const [answers, grades, live] = await Promise.all([
-      db.select().from(attemptAnswers).where(eq(attemptAnswers.attemptId, row.attempt.id)),
-      db.select().from(attemptQuestionGrades).where(eq(attemptQuestionGrades.attemptId, row.attempt.id)),
-      snapshot.length
-        ? db
-            .select({ id: evaluationQuestions.id, workedSteps: evaluationQuestions.workedSteps })
-            .from(evaluationQuestions)
-            .where(inArray(evaluationQuestions.id, snapshot.map(q => q.id)))
-        : Promise.resolve([]),
-    ]);
-
-    res.json({
-      evaluationId,
-      title: row.evaluation.title,
-      titleAr: row.evaluation.titleAr,
-      subjectId: row.evaluation.subjectId,
-      items: reviewItems({
-        snapshot,
-        answers,
-        grades,
-        stepsById: new Map(live.map(q => [q.id, q.workedSteps])),
-        isAr: row.evaluation.language !== "en",
-      }),
-    });
+    res.json(review);
   } catch (err) {
     logger.error({ err }, "student answer review failed");
     res.status(500).json({ error: "Failed to load the answer review" });
@@ -614,6 +559,42 @@ router.get("/parent/exams", async (req: AuthenticatedRequest, res) => {
   } catch (err) {
     logger.error({ err }, "parent exam list failed");
     res.status(500).json({ error: "Failed to load your children's exams" });
+  }
+});
+
+/**
+ * The child's «راجع إجاباتك», read by their parent: the same paper, built by the same
+ * loader under the same rule (`studentReviewReady`: closed, released, and the teacher
+ * turned the review on), so a parent sees it exactly when the child can.
+ *
+ * `child` is the `groupChildren` key «المدرسة» and the results screen pick a child by
+ * (the same as `/parent/homework/:id/done`); in the query string, like there. Only
+ * that child's roster rows are searched, so siblings in one class stay apart. A key
+ * that is not one of this account's children, a missing key, and a paper not ready
+ * are one 404.
+ */
+router.get("/parent/exams/:evaluationId/review", async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!studentAccountsEnabled()) {
+      res.status(403).json({
+        code: "student_accounts_disabled",
+        error: "Parent and student accounts are not available yet.",
+      });
+      return;
+    }
+    const childKey = typeof req.query["child"] === "string" ? req.query["child"] : "";
+    const child = childKey
+      ? groupChildren(await guardianLinkedStudents(req.user!.id)).find(c => c.key === childKey)
+      : undefined;
+    const review = child ? await loadAnswerReview(child.studentIds, req.params["evaluationId"] as string) : null;
+    if (!review) {
+      res.status(404).json({ code: "no_review", error: "There is no answer review for this exam." });
+      return;
+    }
+    res.json(review);
+  } catch (err) {
+    logger.error({ err }, "parent answer review failed");
+    res.status(500).json({ error: "Failed to load the answer review" });
   }
 });
 
