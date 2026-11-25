@@ -17,6 +17,59 @@ Docs only. «Admin users list: filter by channel (web / app) and by new or retur
 after the `production` OTA of 2026-11-05 (Mobile OTA update run 41992984527, commit 705b18e), the admin
 reported on their own Android phone that «هذا الشهر» shows in full and the «انضم عبر» and «المستخدمون» filter
 rows work. That entry is updated to say so. **Verified:** by that report only; no device was driven from here.
+## The whiteboard takes typed text — 2026-11-25
+
+The follow-up the previous entry named («no text tool»). A teacher can now put words on the page.
+
+- **Tool.** A «نص» button beside the pen and eraser (`BoardTool` in `BoardToolbar.tsx`: `'pen' | 'erase' | 'text'`,
+  replacing the erase flag). With it on, tapping empty page opens a dialog (`TextDialog.tsx`); tapping a text edits it
+  (change the words, or delete it there). The colour is the pen's; the three line-width dots become three text sizes
+  (`TEXT_SIZES` 40 / 56 / 84 canvas units, `textSizeFor`). With the eraser on, a tap on a text removes it. With the pen
+  on the layer lets every touch through to the ink.
+- **The dialog is a `<Modal>`, not typing in place** (a change from the design as first described): a phone keyboard
+  would cover the spot and the page would have to resize under the teacher's finger, and the repo's rule for an input
+  in a Modal (`KeyboardSafeView` inside it) already covers this. The text appears on the page when it is added.
+- **Model** (`services/whiteboardModel.ts`). `TextItem = { x, y, size, color, rtl, text }` in canvas units of the
+  1280×720 page; `y` is the top of the first line and `x` the START edge of every line (left for English, right for
+  Arabic, `rtl` read from the first letter), so a line needs no measuring on the screen or in the PDF. `BoardState`
+  gains `texts`, and `past` / `future` hold `{ strokes, texts }` snapshots, so ONE undo history covers ink and text
+  (a stroke after an undo still drops redo). `hasInk` counts texts, so clear, the leave prompt and export see a board
+  of only text. Limits: 100 texts a page, 400 characters, 8 lines (`cleanText` enforces them and drops control and
+  bidi-override characters). Nothing wraps: a line breaks where it was typed and is clipped at the page edge.
+- **File format v3** (`services/boardFile.ts`). `pages[].texts`, written only for a board that has text; a board
+  with a solution and no text stays version 2 and one with neither stays 1, as before, so an app that predates this
+  still opens them. The file is untrusted, so each text is rebuilt field by field and refused whole for a number off
+  the page or outside the size range, a colour that is not plain hex, text that is empty, too long, too many lines or
+  carries a control / bidi-override character, `texts` in a file below version 3, or a total past the 2 MB cap (texts
+  count). **An app or tab that has not updated refuses a version-3 board** (it knows only 1 and 2). `whiteboard.tsx`
+  used to record `formState.boardVersion` from `BOARD_FILE_VERSION`; it now uses `boardFileVersionOf(doc)`, or a
+  solution-only board would have been recorded as 3.
+- **PDF** (`boardExportHtml.ts` `textsSVG`). One SVG `<text>` per line, over the ink, each hung from its item's start
+  edge. `text-anchor` is always `start`: for a right-to-left line the start is the right edge, and `end` (what the first
+  version used, and its unit test pinned) hung the Arabic line's LEFT edge from `x` and ran it off the page. Rendering
+  the export in Chromium found it; a string test could not. Arabic lines isolate foreign runs like the solution does.
+- **Usage.** `whiteboard_text_added {size, rtl}` (never the words) and `withText` on `whiteboard_saved`.
+  «ما الجديد» entry `whiteboard-text`; `howWhiteboard` mentions it.
+
+Verified: `boardText.test.ts` (direction, cleaning, add / edit / remove each one undo step, one history for ink and
+text, clear, the 100-text limit, version 3 written only with text, round trip, every refusal listed above, unknown keys
+dropped, the printed page's coordinates and escaping, screen wiring read from source, copy in both languages),
+`boardFile` / `boardExportHtml` / `whiteboardModel` / `classUsage` / `designScale` tests; `pnpm run typecheck`; mobile
+`pnpm test`. In Chromium against a local API and Postgres, with a new teacher account, on desktop: placing three texts
+(red 56, blue 84 Arabic with a Latin equation, green 40 over two lines); tap-to-edit with the words prefilled; a tap beside
+a text placing a new one; the pen drawing over a text; undo taking the stroke first and then texts, redo bringing them
+back; the eraser removing a text; Delete in the dialog; saving (stored as version 3, `boardVersion: 3`) and reopening
+with every text back; the 8-line hint. At 390 px in Arabic: the toolbar, the dialog (right-aligned, buttons in RTL
+order) and a text hung from the tapped spot. The printed page was rendered in Chromium from `buildBoardHTML` and
+compared with the screen: positions, the Arabic anchor, two lines and the clip at the page edge agree.
+
+Not verified: touch input and the on-screen keyboard on a real phone or Android; the app's own PDF share
+(`exportAsPDF`) end to end (the HTML it prints was rendered, not the share sheet); Arabic-Indic digits next to
+operators beyond one sample («س + ٥», which read correctly), a known trap on web (see CLAUDE.md); how an old app words
+the refusal of a version-3 board. Known limits: a text cannot be moved, resized or recoloured after it is placed (delete
+and retype); one font; a text near the right or bottom edge is clipped, not moved; the text is not searchable in the
+saved material list.
+
 ## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
 
 Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured
