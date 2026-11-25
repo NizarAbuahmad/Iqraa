@@ -1119,13 +1119,14 @@ export function buildOfflineActivity(req: AIRequest, variant = 0, probe?: Revisi
         : [];
 
   const subjectForKind = (kb ? getBookForLesson(kb)?.subjectId : undefined) ?? req.subject;
-  // Grades 1 to 3 are six- to eight-year-olds: each format has its own early-grade
+  // Grades 1 to 4 are six- to ten-year-olds: each format has its own early-grade
   // version (`activityFirstGrade.ts`), a unit or semester review included (its
   // composite lesson sits in a real unit, so the book still decides).
   const early = earlyGradeOf(kb, req.grade);
   const blueprint = early
     ? buildFirstGradeActivity(isActivityBlueprintId(actType) ? actType : 'group', {
       topic, lang, kb, practice, duration, variant, revision: !!rev, grade: early,
+      subjectId: (kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined,
       kind: lessonKindFor((kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined),
     })
     : buildActivityBlueprint(actType, {
@@ -1391,7 +1392,7 @@ export class MockAIService extends AIService {
     // modelling step, its objectives when it states them.
     const earlyDoc = docs.present ? earlyGradeOf(null, req.grade) : null;
     if (earlyDoc) {
-      const g1 = firstGradePlan({ topic, kb: null, lang, kind, style, duration: dur, variant, customObjectives: req.objectives, grade: earlyDoc });
+      const g1 = firstGradePlan({ topic, kb: null, lang, kind, style, duration: dur, variant, customObjectives: req.objectives, grade: earlyDoc, subjectId });
       const ar = lang === 'ar';
       return {
         title: ar ? `${topic} – خطة درس` : `${topic} – Lesson Plan`,
@@ -1469,10 +1470,10 @@ export class MockAIService extends AIService {
     // Grade 1 is six-year-olds learning to read: a plan of its own, every field
     // of it, instead of the paragraph-and-exit-ticket plan below (see
     // `lessonPlanFirstGrade.ts`).
-    // Grades 2 and 3 use the same plans, each with its own content and writing (`EarlyGrade`).
+    // Grades 2 to 4 use the same plans, each with its own content and writing (`EarlyGrade`).
     const earlyPlan = earlyGradeOf(kb, req.grade);
     if (earlyPlan) {
-      const g1 = firstGradePlan({ topic, kb, lang, kind, style, duration: dur, variant, customObjectives: req.objectives, grade: earlyPlan });
+      const g1 = firstGradePlan({ topic, kb, lang, kind, style, duration: dur, variant, customObjectives: req.objectives, grade: earlyPlan, subjectId: (kb ? getBookForLesson(kb)?.subjectId : subjectIdFromName(req.subject)) ?? undefined });
       return {
         title: lang === 'ar' ? `${topic} – خطة درس` : `${topic} – Lesson Plan`,
         grade: req.grade, subject: req.subject, duration: dur,

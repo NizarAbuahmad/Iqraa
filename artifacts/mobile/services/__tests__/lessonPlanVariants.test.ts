@@ -37,13 +37,13 @@ import { FIRST_PERSON, imperativesIn, norm } from './teacherVoiceCheck.ts';
 const FIVE = ['mainActivity', 'guidedPractice', 'independentPractice', 'assessment', 'differentiation'] as const;
 const LANGS = ['ar', 'en'] as const;
 
-/** One lesson per subject, so every `LessonKind` is covered — from Grade 4 up: Grades 1–3 have the early-grade plans. */
+/** One lesson per subject, so every `LessonKind` is covered — from Grade 5 up: Grades 1–4 have the early-grade plans. */
 const lessons = (() => {
   const seen = new Set<string>();
   const out: Array<{ subjectId: string; gradeId: string; id: string; title: string; titleEn: string }> = [];
   for (const l of KB_LESSONS) {
     const b = getBookForLesson(l);
-    if (!b || seen.has(b.subjectId) || /^grade-[123]$/.test(b.gradeId)) continue;
+    if (!b || seen.has(b.subjectId) || /^grade-[1234]$/.test(b.gradeId)) continue;
     seen.add(b.subjectId);
     out.push({ subjectId: b.subjectId, gradeId: b.gradeId, id: l.id, title: l.titleAr, titleEn: l.titleEn });
   }

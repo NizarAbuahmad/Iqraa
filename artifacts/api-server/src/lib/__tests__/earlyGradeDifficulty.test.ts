@@ -78,9 +78,9 @@ describe("the shared pool", () => {
     assert.notEqual(key("quiz", body(3, "الصف الثالث")), "a22afc1f5d84c4ae");
     assert.equal(key("quiz", body(10, "الصف العاشر", "kbl-math-s1-nccd-u1_l1")), "eec87dd251620286");
     assert.equal(key("worksheet", body(5, "الصف الخامس")), "66af46ac22a81d38");
-    // Grade 4: a Grade 3 plan has moved since, for the Grade 3 clause (`thirdGradePrompts.test.ts`).
-    const plan = { ...body(4, "الصف الرابع") } as Record<string, unknown>;
+    // Grade 5: Grade 3 and Grade 4 plans have moved since, for their own clauses (`thirdGradePrompts.test.ts`, `fourthGradePrompts.test.ts`).
+    const plan = { ...body(5, "الصف الخامس") } as Record<string, unknown>;
     delete plan.difficulty;
-    assert.equal(key("lesson-plan", plan), "d610a4100b2dfa1f", "a kind with no level wording keeps its key");
+    assert.equal(key("lesson-plan", plan), "3610bb4f1160b3f6", "a kind with no level wording keeps its key");
   });
 });

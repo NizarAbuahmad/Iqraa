@@ -34,7 +34,13 @@
  * Eight-year-olds read a short book text and write two or three sentences of their own; a
  * simple "why" answered in a sentence is fine, and a short prediction checked by looking.
  * It still rules out paragraphs, summaries, debates, written exit tickets and controlled
- * experiments with variables, and keeps a problem to two steps.
+ * experiments with variables, and keeps a problem to three steps (the difficulty wording's
+ * "hard" in `earlyGrade.ts`; the clause said two until 2026-11-25, which told a hard request both).
+ *
+ * **And Grade 4 (since 2026-11-25)** (`isFourthGrade`; «الصف الرابع الابتدائي» is the grade, but
+ * «الصف الرابع عشر» is not). Nine-year-olds write a short paragraph of three to five sentences;
+ * the clause allows that and still rules out long essays, summaries, formal debates, defending a
+ * claim, written exit tickets and controlled experiments with several variables.
  */
 
 /**
@@ -64,6 +70,17 @@ function bareName(s: string): string {
 const FIRST_GRADE_NAMES = new Set(["الصف الأول", "الأول", "grade 1", "first grade", "1"]);
 const SECOND_GRADE_NAMES = new Set(["الصف الثاني", "الثاني", "grade 2", "second grade", "2"]);
 const THIRD_GRADE_NAMES = new Set(["الصف الثالث", "الثالث", "grade 3", "third grade", "3"]);
+const FOURTH_GRADE_NAMES = new Set(["الصف الرابع", "الرابع", "grade 4", "fourth grade", "4"]);
+
+/** A Grade 4 request, by the same fields and rules as `isFirstGrade`. */
+export function isFourthGrade(b: GradeFields): boolean {
+  const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+  if (/^kbl-g4-/.test(str(b.lessonId)) || /^kbu-g4-/.test(str(b.unitId))) return true;
+  if (str(b.gradeId) === "grade-4") return true;
+  if (b.grade === 4) return true;
+  const name = str(b.grade);
+  return name !== "" && FOURTH_GRADE_NAMES.has(bareName(name));
+}
 
 /** A Grade 3 request, by the same fields and rules as `isFirstGrade`. */
 export function isThirdGrade(b: GradeFields): boolean {
@@ -259,7 +276,7 @@ const THIRD_BASE_AR: Record<FirstGradeUse, string> = {
   paper: `الصف الثالث (أطفال في الثامنة يقرؤون نصوصًا قصيرة):
 - كل سؤال جملة أو جملتان بكلمات مألوفة، يُجاب عنه بعدد أو كلمة أو اختيار أو صح/خطأ أو جملة أو جملتين.
 - «لماذا؟» يُجاب عنها بجملة واحدة؛ لا «حلّل» ولا «اكتب فقرة» ولا «لخّص»، ونص القراءة إن وُجد فقرة قصيرة وأسئلته عمّا فيه.
-- المسألة خطوتان على الأكثر بأعداد الدرس.
+- المسألة ثلاث خطوات على الأكثر بأعداد الدرس.
 - ما يحتاج صورة صِفه بالكلمات أو ارسمه برموز في نص السؤال، ولا تشر إلى «الصورة» أو «الشكل».
 - الإجابة النموذجية عدد أو كلمة أو جملة أو جملتان.`,
   activity: `الصف الثالث (أطفال في الثامنة يقرؤون نصوصًا قصيرة ويكتبون جملتين أو ثلاثًا):
@@ -269,11 +286,11 @@ const THIRD_BASE_AR: Record<FirstGradeUse, string> = {
   classroom: `الصف الثالث (أطفال في الثامنة يقرؤون نصوصًا قصيرة):
 - ما على الشريحة جمل قصيرة، وكل سؤال جملة أو جملتان بكلمات مألوفة.
 - يجيب الطلبة معًا برفع الإبهام أو بصوت واحد أو بعدد أو كلمة أو جملة قصيرة يكتبونها على ألواحهم.
-- لا «اشرح بكلماتك» ولا «علّل» كتابةً، والمسألة خطوتان على الأكثر.`,
+- لا «اشرح بكلماتك» ولا «علّل» كتابةً، والمسألة ثلاث خطوات على الأكثر.`,
   explain: `الصف الثالث (أطفال في الثامنة يقرؤون نصوصًا قصيرة):
 - كل ما يُعرض جمل قصيرة (عشر كلمات أو أقل) بكلمات يعرفها الطفل، وفكرة واحدة في كل شريحة.
 - الشرح بأمثلة من حياة الطفل ونماذج ورسوم (مصفوفة، خط أعداد، شكل)، لا تعريفات مجرّدة.
-- المثال المحلول والتدريب خطوتان على الأكثر بأعداد الدرس وكلماته، والحلّ الخاطئ فيه خطأ واحد بسيط.`,
+- المثال المحلول والتدريب ثلاث خطوات على الأكثر بأعداد الدرس وكلماته، والحلّ الخاطئ فيه خطأ واحد بسيط.`,
   visual: `الصف الثالث (أطفال في الثامنة يقرؤون نصوصًا قصيرة):
 - كلمات قليلة في كل شريحة أو قسم (عشر كلمات أو أقل في السطر)، وصورة أو رسم يوضّح الفكرة.
 - فكرة واحدة في كل شريحة أو قسم؛ لا فقرات ولا مصطلحات صعبة غير مصطلحات الدرس.`,
@@ -288,7 +305,7 @@ const THIRD_BASE_EN: Record<FirstGradeUse, string> = {
   paper: `Grade 3 (eight-year-olds who read short texts):
 - Every question is one or two sentences in familiar words, answered with a number, a word, a choice, True/False, or one or two sentences.
 - "Why?" is answered in one sentence; no "analyse", "write a paragraph" or "summarise"; a reading text, if any, is a short paragraph and its questions ask what it says.
-- A problem is two steps at most, with the lesson's numbers.
+- A problem is three steps at most, with the lesson's numbers.
 - Anything that needs a picture is described in words or drawn with symbols in the question text; never refer to "the picture" or "the figure".
 - The model answer is a number, a word, or one or two sentences.`,
   activity: `Grade 3 (eight-year-olds who read short texts and write two or three sentences):
@@ -298,11 +315,11 @@ const THIRD_BASE_EN: Record<FirstGradeUse, string> = {
   classroom: `Grade 3 (eight-year-olds who read short texts):
 - A slide holds short sentences, and every question is one or two sentences in familiar words.
 - The children answer together with thumbs, in one voice, or with a number, word or short sentence on their boards.
-- No "explain in your own words" or written "justify"; a problem is two steps at most.`,
+- No "explain in your own words" or written "justify"; a problem is three steps at most.`,
   explain: `Grade 3 (eight-year-olds who read short texts):
 - Everything shown is a short sentence (ten words or fewer) in words a child knows, one idea per slide.
 - Explain with examples from the child's life and with models and drawings (an array, a number line, a shape), not abstract definitions.
-- The worked example and the practice are two steps at most with the lesson's numbers and words; the mistake has one simple error.`,
+- The worked example and the practice are three steps at most with the lesson's numbers and words; the mistake has one simple error.`,
   visual: `Grade 3 (eight-year-olds who read short texts):
 - Few words on each slide or section (ten words or fewer per line), and a picture or drawing that shows the idea.
 - One idea per slide or section; no paragraphs or hard terms beyond the lesson's own.`,
@@ -318,6 +335,79 @@ const THIRD_SUBJECT_EN: Record<"arabic" | "english" | "mathematics", string> = {
   arabic: `- Grade 3 Arabic runs in the book's strands «أستمع», «أتحدث», «أقرأ», «أكتب» and «أبني لغتي»: an «أقرأ» lesson is a short text from the book (its title in brackets) the children read aloud and answer questions on in sentences; an «أكتب» lesson is a spelling rule or punctuation mark (in brackets) the child uses to write words and two sentences; «أبني لغتي» is a language pattern for building sentences. No literary analysis of the text, no long paragraphs.`,
   english: `- Grade 3 English: the lesson's words and short structures, with pictures and songs; a child reads words and short sentences and writes a word or a short sentence on the lesson's pattern — never a paragraph.`,
   mathematics: `- Grade 3 mathematics: numbers within the lesson's range (never above 9999), adding and subtracting within four places, multiplication and division facts to 10, multiplying and dividing a two- or three-digit number by a one-digit number when the lesson teaches it, and simple fractions (part of a whole or of a set); no decimals or negative numbers.`,
+};
+
+const FOURTH_OVERRIDE_AR = "هذا البند خاص بالصف الرابع، وهو يحلّ محلّ أي مطلب أعلاه لا يناسب طفلًا في التاسعة (مقال طويل، تلخيص درس كامل، مناظرة رسمية أو دفاع عن ادّعاء، تجربة مضبوطة بمتغيرات متعددة، بطاقة خروج مكتوبة، رهان على النقاط)؛ ويبقى ما سواه.";
+const FOURTH_OVERRIDE_EN = "This section is for Grade 4 and replaces anything above that does not fit a nine-year-old (a long essay, summarising a whole lesson, a formal debate or defending a claim, a controlled experiment with several variables, a written exit ticket, betting points); everything else above still applies.";
+
+const FOURTH_BASE_AR: Record<FirstGradeUse, string> = {
+  plan: `الصف الرابع (أطفال في التاسعة يقرؤون نصوصًا ويكتبون فقرة قصيرة):
+- نشاطات قصيرة (7-10 دقائق) يبدأ فيها المعلم بنموذج، ثم يعمل الطلبة معًا، ثم وحدهم؛ بأدوات محسوسة وصور ورسوم وألعاب حيث تفيد، وكلام المعلم جمل واضحة.
+- القراءة نص من الكتاب يقرؤه الطلبة جهرًا ويجيبون عن أسئلته بجمل كاملة، والكتابة فقرة قصيرة من ثلاث إلى خمس جمل من إنتاج الطفل؛ لا مقالات طويلة ولا تلخيص درس كامل ولا بطاقة خروج مكتوبة.
+- سؤال «لماذا؟» يُجاب عنه بجملة أو جملتين تبدأ بـ«لأنّ…»، والتوقع ثم الملاحظة ثم المقارنة بين ما توقّعه الطفل وما رآه مناسبة؛ لا مناظرة رسمية ولا دفاع عن ادّعاء ولا تجربة مضبوطة بمتغيرات متعددة.
+- التقييم ملاحظة المعلم وسؤاله الشفوي وما يحلّه الطفل أو يكتبه في دفتره، والواجب البيتي قصير (أربعة أمثلة أو فقرة قصيرة)، لا صفحات كتابة.`,
+  paper: `الصف الرابع (أطفال في التاسعة يقرؤون نصوصًا):
+- كل سؤال جملة أو جملتان بكلمات مألوفة، يُجاب عنه بعدد أو كلمة أو اختيار أو صح/خطأ أو جملة أو جملتين.
+- «لماذا؟» يُجاب عنها بجملة أو جملتين؛ لا «حلّل» ولا «اكتب مقالًا» ولا «لخّص الدرس»، ونص القراءة إن وُجد فقرة قصيرة وأسئلته عمّا فيه.
+- المسألة ثلاث خطوات على الأكثر بأعداد الدرس.
+- ما يحتاج صورة صِفه بالكلمات أو ارسمه برموز في نص السؤال، ولا تشر إلى «الصورة» أو «الشكل».
+- الإجابة النموذجية عدد أو كلمة أو جملة أو جملتان.`,
+  activity: `الصف الرابع (أطفال في التاسعة يقرؤون نصوصًا ويكتبون فقرة قصيرة):
+- خطوات قصيرة يقودها المعلم بنموذج: أدوات محسوسة وصور وبطاقات وحركة وألعاب، وتعليمات المعلم جمل واضحة.
+- يقرأ الطفل نصًا قصيرًا ويكتب فقرة قصيرة من ثلاث إلى خمس جمل على الأكثر؛ لا مقالات ولا أوراق عمل طويلة ولا تلخيص درس كامل ولا مناظرة رسمية ولا رهان على النقاط.
+- التقييم ملاحظة المعلم وسؤاله الشفوي وما يكتبه الطفل على لوحه أو في دفتره.`,
+  classroom: `الصف الرابع (أطفال في التاسعة يقرؤون نصوصًا):
+- ما على الشريحة جمل قصيرة، وكل سؤال جملة أو جملتان بكلمات مألوفة.
+- يجيب الطلبة معًا برفع الإبهام أو بصوت واحد أو بعدد أو كلمة أو جملة قصيرة يكتبونها على ألواحهم.
+- لا «اشرح بكلماتك» ولا «علّل» كتابةً، والمسألة ثلاث خطوات على الأكثر.`,
+  explain: `الصف الرابع (أطفال في التاسعة يقرؤون نصوصًا):
+- كل ما يُعرض جمل قصيرة (اثنتا عشرة كلمة أو أقل) بكلمات يعرفها الطفل، وفكرة واحدة في كل شريحة.
+- الشرح بأمثلة من حياة الطفل ونماذج ورسوم (مصفوفة، خط أعداد، شكل، جدول بسيط)، لا تعريفات مجرّدة.
+- المثال المحلول والتدريب ثلاث خطوات على الأكثر بأعداد الدرس وكلماته، والحلّ الخاطئ فيه خطأ واحد بسيط.`,
+  visual: `الصف الرابع (أطفال في التاسعة يقرؤون نصوصًا):
+- كلمات قليلة في كل شريحة أو قسم (اثنتا عشرة كلمة أو أقل في السطر)، وصورة أو رسم أو جدول بسيط يوضّح الفكرة.
+- فكرة واحدة في كل شريحة أو قسم؛ لا فقرات طويلة ولا مصطلحات صعبة غير مصطلحات الدرس.`,
+};
+
+const FOURTH_BASE_EN: Record<FirstGradeUse, string> = {
+  plan: `Grade 4 (nine-year-olds who read texts and write a short paragraph):
+- Short activities (7–10 minutes): the teacher models, the children work together, then alone; concrete materials, pictures, drawings and games where they help, and the teacher speaks in clear sentences.
+- Reading is a text from the book the children read aloud and answer questions on in full sentences; writing is a short paragraph of three to five sentences of the child's own. No long essays, no summarising a whole lesson, no written exit tickets.
+- "Why?" is answered in a sentence or two starting "Because…", and predicting, observing and then comparing what was predicted with what was seen is fine; no formal debates, defending a claim or controlled experiments with several variables.
+- Assessment is the teacher watching, asking aloud and reading what a child solves or writes in the notebook; homework is short (four examples, or a short paragraph), not pages of writing.`,
+  paper: `Grade 4 (nine-year-olds who read texts):
+- Every question is one or two sentences in familiar words, answered with a number, a word, a choice, True/False, or one or two sentences.
+- "Why?" is answered in a sentence or two; no "analyse", "write an essay" or "summarise the lesson"; a reading text, if any, is a short paragraph and its questions ask what it says.
+- A problem is three steps at most, with the lesson's numbers.
+- Anything that needs a picture is described in words or drawn with symbols in the question text; never refer to "the picture" or "the figure".
+- The model answer is a number, a word, or one or two sentences.`,
+  activity: `Grade 4 (nine-year-olds who read texts and write a short paragraph):
+- Short steps the teacher leads with a model: concrete materials, pictures, cards, movement and games; the teacher gives instructions in clear sentences.
+- A child reads a short text and writes a short paragraph of three to five sentences at most; no essays, long worksheets, summarising a whole lesson, formal debates or betting points.
+- Assessment is the teacher's observation, spoken questions and what a child writes on a board or in the notebook.`,
+  classroom: `Grade 4 (nine-year-olds who read texts):
+- A slide holds short sentences, and every question is one or two sentences in familiar words.
+- The children answer together with thumbs, in one voice, or with a number, word or short sentence on their boards.
+- No "explain in your own words" or written "justify"; a problem is three steps at most.`,
+  explain: `Grade 4 (nine-year-olds who read texts):
+- Everything shown is a short sentence (twelve words or fewer) in words a child knows, one idea per slide.
+- Explain with examples from the child's life and with models and drawings (an array, a number line, a shape, a simple table), not abstract definitions.
+- The worked example and the practice are three steps at most with the lesson's numbers and words; the mistake has one simple error.`,
+  visual: `Grade 4 (nine-year-olds who read texts):
+- Few words on each slide or section (twelve words or fewer per line), and a picture, drawing or simple table that shows the idea.
+- One idea per slide or section; no long paragraphs or hard terms beyond the lesson's own.`,
+};
+
+const FOURTH_SUBJECT_AR: Record<"arabic" | "english" | "mathematics", string> = {
+  arabic: `- اللغة العربية في الصف الرابع مقسّمة إلى «أستمع» و«أتحدث» و«أقرأ» و«أكتب» و«أبني لغتي»: درس «أقرأ» نص من الكتاب (عنوانه بين القوسين) يقرؤه الطلبة جهرًا ويجيبون عن أسئلته بجمل كاملة، ودرس «أكتب» قاعدة إملائية أو علامة ترقيم (بين القوسين) يكتب بها الطفل كلمات وفقرة قصيرة، و«أبني لغتي» نمط لغوي تُبنى عليه جمل. لا تحليل أدبي للنص ولا مقالات طويلة.`,
+  english: `- اللغة الإنجليزية في الصف الرابع: مفردات الدرس وتراكيبه مع الصور والأناشيد؛ يقرأ الطفل جملًا وفقرة قصيرة ويكتب جملة أو جملتين على نمط الدرس، لا مقالًا.`,
+  mathematics: `- الرياضيات في الصف الرابع: أعداد ضمن مدى الدرس (حتى ست منازل ولا تتجاوز 999999)، وجمع وطرح ضمن مدى الدرس، وضرب عدد من منزلتين أو ثلاث في عدد من منزلة أو منزلتين، وقسمة عدد على عدد من منزلة واحدة (مع باقٍ أحيانًا)، وكسور بسيطة وأعداد كسرية وكسور عشرية بسيطة (أعشار ومئات) حين يدرسها الدرس؛ بلا أعداد سالبة.`,
+};
+
+const FOURTH_SUBJECT_EN: Record<"arabic" | "english" | "mathematics", string> = {
+  arabic: `- Grade 4 Arabic runs in the book's strands «أستمع», «أتحدث», «أقرأ», «أكتب» and «أبني لغتي»: an «أقرأ» lesson is a text from the book (its title in brackets) the children read aloud and answer questions on in full sentences; an «أكتب» lesson is a spelling rule or punctuation mark (in brackets) the child uses to write words and a short paragraph; «أبني لغتي» is a language pattern for building sentences. No literary analysis of the text, no long essays.`,
+  english: `- Grade 4 English: the lesson's words and structures, with pictures and songs; a child reads sentences and a short paragraph and writes a sentence or two on the lesson's pattern — never an essay.`,
+  mathematics: `- Grade 4 mathematics: numbers within the lesson's range (up to six digits, never above 999,999), adding and subtracting within the lesson's range, multiplying a two- or three-digit number by a one- or two-digit number, dividing by a one-digit number (sometimes with a remainder), and simple fractions, mixed numbers and simple decimals (tenths and hundredths) when the lesson teaches them; no negative numbers.`,
 };
 
 /** An activity's format, as the prompt reads it (`activityFormatKey` in prompts.ts). */
@@ -341,20 +431,22 @@ const groupLineEn = (b: GradeFields) => (GROUPED.has(activityFormat(b)) ? "\n- S
  */
 type ClauseOptions = { ifLesson?: boolean };
 
-/** Which early grade a request is for: 1, 2, 3, or null for any other. */
-export function clauseGradeOf(b: GradeFields): 1 | 2 | 3 | null {
-  return isFirstGrade(b) ? 1 : isSecondGrade(b) ? 2 : isThirdGrade(b) ? 3 : null;
+/** Which early grade a request is for: 1 to 4, or null for any other. */
+export function clauseGradeOf(b: GradeFields): 1 | 2 | 3 | 4 | null {
+  return isFirstGrade(b) ? 1 : isSecondGrade(b) ? 2 : isThirdGrade(b) ? 3 : isFourthGrade(b) ? 4 : null;
 }
 
 const CLAUSE_AR = {
   1: [BASE_AR, SUBJECT_AR, OVERRIDE_AR],
   2: [SECOND_BASE_AR, SECOND_SUBJECT_AR, SECOND_OVERRIDE_AR],
   3: [THIRD_BASE_AR, THIRD_SUBJECT_AR, THIRD_OVERRIDE_AR],
+  4: [FOURTH_BASE_AR, FOURTH_SUBJECT_AR, FOURTH_OVERRIDE_AR],
 } as const;
 const CLAUSE_EN = {
   1: [BASE_EN, SUBJECT_EN, OVERRIDE_EN],
   2: [SECOND_BASE_EN, SECOND_SUBJECT_EN, SECOND_OVERRIDE_EN],
   3: [THIRD_BASE_EN, THIRD_SUBJECT_EN, THIRD_OVERRIDE_EN],
+  4: [FOURTH_BASE_EN, FOURTH_SUBJECT_EN, FOURTH_OVERRIDE_EN],
 } as const;
 
 export function firstGradeClauseAr(b: GradeFields, use: FirstGradeUse, opts: ClauseOptions = {}): string {

@@ -25,7 +25,7 @@ const G3_ARABIC = {
   lessonId: "kbl-g3-arabic-s1-nccd-u1_l3", numQuestions: 6, questionTypes: ["multiple_choice", "true_false"],
 };
 const G3_MATH_EN = { grade: "Grade 3", subject: "Mathematics", topic: "Multiplying by 4", numQuestions: 6, questionTypes: ["multiple_choice"] };
-const G4 = { ...G3_ARABIC, grade: "الصف الرابع", lessonId: "kbl-g4-arabic-s1-nccd-u1_l3" };
+const G5 = { ...G3_ARABIC, grade: "الصف الخامس", lessonId: "kbl-g5-arabic-s1-nccd-u1_l3" };
 
 const MARK_AR = "هذا البند خاص بالصف الثالث";
 const MARK_EN = "This section is for Grade 3";
@@ -68,8 +68,8 @@ describe("the Grade 3 clause reaches every prompt the Grade 1 and 2 clauses reac
 
   it("and for no other grade", () => {
     for (const [name, build] of builders) {
-      const p = build(G4);
-      assert.ok(!p.includes(MARK_AR) && !p.includes(MARK_EN), `${name}: Grade 4 got the Grade 3 clause`);
+      const p = build(G5);
+      assert.ok(!p.includes(MARK_AR) && !p.includes(MARK_EN), `${name}: Grade 5 got the Grade 3 clause`);
     }
   });
 
@@ -86,14 +86,14 @@ describe("the Grade 3 clause reaches every prompt the Grade 1 and 2 clauses reac
     } as never).system;
     assert.ok(evaluation("grade-3").includes(MARK_EN));
     assert.ok(!evaluation("grade-3").includes("In this Grade 1 paper"), "the Grade 1 type notes stay Grade 1's");
-    assert.ok(!evaluation("grade-4").includes(MARK_EN));
+    assert.ok(!evaluation("grade-5").includes(MARK_EN));
   });
 });
 
 describe("the shared pool", () => {
   // Keys computed 2026-11-20 from the code before this change: a Grade 3 request of a clause
-  // kind moves, so nothing pooled under the grade-blind prompt is served to it; Grades 2 and 4
-  // keep their keys.
+  // kind moves, so nothing pooled under the grade-blind prompt is served to it; Grades 2 and 5
+  // keep their keys (Grade 3 moved again on 2026-11-25 with its step count, Grade 4 for its own clause).
   const key = (kind: string, b: Record<string, unknown>) => generationKeys(kind, "gpt-4o-mini", b).strictKey;
   const body = (g: number, grade: string) => ({ grade, subject: "Arabic", lessonId: `kbl-g${g}-arabic-s1-nccd-u1_l3`, topic: "x", language: "arabic" });
 
@@ -101,6 +101,6 @@ describe("the shared pool", () => {
     assert.notEqual(key("lesson-plan", body(3, "الصف الثالث")), "2f13e6fc41b7d901");
     assert.notEqual(key("lesson-teaching", body(3, "الصف الثالث")), "d42d6db1f67d66d4");
     assert.equal(key("lesson-plan", body(2, "الصف الثاني")), "bd3b0a7ebb0f1084");
-    assert.equal(key("lesson-plan", body(4, "الصف الرابع")), "ec321554d84be1cb");
+    assert.equal(key("lesson-plan", body(5, "الصف الخامس")), "560786a6b59e39b8");
   });
 });
