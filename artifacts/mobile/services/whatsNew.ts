@@ -41,11 +41,19 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
     id: 'exam-total-marks',
-    date: '2026-11-24',
+    date: '2026-11-25',
     roles: ['teacher'],
     titleKey: 'whatsNewExamTotalTitle',
     bodyKey: 'whatsNewExamTotalBody',
     route: '/evaluations',
+  },
+  {
+    id: 'whiteboard-text',
+    date: '2026-11-25',
+    roles: ['teacher'],
+    titleKey: 'whatsNewBoardTextTitle',
+    bodyKey: 'whatsNewBoardTextBody',
+    route: '/ai-tools/whiteboard',
   },
   {
     id: 'library-maths-sheets-g1-9',
