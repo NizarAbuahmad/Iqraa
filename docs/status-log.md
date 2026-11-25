@@ -51,6 +51,164 @@ Grade 5 images are links until someone ingests them (`fetch-external.ts`, writes
 `LabExternalCard` shows them with no code change.
 Type chips ignore the grade: Grade 5 offers «نموذج تفاعلي» and «قانون», which show the empty state.
 
+## The whiteboard takes typed text — 2026-11-25
+
+The follow-up the previous entry named («no text tool»). A teacher can now put words on the page.
+
+- **Tool.** A «نص» button beside the pen and eraser (`BoardTool` in `BoardToolbar.tsx`: `'pen' | 'erase' | 'text'`,
+  replacing the erase flag). With it on, tapping empty page opens a dialog (`TextDialog.tsx`); tapping a text edits it
+  (change the words, or delete it there). The colour is the pen's; the three line-width dots become three text sizes
+  (`TEXT_SIZES` 40 / 56 / 84 canvas units, `textSizeFor`). With the eraser on, a tap on a text removes it. With the pen
+  on the layer lets every touch through to the ink.
+- **The dialog is a `<Modal>`, not typing in place** (a change from the design as first described): a phone keyboard
+  would cover the spot and the page would have to resize under the teacher's finger, and the repo's rule for an input
+  in a Modal (`KeyboardSafeView` inside it) already covers this. The text appears on the page when it is added.
+- **Model** (`services/whiteboardModel.ts`). `TextItem = { x, y, size, color, rtl, text }` in canvas units of the
+  1280×720 page; `y` is the top of the first line and `x` the START edge of every line (left for English, right for
+  Arabic, `rtl` read from the first letter), so a line needs no measuring on the screen or in the PDF. `BoardState`
+  gains `texts`, and `past` / `future` hold `{ strokes, texts }` snapshots, so ONE undo history covers ink and text
+  (a stroke after an undo still drops redo). `hasInk` counts texts, so clear, the leave prompt and export see a board
+  of only text. Limits: 100 texts a page, 400 characters, 8 lines (`cleanText` enforces them and drops control and
+  bidi-override characters). Nothing wraps: a line breaks where it was typed and is clipped at the page edge.
+- **File format v3** (`services/boardFile.ts`). `pages[].texts`, written only for a board that has text; a board
+  with a solution and no text stays version 2 and one with neither stays 1, as before, so an app that predates this
+  still opens them. The file is untrusted, so each text is rebuilt field by field and refused whole for a number off
+  the page or outside the size range, a colour that is not plain hex, text that is empty, too long, too many lines or
+  carries a control / bidi-override character, `texts` in a file below version 3, or a total past the 2 MB cap (texts
+  count). **An app or tab that has not updated refuses a version-3 board** (it knows only 1 and 2). `whiteboard.tsx`
+  used to record `formState.boardVersion` from `BOARD_FILE_VERSION`; it now uses `boardFileVersionOf(doc)`, or a
+  solution-only board would have been recorded as 3.
+- **PDF** (`boardExportHtml.ts` `textsSVG`). One SVG `<text>` per line, over the ink, each hung from its item's start
+  edge. `text-anchor` is always `start`: for a right-to-left line the start is the right edge, and `end` (what the first
+  version used, and its unit test pinned) hung the Arabic line's LEFT edge from `x` and ran it off the page. Rendering
+  the export in Chromium found it; a string test could not. Arabic lines isolate foreign runs like the solution does.
+- **Usage.** `whiteboard_text_added {size, rtl}` (never the words) and `withText` on `whiteboard_saved`.
+  «ما الجديد» entry `whiteboard-text`; `howWhiteboard` mentions it.
+
+Verified: `boardText.test.ts` (direction, cleaning, add / edit / remove each one undo step, one history for ink and
+text, clear, the 100-text limit, version 3 written only with text, round trip, every refusal listed above, unknown keys
+dropped, the printed page's coordinates and escaping, screen wiring read from source, copy in both languages),
+`boardFile` / `boardExportHtml` / `whiteboardModel` / `classUsage` / `designScale` tests; `pnpm run typecheck`; mobile
+`pnpm test`. In Chromium against a local API and Postgres, with a new teacher account, on desktop: placing three texts
+(red 56, blue 84 Arabic with a Latin equation, green 40 over two lines); tap-to-edit with the words prefilled; a tap beside
+a text placing a new one; the pen drawing over a text; undo taking the stroke first and then texts, redo bringing them
+back; the eraser removing a text; Delete in the dialog; saving (stored as version 3, `boardVersion: 3`) and reopening
+with every text back; the 8-line hint. At 390 px in Arabic: the toolbar, the dialog (right-aligned, buttons in RTL
+order) and a text hung from the tapped spot. The printed page was rendered in Chromium from `buildBoardHTML` and
+compared with the screen: positions, the Arabic anchor, two lines and the clip at the page edge agree.
+
+Not verified: touch input and the on-screen keyboard on a real phone or Android; the app's own PDF share
+(`exportAsPDF`) end to end (the HTML it prints was rendered, not the share sheet); Arabic-Indic digits next to
+operators beyond one sample («س + ٥», which read correctly), a known trap on web (see CLAUDE.md); how an old app words
+the refusal of a version-3 board. Known limits: a text cannot be moved, resized or recoloured after it is placed (delete
+and retype); one font; a text near the right or bottom edge is clipped, not moved; the text is not searchable in the
+saved material list.
+
+## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
+
+Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured
+2026-11-20, staff uploads aside). This fills the maths shelves.
+
+**What changed.**
+- **432 ready-made sheets**, one per maths lesson in grades 1–9 less the 15 held back below
+  (`lib/curriculum/src/data/premade_worksheets.json`, 460 with Grade 10's 28). `scripts/build-premade-sheets.ts` now takes `--grade grade-1`…`grade-10`: Grades
+  1–9 read their lessons from the knowledge base, grade names come from the catalog, `_lab` lessons and lessons the
+  bank does not cover (`mathBankCovers`; none today) are skipped. Same generator as Grade 10 (`MockAIService`,
+  medium, 10 questions), keys recorded `'bank'`. The 3 Grade 9 GeoGebra labs get none.
+- **The build is reproducible.** It claimed to be deterministic and was not: the generator draws with `Math.random`, so
+  a rebuild changed every number on every sheet, and a sheet read by hand was not the sheet that shipped. Each draw is
+  now seeded by sheet id and draw number (`seedFor`); a lesson built alone or among 30 others comes out identical.
+- **A «which one» item kept its choices only in a multiple-choice slot.** A worksheet files bank items as short
+  answer at random, and `formatItem` dropped the options there, so «أيّ وحدة أنسب لقياس طول الكتاب؟» printed
+  keyed «مشبك الورق» with nothing to pick from. Nine templates across grades 1, 5, 6, 8 and 9 did it. `formatItem`
+  now keeps a pick's options in every slot (`lib/math-practice/src/picks.ts`: «أيّ» in front of what it points at,
+  or «أنسب», and the key not in the text). This also changes teachers' own offline worksheets. **Not fixed:** the
+  offline quiz's short-answer and fill-in makers (`makeQuizSA_*`, `makeQuizFB_*` in `generators.ts`) still drop
+  options, as they did before.
+- **A build gate** (`services/premadeSheetGate.ts`, the same rule) re-draws a sheet with an unanswerable pick, up to
+  8 times, then refuses the lesson. On the final build it refused nothing. A first, broader rule ("mentions «الآتي»
+  or «هذه»") refused good sheets such as «ما العدد التالي للعدد 49؟»; the tests pin those as passing.
+- «ما الجديد» entry `library-maths-sheets-g1-9` for teachers.
+
+**Verified.** `picksShowChoices.test.ts` sweeps every template in `TOPICS` at every tier into every typed slot, Arabic
+and English; `premadeSheetGate.test.ts`; `premadeSheets.test.ts` now asserts every grade 1–9 has ≥ 25 maths sheets,
+each filed under a KB lesson with that lesson's title, and that every one of the 475 sheets passes the gate with a
+key per question. `pnpm run typecheck`; math-practice 1,433 pass; api-server 2,999 pass; curriculum 930 of 931 —
+`r2.test.ts` fails identically on untouched `main` in this environment (it asserts R2 is *not* configured).
+
+**Hand review.** Three independent reviewers worked every one of the 4,464 questions (grades 1–3, 4–6, 7–9). No key
+was arithmetically wrong. What it found, and what was done:
+- **One incomplete key:** Grade 8 «حلّل: 9x² + 18x + 9» keyed «(3x + 3)²». At the hard tier `factor_special` drew
+  `m` and `a` apart, so m = a = 3 left a common factor (also «9x² − 36 → (3x − 6)(3x + 6)»). `a` is now coprime to
+  `m`; `algebra.test.ts` asserts no bracket keeps a common factor.
+- **Unanswerable picks the first rule missed:** «أيّ البيانات العددية الآتية…» (two words before «الآتية») and
+  «في أيّ مجموعة / صندوق نضع…» (groups never shown). `picks.ts` now covers both, so they keep their options.
+- **15 sheets held back** (`HELD_BACK` in the build script, with the evidence per lesson): the lesson's skill is
+  missing or 3+ of 10 questions are another lesson's or grade's — e.g. «الضرب في 6 و9» with no ×9, «القسمة مع وجود
+  أصفار في الناتج» with no zero in any quotient, thousandths in Grade 4, «تمييز متوازي الأضلاع» asking what one
+  condition makes a parallelogram. Each is a bank generator to fix, then a re-run with `--only`.
+- **Kept, keys correct, to fix in the bank later:** «أجب بعدد كسري» where the answer is not a mixed number (g6
+  u2_l2–l4); least common denominator of unsimplified fractions (g6 u2_l1); «قدّر ناتج 18 ÷ 2» where the fact is
+  exact (g3 u8_l2); «أقل عدد من الكرات يجب إخراجه» read as drawing blind (g3 u12_l5, g4 u10_l4); a missing leading
+  digit that cannot change divisibility by 4 (g5 u3_l1); «مستطيل» for squares; «قطعة بيتزا» for a whole pizza;
+  combinations in Grade 8 «عدّ النواتج» (check the book); open questions with one keyed form («الحادية عشرة إلا
+  ثلثًا», «في الظهر»).
+- **Not checked:** coordinates written «(8 ، 4)» with Latin digits in an RTL line may render reversed (g5 u5_l2,
+  u8_l6, g6 u4_l1–l3) — look at one printed sheet.
+
+**Second pass, on the sheets that ship.** The first pass read a draw that the next build replaced (the build was not
+yet seeded), so the 432 seeded sheets were read again in full: 4,314 keys, no arithmetic error. Six generators made
+questions right by formula and wrong as questions; each is fixed at the source and pinned in
+`lib/math-practice/src/__tests__/sheetReviewFindings.test.ts` (or `picksShowChoices.test.ts`):
+- «ما القيمة المنزلية للرقم 6 في العدد 64.36؟» — the digit occurs twice (`dec_place` now asks only about a digit that
+  occurs once, as the whole-number version already did);
+- a square pyramid with slant height 3 cm on an 11 cm base — slant height is now over half the side;
+- the angle-bisector item keyed DC = 48 for sides 6, 24, 60 — `bd` is now drawn so the triangle exists;
+- «نظّمها في فئات طول كل منها 5» never named the first class — it now says «أولاها 0–4»;
+- «ما العمل الذي يأتي بعد … مباشرة؟» had no list — it lists four, like its sibling;
+- «أيّ تمثيل يُظهر العدد 35…؟» printed no models — `picks.ts` covers «أيّ تمثيل / نموذج».
+The rebuild after those fixes (and after merging `main`, whose Grade 1–3 bank changes also moved some sheets) changed
+41 sheets; every other sheet is byte-identical to what was read. The 41 were read again in full: 410 keys, none
+wrong, nothing unanswerable, and each of the six fixes seen in the output.
+
+**Not done.**
+- **Other subjects, grades 1–8.** The only built-in source is the QR codes printed in the books
+  (`scripts/scan_book_qr.py --fetch`), and `nccd.gov.jo` resets connections from this cloud environment (checked
+  2026-11-20). It needs a machine in Jordan. The offline generator has templates, not questions, for non-maths
+  subjects, so it cannot fill them honestly.
+- Bundle size: the manifest is now ~2.5× its Grade 10 size and is imported statically. The web entry bundle was
+  ~21 MB before this; splitting the manifest per grade is a follow-up.
+
+
+## Grade 10: every page of every served range read — nothing foreign inside, two known cut-offs confirmed — 2026-11-21
+
+«Grade 10 audit…» (2026-11-13) looked at the first and last page of each range. This pass opened **all 2,006 images of
+the 346 served Grade 10 ranges** (six readers, one per group of subjects) for what that could not see: another lesson's
+pages, a unit opener, review, project, enrichment or glossary in the middle of a range. Printed page = PDF page in every
+book except English (PDF = printed + 2).
+
+**Result: no foreign page inside any range, in any subject.** Ranges start on the lesson's own opener and end on its own
+last page («مراجعة الدرس», «أقيّم تعلّمي», «أختبر معلوماتي», the closing exercises) in 336 of the 346; labs match their
+own pages; the re-pointed civic S1 ranges all show their own lesson. Honorifics on the Islamic pages (300 images) follow
+the right people everywhere. Nothing was changed. Since 2026-11-13 no Grade 10 page range or figure has changed
+(checked against the #1458 merge), and 25 lessons were added to the catalogs by «Grade 10 checked against its books, and
+corrected» — ten opening labs, maths u1_l5 and nine vocational S1 lessons — none with page images yet. All 37 maths
+lessons give offline questions; 111 sampled keys were read by hand, all right.
+
+**What it found, all already known:**
+- Cut by the 20-page cap, mid-lesson: digital S1 u1_l2, u1_l3, u1_l4 and S2 u4_l3; physics S1 u2_l1 (p56 unserved) and S2
+  u4_l2 (p38–41 unserved); civic S1 u2_l5 (75–79 of 75–82). The missing pages are in no image folder, so these need
+  re-rendering from the PDFs.
+- Start a page late: Arabic S1 u2_l2 (p38; its opener p37 is only in u2_l1's folder) and civic S2 u7_l1 (87–92; opener p86).
+- **Left on purpose:** chemistry S1 u2_l2 ends on p47, the full-page periodic table, after its own «مراجعة الدرس» (p46).
+  Review question 3 says «مستعينًا بالجدول الدوري», so the plate is the lesson's own reference, not another lesson's page.
+- Printed titles differ from the catalog only by a clause (Arabic S2 u9_l2 prints «أعبّرُ وأحاورُ»; Islamic S2 u1_l7 adds
+  «/الجيش العربي») — same lessons, not changed.
+
+**Not verified:** the pages beyond each range (not in the bucket); anything needing the PDFs; the pages on a phone.
+
+No «ما الجديد» entry: a record, not a change.
+
 ## Grade 3 review, the Grade 2 way: plans, activities, quick checks and live prompts for eight-year-olds — 2026-11-20
 
 The Grade 2 review (below, «Grade 2 review, the Grade 1 way… — 2026-11-15») repeated for Grade 3: 8 subjects, 254

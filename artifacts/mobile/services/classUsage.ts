@@ -20,6 +20,7 @@ export const CLASS_USAGE_EVENTS = [
   'whiteboard_solved',
   'whiteboard_saved',
   'whiteboard_exported',
+  'whiteboard_text_added',
   'classroom_activity_started',
   'class_pen_used',
 ] as const;
@@ -53,8 +54,13 @@ export function trackWhiteboardSolved(ok: boolean): void {
   trackEvent('whiteboard_solved', { ok });
 }
 
-export function trackWhiteboardSaved(p: { pages: number; first: boolean; withSolution: boolean }): void {
+export function trackWhiteboardSaved(p: { pages: number; first: boolean; withSolution: boolean; withText: boolean }): void {
   trackEvent('whiteboard_saved', p);
+}
+
+/** A text was placed: which of the three sizes and which direction — never what it says. */
+export function trackWhiteboardText(p: { size: 'small' | 'medium' | 'large'; rtl: boolean }): void {
+  trackEvent('whiteboard_text_added', p);
 }
 
 export function trackWhiteboardExported(pages: number): void {

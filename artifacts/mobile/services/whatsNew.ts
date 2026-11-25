@@ -41,11 +41,27 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
     id: 'lab-grades-and-media',
-    date: '2026-11-24',
+    date: '2026-11-25',
     roles: ['teacher', 'student'],
     titleKey: 'whatsNewLabGradesTitle',
     bodyKey: 'whatsNewLabGradesBody',
     route: '/curriculum/lab',
+  },
+  {
+    id: 'whiteboard-text',
+    date: '2026-11-25',
+    roles: ['teacher'],
+    titleKey: 'whatsNewBoardTextTitle',
+    bodyKey: 'whatsNewBoardTextBody',
+    route: '/ai-tools/whiteboard',
+  },
+  {
+    id: 'library-maths-sheets-g1-9',
+    date: '2026-11-24',
+    roles: ['teacher'],
+    titleKey: 'whatsNewLibraryMathsSheetsTitle',
+    bodyKey: 'whatsNewLibraryMathsSheetsBody',
+    route: '/curriculum/resources',
   },
   {
     id: 'g10-english-whole-track',
