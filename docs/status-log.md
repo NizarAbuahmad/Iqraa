@@ -10,6 +10,40 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+
+## A placed text can be moved, recoloured and resized — 2026-11-25
+
+The limit the text-tool entry named («cannot be moved, resized or recoloured after it is placed»).
+
+- **Move.** With the text tool on, drag a text: it follows the pointer (a little faded) and is dropped where it is let
+  go, as ONE undo step (`TextLayer.tsx`, `TextBox`). A touch that moves no more than 8 px is a tap, which still opens the
+  dialog. The new spot is clamped onto the page and rounded (`moveText`); an Arabic text moves by its right edge, as it
+  was placed. In erase mode a tap still removes a text; with the pen on the layer still lets every touch through.
+- **Colour and size** are chosen in the text dialog, for a new text and a placed one alike (seven colours, three sizes),
+  starting at the text's own or, for a new one, the toolbar's, and changing nothing outside that text.
+  `updateText(state, index, { text?, color?, size? })` applies any of them as one undo step; `editText` is now a
+  wrapper. A colour that is not plain hex is ignored (a bad one would make the board unsavable), a size is clamped into
+  the 8–240 range the file accepts, the direction is kept when only colour or size change, and emptying the words
+  removes the text. **The file format does not change**: a text already had `x`, `y`, `size` and `color`.
+- **A flaw found while testing it:** after editing a text, the dialog for a NEW text showed the old words for a frame,
+  because the dialog reset its words in an effect after it first painted. It now takes a fresh `key` for every text it
+  opens for (a `seq` on the draft in `whiteboard.tsx`) and has no effect at all; a test pins both.
+- No «ما الجديد» wording beyond the new entry `whiteboard-text-edit`. The dialog uses the theme's scales.
+
+Verified: `boardText.test.ts` (move: clamped, rounded, one undo step, no-ops; update: colour, size, words, direction
+kept, bad colour refused, size clamped, empty removes, only the asked-for text changes; the screen wiring read from
+source), the design-scale ratchet; `pnpm run typecheck`. In Chromium against a local API and Postgres, on desktop:
+dragging an English text by (+200, +120) moved it exactly that far with no dialog opening and it stayed after the drop;
+dragging an Arabic text left by 300 moved its right edge by 300; undo and redo of a move; a tap with no movement opening
+the dialog with the words; recolour to blue and size to large in one save (box 107×73 → 160×109), and ONE undo
+restoring both; the stored board had the new `x`, `y`, `size` and `color`; the new-text dialog opening empty after
+an edit (the flaw above, before and after).
+
+Not verified: dragging by touch on a real phone or Android (the same `PanResponder` the pen uses, but not tried), and
+a drag that starts on a text near the page edge. Known limits: a text can no longer be edited from the keyboard alone
+(it was a button; it is now a drag handle, and the tool is pointer-driven as a whole); there is no resize handle on the
+page, only the three sizes in the dialog; a text cannot be dragged off the page, only clamped at its edge.
+
 ## Admin users filters: confirmed on Android — 2026-11-24
 
 Docs only. «Admin users list: filter by channel (web / app) and by new or returning» (#1409) said its
