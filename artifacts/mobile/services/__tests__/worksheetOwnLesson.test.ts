@@ -17,7 +17,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { aiService } from '../ai/generators.ts';
+import { aiService, worksheetInstructions } from '../ai/generators.ts';
 import type { AIRequest, WorksheetOutput } from '../ai/AIService.ts';
 
 const G10 = { subject: 'الرياضيات', grade: 'الصف العاشر', language: 'arabic', difficulty: 'medium' } as const;
@@ -51,15 +51,20 @@ describe('«قانون الجيوب» fills its own paper', () => {
     }
   });
 
-  it('the instructions promise a half-solved question only when there is one', async () => {
-    // «جمع المتجهات وطرحها» has one solved item of its own: a worked example and no «مثال نكمله».
-    // By id: the title alone grounds to another grade's lesson of the same name.
-    const w = await aiService.generateWorksheet({
-      ...G10, topic: 'جمع المتجهات وطرحها', lessonId: 'kbl-math-s2-nccd-u7_l2', numQuestions: 6, questionTypes: ['short_answer'],
-    } as AIRequest);
-    assert.ok(w.workedExample, 'the lesson has a worked example');
-    assert.ok(!w.sections.some(s => s.title === 'مثال نكمله'));
-    assert.doesNotMatch(w.instructions, /أكمل الحل/);
+  it('the instructions promise a half-solved question only when there is one', () => {
+    // Every lesson with a worked example now has a second solved item, so no real
+    // paper prints an example without «مثال نكمله»; the wording is checked directly.
+    assert.match(worksheetInstructions('ar', 'د', true, true), /أكمل الحل في السؤال الأول/);
+    assert.doesNotMatch(worksheetInstructions('ar', 'د', true, false), /أكمل الحل/);
+    assert.match(worksheetInstructions('ar', 'د', true, false), /ادرس المثال المحلول أولًا/);
+    assert.doesNotMatch(worksheetInstructions('ar', 'د', false, false), /المثال المحلول/);
+    assert.doesNotMatch(worksheetInstructions('en', 't', true, false), /question 1/);
+  });
+
+  it('a generated paper carries the instructions for what it holds', async () => {
+    const w = await make('المعادلات الأسية', 8, ['short_answer']);
+    const half = w.sections.some(s => s.title === 'مثال نكمله');
+    assert.equal(w.instructions, worksheetInstructions('ar', 'المعادلات الأسية', Boolean(w.workedExample), half));
   });
 });
 

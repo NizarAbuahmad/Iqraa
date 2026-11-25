@@ -1309,6 +1309,29 @@ function makeWorksheetQ(type: QType, lang: Lang, topic: string, kb: KBLesson | n
  * example and every question, so regenerate is judged by those and not by the
  * order they come in or how their options are shuffled.
  */
+/**
+ * An offline worksheet's instructions. They name the worked example and the
+ * half-solved question only when the paper prints them: a lesson with one
+ * solved item gets the example and no «مثال نكمله», and the old line told its
+ * students to finish question 1 all the same (found in review, 2026-11-13).
+ */
+export function worksheetInstructions(lang: Lang, topic: string, hasExample: boolean, hasCompletion: boolean): string {
+  if (lang === 'ar') {
+    const study = hasExample
+      ? (hasCompletion
+        ? '• ادرس المثال المحلول أولًا، ثم أكمل الحل في السؤال الأول، ثم تابع بقية الأسئلة.\n'
+        : '• ادرس المثال المحلول أولًا، ثم تابع الأسئلة.\n')
+      : '';
+    return `مقدمة قصيرة: هذه ورقة تدريب صفية حول «${topic}». اعمل بهدوء، وابدأ بالأسهل ثم انتقل للأصعب.\n\n${study}• أجب في المساحات المخصصة.\n• بيّن خطوات الحل عند الحاجة.`;
+  }
+  const study = hasExample
+    ? (hasCompletion
+      ? '• Study the worked example first, then finish the solution in question 1, then carry on.\n'
+      : '• Study the worked example first, then carry on with the questions.\n')
+    : '';
+  return `Short intro: This is an in-class practice sheet on “${topic}”. Work quietly and move from easier to harder items.\n\n${study}• Write in the answer spaces provided.\n• Show working where needed.`;
+}
+
 function worksheetStems(w: WorksheetOutput): string[] {
   return [
     ...(w.workedExample ? [questionStemKey(w.workedExample.problem)] : []),
@@ -1898,9 +1921,7 @@ export class MockAIService extends AIService {
       title: lang === 'ar'
         ? `ورقة عمل صفية – ${topic}`
         : `In-class Worksheet – ${topic}`,
-      instructions: lang === 'ar'
-        ? `مقدمة قصيرة: هذه ورقة تدريب صفية حول «${topic}». اعمل بهدوء، وابدأ بالأسهل ثم انتقل للأصعب.\n\n${exampleItem ? (completionItem ? '• ادرس المثال المحلول أولًا، ثم أكمل الحل في السؤال الأول، ثم تابع بقية الأسئلة.\n' : '• ادرس المثال المحلول أولًا، ثم تابع الأسئلة.\n') : ''}• أجب في المساحات المخصصة.\n• بيّن خطوات الحل عند الحاجة.`
-        : `Short intro: This is an in-class practice sheet on “${topic}”. Work quietly and move from easier to harder items.\n\n${exampleItem ? (completionItem ? '• Study the worked example first, then finish the solution in question 1, then carry on.\n' : '• Study the worked example first, then carry on with the questions.\n') : ''}• Write in the answer spaces provided.\n• Show working where needed.`,
+      instructions: worksheetInstructions(lang, topic, Boolean(exampleItem), Boolean(completionItem)),
       ...(exampleItem
         ? {
             workedExample: {

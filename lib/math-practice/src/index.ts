@@ -707,6 +707,22 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'v-e2', family: 'vectors', diff: 'easy', eq: '⟨3,4⟩', answer: '|v| = 5', wrongs: ['7', '12', '1'], promptAr: 'أوجد مقدار المتجه ⟨3 ، 4⟩.', promptEn: 'Find the magnitude of ⟨3, 4⟩.' },
   { id: 'v-m1', family: 'vectors', diff: 'medium', eq: 'u=⟨1,2⟩, v=⟨3,−1⟩', answer: 'u+v = ⟨4 ، 1⟩', wrongs: ['⟨2 ، 1⟩', '⟨4 ، 3⟩', '⟨3 ، 2⟩'], promptAr: 'إذا كان u = ⟨1 ، 2⟩ و v = ⟨3 ، −1⟩، أوجد u + v.', promptEn: 'If u = ⟨1, 2⟩ and v = ⟨3, −1⟩, find u + v.' },
   { id: 'v-m2', family: 'vectors', diff: 'medium', eq: 'u=⟨2,3⟩, v=⟨4,−1⟩', answer: 'u·v = 5', wrongs: ['8', '−3', '7'], promptAr: 'أوجد الضرب القياسي ⟨2 ، 3⟩ · ⟨4 ، −1⟩.', promptEn: 'Find the dot product ⟨2, 3⟩ · ⟨4, −1⟩.' },
+  // «جمع المتجهات وطرحها» on its own: a sum and a difference, combinations with
+  // a scalar, the length of a sum (not the sum of the lengths), an unknown
+  // vector, the triangle rule from three points, and a boat crossing a river.
+  // `lessonFocus.test.ts` recomputes every key from the stem's numbers.
+  { id: 'va-e1', family: 'vectors', diff: 'easy', eq: 'u=⟨2,5⟩, v=⟨4,1⟩, u+v', answer: 'u+v = ⟨6 ، 6⟩', wrongs: ['⟨−2 ، 4⟩', '⟨8 ، 5⟩', '⟨6 ، 5⟩'], promptAr: 'إذا كان u = ⟨2 ، 5⟩ و v = ⟨4 ، 1⟩، فأوجد u + v.', promptEn: 'If u = ⟨2, 5⟩ and v = ⟨4, 1⟩, find u + v.' },
+  { id: 'va-e2', family: 'vectors', diff: 'easy', eq: 'u=⟨7,3⟩, v=⟨2,5⟩, u−v', answer: 'u−v = ⟨5 ، −2⟩', wrongs: ['⟨9 ، 8⟩', '⟨−5 ، 2⟩', '⟨5 ، 2⟩'], promptAr: 'إذا كان u = ⟨7 ، 3⟩ و v = ⟨2 ، 5⟩، فأوجد u − v.', promptEn: 'If u = ⟨7, 3⟩ and v = ⟨2, 5⟩, find u − v.' },
+  { id: 'va-m1', family: 'vectors', diff: 'medium', eq: 'u=⟨1,−2⟩, v=⟨3,4⟩, 2u+v', answer: '2u+v = ⟨5 ، 0⟩', wrongs: ['⟨4 ، 2⟩', '⟨7 ، 6⟩', '⟨8 ، 4⟩'], promptAr: 'إذا كان u = ⟨1 ، −2⟩ و v = ⟨3 ، 4⟩، فأوجد 2u + v.', promptEn: 'If u = ⟨1, −2⟩ and v = ⟨3, 4⟩, find 2u + v.' },
+  { id: 'va-m2', family: 'vectors', diff: 'medium', eq: 'u=⟨2,1⟩, v=⟨1,−3⟩, 3u−2v', answer: '3u−2v = ⟨4 ، 9⟩', wrongs: ['⟨4 ، −3⟩', '⟨8 ، −3⟩', '⟨1 ، 4⟩'], promptAr: 'إذا كان u = ⟨2 ، 1⟩ و v = ⟨1 ، −3⟩، فأوجد 3u − 2v.', promptEn: 'If u = ⟨2, 1⟩ and v = ⟨1, −3⟩, find 3u − 2v.' },
+  { id: 'va-m3', family: 'vectors', diff: 'medium', eq: 'u=⟨1,2⟩, v=⟨2,2⟩, |u+v|', answer: '|u+v| = 5', wrongs: ['7', '25', '√5 + 2√2'], promptAr: 'إذا كان u = ⟨1 ، 2⟩ و v = ⟨2 ، 2⟩، فأوجد مقدار المتجه u + v.', promptEn: 'If u = ⟨1, 2⟩ and v = ⟨2, 2⟩, find the magnitude of u + v.' },
+  { id: 'va-h1', family: 'vectors', diff: 'hard', eq: 'u=⟨3,−1⟩, v=⟨−2,4⟩, u+w=v', answer: 'w = ⟨−5 ، 5⟩', wrongs: ['⟨1 ، 3⟩', '⟨5 ، −5⟩', '⟨−5 ، 3⟩'], promptAr: 'إذا كان u = ⟨3 ، −1⟩ و v = ⟨−2 ، 4⟩، فأوجد المتجه w الذي يحقق u + w = v.', promptEn: 'If u = ⟨3, −1⟩ and v = ⟨−2, 4⟩, find the vector w with u + w = v.' },
+  { id: 'va-h2', family: 'vectors', diff: 'hard', eq: 'A(0,1), B(2,5), C(6,4), AB+BC', answer: 'AB⃗ + BC⃗ = ⟨6 ، 3⟩', wrongs: ['⟨−2 ، 5⟩', '⟨2 ، 4⟩', '⟨8 ، 9⟩'], promptAr: 'النقاط A(0,1) و B(2,5) و C(6,4). أوجد AB⃗ + BC⃗، ثم قارنه بالمتجه AC⃗.', promptEn: 'Points A(0,1), B(2,5), C(6,4). Find AB + BC, then compare it with AC.' },
+  {
+    id: 'va-w1', family: 'vectors', diff: 'hard', eq: 'boat ⟨0,4⟩, current ⟨3,0⟩', answer: 'السرعة المحصلة = 5 كم/ساعة', wrongs: ['السرعة المحصلة = 7 كم/ساعة', 'السرعة المحصلة = 1 كم/ساعة', 'السرعة المحصلة = 25 كم/ساعة'], kind: 'word', story: true,
+    wordAr: 'يعبر قارب نهرًا، وسرعته بالنسبة إلى الماء ⟨0 ، 4⟩ كم/ساعة عموديًا على الضفة، ويجري التيار بسرعة ⟨3 ، 0⟩ كم/ساعة. أوجد متجه السرعة المحصلة للقارب، ثم أوجد مقدارها.',
+    wordEn: 'A boat crosses a river at ⟨0, 4⟩ km/h relative to the water, straight across, while the current flows at ⟨3, 0⟩ km/h. Find the boat\'s resultant velocity vector, then its speed.',
+  },
   { id: 'v-h1', family: 'vectors', diff: 'hard', eq: 'u=⟨1,0⟩, v=⟨0,1⟩', answer: 'متعامدان (الضرب القياسي = 0)', wrongs: ['متوازيان', 'نفس الاتجاه', 'غير معرّف'], promptAr: 'هل ⟨1 ، 0⟩ و ⟨0 ، 1⟩ متعامدان؟ برّر بالضرب القياسي.', promptEn: 'Are ⟨1, 0⟩ and ⟨0, 1⟩ perpendicular? Justify with the dot product.' },
 
   // ── Stats / probability ──

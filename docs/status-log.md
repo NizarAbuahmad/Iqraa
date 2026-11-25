@@ -102,6 +102,25 @@ asked), so the key on the page is what is checked, not a copy of it. Before thes
 so its worksheet had a worked example and no half-solved question. The tests that used it as their one-item
 lesson now use «جمع المتجهات وطرحها».
 
+**Vector addition and subtraction: eight new bank items** (`va-e1` … `va-w1`, focus `vector_add`, 2026-11-25),
+each with checked working:
+- easy: a sum and a difference;
+- medium: `2u + v`, `3u − 2v` (the minus times a negative component), and the length of a sum, `5`, not the sum of
+  the lengths;
+- hard: the unknown w in u + w = v, and AB⃗ + BC⃗ from three points, compared with AC⃗ (the triangle rule);
+- a story: a boat crossing a river against a current, resultant speed 5 كم/ساعة.
+
+The distractors are the usual slips: v − u for u − v, components multiplied, u + 2v for 2u + v, 3u + 2v, the sign of
+−2 × (−3), |u| + |v|, AB⃗ − BC⃗, and the points' coordinates added. `lessonFocus.test.ts` recomputes every key from
+the numbers in its stem. The points avoid A(1,2), B(4,6), so the working cannot answer «المتجهات في المستوى»'s own
+AB⃗ item. The unit is written «كم/ساعة»: the working check reads a lone «س» as an Arabic variable letter.
+
+This was the last lesson with a single solved item. So no real paper now prints a worked example without a
+half-solved question, and the instruction wording for that case moved into `worksheetInstructions`, tested
+directly (and against a generated paper). The bank tests that needed a one-item lesson now use «الضرب القياسي»
+(two solved items: two worked examples, then none). The one-item rule in `takeFromBank` is kept, though no lesson
+triggers it now.
+
 **Fixed after an independent review of the first commit:**
 - **Instructions.** They promised «أكمل الحل في السؤال الأول» whenever there was a worked example. A lesson with one
   solved item of its own («قانون جيب التمام», «الاقتران العكسي») gets no half-solved question, so the line now
@@ -140,8 +159,8 @@ lesson now use «جمع المتجهات وطرحها».
     probability and trigonometry lessons as well. The bank's lesson ranking now decides practice only for a topic
     that is not a book title (a typed topic, or an objective's wording from the API's evaluation generator), and
     the tests use such topics. The worked example and the half-solved question still come from the bank for every
-    lesson, so the lesson tags still decide those: «جمع المتجهات وطرحها» has one solved item,
-    so a worked example and no half-solved question («الاقتران العكسي» had the same until its items below).
+    lesson, so the lesson tags still decide those. «الاقتران العكسي» and «جمع المتجهات وطرحها» had one
+    solved item each, so a worked example and no half-solved question, until their items below.
 - **Offline worksheets with «مسألة حياتية» ticked** now say the real-life problem could not be added for every lesson
   without a story of its own. That is every chemistry lesson, and every maths family but `exp_eq`, `linear_quad`,
   `algebra` and the law of sines. The notice's wording («…أو لا تكفي أسئلة البنك لهذا الدرس») fits only loosely.

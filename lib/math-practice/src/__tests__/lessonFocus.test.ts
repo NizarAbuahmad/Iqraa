@@ -101,10 +101,11 @@ describe('the worked example is the lesson\'s own', () => {
   });
 
   it('runs out rather than leave the lesson', () => {
-    // «جمع المتجهات وطرحها» has one item of its own: one worked example, then none.
+    // «الضرب القياسي» has two solved items of its own: two worked examples, then none.
     const session = new Set<string>();
-    assert.ok(takeSolvedMath('جمع المتجهات وطرحها', null, 'medium', 'ar', session));
-    assert.equal(takeSolvedMath('جمع المتجهات وطرحها', null, 'medium', 'ar', session), null);
+    assert.ok(takeSolvedMath('الضرب القياسي', null, 'medium', 'ar', session));
+    assert.ok(takeSolvedMath('الضرب القياسي', null, 'medium', 'ar', session));
+    assert.equal(takeSolvedMath('الضرب القياسي', null, 'medium', 'ar', session), null);
   });
 
   it('practice takes the lesson\'s own items first, within the tier asked', () => {
@@ -120,11 +121,15 @@ describe('the worked example is the lesson\'s own', () => {
     }
   });
 
-  it('the tier still comes first, so a one-item lesson does not open every paper', () => {
-    // The inverse function has one bank item, and it is medium: an easy slot takes
-    // an easy one. (A typed topic: the book's own title now has a generator.)
-    const q = takeConcreteMath('short_answer', 'إيجاد جمع المتجهات', null, 'easy', 'ar', 4, new Set(), false)!;
-    assert.doesNotMatch(q.text, /u \+ v/);
+  it('a lesson with items of its own takes one from another tier before the next lesson\'s', () => {
+    // The dot product has no easy item; an easy slot still takes the lesson's own
+    // (v-m2, v-h1) before the family's easy ones, which belong to «المتجهات في
+    // المستوى». (Only a lesson with a single bank item keeps it to its own tier —
+    // `takeFromBank` — and since every split lesson got items of its own, none has.)
+    for (let k = 0; k < 20; k++) {
+      const q = takeConcreteMath('short_answer', 'إيجاد الضرب القياسي لمتجهين', null, 'easy', 'ar', 4, new Set(), false)!;
+      assert.match(q.text, /الضرب القياسي|متعامد/, q.text);
+    }
   });
 });
 
@@ -184,6 +189,60 @@ describe('«الاقتران العكسي» has a lesson\'s worth of items, ever
         const s = takeSolvedMath('الاقتران العكسي', null, tier, 'ar', new Set());
         assert.ok(s);
         assert.equal(item(s.id).focus, 'inverse', `got ${s.id}: ${s.problem}`);
+      }
+    }
+  });
+});
+
+describe('«جمع المتجهات وطرحها» has a lesson\'s worth of items, every key recomputed', () => {
+  type V = [number, number];
+  const add = (a: V, b: V): V => [a[0] + b[0], a[1] + b[1]];
+  const scale = (k: number, a: V): V => [k * a[0], k * a[1]];
+  const len = (a: V) => Math.hypot(a[0], a[1]);
+  // Each item's vectors and what it asks, computed here from the numbers in its stem.
+  const KEYS: Record<string, V | number> = {
+    'v-m1': add([1, 2], [3, -1]),
+    'va-e1': add([2, 5], [4, 1]),
+    'va-e2': add([7, 3], scale(-1, [2, 5])),
+    'va-m1': add(scale(2, [1, -2]), [3, 4]),
+    'va-m2': add(scale(3, [2, 1]), scale(-2, [1, -3])),
+    'va-m3': len(add([1, 2], [2, 2])),
+    'va-h1': add([-2, 4], scale(-1, [3, -1])),
+    // AB⃗ + BC⃗ for A(0,1), B(2,5), C(6,4).
+    'va-h2': add(add([2, 5], scale(-1, [0, 1])), add([6, 4], scale(-1, [2, 5]))),
+    'va-w1': len(add([0, 4], [3, 0])),
+  };
+  const own = () => MATH_BANK.filter(i => i.focus === 'vector_add');
+  /** «⟨5 ، −2⟩» as [5, -2], or the number after «=». */
+  const stated = (answer: string): V | number => {
+    const m = /⟨\s*([−-]?\d+)\s*،\s*([−-]?\d+)\s*⟩/.exec(answer);
+    if (m) return [Number(m[1]!.replace('−', '-')), Number(m[2]!.replace('−', '-'))];
+    return Number(answer.split('=').pop()!.replace(/[^0-9.]/g, ''));
+  };
+
+  it('lists every item of the lesson', () => {
+    assert.deepEqual(own().map(i => i.id).sort(), Object.keys(KEYS).sort());
+  });
+
+  it('every key is the vectors\' own sum, difference or length', () => {
+    for (const [id, want] of Object.entries(KEYS)) {
+      assert.deepEqual(stated(item(id).answer), want, `${id}: key «${item(id).answer}»`);
+    }
+  });
+
+  it('enough for a worksheet, in every tier, with a story, every one with working', () => {
+    assert.ok(own().length >= 8, `${own().length} items`);
+    for (const tier of ['easy', 'medium', 'hard'] as const) assert.ok(own().some(i => i.diff === tier), `no ${tier} item`);
+    assert.ok(own().some(i => i.story), 'no real-life story');
+    for (const i of own()) assert.ok(stepsFor(i.id), `${i.id} has no working`);
+  });
+
+  it('studies only its own lesson', () => {
+    for (const tier of ['easy', 'medium', 'hard'] as const) {
+      for (let k = 0; k < 20; k++) {
+        const s = takeSolvedMath('جمع المتجهات وطرحها', null, tier, 'ar', new Set());
+        assert.ok(s);
+        assert.equal(item(s.id).focus, 'vector_add', `got ${s.id}: ${s.problem}`);
       }
     }
   });
