@@ -22,8 +22,8 @@ import type { AIRequest, LessonPlanOutput } from '../ai/AIService.ts';
 (aiService as unknown as { delay: () => Promise<void> }).delay = async () => {};
 
 const lessonOf = (subjectId: string) => {
-  // Grades 1–3 have the early-grade plans (`lessonPlanFirstGrade.ts`); these are the all-grades kinds.
-  const l = KB_LESSONS.find(x => { const b = getBookForLesson(x); return b?.subjectId === subjectId && !/^grade-[123]$/.test(b.gradeId); });
+  // Grades 1–4 have the early-grade plans (`lessonPlanFirstGrade.ts`); these are the all-grades kinds.
+  const l = KB_LESSONS.find(x => { const b = getBookForLesson(x); return b?.subjectId === subjectId && !/^grade-[1234]$/.test(b.gradeId); });
   assert.ok(l, `no ${subjectId} lesson — the catalog changed`);
   return l;
 };
@@ -160,7 +160,7 @@ describe('the plan\'s wording', () => {
 
   it('a typed topic with a subject name and no lesson still gets that subject\'s plan', async () => {
     const p = await aiService.generateLessonPlan({
-      grade: 'الصف الرابع', subject: 'التربية الإسلامية', topic: 'موضوع حر', language: 'arabic', duration: 45,
+      grade: 'الصف الخامس', subject: 'التربية الإسلامية', topic: 'موضوع حر', language: 'arabic', duration: 45,
     } as AIRequest);
     assert.match(p.mainActivity, /مرتّلًا/);
     assert.doesNotMatch(text(p), /مثال محلول/);

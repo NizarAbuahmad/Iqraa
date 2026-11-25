@@ -10,6 +10,89 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 4 review, the Grade 3 way: plans, activities, quick checks and live prompts for nine-year-olds — 2026-11-25
+
+The Grade 3 review (below, «Grade 3 review, the Grade 2 way… — 2026-11-20») repeated for Grade 4: 10 subjects, 313
+lessons — the eight Grade 3 had plus vocational education (31 lessons) and digital literacy (27). Like Grade 3's, the
+Grade 4 books in the repo are titles only, so the level is set from the titles, the maths banks and the usual Grade 4
+expectations, not read off the pages.
+
+**Swept.** The offline plan (three styles) and the six activity formats, for all 313 lessons. Grade 4 is not Grade 3
+with bigger numbers, and what is wrong with it is partly different:
+- the all-grades templates, in all 313: «اكتب من ذاكرتك — الدفاتر مغلقة», a claim to defend, teams betting points, a
+  debate, «برّر», a written summary and an individual worksheet with a "worked example"; a 3-2-1 exit card in 287, a
+  concept map in 231, a controlled experiment in all 19 science lessons;
+- **a 10-sentence «ملخصًا شخصيًا» as the homework of 44 of the 50 maths lessons** — a nine-year-old's homework;
+- **a card template that is blind to the subject, in 215 plans** (the collaborative style): «بطاقة 1: تعريف X بمثال,
+  بطاقة 3: خطأ شائع وكيف نتجنّبه». «تعريف قِصَّةُ نَبِيِّ اللهِ سَيِّدِنا آدَمَ بمثال» and «خطأ شائع» for a prophet's
+  story, the same for a programming lesson («بَرْمِجْها بِنَفْسِكَ»), «تكتب المجموعة إجابة واحدة كاملة على اللوح»
+  in a PE lesson. All of Islamic education, the arts and digital literacy, and most of Arabic and maths.
+Grade 4 does not need Grade 3's scaffolding everywhere (a nine-year-old can write a short paragraph and does recall
+practice fine), so it gets its own level rather than Grade 3's.
+
+**Offline (`artifacts/mobile`).**
+- **Grade 4 uses the early-grade plans, activities, quick check and review** (`EarlyGrade` is 1 to 4), because they are
+  the subject-aware ones: Islamic education recites, PE moves, the arts make, instead of defining.
+  - **Maths, science, social studies and English** are Grade 3's content with a little more of the child's own
+    (`fourthGradeContent`): four examples on a board instead of three and a sentence on the first step; science writes a
+    short paragraph of three sentences («ما الذي رآه، وهل صدق توقعه، ولماذا») after recording in a table; social studies
+    a paragraph of three sentences; English two short sentences. Still no controlled experiment.
+  - **Arabic** is the book's strands with a short paragraph of three sentences (`fourthGradeArabic`): retelling what was
+    heard, what was said, a reading answered in three full sentences, five words by the spelling rule and a paragraph
+    using three of them, a pattern built into a paragraph. A punctuation lesson keeps Grade 3's sentences.
+  - **Digital literacy and vocational education get content of their own** (`digitalContent`, `vocationalContent`):
+    they are «making» in the catalog, which meant drawing, music and theatre. A digital lesson is a screen task step by
+    step on a device or on paper where there is none; a vocational lesson shows the skill with its safety rule, practises
+    it and writes what was done. Their hands-on and game steps follow (`subjectId` in the activity context): the
+    safety rule is «نستعمل الأجهزة بهدوء», not «المقص والصمغ».
+  - Every assessment ends with the Grade 4 limit: «ولا تزيد الكتابة على فقرة قصيرة من أربع أو خمس جمل يكتبها الطفل
+    بنفسه.» Children answer «بجملة أو جملتين» (`ANSWER`). A Grade 4 review has each child solve an example or write a
+    short paragraph of three sentences.
+- **The inquiry plan's assessment follows the grade.** It asked whether the child describes what they noticed «بكلمة
+  صحيحة»; Grades 3 and 4 now say «بجملة صحيحة». (This was Grade 3's too.)
+- Measured again over all 313 lessons: every phrase above → 0, the card template → 0, no template leak.
+
+**Live (`artifacts/api-server`).**
+- **A Grade 4 clause** (`firstGrade.ts`, `isFourthGrade`; «الصف الرابع عشر» is not Grade 4) for every use the Grade 1–3
+  clauses cover. It allows a short paragraph of three to five sentences, answers in a sentence or two, and a prediction
+  then an observation then a comparison; it rules out long essays, summarising a whole lesson, formal debates,
+  defending a claim, written exit tickets, controlled experiments with several variables and betting points. Arabic's
+  strands; maths up to six digits (never above 999,999), multiplying by one- and two-digit numbers, dividing by one
+  digit with a remainder, fractions, mixed numbers and tenths and hundredths — what Grade 4's banks hold.
+- **Grade 3's clause said "two steps at most" while its difficulty wording (`earlyGrade.ts`) said three** — a hard
+  Grade 3 request was told both. Both clauses now say three, as the difficulty wording does for Grades 3 and 4.
+- **The pool key gains `fourthGrade: "2026-11-25"`** for a Grade 4 request of those kinds, and `thirdGrade` moves to
+  the same date because its step count changed. Grades 2 and 5 keys are unchanged, pinned by literal keys computed from
+  the code before the change.
+
+**Verified.**
+- `fourthGradePlans.test.ts` (mobile, 12 tests) runs every Grade 4 lesson through the plan in three styles, the six
+  formats and the quick check. It checks for none of the phrases above and none of the card template, no Grade 1
+  counting in maths, science, social studies or English, the teacher's first-person voice and the Grade 4 limit; it pins
+  the maths, science, Islamic education, PE, digital-literacy, vocational and Arabic content and the review, and that
+  Grade 3 is unchanged. On the old generators 11 of 12 fail (2,555 plan problems and 4,218 activity problems).
+- `fourthGradePrompts.test.ts` (API) checks the clause in each prompt builder for Grade 4 only, both languages, and the
+  keys; and that Grades 3 and 4 both say three steps.
+- `pnpm run typecheck`; api-server `build` + `test` (3,084 pass); the mobile suite (9,599 pass, 10 skipped).
+- Tests that pinned Grade 4 as all-grades now pin Grade 5 (`secondGradePlans.test.ts`, `thirdGradePlans.test.ts`,
+  `activityFirstGrade.test.ts`, `lessonPlanKinds.test.ts`, `lessonPlanVariants.test.ts` and the keys in
+  `secondGradePrompts.test.ts`, `thirdGradePrompts.test.ts`, `earlyGradeDifficulty.test.ts`).
+- The sweep found «ماذا لاحظ» ("what did they notice") in a first draft: unvowelled it is also the imperative «لاحظ», which
+  the teacher-voice check rightly cannot tell apart; it now reads «ما الذي رآه».
+
+**Not verified:** a live model's Grade 4 output; the Arabic wording by a native reader; the level against the Grade 4
+book pages, which the repo does not hold as text; that Grade 4 should keep the early-grade scaffolding for as many
+subjects as it now does (a nine-year-old needs less than a seven-year-old).
+
+**Still open.**
+- Grade 4 evaluations keep every question type.
+- Grade 5 keeps the all-grades templates; it was not swept. The discussion's fallback claim for a lesson with no items,
+  rules or concepts («يمكن تطبيق <العنوان> في كل الحالات دون استثناء», `contestableClaim` in `activityBlueprints.ts`)
+  reads as nonsense for most titles — and the Grades 3–5 books are titles only, so most of their lessons get it. It is
+  a shared template, so it was left for the grade-by-grade reviews that come next.
+
+No «ما الجديد» entry: these correct what existing generators write for Grade 4.
+
 ## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
 
 Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured

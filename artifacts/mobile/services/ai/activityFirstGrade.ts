@@ -22,7 +22,7 @@
  * same rule (`artifacts/api-server/src/lib/firstGrade.ts`).
  */
 import type { ActivitySlide } from './AIService.ts';
-import type { KBLesson } from '../knowledgeBase.ts';
+import { getBookForLesson, type KBLesson } from '../knowledgeBase.ts';
 import type { Lang, PracticeWQ } from './mathPractice.ts';
 import { distributeMinutes, type ActivityBlueprint, type ActivityBlueprintId } from './activityBlueprints.ts';
 import { ANSWER, WRITING_LIMIT, arabicLessonType, firstGradeContent, isPunctuation, titleDetail, type EarlyGrade } from './lessonPlanFirstGrade.ts';
@@ -39,8 +39,10 @@ export interface FirstGradeActivityContext {
   variant?: number;
   /** A unit or semester review: its warm-up looks back over the units, not at «yesterday's lesson». */
   revision?: boolean;
-  /** Grade 1 (the default), 2 or 3 — see `EarlyGrade` in `lessonPlanFirstGrade.ts`. */
+  /** Grade 1 (the default) to 4 — see `EarlyGrade` in `lessonPlanFirstGrade.ts`. */
   grade?: EarlyGrade;
+  /** The lesson's subject id: digital literacy and vocational education are not drawing or music. */
+  subjectId?: string;
 }
 
 type Pair = { ar: string; en: string };
@@ -103,6 +105,18 @@ function gameRound(ctx: FirstGradeActivityContext): Pair {
         en: `A short relay: each child in the team does “${t}” to the cone, comes back and touches the next child’s hand.`,
       };
     case 'making':
+      if (ctx.subjectId === 'digital-literacy') {
+        return {
+          ar: 'سأعرض خطوة من المهمة على الشاشة، ويقرّر الفريق بصوت واحد الأمر أو الأداة التي تلزم لها، ويرفع بطاقة الجواب.',
+          en: 'I will show a step of the task on the screen, and the team decides together which command or tool it needs and holds up its answer card.',
+        };
+      }
+      if (ctx.subjectId === 'vocational-education') {
+        return {
+          ar: 'سأقول موقفًا من العمل (مثل: «ستستعمل أداة حادّة»)، ويرفع الفريق بطاقة «آمن» أو «غير آمن»، ثم يذكر السبب بجملة.',
+          en: 'I will describe a situation at work (like “You will use a sharp tool”), and the team holds up a “safe” or “not safe” card, then gives the reason in a sentence.',
+        };
+      }
       return {
         ar: 'سأؤدّي إيقاعًا أو حركة أو أعرض لونًا، ويقلّده الفريق كما هو.',
         en: 'I will play a rhythm, do a movement or show a colour, and the team copies it exactly.',
@@ -116,7 +130,7 @@ function gameRound(ctx: FirstGradeActivityContext): Pair {
     case 'calc':
     default: {
       const q = spoken(ctx.practice[0]);
-      if ((ctx.grade ?? 1) === 3) {
+      if ((ctx.grade ?? 1) >= 3) {
         return {
           ar: `سأقرأ مسألة أو أكتبها على السبورة${q ? ` (مثل: «${q}»)` : ''}، ويحلّها الفريق معًا، ويكتب أحدهم الناتج على لوح الفريق ويرفعه.`,
           en: `I will read or write a problem on the board${q ? ` (like: “${q}”)` : ''}; the team solves it together and one child writes the answer on the team board and holds it up.`,
@@ -159,7 +173,7 @@ function handsOnTask(ctx: FirstGradeActivityContext): Pair {
         en: 'Each child makes a picture card for a lesson word (draws and colours it), then holds it up and says the word.',
       };
     case 'calc':
-      if ((ctx.grade ?? 1) === 3) {
+      if ((ctx.grade ?? 1) >= 3) {
         return {
           ar: `يمثّل كل طفل مثالًا على «${t}» بالأدوات (قطع العشرات والمئات، أو مصفوفة من الأزرار، أو أشكال، أو شرائط كسور)، ثم يكتبه بالأرقام على لوحه، ويقارنه بما أكتبه على السبورة.`,
           en: `Each child builds an example of “${t}” with materials (tens and hundreds blocks, a button array, shapes or fraction strips), writes it in numbers on their board, and checks it against what I write on the board.`,
@@ -191,6 +205,18 @@ function handsOnTask(ctx: FirstGradeActivityContext): Pair {
       };
     case 'making':
     default:
+      if (ctx.subjectId === 'digital-literacy') {
+        return {
+          ar: 'ينفّذ كل ثنائي جزءًا من المهمة على الجهاز (أو يرسم خطة الشاشة على ورقة)، ثم يعرض ما أنجزه ويقول خطوة واحدة كانت صعبة عليه.',
+          en: 'Each pair does a part of the task on the device (or draws the screen plan on paper), then shows what they made and names one step that was hard.',
+        };
+      }
+      if (ctx.subjectId === 'vocational-education') {
+        return {
+          ar: 'ينفّذ كل طفل مهمة عملية قصيرة بمواد بسيطة وآمنة بحسب قائمة الخطوات، ثم يعرضها على زميله ويقول قاعدة السلامة التي التزم بها.',
+          en: 'Each child does a short practical task with simple, safe materials by the list of steps, then shows it to a classmate and names the safety rule they kept.',
+        };
+      }
       return {
         ar: 'يصنع كل طفل عمله الصغير بالمواد المتاحة (رسمًا أو قصًّا ولصقًا أو آلة إيقاع بسيطة)، ويعرضه على زميله.',
         en: 'Each child makes their own small piece with the materials (a drawing, a cut-and-paste or a simple rhythm instrument) and shows it to a classmate.',
@@ -236,7 +262,7 @@ export function buildFirstGradeActivity(id: ActivityBlueprintId, ctx: FirstGrade
 
 function oneLesson(id: ActivityBlueprintId, ctx: FirstGradeActivityContext): ActivityBlueprint {
   const grade = ctx.grade ?? 1;
-  const c = firstGradeContent(ctx.kind, ctx.topic, ctx.kb?.titleAr ?? ctx.topic, grade);
+  const c = firstGradeContent(ctx.kind, ctx.topic, ctx.kb?.titleAr ?? ctx.topic, grade, ctx.subjectId ?? (ctx.kb ? getBookForLesson(ctx.kb)?.subjectId : undefined));
   const ar = ctx.lang === 'ar';
   const t = ctx.topic;
   const limit = WRITING_LIMIT[grade];
@@ -330,18 +356,30 @@ function oneLesson(id: ActivityBlueprintId, ctx: FirstGradeActivityContext): Act
       };
     case 'hands-on': {
       const task = handsOnTask(ctx);
+      // The materials and the safety rule follow the subject: a screen task is not clay and scissors.
+      const sub = ctx.subjectId === 'digital-literacy' ? 'digital' : ctx.subjectId === 'vocational-education' ? 'vocational' : 'craft';
+      const handsMaterials: Pair = sub === 'digital'
+        ? { ar: 'أجهزة (أو أوراق تخطيط للشاشة) وبطاقة خطوات المهمة', en: 'Devices (or paper screen-planning sheets) and the task’s step card' }
+        : sub === 'vocational'
+          ? { ar: 'مواد وأدوات بسيطة وآمنة وبطاقة قواعد السلامة وقائمة الخطوات', en: 'Simple, safe materials and tools, a safety-rules card and a list of steps' }
+          : { ar: 'صلصال أو مكعبات أو ورق مقوّى ومقص آمن وصمغ حسب الدرس', en: 'Clay, cubes, or card with safe scissors and glue, as the lesson needs' };
+      const safety: Pair = sub === 'digital'
+        ? { ar: 'نستعمل الأجهزة بهدوء ولا نغيّر عمل زملائنا', en: 'We use the devices calmly and do not change a classmate’s work' }
+        : sub === 'vocational'
+          ? { ar: 'نستعمل الأدوات كما أريناكم وبهدوء، ونقرأ قاعدة السلامة قبل كل خطوة', en: 'We use the tools the way I showed you, calmly, and read the safety rule before each step' }
+          : { ar: 'نستعمل المقص والصمغ بهدوء', en: 'We use scissors and glue calmly' };
       return {
         titleSuffix: ar ? 'نشاط عملي' : 'Hands-on activity',
         groupSize: ar ? 'ثنائيات، ولكل طفل عمله' : 'Pairs, each child with their own piece',
         objective: ar ? `أن يصنع الأطفال أو يحرّكوا بأيديهم ما يتعلّق بـ«${t}»` : `Children make or handle with their hands what “${t}” is about`,
-        materials: [...materials, ar ? 'صلصال أو مكعبات أو ورق مقوّى ومقص آمن وصمغ حسب الدرس' : 'Clay, cubes, or card with safe scissors and glue, as the lesson needs'],
+        materials: [...materials, ar ? handsMaterials.ar : handsMaterials.en],
         steps: mk(ar ? [
-          ['أُري المواد', 'سأعرض المواد على الطاولة وأسمّي كل واحدة، وأذكّر بقاعدة السلامة: «نستعمل المقص والصمغ بهدوء».'],
+          ['أُري المواد', `سأعرض المواد على الطاولة وأسمّي كل واحدة، وأذكّر بقاعدة السلامة: «${safety.ar}».`],
           ['نصنع بأيدينا', task.ar],
           ['نقارن بالنموذج', 'يضع كل طفل عمله بجانب النموذج الذي صنعته أنا، ويقول ما المتشابه.'],
           ['نرتّب ونعرض', 'يرتّب الأطفال المكان، ونضع الأعمال على طاولة العرض.'],
         ] : [
-          ['I show the materials', 'I will lay out the materials and name each one, with the safety rule: “We use scissors and glue calmly.”'],
+          ['I show the materials', `I will lay out the materials and name each one, with the safety rule: “${safety.en}.”`],
           ['We make it with our hands', task.en],
           ['We compare with the model', 'Each child puts their piece next to the model I made and says what is the same.'],
           ['We tidy and display', 'The children tidy up, and we put the work on the display table.'],

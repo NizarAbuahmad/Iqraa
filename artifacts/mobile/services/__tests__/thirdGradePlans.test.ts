@@ -65,7 +65,7 @@ describe('which lessons are Grade 3', () => {
     assert.equal(new Set(G3.map(l => getBookForLesson(l)!.subjectId)).size, 8);
     assert.equal(earlyGradeOf(G3[0]!), 3);
     for (const g of ['الصف الثالث', 'الصَّفُّ الثَّالِثُ', 'Grade 3', 'grade-3']) assert.equal(earlyGradeOf(null, g), 3, g);
-    for (const g of ['الصف الرابع', 'الصف الثالث عشر', 'Grade 13', '']) assert.equal(earlyGradeOf(null, g), null, g);
+    for (const g of ['الصف الخامس', 'الصف الثالث عشر', 'Grade 13', '']) assert.equal(earlyGradeOf(null, g), null, g);
   });
 });
 

@@ -53,9 +53,10 @@ const fold = (s: string) =>
 const FIRST_GRADE_NAMES = new Set(['الصف الاول', 'الاول', 'grade 1', 'grade-1', 'first grade', '1']);
 const SECOND_GRADE_NAMES = new Set(['الصف الثاني', 'الثاني', 'grade 2', 'grade-2', 'second grade', '2']);
 const THIRD_GRADE_NAMES = new Set(['الصف الثالث', 'الثالث', 'grade 3', 'grade-3', 'third grade', '3']);
+const FOURTH_GRADE_NAMES = new Set(['الصف الرابع', 'الرابع', 'grade 4', 'grade-4', 'fourth grade', '4']);
 
 /** The grades these plans are written for. */
-export type EarlyGrade = 1 | 2 | 3;
+export type EarlyGrade = 1 | 2 | 3 | 4;
 
 /**
  * Grade 1, 2 or 3, or null for any other grade. The lesson's own book decides; a typed
@@ -64,14 +65,14 @@ export type EarlyGrade = 1 | 2 | 3;
 export function earlyGradeOf(kb: KBLesson | null, grade?: string): EarlyGrade | null {
   if (kb) {
     const id = getBookForLesson(kb)?.gradeId;
-    return id === 'grade-1' ? 1 : id === 'grade-2' ? 2 : id === 'grade-3' ? 3 : null;
+    return id === 'grade-1' ? 1 : id === 'grade-2' ? 2 : id === 'grade-3' ? 3 : id === 'grade-4' ? 4 : null;
   }
   const g = fold(grade ?? '').toLowerCase().replace(/\s+/g, ' ');
   if (!g) return null;
-  return FIRST_GRADE_NAMES.has(g) ? 1 : SECOND_GRADE_NAMES.has(g) ? 2 : THIRD_GRADE_NAMES.has(g) ? 3 : null;
+  return FIRST_GRADE_NAMES.has(g) ? 1 : SECOND_GRADE_NAMES.has(g) ? 2 : THIRD_GRADE_NAMES.has(g) ? 3 : FOURTH_GRADE_NAMES.has(g) ? 4 : null;
 }
 
-/** Is this a Grade 1 lesson? (`earlyGradeOf` for Grades 1 to 3.) */
+/** Is this a Grade 1 lesson? (`earlyGradeOf` for Grades 1 to 4.) */
 export function isFirstGradeLesson(kb: KBLesson | null, grade?: string): boolean {
   return earlyGradeOf(kb, grade) === 1;
 }
@@ -122,8 +123,8 @@ export function arabicLessonType(title: string): ArabicLesson {
 const SURAH = /سوره/;
 
 /** What a Grade 1 or 2 lesson of this kind is made of — shared with the early-grade activities. */
-export function firstGradeContent(kind: LessonKind, topic: string, titleAr: string, grade: EarlyGrade = 1): Content {
-  return contentFor(kind, topic, titleAr, grade);
+export function firstGradeContent(kind: LessonKind, topic: string, titleAr: string, grade: EarlyGrade = 1, subjectId?: string): Content {
+  return contentFor(kind, topic, titleAr, grade, subjectId);
 }
 
 /**
@@ -188,9 +189,13 @@ function withEarlyWriting(kind: LessonKind, c: Content, titleAr: string, table: 
 
 export type FirstGradeContent = Content;
 
-function contentFor(kind: LessonKind, topic: string, titleAr: string, grade: EarlyGrade = 1): Content {
-  if (grade === 3) {
-    const own = thirdGradeContent(kind, topic);
+function contentFor(kind: LessonKind, topic: string, titleAr: string, grade: EarlyGrade = 1, subjectId?: string): Content {
+  if (grade >= 3) {
+    // Digital literacy and vocational education are «making» in the catalog, but they are not
+    // drawing, music or theatre: a screen task and a safe practical task (Grade 4 has both).
+    const practical = subjectId === 'digital-literacy' ? digitalContent(topic) : subjectId === 'vocational-education' ? vocationalContent(topic) : null;
+    if (practical) return practical;
+    const own = grade === 4 ? fourthGradeContent(kind, topic) : thirdGradeContent(kind, topic);
     if (own) return own;
     const c = baseContent(kind, topic, titleAr, grade);
     // Movement and the arts are done, not written: they keep the shared content.
@@ -208,7 +213,149 @@ export const ANSWER: Record<EarlyGrade, Pair> = {
   1: { ar: 'بكلمة أو بإشارة', en: 'with a word or by pointing' },
   2: { ar: 'بكلمة أو بإشارة', en: 'with a word or by pointing' },
   3: { ar: 'بجملة قصيرة', en: 'in a short sentence' },
+  4: { ar: 'بجملة أو جملتين', en: 'in a sentence or two' },
 };
+
+/**
+ * Grade 4 (nine- and ten-year-olds) is Grade 3's content with a little more of the child's own:
+ * four examples on a board instead of three, a short paragraph of three sentences where Grade 3
+ * writes two, answers in a sentence or two. Where Grade 3's content is the same, it is reused
+ * (`thirdGradeContent`); only what the child writes or does alone changes.
+ */
+function fourthGradeContent(kind: LessonKind, topic: string): Content | null {
+  const base = thirdGradeContent(kind, topic);
+  if (!base) return null;
+  const q = `«${topic}»`;
+  const qEn = `“${topic}”`;
+  switch (kind) {
+    case 'calc':
+      return {
+        ...base,
+        alone: {
+          ar: 'يحلّ كل طفل على لوحه أربعة أمثلة أكتبها على السبورة، ويرسم لأحدها نموذجًا (مصفوفة أو خط أعداد أو شكلًا) يبيّن طريقته، ثم يكتب في دفتره جملة تشرح أول خطوة فيه.',
+          en: 'Each child solves four examples I write on the board on their small board, draws a model (an array, a number line or a shape) for one of them to show how, then writes a sentence in the notebook explaining its first step.',
+        },
+        homework: {
+          ar: `يحلّ الطفل أربعة أمثلة من كتابه على ${q}، ويكتب مسألة قصيرة من حياته عليه ويحلّها، ثم يكتب جملة عن طريقته.`,
+          en: `The child solves four examples of ${qEn} from the book, writes and solves one short problem about it from their own life, then writes a sentence about their way.`,
+        },
+      };
+    case 'science':
+      return {
+        ...base,
+        alone: {
+          ar: 'يصنّف كل طفل الصور أو يصلها في كتابه، ثم يكتب فقرة قصيرة من ثلاث جمل: ما الذي رآه، وهل صدق توقعه، ولماذا (جملة تبدأ بـ«لأنّ…»).',
+          en: 'Each child sorts or matches the pictures in the book, then writes a short paragraph of three sentences: what they saw, whether their prediction was right, and why (a sentence starting “Because…”).',
+        },
+        homework: {
+          ar: `يلاحظ الطفل في البيت أو الحديقة شيئًا يتصل ${arPrefixed('ب', topic)}، ويسجّله في جدول من عمودين، ثم يكتب ثلاث جمل عنه.`,
+          en: `The child observes something at home or in the garden linked to ${topic}, records it in a two-column table, then writes three sentences about it.`,
+        },
+      };
+    case 'social':
+      return {
+        ...base,
+        alone: {
+          ar: 'يجيب كل طفل في دفتره عن سؤال من الدرس بجملة، ثم يكتب فقرة قصيرة من ثلاث جمل عن أحد ما تعلّمه.',
+          en: 'Each child answers one question from the lesson in a sentence in their notebook, then writes a short paragraph of three sentences about one thing they learned.',
+        },
+        homework: {
+          ar: `يسأل الطفل أحد كبار أسرته عن ${q}، ويكتب ثلاث جمل عمّا سمعه.`,
+          en: `The child asks an older family member about ${qEn} and writes three sentences about what they heard.`,
+        },
+      };
+    case 'english':
+      return {
+        ...base,
+        alone: {
+          ar: 'يكتب كل طفل في دفتر النشاط كلمة تحت كل صورة، ثم يكتب جملتين قصيرتين من الدرس ويقرؤهما لي.',
+          en: 'Each child writes a word under each picture in the activity book, then writes two short sentences from the lesson and reads them to me.',
+        },
+        homework: {
+          ar: 'يكتب الطفل خمس كلمات من الدرس وجملتين قصيرتين فيهما، ويقرؤها لأسرته.',
+          en: 'The child writes five lesson words and two short sentences using them, and reads them to the family.',
+        },
+      };
+    default:
+      return base;
+  }
+}
+
+/** A Grade 4 digital-literacy lesson: a task on a screen (or on paper where there is no device) done step by step. */
+function digitalContent(topic: string): Content {
+  const q = `«${topic}»`;
+  const qEn = `“${topic}”`;
+  return {
+    materials: {
+      ar: ['حاسوب أو جهاز لوحي لكل ثنائي (وأوراق وأقلام إن لم تتوفر الأجهزة)', 'شاشة العرض', 'بطاقة خطوات المهمة', 'كتاب الطالب'],
+      en: ['A computer or tablet for each pair (and paper and pens if there are no devices)', 'The display screen', 'A card with the task’s steps', 'Student book'],
+    },
+    intro: {
+      ar: `سأبدأ بعرض نتاج جاهز أو صورة لما سننجزه في ${q} على الشاشة، وأسأل: «ما الذي تلاحظونه؟ كيف تظنون أنه صُنع؟»`,
+      en: `I will open by showing a finished piece or a picture of what we will make in ${qEn} on the screen and ask: “What do you notice? How do you think it was made?”`,
+    },
+    show: {
+      ar: `سأنفّذ خطوات ${q} أمام الأطفال على الشاشة (أو على لوحة ورقية إن لم تتوفر الأجهزة)، وأقول كل خطوة بصوت واضح وأكتب الكلمات الجديدة على السبورة.`,
+      en: `I will carry out the steps of ${qEn} in front of the children on the screen (or on a paper board if there are no devices), saying each step aloud and writing the new words on the board.`,
+    },
+    explore: { ar: 'الجهاز أو ورقة التخطيط والمهمة نفسها، ليجرّبوا بأنفسهم', en: 'the device or the planning sheet and the task itself, to try it for themselves' },
+    together: {
+      ar: 'ننفّذ معًا خطوة بخطوة: أقرأ الخطوة، ويجرّبها الأطفال في ثنائيات على الجهاز (أو على الورق)، ثم نتحقق معًا من النتيجة ونصلح الخطأ إن وُجد.',
+      en: 'We do it together step by step: I read a step, the children try it in pairs on the device (or on paper), then we check the result together and fix any mistake.',
+    },
+    alone: {
+      ar: 'يكمل كل طفل أو ثنائي المهمة على الجهاز (أو على الورق) بحسب بطاقة الخطوات، ثم يكتب في دفتره ثلاث جمل: ما فعله، وما صادفه من صعوبة، وكيف حلّها.',
+      en: 'Each child or pair finishes the task on the device (or on paper) using the step card, then writes three sentences in the notebook: what they did, what was hard, and how they solved it.',
+    },
+    pairRoles: { ar: 'طفل يمسك الجهاز وينفّذ الخطوة، وصاحبه يقرأ بطاقة الخطوات ويتحقق من النتيجة', en: 'one child holds the device and does the step, the other reads the step card and checks the result' },
+    homework: {
+      ar: `يشرح الطفل لأسرته ما أنجزه في ${q}، ويكتب جملتين عمّا سيحسّنه في عمله.`,
+      en: `The child explains to the family what they made in ${qEn} and writes two sentences about what they would improve.`,
+    },
+    objectives: {
+      ar: [`أن يتعرّف الطفل المصطلحات والأدوات الأساسية في ${q}`, 'أن ينفّذ الطفل خطوات المهمة بترتيبها', 'أن يصف الطفل ما أنجزه ويقترح تحسينًا واحدًا'],
+      en: [`The child will recognise the key terms and tools in ${qEn}`, 'The child will carry out the task’s steps in order', 'The child will describe what they made and suggest one improvement'],
+    },
+  };
+}
+
+/** A Grade 4 vocational-education lesson: a real or pictured skill, shown, practised with its safety rule, then done. */
+function vocationalContent(topic: string): Content {
+  const q = `«${topic}»`;
+  const qEn = `“${topic}”`;
+  return {
+    materials: {
+      ar: ['أدوات ومواد حقيقية أو صور لها (حسب الدرس)', 'بطاقة قواعد السلامة', 'قائمة خطوات العمل', 'كتاب الطالب'],
+      en: ['Real tools and materials, or pictures of them (as the lesson needs)', 'A safety-rules card', 'A list of the work’s steps', 'Student book'],
+    },
+    intro: {
+      ar: `سأبدأ بصورة أو بشيء حقيقي يتصل ${arPrefixed('ب', topic)}، وأسأل: «أين رأيتم هذا؟ ولمن يفيد؟»`,
+      en: `I will open with a picture or a real object linked to ${topic} and ask: “Where have you seen this? Who is it useful to?”`,
+    },
+    show: {
+      ar: `سأعرض ${q} بمواد وأدوات حقيقية أو بصور، وأسمّي كل أداة أو خطوة، وأبدأ بقاعدة السلامة التي تخصّها.`,
+      en: `I will show ${qEn} with real tools and materials or pictures, naming each tool or step and starting with its safety rule.`,
+    },
+    explore: { ar: 'الأدوات والمواد أو الصور نفسها، ليصفوا ما يرونه', en: 'the tools and materials or pictures themselves, to describe what they see' },
+    together: {
+      ar: 'نمارس الخطوة معًا ببطء: يؤدّي كل طفل الخطوة في دوره وأنا أراقب السلامة، ثم نراجع خطوات العمل بالترتيب.',
+      en: 'We practise the step together slowly: each child does it in turn while I watch the safety, then we go over the steps of the work in order.',
+    },
+    alone: {
+      ar: 'ينفّذ كل طفل مهمة عملية قصيرة بحسب قائمة الخطوات (أو يكمل مخطط الخطوات إن كان الدرس نظريًا)، ثم يكتب في دفتره ثلاث جمل: ماذا فعل، وما قاعدة السلامة التي التزم بها، وماذا سيحسّن.',
+      en: 'Each child does a short practical task by the list of steps (or completes the step chart if the lesson is not practical), then writes three sentences in the notebook: what they did, which safety rule they kept, and what they would improve.',
+    },
+    pairRoles: { ar: 'طفل ينفّذ الخطوة، وصاحبه يراجع قائمة الخطوات وقواعد السلامة ويشير إلى ما أحسنه', en: 'one child does the step, the other checks the list of steps and the safety rules and points to what they did well' },
+    homework: {
+      ar: `يحدّث الطفل أسرته عمّا تعلّمه في ${q}، ويجرّب بمساعدتهم خطوة آمنة منه في البيت، ثم يكتب جملتين عنها.`,
+      en: `The child tells the family what they learned in ${qEn}, tries one safe step of it at home with their help, then writes two sentences about it.`,
+    },
+    objectives: {
+      ar: [`أن يتعرّف الطفل ${q} وأدواتها أو مواردها`, 'أن ينفّذ الطفل خطوات العمل بترتيبها مع الالتزام بقواعد السلامة', 'أن يقيّم الطفل عمله ويذكر ما يحسّنه'],
+      en: [`The child will recognise ${qEn} and its tools or resources`, 'The child will carry out the steps of the work in order, keeping the safety rules', 'The child will assess their work and say what to improve'],
+    },
+  };
+}
 
 /**
  * Grade 3's own content for the kinds where Grade 1's is too young: an eight-year-old
@@ -798,11 +945,61 @@ function punctuationLesson(detail: string): Omit<Content, 'materials' | 'intro' 
   };
 }
 
+/**
+ * Grade 4 Arabic: Grade 3's strands, with a short paragraph of three sentences where Grade 3 writes
+ * two — retelling what was heard, what was said, a reading's answer, the spelling rule used in
+ * context, a pattern built into a paragraph. A punctuation lesson keeps Grade 3's sentences.
+ */
+function fourthGradeArabic(type: 'listen' | 'speak' | 'read' | 'write' | 'build', detail: string | null): Omit<Content, 'materials' | 'intro' | 'explore' | 'pairRoles'> {
+  const base = thirdGradeArabic(type, detail);
+  if (type === 'write' && isPunctuation(detail)) return base;
+  const text = detail ? `نص «${detail}»` : 'نص الدرس';
+  const textEn = detail ? `the text “${detail}”` : 'the lesson’s text';
+  const rule = detail ? `«${detail}»` : 'قاعدة الدرس';
+  const ruleEn = detail ? `“${detail}”` : 'the lesson’s rule';
+  const set = (alone: Pair, homework: Pair, last: Pair) => ({
+    ...base, alone, homework,
+    objectives: { ar: [...base.objectives.ar.slice(0, 2), last.ar], en: [...base.objectives.en.slice(0, 2), last.en] },
+  });
+  switch (type) {
+    case 'listen':
+      return set(
+        { ar: 'يرتّب كل طفل صور الأحداث في كتابه، ثم يكتب فقرة قصيرة من ثلاث جمل يعيد فيها سرد ما سمعه بترتيبه.', en: 'Each child orders the event pictures in the book, then writes a short paragraph of three sentences retelling what they heard, in order.' },
+        { ar: 'يعيد الطفل سرد ما سمعه لأسرته بترتيب أحداثه، ويكتب فقرة قصيرة من ثلاث جمل.', en: 'The child retells what they heard to the family, in order, and writes a short paragraph of three sentences.' },
+        { ar: 'أن يرتّب الطفل أحداث النص ويعيد سردها في فقرة قصيرة', en: 'The child will order the events and retell them in a short paragraph' },
+      );
+    case 'speak':
+      return set(
+        { ar: 'يحكي كل طفل لزميله ما يراه في صورة بجمل متتابعة، ثم يكتب ما قاله في فقرة قصيرة من ثلاث أو أربع جمل.', en: 'Each child tells a classmate what they see in a picture in connected sentences, then writes what they said in a short paragraph of three or four sentences.' },
+        { ar: 'يتحدث الطفل مع أسرته عن موضوع الوحدة، ويكتب فقرة قصيرة من ثلاث جمل مما قاله.', en: 'The child talks with the family about the unit’s theme and writes a short paragraph of three sentences from what they said.' },
+        { ar: 'أن يكتب الطفل فقرة قصيرة مما قاله', en: 'The child will write a short paragraph from what they said' },
+      );
+    case 'read':
+      return set(
+        { ar: `يقرأ كل طفل لي فقرة قصيرة من ${text} بصوته، ثم يجيب في دفتره عن ثلاثة أسئلة عن النص بجملة كاملة لكل منها.`, en: `Each child reads me a short part of ${textEn} aloud, then answers three questions about the text in the notebook, a full sentence each.` },
+        { ar: `يقرأ الطفل ${text} لأسرته قراءة جهرية، ويكتب فقرة قصيرة من ثلاث جمل عمّا أعجبه فيه ولماذا.`, en: `The child reads ${textEn} aloud to the family and writes a short paragraph of three sentences about what they liked in it and why.` },
+        { ar: 'أن يستعمل الطفل ثلاث كلمات جديدة من النص في فقرة قصيرة من عنده', en: 'The child will use three new words from the text in a short paragraph of their own' },
+      );
+    case 'write':
+      return set(
+        { ar: `يكتب كل طفل في دفتره خمس كلمات فيها ${rule}، ثم فقرة قصيرة من ثلاث جمل تستعمل ثلاثًا منها.`, en: `Each child writes five words with ${ruleEn} in their notebook, then a short paragraph of three sentences using three of them.` },
+        { ar: `يبحث الطفل في كتابه عن أربع كلمات فيها ${rule}، ويكتبها في فقرة قصيرة من ثلاث جمل.`, en: `The child finds four words with ${ruleEn} in the book and uses them in a short paragraph of three sentences.` },
+        { ar: 'أن يكتب الطفل فقرة قصيرة صحيحة فيها كلمات من الدرس', en: 'The child will write a correct short paragraph using words from the lesson' },
+      );
+    case 'build':
+      return set(
+        { ar: 'يكمل كل طفل جملًا ناقصة على نمط الدرس في كتابه، ثم يكتب فقرة قصيرة من ثلاث جمل على النمط نفسه.', en: 'Each child completes unfinished sentences on the lesson’s pattern in the book, then writes a short paragraph of three sentences on the same pattern.' },
+        { ar: 'يكتب الطفل فقرة قصيرة من ثلاث جمل على نمط الدرس، ويقرؤها لأسرته.', en: 'The child writes a short paragraph of three sentences on the lesson’s pattern and reads it to the family.' },
+        { ar: 'أن يكتب الطفل فقرة قصيرة صحيحة من عنده على النمط', en: 'The child will write a correct short paragraph of their own on the pattern' },
+      );
+  }
+}
+
 function arabicContent(topic: string, titleAr: string, grade: EarlyGrade = 1): Content {
   const lesson = arabicLessonType(titleAr || topic);
   if (grade >= 2 && lesson.type !== 'letter' && lesson.type !== 'mark' && lesson.type !== 'other') {
     const detail = titleDetail(titleAr || topic);
-    const g2 = grade === 3 ? thirdGradeArabic(lesson.type, detail) : secondGradeArabic(lesson.type, detail);
+    const g2 = grade === 4 ? fourthGradeArabic(lesson.type, detail) : grade === 3 ? thirdGradeArabic(lesson.type, detail) : secondGradeArabic(lesson.type, detail);
     return {
       materials: { ar: ['كتاب الطالب', 'بطاقات كلمات وجمل من الدرس', 'صور من موضوع الوحدة', 'دفتر لكل طفل'], en: ['Student book', 'Word and sentence cards from the lesson', 'Pictures of the unit’s theme', 'A notebook for each child'] },
       intro: { ar: 'سأبدأ بصورة كبيرة من موضوع الوحدة أو بسؤال قريب من حياة الأطفال، وأستمع إلى ثلاث إجابات بجمل قصيرة.', en: 'I will open with a large picture of the unit’s theme or a question close to the children’s lives, and listen to three answers in short sentences.' },
@@ -948,8 +1145,10 @@ export interface FirstGradePlanArgs {
   variant: number;
   /** Teacher-typed objectives, which win as they do everywhere. */
   customObjectives?: string;
-  /** Grade 1 (the default), 2 or 3: what the content asks for and how much a child writes. */
+  /** Grade 1 (the default) to 4: what the content asks for and how much a child writes. */
   grade?: EarlyGrade;
+  /** The lesson's subject id: Grade 4's digital literacy and vocational education have content of their own. */
+  subjectId?: string;
 }
 
 /** How much a child writes, by grade — the last line of every early-grade assessment. */
@@ -957,6 +1156,7 @@ export const WRITING_LIMIT: Record<EarlyGrade, Pair> = {
   1: { ar: 'لن أطلب كتابة إلا نسخ حرف أو كلمة أو عدد.', en: 'The only writing is copying a letter, a word or a number.' },
   2: { ar: 'ولا تزيد الكتابة على كلمات أو جملة قصيرة يكتبها الطفل بنفسه.', en: 'Writing is no more than words or a short sentence the child writes on their own.' },
   3: { ar: 'ولا تزيد الكتابة على جملتين أو ثلاث جمل قصيرة يكتبها الطفل بنفسه.', en: 'Writing is no more than two or three short sentences the child writes on their own.' },
+  4: { ar: 'ولا تزيد الكتابة على فقرة قصيرة من أربع أو خمس جمل يكتبها الطفل بنفسه.', en: 'Writing is no more than a short paragraph of four or five sentences the child writes on their own.' },
 };
 
 export interface FirstGradePlan {
@@ -979,7 +1179,7 @@ const minutes = (lang: Lang, duration: number, share: number) => {
 
 export function firstGradePlan(a: FirstGradePlanArgs): FirstGradePlan {
   const grade = a.grade ?? 1;
-  const c = contentFor(a.kind, a.topic, a.kb?.titleAr ?? a.topic, grade);
+  const c = contentFor(a.kind, a.topic, a.kb?.titleAr ?? a.topic, grade, a.subjectId ?? (a.kb ? getBookForLesson(a.kb)?.subjectId : undefined));
   const limit = WRITING_LIMIT[grade];
   const say = ANSWER[grade];
   const ar = a.lang === 'ar';
@@ -997,7 +1197,7 @@ export function firstGradePlan(a: FirstGradePlanArgs): FirstGradePlan {
       mainActivity = `(${m(0.3)}) – نكتشف أولًا:\n\n1. سأضع أمام الأطفال ${c.explore.ar} دون أن أقول الفكرة، وسأسأل: «ماذا ترون؟ ما الذي يتشابه؟»\n2. يشير الأطفال ويقولون ما لاحظوه بكلمة أو جملة قصيرة، وسأكرّر كلماتهم بصوت واضح.\n3. بعد ذلك سأسمّي ما اكتشفوه: ${c.show.ar}`;
       guidedPractice = `(${m(0.22)}) – نجرّب ما اكتشفناه:\n\n• ${c.together.ar}\n• وسأسأل: «كيف عرفتم؟» ويجيب الأطفال شفويًا.`;
       independentPractice = `(${m(0.18)}) – كل طفل يجرّب مثالًا جديدًا:\n\n• ${c.alone.ar}\n• وسأسأل كل طفل: «لماذا اخترت هذا؟» ويجيب ${say.ar}.`;
-      assessment = 'سأقيّم بالملاحظة: هل يصف الطفل ما لاحظه بكلمة صحيحة؟ وسأسأل كل طفل «كيف عرفت؟» ويجيب شفويًا، وأسجّل ملاحظتي في قائمة الصف.\n' + limit.ar;
+      assessment = `سأقيّم بالملاحظة: هل يصف الطفل ما لاحظه ${grade >= 3 ? 'بجملة صحيحة' : 'بكلمة صحيحة'}؟ وسأسأل كل طفل «كيف عرفت؟» ويجيب شفويًا، وأسجّل ملاحظتي في قائمة الصف.\n` + limit.ar;
     } else if (style === 'collaborative') {
       mainActivity = `(${m(0.3)}) – نعمل في ثنائيات:\n\n1. ${c.show.ar}\n2. سأقسم الأطفال ثنائيات، ولكل طفل دور واحد واضح: ${c.pairRoles.ar}.\n3. يتبادل الطفلان الدورين عند إشارتي.`;
       guidedPractice = `(${m(0.22)}) – ثنائيات أمام الصف:\n\n• يعرض ثنائيان أو ثلاثة ما فعلاه أمام الصف، ويصفّق الصف لهما.\n• ${c.together.ar}\n• وسأسأل الصف: «هل نتفق؟» ويرفع الأطفال أيديهم.`;
@@ -1013,7 +1213,7 @@ export function firstGradePlan(a: FirstGradePlanArgs): FirstGradePlan {
     mainActivity = `(${m(0.3)}) – Explore first:\n\n1. I will put ${c.explore.en} in front of the children without naming the idea, and ask: “What do you see? What is the same?”\n2. The children point and say what they noticed in a word or short sentence, and I will repeat their words clearly.\n3. Then I will name what they found: ${c.show.en}`;
     guidedPractice = `(${m(0.22)}) – Try what we found:\n\n• ${c.together.en}\n• I will ask “How did you know?” and the children answer aloud.`;
     independentPractice = `(${m(0.18)}) – Each child tries a new example:\n\n• ${c.alone.en}\n• I will ask each child “Why did you choose this?” and they answer ${say.en}.`;
-    assessment = 'I will assess by watching: does the child describe what they noticed with the right word? I will ask each child “How did you know?” and note it on the class list.\n' + limit.en;
+    assessment = `I will assess by watching: does the child describe what they noticed ${grade >= 3 ? 'in a right sentence' : 'with the right word'}? I will ask each child “How did you know?” and note it on the class list.\n` + limit.en;
   } else if (style === 'collaborative') {
     mainActivity = `(${m(0.3)}) – Work in pairs:\n\n1. ${c.show.en}\n2. I will put the children in pairs with one clear job each: ${c.pairRoles.en}.\n3. The two swap jobs at my signal.`;
     guidedPractice = `(${m(0.22)}) – Pairs in front of the class:\n\n• Two or three pairs show what they did, and the class claps for them.\n• ${c.together.en}\n• I will ask the class “Do we agree?” and the children raise their hands.`;

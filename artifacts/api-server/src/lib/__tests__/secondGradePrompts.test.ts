@@ -89,15 +89,15 @@ describe("the Grade 2 clause reaches every prompt the Grade 1 clause reaches", (
 
 describe("the shared pool", () => {
   // Keys computed 2026-11-15 from the code before this change: a Grade 2 request of a
-  // clause kind moves, so nothing pooled under the grade-blind prompt is served; Grades 4
-  // and 12 keep their keys (Grade 3 has moved since, for its own clause — `thirdGradePrompts.test.ts`).
+  // clause kind moves, so nothing pooled under the grade-blind prompt is served; Grades 5
+  // and 12 keep their keys (Grades 3 and 4 have moved since, for their own clauses — `thirdGradePrompts.test.ts`, `fourthGradePrompts.test.ts`).
   const key = (kind: string, b: Record<string, unknown>) => generationKeys(kind, "gpt-4o-mini", b).strictKey;
   const body = (g: number, grade: string) => ({ grade, subject: "Arabic", lessonId: `kbl-g${g}-arabic-s1-nccd-u1_l3`, topic: "x", language: "arabic" });
 
   it("restarts Grade 2's clause kinds and keeps every other grade's key", () => {
     assert.notEqual(key("lesson-plan", body(2, "الصف الثاني")), "94e3f6b0e21a2dc2");
     assert.notEqual(key("lesson-teaching", body(2, "الصف الثاني")), "a10ffec69164de30");
-    assert.equal(key("lesson-plan", body(4, "الصف الرابع")), "ec321554d84be1cb");
+    assert.equal(key("lesson-plan", body(5, "الصف الخامس")), "560786a6b59e39b8");
     assert.equal(key("lesson-plan", body(12, "الصف الثاني عشر")), "8df24d9a9b2eb587");
   });
 });
