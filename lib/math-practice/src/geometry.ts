@@ -419,11 +419,14 @@ const prismCylinderSurface = T('surface_prism_cyl', /^مساحه سطح المن
   return { eq: `${r}, ${h}`, answer: PI(N), wrongs: piOpts(N, [2 * r * h, 2 * r * r, r * r * h, r * (r + h), N + 2 * r]), ar: `ما مساحة السطح الكلية لأسطوانة نصف قطر قاعدتها ${r} سم وارتفاعها ${h} سم؟ (اترك الإجابة بدلالة π)`, en: `What is the total surface area of a cylinder with base radius ${r} cm and height ${h} cm? (Leave your answer in terms of π)` };
 });
 
+// A regular pyramid's slant height is more than half its base side, or the faces never
+// meet at the apex: «ضلعها 11 سم، وارتفاعه المائل 3 سم» was keyed 66 for a pyramid that
+// cannot exist (hand review of the ready-made sheets, 2026-11-20).
 const pyramidConeSurface = T('surface_pyr_cone', /^مساحه سطح الهرم والمخروط$/, [7, 7], ({ rng, diff }) => {
   // 0 pyramid total, 1 cone total; 2 pyramid lateral, 3 cone lateral, 4 a paper hat (cone lateral, real life).
   const k = pick(rng, [0, 1, 2, 3, 4]);
   if (k === 2) {
-    const b = int(rng, 3, span(diff, 8, 12, 16)), l = int(rng, 3, span(diff, 10, 14, 18));
+    const b = int(rng, 3, span(diff, 8, 12, 16)), l = int(rng, Math.max(3, Math.floor(b / 2) + 1), span(diff, 10, 14, 18));
     return { eq: `lat ${b}, ${l}`, answer: String(2 * b * l), wrongs: pos(2 * b * l, [b * b + 2 * b * l, 4 * b * l, b * l, b * b + b * l]), ar: `ما المساحة الجانبية لهرم منتظم قاعدته مربعة طول ضلعها ${b} سم، وارتفاعه المائل ${l} سم؟`, en: `What is the lateral surface area of a regular pyramid with a square base of side ${b} cm and slant height ${l} cm?` };
   }
   if (k === 3 || k === 4) {
@@ -433,7 +436,7 @@ const pyramidConeSurface = T('surface_pyr_cone', /^مساحه سطح الهرم 
     return { eq: `hat ${r}, ${l}`, answer: PI(r * l), wrongs: wr, ar: `قبعة على شكل مخروط بلا قاعدة، نصف قطر فتحتها ${r} سم وارتفاعها المائل ${l} سم. ما مساحة الورق اللازم لصنعها؟ (اترك الإجابة بدلالة π)`, en: `A party hat is a cone with no base, opening radius ${r} cm and slant height ${l} cm. How much paper does it take? (Leave your answer in terms of π)` };
   }
   if (k === 0) {
-    const b = int(rng, 3, span(diff, 8, 12, 16)), l = int(rng, 3, span(diff, 10, 14, 18));
+    const b = int(rng, 3, span(diff, 8, 12, 16)), l = int(rng, Math.max(3, Math.floor(b / 2) + 1), span(diff, 10, 14, 18));
     const s = b * b + 2 * b * l;
     return { eq: `${b}, ${l}`, answer: String(s), wrongs: pos(s, [4 * b * l, b * b + 4 * b * l, b * b + b * l, s + b]), ar: `ما مساحة السطح الكلية لهرم قاعدته مربعة طول ضلعها ${b} سم وارتفاع كل وجه جانبي (الارتفاع المائل) ${l} سم؟`, en: `What is the total surface area of a pyramid with a square base of side ${b} cm and slant height ${l} cm?` };
   }
@@ -1302,7 +1305,12 @@ const proportionalParts = T('proportional_parts', /^الاجزاء المتنا�
 });
 
 const bisector = T('angle_bisector_thm', /^منصفات في المثلث$/, [9, 9], ({ rng, diff }) => {
-  const a = int(rng, 2, 7), k = int(rng, 2, 4), bd = int(rng, 2, span(diff, 6, 9, 12));
+  // AB = a, AC = ak, BC = bd(1 + k): a triangle only when bd < a and bd(k + 1) > a(k − 1).
+  // Drawn apart, AB = 6, AC = 24, BD = 12 keyed DC = 48 for sides 6, 24, 60 — no such
+  // triangle (hand review of the ready-made sheets, 2026-11-20).
+  const a = int(rng, 3, span(diff, 7, 9, 12)), k = int(rng, 2, 4);
+  const fits = Array.from({ length: a - 2 }, (_, i) => i + 2).filter(n => n * (k + 1) > a * (k - 1));
+  const bd = pick(rng, fits.length ? fits : [a - 1]);
   const b = a * k, dc = bd * k;
   // 0 the angle bisector theorem; 1 a point on a perpendicular bisector, 2 a point on an angle bisector (both equidistant); 3 the incentre's distance from a side.
   const kind = pick(rng, [0, 1, 2, 3]);
