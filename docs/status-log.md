@@ -39,6 +39,18 @@ Six changes from a review of the parent side (the first four written 2026-11-13,
   The loader now reads the steps on `systemDb`, only after the review gate holds, only for the question ids in the
   caller's own sitting, and only that column. It is pinned in `systemDbFiles.test.ts` with that reason.
   `rlsDiff.test.ts` now reads both reviews and logs the steps each one got.
+  Verified: `answerReview.db.test.ts` (7 cases: the parent gets exactly the child's JSON; a sibling's key, another
+  family, a missing or unknown key and a hidden or re-published review are 404; a student or teacher is refused by
+  role) and the full API suite against a local Postgres (3,684 tests, 0 failures); the RLS suites, 76 of 76; the
+  mobile suite (9,706 tests, 0 failures, 10 skipped), including `parentExamReview.test.ts`; `pnpm run typecheck`.
+  Mutation checks: searching all of the parent's rows instead of the child's fails the sibling case; reading the
+  steps on the caller's connection fails the RLS diff (`[["step one","step two"]]` off, `[null]` on). Browser (web
+  build, API stubbed by Playwright): a parent on Arabic phone light and dark and English desktop sees the button
+  under the one exam whose review is on and not under the sibling's; it sends one request with that child's key; the
+  screen shows «إجابات سارة» / «Answers: سارة», «الإجابة المُقدَّمة» and never «إجابتك», and the steps.
+  Not verified: a phone or a native build; the real API and database behind the parent screens; the teacher's
+  changed switch wording seen on the evaluation screen (it is pinned by `parentExamReview.test.ts`, not looked at).
+  The review screen is recorded like the student's own (`/exam-review` was already a recorded student page).
 - **A parent ticks homework for a child with no student account** (the owner's call, 2026-11-20). Until now an item
   whose class held no student account for the child could be ticked by nobody, so it showed only its date; a young
   child is often in exactly that position, and the parent is the one checking. New `PUT/DELETE
