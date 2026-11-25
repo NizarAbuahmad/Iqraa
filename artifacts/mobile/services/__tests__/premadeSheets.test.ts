@@ -16,6 +16,8 @@ import assert from 'node:assert/strict';
 
 import { allPremade, type PremadeWorksheetContent } from '@workspace/curriculum/premade';
 import type { WorksheetOutput } from '../ai/AIService.ts';
+import { unanswerableQuestions } from '../premadeSheetGate.ts';
+import { getLessonById } from '../knowledgeBase.ts';
 
 /**
  * Compile-time assignability. If `PremadeWorksheetContent` stops satisfying
@@ -79,5 +81,57 @@ describe('coverage of Grade 10 mathematics', () => {
       assert.ok(!seen.has(slot), `${slot} appears twice`);
       seen.add(slot);
     }
+  });
+});
+
+/**
+ * Grades 1–9 maths (built 2026-11-20 from the knowledge base). Before that
+ * these grades' libraries held nothing at all, so the floor below is what
+ * turns "the shelf is empty again" into a failing test rather than a teacher's
+ * discovery. Counts are lessons the maths bank covers, minus `HELD_BACK`.
+ */
+describe('coverage of Grades 1–9 mathematics', () => {
+  const lower = allPremade().filter(
+    sheet => sheet.subjectId === 'mathematics' && sheet.gradeId !== 'grade-10',
+  );
+
+  it('ships sheets for every grade from 1 to 9', () => {
+    for (let level = 1; level <= 9; level += 1) {
+      const count = lower.filter(sheet => sheet.gradeId === `grade-${level}`).length;
+      assert.ok(count >= 25, `grade-${level} has only ${count} maths sheets`);
+    }
+  });
+
+  it('files every sheet under a lesson the knowledge base knows, in its own grade', () => {
+    for (const sheet of lower) {
+      const lesson = getLessonById(sheet.lessonId);
+      assert.ok(lesson, `${sheet.id}: no such lesson ${sheet.lessonId}`);
+      assert.equal(lesson!.titleAr, sheet.titleAr, `${sheet.id} carries another lesson's title`);
+    }
+  });
+});
+
+describe('every ready-made sheet', () => {
+  it('can be answered from the page (premadeSheetGate)', () => {
+    for (const sheet of allPremade()) {
+      const found = unanswerableQuestions(sheet.content as unknown as WorksheetOutput);
+      assert.deepEqual(found, [], `${sheet.id} has a question that cannot be answered from the page`);
+    }
+  });
+
+  it('never ships a blank answer, and keys every question once', () => {
+    for (const sheet of allPremade()) {
+      const questions = sheet.content.sections.reduce((n, s) => n + (s.questions?.length ?? 0), 0);
+      const nums = sheet.content.answerKey.map(k => k.num).sort((a, b) => a - b);
+      assert.deepEqual(nums, Array.from({ length: questions }, (_, i) => i + 1), `${sheet.id} key does not line up`);
+      for (const entry of sheet.content.answerKey) {
+        assert.ok(entry.answer.trim(), `${sheet.id} q${entry.num} has a blank answer`);
+      }
+    }
+  });
+
+  it('has a unique id', () => {
+    const ids = allPremade().map(sheet => sheet.id);
+    assert.equal(new Set(ids).size, ids.length);
   });
 });

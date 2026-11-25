@@ -17,7 +17,7 @@ const stroke = (points: string, extra: Partial<Stroke> = {}): Stroke => ({ color
 
 const docOf = (...pages: Array<[BoardBackground, Stroke[]]>): BoardDoc => ({
   current: 0,
-  pages: pages.map(([background, strokes]) => ({ background, board: { strokes, past: [], future: [] } })),
+  pages: pages.map(([background, strokes]) => ({ background, board: { strokes, texts: [], past: [], future: [] } })),
 });
 
 /** `n` plausible points, ~12 characters each. */
@@ -61,7 +61,7 @@ describe('serializeBoard / parseBoard round trip', () => {
   });
 
   it('boardFileOf never includes undo history', () => {
-    const d: BoardDoc = { current: 0, pages: [{ background: 'blank', board: { strokes: [], past: [[stroke('0,0 1,1')]], future: [] } }] };
+    const d: BoardDoc = { current: 0, pages: [{ background: 'blank', board: { strokes: [], texts: [], past: [{ strokes: [stroke('0,0 1,1')], texts: [] }], future: [] } }] };
     assert.equal(JSON.stringify(boardFileOf(d)).includes('past'), false);
   });
 });
@@ -120,7 +120,7 @@ describe('parseBoard refuses', () => {
     ['null', null],
     ['an array', []],
     ['text that is not JSON', '{nope'],
-    ['a wrong version', mutate(b => { b.version = 3; })],
+    ['a version from the future', mutate(b => { b.version = 4; })],
     ['a missing version', mutate(b => { delete b.version; })],
     ['a wrong canvas width', mutate(b => { b.canvas.w = 100; })],
     ['a wrong canvas height', mutate(b => { b.canvas.h = 100; })],
@@ -194,7 +194,7 @@ describe('isBoardDirty', () => {
     const r = serializeBoard(inked);
     assert.ok(r.ok);
     if (!r.ok) return;
-    const moved: BoardDoc = { current: 0, pages: [{ background: 'blank', board: { strokes: inked.pages[0]!.board.strokes, past: [[]], future: [] } }] };
+    const moved: BoardDoc = { current: 0, pages: [{ background: 'blank', board: { strokes: inked.pages[0]!.board.strokes, texts: [], past: [{ strokes: [], texts: [] }], future: [] } }] };
     assert.equal(isBoardDirty(moved, r.json), false);
   });
 
@@ -218,7 +218,7 @@ describe('boards with a solution (version 2)', () => {
   });
   const docWith = (s: BoardSolution | null): BoardDoc => ({
     current: 0,
-    pages: [withSolution({ background: 'grid', board: { strokes: [stroke('0.1,0.2 0.3,0.4')], past: [], future: [] } }, s), blankPage()],
+    pages: [withSolution({ background: 'grid', board: { strokes: [stroke('0.1,0.2 0.3,0.4')], texts: [], past: [], future: [] } }, s), blankPage()],
   });
 
   it('writes version 2 only when some page has a solution', () => {
@@ -227,8 +227,9 @@ describe('boards with a solution (version 2)', () => {
     assert.ok(plain.ok && solved.ok);
     if (!plain.ok || !solved.ok) return;
     assert.equal((JSON.parse(plain.json) as { version: number }).version, 1);
-    assert.equal((JSON.parse(solved.json) as { version: number }).version, BOARD_FILE_VERSION);
-    assert.equal(BOARD_FILE_VERSION, 2);
+    // A board with a solution and no text stays version 2, so an app that predates text still opens it.
+    assert.equal((JSON.parse(solved.json) as { version: number }).version, 2);
+    assert.equal(BOARD_FILE_VERSION, 3);
   });
 
   it('round-trips a solution, verified and unchecked, onto the right page', () => {

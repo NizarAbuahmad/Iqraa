@@ -40,6 +40,22 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
+    id: 'whiteboard-text',
+    date: '2026-11-25',
+    roles: ['teacher'],
+    titleKey: 'whatsNewBoardTextTitle',
+    bodyKey: 'whatsNewBoardTextBody',
+    route: '/ai-tools/whiteboard',
+  },
+  {
+    id: 'library-maths-sheets-g1-9',
+    date: '2026-11-24',
+    roles: ['teacher'],
+    titleKey: 'whatsNewLibraryMathsSheetsTitle',
+    bodyKey: 'whatsNewLibraryMathsSheetsBody',
+    route: '/curriculum/resources',
+  },
+  {
     id: 'g10-english-whole-track',
     date: '2026-11-24',
     roles: ['teacher'],
