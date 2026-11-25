@@ -7,7 +7,7 @@ import { confirm } from '@/services/confirm';
 import { goBack } from '@/services/navigation';
 import { DECK_ACCENT, DECK_BG, DECK_CARD_BG } from '@/services/deckTheme';
 import { getItem, saveItem, updateItem } from '@/services/workspace';
-import { BOARD_FILE_VERSION, boardFileOf, docOfFile, isBoardDirty, parseBoard, serializeBoard } from '@/services/boardFile';
+import { boardFileOf, boardFileVersionOf, docOfFile, isBoardDirty, parseBoard, serializeBoard } from '@/services/boardFile';
 import { PenCanvas } from '@/components/classroom/PenLayer';
 import { BOARD_PEN_COLORS, BOARD_PEN_LABEL_KEYS } from '@/services/penColors';
 import { boardScope } from '@/services/boardScope';
@@ -15,7 +15,9 @@ import { BoardBackground } from '@/components/classroom/BoardBackground';
 import { exportAsPDF } from '@/services/share';
 import { exportFilename } from '@/services/exportFilename';
 import { buildBoardHTML } from '@/services/boardExportHtml';
-import { BoardToolbar } from '@/components/classroom/BoardToolbar';
+import { BoardToolbar, type BoardTool } from '@/components/classroom/BoardToolbar';
+import { TextLayer } from '@/components/classroom/TextLayer';
+import { TextDialog } from '@/components/classroom/TextDialog';
 import { BoardSaveDialog } from '@/components/classroom/BoardSaveDialog';
 import { SolveDialog } from '@/components/classroom/SolveDialog';
 import { SolutionBlock } from '@/components/classroom/SolutionBlock';
@@ -31,6 +33,7 @@ import {
   trackWhiteboardOpened,
   trackWhiteboardSaved,
   trackWhiteboardSolved,
+  trackWhiteboardText,
   whiteboardSource,
 } from '@/services/classUsage';
 import {
@@ -54,6 +57,14 @@ import {
   undoBoard,
   updateCurrent,
   withSolution,
+  MAX_TEXTS_PER_PAGE,
+  TEXT_SIZES,
+  addText,
+  docHasText,
+  editText,
+  makeText,
+  removeText,
+  textSizeFor,
   type BoardBackground as BoardBackgroundKind,
   type BoardDoc,
 } from '@/services/whiteboardModel';
@@ -101,7 +112,9 @@ export default function WhiteboardScreen() {
   const [doc, setDoc] = useState<BoardDoc>(EMPTY_DOC);
   const [color, setColor] = useState(BOARD_PEN_COLORS[0]!);
   const [width, setWidth] = useState(BOARD_DEFAULT_WIDTH);
-  const [erase, setErase] = useState(false);
+  const [tool, setTool] = useState<BoardTool>('pen');
+  // The text being typed or edited: a new one at a spot of the page (`index` null), or an existing one.
+  const [textDraft, setTextDraft] = useState<null | { index: number | null; x: number; y: number; initial: string }>(null);
   const [area, setArea] = useState({ w: 0, h: 0 });
   const [loading, setLoading] = useState(!!params.savedId);
   const [saved, setSaved] = useState<Saved | null>(null);
@@ -136,6 +149,8 @@ export default function WhiteboardScreen() {
   askTitleRef.current = askTitle;
   const askSolveRef = useRef(askSolve);
   askSolveRef.current = askSolve;
+  const askTextRef = useRef(textDraft !== null);
+  askTextRef.current = textDraft !== null;
 
   // One confirm dialog at a time, shared by leave, clear and delete-page: a held
   // Escape key repeats, and each repeat would otherwise stack another dialog.
@@ -148,7 +163,7 @@ export default function WhiteboardScreen() {
   const dirty = useMemo(() => isBoardDirty(doc, saved?.json ?? null), [doc, saved]);
 
   const leave = useCallback(async () => {
-    if (busy.current || askTitleRef.current || askSolveRef.current) return;
+    if (busy.current || askTitleRef.current || askSolveRef.current || askTextRef.current) return;
     if (!isBoardDirty(docRef.current, savedRef.current?.json ?? null)) {
       goBack();
       return;
@@ -183,7 +198,7 @@ export default function WhiteboardScreen() {
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || askTitleRef.current || askSolveRef.current) return;
+      if (e.key !== 'Escape' || askTitleRef.current || askSolveRef.current || askTextRef.current) return;
       e.preventDefault();
       void leave();
     };
@@ -372,7 +387,7 @@ export default function WhiteboardScreen() {
   const persist = useCallback(async (title: string) => {
     if (saving.current) return;
     const r = serializeBoard(docRef.current);
-    const version = docHasSolution(docRef.current) ? BOARD_FILE_VERSION : 1;
+    const version = boardFileVersionOf(docRef.current); // the lowest that holds it: 1, 2 with a solution, 3 with text
     if (!r.ok) {
       showToast(t('boardTooBig'));
       return;
@@ -412,7 +427,12 @@ export default function WhiteboardScreen() {
       // `r.json` is the snapshot that was written: ink added while the request
       // was in flight leaves the board dirty, as it should.
       setSaved({ id, title, json: r.json });
-      trackWhiteboardSaved({ pages: docRef.current.pages.length, first, withSolution: version === BOARD_FILE_VERSION });
+      trackWhiteboardSaved({
+        pages: docRef.current.pages.length,
+        first,
+        withSolution: docHasSolution(docRef.current),
+        withText: docHasText(docRef.current),
+      });
     } catch {
       // `saveItem`'s device-storage fallback can throw (quota); nothing was kept.
       showToast(t('boardSaveFailed'));
@@ -458,6 +478,47 @@ export default function WhiteboardScreen() {
     }
   }, [defaultTitle, lang, loading, showToast, t]);
 
+  // ---- typed text: the layer reports a tap, this decides what it means, the dialog collects the words.
+  const onTapEmpty = useCallback((x: number, y: number) => {
+    if (loading || askTextRef.current) return;
+    if (currentPage(docRef.current).board.texts.length >= MAX_TEXTS_PER_PAGE) {
+      showToast(t('boardTextFull'));
+      return;
+    }
+    setTextDraft({ index: null, x, y, initial: '' });
+  }, [loading, showToast, t]);
+
+  const onTapText = useCallback((index: number) => {
+    if (askTextRef.current) return;
+    const item = currentPage(docRef.current).board.texts[index];
+    if (item) setTextDraft({ index, x: item.x, y: item.y, initial: item.text });
+  }, []);
+
+  const onEraseText = useCallback((index: number) => {
+    setDoc(d => updateCurrent(d, p => ({ ...p, board: removeText(p.board, index) })));
+  }, []);
+
+  const onSubmitText = useCallback((raw: string) => {
+    const draft = textDraft;
+    setTextDraft(null);
+    if (!draft) return;
+    if (draft.index === null) {
+      const item = makeText(draft.x, draft.y, raw, color, textSizeFor(width));
+      if (!item) return;
+      setDoc(d => updateCurrent(d, p => ({ ...p, board: addText(p.board, item) })));
+      trackWhiteboardText({ size: (['small', 'medium', 'large'] as const)[Math.max(0, TEXT_SIZES.indexOf(item.size as (typeof TEXT_SIZES)[number]))]!, rtl: item.rtl });
+    } else {
+      const index = draft.index;
+      setDoc(d => updateCurrent(d, p => ({ ...p, board: editText(p.board, index, raw) })));
+    }
+  }, [textDraft, color, width]);
+
+  const onRemoveText = useCallback(() => {
+    const draft = textDraft;
+    setTextDraft(null);
+    if (draft?.index != null) onEraseText(draft.index);
+  }, [textDraft, onEraseText]);
+
   const pageLabel = `${localizeDigits(String(doc.current + 1), lang)} / ${localizeDigits(String(doc.pages.length), lang)}`;
 
   return (
@@ -484,8 +545,8 @@ export default function WhiteboardScreen() {
           color={color}
           width={width}
           strokeScale={stage.scale > 0 ? stage.scale : 1}
-          erase={erase}
-          active={!loading}
+          erase={tool === 'erase'}
+          active={!loading && tool !== 'text'}
           onChange={next => {
             if (firstInk(drawnReported.current, next.length > 0)) {
               drawnReported.current = true;
@@ -493,6 +554,15 @@ export default function WhiteboardScreen() {
             }
             setDoc(d => updateCurrent(d, p => ({ ...p, board: commitStrokes(p.board, next) })));
           }}
+        />
+        <TextLayer
+          texts={page.board.texts}
+          scale={stage.scale}
+          mode={loading ? 'none' : tool === 'text' ? 'text' : tool === 'erase' ? 'erase' : 'none'}
+          onTapEmpty={onTapEmpty}
+          onTapText={onTapText}
+          onEraseText={onEraseText}
+          labels={{ edit: t('boardTextEditTitle'), erase: t('boardTextRemove') }}
         />
         {loading && (
           <View pointerEvents="none" style={styles.loading}>
@@ -508,8 +578,8 @@ export default function WhiteboardScreen() {
         onColor={setColor}
         width={width}
         onWidth={setWidth}
-        erase={erase}
-        onErase={setErase}
+        tool={tool}
+        onTool={setTool}
         canUndo={canUndo(page.board)}
         onUndo={() => setDoc(d => updateCurrent(d, p => ({ ...p, board: undoBoard(p.board) })))}
         canRedo={canRedo(page.board)}
@@ -549,11 +619,13 @@ export default function WhiteboardScreen() {
           close: t('close'),
           pen: t('penTool'),
           eraser: t('boardEraser'),
+          text: t('boardTextTool'),
           undo: t('penUndo'),
           redo: t('penRedo'),
           clear: t('penClear'),
           colors: BOARD_PEN_LABEL_KEYS.map(k => t(k)),
           widths: [t('boardWidthThin'), t('boardWidthMedium'), t('boardWidthThick')],
+          textSizes: [t('boardTextSmall'), t('boardTextMedium'), t('boardTextLarge')],
           backgrounds: { blank: t('boardBgBlank'), grid: t('boardBgGrid'), axes: t('boardBgAxes') },
           prevPage: t('boardPrevPage'),
           nextPage: t('boardNextPage'),
@@ -566,6 +638,20 @@ export default function WhiteboardScreen() {
           solveHideAll: t('solveHideAll'),
           solveDelete: t('solveDelete'),
         }}
+      />
+      <TextDialog
+        visible={textDraft !== null}
+        isRTL={isRTL}
+        editing={textDraft?.index != null}
+        initialText={textDraft?.initial ?? ''}
+        labels={{
+          addTitle: t('boardTextAddTitle'), editTitle: t('boardTextEditTitle'), fieldLabel: t('boardTextField'),
+          placeholder: t('boardTextPlaceholder'), add: t('boardTextAdd'), save: t('save'), remove: t('boardTextRemove'),
+          cancel: t('cancel'), tooManyLines: t('boardTextTooManyLines'),
+        }}
+        onSubmit={onSubmitText}
+        onRemove={onRemoveText}
+        onCancel={() => setTextDraft(null)}
       />
       <BoardSaveDialog
         visible={askTitle}
