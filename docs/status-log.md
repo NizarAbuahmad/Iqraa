@@ -10,6 +10,47 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+
+## Grade 2 review: four social studies main ideas corrected against the book, and what the review could not reach — 2026-11-25
+
+Grade 2, the Grade 3 way: the catalogs, the maths generators, the figures and page links, and — new this time — the
+catalog's own text against the printed book.
+
+**Fixed.** Four «الفِكْرَةُ الرَّئيسَةُ» entries in `iqra_curriculum_g2_social_sem1.json` did not match the book
+(`g2-social-s1-student-book`, read through Drive's text layer, which stores every line reversed with scrambled vowel
+marks; each line was un-reversed by hand from the raw stored strings, not taken from a summary):
+- `u1_l1` «الأسرة» said «يوجد في وطني **عناوين** من الأسرة، **مثل**…»; the book says «**نوعان** من الأسر، **منها**: الأسرة
+  النواة، والأسرة الممتدة». The live model reads this entry as the lesson's context, so it was being told the lesson was about
+  «headings» of the family.
+- `u1_l3` «آداب المعاملة» lacked «هم» (the book: «وتمنحهم السعادة…»).
+- `u3_l2` «من عاداتنا وتقاليدنا» was a different sentence; the book: «للمجتمع الأردني عادات وتقاليد وقيم ورثها من الآباء
+  والأجداد».
+- `u3_l4` «المهن في وطني» added «المهندسون» and dropped «تخدم المجتمع».
+The other seven semester 1 main ideas match the book letter for letter (ignoring vowel marks, which the text layer cannot
+give). The new wording carries my own vowel marks, in the catalog's style.
+
+**Checked and unchanged**
+- All 14 Grade 2 catalogs load into the app with their file counts: 236 lessons.
+- Maths, 61 lessons: the question generator (7,320 items), and the full quiz, worksheet and homework generators (every
+  paper at its requested length): no empty stem or key, no repeated stem, no option error. I read two or three questions
+  per lesson and recomputed about 30 keys by hand.
+- No duplicate lesson ids or main ideas, no lesson without an English title, in any Grade 2 catalog.
+
+**Not done, and why**
+- **The text-vs-book check covers one of 14 books.** The Grade 2 social studies semester 2 student book has **no text
+  layer** (both Drive copies return an empty string), so its 13 lessons need OCR from the PDF. The other twelve books were not
+  read. The method costs roughly 200k tokens of reading per book, and a transcription error survives every test we have.
+- No book text is extracted and no figures exist for Grade 2 (or Grade 1), so decks have no book pictures.
+- «صفحة الكتاب» has pages for 23 of 236 lessons (Physical Education 14 of 14; Islamic studies 9 of 24; nothing else).
+- **No Physical Education semester 2 catalog.** The book is not in Drive (only semester 1), so it may never have been supplied.
+- **No Digital Skills catalog for Grades 1–3**, although the subject is offered for every grade and Drive holds teacher's
+  guides and activity books for them (no student book). A new catalog is a scope decision, so I did not add one.
+- Only the maths subject has an offline question bank; every other subject answers «No offline question bank» with live AI
+  off, by design.
+
+Verified: `lib/curriculum` tests (937) and `verify` (0 errors); the change is four strings in one data file. No
+«ما الجديد» entry: nothing a teacher operates changed.
+
 ## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
 
 Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured
