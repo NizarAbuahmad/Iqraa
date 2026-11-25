@@ -139,13 +139,26 @@ export function eraseAlong(
 }
 
 /**
- * The strokes on the board plus snapshots to undo back to (`past`, oldest first)
- * and to redo forward to (`future`, the next redo first). `future` is empty
+ * A piece of typed text on the page. `x`/`y` are canvas units of the 1280x720 page
+ * (like a stroke's width, not fractions of the width): `y` is the top of the first
+ * line, and `x` is the START edge of every line — the left edge of an English item,
+ * the RIGHT edge of an Arabic one (`rtl`) — so a line needs no measuring to be placed,
+ * on the screen or in the PDF. `size` is the font size in canvas units. Lines are
+ * exactly as typed: nothing wraps, and what runs past the page edge is clipped.
+ */
+export type TextItem = { x: number; y: number; size: number; color: string; rtl: boolean; text: string };
+
+/** What undo and redo move between: the strokes AND the texts, so one history covers both. */
+export type BoardSnapshot = { strokes: Stroke[]; texts: TextItem[] };
+
+/**
+ * The strokes and texts on the board plus snapshots to undo back to (`past`, oldest
+ * first) and to redo forward to (`future`, the next redo first). `future` is empty
  * until something is undone, and any new commit empties it again.
  */
-export type BoardState = { strokes: Stroke[]; past: Stroke[][]; future: Stroke[][] };
+export type BoardState = { strokes: Stroke[]; texts: TextItem[]; past: BoardSnapshot[]; future: BoardSnapshot[] };
 
-export const EMPTY_BOARD: BoardState = { strokes: [], past: [], future: [] };
+export const EMPTY_BOARD: BoardState = { strokes: [], texts: [], past: [], future: [] };
 
 /**
  * Make `next` the board's strokes, remembering the old list. Same list in, same
@@ -154,31 +167,50 @@ export const EMPTY_BOARD: BoardState = { strokes: [], past: [], future: [] };
  */
 export function commitStrokes(state: BoardState, next: Stroke[]): BoardState {
   if (next === state.strokes) return state;
-  const past = [...state.past, state.strokes];
-  return { strokes: next, past: past.length > HISTORY_LIMIT ? past.slice(past.length - HISTORY_LIMIT) : past, future: [] };
+  return commitBoth(state, next, state.texts);
+}
+
+/** The texts' counterpart of `commitStrokes`: same history, same rules. */
+export function commitTexts(state: BoardState, next: TextItem[]): BoardState {
+  if (next === state.texts) return state;
+  return commitBoth(state, state.strokes, next);
+}
+
+function commitBoth(state: BoardState, strokes: Stroke[], texts: TextItem[]): BoardState {
+  const past = [...state.past, { strokes: state.strokes, texts: state.texts }];
+  return { strokes, texts, past: past.length > HISTORY_LIMIT ? past.slice(past.length - HISTORY_LIMIT) : past, future: [] };
 }
 
 export function undoBoard(state: BoardState): BoardState {
   if (state.past.length === 0) return state;
+  const back = state.past[state.past.length - 1]!;
   return {
-    strokes: state.past[state.past.length - 1]!,
+    strokes: back.strokes,
+    texts: back.texts,
     past: state.past.slice(0, -1),
-    future: [state.strokes, ...state.future],
+    future: [{ strokes: state.strokes, texts: state.texts }, ...state.future],
   };
 }
 
 /** Step forward again after an undo. Nothing to redo gives the same state back. */
 export function redoBoard(state: BoardState): BoardState {
   if (state.future.length === 0) return state;
-  return { strokes: state.future[0]!, past: [...state.past, state.strokes], future: state.future.slice(1) };
+  const next = state.future[0]!;
+  return {
+    strokes: next.strokes,
+    texts: next.texts,
+    past: [...state.past, { strokes: state.strokes, texts: state.texts }],
+    future: state.future.slice(1),
+  };
 }
 
-/** Wipe the board — as a commit, so it can be undone. No-op when already empty. */
+/** Wipe the board — strokes and texts together, as one commit, so it can be undone. No-op when already empty. */
 export function clearBoard(state: BoardState): BoardState {
-  return state.strokes.length === 0 ? state : commitStrokes(state, []);
+  return state.strokes.length === 0 && state.texts.length === 0 ? state : commitBoth(state, [], []);
 }
 
-export const hasInk = (state: BoardState): boolean => state.strokes.length > 0;
+/** Is there anything on the page the teacher drew or typed? (Clear, leave-guard and export ask this.) */
+export const hasInk = (state: BoardState): boolean => state.strokes.length > 0 || state.texts.length > 0;
 export const canUndo = (state: BoardState): boolean => state.past.length > 0;
 export const canRedo = (state: BoardState): boolean => state.future.length > 0;
 
@@ -326,8 +358,11 @@ export function goToPage(doc: BoardDoc, index: number): BoardDoc {
   return next === doc.current ? doc : { ...doc, current: next };
 }
 
-/** Is there ink on ANY page? (What leaving the board asks about.) */
+/** Is there ink or text on ANY page? (What leaving the board asks about.) */
 export const docHasInk = (doc: BoardDoc): boolean => doc.pages.some(p => hasInk(p.board));
+
+/** Does ANY page carry typed text? (It is what makes a board file version 3.) */
+export const docHasText = (doc: BoardDoc): boolean => doc.pages.some(p => p.board.texts.length > 0);
 
 /** Set (or with `null`, remove) the page's solution. Nothing to change gives the same page back. */
 export function withSolution(page: Page, solution: BoardSolution | null): Page {
@@ -341,3 +376,92 @@ export function withSolution(page: Page, solution: BoardSolution | null): Page {
 
 /** Does ANY page carry a solution? (A solution is content even with no ink.) */
 export const docHasSolution = (doc: BoardDoc): boolean => doc.pages.some(p => p.solution !== undefined);
+
+// ----------------------------------------------------------------------------- typed text
+
+/** Font sizes in canvas units. The board's three line widths pick them (same order), so one control serves both tools. */
+export const TEXT_SIZES = [40, 56, 84] as const;
+export const DEFAULT_TEXT_SIZE: number = TEXT_SIZES[1];
+export const MIN_TEXT_SIZE = 8;
+export const MAX_TEXT_SIZE = 240;
+export const TEXT_LINE_HEIGHT = 1.3;
+export const MAX_TEXTS_PER_PAGE = 100;
+export const MAX_TEXT_CHARS = 400;
+export const MAX_TEXT_LINES = 8;
+
+/** The font size a stroke width stands for; a width that is not one of the three gets the middle size. */
+export function textSizeFor(width: number): number {
+  const i = STROKE_WIDTHS.indexOf(width as (typeof STROKE_WIDTHS)[number]);
+  return TEXT_SIZES[i >= 0 ? i : 1]!;
+}
+
+const ARABIC_SCRIPT = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+const LATIN_LETTER = /[A-Za-z]/;
+
+/** Does the text read right to left? The first letter of either script decides; digits and punctuation do not. */
+export function textIsRtl(text: string): boolean {
+  for (const ch of text) {
+    if (ARABIC_SCRIPT.test(ch)) return true;
+    if (LATIN_LETTER.test(ch)) return false;
+  }
+  return false;
+}
+
+/** Control characters other than a newline, and the bidi override / embedding marks that could reverse what a reader sees. */
+// eslint-disable-next-line no-control-regex
+export const UNSAFE_TEXT_CHARS = /[\u0000-\u0009\u000B-\u001F\u007F\u202A-\u202E\u2066-\u2069]/;
+
+/**
+ * What the dialog's text becomes: line endings unified, unsafe characters dropped, each
+ * line trimmed on the right, blank lines at either end gone, then capped at
+ * `MAX_TEXT_LINES` lines and `MAX_TEXT_CHARS` characters. Empty in, empty out.
+ */
+export function cleanText(raw: string): string {
+  const lines = raw
+    .replace(/\r\n?/g, '\n')
+    .replace(new RegExp(UNSAFE_TEXT_CHARS.source, 'g'), '')
+    .split('\n')
+    .map(l => l.replace(/\s+$/, ''));
+  while (lines.length > 0 && lines[0]!.trim() === '') lines.shift();
+  while (lines.length > 0 && lines[lines.length - 1]!.trim() === '') lines.pop();
+  return lines.slice(0, MAX_TEXT_LINES).join('\n').slice(0, MAX_TEXT_CHARS);
+}
+
+export const textLines = (text: string): string[] => text.split('\n');
+
+const round1 = (n: number): number => Math.round(n * 10) / 10;
+
+/**
+ * A new item at a spot on the page (canvas units), or null when the text is empty after
+ * cleaning. The spot is clamped onto the page, rounded so the saved string is stable, and
+ * the item's direction is read from its own text.
+ */
+export function makeText(x: number, y: number, rawText: string, color: string, size: number): TextItem | null {
+  const text = cleanText(rawText);
+  if (text === '') return null;
+  const px = Math.min(CANVAS_W, Math.max(0, Number.isFinite(x) ? x : 0));
+  const py = Math.min(CANVAS_H, Math.max(0, Number.isFinite(y) ? y : 0));
+  return { x: round1(px), y: round1(py), size, color, rtl: textIsRtl(text), text };
+}
+
+/** Add a text. A full page (`MAX_TEXTS_PER_PAGE`) gives the same state back. */
+export function addText(state: BoardState, item: TextItem): BoardState {
+  if (state.texts.length >= MAX_TEXTS_PER_PAGE) return state;
+  return commitTexts(state, [...state.texts, item]);
+}
+
+/** Change the words of one text (its place, colour and size stay; its direction follows the words). Same words give the same state back. */
+export function editText(state: BoardState, index: number, rawText: string): BoardState {
+  const old = state.texts[index];
+  if (!old) return state;
+  const text = cleanText(rawText);
+  if (text === '') return removeText(state, index);
+  if (text === old.text) return state;
+  return commitTexts(state, state.texts.map((t, i) => (i === index ? { ...t, text, rtl: textIsRtl(text) } : t)));
+}
+
+/** Remove one text. A bad index gives the same state back. */
+export function removeText(state: BoardState, index: number): BoardState {
+  if (!state.texts[index]) return state;
+  return commitTexts(state, state.texts.filter((_, i) => i !== index));
+}
