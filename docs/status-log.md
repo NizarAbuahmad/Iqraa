@@ -10,6 +10,54 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Instant feedback: students see their mark and mistakes as soon as they hand in — 2026-11-26
+
+Asked for by the owner: homework and tests the AI designs, answered in the app, with the mark and the mistakes shown
+when the student finishes. Generating, sharing, sitting and auto-marking already existed (evaluations, `/take/CODE`,
+`homework.evaluationId`); what did not was seeing mistakes before the exam **closed** — the answer review
+(`studentReviewReady`) waits for a closed exam and the teacher's «اعرض الإجابات», because an open exam is still being
+sat. The owner chose (option «ب»): right and wrong per question at once, the correct answers only after close.
+
+- **Switch.** `evaluations.instant_feedback` (migration `0032`, additive), «فعّل التغذية الراجعة الفورية» on the
+  exam screen in any status, never for a paper exam. `POST /evaluations/:id/instant-feedback {enabled}`. A mark per
+  question is a mark, so the feedback needs released results (`feedbackReady` = switch ∧ released ∧ handed in):
+  turning it on for a published/closed exam also releases them (same conditional update and announcement as
+  `/results-release`, awaited with `pushWithin`); the **first** publish of a draft with it on releases them; a
+  re-publish leaves the release as the teacher left it; hiding the results pauses the feedback (the screen says so,
+  `instantFeedbackPausedNote`); turning it off leaves the release alone. Worksheets sent to a class
+  (`/evaluations/from-worksheet`) are created with it on.
+- **What the student gets.** `/take/attempt/result` adds `feedback`, and `/student/exams/:id/review` falls back to
+  `mode: "feedback"` short of the full review; the «اختباراتي» row has `reviewMode`. Items come from
+  `feedbackItems`: verdict, the student's own answer and marks, **no** `correctAnswer` or steps, and the body
+  **as the student was shown it** (`sanitizeQuestionForStudent` with the attempt's seed) — the stored body can carry
+  the key (an option's `isCorrect`, a fill-blank's `blanks`, a matching column in key order); the review found the
+  first version sending the stored body. A question waiting for the teacher has no verdict («بانتظار تصحيح المعلم»).
+  The hand-in screen asks for the result once by itself (quietly — no «not marked yet» unasked) and lists the cards
+  (`components/AnswerReviewCard.tsx`, shared with `/exam-review`).
+- **No retakes with it on** (owner's choice, 2026-11-26): `retakeDecision` refuses `instant_feedback` after
+  `already_passed`. Right/wrong plus three retakes of the same paper settles true/false and most multiple choice by
+  elimination, and a pass opens the next lesson behind the mastery gate.
+- **What it does give away, said in the teacher's confirm:** «صحيحة» beside a student's own answer is that item's
+  key, and any verdict on a true/false item is. It is for homework and practice, not an exam classmates are still
+  sitting. A student can also claim an absent classmate's name on the share link and read verdicts off that sitting.
+- «ما الجديد»: `instant-feedback-teacher`, `instant-feedback-student`.
+
+Verified: `answerReview.test.ts` (gate, no key or steps, the sanitised body for `isCorrect` / `blanks` / matching
+order), `studentExams.test.ts` (row `review` / `reviewMode`), `retake.test.ts`; `instantFeedback.db.test.ts` over HTTP
+against Postgres (off by default; teacher-only switch; turning on releases; review and hand-in route send no key;
+another student / a parent get nothing; hiding results hides it; full review takes over once closed and shown;
+re-publish keeps a hide; off stops it; a failed lesson quiz is retakeable only with it off); api-server `pnpm test`
+with the database (3689 pass); mobile `pnpm test`; `pnpm run typecheck`; all three `e2e/` specs, the journey now
+turning the switch on before publishing and asserting the student sees verdicts and no «Correct answer». Screens
+read in Chromium: the teacher switch (English, desktop), the hand-in screen in English desktop and Arabic at 390 px.
+
+Not verified: a real phone or Android; dark mode of the cards (the colours came unchanged from `/exam-review`);
+`RLS_ENFORCE` on; a live-AI paper. **Found, not fixed (shared code):** in Arabic a coordinate-pair answer such as
+«(1, 3)» prints «(3 ,1)» — `isolateForeignRuns` does not isolate digits with only commas and brackets — on these cards
+and very likely in the options while the exam is sat. Open nits from the review: the switch route reads the status
+before its update (a publish racing it can leave feedback on with results unreleased); the route does not refuse a
+paper exam (the app hides the switch for one).
+
 ## The whiteboard takes typed text — 2026-11-25
 
 The follow-up the previous entry named («no text tool»). A teacher can now put words on the page.
