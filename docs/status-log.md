@@ -10,6 +10,33 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Coordinate pairs read left to right in Arabic — 2026-11-26
+
+A maths option `(1, 3)` printed as `(3 ,1)` in the Arabic UI: on the take screen's options
+(`app/take/[code].tsx`) and in «إجابتك» on the review card (`ReviewCard` in `app/exam-review/[id].tsx`;
+there is no `AnswerReviewCard.tsx`), for «حل نظام مكوَّن من معادلة خطية ومعادلة تربيعية», whose options are
+all ordered pairs. **Cause:** `isolateForeignRuns` (`services/mathRender.ts`) leaves the latin comma out of its
+run class on purpose (prose uses it), so the pair was cut into `(1` and `3)`, and neither half passed
+`worthIsolating` (a digit but no operator). Both stayed in the RTL flow, which laid the numbers out right to left.
+
+**Fix.** A latin comma inside a bracketed tuple of plain maths atoms (`(1, 3)`, `(−2, 0)`, `(x, y)`,
+`(1, 2, 3)`), or between such tuples (`(1, 3), (2, 5)`), is swapped for a private-use stand-in (`PAIR_COMMA`)
+before runs are found, and swapped back after. This is the trick the `؟` blank already uses. The stand-in is in
+the run class and makes a run worth isolating, and it counts as an operator for the closing-full-stop rule
+(«الحل هو (1, 3).» keeps the stop outside). These are unchanged: a prose comma with no brackets («الأعداد 1, 2,
+3»), an Arabic-comma pair «(1، 3)», the bracket-pairing split (`isolateRun`) and the `؟` override. Every caller
+of `isolateForeignRuns` gets this, not only the two screens.
+
+**Verified:** ten new cases in `mathRender.test.ts` (seven failed before the fix); the mobile suite and root
+typecheck pass. In Chromium at 390px, Arabic UI, a scratch copy of the e2e journey published an exam on this
+lesson and measured each option's text on `/take/CODE`. Fixed, the first coordinate's x is left of the second
+(`(1, 3)`: 283 < 294). In a clone of the same element holding the old un-isolated text it is right of it
+(165 > 152). Same result for `(0, 2)`, `(2, 0)` and `(−2, −2)`, and the screenshot shows them left to right.
+**Not verified:** the «إجابتك» card itself (it needs a signed-in student account with results released; it
+renders the same helper in the same kind of `<Text>`), and native Android/iOS, which rely on LRI/PDI as every
+other isolate here does. **Not covered:** intervals `[1, 3]` / `]1, 3[` — square brackets are not in the run
+class, so an interval still reads reversed.
+
 ## Admin users filters: confirmed on Android — 2026-11-24
 
 Docs only. «Admin users list: filter by channel (web / app) and by new or returning» (#1409) said its
