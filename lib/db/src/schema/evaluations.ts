@@ -182,6 +182,16 @@ export const evaluations = pgTable(
      * read together with `releaseResultsToStudent` (`studentReviewReady`).
      */
     showSolutionsToStudent: boolean("show_solutions_to_student").notNull().default(false),
+    /**
+     * «تغذية راجعة فورية»: a student sees, as soon as they hand in, which
+     * questions they got right and wrong — their own answer and the marks, never
+     * the correct answer or the steps, which still wait for a closed exam and
+     * `showSolutionsToStudent` (`modules/assessment/answerReview.ts`,
+     * `feedbackReady`). A per-question mark is a mark, so it also needs the
+     * results released: turning this on releases them (and publishing an exam
+     * with it on does too), and hiding the results hides the feedback.
+     */
+    instantFeedback: boolean("instant_feedback").notNull().default(false),
 
     /** Denormalized sum of question marks; recomputed on every question write. */
     totalMarks: numeric("total_marks", { precision: 6, scale: 2 }).notNull().default("0"),

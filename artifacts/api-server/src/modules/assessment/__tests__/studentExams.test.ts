@@ -126,6 +126,23 @@ describe("studentExamRow", () => {
     assert.equal(guardianExamRow(rowOf(exam(shown), sat, RESULT, NOW)).review, false, "the review route is the student's");
   });
 
+  it("with instant feedback, offers the review on an exam still being sat, as soon as it is handed in", () => {
+    const sat = { status: "graded", startedAt: NOW, submittedAt: NOW };
+    const instant = { status: "published", releaseResultsToStudent: true, instantFeedback: true } as const;
+    assert.equal(rowOf(exam(instant), sat, RESULT, NOW).review, true);
+    assert.equal(rowOf(exam(instant), sat, RESULT, NOW).reviewMode, "feedback");
+    // Once closed with the answers shown, the full review takes over.
+    const closed = exam({ ...instant, status: "closed", showSolutionsToStudent: true });
+    assert.equal(rowOf(closed, sat, RESULT, NOW).reviewMode, "full");
+    // A question still waiting for the teacher does not hold the feedback back.
+    assert.equal(rowOf(exam(instant), { ...sat, status: "needs_review" }, { ...RESULT, isProvisional: true }, NOW).review, true);
+    assert.equal(rowOf(exam({ ...instant, releaseResultsToStudent: false }), sat, RESULT, NOW).review, false, "results hidden");
+    assert.equal(rowOf(exam({ ...instant, instantFeedback: false }), sat, RESULT, NOW).review, false, "switch off");
+    assert.equal(rowOf(exam(instant), { status: "in_progress", startedAt: NOW, submittedAt: null }, null, NOW).review, false, "not handed in");
+    assert.equal(rowOf(exam({ ...instant, paper: true }), sat, RESULT, NOW).review, false, "a paper exam has no questions");
+    assert.equal(guardianExamRow(rowOf(exam(instant), sat, RESULT, NOW)).review, false, "the review route is the student's");
+  });
+
   it("never hands out the link of a closed exam", () => {
     const row = rowOf(exam({ status: "closed", closedAt: NOW }), null, null, NOW);
     assert.equal(row.state, "closed");
