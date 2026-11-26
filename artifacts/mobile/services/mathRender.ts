@@ -454,7 +454,20 @@ const FOREIGN_GREEK = 'α-ωΑ-Ωϑϕϵ';
 // sentence and stays in the Arabic flow.
 const BLANK = '\uE000';
 const BLANK_RE = /؟(?=[ ]*[=+\-−×÷])|(?<=[=+\-−×÷][ ]*)؟/g;
-const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}`;
+// A coordinate pair «(1, 3)» — or a list of them, «(1, 3), (2, 5)» — has digits,
+// brackets and a comma but no operator. The latin comma is not in the run class
+// (prose uses it), so the pair was cut into «(1» and «3)», neither of which earned
+// an isolate, and bidi printed «(3 ,1)» (found 2026-11-26 on a lesson whose
+// options are ordered pairs). Only a comma INSIDE a bracketed tuple of plain
+// maths atoms, or between two such tuples, is swapped for this stand-in, which
+// the run class accepts and which marks the run as worth isolating; it is swapped
+// back before the line is returned. «الأعداد 1, 2, 3» has no brackets and is
+// untouched, and an Arabic-comma pair «(1، 3)» stays in the Arabic flow as before.
+const PAIR_COMMA = String.fromCodePoint(0xe001);
+const PAIR_ATOM = `[+−-]?[A-Za-z0-9.^√/′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉°${FOREIGN_GREEK}]+`;
+const PAIR_TUPLE = `[(] *${PAIR_ATOM} *(?:, *${PAIR_ATOM} *)+[)]`;
+const PAIR_RE = new RegExp(`${PAIR_TUPLE}(?: *, *${PAIR_TUPLE})*`, 'g');
+const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}${PAIR_COMMA}`;
 const FOREIGN_END = FOREIGN_CHAR.replace('.', '');
 
 // Reaction and implication arrows. They may sit INSIDE a run but never at its
@@ -487,13 +500,21 @@ const HAS_LATIN = /[A-Za-zα-ωΑ-Ωϑϕϵ]/;
 const HAS_DIGIT = /[0-9₀-₉¹²³⁰⁴-⁹]/;
 const HAS_OPERATOR = /[=+\-−/^√×÷∘<>≤≥≠≈±∞]/;
 
+/** An equation's shape: an operator, or the comma of a coordinate pair. */
+function isEquationLike(run: string): boolean {
+  return HAS_OPERATOR.test(run) || run.includes(PAIR_COMMA);
+}
+
 function worthIsolating(run: string): boolean {
   if (HAS_LATIN.test(run)) return true;
-  return HAS_DIGIT.test(run) && HAS_OPERATOR.test(run);
+  return HAS_DIGIT.test(run) && isEquationLike(run);
 }
 
 export function isolateForeignRuns(line: string): string {
-  return (line ?? '').replace(BLANK_RE, BLANK).replace(FOREIGN_RUN_RE, m => {
+  return (line ?? '')
+    .replace(BLANK_RE, BLANK)
+    .replace(PAIR_RE, m => m.replaceAll(',', PAIR_COMMA))
+    .replace(FOREIGN_RUN_RE, m => {
     // A run with the bank's blank in it is overridden left-to-right, not just
     // isolated: «؟» is an Arabic letter to the bidi algorithm, and inside a bare
     // isolate it turned the digits after it Arabic too (rule W2), so
@@ -502,17 +523,20 @@ export function isolateForeignRuns(line: string): string {
     if (m.includes(BLANK)) return `⁦\u202D${m.replaceAll(BLANK, '؟')}\u202C⁩`;
     // A sentence's closing full stop is not part of an equation before it:
     // inside the isolate it printed on the wrong side, «3x − 3.» read
-    // «.3x − 3». So when the run ENDS in dots and holds an operator, those
-    // dots go back to the flow («x = 3.» → isolate «x = 3», then «.»).
+    // «.3x − 3». So when the run ENDS in dots and holds an operator (or is a
+    // coordinate pair), those dots go back to the flow («x = 3.» → isolate
+    // «x = 3», then «.»).
     // Only that case. A run with no operator keeps its dot inside — a label
     // such as «A.» (wanted), but also a sentence ending in a latin-only run,
     // «x.» or «CO₂.», whose dot can still print on the wrong side. And a dot
     // followed by more latin on the same run («x = 3. y = 4») is mid-run, so
     // it stays inside too.
     const [, body, dots] = /^(.*?)(\s*\.*)$/su.exec(m)!;
-    if (dots && HAS_OPERATOR.test(body!)) return worthIsolating(body!) ? isolateRun(body!) + dots : m;
+    if (dots && isEquationLike(body!)) return worthIsolating(body!) ? isolateRun(body!) + dots : m;
     return worthIsolating(m) ? isolateRun(m) : m;
-  }).replaceAll(BLANK, '؟');
+  })
+    .replaceAll(BLANK, '؟')
+    .replaceAll(PAIR_COMMA, ',');
 }
 
 /**

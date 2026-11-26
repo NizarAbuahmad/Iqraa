@@ -425,6 +425,60 @@ describe('isolateForeignRuns', () => {
   });
 });
 
+// A coordinate pair has digits, brackets and a comma but no operator, so it was
+// never isolated: the comma was not in the run class and «(1, 3)» split into
+// «(1» and «3)», which the bidi algorithm laid out right to left as «(3 ,1)».
+// Seen on the take and review screens for «حل نظام مكوَّن من معادلة خطية
+// ومعادلة تربيعية», whose options are ordered pairs (found 2026-11-26).
+describe('isolateForeignRuns — coordinate pairs read left to right', () => {
+  it('isolates a pair on its own and inside Arabic prose', () => {
+    assert.equal(isolateForeignRuns('(1, 3)'), '⁦(1, 3)⁩');
+    assert.equal(isolateForeignRuns('النقطة (1, 3) تقع على المنحنى'), 'النقطة ⁦(1, 3)⁩ تقع على المنحنى');
+  });
+
+  it('keeps a negative coordinate inside the pair, either minus sign', () => {
+    assert.equal(isolateForeignRuns('(-2, 0)'), '⁦(-2, 0)⁩');
+    assert.equal(isolateForeignRuns('(−2, 0)'), '⁦(−2, 0)⁩');
+    assert.equal(isolateForeignRuns('(2.5, −1)'), '⁦(2.5, −1)⁩');
+  });
+
+  it('keeps a list of pairs in ONE isolate, the comma between them included', () => {
+    assert.equal(isolateForeignRuns('(1, 3), (2, 5)'), '⁦(1, 3), (2, 5)⁩');
+    assert.equal(isolateForeignRuns('الحلان هما (1, 3), (-2, 0)'), 'الحلان هما ⁦(1, 3), (-2, 0)⁩');
+  });
+
+  it('gives two pairs joined by an Arabic word one isolate each', () => {
+    assert.equal(isolateForeignRuns('(1, 3) و (2, 5)'), '⁦(1, 3)⁩ و ⁦(2, 5)⁩');
+  });
+
+  it('isolates a pair of letters and a triple too', () => {
+    assert.equal(isolateForeignRuns('النقطة (x, y)'), 'النقطة ⁦(x, y)⁩');
+    assert.equal(isolateForeignRuns('(1, 2, 3)'), '⁦(1, 2, 3)⁩');
+  });
+
+  it('leaves a sentence\'s closing full stop outside the pair', () => {
+    assert.equal(isolateForeignRuns('الحل هو (1, 3).'), 'الحل هو ⁦(1, 3)⁩.');
+  });
+
+  it('keeps a bracket opened in the Arabic out of the pair\'s isolate', () => {
+    assert.equal(isolateForeignRuns('(النقطة (1, 3))'), '(النقطة ⁦(1, 3)⁩)');
+  });
+
+  it('leaves a latin comma in prose alone — no tuple, no isolate', () => {
+    assert.equal(isolateForeignRuns('انظر الصفحات 3, 4'), 'انظر الصفحات 3, 4');
+    assert.equal(isolateForeignRuns('الأعداد 1, 2, 3'), 'الأعداد 1, 2, 3');
+  });
+
+  it('leaves an Arabic-comma pair to the Arabic flow, as before', () => {
+    assert.equal(isolateForeignRuns('(1، 3)'), '(1، 3)');
+  });
+
+  it('never drops or reorders characters', () => {
+    const original = 'نقطتا التقاطع (1, 3), (-2, 0) و (x, y).';
+    assert.equal(isolateForeignRuns(original).replace(/[⁦⁩]/g, ''), original);
+  });
+});
+
 // The bank stores maths canonically (`5^{10}`, `3^6 = 729`) and its promptAr
 // carries the display form (`5⁷ ÷ 5³`). A printed worksheet mixed the two:
 // stems in real superscripts, options and the whole answer key in raw caret
