@@ -20,6 +20,12 @@
  * - **`already_passed`** — a pass stands.
  * - **`teacher_entry`** — a paper the teacher typed in is the teacher's record,
  *   not the student's sitting (resume refuses it for the same reason).
+ * - **`instant_feedback`** — the exam showed the student which questions they
+ *   got wrong the moment they handed in («تغذية راجعة فورية»). Another go at
+ *   the same paper would settle every true/false and most multiple choice by
+ *   elimination, and a pass opens the next lesson behind the mastery gate. The
+ *   owner chose «no retakes» over hiding the feedback on a retake (2026-11-26).
+ *   Checked after `already_passed`, so a pass still reads as a pass.
  */
 
 /** ponytail: a flat cap, no cooldown; add a wait between tries if guessing shows up. */
@@ -39,6 +45,8 @@ export interface RetakeInput {
   singleLesson: boolean;
   /** Published, with a share link that has not expired. */
   open: boolean;
+  /** The exam is on «تغذية راجعة فورية» (`evaluations.instantFeedback`). Absent reads as `false`. */
+  instantFeedback?: boolean;
 }
 
 export type RetakeRefusal =
@@ -49,6 +57,7 @@ export type RetakeRefusal =
   | "not_a_quiz"
   | "closed"
   | "already_passed"
+  | "instant_feedback"
   | "limit_reached";
 
 export function retakeDecision(i: RetakeInput): { ok: true } | { ok: false; code: RetakeRefusal } {
@@ -60,6 +69,7 @@ export function retakeDecision(i: RetakeInput): { ok: true } | { ok: false; code
   if (!i.open) return { ok: false, code: "closed" };
   const percent = Number(i.percent);
   if (Number.isFinite(percent) && percent >= i.threshold) return { ok: false, code: "already_passed" };
+  if (i.instantFeedback) return { ok: false, code: "instant_feedback" };
   if (i.retakesUsed >= MAX_RETAKES) return { ok: false, code: "limit_reached" };
   return { ok: true };
 }
