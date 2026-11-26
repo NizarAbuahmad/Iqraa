@@ -469,12 +469,97 @@ describe('isolateForeignRuns — coordinate pairs read left to right', () => {
     assert.equal(isolateForeignRuns('الأعداد 1, 2, 3'), 'الأعداد 1, 2, 3');
   });
 
-  it('leaves an Arabic-comma pair to the Arabic flow, as before', () => {
+  // «،» between numbers in prose is read right to left: forcing these left to
+  // right would reverse a verse citation and a list of numbered materials.
+  it('leaves an Arabic-comma list of numbers in the Arabic flow', () => {
     assert.equal(isolateForeignRuns('(1، 3)'), '(1، 3)');
+    assert.equal(isolateForeignRuns('(79 ،78 )سورة الأنبياء:'), '(79 ،78 )سورة الأنبياء:');
+    assert.equal(isolateForeignRuns('أضع المواد المرقمة (3،2،1) في وعاء'), 'أضع المواد المرقمة (3،2،1) في وعاء');
+  });
+
+  it('still leaves a bracket of prose with an Arabic comma in it to the flow', () => {
+    // The chemistry stem from isolateRun's note: spaced «C = 12» is not a tuple atom.
+    assert.equal(isolateForeignRuns('الكتلة (C = 12، O = 16)'), 'الكتلة (⁦C = 12⁩، ⁦O = 16⁩)');
+    assert.equal(isolateForeignRuns('(الصف، الشعبة)'), '(الصف، الشعبة)');
   });
 
   it('never drops or reorders characters', () => {
     const original = 'نقطتا التقاطع (1, 3), (-2, 0) و (x, y).';
+    assert.equal(isolateForeignRuns(original).replace(/[⁦⁩]/g, ''), original);
+  });
+});
+
+// Intervals had the same fault and one more: «[» and «]» are not in the run
+// class at all, so «[1, 3]» was never isolated and printed «[3 ,1]», and a
+// half-open «[5, ∞)» has a «)» with no partner, which the bracket-pairing
+// split would have cut out of the interval. The forms below are the ones the
+// books write (domains and ranges, inequality solution sets, «[0°, 360°]»).
+describe('isolateForeignRuns — intervals read left to right', () => {
+  it('isolates a closed interval, on its own and in Arabic prose', () => {
+    assert.equal(isolateForeignRuns('[1, 3]'), '⁦[1, 3]⁩');
+    assert.equal(isolateForeignRuns('في الفترة [1, 3] تزداد السرعة'), 'في الفترة ⁦[1, 3]⁩ تزداد السرعة');
+    assert.equal(isolateForeignRuns('حل المعادلة على [0°, 360°]'), 'حل المعادلة على ⁦[0°, 360°]⁩');
+  });
+
+  it('keeps a half-open interval whole, its unpaired bracket included', () => {
+    assert.equal(isolateForeignRuns('المجال [5, ∞)'), 'المجال ⁦[5, ∞)⁩');
+    assert.equal(isolateForeignRuns('المدى (-∞, -2]'), 'المدى ⁦(-∞, -2]⁩');
+    assert.equal(isolateForeignRuns('(−∞, 4]'), '⁦(−∞, 4]⁩');
+    assert.equal(isolateForeignRuns('( - ∞, 3]'), '⁦( - ∞, 3]⁩');
+    assert.equal(isolateForeignRuns('[-4, ∞)'), '⁦[-4, ∞)⁩');
+  });
+
+  it('isolates an open interval written with parentheses and infinity', () => {
+    assert.equal(isolateForeignRuns('المجال (-∞, ∞)'), 'المجال ⁦(-∞, ∞)⁩');
+    assert.equal(isolateForeignRuns('(-∞,∞)'), '⁦(-∞,∞)⁩');
+  });
+
+  it('accepts the reversed-bracket notation too', () => {
+    assert.equal(isolateForeignRuns(']1, 3['), '⁦]1, 3[⁩');
+  });
+
+  it('keeps a union of intervals in ONE isolate', () => {
+    assert.equal(isolateForeignRuns('مجموعة الحل (-∞, 0) ∪ [5, ∞)'), 'مجموعة الحل ⁦(-∞, 0) ∪ [5, ∞)⁩');
+    assert.equal(isolateForeignRuns('(-∞, 4)∪(-∞, 4]=(-∞, 4]'), '⁦(-∞, 4)∪(-∞, 4]=(-∞, 4]⁩');
+  });
+
+  it('keeps «x ∈ [1, 3]» and «A ∪ B» whole', () => {
+    assert.equal(isolateForeignRuns('إذا كان x ∈ [1, 3] فإن'), 'إذا كان ⁦x ∈ [1, 3]⁩ فإن');
+    assert.equal(isolateForeignRuns('أوجد A ∪ B'), 'أوجد ⁦A ∪ B⁩');
+  });
+
+  it('does not pull a set symbol at a run\'s edge into the isolate', () => {
+    const line = 'الرمز ∪ يعني الاتحاد';
+    assert.equal(isolateForeignRuns(line), line);
+  });
+
+  it('leaves a sentence\'s closing full stop outside the interval', () => {
+    assert.equal(isolateForeignRuns('المجال هو [0, ∞).'), 'المجال هو ⁦[0, ∞)⁩.');
+  });
+
+  it('keeps a bracket opened in the Arabic out of the interval\'s isolate', () => {
+    assert.equal(isolateForeignRuns('(المجال [0, ∞))'), '(المجال ⁦[0, ∞)⁩)');
+  });
+
+  it('leaves square brackets that are not an interval alone', () => {
+    assert.equal(isolateForeignRuns('[ملاحظة] اقرأ النص'), '[ملاحظة] اقرأ النص');
+    assert.equal(isolateForeignRuns('[الرابط](https://x.y/a)'), '[الرابط](⁦https⁩:⁦//x.y/a⁩)');
+  });
+
+  // The bank's own form (lib/math-practice intervals): an Arabic comma, spaced.
+  it('isolates the bank\'s Arabic-comma intervals, keeping their comma', () => {
+    assert.equal(
+      isolateForeignRuns('اكتب الفترة (−∞ ، 5] على صورة متباينة.'),
+      'اكتب الفترة ⁦(−∞ ، 5]⁩ على صورة متباينة.',
+    );
+    assert.equal(isolateForeignRuns('[−3 ، ∞)'), '⁦[−3 ، ∞)⁩');
+    assert.equal(isolateForeignRuns('[1، 3]'), '⁦[1، 3]⁩');
+    assert.equal(isolateForeignRuns('(−2 ، 4]'), '⁦(−2 ، 4]⁩');
+    assert.equal(isolateForeignRuns('اكتب الفترة (−∞ ، 5) على صورة متباينة.'), 'اكتب الفترة ⁦(−∞ ، 5)⁩ على صورة متباينة.');
+  });
+
+  it('never drops or reorders characters', () => {
+    const original = 'المجال [0, ∞) والمدى (-∞, 2] و x ∈ ]1, 3[ و (-∞, 0) ∪ [5, ∞).';
     assert.equal(isolateForeignRuns(original).replace(/[⁦⁩]/g, ''), original);
   });
 });

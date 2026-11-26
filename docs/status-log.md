@@ -10,6 +10,50 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Intervals and set symbols read left to right in Arabic — 2026-11-26
+
+The follow-up the pairs entry below named. An interval printed backwards in the Arabic UI: `[1, 3]` as `[3 ,1]`,
+and the bank's `(−∞ ، 5]` as `[5 ، ∞−)` when read left to right. **Cause:** `[` and `]` are not in
+`isolateForeignRuns`'s run class at all (a chat's markdown link `[نص](…)` passes through it). A half-open `[5, ∞)`
+also has a `)` with no partner, which `isolateRun` would cut out of the interval.
+
+**Fix** (`services/mathRender.ts`).
+- `INTERVAL_RE` finds an interval: two maths atoms between `[(]` and `[)][`. It counts only with a square bracket
+  or `∞`. Inside it, every bracket character and the comma become private-use stand-ins (`protectInterval`). The run
+  class accepts them, the bracket pairing doesn't see them, and `restoreStandIns` swaps them back.
+- An atom may be `∞`, so `(-∞, ∞)` and `(-∞, -1)` are found too.
+- An interval may use **either** comma. Product decision: the banks' `(−∞ ، 5]`, `[−3 ، ∞)` (Grade 9 intervals in
+  `lib/math-practice/src/algebra.ts`) read left to right like the books. Before, they read as right-to-left notation
+  beside left-to-right equations and options. `،` has its own stand-in and comes back as `،`.
+- `∪ ∩ ∈ ∉` may sit inside a run, never at its edge, as arrows already do. So `(-∞, 0) ∪ [5, ∞)` and `x ∈ [1, 3]`
+  stay whole. A side effect fixes the probability lessons: `P(A ∪ B)` was three isolates, `P⁩(⁦A⁩ ∪ ⁦B⁩)`, which an
+  RTL line lays out as `(B ∪ A)P`. It is now one.
+
+**An Arabic-comma *pair* is still left alone, on purpose.** In prose, `،` between numbers is read right to left:
+a Quran citation `(79 ،78)`, an outcome code `(2 ،3)`, «المواد المرقمة (3،2،1)». Forcing those left to right
+reversed them; a first version did, and the corpus check below caught it. Tests pin all three.
+
+**Verified:**
+- 13 new cases in `mathRender.test.ts`; the mobile suite (9,663 tests, 0 failures) and root typecheck pass.
+- Old against new over every Arabic string in `lib/`, the mobile services and app, and the API source (487,287
+  distinct lines). Every changed display line was read. Intervals, `∞` pairs and `x ∈ W` / `P(A ∪ B)` got better;
+  no prose bracket changed after the fix above. The markdown-link cases are byte-identical.
+- Every bank topic generated 40 times per grade (9, 10) and difficulty: 556,442 texts. All 589 intervals and all 54
+  Latin-comma pairs come out as one isolate.
+- **Browser, Chromium at 390px, Arabic.** A scratch copy of the e2e journey (not committed) added a teacher-written
+  multiple-choice question to a published exam, with options `(−∞ ، 5]`, `[5, ∞)`, `(−∞ ، 5)` and `[−3 ، ∞)`. On
+  `/take/CODE` each option's first endpoint is left of its second. In a clone of the element with the old text, each
+  is right of it. The screenshot shows all four left to right.
+
+**Not verified / not covered:**
+- Native Android and iOS; they rely on LRI/PDI like every other isolate here.
+- The API's offline exam generator produced no questions for the Grade 9 «المجموعات والفترات» lesson ("6 selected
+  objective(s) have no questions"), which is why the browser check used a teacher-written question.
+- **Bank points with the Arabic comma**, `(${signed(x)} ، ${signed(y)})` in coordinate, translation, systems and
+  slope topics: thousands per run, still right to left. Telling them from prose needs the bank to emit `,`, or a
+  decision. Set-builder braces `{x | x ≤ 3}` are still split at `|` and `,`, as before.
+- Text that is already isolated gets a second, nested isolate; it draws the same. The old code did this to every run.
+
 ## Coordinate pairs read left to right in Arabic — 2026-11-26
 
 A maths option `(1, 3)` printed as `(3 ,1)` in the Arabic UI: on the take screen's options
