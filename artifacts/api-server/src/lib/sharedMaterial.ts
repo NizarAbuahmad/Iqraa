@@ -18,7 +18,7 @@ import { db, savedMaterials, systemDb, type SavedMaterial } from "@workspace/db"
 import { eq } from "drizzle-orm";
 
 import { studentCopy } from "../modules/homework/materialCopy.ts";
-import { copyableFormState, normalizeMaterialShareCode, redactOwnerNotes } from "./materialShare.ts";
+import { copyableFormState, normalizeMaterialShareCode, redactOwnerNotes, sharedPublicContent } from "./materialShare.ts";
 
 export interface SharedMaterial {
   type: string;
@@ -53,7 +53,7 @@ export async function loadSharedMaterial(rawCode: unknown, { full }: { full: boo
     grade: m.grade,
     topic: m.topic,
     language: m.language,
-    content: JSON.stringify(full ? content : studentCopy(content)),
+    content: JSON.stringify(full ? content : sharedPublicContent(m.type, content, studentCopy)),
     savedAt: m.updatedAt.toISOString(),
   };
 }
