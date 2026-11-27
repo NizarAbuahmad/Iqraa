@@ -56,7 +56,9 @@ Checked 2026-10-22:
   `users.ai_budget_usd`, optionally ending after `ai_budget_until`; deploys do not reset it; two of the owner's
   accounts have $20 since 2026-11-20); `STUDENT_ACCOUNTS=true`; `MASTERY_GATE=true`. **These caps are the app's own
   tracking, not money:** the OpenAI account must hold the credit. On 2026-11-20 its balance ran out and every live
-  call failed while the app showed sample content (see «OpenAI credit ran out» in the log).
+  call failed while the app showed sample content (see «OpenAI credit ran out» in the log). Since the
+  2026-11-27 review fixes, a provider account error and spend at 80%/100% of `AI_BUDGET_USD` push and email
+  every `system_admin` (deduplicated across instances); no real alert has been sent yet.
 - **Credentials:** 11 are Secret Manager references, 18 are plain config. Rotation:
   [`docs/deploying.md`](./docs/deploying.md), «Rotating a secret».
 - **Mobile:** `app.json` version `1.6.0` (bumped 2026-10-29 for PostHog session replay's native
@@ -137,7 +139,7 @@ Checked 2026-10-22:
   running, and whether masking hides their photos is unverified, like every other screen. The
   teacher's screens are reached from the tracked class page, so on the web a Contentsquare
   recording is usually already running when they open and only the body-level mask protects the
-  photos; Android replay has `maskAllImages` true. The policy (`LEGAL_VERSION` 2026-11-19 now; its recording text dates from 2026-10-30, its «time in the app» and optional-teacher-details lines from 2026-11-19, «Admin user insights» in the log) was written by a model and **not reviewed by a
+  photos; Android replay has `maskAllImages` true. The policy (`LEGAL_VERSION` 2026-11-27 now, which added Anthropic, Crashlytics and the photo scans to the providers; its recording text dates from 2026-10-30, its «time in the app» and optional-teacher-details lines from 2026-11-19, «Admin user insights» in the log) was written by a model and **not reviewed by a
   lawyer**; Contentsquare's data location was not checked (PostHog's settings say «EU Cloud»),
   and the Contentsquare plan shows a 200K sessions a month cap.
   Entry: «Screen recordings: Contentsquare on the web, PostHog replay on Android» in the log.
@@ -183,13 +185,12 @@ Checked 2026-10-22:
   neither that nor the student deleting their account deletes the recordings in R2 (privacy §6
   says so). They go only with a re-take, a quiz retake, the teacher deleting the attempt, or the
   teacher's account. To decide: purge them on archive and/or with the student's account.
-- **Uploaded images keep the metadata the device wrote, which can include where a photo was
-  taken.** The client re-encodes a photo only when it shrinks it (long edge over 1600 px): on the
-  web through a canvas, which writes no metadata; on a phone through `expo-image-manipulator`,
-  whose output was not checked for metadata. A smaller photo, or one whose resize fails, is sent as
-  its file's own bytes, and the server stores them as received. That covers
-  project photos, chat images and lesson media. Privacy §1 now says an attached image may carry its
-  own metadata. To do: strip EXIF/GPS on the server, or always re-encode on the client.
+- **Uploaded photos: two pickers still send raw files with their metadata.** Since 2026-11-27 every
+  JPEG/HEIC photo is re-encoded on the client before upload (project photos, chat images, lesson
+  media, scans), which drops EXIF/GPS, and one that cannot be re-encoded is not sent («Eight fixes
+  from the 2026-11-27 app review» in the log). Not covered: `pickTeachingImages` and the `image/*`
+  option of `pickTeachingDocuments` (`services/documents/pick.ts`). Not checked on a geotagged photo
+  on a phone. The server still stores what it receives; stripping there too would close the rest.
 - **Neon is on Launch (applied 2026-10-23 by the owner); two checks remain.** Autoscaling 0.25-0.5
   CU, scale to zero on: about $10 a month expected, about $39 at most (estimates; read Neon's
   Usage page weekly for a month). Check `pooled` on `GET /api/healthz/pool` (admin key) once this
