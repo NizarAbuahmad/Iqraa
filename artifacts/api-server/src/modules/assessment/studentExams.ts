@@ -22,7 +22,7 @@
  */
 import { sanitizeResultForStudent, studentResultReady, type StudentResult } from "./studentView.ts";
 import { examDeadline } from "./studentResponse.ts";
-import { studentReviewReady } from "./answerReview.ts";
+import { feedbackReady, studentReviewReady } from "./answerReview.ts";
 
 export interface ExamForStudent {
   id: string;
@@ -38,6 +38,8 @@ export interface ExamForStudent {
   releaseResultsToStudent: boolean;
   /** The teacher turned on the answer review. Absent reads as `false`. */
   showSolutionsToStudent?: boolean;
+  /** «تغذية راجعة فورية» (`feedbackReady`). Absent reads as `false`. */
+  instantFeedback?: boolean;
   publishedAt: Date | null;
   closedAt: Date | null;
   /**
@@ -99,8 +101,14 @@ export interface StudentExamRow {
   /** When a sitting already under way runs out, if the exam is timed. */
   deadlineAt: string | null;
   result: StudentResult | null;
-  /** «راجع إجاباتك» may open — `studentReviewReady`, and never for a paper exam (it has no questions to show). */
+  /**
+   * «راجع إجاباتك» may open — `studentReviewReady` (with the answers) or
+   * `feedbackReady` (right and wrong only, before the exam closes); never for a
+   * paper exam (it has no questions to show).
+   */
   review: boolean;
+  /** Which of the two `review` opens: "full" (with the answers), "feedback", or null. */
+  reviewMode: "full" | "feedback" | null;
 }
 
 function linkIsOpen(exam: ExamForStudent, now: Date): boolean {
@@ -133,6 +141,20 @@ export function studentExamRow(
   else if (!open) state = "closed";
   else state = sitting ? "in_progress" : "available";
 
+  const reviewable = handedIn && !paper;
+  const fullReview =
+    reviewable &&
+    studentReviewReady({
+      status: exam.status,
+      released: exam.releaseResultsToStudent,
+      solutionsShown: exam.showSolutionsToStudent === true,
+      result: result ?? undefined,
+    });
+  const feedbackReview =
+    reviewable &&
+    !fullReview &&
+    feedbackReady({ instantFeedback: exam.instantFeedback === true, released: exam.releaseResultsToStudent, submitted: handedIn });
+
   const studentsOwn = !sitting || (sitting.source ?? "student_link") === "student_link";
   // Never a link to a paper exam: publishing issued a code, but the paper has no questions to show.
   const offerLink = !paper && open && studentsOwn && (state === "available" || state === "in_progress" || state === "submitted");
@@ -157,15 +179,8 @@ export function studentExamRow(
         ? examDeadline(sitting?.startedAt ?? null, exam.timeLimitMin, 0)?.toISOString() ?? null
         : null,
     result: released && result ? sanitizeResultForStudent(result) : null,
-    review:
-      handedIn &&
-      !paper &&
-      studentReviewReady({
-        status: exam.status,
-        released: exam.releaseResultsToStudent,
-        solutionsShown: exam.showSolutionsToStudent === true,
-        result: result ?? undefined,
-      }),
+    review: fullReview || feedbackReview,
+    reviewMode: fullReview ? "full" : feedbackReview ? "feedback" : null,
   };
 }
 
@@ -194,10 +209,13 @@ export function sortStudentExams(rows: readonly StudentExamRow[]): StudentExamRo
  * exam is the child's to sit, and `/take/:code` would let whoever opens it
  * pick the child's name.
  *
- * The answer review (`review`) stays as the child's: since 2026-11-25 a parent
- * opens the same paper through `GET /parent/exams/:id/review`, under the same
- * rule and the teacher's same switch.
+ * The full answer review stays as the child's: since 2026-11-25 a parent opens
+ * the same paper through `GET /parent/exams/:id/review`, under the same rule and
+ * the teacher's same «اعرض الإجابات». The «تغذية راجعة فورية» mode does not: it
+ * runs while classmates may still be sitting the exam, and the teacher's switch
+ * for it speaks of students only.
  */
 export function guardianExamRow(row: StudentExamRow): StudentExamRow {
-  return { ...row, shareCode: null };
+  const full = row.reviewMode === "full";
+  return { ...row, shareCode: null, review: full, reviewMode: full ? "full" : null };
 }

@@ -100,6 +100,19 @@ describeDb("answer review over HTTP, against a real database", () => {
     assert.equal((await parentReview(w.users.parentA, await keyOf(w.users.parentA, CHILDREN.sara))).status, 404);
   });
 
+  it("keeps «تغذية راجعة فورية» the student's: a parent gets the full review only", async () => {
+    const instant = (enabled: boolean) => call(on, "POST", `/evaluations/${examId}/instant-feedback`, w.users.t1, { enabled });
+    assert.equal((await instant(true)).status, 200, on.logs().slice(-1500));
+    const mine = await reviewFor(w.users.studentA);
+    assert.equal(mine.status, 200, on.logs().slice(-1500));
+    assert.equal(mine.json.mode, "feedback");
+    assert.equal(mine.json.items[0].correctAnswer, null, "feedback carries no key");
+    assert.equal((await parentReview(w.users.parentA, await keyOf(w.users.parentA, CHILDREN.sara))).status, 404);
+    assert.equal((await parentRow(w.users.parentA, CHILDREN.sara))?.review, false);
+    assert.equal((await instant(false)).status, 200);
+    assert.equal((await reviewFor(w.users.studentA)).status, 404, "back to waiting for the answers");
+  });
+
   it("hands the student their paper as text once the closed exam's answers are shown", async () => {
     assert.equal((await call(on, "POST", `/evaluations/${examId}/close`, w.users.t1)).status, 200);
     assert.equal((await reviewFor(w.users.studentA)).status, 404, "closed alone is not enough");

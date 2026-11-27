@@ -454,8 +454,141 @@ const FOREIGN_GREEK = 'α-ωΑ-Ωϑϕϵ';
 // sentence and stays in the Arabic flow.
 const BLANK = '\uE000';
 const BLANK_RE = /؟(?=[ ]*[=+\-−×÷])|(?<=[=+\-−×÷][ ]*)؟/g;
-const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}`;
+// A coordinate pair «(1, 3)» — or a list of them, «(1, 3), (2, 5)» — has digits,
+// brackets and a comma but no operator. The latin comma is not in the run class
+// (prose uses it), so the pair was cut into «(1» and «3)», neither of which earned
+// an isolate, and bidi printed «(3 ,1)» (found 2026-11-26 on a lesson whose
+// options are ordered pairs). Only a comma INSIDE a bracketed tuple of plain
+// maths atoms, or between two such tuples, is swapped for this stand-in, which
+// the run class accepts and which marks the run as worth isolating; it is swapped
+// back before the line is returned. «الأعداد 1, 2, 3» has no brackets and is
+// untouched.
+//
+// A pair written with the ARABIC comma is left alone: in prose «،» separates
+// numbers an Arabic reader reads right to left — a Quran citation «(79 ،78)»,
+// an outcome code «(2 ،3)», «المواد المرقمة (3،2،1)» — and forcing those left
+// to right reverses them. An interval is different (below).
+const PAIR_COMMA = String.fromCodePoint(0xe001);
+const PAIR_COMMA_AR = String.fromCodePoint(0xe006);
+// An atom may be infinity, and the books space a sign off it: «( - ∞, 3]».
+const PAIR_ATOM = `[+−-]? *[A-Za-z0-9.^√/′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉°∞${FOREIGN_GREEK}]+`;
+const PAIR_TUPLE = `[(] *${PAIR_ATOM} *(?:, *${PAIR_ATOM} *)+[)]`;
+const PAIR_RE = new RegExp(`${PAIR_TUPLE}(?: *, *${PAIR_TUPLE})*`, 'g');
+// An interval may use either comma: the question banks write «(−∞ ، 5]» and
+// «[−3 ، ∞)», which displayed as right-to-left notation beside left-to-right
+// equations and options (product decision 2026-11-26: intervals read left to
+// right, like the books). A square bracket or «∞» is never prose, so the
+// Arabic comma is safe there; it gets a stand-in of its own and comes back as «،».
+const COMMA = '[,،]';
+// An interval — «[1, 3]», «[5, ∞)», «(-∞, -2]», «]1, 3[» — is a pair with at
+// least one square bracket. «[» and «]» are not in the run class (a chat's
+// markdown link «[نص](…)» passes through here), and a half-open interval has a
+// «)» with no partner, which `isolateRun` would cut out of it. So inside an
+// interval all four bracket characters become stand-ins too, which the run
+// class accepts and the pairing does not see, and the comma becomes
+// `PAIR_COMMA`. All are swapped back before the line is returned. A run of two
+// parentheses only is left to `PAIR_RE`.
+const INTERVAL_RE = new RegExp(`[[(\\]] *${PAIR_ATOM} *${COMMA} *${PAIR_ATOM} *[\\])[]`, 'g');
+const INTERVAL_STAND_IN: Record<string, string> = {
+  '[': String.fromCodePoint(0xe002),
+  ']': String.fromCodePoint(0xe003),
+  '(': String.fromCodePoint(0xe004),
+  ')': String.fromCodePoint(0xe005),
+};
+const INTERVAL_CHARS = Object.values(INTERVAL_STAND_IN).join('');
+// A vector «⟨3, 4⟩» (found 2026-11-27): «⟨» and «⟩» are not in the run class
+// and its comma cut it in two, so it was never isolated. Angle brackets are
+// never prose, so either comma is safe (saved papers carry «⟨3 ، 4⟩»), and a
+// component may be an expression — the worked solutions write «⟨4 − 1, 6 − 2⟩»
+// and «⟨1 + 3, 2 + (−1)⟩». Brackets and commas become stand-ins, as for an interval.
+// The books' text layer and math_formulas.json write the same brackets as «〈 〉»
+// (U+3008/3009): «a + b = 〈x1 +x2 , y1 +y2〉».
+const VECTOR_STAND_IN: Record<string, string> = {
+  '⟨': String.fromCodePoint(0xe007),
+  '⟩': String.fromCodePoint(0xe008),
+  '〈': String.fromCodePoint(0xe00b),
+  '〉': String.fromCodePoint(0xe00c),
+};
+const VECTOR_CHARS = Object.values(VECTOR_STAND_IN).join('');
+const VEC_COMPONENT = `[A-Za-z0-9.^√/′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉°∞${FOREIGN_GREEK}+−×÷() -]+`;
+const VECTOR_RE = new RegExp(`[⟨〈] *${VEC_COMPONENT}(?:${COMMA} *${VEC_COMPONENT})+[⟩〉]`, 'g');
+function protectVector(m: string): string {
+  return [...m].map(c => COMMA_STAND_IN[c] ?? VECTOR_STAND_IN[c] ?? c).join('');
+}
+// The arrow over a vector's name, «AB⃗» — a combining mark, so it must ride in the
+// run with its letters or «AB» is isolated and the arrow is left behind.
+const COMBINING_ARROW = String.fromCodePoint(0x20d7);
+// Magnitude / absolute-value bars «|v|», «|x − 3|» (found 2026-11-27). «|» is
+// not in the run class, so «|v| = 5» split at each bar. But «|» is also a
+// separator — a chat's markdown table «| x | 5 |», «الصف العاشر | الرياضيات»,
+// set-builder «{x | x ≤ 3}» — so a bar joins a run only as one of a PAIR around
+// maths (`protectBars`), which becomes stand-ins like an interval's brackets.
+const BAR_STAND_IN = String.fromCodePoint(0xe00d);
+const COMMA_STAND_IN: Record<string, string> = { ',': PAIR_COMMA, '،': PAIR_COMMA_AR };
+function protectPair(m: string): string {
+  return [...m].map(c => COMMA_STAND_IN[c] ?? c).join('');
+}
+function protectInterval(m: string): string {
+  // «(−∞ ، 5)» has no square bracket but is no less an interval.
+  if (!m.includes('[') && !m.includes(']') && !m.includes('∞')) return m;
+  return [...m].map(c => COMMA_STAND_IN[c] ?? INTERVAL_STAND_IN[c] ?? c).join('');
+}
+/** The run holds a tuple's or interval's comma. */
+function hasPairComma(run: string): boolean {
+  return run.includes(PAIR_COMMA) || run.includes(PAIR_COMMA_AR);
+}
+function restoreStandIns(s: string): string {
+  let out = s.replaceAll(BLANK, '؟');
+  for (const map of [COMMA_STAND_IN, INTERVAL_STAND_IN, VECTOR_STAND_IN, DOT_STAND_IN]) {
+    for (const [real, standIn] of Object.entries(map)) out = out.replaceAll(standIn, real);
+  }
+  out = out.replaceAll(BAR_STAND_IN, '|');
+  return out;
+}
+const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}${PAIR_COMMA}${PAIR_COMMA_AR}${INTERVAL_CHARS}${VECTOR_CHARS}${COMBINING_ARROW}${BAR_STAND_IN}`;
 const FOREIGN_END = FOREIGN_CHAR.replace('.', '');
+
+/**
+ * Pair each «|» with the next one, and keep the pair only when what lies between
+ * is maths: no Arabic letter, nothing outside the run class, not empty, at most
+ * one space against each bar («| v | = …» is how the books' text layer writes a
+ * magnitude), and balanced brackets — so «P(B|A) + |x|» does not pair the bar of
+ * «B|A» with the first bar of «|x|». A failed pair moves on to the next bar. A
+ * markdown table row (a line that starts and ends with «|») is left alone.
+ */
+const BAR_CONTENT = new RegExp(`^ ?[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR} ]*[${FOREIGN_CHAR}])? ?$`);
+function balanced(s: string): boolean {
+  let depth = 0;
+  for (const c of s) {
+    if (c === '(') depth++;
+    else if (c === ')' && --depth < 0) return false;
+  }
+  return depth === 0;
+}
+function protectBars(s: string): string {
+  // A markdown row opens «| cell», «|:-:» or «|---»; «|a| · |b|» opens on a symbol.
+  const t = s.trim();
+  if (/^\|[ :-]/.test(t) && t.endsWith('|')) return s;
+  let out = '';
+  let i = 0;
+  while (i < s.length) {
+    if (s[i] === '|') {
+      const j = s.indexOf('|', i + 1);
+      const inner = j > i ? s.slice(i + 1, j) : '';
+      // Two Latin words is prose, not a magnitude: an English book's text layer
+      // reads the pronoun «I» as «|» — «Well... | had it when | went to…».
+      const words = inner.match(/[A-Za-z]{2,}/g)?.length ?? 0;
+      if (j > i && BAR_CONTENT.test(inner) && balanced(inner) && words < 2) {
+        out += BAR_STAND_IN + inner + BAR_STAND_IN;
+        i = j + 1;
+        continue;
+      }
+    }
+    out += s[i];
+    i++;
+  }
+  return out;
+}
 
 // Reaction and implication arrows. They may sit INSIDE a run but never at its
 // edge. Left out of the run, «N₂ + H₂ → NH₃» became two isolates with the arrow
@@ -466,9 +599,36 @@ const FOREIGN_END = FOREIGN_CHAR.replace('.', '');
 // edge of a Latin word and Arabic prose, and pulling it into the isolate would
 // change layout that was already right.
 const FOREIGN_ARROW = '→←↔⇒⇐⇔⇌⇄⟶⟵⟷';
+// Set symbols sit inside a run for the same reason and on the same terms:
+// «(-∞, 0) ∪ [5, ∞)» and «x ∈ [1, 3]» split at the symbol laid their two halves
+// out right to left. Never at the edge, so «الرمز ∪ يعني الاتحاد» is untouched.
+const FOREIGN_SET_OP = '∪∩∈∉';
+
+// A multiplication dot «·» / «⋅» (2026-11-27): «⟨a, b⟩ · ⟨c, d⟩», «q = m·c·ΔT» and
+// «2^x · 2^2» split at it, and bidi reordered the halves. But «·» also separates
+// words in a list — «(PDF · Word · PowerPoint · صور · نص)», «Mathematics teacher ·
+// About» — and joining those reorders the list for an Arabic reader. So a dot joins
+// a run only when it is maths: unspaced between two run characters («m·c»,
+// «2bc·cos A»), or spaced with a number, superscript, bracket or vector on one side
+// («4 · 2^x», «⟩ · ⟨»). Two words either side of « · » are left alone.
+const DOT_STAND_IN: Record<string, string> = {
+  '·': String.fromCodePoint(0xe009),
+  '⋅': String.fromCodePoint(0xe00a),
+};
+const DOT_CHARS = Object.values(DOT_STAND_IN).join('');
+const MATH_NEIGHBOUR = `0-9¹²³⁰⁴-⁹⁺⁻₀-₉°∞()^′'${INTERVAL_CHARS}${VECTOR_CHARS}${BAR_STAND_IN}`;
+const DOT_RE = new RegExp(
+  `(?<=[${FOREIGN_CHAR}])[·⋅](?=[${FOREIGN_CHAR}])` +
+    `|(?<=[${MATH_NEIGHBOUR}]) [·⋅] (?=[${FOREIGN_CHAR}])` +
+    `|(?<=[${FOREIGN_CHAR}]) [·⋅] (?=[${MATH_NEIGHBOUR}])`,
+  'g',
+);
+function protectDot(m: string): string {
+  return [...m].map(c => DOT_STAND_IN[c] ?? c).join('');
+}
 
 const FOREIGN_RUN_RE = new RegExp(
-  `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW} ]*[${FOREIGN_END}])?`,
+  `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW}${FOREIGN_SET_OP}${DOT_CHARS} ]*[${FOREIGN_END}])?`,
   'g',
 );
 
@@ -487,13 +647,27 @@ const HAS_LATIN = /[A-Za-zα-ωΑ-Ωϑϕϵ]/;
 const HAS_DIGIT = /[0-9₀-₉¹²³⁰⁴-⁹]/;
 const HAS_OPERATOR = /[=+\-−/^√×÷∘<>≤≥≠≈±∞]/;
 
+/** An equation's shape: an operator, or the comma of a coordinate pair. */
+function isEquationLike(run: string): boolean {
+  return HAS_OPERATOR.test(run) || hasPairComma(run);
+}
+
 function worthIsolating(run: string): boolean {
-  if (HAS_LATIN.test(run)) return true;
-  return HAS_DIGIT.test(run) && HAS_OPERATOR.test(run);
+  // A tuple or interval always is — even «(-∞, ∞)», which has no digit.
+  if (HAS_LATIN.test(run) || hasPairComma(run)) return true;
+  return HAS_DIGIT.test(run) && isEquationLike(run);
 }
 
 export function isolateForeignRuns(line: string): string {
-  return (line ?? '').replace(BLANK_RE, BLANK).replace(FOREIGN_RUN_RE, m => {
+  const out = protectBars(
+    (line ?? '')
+      .replace(BLANK_RE, BLANK)
+      .replace(VECTOR_RE, protectVector)
+      .replace(INTERVAL_RE, protectInterval)
+      .replace(PAIR_RE, protectPair),
+  )
+    .replace(DOT_RE, protectDot)
+    .replace(FOREIGN_RUN_RE, m => {
     // A run with the bank's blank in it is overridden left-to-right, not just
     // isolated: «؟» is an Arabic letter to the bidi algorithm, and inside a bare
     // isolate it turned the digits after it Arabic too (rule W2), so
@@ -502,17 +676,19 @@ export function isolateForeignRuns(line: string): string {
     if (m.includes(BLANK)) return `⁦\u202D${m.replaceAll(BLANK, '؟')}\u202C⁩`;
     // A sentence's closing full stop is not part of an equation before it:
     // inside the isolate it printed on the wrong side, «3x − 3.» read
-    // «.3x − 3». So when the run ENDS in dots and holds an operator, those
-    // dots go back to the flow («x = 3.» → isolate «x = 3», then «.»).
+    // «.3x − 3». So when the run ENDS in dots and holds an operator (or is a
+    // coordinate pair), those dots go back to the flow («x = 3.» → isolate
+    // «x = 3», then «.»).
     // Only that case. A run with no operator keeps its dot inside — a label
     // such as «A.» (wanted), but also a sentence ending in a latin-only run,
     // «x.» or «CO₂.», whose dot can still print on the wrong side. And a dot
     // followed by more latin on the same run («x = 3. y = 4») is mid-run, so
     // it stays inside too.
     const [, body, dots] = /^(.*?)(\s*\.*)$/su.exec(m)!;
-    if (dots && HAS_OPERATOR.test(body!)) return worthIsolating(body!) ? isolateRun(body!) + dots : m;
+    if (dots && isEquationLike(body!)) return worthIsolating(body!) ? isolateRun(body!) + dots : m;
     return worthIsolating(m) ? isolateRun(m) : m;
-  }).replaceAll(BLANK, '؟');
+  });
+  return restoreStandIns(out);
 }
 
 /**

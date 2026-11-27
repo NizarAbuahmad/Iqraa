@@ -210,8 +210,14 @@ export interface StudentResult {
  * `ready: false` means "not yet" and nothing more — it covers both "the
  * teacher has not opted this exam into student-visible results" and "grading
  * isn't finished", on purpose. See `studentResultReady` on the server.
+ *
+ * `feedback` is there only when the teacher put the exam on «تغذية راجعة
+ * فورية» (`feedbackReady` on the server): each question right or wrong, the
+ * student's answer and the marks — never the correct answer, which waits for
+ * the exam to close. It can come with `ready: false`, while a question still
+ * waits for the teacher (its `verdict` is null).
  */
-export function getExamResult(token: string): Promise<{ ready: boolean; result?: StudentResult }> {
+export function getExamResult(token: string): Promise<{ ready: boolean; result?: StudentResult; feedback?: ExamReviewItem[] }> {
   return call('/take/attempt/result', { token });
 }
 
@@ -245,6 +251,12 @@ export interface ExamReview {
   title: string;
   titleAr: string;
   subjectId: string;
+  /**
+   * "feedback": the exam is still open and on «تغذية راجعة فورية», so items
+   * carry right and wrong but no `correctAnswer` or `steps`. Absent from an
+   * older server, which only ever sent the full review.
+   */
+  mode?: 'full' | 'feedback';
   items: ExamReviewItem[];
 }
 

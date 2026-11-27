@@ -3,12 +3,16 @@ import assert from "node:assert/strict";
 
 import {
   correctAnswerText,
+  feedbackItems,
+  feedbackReady,
+  instantFeedbackDecision,
   reviewItems,
   solutionsDecision,
   studentReviewReady,
   yourAnswerText,
   type ReviewQuestion,
 } from "../answerReview.ts";
+import { sanitizeQuestionForStudent } from "../studentView.ts";
 import { needsWorkedSteps, parseWorkedSteps, stepsProblemText, workedStepsPrompt } from "../workedSteps.ts";
 
 const mcq: ReviewQuestion = {
@@ -147,5 +151,124 @@ describe("worked steps", () => {
     assert.equal(parseWorkedSteps({ steps: ["ok", 3] }), null);
     assert.equal(parseWorkedSteps({ steps: Array(9).fill("s") }), null);
     assert.equal(parseWorkedSteps("nope"), null);
+  });
+});
+
+describe("instant feedback («تغذية راجعة فورية»)", () => {
+  const on = { instantFeedback: true, released: true, submitted: true };
+
+  it("opens as soon as a released paper with the feedback on is handed in", () => {
+    assert.equal(feedbackReady(on), true);
+  });
+
+  it("stays shut without the switch, without released results, or before hand-in", () => {
+    assert.equal(feedbackReady({ ...on, instantFeedback: false }), false);
+    // Hiding the results hides the feedback: a per-question mark is a mark.
+    assert.equal(feedbackReady({ ...on, released: false }), false);
+    assert.equal(feedbackReady({ ...on, submitted: false }), false);
+  });
+
+  it("does not wait for the exam to close — that is the whole point", () => {
+    // No `status` input at all: an open homework is exactly where it is used.
+    assert.equal(feedbackReady({ instantFeedback: true, released: true, submitted: true }), true);
+  });
+
+  it("never sends the correct answer or the steps — only right/wrong, your answer and the marks", () => {
+    const items = feedbackItems({
+      snapshot: [mcq],
+      answers: [{ questionId: "q1", response: { optionIds: ["a"] } }],
+      grades: [{ questionId: "q1", awardedMarks: "0", maxMarks: "2", verdict: "incorrect" }],
+      stepsById: new Map([["q1", ["اطرح 1", "اقسم على 2"]]]),
+      isAr: true,
+      attemptId: "att-1",
+    });
+    assert.equal(items.length, 1);
+    assert.equal(items[0]!.verdict, "incorrect");
+    assert.equal(items[0]!.yourAnswer, "x = 2");
+    assert.equal(items[0]!.awardedMarks, 0);
+    assert.equal(items[0]!.maxMarks, 2);
+    assert.equal(items[0]!.correctAnswer, null);
+    assert.equal(items[0]!.steps, null);
+    // Nor anything of the key hiding in what was sent. (The options themselves,
+    // «x = 3» included, are the question the student was shown.)
+    assert.doesNotMatch(JSON.stringify(items), /optionIds|expectedAnswer|اقسم/);
+  });
+
+  it("leaves a question the teacher has yet to mark without a verdict", () => {
+    const essay: ReviewQuestion = {
+      id: "q2",
+      type: "open_ended",
+      marks: 4,
+      body: { stem: "اشرح لماذا…" },
+      expectedAnswer: { modelAnswer: "لأن المميز سالب" },
+    };
+    const [item] = feedbackItems({
+      snapshot: [essay],
+      answers: [{ questionId: "q2", response: { text: "لا أعرف" } }],
+      grades: [],
+      stepsById: new Map(),
+      isAr: true,
+      attemptId: "att-1",
+    });
+    assert.equal(item!.verdict, null);
+    assert.equal(item!.awardedMarks, null);
+    assert.equal(item!.correctAnswer, null);
+    assert.doesNotMatch(JSON.stringify(item), /المميز/);
+  });
+});
+
+describe("feedbackItems sends the question as the student was shown it, never as stored", () => {
+  // Stored bodies can carry the key: an option's `isCorrect`, a fill-blank's
+  // `blanks`, a matching column written in key order. During the sitting
+  // `sanitizeQuestionForStudent` keeps them back; the feedback must too.
+  const run = (q: ReviewQuestion) =>
+    feedbackItems({ snapshot: [q], answers: [], grades: [], stepsById: new Map(), isAr: true, attemptId: "att-1" })[0]!;
+
+  it("strips an option's correctness flag", () => {
+    const item = run({
+      ...mcq,
+      body: { ...mcq.body, options: [{ id: "a", text: "x = 2" }, { id: "b", text: "x = 3", isCorrect: true }] },
+    });
+    assert.doesNotMatch(JSON.stringify(item.body), /isCorrect/);
+    assert.equal((item.body["options"] as unknown[]).length, 2);
+  });
+
+  it("drops a fill-blank's stored blanks", () => {
+    const item = run({
+      id: "q3",
+      type: "fill_blank",
+      marks: 1,
+      body: { stem: "ناتج 2 + 2 هو ___", blanks: [{ accept: ["4"] }] },
+      expectedAnswer: { blanks: [{ accept: ["4"] }] },
+    });
+    assert.equal(item.body["blanks"], undefined);
+  });
+
+  it("serves the matching column in the attempt's own order, not the stored (key) order", () => {
+    const right = Array.from({ length: 8 }, (_, i) => ({ id: `r${i}`, text: `R${i}` }));
+    const left = right.map((_, i) => ({ id: `l${i}`, text: `L${i}` }));
+    const item = run({
+      id: "q4",
+      type: "matching",
+      marks: 4,
+      body: { stem: "صِل", left, right },
+      expectedAnswer: { pairs: left.map((l, i) => ({ left: l.id, right: `r${i}` })) },
+    });
+    const served = (item.body["right"] as { id: string }[]).map(r => r.id);
+    assert.deepEqual([...served].sort(), right.map(r => r.id).sort(), "every item still there");
+    assert.notDeepEqual(served, right.map(r => r.id), "but not in the stored order");
+    const sat = sanitizeQuestionForStudent({ id: "q4", orderIndex: 0, type: "matching", marks: 4, body: { stem: "صِل", left, right } }, "att-1");
+    assert.deepEqual(item.body["right"], sat.body["right"], "the same order the student answered in");
+  });
+});
+
+describe("instantFeedbackDecision", () => {
+  it("takes a boolean and refuses anything else", () => {
+    assert.deepEqual(instantFeedbackDecision({ enabled: true }), { ok: true, enabled: true });
+    assert.deepEqual(instantFeedbackDecision({ enabled: false }), { ok: true, enabled: false });
+    for (const body of [{}, { enabled: "yes" }, null, undefined]) {
+      const d = instantFeedbackDecision(body);
+      assert.equal(!d.ok && d.code, "invalid_input");
+    }
   });
 });

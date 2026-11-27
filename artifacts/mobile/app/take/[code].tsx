@@ -58,6 +58,7 @@ import {
   type RosterName,
   type StudentQuestion,
   type StudentResponse,
+  type ExamReviewItem,
   type StudentResult,
 } from '@/services/studentExam';
 import { createSaveQueue, mergeUnsavedAnswers, type SaveQueue, type SaveQueueState } from '@/services/answerSaveQueue';
@@ -65,6 +66,7 @@ import { takeErrorKey } from '@/services/takeErrorKey';
 import { clearExamSession, loadExamSession, loadUnsavedAnswers, saveExamSession, saveUnsavedAnswers } from '@/services/examSession';
 import { formatMarks } from '@/services/studentAnswers';
 import { StudentResultCard } from '@/components/StudentResultCard';
+import { AnswerReviewCard, FeedbackAnswersLaterNote } from '@/components/AnswerReviewCard';
 import { DictationInput, FillBlankInput, MatchingInput, ReadAloudInput } from '@/components/QuestionInputs';
 import { isolateForeignRuns } from '@/services/mathRender';
 import type { TranslationKey } from '@/services/i18n';
@@ -347,22 +349,37 @@ export default function TakeExamScreen() {
   const [checkingResult, setCheckingResult] = useState(false);
   const [resultChecked, setResultChecked] = useState(false);
   const [studentResult, setStudentResult] = useState<StudentResult | null>(null);
+  // «تغذية راجعة فورية»: right and wrong per question, no answer key — only
+  // ever sent for an exam the teacher put on it (`feedbackReady` on the server).
+  const [feedback, setFeedback] = useState<ExamReviewItem[] | null>(null);
 
-  const checkResult = useCallback(async () => {
+  /** `quiet`: the automatic check on hand-in, which must not say «not marked yet» unasked. */
+  const checkResult = useCallback(async (opts?: { quiet?: boolean }) => {
     if (!token || checkingResult) return;
     setCheckingResult(true);
     try {
       const data = await getExamResult(token);
-      setResultChecked(true);
+      if (!opts?.quiet) setResultChecked(true);
       setStudentResult(data.ready ? data.result ?? null : null);
+      setFeedback(data.feedback && data.feedback.length > 0 ? data.feedback : null);
     } catch {
       // A network hiccup here is not worth a dedicated error state — the
       // button stays and the student just taps it again.
-      setResultChecked(false);
+      if (!opts?.quiet) setResultChecked(false);
     } finally {
       setCheckingResult(false);
     }
   }, [token, checkingResult]);
+
+  // Ask once, on its own, as the paper is handed in: an exam on instant
+  // feedback has its marks and mistakes ready now, and for any other the
+  // answer is the same quiet "not yet" the button would get.
+  const autoChecked = useRef(false);
+  useEffect(() => {
+    if (phase !== 'done' || autoChecked.current || !token) return;
+    autoChecked.current = true;
+    void checkResult({ quiet: true });
+  }, [phase, token, checkResult]);
 
   const hand = useCallback(async (opts?: { force?: boolean }) => {
     if (busy) return;
@@ -444,25 +461,43 @@ export default function TakeExamScreen() {
   }
 
   if (phase === 'done') {
+    const instant = feedback !== null;
     return (
-      <View style={{ flex: 1 }}>
-        <View style={[styles.center, { backgroundColor: colors.background, padding: 32, gap: 12 }]}>
-          <Ionicons name="checkmark-circle" size={64} color={ACCENT} />
-          <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20 }}>
-            {t('takeHandedIn')}
-          </Text>
-          {notice ? (
-            <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
-              {notice}
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: instant ? 'flex-start' : 'center',
+            padding: instant ? 20 : 32,
+            paddingTop: instant ? insets.top + 24 : 32,
+            paddingBottom: insets.bottom + 40,
+            gap: 12,
+            width: '100%',
+            maxWidth: 720,
+            alignSelf: 'center',
+          }}
+        >
+          <View style={{ alignItems: 'center', gap: 12 }}>
+            <Ionicons name="checkmark-circle" size={64} color={ACCENT} />
+            <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 20 }}>
+              {t('takeHandedIn')}
             </Text>
-          ) : null}
-          {/* Never a score by default. Releasing one is the teacher's decision
-              (`releaseResultsToStudent`) and requires the paper to be fully
-              marked — this only ever checks, on request, whether both are true
-              yet; see `studentResultReady` on the server. */}
-          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
-            {t('takeTeacherWillReview')}
-          </Text>
+            {notice ? (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
+                {notice}
+              </Text>
+            ) : null}
+            {/* Never a score by default. Releasing one is the teacher's decision
+                (`releaseResultsToStudent`) and requires the paper to be fully
+                marked — this only ever checks whether both are true yet; see
+                `studentResultReady` on the server. An exam on «تغذية راجعة
+                فورية» also sends right and wrong per question (`feedback`). */}
+            {instant ? null : (
+              <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
+                {t('takeTeacherWillReview')}
+              </Text>
+            )}
+          </View>
 
           {studentResult ? (
             <View style={{ marginTop: 12, width: '100%' }}>
@@ -476,7 +511,7 @@ export default function TakeExamScreen() {
                 </Text>
               )}
               <Pressable
-                onPress={checkResult}
+                onPress={() => void checkResult()}
                 disabled={checkingResult}
                 style={[styles.retryBtn, { borderColor: ACCENT, opacity: checkingResult ? 0.7 : 1 }]}
               >
@@ -491,7 +526,19 @@ export default function TakeExamScreen() {
               </Pressable>
             </View>
           )}
-        </View>
+
+          {instant ? (
+            <View style={{ marginTop: 12, gap: 12 }}>
+              <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: 17, textAlign: align }}>
+                {t('feedbackTitle')}
+              </Text>
+              <FeedbackAnswersLaterNote />
+              {feedback.map(item => (
+                <AnswerReviewCard key={item.questionId} item={item} />
+              ))}
+            </View>
+          ) : null}
+        </ScrollView>
         <Celebrate visible={celebrating} size="big" message={t('celebrateHandedIn')} onDone={() => setCelebrating(false)} />
       </View>
     );

@@ -98,6 +98,7 @@ async function loadRetakeCandidates(studentIds: string[], now: Date): Promise<Re
       objectiveIds: evaluations.objectiveIds,
       status: evaluations.status,
       released: evaluations.releaseResultsToStudent,
+      instantFeedback: evaluations.instantFeedback,
       shareCode: evaluations.shareCode,
       shareCodeExpiresAt: evaluations.shareCodeExpiresAt,
     })
@@ -134,6 +135,7 @@ async function loadRetakeCandidates(studentIds: string[], now: Date): Promise<Re
       retakesUsed: usedBy.get(`${s.evaluationId}:${s.studentId}`) ?? 0,
       singleLesson: lessonIdsForObjectiveIds(s.objectiveIds).length === 1,
       open: s.status === "published" && (!s.shareCodeExpiresAt || s.shareCodeExpiresAt.getTime() > now.getTime()),
+      instantFeedback: s.instantFeedback,
     }),
   }));
 }
@@ -213,6 +215,7 @@ async function examRowsFor(studentIds: string[]): Promise<StudentExamRow[]> {
       totalMarks: evaluations.totalMarks,
       releaseResultsToStudent: evaluations.releaseResultsToStudent,
       showSolutionsToStudent: evaluations.showSolutionsToStudent,
+      instantFeedback: evaluations.instantFeedback,
       publishedAt: evaluations.publishedAt,
       closedAt: evaluations.closedAt,
       examDate: evaluations.examDate,
@@ -565,7 +568,9 @@ router.get("/parent/exams", async (req: AuthenticatedRequest, res) => {
 /**
  * The child's «راجع إجاباتك», read by their parent: the same paper, built by the same
  * loader under the same rule (`studentReviewReady`: closed, released, and the teacher
- * turned the review on), so a parent sees it exactly when the child can.
+ * turned the review on), so a parent sees it exactly when the child can. The full
+ * review only: «تغذية راجعة فورية» (right and wrong while the exam is still open) stays
+ * the student's.
  *
  * `child` is the `groupChildren` key «المدرسة» and the results screen pick a child by
  * (the same as `/parent/homework/:id/done`); in the query string, like there. Only
@@ -586,7 +591,9 @@ router.get("/parent/exams/:evaluationId/review", async (req: AuthenticatedReques
     const child = childKey
       ? groupChildren(await guardianLinkedStudents(req.user!.id)).find(c => c.key === childKey)
       : undefined;
-    const review = child ? await loadAnswerReview(child.studentIds, req.params["evaluationId"] as string) : null;
+    const review = child
+      ? await loadAnswerReview(child.studentIds, req.params["evaluationId"] as string, { fullOnly: true })
+      : null;
     if (!review) {
       res.status(404).json({ code: "no_review", error: "There is no answer review for this exam." });
       return;
