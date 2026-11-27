@@ -1161,22 +1161,46 @@ const pointLineRay = T('point_line_ray', /^النقطه والمستقيم وا�
 });
 
 const ANGLE_NAMES = ['حادة', 'قائمة', 'منفرجة'];
+/**
+ * Grade 3 names an angle by comparing it with a right angle — the corner of a page — and
+ * measures nothing: degrees and the protractor are Grade 4's «قياس الزوايا ورسمها» («بالدرجات»).
+ * This generator printed «زاوية قياسها 112°» in seven of ten questions (held back from the
+ * ready-made sheets, 2026-11-20); it now asks by comparison, by things around us, by the
+ * hands of a clock, and by counting the angles of a shape.
+ */
+const ANGLE_COMPARE: Array<[string, number, string]> = [
+  ['زاوية أصغر من الزاوية القائمة', 0, 'an angle smaller than a right angle'],
+  ['زاوية تنطبق تمامًا على ركن الورقة', 1, 'an angle that fits the corner of a sheet of paper exactly'],
+  ['زاوية أكبر من الزاوية القائمة، وأصغر من نصف دورة', 2, 'an angle bigger than a right angle but less than half a turn'],
+];
+const ANGLE_THINGS: Array<[string, number, string]> = [
+  ['ركن صفحة الكتاب', 1, 'the corner of a book page'],
+  ['الزاوية بين أرض الغرفة وجدارها', 1, 'the angle between the floor and a wall'],
+  ['ركن السبورة', 1, 'the corner of the board'],
+  ['رأس قطعة بيتزا مثلثة صغيرة', 0, 'the tip of a thin slice of pizza'],
+  ['فتحة مقص مفتوح قليلًا', 0, 'a pair of scissors opened a little'],
+  ['مسند كرسي يميل إلى الخلف مع مقعده', 2, 'the back of a reclining chair and its seat'],
+];
+const SHAPE_ANGLES: Array<[string, number, string]> = [
+  ['كم زاوية في المثلث؟', 3, 'How many angles does a triangle have?'],
+  ['كم زاوية قائمة في المستطيل؟', 4, 'How many right angles does a rectangle have?'],
+  ['كم زاوية قائمة في المربع؟', 4, 'How many right angles does a square have?'],
+  ['كم زاوية في الشكل الخماسي؟', 5, 'How many angles does a pentagon have?'],
+];
 const angleG3 = T('angle_kind_g3', /^الزوايا$/, [3, 3], ({ rng }) => {
-  const kind = pick(rng, [0, 1, 2]), measure = (t: number) => (t === 0 ? 5 * int(rng, 2, 17) : t === 1 ? 90 : 5 * int(rng, 19, 35)), a = kind === 0 ? int(rng, 10, 85) : kind === 1 ? 90 : int(rng, 95, 175);
-  const ask = pick(rng, [0, 1, 2]);
-  if (ask === 2) {
-    // the hands of a clock on the hour: 30° for each hour between them (never 6:00, a straight angle)
-    const h = pick(rng, [1, 2, 3, 4, 5, 7, 8, 9, 10, 11]), deg = Math.min(30 * h, 360 - 30 * h), t = deg < 90 ? 0 : deg === 90 ? 1 : 2;
-    return { eq: `${h}:00`, answer: ANGLE_NAMES[t]!, wrongs: [...ANGLE_NAMES.filter((_, i) => i !== t), 'مستقيمة'], ar: `تشير الساعة إلى ${h}:00. ما نوع الزاوية الصغرى بين عقربي الساعة؟`, en: `A clock shows ${h}:00. What kind of angle is the smaller angle between its hands? (حادة = acute, قائمة = right, منفرجة = obtuse, مستقيمة = straight)` };
+  const ask = pick(rng, [0, 1, 2, 2, 3]);
+  if (ask === 3) {
+    const [q, n, en] = pick(rng, SHAPE_ANGLES);
+    return { eq: q, answer: String(n), wrongs: ints(n, [n + 1, n - 1, n + 2, 2 * n]), ar: q, en };
   }
-  if (ask === 1) {
-    // four measures, exactly one of the asked kind
-    const list = new Set<number>([measure(kind)]);
-    while (list.size < 4) list.add(measure(pick(rng, [0, 1, 2].filter(t => t !== kind && (t !== 1 || !list.has(90))))));
-    const xs = shuffle(rng, [...list]), ans = xs.find(x => (x < 90 ? 0 : x === 90 ? 1 : 2) === kind)!;
-    return { eq: xs.join(', '), answer: `${ans}°`, wrongs: xs.filter(x => x !== ans).map(x => `${x}°`), ar: `أي القياسات الآتية قياس زاوية ${ANGLE_NAMES[kind]}: ${xs.map(x => `${x}°`).join('، ')}؟`, en: `Which of these is the measure of a${kind === 0 ? 'n acute' : kind === 1 ? ' right' : 'n obtuse'} angle: ${xs.map(x => `${x}°`).join(', ')}?` };
+  if (ask === 0 || ask === 1) {
+    const [desc, t, en] = pick(rng, ask === 0 ? ANGLE_COMPARE : ANGLE_THINGS);
+    return { eq: desc, answer: ANGLE_NAMES[t]!, wrongs: [...ANGLE_NAMES.filter((_, i) => i !== t), 'مستقيمة'], ar: ask === 0 ? `${desc}. ما نوعها؟` : `ما نوع الزاوية في ${desc}؟`, en: `${en}: what kind of angle is it? (Arabic)` };
   }
-  return { eq: `${a}°`, answer: ANGLE_NAMES[kind]!, wrongs: [...ANGLE_NAMES.filter((_, i) => i !== kind), 'مستقيمة'], ar: `زاوية قياسها ${a}°. ما نوعها؟`, en: `An angle measures ${a}°. What kind is it? (حادة = acute, قائمة = right, منفرجة = obtuse, مستقيمة = straight)` };
+  // the hands of a clock on the hour, by how far apart they are — no degrees are printed:
+  // an hour is a twelfth of a turn, so 3 hours apart is a right angle (never 6:00, a straight one)
+  const h = pick(rng, [1, 2, 3, 4, 5, 7, 8, 9, 10, 11]), apart = Math.min(h, 12 - h), t = apart < 3 ? 0 : apart === 3 ? 1 : 2;
+  return { eq: `${h}:00`, answer: ANGLE_NAMES[t]!, wrongs: [...ANGLE_NAMES.filter((_, i) => i !== t), 'مستقيمة'], ar: `تشير الساعة إلى ${h}:00. ما نوع الزاوية الصغرى بين عقربي الساعة؟`, en: `A clock shows ${h}:00. What kind of angle is the smaller angle between its hands? (حادة = acute, قائمة = right, منفرجة = obtuse, مستقيمة = straight)` };
 });
 
 const LINE_REL: Array<[string, string]> = [['مستقيمان لا يلتقيان مهما امتدّا', 'متوازيان'], ['مستقيمان يلتقيان في نقطة واحدة وزاوية التقاطع بينهما قائمة', 'متعامدان'], ['مستقيمان يلتقيان في نقطة واحدة وزاوية التقاطع بينهما ليست قائمة', 'متقاطعان']];
