@@ -5,7 +5,7 @@
  * `useTourAutostart` feeds the tour.
  */
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { usePathname } from 'expo-router';
+import { useGlobalSearchParams, usePathname } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { trackEvent } from '@/services/analytics';
 import { tourRoleOf } from '@/services/tour';
@@ -127,13 +127,19 @@ export function useClearNewToolOnVisit(): void {
   const { user } = useAuth();
   const userId = user?.id;
   const pathname = usePathname();
+  // A tool can be its screen with certain params («غلق الدرس» is the classroom
+  // builder on `activityType=exit-ticket`). The params object is new each render,
+  // so the effect keys on its text.
+  const search = useGlobalSearchParams();
+  const searchKey = JSON.stringify(search);
   const newTools = useNewTools();
 
   useEffect(() => {
     if (!userId || newTools.size === 0) return;
-    const visited = toolIdsForPath(pathname, ALL_TOOLS).filter(id => newTools.has(id));
+    const params = JSON.parse(searchKey) as Record<string, string | string[] | undefined>;
+    const visited = toolIdsForPath(pathname, ALL_TOOLS, params).filter(id => newTools.has(id));
     if (visited.length === 0) return;
     trackEvent('new_tool_opened', { ids: visited.join(',') });
     void markNewToolsOpened(userId, visited);
-  }, [pathname, userId, newTools]);
+  }, [pathname, searchKey, userId, newTools]);
 }

@@ -10,6 +10,38 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## «غلق الدرس» is a card on the Tools tab — 2026-11-27
+
+The exit ticket has been one of the classroom builder's activity cards all along
+(`exit-ticket` in `classroomRouting.ts`, `generators.ts` and `classroomPrompts.ts`: three
+questions — recall, apply, critical thinking — answered individually on a slip at the end of
+the lesson). Asked for as «a lesson exit ticket tool», it was reachable only from inside
+«الحصة التفاعلية». It now has its own card.
+
+- **The card** (`toolCatalog.ts`, last in «أثناء الحصة», so the tools Today and the chat take
+  from the front of the list do not move): «غلق الدرس» / "Exit ticket", opening
+  `/ai-tools/classroom/builder` with `routeParams: { activityType: 'exit-ticket' }`. No new
+  generator, prompt or screen. The builder does not read the "current lesson" a card passes,
+  so the teacher picks the lesson there — the same as opening the activity from the hub.
+- **Its concept** (`constants/icons.ts`): `exit-ticket`, `ticket-outline`, plum `#702459` —
+  chosen by running `iconSystem.test.ts`'s own ΔE2000 and `readableOn` over candidates: at
+  least 13.3 from every concept on the light card and on the dark one (the tab needs 8, any
+  two concepts 7), white at 10:1, not amber.
+- **«ما الجديد»** entry `exit-ticket-in-tools` (teachers, `toolId: 'exit-ticket'`), so the card
+  wears «جديد». Its «جرّبها» opens the builder on the exit ticket.
+- **The badge now knows a tool's params.** Every classroom activity is the builder with a
+  different `activityType`, so the path alone would have let opening bingo clear the exit
+  ticket's «جديد». `toolIdsForPath` takes the search params and matches a tool that has
+  `routeParams` only when they are all present; `useClearNewToolOnVisit` passes
+  `useGlobalSearchParams()`.
+
+**Verified:** `whatsNew.test.ts` (two new tests: the params rule, on a fixture and on the real
+catalog — builder + `exit-ticket` clears it, builder + `bingo` does not — and the card's route,
+params, visibility and entry) and `iconSystem.test.ts` (the new colour against every pair rule);
+the full mobile suite; `pnpm run typecheck`.
+**Not verified:** the card and the builder it opens were not seen in a browser or on a phone.
+The entry is dated 2026-11-27; if this merges later, move the date to the merge day.
+
 ## Magnitude and absolute-value bars read left to right in Arabic — 2026-11-27
 
 The follow-up the vectors entry below named. `|` was not in `isolateForeignRuns`'s run class, so a magnitude or

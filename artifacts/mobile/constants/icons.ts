@@ -54,6 +54,8 @@ export const CONCEPTS = {
   /** The public games hub. */
   games: { icon: 'game-controller-outline', color: '#15803D', glyph: 'games' },
   classroom: { icon: 'grid-outline', color: '#3F6212' },
+  /** «غلق الدرس»: the classroom builder opened on its exit-ticket activity. Plum, the furthest free hue from every other concept. */
+  'exit-ticket': { icon: 'ticket-outline', color: '#702459' },
   /** The board tool and a saved board (`MATERIAL_CONCEPT.board`): slate, the neutral. */
   whiteboard: { icon: 'easel-outline', color: '#475569' },
   'parent-msg': { icon: 'mail-outline', color: '#A21CAF' },

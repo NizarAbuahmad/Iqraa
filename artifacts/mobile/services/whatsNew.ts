@@ -40,6 +40,15 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
+    id: 'exit-ticket-in-tools',
+    date: '2026-11-27',
+    roles: ['teacher'],
+    titleKey: 'whatsNewExitTicketTitle',
+    bodyKey: 'whatsNewExitTicketBody',
+    route: '/ai-tools/classroom/builder?activityType=exit-ticket',
+    toolId: 'exit-ticket',
+  },
+  {
     id: 'instant-feedback-teacher',
     date: '2026-11-26',
     roles: ['teacher'],
@@ -333,11 +342,19 @@ export function newToolIds(opts: {
  * The tools a pathname belongs to — a tool's screen or anything under it
  * (`/ai-tools/classroom/builder` is the classroom). Opening it by any way in (its
  * card, a link from Today, a deep link) clears its «جديد». Two catalog entries can
- * share a screen, so this returns every match.
+ * share a screen, so this returns every match — but a tool that opens its screen
+ * with `routeParams` is only that screen with those params: «غلق الدرس» is the
+ * classroom builder with `activityType=exit-ticket`, and opening the builder on
+ * bingo must not clear its badge.
  */
-export function toolIdsForPath(pathname: string, tools: readonly { id: string; route?: string }[]): string[] {
+export function toolIdsForPath(
+  pathname: string,
+  tools: readonly { id: string; route?: string; routeParams?: Record<string, string> }[],
+  search: Readonly<Record<string, string | string[] | undefined>> = {},
+): string[] {
   return tools
     .filter(t => t.route && (pathname === t.route || pathname.startsWith(`${t.route}/`)))
+    .filter(t => Object.entries(t.routeParams ?? {}).every(([k, v]) => search[k] === v))
     .map(t => t.id);
 }
 

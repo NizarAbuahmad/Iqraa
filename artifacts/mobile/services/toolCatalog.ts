@@ -165,6 +165,18 @@ const DURING_CLASS_ALL: ToolDef[] = [
     ...look('games'),
     route: '/play',
   },
+  // «غلق الدرس» has been one of the classroom builder's activity cards all
+  // along; this card opens the builder already on it, the last minutes of the
+  // lesson being when a teacher wants it. Last in the section, so it does not
+  // move the tools Today and the chat menu take from the front of the list.
+  {
+    id: 'exit-ticket',
+    titleKey: 'toolExitTicketTitle',
+    descKey: 'toolExitTicketDesc',
+    ...look('exit-ticket'),
+    route: '/ai-tools/classroom/builder',
+    routeParams: { activityType: 'exit-ticket' },
+  },
   {
     id: 'geogebra',
     hidden: true,

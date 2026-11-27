@@ -318,6 +318,31 @@ test('a tool is opened by its screen or anything under it, never by a look-alike
   assert.deepEqual(toolIdsForPath('/', tools), []);
 });
 
+test('a tool that opens its screen with routeParams is opened only with those params', () => {
+  const tools = [
+    { id: 'classroom', route: '/ai-tools/classroom' },
+    { id: 'exit-ticket', route: '/ai-tools/classroom/builder', routeParams: { activityType: 'exit-ticket' } },
+  ];
+  const builder = '/ai-tools/classroom/builder';
+  assert.deepEqual(toolIdsForPath(builder, tools, { activityType: 'exit-ticket' }), ['classroom', 'exit-ticket']);
+  assert.deepEqual(toolIdsForPath(builder, tools, { activityType: 'bingo' }), ['classroom']);
+  assert.deepEqual(toolIdsForPath(builder, tools), ['classroom']);
+  // The real catalog agrees: the builder on bingo is not the exit ticket.
+  assert.ok(toolIdsForPath(builder, ALL_TOOLS, { activityType: 'exit-ticket' }).includes('exit-ticket'));
+  assert.ok(!toolIdsForPath(builder, ALL_TOOLS, { activityType: 'bingo' }).includes('exit-ticket'));
+});
+
+test('the exit ticket card opens the classroom builder on the exit-ticket activity', () => {
+  const tool = ALL_TOOLS.find(t => t.id === 'exit-ticket');
+  assert.ok(tool, 'no exit-ticket tool in the catalog');
+  assert.equal(tool.route, '/ai-tools/classroom/builder');
+  assert.deepEqual(tool.routeParams, { activityType: 'exit-ticket' });
+  assert.ok(!tool.hidden && !tool.tabHidden, 'the exit ticket must be on the Tools tab');
+  const entry = WHATS_NEW.find(e => e.toolId === 'exit-ticket');
+  assert.ok(entry, 'the exit ticket has no «ما الجديد» entry');
+  assert.equal(entry.route, '/ai-tools/classroom/builder?activityType=exit-ticket');
+});
+
 test('a fixed label wins over «جديد», which shows only while the tool is new', () => {
   const fresh = new Set(['quiz', 'geogebra']);
   assert.equal(toolBadgeKey({ id: 'quiz' }, fresh), 'whatsNewBadge');

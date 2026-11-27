@@ -248,6 +248,7 @@ From session notes **(notes)**:
 
 The 30 newest dated entries, titles only; the text of each is in the [log](./docs/status-log.md).
 
+- 2026-11-27 — «غلق الدرس» is a card on the Tools tab
 - 2026-11-01 — «جديد» on a new tool's card, from its «ما الجديد» entry
 - 2026-11-01 — «ما الجديد»: existing users are told about new features, once, in the app
 - 2026-11-01 — Grammar sheets stop mentioning pictures in the grades that have none
