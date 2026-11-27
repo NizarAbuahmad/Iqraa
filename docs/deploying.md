@@ -1184,9 +1184,15 @@ step. `eas submit` passes it to Expo's submission service, the same service the
 EAS builds already trust with the signing key. To revoke: delete the key in
 Google Cloud (and the user in Play Console); the secret then stops working.
 
-Not yet verified (written 2026-11-13, before the first run): that Play accepts
-an API commit while the Console holds a drafted listing change (`false` avoids
-the question), and that a key on EAS's servers is not also required.
+**Verified by its runs (checked 2026-11-27):** the key from the GitHub secret is
+enough on its own, with no key stored on Expo's side (`eas submit` reports
+`Key Source: local`). Run 1 (2026-11-13) reached Play and was refused only
+because version code 12 had already been uploaded by hand ("This version code
+was already uploaded"): build a new bundle, never resubmit an uploaded code.
+Runs 2–4 (2026-11-14 and 2026-11-21, the last with `send_for_review=true` for
+versionCode 15) succeeded. **Still not checked:** whether a `send_for_review=true`
+commit goes through while the Console holds a drafted listing change; keep using
+`false` when one is waiting.
 
 ## Schema
 
