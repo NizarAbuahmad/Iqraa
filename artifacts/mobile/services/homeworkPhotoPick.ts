@@ -18,8 +18,9 @@ export type HomeworkPhotoPick =
   | { kind: 'denied' }
   /**
    * Picked, but the encoded result is not a jpeg/png/webp data URL the server
-   * accepts (or is over its size cap). A photo already within the long-edge limit
-   * is passed through without re-encoding, so a small HEIC stays `data:image/heic`.
+   * accepts (or is over its size cap). A JPEG or HEIC is always re-encoded to a
+   * JPEG (which drops its EXIF), so this is now mainly a GIF or other format
+   * passed through untouched, or a JPEG/HEIC that could not be re-encoded at all.
    * The screen shows its own message for this instead of letting the server answer 400.
    */
   | { kind: 'unsupported' };

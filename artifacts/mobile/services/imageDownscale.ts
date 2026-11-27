@@ -16,8 +16,10 @@
  * only — no base64, no picker-side compression — and `expo-image-manipulator`
  * shrinks one photo at a time, so the full-resolution photo is never a string in
  * JavaScript. A photo that needed shrinking ends as a JPEG at quality
- * `SHRUNK_JPEG_QUALITY`; one already within the limit is passed through in its
- * own format, not re-encoded. The decisions
+ * `SHRUNK_JPEG_QUALITY`. So does any JPEG or HEIC even when it is within the
+ * limit, because the re-encode is what drops its EXIF/GPS (`photoMetadata.ts`);
+ * only a PNG, GIF or WebP within the limit is passed through in its own format.
+ * The decisions
  * (which path, the fallback, one at a time) are in `photoEncode.ts`, which
  * tests can load; this file only supplies the platform calls.
  *
@@ -57,15 +59,25 @@ export function photoPickQuality(webQuality: number): number {
 }
 
 /**
- * Return the same photo, smaller (web, from a data URL). Falls back to the
- * original on any failure — a scan refused for size is a better outcome than
- * one that never happens because the resize threw.
+ * Return the same photo, smaller (web, from a data URL). With
+ * `forceReencode` it is redrawn on the canvas even when it is already small,
+ * which drops its EXIF/GPS (the canvas holds pixels only, and current browsers
+ * draw an image with its EXIF orientation applied).
+ *
+ * Without `forceReencode`, falls back to the original on any failure — a scan
+ * refused for size is a better outcome than one that never happens because the
+ * resize threw. With it, a failure THROWS: handing back the original would
+ * hand back the metadata, and `photoEncode.ts` decides what to do then.
  */
 export async function downscaleImage(
   dataUrl: string,
   maxEdge: number = MAX_SCAN_EDGE,
+  forceReencode: boolean = false,
 ): Promise<string> {
-  if (Platform.OS !== 'web' || typeof document === 'undefined') return dataUrl;
+  if (Platform.OS !== 'web' || typeof document === 'undefined') {
+    if (forceReencode) throw new Error('no canvas to re-encode on');
+    return dataUrl;
+  }
 
   try {
     const image = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -76,9 +88,13 @@ export async function downscaleImage(
     });
 
     const size = fitWithin(image.naturalWidth, image.naturalHeight, maxEdge);
-    if (size.width === 0) return dataUrl;
-    // Already small enough — re-encoding would only lose detail.
-    if (size.width === image.naturalWidth && size.height === image.naturalHeight) {
+    if (size.width === 0) {
+      if (forceReencode) throw new Error('the photo has no size');
+      return dataUrl;
+    }
+    // Already small enough — re-encoding would only lose detail, unless it
+    // carries metadata that must go.
+    if (!forceReencode && size.width === image.naturalWidth && size.height === image.naturalHeight) {
       return dataUrl;
     }
 
@@ -86,13 +102,17 @@ export async function downscaleImage(
     canvas.width = size.width;
     canvas.height = size.height;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return dataUrl;
+    if (!ctx) {
+      if (forceReencode) throw new Error('no 2d canvas');
+      return dataUrl;
+    }
     ctx.drawImage(image, 0, 0, size.width, size.height);
 
     // JPEG, not PNG: this is a photograph, and PNG would be several times
     // larger for no gain on a page of handwriting.
     return canvas.toDataURL('image/jpeg', SHRUNK_JPEG_QUALITY);
-  } catch {
+  } catch (error) {
+    if (forceReencode) throw error;
     return dataUrl;
   }
 }
@@ -102,6 +122,8 @@ const photoDeps: PhotoDeps = {
   webDownscale: downscaleImage,
 
   async nativeResize(uri, arg) {
+    // `arg` is null when the photo is small enough and is only being
+    // re-encoded to drop its metadata.
     try {
       // Lazy: the web bundle and the node tests must never load a native module.
       const { ImageManipulator, SaveFormat } = await import('expo-image-manipulator');
@@ -113,7 +135,7 @@ const photoDeps: PhotoDeps = {
       // the full-size fallback.
       const context = ImageManipulator.manipulate(uri);
       try {
-        const ref = await context.resize(arg).renderAsync();
+        const ref = await (arg ? context.resize(arg) : context).renderAsync();
         try {
           const out = await ref.saveAsync({
             format: SaveFormat.JPEG,
@@ -137,10 +159,10 @@ const photoDeps: PhotoDeps = {
         }
       }
     } catch (error) {
-      // `photoEncode` falls back to the original photo, full size, at the
-      // camera's own quality. If the resize fails on every phone, that fallback
-      // would hide it completely — so leave a trace, then let it fall back.
-      console.warn('[photoEncode] native resize failed, using the original photo:', error);
+      // `photoEncode` falls back to the original photo for a type with no
+      // metadata, and drops the photo for a JPEG/HEIC. Either would hide a
+      // re-encode that fails on every phone, so leave a trace first.
+      console.warn('[photoEncode] native re-encode failed:', error);
       throw error;
     }
   },

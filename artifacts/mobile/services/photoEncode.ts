@@ -14,6 +14,7 @@
  * class-scan photos need.
  */
 import { MAX_SCAN_EDGE, resizeArg, type ResizeArg } from './imageFit.ts';
+import { carriesCameraMetadata } from './photoMetadata.ts';
 
 /** What the picker gives us about one photo (a subset of `ImagePickerAsset`). */
 export interface PickedPhoto {
@@ -27,10 +28,16 @@ export interface PickedPhoto {
 
 export interface PhotoDeps {
   platform: 'web' | 'native';
-  /** Web: shrink a data URL on a canvas. Never needs to throw. */
-  webDownscale(dataUrl: string, maxEdge: number): Promise<string>;
-  /** Native: shrink the file at `uri`; resolves with the base64 body of a JPEG. */
-  nativeResize(uri: string, arg: ResizeArg): Promise<string>;
+  /**
+   * Web: shrink a data URL on a canvas. With `forceReencode` it redraws even
+   * when no shrinking is needed, which drops the EXIF. Throws when it cannot.
+   */
+  webDownscale(dataUrl: string, maxEdge: number, forceReencode?: boolean): Promise<string>;
+  /**
+   * Native: re-encode the file at `uri`, shrunk by `arg` (or at its own size
+   * when `arg` is null); resolves with the base64 body of a JPEG.
+   */
+  nativeResize(uri: string, arg: ResizeArg | null): Promise<string>;
   /** Native: the file at `uri` as it is, as a base64 body. */
   readAsBase64(uri: string): Promise<string>;
 }
@@ -41,10 +48,17 @@ const dataUrl = (mime: string, base64: string) => `data:${mime};base64,${base64}
  * One photo as a data URL, or `null` when it cannot be read at all (every
  * caller already treats that like a cancelled pick).
  *
- * A failed resize falls back to the original rather than losing the photo: the
- * original, full size, at the camera's quality (the picker now runs at quality
- * 1, so that is larger than the old re-encoded pick). The server's size refusal
- * then names the problem.
+ * A JPEG or HEIC (what a camera writes, and what carries EXIF and GPS) is
+ * ALWAYS re-encoded, even when it is small enough, so the metadata is dropped
+ * (`photoMetadata.ts`). Other types are re-encoded only when they are too big,
+ * as before.
+ *
+ * When the re-encode fails the two cases part ways. A photo with no metadata
+ * to protect falls back to the original, full size, and the server's size
+ * refusal names the problem. A photo that carries metadata is NOT sent: the
+ * original would leak the location the re-encode exists to remove, so the
+ * result is `null` and the caller treats it as a cancelled pick. The failure
+ * is logged by the platform layer.
  */
 export async function encodePickedPhoto(
   asset: PickedPhoto,
@@ -52,26 +66,28 @@ export async function encodePickedPhoto(
   maxEdge: number = MAX_SCAN_EDGE,
 ): Promise<string | null> {
   const mime = asset.mimeType || 'image/jpeg';
+  const strip = carriesCameraMetadata(asset.mimeType, asset.uri);
 
   if (deps.platform === 'web') {
     if (!asset.base64) return null;
     const original = dataUrl(mime, asset.base64);
     try {
-      return await deps.webDownscale(original, maxEdge);
+      return await deps.webDownscale(original, maxEdge, strip);
     } catch {
-      return original;
+      return strip ? null : original;
     }
   }
 
   const arg = resizeArg(asset.width, asset.height, maxEdge);
-  if (arg) {
+  if (arg || strip) {
     try {
-      const shrunk = await deps.nativeResize(asset.uri, arg);
+      const encoded = await deps.nativeResize(asset.uri, arg);
       // The manipulator writes a JPEG whatever the input was.
-      if (shrunk) return dataUrl('image/jpeg', shrunk);
+      if (encoded) return dataUrl('image/jpeg', encoded);
     } catch {
-      // fall through to the original
+      // handled below
     }
+    if (strip) return null;
   }
 
   try {

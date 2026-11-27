@@ -79,51 +79,94 @@ describe('encodePickedPhoto — native', () => {
     assert.deepEqual(calls, ['read:file:///a.jpg']);
   });
 
-  it('reads a photo of unknown size as it is rather than guessing a resize', async () => {
+  it('re-encodes a small JPEG with no resize, so its EXIF is dropped', async () => {
+    const { deps, calls } = fakeDeps();
+    const out = await encodePickedPhoto(photo({ width: 800, height: 600 }), deps);
+    assert.equal(out, 'data:image/jpeg;base64,SMALL64');
+    assert.deepEqual(calls, ['resize:file:///a.jpg:null']);
+  });
+
+  it('re-encodes a small HEIC to a JPEG', async () => {
+    const { deps, calls } = fakeDeps();
+    const out = await encodePickedPhoto(photo({ width: 800, height: 600, mimeType: 'image/heic', uri: 'file:///a.heic' }), deps);
+    assert.equal(out, 'data:image/jpeg;base64,SMALL64');
+    assert.deepEqual(calls, ['resize:file:///a.heic:null']);
+  });
+
+  it('re-encodes a photo of unknown size rather than guessing a resize', async () => {
     const { deps, calls } = fakeDeps();
     const out = await encodePickedPhoto(photo({ width: 0, height: 0 }), deps);
-    assert.equal(out, 'data:image/jpeg;base64,FULL64');
-    assert.deepEqual(calls, ['read:file:///a.jpg']);
+    assert.equal(out, 'data:image/jpeg;base64,SMALL64');
+    assert.deepEqual(calls, ['resize:file:///a.jpg:null']);
   });
 
-  it('defaults the type to JPEG when the picker did not say', async () => {
+  it('treats a missing type as a JPEG and re-encodes it', async () => {
     const { deps } = fakeDeps();
-    const out = await encodePickedPhoto(photo({ width: 100, height: 100, mimeType: undefined }), deps);
-    assert.equal(out, 'data:image/jpeg;base64,FULL64');
+    const out = await encodePickedPhoto(photo({ width: 100, height: 100, mimeType: undefined, uri: 'file:///noext' }), deps);
+    assert.equal(out, 'data:image/jpeg;base64,SMALL64');
   });
 
-  it('falls back to the original when the resize throws', async () => {
-    const { deps, calls } = fakeDeps({
-      async nativeResize() {
-        throw new Error('out of memory');
-      },
-    });
-    const out = await encodePickedPhoto(photo({ mimeType: 'image/heic' }), deps);
-    assert.equal(out, 'data:image/heic;base64,FULL64');
-    assert.deepEqual(calls, ['read:file:///a.jpg']);
+  it('leaves a small GIF, WebP or PNG as it is (animation, transparency)', async () => {
+    for (const [mimeType, ext] of [['image/gif', 'gif'], ['image/webp', 'webp'], ['image/png', 'png']] as const) {
+      const { deps, calls } = fakeDeps();
+      const out = await encodePickedPhoto(photo({ width: 100, height: 100, mimeType, uri: `file:///a.${ext}` }), deps);
+      assert.equal(out, `data:${mimeType};base64,FULL64`);
+      assert.deepEqual(calls, [`read:file:///a.${ext}`]);
+    }
   });
 
-  it('falls back to the original when the resize returns nothing', async () => {
-    const { deps } = fakeDeps({ nativeResize: async () => '' });
-    const out = await encodePickedPhoto(photo(), deps);
-    assert.equal(out, 'data:image/jpeg;base64,FULL64');
+  it('infers the type from the file name when the picker gave none', async () => {
+    const { deps, calls } = fakeDeps();
+    await encodePickedPhoto(photo({ width: 100, height: 100, mimeType: null, uri: 'file:///a.PNG' }), deps);
+    assert.deepEqual(calls, ['read:file:///a.PNG']);
   });
 
-  it('is null when the resize and the read both fail', async () => {
+  it('does NOT send the original JPEG/HEIC when the re-encode throws: it carries the GPS', async () => {
+    for (const mimeType of ['image/jpeg', 'image/heic']) {
+      for (const big of [true, false]) {
+        const { deps, calls } = fakeDeps({
+          async nativeResize() {
+            throw new Error('out of memory');
+          },
+        });
+        const out = await encodePickedPhoto(photo({ mimeType, ...(big ? {} : { width: 100, height: 100 }) }), deps);
+        assert.equal(out, null);
+        assert.equal(calls.some(c => c.startsWith('read')), false);
+      }
+    }
+  });
+
+  it('does NOT send the original JPEG when the re-encode returns nothing', async () => {
+    const { deps, calls } = fakeDeps({ nativeResize: async () => '' });
+    assert.equal(await encodePickedPhoto(photo(), deps), null);
+    assert.equal(calls.some(c => c.startsWith('read')), false);
+  });
+
+  it('still falls back to the original for a big PNG whose resize throws (no camera metadata)', async () => {
     const { deps } = fakeDeps({
-      nativeResize: async () => {
+      async nativeResize() {
         throw new Error('x');
       },
-      readAsBase64: async () => {
+    });
+    const out = await encodePickedPhoto(photo({ mimeType: 'image/png', uri: 'file:///a.png' }), deps);
+    assert.equal(out, 'data:image/png;base64,FULL64');
+  });
+
+  it('is null when a big PNG cannot be resized or read', async () => {
+    const { deps } = fakeDeps({
+      async nativeResize() {
+        throw new Error('x');
+      },
+      async readAsBase64() {
         throw new Error('y');
       },
     });
-    assert.equal(await encodePickedPhoto(photo(), deps), null);
+    assert.equal(await encodePickedPhoto(photo({ mimeType: 'image/png' }), deps), null);
   });
 
-  it('is null when the original reads back empty', async () => {
+  it('is null when the original of a small PNG reads back empty', async () => {
     const { deps } = fakeDeps({ readAsBase64: async () => '' });
-    assert.equal(await encodePickedPhoto(photo({ width: 10, height: 10 }), deps), null);
+    assert.equal(await encodePickedPhoto(photo({ width: 10, height: 10, mimeType: 'image/png' }), deps), null);
   });
 });
 
@@ -143,15 +186,31 @@ describe('encodePickedPhoto — web', () => {
     assert.deepEqual(calls, []);
   });
 
-  it('returns the photo unshrunk if the canvas path throws', async () => {
+  it('asks the canvas to re-encode a JPEG/HEIC even when small, and not a PNG or GIF', async () => {
+    const seen: boolean[] = [];
+    const { deps } = web({
+      async webDownscale(url, _edge, force) {
+        seen.push(!!force);
+        return url;
+      },
+    });
+    await encodePickedPhoto(photo({ base64: 'A', mimeType: 'image/jpeg' }), deps);
+    await encodePickedPhoto(photo({ base64: 'A', mimeType: 'image/heic' }), deps);
+    await encodePickedPhoto(photo({ base64: 'A', mimeType: 'image/png' }), deps);
+    await encodePickedPhoto(photo({ base64: 'A', mimeType: 'image/gif' }), deps);
+    assert.deepEqual(seen, [true, true, false, false]);
+  });
+
+  it('drops a JPEG the canvas could not re-encode, but returns a PNG unshrunk', async () => {
     const { deps } = web({
       webDownscale: async () => {
         throw new Error('decode');
       },
     });
+    assert.equal(await encodePickedPhoto(photo({ base64: 'ABC' }), deps), null);
     assert.equal(
-      await encodePickedPhoto(photo({ base64: 'ABC' }), deps),
-      'data:image/jpeg;base64,ABC',
+      await encodePickedPhoto(photo({ base64: 'ABC', mimeType: 'image/png', uri: 'blob:x' }), deps),
+      'data:image/png;base64,ABC',
     );
   });
 
