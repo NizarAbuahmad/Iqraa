@@ -34,7 +34,7 @@ function solutionCount(e1: string, e2: string): number {
   const d = b * b - 4 * a * c;
   return Math.abs(d) < 1e-12 ? 1 : d > 0 ? 2 : 0;
 }
-const points = (s: string) => [...s.matchAll(/\((−?\d+) ، (−?\d+)\)/g)].map(m => [Number(m[1]!.replace('−', '-')), Number(m[2]!.replace('−', '-'))] as const);
+const points = (s: string) => [...s.matchAll(/\((−?\d+), (−?\d+)\)/g)].map(m => [Number(m[1]!.replace('−', '-')), Number(m[2]!.replace('−', '-'))] as const);
 const COUNT: Record<string, number> = { 'لا يوجد حل': 0, 'حل واحد': 1, 'حلّان': 2 };
 const systems = MATH_BANK.filter(i => (i.family === 'linear_quad' || i.family === 'quad_system') && i.eq2 && isYOfX(i.eq.replace(/k/, '0')) && /=/.test(i.eq2));
 

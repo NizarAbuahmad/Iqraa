@@ -172,6 +172,249 @@ triggers it now.
 - Only the offline generator changed. The live path (`worksheetPromptAr/En`) is the model's, and production runs live
   AI, so a teacher sees this paper only when live generation is off or fails.
 
+## Magnitude and absolute-value bars read left to right in Arabic — 2026-11-27
+
+The follow-up the vectors entry below named. `|` was not in `isolateForeignRuns`'s run class, so a magnitude or
+absolute value split at every bar, and inside an Arabic sentence the pieces came out reversed. In Chromium, «إذا كان
+مقدار المتجه |v| = 5» showed `= 5` before `|v|`, and the same held for `|x − 3| ≤ 5`, `|−4| + |3|` and
+`(a·b)/(|a||b|)`.
+
+**Fix** (`services/mathRender.ts`, renderer only). `|` is also a separator: a chat's markdown table `| x | 5 |`,
+«الصف العاشر | الرياضيات», set-builder `{x | x ≤ 3}`, and `P(A | B)`. So it is not added to the run class. Instead
+`protectBars` pairs each bar with the next and keeps the pair, as stand-ins, only when the content between is maths:
+- no Arabic letter, and nothing outside the run class;
+- not empty, with at most one space against each bar (the books' text layer writes `| v | = √…`);
+- balanced brackets, so `P(B|A) + |x|` does not pair `B|A`'s bar with `|x|`'s;
+- fewer than two Latin words of two letters or more. An English book's text layer reads the pronoun «I» as `|`
+  («Well... | had it when | went…»).
+
+A failed pair moves on to the next bar. A markdown table row (one starting `| `, `|:` or `|-` and ending `|`) is left
+alone. A first version skipped every line that started and ended with `|`, which missed `|a| · |b|`; a test pins it.
+
+**Verified:**
+- 10 new cases in `mathRender.test.ts`. The mobile suite (9,683, 0 failures) and root typecheck pass.
+- Old against new over 5,047 lines of the repo's text that hold a bar. Of the 449 that change, every one read was
+  maths (`|w| |v| cosθ`, `W = | F | | d | cosθ`, `|A × B| = A B sin θ`, `3|2x-5|+2 = 11`). The exceptions are six
+  English OCR lines with a one-word «I»-bar pair, which become one English isolate, better than the scrambled
+  pieces they were.
+- **Chromium, Arabic sentences:** «… |v| = 5 …», «… |x − 3| ≤ 5 …», «… |−4| + |3| …» and «… (a·b)/(|a||b|) …». The
+  maths reads left to right with the fix; all four were reversed with the old text.
+- **Take screen at 390px:** a teacher-written question with those four as options, and `|v|` in the stem, shows them
+  left to right. Options with no Arabic in them already displayed left to right (`dir="auto"`), so there only
+  `|−4| + |3| = 7` had been reversed.
+
+**Not covered:** set-builder `{x | x ≤ 3}` and conditional probability `P(A | B)`, whose single `|` is not a pair;
+native Android and iOS.
+
+## Vectors, the vector arrow and the multiplication dot read left to right in Arabic — 2026-11-27
+
+The follow-up the Latin-comma entry below named. A vector `⟨3, 4⟩` was never isolated: `⟨` and `⟩` are not in
+`isolateForeignRuns`'s run class, and its comma cut it in two anyway. Two neighbours had the same problem. The
+combining arrow of `AB⃗` (U+20D7) was outside the run too, so `AB⃗ = ⟨3, 4⟩` split after `AB`. And the
+multiplication dot was outside it, so `⟨a, b⟩ · ⟨c, d⟩ = ac + bd` fell into five pieces, as did `q = m·c·ΔT`,
+`J/g·°C` and `2^x · 2^2`.
+
+**Renderer** (`services/mathRender.ts`):
+- **Vectors.** `VECTOR_RE` finds `⟨…⟩`, and the books' `〈…〉` (U+3008/3009, used in `math_formulas.json` and the
+  text layers). Components may be expressions: `⟨4 − 1, 6 − 2⟩`, `⟨1 + 3, 2 + (−1)⟩`. Brackets and commas become
+  stand-ins, as for an interval. Angle brackets are never prose, so either comma counts, which covers papers saved
+  with `⟨3 ، 4⟩`.
+- **The arrow** U+20D7 joins the run class.
+- **The dot** `·` / `⋅` joins a run only when it is maths. It joins when unspaced between run characters (`m·c`,
+  `2bc·cos A`), or spaced with a number, superscript, bracket or vector on one side (`4 · 2^x`, `⟩ · ⟨`). A first
+  version joined any interior dot, and the corpus check caught it reordering UI lists: «(PDF · Word · PowerPoint ·
+  صور · نص)» would have read «PowerPoint · Word · PDF» to an Arabic reader. Two words either side of « · » are
+  left alone, and a test pins that line.
+
+**Bank** (`lib/math-practice`): the `vec` helper and the inline `⟨k, …⟩` templates in `grade10b.ts`, 15 items in
+`MATH_BANK` and 9 worked-solution lines in `steps-math-b.ts` now write `⟨3, 4⟩`. `latinCommaPoints.test.ts` now
+also fails on a vector holding «،», and `grade10LessonsB.test.ts`'s vector parsers read the Latin form.
+
+**Verified:**
+- 10 new cases in `mathRender.test.ts`. The mobile suite (9,673, 0 failures), `@workspace/math-practice` (1,491)
+  and its typecheck, the api-server build and tests (3,089), and the root typecheck all pass.
+- Old against new over every Arabic string in the repo (95,856 lines). Every changed line was read: 42 vector, 47
+  dot and 4 arrow lines, all maths, and no word list after the fix above.
+- Through the real renderer, 13,773 vectors from the bank's items, worked solutions and generated questions all sit
+  inside an isolate.
+- **Browser, Chromium at 390px, Arabic.** A scratch copy of the e2e journey (not committed) added a teacher-written
+  question with options `⟨3, 4⟩`, `⟨3 ، 4⟩`, `AB⃗ = ⟨4 − 1, 6 − 2⟩` and `⟨1, 2⟩ · ⟨3, 4⟩ = 11`. On `/take/CODE`
+  each option's first digit is left of its last. With the old text three of the four were reversed; the `AB⃗` line
+  starts with Latin and already passed that crude check. The screenshot shows all four left to right, with the
+  arrow over `AB`.
+
+**Not covered:**
+- `|v|` and `|a||b|` magnitude bars: `|` is not in the run class, as with set-builder braces.
+- Native Android and iOS.
+- Saved papers keep whatever comma they were written with; both now display left to right.
+
+## The question bank writes points with the Latin comma — 2026-11-27
+
+The follow-up the intervals entry below named. The bank (`lib/math-practice`) wrote every point as `(2 ، −1)`. The
+renderer can't lay that out left to right: «،» between numbers is also Arabic prose (a verse citation `(79 ،78)`,
+«المواد المرقمة (3،2،1)»), so `isolateForeignRuns` leaves it alone. The bank's points displayed right to left,
+`(1− ، 2)`, beside left-to-right equations and options. The English prompts (`promptEn`) carried the Arabic comma
+too. A scan of every topic found 43,756 such tuples across 36 topics. Points now print `(2, −1)`.
+
+**What changed** (data only; no renderer change):
+- **The four point helpers:** `pt` in `geometry.ts`, `grade10.ts` and `grade10b.ts`, and `pair` in `algebra.ts`.
+- **The inline templates** in `algebra.ts`, `geometry.ts`, `grade10b.ts`, `proportion.ts` and `stats.ts`: the
+  slope-with-`k` stems, scatter plots, proportional relations, graph interpretation, average speed on `[t1, t2]`,
+  and the `(x, y)` table headers. Each was changed by line, reading every match.
+- **The bank's intervals too:** `(−∞, 5]`, `[−3, ∞)`, `(1, 5]`. An open interval with finite ends, `(1 ، 5)`,
+  looks exactly like a point, so the renderer had left it right to left (the gap the intervals entry left).
+- **`relStr`** joins a relation's pairs with «, », so `{(1, 2), (3, −4)}` is one left-to-right set.
+- **Hand-written items:** 99 tuples in `MATH_BANK` (`index.ts`; among them the systems and `linear_quad` items) and
+  38 in the worked solutions (`steps-math-a.ts`, `steps-math-b.ts`). Only the comma inside a bracketed two-atom
+  tuple changed: the replacement used `latinCommaPoints.test.ts`'s own pattern.
+- **Test parsers** that re-derive answers from stems (`\((−?\d+) ، (−?\d+)\)` and similar, in seven test files)
+  now read the Latin form. One geometry test split `eq` on «, » and now uses the file's point parser. None was
+  loosened: each still recomputes the answer.
+
+**Left on «،», on purpose:**
+- Lists in Arabic sentences, such as the Grade 1 `(10، 20، 30، 40، 50)` and «−3 ، 4» (two roots, or two consecutive
+  integers, with no brackets).
+- Two equations in a system's `eq`.
+- **Vectors `⟨5 ، 2⟩`.** The renderer doesn't recognise `⟨⟩` yet, so a Latin comma alone would not change how they
+  display. That is a renderer change of its own.
+
+**Verified:**
+- `latinCommaPoints.test.ts` (new) fails on any two-atom tuple with «،» in a generated item (every topic, grades
+  1–10, every difficulty), in `MATH_BANK` or in the worked solutions. It failed before the change and passes after.
+- `@workspace/math-practice` tests (1,491) pass, and so do its typecheck, the mobile suite, the api-server build and
+  tests, and the root typecheck.
+- Every topic generated 40 times per grade (9, 10) and difficulty (556,403 texts), through `isolateForeignRuns`:
+  all 21,714 points and 616 intervals come out as one isolate (54 points before; the rest were «،»), and no
+  Arabic-comma point is left.
+- The display path for a Latin-comma point was checked in a browser in «Coordinate pairs read left to right in
+  Arabic» below.
+
+**Not verified / not covered:**
+- No new browser run for this change; it changes the strings, not how they are drawn.
+- **Saved papers and pooled artifacts** made before this keep `(2 ، −1)` and display as before. Only new generation
+  uses the new form.
+- Answer checking already treats the two commas alike (`keyLinking.ts` folds «،» to «,», and `formatsBank.ts`
+  reads `[،,]`), so a key stored either way still matches. That was read in the code, not re-run against old papers.
+
+## Intervals and set symbols read left to right in Arabic — 2026-11-26
+
+The follow-up the pairs entry below named. An interval printed backwards in the Arabic UI: `[1, 3]` as `[3 ,1]`,
+and the bank's `(−∞ ، 5]` as `[5 ، ∞−)` when read left to right. **Cause:** `[` and `]` are not in
+`isolateForeignRuns`'s run class at all (a chat's markdown link `[نص](…)` passes through it). A half-open `[5, ∞)`
+also has a `)` with no partner, which `isolateRun` would cut out of the interval.
+
+**Fix** (`services/mathRender.ts`).
+- `INTERVAL_RE` finds an interval: two maths atoms between `[(]` and `[)][`. It counts only with a square bracket
+  or `∞`. Inside it, every bracket character and the comma become private-use stand-ins (`protectInterval`). The run
+  class accepts them, the bracket pairing doesn't see them, and `restoreStandIns` swaps them back.
+- An atom may be `∞`, so `(-∞, ∞)` and `(-∞, -1)` are found too.
+- An interval may use **either** comma. Product decision: the banks' `(−∞ ، 5]`, `[−3 ، ∞)` (Grade 9 intervals in
+  `lib/math-practice/src/algebra.ts`) read left to right like the books. Before, they read as right-to-left notation
+  beside left-to-right equations and options. `،` has its own stand-in and comes back as `،`.
+- `∪ ∩ ∈ ∉` may sit inside a run, never at its edge, as arrows already do. So `(-∞, 0) ∪ [5, ∞)` and `x ∈ [1, 3]`
+  stay whole. A side effect fixes the probability lessons: `P(A ∪ B)` was three isolates, `P⁩(⁦A⁩ ∪ ⁦B⁩)`, which an
+  RTL line lays out as `(B ∪ A)P`. It is now one.
+
+**An Arabic-comma *pair* is still left alone, on purpose.** In prose, `،` between numbers is read right to left:
+a Quran citation `(79 ،78)`, an outcome code `(2 ،3)`, «المواد المرقمة (3،2،1)». Forcing those left to right
+reversed them; a first version did, and the corpus check below caught it. Tests pin all three.
+
+**Verified:**
+- 13 new cases in `mathRender.test.ts`; the mobile suite (9,663 tests, 0 failures) and root typecheck pass.
+- Old against new over every Arabic string in `lib/`, the mobile services and app, and the API source (487,287
+  distinct lines). Every changed display line was read. Intervals, `∞` pairs and `x ∈ W` / `P(A ∪ B)` got better;
+  no prose bracket changed after the fix above. The markdown-link cases are byte-identical.
+- Every bank topic generated 40 times per grade (9, 10) and difficulty: 556,442 texts. All 589 intervals and all 54
+  Latin-comma pairs come out as one isolate.
+- **Browser, Chromium at 390px, Arabic.** A scratch copy of the e2e journey (not committed) added a teacher-written
+  multiple-choice question to a published exam, with options `(−∞ ، 5]`, `[5, ∞)`, `(−∞ ، 5)` and `[−3 ، ∞)`. On
+  `/take/CODE` each option's first endpoint is left of its second. In a clone of the element with the old text, each
+  is right of it. The screenshot shows all four left to right.
+
+**Not verified / not covered:**
+- Native Android and iOS; they rely on LRI/PDI like every other isolate here.
+- The API's offline exam generator produced no questions for the Grade 9 «المجموعات والفترات» lesson ("6 selected
+  objective(s) have no questions"), which is why the browser check used a teacher-written question.
+- **Bank points with the Arabic comma**, `(${signed(x)} ، ${signed(y)})` in coordinate, translation, systems and
+  slope topics: thousands per run, still right to left. Telling them from prose needs the bank to emit `,`, or a
+  decision. Set-builder braces `{x | x ≤ 3}` are still split at `|` and `,`, as before.
+- Text that is already isolated gets a second, nested isolate; it draws the same. The old code did this to every run.
+
+## Instant feedback: students see their mark and mistakes as soon as they hand in — 2026-11-26
+
+Asked for by the owner: homework and tests the AI designs, answered in the app, with the mark and the mistakes shown
+when the student finishes. Generating, sharing, sitting and auto-marking already existed (evaluations, `/take/CODE`,
+`homework.evaluationId`); what did not was seeing mistakes before the exam **closed** — the answer review
+(`studentReviewReady`) waits for a closed exam and the teacher's «اعرض الإجابات», because an open exam is still being
+sat. The owner chose (option «ب»): right and wrong per question at once, the correct answers only after close.
+
+- **Switch.** `evaluations.instant_feedback` (migration `0032`, additive), «فعّل التغذية الراجعة الفورية» on the
+  exam screen in any status, never for a paper exam. `POST /evaluations/:id/instant-feedback {enabled}`. A mark per
+  question is a mark, so the feedback needs released results (`feedbackReady` = switch ∧ released ∧ handed in):
+  turning it on for a published/closed exam also releases them (same conditional update and announcement as
+  `/results-release`, awaited with `pushWithin`); the **first** publish of a draft with it on releases them; a
+  re-publish leaves the release as the teacher left it; hiding the results pauses the feedback (the screen says so,
+  `instantFeedbackPausedNote`); turning it off leaves the release alone. Worksheets sent to a class
+  (`/evaluations/from-worksheet`) are created with it on.
+- **What the student gets.** `/take/attempt/result` adds `feedback`, and `/student/exams/:id/review` falls back to
+  `mode: "feedback"` short of the full review; the «اختباراتي» row has `reviewMode`. Items come from
+  `feedbackItems`: verdict, the student's own answer and marks, **no** `correctAnswer` or steps, and the body
+  **as the student was shown it** (`sanitizeQuestionForStudent` with the attempt's seed) — the stored body can carry
+  the key (an option's `isCorrect`, a fill-blank's `blanks`, a matching column in key order); the review found the
+  first version sending the stored body. A question waiting for the teacher has no verdict («بانتظار تصحيح المعلم»).
+  The hand-in screen asks for the result once by itself (quietly — no «not marked yet» unasked) and lists the cards
+  (`components/AnswerReviewCard.tsx`, shared with `/exam-review`).
+- **No retakes with it on** (owner's choice, 2026-11-26): `retakeDecision` refuses `instant_feedback` after
+  `already_passed`. Right/wrong plus three retakes of the same paper settles true/false and most multiple choice by
+  elimination, and a pass opens the next lesson behind the mastery gate.
+- **What it does give away, said in the teacher's confirm:** «صحيحة» beside a student's own answer is that item's
+  key, and any verdict on a true/false item is. It is for homework and practice, not an exam classmates are still
+  sitting. A student can also claim an absent classmate's name on the share link and read verdicts off that sitting.
+- «ما الجديد»: `instant-feedback-teacher`, `instant-feedback-student`.
+
+Verified: `answerReview.test.ts` (gate, no key or steps, the sanitised body for `isCorrect` / `blanks` / matching
+order), `studentExams.test.ts` (row `review` / `reviewMode`), `retake.test.ts`; `instantFeedback.db.test.ts` over HTTP
+against Postgres (off by default; teacher-only switch; turning on releases; review and hand-in route send no key;
+another student / a parent get nothing; hiding results hides it; full review takes over once closed and shown;
+re-publish keeps a hide; off stops it; a failed lesson quiz is retakeable only with it off); api-server `pnpm test`
+with the database (3689 pass); mobile `pnpm test`; `pnpm run typecheck`; all three `e2e/` specs, the journey now
+turning the switch on before publishing and asserting the student sees verdicts and no «Correct answer». Screens
+read in Chromium: the teacher switch (English, desktop), the hand-in screen in English desktop and Arabic at 390 px.
+
+Not verified: a real phone or Android; dark mode of the cards (the colours came unchanged from `/exam-review`);
+`RLS_ENFORCE` on; a live-AI paper. The coordinate-pair bidi bug found here («(1, 3)» printing «(3 ,1)» in Arabic, on these cards and
+in the options) was fixed separately, «Coordinate pairs read left to right in Arabic» (#1559). Open nits from the review: the switch route reads the status
+before its update (a publish racing it can leave feedback on with results unreleased); the route does not refuse a
+paper exam (the app hides the switch for one).
+
+## Coordinate pairs read left to right in Arabic — 2026-11-26
+
+A maths option `(1, 3)` printed as `(3 ,1)` in the Arabic UI: on the take screen's options
+(`app/take/[code].tsx`) and in «إجابتك» on the review card (`ReviewCard` in `app/exam-review/[id].tsx`;
+there is no `AnswerReviewCard.tsx`), for «حل نظام مكوَّن من معادلة خطية ومعادلة تربيعية», whose options are
+all ordered pairs. **Cause:** `isolateForeignRuns` (`services/mathRender.ts`) leaves the latin comma out of its
+run class on purpose (prose uses it), so the pair was cut into `(1` and `3)`, and neither half passed
+`worthIsolating` (a digit but no operator). Both stayed in the RTL flow, which laid the numbers out right to left.
+
+**Fix.** A latin comma inside a bracketed tuple of plain maths atoms (`(1, 3)`, `(−2, 0)`, `(x, y)`,
+`(1, 2, 3)`), or between such tuples (`(1, 3), (2, 5)`), is swapped for a private-use stand-in (`PAIR_COMMA`)
+before runs are found, and swapped back after. This is the trick the `؟` blank already uses. The stand-in is in
+the run class and makes a run worth isolating, and it counts as an operator for the closing-full-stop rule
+(«الحل هو (1, 3).» keeps the stop outside). These are unchanged: a prose comma with no brackets («الأعداد 1, 2,
+3»), an Arabic-comma pair «(1، 3)», the bracket-pairing split (`isolateRun`) and the `؟` override. Every caller
+of `isolateForeignRuns` gets this, not only the two screens.
+
+**Verified:** ten new cases in `mathRender.test.ts` (seven failed before the fix); the mobile suite and root
+typecheck pass. In Chromium at 390px, Arabic UI, a scratch copy of the e2e journey published an exam on this
+lesson and measured each option's text on `/take/CODE`. Fixed, the first coordinate's x is left of the second
+(`(1, 3)`: 283 < 294). In a clone of the same element holding the old un-isolated text it is right of it
+(165 > 152). Same result for `(0, 2)`, `(2, 0)` and `(−2, −2)`, and the screenshot shows them left to right.
+**Not verified:** the «إجابتك» card itself (it needs a signed-in student account with results released; it
+renders the same helper in the same kind of `<Text>`), and native Android/iOS, which rely on LRI/PDI as every
+other isolate here does. **Not covered:** intervals `[1, 3]` / `]1, 3[` — square brackets are not in the run
+class, so an interval still reads reversed.
+
+
 ## Admin users filters: confirmed on Android — 2026-11-24
 
 Docs only. «Admin users list: filter by channel (web / app) and by new or returning» (#1409) said its
@@ -179,6 +422,7 @@ Docs only. «Admin users list: filter by channel (web / app) and by new or retur
 after the `production` OTA of 2026-11-05 (Mobile OTA update run 41992984527, commit 705b18e), the admin
 reported on their own Android phone that «هذا الشهر» shows in full and the «انضم عبر» and «المستخدمون» filter
 rows work. That entry is updated to say so. **Verified:** by that report only; no device was driven from here.
+
 ## The whiteboard takes typed text — 2026-11-25
 
 The follow-up the previous entry named («no text tool»). A teacher can now put words on the page.

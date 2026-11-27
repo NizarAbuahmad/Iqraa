@@ -213,9 +213,9 @@ describe('«جمع المتجهات وطرحها» has a lesson\'s worth of item
     'va-w1': len(add([0, 4], [3, 0])),
   };
   const own = () => MATH_BANK.filter(i => i.focus === 'vector_add');
-  /** «⟨5 ، −2⟩» as [5, -2], or the number after «=». */
+  /** «⟨5, −2⟩» as [5, -2], or the number after «=». */
   const stated = (answer: string): V | number => {
-    const m = /⟨\s*([−-]?\d+)\s*،\s*([−-]?\d+)\s*⟩/.exec(answer);
+    const m = /⟨\s*([−-]?\d+)\s*[,،]\s*([−-]?\d+)\s*⟩/.exec(answer);
     if (m) return [Number(m[1]!.replace('−', '-')), Number(m[2]!.replace('−', '-'))];
     return Number(answer.split('=').pop()!.replace(/[^0-9.]/g, ''));
   };

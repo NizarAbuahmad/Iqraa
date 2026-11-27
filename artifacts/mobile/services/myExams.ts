@@ -35,6 +35,8 @@ export interface MyExam {
   paper?: boolean;
   /** «راجع إجاباتك» may open (`GET /student/exams/:id/review`). Absent from an older server. */
   review?: boolean;
+  /** Which review `review` opens: "feedback" is right and wrong only, before the exam closes. */
+  reviewMode?: 'full' | 'feedback' | null;
 }
 
 /** One child's list, as `GET /parent/exams` returns it — no row carries a link. */

@@ -32,7 +32,7 @@ const sn = (s: string) => Number(s.replace('−', '-'));
 const nums = (s: string) => (s.match(/\d+/g) ?? []).map(Number);
 const has = (s: string, w: string) => s.includes(w);
 /** Every «(x ، y)» in a string, in order. */
-const pts = (s: string) => [...s.matchAll(/\((−?\d+) ، (−?\d+)\)/g)].map(m => [sn(m[1]!), sn(m[2]!)] as [number, number]);
+const pts = (s: string) => [...s.matchAll(/\((−?\d+), (−?\d+)\)/g)].map(m => [sn(m[1]!), sn(m[2]!)] as [number, number]);
 const cmp = (v: number, s: string, c: number) => (s === '<' ? v < c : s === '>' ? v > c : s === '≤' ? v <= c : v >= c);
 const SIGN = '[<>≤≥]';
 

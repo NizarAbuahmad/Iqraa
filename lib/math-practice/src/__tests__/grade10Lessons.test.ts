@@ -95,7 +95,7 @@ const sn = (s: string) => Number(s.replace(/−/g, '-'));
 /** «30° ، 150°» → [30, 150] */
 const degList = (s: string) => s.split(' ، ').map(x => { assert.match(x, /^\d+°$/, s); return Number(x.slice(0, -1)); });
 /** Every «(x ، y)» point in a stem; coordinates may be fractions. */
-const pts = (s: string) => [...s.matchAll(/\((−?[\d/]+) ، (−?[\d/]+)\)/g)].map(m => [num(m[1]!), num(m[2]!)] as [number, number]);
+const pts = (s: string) => [...s.matchAll(/\((−?[\d/]+), (−?[\d/]+)\)/g)].map(m => [num(m[1]!), num(m[2]!)] as [number, number]);
 const nums = (s: string) => (s.match(/−?\d+(?:\.\d+)?/g) ?? []).map(sn);
 
 const SUPS = '⁰¹²³⁴⁵⁶⁷⁸⁹';

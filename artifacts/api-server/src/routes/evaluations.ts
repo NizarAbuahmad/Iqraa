@@ -135,7 +135,7 @@ import {
   workedStepsPrompt,
   workedStepsSystemPrompt,
 } from "../modules/assessment/workedSteps.ts";
-import { correctAnswerText, solutionsDecision } from "../modules/assessment/answerReview.ts";
+import { correctAnswerText, instantFeedbackDecision, solutionsDecision } from "../modules/assessment/answerReview.ts";
 import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
 import { pushWithin } from "../lib/pushWithin.ts";
 import { announceExamDate, announcePaperResults } from "../lib/familyPushEvents.ts";
@@ -516,6 +516,9 @@ router.post("/evaluations/from-worksheet", async (req: AuthenticatedRequest, res
           generator: "worksheet",
           generationParams: { fromWorksheet: true },
           totalMarks: total.toFixed(2),
+          // A worksheet sent to the class is practice: students see where they
+          // went wrong the moment they hand it in (the teacher can turn it off).
+          instantFeedback: true,
         })
         .returning();
       await tx.insert(evaluationQuestions).values(
@@ -1921,6 +1924,12 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
                 // And it is being sat again, so its answers go back out of view
                 // (`modules/assessment/answerReview.ts`).
                 showSolutionsToStudent: false,
+                // «تغذية راجعة فورية» shows a mark per question, which needs the
+                // results released (`feedbackReady`). Only on the FIRST publish:
+                // nobody has handed in yet, so there is nothing to announce. A
+                // re-publish leaves the release as the teacher last set it — results
+                // they hid on purpose must not come back because the exam reopened.
+                ...(locked.instantFeedback && !locked.publishedAt ? { releaseResultsToStudent: true } : {}),
                 updatedAt: new Date(),
                 totalMarks: total.toFixed(2),
                 shareCode: locked.shareCode ?? generateShareCode(),
@@ -2096,6 +2105,59 @@ router.post("/evaluations/:id/results-release", async (req: AuthenticatedRequest
   } catch (err) {
     logger.error({ err }, "results release failed");
     res.status(500).json({ error: "Failed to update result release" });
+  }
+});
+
+/**
+ * «تغذية راجعة فورية» on or off — see `feedbackReady` in
+ * modules/assessment/answerReview.ts. Any status: a draft keeps it for
+ * publishing, which releases the results then.
+ *
+ * Turning it on for an exam already published or closed releases the results
+ * too, since a mark per question is a mark — the same conditional update and
+ * announcement as `/results-release`, so students who already handed in hear
+ * of it once. Turning it off leaves the results as they are: hiding a mark is
+ * the release button's job, and nobody who turns feedback off has asked for it.
+ */
+router.post("/evaluations/:id/instant-feedback", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    const decision = instantFeedbackDecision(req.body);
+    if (!decision.ok) {
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+    if (evaluation.archivedAt) {
+      res.status(409).json({ error: "This evaluation was removed from your list", code: "archived" });
+      return;
+    }
+    const live = evaluation.status === "published" || evaluation.status === "closed";
+    const [turnedOn] =
+      decision.enabled && live
+        ? await db
+            .update(evaluations)
+            .set({ instantFeedback: true, releaseResultsToStudent: true, updatedAt: new Date() })
+            .where(and(eq(evaluations.id, evaluation.id), eq(evaluations.releaseResultsToStudent, false)))
+            .returning()
+        : [];
+    const [updated] = turnedOn
+      ? [turnedOn]
+      : await db
+          .update(evaluations)
+          .set({ instantFeedback: decision.enabled, updatedAt: new Date() })
+          .where(eq(evaluations.id, evaluation.id))
+          .returning();
+    // Before answering, not after: work after `res.json` may never run on Cloud
+    // Run (CLAUDE.md, «Work after `res.json`…»). Capped and never throws.
+    if (turnedOn) await pushWithin("instant feedback released results", () => announceResultsRelease(turnedOn));
+    res.json({ evaluation: updated });
+  } catch (err) {
+    logger.error({ err }, "instant feedback toggle failed");
+    res.status(500).json({ error: "Failed to update instant feedback" });
   }
 });
 
