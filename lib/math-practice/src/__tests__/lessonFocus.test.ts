@@ -101,11 +101,11 @@ describe('the worked example is the lesson\'s own', () => {
   });
 
   it('runs out rather than leave the lesson', () => {
-    // «المتجهات في المستوى» has two solved items of its own: two worked examples, then none.
+    // «حل المعادلات المثلثية» has two solved items of its own: two worked examples, then none.
     const session = new Set<string>();
-    assert.ok(takeSolvedMath('المتجهات في المستوى', null, 'medium', 'ar', session));
-    assert.ok(takeSolvedMath('المتجهات في المستوى', null, 'medium', 'ar', session));
-    assert.equal(takeSolvedMath('المتجهات في المستوى', null, 'medium', 'ar', session), null);
+    assert.ok(takeSolvedMath('حل المعادلات المثلثية', null, 'medium', 'ar', session));
+    assert.ok(takeSolvedMath('حل المعادلات المثلثية', null, 'medium', 'ar', session));
+    assert.equal(takeSolvedMath('حل المعادلات المثلثية', null, 'medium', 'ar', session), null);
   });
 
   it('practice takes the lesson\'s own items first, within the tier asked', () => {
@@ -326,6 +326,76 @@ describe('«الضرب القياسي» has a lesson\'s worth of items, every ke
         const s = takeSolvedMath('الضرب القياسي', null, tier, 'ar', new Set());
         assert.ok(s);
         assert.equal(item(s.id).focus, 'dot_product', `got ${s.id}: ${s.problem}`);
+      }
+    }
+  });
+});
+
+describe('«المتجهات في المستوى» has a lesson\'s worth of items, every key recomputed', () => {
+  type V = [number, number];
+  const sub = (b: V, a: V): V => [b[0] - a[0], b[1] - a[1]];
+  const len = (a: V) => Math.hypot(a[0], a[1]);
+  /** The direction angle from the positive x-axis, 0° to 360°. */
+  const dir = (a: V) => ((Math.atan2(a[1], a[0]) * 180) / Math.PI + 360) % 360;
+  const KEYS: Record<string, V | number> = {
+    'v-e1': sub([4, 6], [1, 2]),
+    'v-e2': len([3, 4]),
+    'vp-e1': sub([4, 1], [-2, 3]),
+    'vp-e2': len([-5, 12]),
+    'vp-m1': len(sub([7, 7], [1, -1])),
+    'vp-m2': [3 / len([3, -4]), -4 / len([3, -4])],
+    'vp-m3': dir([1, Math.sqrt(3)]),
+    // D with AB⃗ = CD⃗: C + AB⃗, for A(1, 2), B(4, 7), C(0, −1).
+    'vp-m4': [0 + 3, -1 + 5],
+    'vp-h1': dir([-2, 2]),
+    // a > 0 with |⟨a, 6⟩| = 10.
+    'vp-h2': Math.sqrt(100 - 36),
+    'vp-w1': len(sub([8, 9], [2, 1])),
+  };
+  const own = () => MATH_BANK.filter(i => i.focus === 'vector_plane');
+  const num = (t: string) => {
+    const [n, d] = t.replace(/−/g, '-').replace(/\s/g, '').split('/');
+    return d === undefined ? Number(n) : Number(n) / Number(d);
+  };
+  /** «⟨3/5, −4/5⟩», «D(3, 4)», or the signed number after the last «=». */
+  const stated = (answer: string): V | number => {
+    const v = /[⟨(]\s*([−\d/ ]+?)\s*,\s*([−\d/ ]+?)\s*[⟩)]/.exec(answer);
+    if (v) return [num(v[1]!), num(v[2]!)];
+    return Number(answer.split('=').pop()!.replace(/−/g, '-').replace(/[^0-9.-]/g, ''));
+  };
+  const close = (a: V | number, b: V | number) =>
+    Array.isArray(a) && Array.isArray(b) ? a.every((x, k) => Math.abs(x - b[k]!) < 1e-9) : Math.abs((a as number) - (b as number)) < 1e-9;
+
+  it('lists every item of the lesson', () => {
+    assert.deepEqual(own().map(i => i.id).sort(), Object.keys(KEYS).sort());
+  });
+
+  it('every key is the vector\'s own components, length, direction or point', () => {
+    for (const [id, want] of Object.entries(KEYS)) {
+      const answer = item(id).answer;
+      assert.ok(close(stated(answer), want), `${id}: key «${answer}», the numbers give ${JSON.stringify(want)}`);
+    }
+  });
+
+  it('enough for a worksheet, in every tier, with a story, every one with working', () => {
+    assert.ok(own().length >= 8, `${own().length} items`);
+    for (const tier of ['easy', 'medium', 'hard'] as const) assert.ok(own().some(i => i.diff === tier), `no ${tier} item`);
+    assert.ok(own().some(i => i.story), 'no real-life story');
+    for (const i of own()) assert.ok(stepsFor(i.id), `${i.id} has no working`);
+  });
+
+  it('asks for a direction angle, a unit vector and a point, not only components', () => {
+    assert.ok(own().some(i => /°$/.test(i.answer)), 'no direction angle');
+    assert.ok(own().some(i => /\//.test(i.answer)), 'no unit vector');
+    assert.ok(own().some(i => /^[A-Z]\(/.test(i.answer)), 'no point');
+  });
+
+  it('studies only its own lesson', () => {
+    for (const tier of ['easy', 'medium', 'hard'] as const) {
+      for (let k = 0; k < 20; k++) {
+        const s = takeSolvedMath('المتجهات في المستوى', null, tier, 'ar', new Set());
+        assert.ok(s);
+        assert.equal(item(s.id).focus, 'vector_plane', `got ${s.id}: ${s.problem}`);
       }
     }
   });

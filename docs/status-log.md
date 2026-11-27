@@ -154,6 +154,20 @@ condition, and the right-angle «نعم» against a zero dot product. Moved fixt
 - the in-tier test now checks that the question is one of the lesson's own items, not that it contains the words
   «الضرب القياسي», since an angle question doesn't.
 
+**Vectors in the plane: nine new bank items** (`vp-e1` … `vp-w1`, focus `vector_plane`, 2026-11-27), each with
+checked working:
+- easy: a vector from two points (end minus start) and a magnitude (`13`);
+- medium: the length of a vector between points (`10`); a unit vector (`⟨3/5, −4/5⟩`, checked to have length 1);
+  a direction angle in the first quadrant (`60°`); the end D of a vector equal to AB⃗ (`D(3, 4)`);
+- hard: a direction angle in the second quadrant (`135°`, reference angle then 180° − α); a missing component from
+  the magnitude, with the negative root ruled out (`a = 8`);
+- a story: a drone's straight flight on a kilometre map (`10 كم`).
+
+The distractors are: QP⃗ for PQ⃗, the components added for the magnitude, the vector not divided (or divided by
+|3| + |4|), the reference angle without its quadrant, tan⁻¹(−1) = −45°, C − AB⃗ for D, and a² for a.
+`lessonFocus.test.ts` recomputes every key (direction angles by atan2, the unit vector by dividing). The run-out
+test now uses «حل المعادلات المثلثية», which still has two solved bank items.
+
 **Fixed after an independent review of the first commit:**
 - **Instructions.** They promised «أكمل الحل في السؤال الأول» whenever there was a worked example. A lesson with one
   solved item of its own («قانون جيب التمام», «الاقتران العكسي») gets no half-solved question, so the line now

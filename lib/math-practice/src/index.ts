@@ -705,6 +705,23 @@ export const MATH_BANK: ConcreteItem[] = [
   // ── Vectors ──
   { id: 'v-e1', family: 'vectors', diff: 'easy', eq: 'A(1,2), B(4,6)', answer: 'AB⃗ = ⟨3, 4⟩', wrongs: ['⟨5, 8⟩', '⟨−3, −4⟩', '⟨4, 3⟩'], promptAr: 'أوجد المتجه AB⃗ من A(1,2) إلى B(4,6).', promptEn: 'Find vector AB from A(1,2) to B(4,6).' },
   { id: 'v-e2', family: 'vectors', diff: 'easy', eq: '⟨3,4⟩', answer: '|v| = 5', wrongs: ['7', '12', '1'], promptAr: 'أوجد مقدار المتجه ⟨3, 4⟩.', promptEn: 'Find the magnitude of ⟨3, 4⟩.' },
+  // «المتجهات في المستوى» on its own: a vector from two points, a magnitude, the
+  // length of a vector between points, a unit vector, direction angles (60° and
+  // 135°), the end of an equal vector, a missing component from a magnitude,
+  // and a drone's flight. `lessonFocus.test.ts` recomputes every key.
+  { id: 'vp-e1', family: 'vectors', diff: 'easy', eq: 'P(−2,3), Q(4,1), PQ', answer: 'PQ⃗ = ⟨6, −2⟩', wrongs: ['⟨−6, 2⟩', '⟨2, 4⟩', '⟨6, 2⟩'], promptAr: 'أوجد المتجه PQ⃗ من P(−2, 3) إلى Q(4, 1) بالصورة الإحداثية.', promptEn: 'Find the vector PQ from P(−2, 3) to Q(4, 1) in component form.' },
+  { id: 'vp-e2', family: 'vectors', diff: 'easy', eq: '⟨−5,12⟩, magnitude', answer: '|v| = 13', wrongs: ['7', '17', '169'], promptAr: 'أوجد مقدار المتجه v = ⟨−5, 12⟩.', promptEn: 'Find the magnitude of v = ⟨−5, 12⟩.' },
+  { id: 'vp-m1', family: 'vectors', diff: 'medium', eq: 'A(1,−1), B(7,7), |AB|', answer: '|AB⃗| = 10', wrongs: ['14', '100', '8'], promptAr: 'أوجد مقدار المتجه AB⃗ حيث A(1, −1) و B(7, 7).', promptEn: 'Find the magnitude of AB where A(1, −1) and B(7, 7).' },
+  { id: 'vp-m2', family: 'vectors', diff: 'medium', eq: '⟨3,−4⟩, unit vector', answer: 'u = ⟨3/5, −4/5⟩', wrongs: ['⟨3, −4⟩', '⟨1/3, −1/4⟩', '⟨3/7, −4/7⟩'], promptAr: 'أوجد متجه الوحدة في اتجاه المتجه v = ⟨3, −4⟩.', promptEn: 'Find the unit vector in the direction of v = ⟨3, −4⟩.' },
+  { id: 'vp-m3', family: 'vectors', diff: 'medium', eq: '⟨1,√3⟩, direction angle', answer: 'θ = 60°', wrongs: ['θ = 30°', 'θ = 45°', 'θ = 120°'], promptAr: 'أوجد قياس الزاوية التي يصنعها المتجه v = ⟨1, √3⟩ مع الاتجاه الموجب لمحور x.', promptEn: 'Find the angle v = ⟨1, √3⟩ makes with the positive x-axis.' },
+  { id: 'vp-m4', family: 'vectors', diff: 'medium', eq: 'A(1,2), B(4,7), C(0,−1), AB=CD, D', answer: 'D(3, 4)', wrongs: ['D(−3, −6)', 'D(4, 6)', 'D(3, 6)'], promptAr: 'إذا كان AB⃗ = CD⃗ حيث A(1, 2) و B(4, 7) و C(0, −1)، فأوجد إحداثيي النقطة D.', promptEn: 'If AB = CD where A(1, 2), B(4, 7) and C(0, −1), find the point D.' },
+  { id: 'vp-h1', family: 'vectors', diff: 'hard', eq: '⟨−2,2⟩, direction angle', answer: 'θ = 135°', wrongs: ['θ = 45°', 'θ = −45°', 'θ = 225°'], promptAr: 'أوجد قياس الزاوية التي يصنعها المتجه v = ⟨−2, 2⟩ مع الاتجاه الموجب لمحور x.', promptEn: 'Find the angle v = ⟨−2, 2⟩ makes with the positive x-axis.' },
+  { id: 'vp-h2', family: 'vectors', diff: 'hard', eq: '|⟨a,6⟩|=10, a>0', answer: 'a = 8', wrongs: ['a = 4', 'a = 16', 'a = 64'], promptAr: 'إذا كان مقدار المتجه v = ⟨a, 6⟩ يساوي 10 حيث a > 0، فأوجد قيمة a.', promptEn: 'If the magnitude of v = ⟨a, 6⟩ is 10 with a > 0, find a.' },
+  {
+    id: 'vp-w1', family: 'vectors', diff: 'hard', eq: 'drone (2,1) to (8,9)', answer: 'المسافة = 10 كم', wrongs: ['المسافة = 14 كم', 'المسافة = 100 كم', 'المسافة = 2 كم'], kind: 'word', story: true,
+    wordAr: 'على خريطة وحدتها الكيلومتر، طارت طائرة مسيّرة في خط مستقيم من النقطة (2, 1) إلى النقطة (8, 9). اكتب متجه إزاحتها بالصورة الإحداثية، ثم أوجد المسافة التي قطعتها.',
+    wordEn: 'On a map measured in kilometres, a drone flies in a straight line from (2, 1) to (8, 9). Write its displacement vector in component form, then find the distance it flew.',
+  },
   { id: 'v-m1', family: 'vectors', diff: 'medium', eq: 'u=⟨1,2⟩, v=⟨3,−1⟩', answer: 'u+v = ⟨4, 1⟩', wrongs: ['⟨2, 1⟩', '⟨4, 3⟩', '⟨3, 2⟩'], promptAr: 'إذا كان u = ⟨1, 2⟩ و v = ⟨3, −1⟩، أوجد u + v.', promptEn: 'If u = ⟨1, 2⟩ and v = ⟨3, −1⟩, find u + v.' },
   { id: 'v-m2', family: 'vectors', diff: 'medium', eq: 'u=⟨2,3⟩, v=⟨4,−1⟩', answer: 'u·v = 5', wrongs: ['8', '−3', '7'], promptAr: 'أوجد الضرب القياسي ⟨2, 3⟩ · ⟨4, −1⟩.', promptEn: 'Find the dot product ⟨2, 3⟩ · ⟨4, −1⟩.' },
   // «الضرب القياسي» on its own: a dot product, one with a negative term, a
