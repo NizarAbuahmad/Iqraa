@@ -859,27 +859,34 @@ describe('shapes, fractions, patterns: answers recomputed', () => {
       assert.equal(Number(item.answer), PT[item.eq]);
     }
     assert.equal(plr.size, 3, [...plr].join(', '));
+    // Grade 3 compares an angle with a right angle; degrees come in Grade 4, so none is printed
     const kindOf = (a: number) => (a < 90 ? 'حادة' : a === 90 ? 'قائمة' : 'منفرجة');
+    const BY_DESC: Array<[RegExp, string]> = [
+      [/أصغر من الزاوية القائمة/, 'حادة'], [/ركن الورقة|ركن صفحة|أرض الغرفة|ركن السبورة/, 'قائمة'],
+      [/أكبر من الزاوية القائمة|يميل إلى الخلف/, 'منفرجة'], [/بيتزا|مفتوح قليلًا/, 'حادة'],
+    ];
+    const COUNT: Array<[RegExp, number]> = [[/المثلث/, 3], [/المستطيل/, 4], [/المربع/, 4], [/الخماسي/, 5]];
     const angles = new Set<string>();
     for (const item of draws('angle_kind_g3', 300)) {
       const p = item.promptAr!;
+      assert.doesNotMatch(p + item.answer + item.wrongs.join(' '), /°|درجة/, p);
       if (has(p, 'عقربي الساعة')) {
         angles.add('clock');
-        const h = Number(p.match(/(\d+):00/)![1]), between = Math.abs(h * 30 - 0), small = Math.min(between, 360 - between);
+        const h = Number(p.match(/(\d+):00/)![1]), between = h * 30, small = Math.min(between, 360 - between);
         assert.notEqual(small, 180, p); assert.equal(item.answer, kindOf(small), p);
         continue;
       }
-      if (has(p, 'أي القياسات')) {
-        const want = p.match(/قياس زاوية (\S+):/)![1]!, list = nums(p.slice(p.indexOf(':')));
-        angles.add(`which ${want}`);
-        assert.equal(list.length, 4, p);
-        assert.deepEqual(list.filter(a => kindOf(a) === want).map(a => `${a}°`), [item.answer], p);
+      if (has(p, 'كم زاوية')) {
+        angles.add('count');
+        const hit = COUNT.filter(([re]) => re.test(p)); assert.equal(hit.length, 1, p);
+        assert.equal(Number(item.answer), hit[0]![1], p);
         continue;
       }
-      angles.add('name');
-      const a = nums(p)[0]!; assert.equal(item.answer, kindOf(a));
+      angles.add(has(p, 'ما نوعها') ? 'compare' : 'thing');
+      const hit = BY_DESC.filter(([re]) => re.test(p)); assert.equal(hit.length, 1, p);
+      assert.equal(item.answer, hit[0]![1], p);
     }
-    assert.equal(angles.size, 5, [...angles].join(', '));
+    assert.equal(angles.size, 4, [...angles].join(', '));
     const REL: Array<[string, string]> = [['لا يلتقيان', 'متوازيان'], ['زاوية التقاطع بينهما قائمة', 'متعامدان'], ['ليست قائمة', 'متقاطعان']];
     const THINGS: Record<string, string> = { 'قضيبا سكة القطار': 'متوازيان', 'الحافتان الطويلتان للمسطرة': 'متوازيان', 'حافتان متجاورتان لصفحة الكتاب': 'متعامدان', 'خطّا إشارة الجمع (+)': 'متعامدان', 'شفرتا المقص وهو مفتوح قليلًا': 'متقاطعان' };
     for (const id of ['lines_g3', 'lines_g4']) {

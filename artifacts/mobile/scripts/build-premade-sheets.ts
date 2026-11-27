@@ -129,25 +129,9 @@ const HELD_BACK: Record<string, string> = {
   'kbl-math-s2-nccd-u6_l1': 'تقدير ميل المنحنى detects as system_graph — serves line intersections',
   'kbl-math-s2-nccd-u7_l2': 'جمع المتجهات وطرحها detects as trig — serves sin/cos values',
   'kbl-math-s2-nccd-u8_l1': 'أشكال الانتشار detects as system_graph — serves system solving',
-
-  // Grades 1–9, from the hand review of every built sheet (2026-11-20). Held
-  // where the lesson's own skill is missing or 3+ of 10 questions belong to
-  // another lesson or grade. Each is a bank generator to fix, then `--only`.
-  'kbl-g2-math-s2-nccd-u6_l3': 'الشبكات والضرب: no grid or array in any question — the repeated-addition sheet again',
-  'kbl-g3-math-s1-nccd-u4_l7': 'الضرب في 6 و9: all ten are ×6, no ×9 at all',
-  'kbl-g3-math-s1-nccd-u4_l8': 'الضرب في 7 و8: all ten are ×7; ×8 only as 7×8',
-  'kbl-g3-math-s1-nccd-u6_l2': 'الزوايا: classifies angles by degree (13°, 134°); grade 3 has right/acute/obtuse only',
-  'kbl-g4-math-s1-nccd-u2_l3': 'ضرب الأعداد: 2 of 10 practise 3-digit × 1-digit; the rest are repeated addition and division facts',
-  'kbl-g4-math-s1-nccd-u3_l4': 'القسمة مع وجود أصفار في الناتج: no quotient has a zero in it',
-  'kbl-g4-math-s1-nccd-u5_l2': 'قياس الزوايا ورسمها: angle arithmetic, nothing measured; 2 are the grade 5 «angles on a line»',
-  'kbl-g4-math-s2-nccd-u7_l1': 'أجزاء العشرة: 5 of 10 are hundredths, the next lessons',
-  'kbl-g4-math-s2-nccd-u7_l7': 'تقريب الأعداد العشرية: 4 of 10 round thousandths, a grade 5 skill',
-  'kbl-g5-math-s1-nccd-u4_l5': 'ضرب الكسور: 4 of 10 are missing-factor items that need division of fractions (the next lesson)',
-  'kbl-g5-math-s2-nccd-u6_l7': 'ضرب الأعداد العشرية وقسمتها (by 10/100/1000): 4 are decimal × decimal, grade 6',
-  'kbl-g7-math-s1-nccd-u1_l2': 'كتابة العدد النسبي بالصورة العشرية: 7 of 10 are the u1_l1 sheet',
-  'kbl-g8-math-s2-nccd-u7_l3': 'تمييز متوازي الأضلاع: 7 of 10 give one condition and ask what makes ABCD a parallelogram',
-  'kbl-g9-math-s1-nccd-u4_l1': 'المسافة في المستوى الإحداثي: 6 of 10 are the midpoint; the objectives are distance only',
-  'kbl-g9-math-s2-nccd-u8_l3': 'المدرجات التكرارية: 8 of 10 are grouped tables — the u8_l2 sheet again',
+  // The 15 Grades 1–9 lessons held after the 2026-11-20 hand review were
+  // released on 2026-11-27: their generators were fixed (most in
+  // lib/math-practice/src/lessonFits.ts) and every rebuilt key was read.
 };
 
 /** Questions per sheet — the generator screen's middle option. */
@@ -335,10 +319,18 @@ function readManifest(): Manifest {
  * Also drops any sheet whose lesson is now held back. Without that, adding an
  * entry to `HELD_BACK` would leave the bad sheet sitting in the manifest from
  * an earlier run — held back in the code and still shipped in the data.
+ *
+ * A rebuilt sheet that came out the same as the stored one keeps the stored
+ * one, `generatedAt` included: a re-run of a whole grade otherwise rewrites
+ * every timestamp and buries the sheets that did change in the diff.
  */
 function writeManifest(manifest: Manifest, produced: PremadeWorksheet[]): void {
   const byId = new Map(manifest.sheets.map(sheet => [sheet.id, sheet]));
-  for (const sheet of produced) byId.set(sheet.id, sheet);
+  const sansTime = ({ generatedAt: _at, ...rest }: PremadeWorksheet) => JSON.stringify(rest);
+  for (const sheet of produced) {
+    const stored = byId.get(sheet.id);
+    if (!stored || sansTime(stored) !== sansTime(sheet)) byId.set(sheet.id, sheet);
+  }
   const sheets = [...byId.values()]
     .filter(sheet => !HELD_BACK[sheet.lessonId])
     .sort((a, b) => a.id.localeCompare(b.id));
