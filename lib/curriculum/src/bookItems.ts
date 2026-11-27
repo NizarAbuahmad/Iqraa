@@ -2,7 +2,7 @@
  * Real items from the NCCD Grade 10 maths books — exercise-book questions and
  * the teacher guide's end-of-unit test — for the generators that build papers.
  *
- * Three kinds: `exercise` (exercise-book question, a short answer),
+ * Three kinds: `exercise` (an exercise-book or student-book question, a short answer),
  * `unit-test-mcq` (end-of-unit multiple choice) and `unit-test` (an open,
  * short-answer question from the same end-of-unit test; it cites as the test,
  * not as the exercise book, and is drawn wherever a short answer is wanted).
@@ -12,9 +12,12 @@
  *
  * **Trust is in `status`, and it is not a ranking.**
  *  - `verified`    the book's printed answer and SymPy agree. Today that is
- *                  five `unit-test` items (teacher guide p.47), whose printed
- *                  answers are paired with the items by value, not position, so
- *                  a misread stem finds no answer. Still no `check`, no badge.
+ *                  five `unit-test` items (teacher guide p.47) and the fourteen
+ *                  derivatives of the semester-2 student book (unit 6), whose
+ *                  printed answers the s2 guide carries on its copy of the page.
+ *                  They are paired with the items by value (and name), not
+ *                  position, so a misread stem finds no answer. Still no
+ *                  `check`, no badge.
  *  - `computed`    SymPy solved the stem; nothing in the book cross-checks it.
  *                  Served, labelled, and NEVER shown as verified — the stem was
  *                  read from a text layer that flattens exponents and splits
@@ -30,6 +33,7 @@
 import exerciseS1 from './data/book-items/math-s1-exercise-book.json' with { type: 'json' };
 import exerciseS2 from './data/book-items/math-s2-exercise-book.json' with { type: 'json' };
 import guideS1 from './data/book-items/math-s1-teacher-guide.json' with { type: 'json' };
+import studentS2 from './data/book-items/math-s2-student-book.json' with { type: 'json' };
 
 export type BookItemStatus = 'verified' | 'computed' | 'book-key' | 'quarantined';
 export type BookItemKind = 'exercise' | 'unit-test-mcq' | 'unit-test';
@@ -62,12 +66,19 @@ export interface BookItem {
   tierSource: 'position' | 'default';
   status: BookItemStatus;
   verificationSource: 'sympy+book' | 'sympy' | 'book' | 'none';
+  /**
+   * A drawing the question carries (a `@workspace/figure` figure, in the gate's canonical
+   * form), only where the question itself fixes the curve: a graph question cannot be asked
+   * without its graph. The API puts it in `body.visual`, where `studentVisual` gates it again.
+   * Typed loosely here so this package needs no dependency on the figure package.
+   */
+  visual?: { kind: string } & Record<string, unknown>;
 }
 
 /** What a paper may draw. Narrow to `['verified']` here and nowhere else. */
 export const SERVED_STATUSES: readonly BookItemStatus[] = ['verified', 'computed', 'book-key'];
 
-const ALL: readonly BookItem[] = [exerciseS1, exerciseS2, guideS1].flatMap(
+const ALL: readonly BookItem[] = [exerciseS1, exerciseS2, guideS1, studentS2].flatMap(
   f => (f as unknown as { items: BookItem[] }).items,
 );
 
@@ -134,11 +145,23 @@ const arabicDigits = (n: number) => String(n).replace(/[0-9]/g, d => '٠١٢٣٤
 /** «كتاب التمارين ص ٧٢، س ١١» — Arabic digits at display time only. */
 export function bookCitation(item: BookItem, lang: 'ar' | 'en'): string {
   const { bookPage, number, unit } = item.source;
-  // Both unit-test kinds cite the test; only `exercise` cites the exercise book.
+  // Both unit-test kinds cite the test; an `exercise` cites the book it came from.
+  if ((item.kind === 'unit-test-mcq' || item.kind === 'unit-test') && item.source.sourceId.endsWith('-student-book')) {
+    // The page too: printings of the student book number a test's questions differently
+    // (the 2021 printing's unit-6 test runs one higher), so a number alone can point elsewhere.
+    return lang === 'ar'
+      ? `كتاب الطالب ص ${arabicDigits(bookPage)}، اختبار نهاية الوحدة ${arabicDigits(unit)}، س ${arabicDigits(number)}`
+      : `Student book p. ${bookPage}, unit ${unit} test, Q${number}`;
+  }
   if (item.kind === 'unit-test-mcq' || item.kind === 'unit-test') {
     return lang === 'ar'
       ? `اختبار نهاية الوحدة ${arabicDigits(unit)}، س ${arabicDigits(number)}`
       : `Unit ${unit} test, Q${number}`;
+  }
+  if (item.source.sourceId.endsWith('-student-book')) {
+    return lang === 'ar'
+      ? `كتاب الطالب ص ${arabicDigits(bookPage)}، س ${arabicDigits(number)}`
+      : `Student book p. ${bookPage}, Q${number}`;
   }
   return lang === 'ar'
     ? `كتاب التمارين ص ${arabicDigits(bookPage)}، س ${arabicDigits(number)}`

@@ -10,6 +10,292 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Book items: the semester-2 student book's unit 6 (derivatives, max/min, the test's multiple choice, graphs, word problems, lesson 6.1's slopes, the lessons' word problems) — 2026-11-21
+
+`scripts/extract_book_items.py` now reads the NCCD Grade 10 maths **student book**, semester 2
+(`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **41 `verified`
+(13 derivatives, 3 of the unit test's 4 open max/min questions, 5 of its 9 word problems, 7 of lesson 6.1's
+11 slope exercises, 13 of the lessons' own 18 word problems); 33 `computed` (lesson 6.3's 9 max/min exercises,
+the test's other max/min question, its 6 multiple choice, 4 graph questions that carry a drawing, its other 4
+word problems, lesson 6.1's other 4 and the lessons' other 5 word problems)**, written to
+`lib/curriculum/src/data/book-items/math-s2-student-book.json` and served to lessons 6.1–6.3
+(`kbl-math-s2-nccd-u6_l1` … `u6_l3`).
+
+| Page | Items | Kind | Result |
+| --- | --- | --- | --- |
+| 61 | 10–16 slope at a point (6.1) | `exercise` | 5 verified (10–13, 15); 2 computed (14, 16: the guide prints them bare) |
+| 68 | 10–15 word problems (6.2) | `exercise` | 2 verified (13, 15); 3 computed (10, 11, 14); 12 left out |
+| 69 | 16–30 word problems (6.2) | `exercise` | 8 verified (16, 17, 19, 20, 22, 27, 29, 30); 2 computed (21, 28); 18, 23 left out |
+| 74 | 11–13 word problems (6.3) | `exercise` | 3 verified |
+| 62 | 21, 24–26 (6.1) | `exercise` | 2 verified (21, 24); 2 computed (25, 26) |
+| 68 | 1–6 «أجد مشتقة» | `exercise` | 6 verified |
+| 68 | 7–9 f′(−2) | — | quarantined: split fractions (7 `not_a_function_definition`, 9) and `x99` (8, `exponent_out_of_range`) |
+| 69 | 24–26 products | `exercise` | 3 verified |
+| 74 | 1, 3–10 local max/min (6.3) | `exercise` | 9 computed; 2 left out (a near-duplicate of 1, 0.89) |
+| 77 | unit test 14–19 «أجد مشتقة» | `unit-test` | 4 verified (15, 16, 18, 19); 14 (`2π/3`) quarantined; 17 left out (below) |
+| 77 | unit test 20–23, max/min (6.3) | `unit-test` | 3 verified (20, 21, 22); 23 computed (its max is printed rounded) |
+| 77 | unit test 29, 32–34, graph questions | `unit-test` + `visual` | 4 computed, each with a drawing (6.1, 6.2, 6.2, 6.3); 26–28 left out |
+| 76 | unit test 5–7, 9–12, word problems | `unit-test` | 3 verified (9, 11, 12); 4 computed (5, 6, 7, 10); 8 and 13 left out |
+| 77 | unit test 24–25, word problems | `unit-test` | 2 verified |
+| 76 | unit test 1–4, multiple choice | `unit-test-mcq` | 4 computed: slope at a point (6.1), a derivative (6.2), the x of a maximum (6.3), a velocity (6.2) |
+| 77 | unit test 30–31, multiple choice | `unit-test-mcq` | 2 computed: all local extrema, the number of critical points (6.3) |
+
+**Item 17, `f(x) = x`, is left out on purpose.** Its prompt is so short that the shared instruction makes it a
+near-duplicate (0.86, over the validator's 0.85) of four other derivative items in lesson 6.2, so no paper can
+carry it beside them, and the plan — a dry run with one seed — promised a question the draw then did not
+deliver. `bookQuestions.test.ts` («a draw of the planned size delivers exactly the plan») caught it once the
+multiple choice changed the draw order; it had passed before only because the old order never hit it.
+
+**The multiple choice is read, not parsed.** The text layer splits every fraction in these options (`-7/3`)
+and drops two exponents onto their own lines (item 3's `(x-3)²`, item 31's), and the guide marks its key by
+circling it, which the text layer does not carry. So each item has a hand-written reading (`SB2_READINGS`,
+keyed by page and number) that passes the existing gates or is quarantined: the same characters and bracket
+pairs as the page, and exactly one option correct under SymPy. New pieces:
+- `split_choices` cuts the block after «أضع دائرة حول رمز الإجابة» at each `d)` line, keeping the bare-number
+  lines after it (option d)'s split denominator, p.76 item 3). Heading lines cannot cut these pages: item 2's
+  number also ends another line, item 4's is followed by a diacritic, and item 31's function is printed above
+  its heading. A chunk without exactly one heading carrying its own number is not cut.
+- «Residue» in a reading (`«t s»`, `«m/s»`): sentence words left in the Latin text. The character gate still
+  checks them in place; `served_stem` removes them. The served stem is derived, never written separately, so
+  it cannot drop the end of an expression.
+- Six SymPy checks (`curve_option_holds`): `slope_at`, `velocity_at`, `derivative`, `max_at` (refuses
+  f″ = 0), `extrema_at` and `critical_count` (polynomials only; a local extremum is a real root of f′ of odd
+  multiplicity, so item 30's 0 is not one).
+- The option-label stripper also takes a label after a digit and a space («3 b) - 5», a split fraction's
+  denominator beside the next label); guide p.47's output is unchanged.
+
+A reading's gates are evidence, not proof: read flat, item 31 is `2(x-3)`, which has no critical point, and
+the gate would accept option a). Its exponent, like each reading, was compared by eye with the printed page.
+
+**Lesson 6.3's max/min exercises (p.74) are solved, not verified.** «أستعمل المشتقة لإيجاد القيم العظمى والقيم
+الصغرى المحلية (إن وجدت)»: all ten stems are clean in the text layer, but the guide's copy of p.74 carries no
+answer in its text, and the appendix (guide p.117) only split, rounded fragments for 9 and 10 (`3 , 47.48)`),
+which would need rounding to count as agreement — so all are `computed`. `solve_extrema` (polynomials only):
+a real root of f′ is an extremum iff its multiplicity is odd, classified by the sign of the first non-zero
+derivative of f′ there, so item 8's `2x³ + 7` has none and `x⁴` would have a minimum; values are exact (item 9:
+`f(-√6/3) = 4√6/9 + 4`, item 10: `f(4/3) = 1282/27`; decimals where the stem has them, item 4: `40.5`). A root
+only a CRootOf can name, or a sign SymPy cannot decide, is refused. **The key is words as well as maths**, so it
+is one of five fixed Arabic labels per line («قيمة عظمى محلية:», «قيمة صغرى محلية:», «لا توجد قيمة عظمى محلية»,
+«لا توجد قيمة صغرى محلية», «لا توجد قيم عظمى أو صغرى محلية») with each `f(a) = v` on its own line: a line
+mixing Arabic and Latin maths scrambles under the bidi algorithm on web. `bookItems.test.ts` allows exactly
+those five lines as Arabic in a key and nothing else. Item 2 (`x² + 6x - 3`) is left out as a near-duplicate
+of item 1 (0.89), for the same reason as item 17 below; a probe of lessons 6.1–6.3's whole pools afterwards
+finds no pair above 0.82.
+
+**The unit test's open max/min questions (p.77 items 20–23) are verified where the guide allows.** The guide's
+copy of p.77 (p.112) prints each answer on a line ending in its item number: «لا توجد قيم عظمى وقيم صغرى. )20»,
+the same for 21, «: صغرى.(2.5, -0.25) )22», and for 23 only a split, rounded fragment, `3 , 1.296) )23`.
+`printed_extrema` reads that line alone, and `pair_extrema` verifies an item only when the line holds **exactly**
+the computed answer: the same kinds and the same exact points (`2.5` = 5/2, `−0.25` = −1/4), or the «none»
+phrase for none. A line holding part of an answer, a rounded value or anything else beside whole points
+verifies nothing. So 20, 21 and 22 are `verified`, and 23 (max f(1/3) = 35/27; the guide's 1.296 is rounded)
+stays `computed` with a note in `report.json`. The TS suite re-reads every pair independently (`extrema` in
+`bookItems.test.ts`, exact rationals only) and is fed three corruptions — a rounded value, a missing point,
+another item's label — to show it catches each. Two smaller changes came with it:
+- **A constant has no extrema**, as the guide answers item 20 (`f(x) = 17`): `solve_extrema` used to refuse
+  f′ ≡ 0 and now answers «لا توجد قيم عظمى أو صغرى محلية». Every point of a constant is a non-strict
+  extremum; the school counts strict ones only, and the key follows the book.
+- **Item 23's stem is broken over two lines** by the text layer (`2x3 -4x2` / `+2x+1`). That row alone sets
+  `join`, which joins a line starting with `+` or `−` onto the one before (`join_continued`); a line starting
+  with a digit, like a split fraction's denominator, is never joined.
+
+**The unit test's graph questions are drawn, where the question fixes the curve.** A graph question cannot be
+asked without its graph, and no crop of the book's picture can reach a paper from here (no figure crop exists
+for p.77, and book items were text only). But `lib/figure` already draws a `function-graph` and the app already
+renders a question's `body.visual` (the exam a student takes, the teacher's evaluation, the answer review). So
+a `BookItem` may now carry a `visual`, and `buildBookQuestion` puts it in `body.visual`, where `studentVisual`
+gates it again as it does a model's drawing. Four items qualify, all `computed` (the guide's answers on p.112
+are unlabelled or split):
+
+| Item | Drawing | Key | Lesson |
+| --- | --- | --- | --- |
+| 29 | the line `2 - x/3` through P(0, 2) and Q(6, 0) | f′(x) = −1/3 | 6.1 |
+| 32 | `x^3 - 12x + 17`, A, B, C at x = −2, 0, 2 | f′(x) = 3x² − 12 | 6.2 |
+| 33 | the same | slope at B: −12 | 6.2 |
+| 34 | the same | A(−2, 33), C(2, 1) | 6.3 |
+
+A drawing is trusted for nothing (`solve_figure`): its curve must be the stated one (`drawing_is_another_curve`),
+each stated point must lie on it (29: the line was derived from its two labelled points, and both are checked),
+the stated data must be on the page (`require_on_page`), and every label the answer names must sit where the
+answer is (34: A at the computed maximum, C at the minimum, else `drawing_labels_disagree`). The drawings are in
+the figure gate's canonical form, and the API suite checks `resolveFigure` returns each one unchanged. A drawn
+label may not hold a value, so 29's points are drawn as P and Q and its stem states their coordinates.
+Following the newer printing (and the picture), 32–34 call the minimum C; the guide and the 2021 text call it B.
+
+**Items 26–28 are left out.** Their curve is drawn through four labelled points with no formula, and no simple
+curve fits them (a cubic turning at −2 and 2 passes (−5, −35.9) and (3, 13.1), not the book's −42 and 14). A
+curve of ours would be a different picture in a question about reading the book's.
+
+**Seen, not only tested.** Both drawings were rendered with `figureSvg` and compared with the book's picture:
+the line through P and Q, and the cubic with A at its maximum, B on the y-axis and C at its minimum. **Known
+limit:** the drawing has a numbered grid the book's picture does not, so a student could read item 34's
+A ≈ (−2, 33) off it rather than compute it — the same answer, by an easier road.
+
+**The unit test's word problems are restated, solved, and verified part by part.** Each item's Arabic is ours
+(the book's line is scrambled), its maths sits in the stem, and every number the restatement carries
+(`6 m/s`, `14.7`, `P(-1, c)`, `x = -1`, the stated function) must be found on the page (`require_on_page`).
+`solve_applied` has one small solver per shape, each refusing what it cannot decide (`identity_fails`,
+`time_not_unique`, `maximum_not_unique`, `parameter_not_unique`):
+
+| Item | Stem | Key | Guide prints (p.111 / p.112) | State |
+| --- | --- | --- | --- | --- |
+| 5 | `h(x) = 2x^2 + x` | h′(x) = 4x + 1 (the identity x(1 + h′) = 2h is checked) | «انظر الهامش» | computed |
+| 6 | `f(x) = 5x^2 + 2` | c = 7, f′(−1) = −10 < 0 | `c = 7`, «الميل سالب.» | computed |
+| 7 | `f(x) = 4x^3 + 2` | y = 12x + 10 | «انظر الهامش» | computed |
+| 9 | `V(x) = 200x - 4/3 x^3` | x = 5√2 | `x = √50` | verified |
+| 10 | the same | V = 2000√2/3 cm³ | `942.8 cm3` (rounded) | computed |
+| 11 | `s(t) = t^2 + 1` | v(2) = 4 m/s, t = 3 s | `4 m/s ⇥ t = 3 s` | verified |
+| 12 | `s(t) = (t - 10)^2` | v(2) = −16 m/s | `-16 m/s` | verified |
+| 24 | `s(t) = 0.6t^3 - 1.5t - 0.9` | t = 3 s (t ≥ 0) | `t = 3 s` | verified |
+| 25 | `f(x) = kx - x^3` | k = 3 | `k = 3` | verified |
+
+`pair_applied` verifies an item only when **every part** of its key equals a printed entry on the guide's copy of
+the page: the same exact value (`√50` = 5√2, never `942.8` for 2000√2/3), the same unit, and the same name where
+the entry prints one. A bare number is never an entry (the pages carry axis labels such as `3`, which would
+otherwise "verify" `k = 3`), and an entry two items could take verifies neither. Item 6 stays computed: half its
+printed answer is a sentence. The TS suite re-reads every pair independently (`sameParts` in `bookItems.test.ts`,
+exact surds only) and is fed four corruptions — another surd, another unit, a missing part, another name. Left out:
+**8** («show that V(x) = 200x − 4/3 x³»: the answer is in the question, the dimensions in the figure) and **13** (a
+near-duplicate of 12, 0.89). The shared curve pattern now takes an upper-case name (`V(x)`), which changes no
+earlier output. In the 2021 printing these items are numbered one higher and write `d(t)` for `s(t)`.
+
+**Lesson 6.1's exercises (estimating slope, p.61–62) are keyed with the exact value.** The book asks
+«أقدّر» (estimate), by drawing a tangent, and the guide accepts «أي إجابة قريبة» (any close answer). The served
+question keeps the book's «أقدّر» (a lesson 6.1 student has no derivatives yet), and the key is the exact
+slope, which is the number the guide prints wherever it prints one; the teacher marking a short answer is
+the one who accepts a close estimate, as the guide does. Eleven items, all `exercise`, tiered by position in the
+lesson's 27:
+
+| Item | Stem | Key | Guide prints | State |
+| --- | --- | --- | --- | --- |
+| 10 | `f(x) = 0.1x^3`, (2, 0.8) | 1.2 | «تقريبًا. 1.2» (p.94) | verified |
+| 11–13, 15 | `y = 4x^2 + 1` (1, 5), `y = 3 + 2x^2` (−1, 5), `y = 1 - x^2` (−1, 0), `y = 9 - x^2` (2, 5) | 8, −4, 2, −4 | «8 أي إجابة قريبة من», … (p.94) | verified |
+| 14, 16 | `y = 5x^3 + 1` (0, 1), `y = 8 - 2x` (1, 6) | 0, −2 | a bare `0`, `-2` (p.94) | computed |
+| 21 | the bike's table, [1, 3] | 8 m/s (average velocity) | `8 m/s` (p.95) | verified |
+| 24 | `s(t) = at + bt^2` and the car's table | a = 4, b = 1 | the working's `a = 4`, `b = 1` (p.116) | verified |
+| 25 | `s(t) = 3t - t^2`, t = 2 | v(2) = −1 m/s | «قريبة من -1» in a sentence (p.116) | computed |
+| 26 | `f(x) = x^2 - 6x - 16` | f′(−2) = −10, f′(8) = 10, f′(0) = −6 | inside prose (p.116) | computed |
+
+New pieces, all in the word-problem machinery (`solve_applied`, `pair_applied`):
+- Four asks: `slope_at_point` (the stem's point must lie on its curve, else `point_not_on_curve`),
+  `average_velocity` (read off the stem's table), `fit_table` (the constants that pass every table row, once,
+  else `table_not_fitted_once`) and `intercept_slopes` (rational x-intercepts only). A curve may be named
+  `y = …`, and a stem's later lines carry its point, table or interval (`(1, 5)`, `t: 0, 1, 2`, `[1, 3]`), so no
+  Latin sits inside the Arabic instruction. `require_on_page` checks each point together with its curve.
+- **An estimate is an entry only with the guide's own words around it** («8 أي إجابة قريبة من», «تقريبًا. 1.2»,
+  `ESTIMATE_ENTRY`). The same number alone on a line is still treated as an axis label, so 14 and 16 stay
+  `computed` (the design expected them verified; the bare-number rule won).
+- **A value printed twice can verify two items.** 12 and 15 both have −4, and the guide prints −4 twice. An
+  entry several items' parts could match is now used where the page prints it at least as often as those items
+  need it (before: never). Printed once for two items, it still verifies neither. No earlier item changed.
+- **Item 24's answer is in the working**, so its row opts in (`prose`) to `PROSE_RESULT`: a `name = value` the
+  working states, never the right-hand end of an equation (`a + b = 5`, `2a + 4b = 12` give nothing).
+
+The TS suite re-derives every lesson 6.1 key from its own stem, written apart from SymPy (a small polynomial
+reader: the point is on the curve, the slope is the key, the table fits `4t + t²`), and is fed four
+corruptions (a dropped sign, 1.3 for 1.2, another unit, another b). A probe of the lesson's whole pool finds no
+pair above 0.65. Left out: 1–3 (read off a drawn curve the text never gives), 4, 5, 8, 9, 17, 18, 22 (drawing),
+6–7 (a function known only from a table; the guide's 1.9 and (1, 1.5) are readings of a sketch), 19, 20 and 23
+(a curve known only from a table; for 23 the guide's 10.5 is an estimate and the fitted curve gives 10) and 27
+(open). **Printing:** p.61 of the 2021 copy matches the app's text item for item; its **p.62 is a different page**
+(a car problem `x = at² + bt⁴` with other numbers, no average-velocity item, items numbered one lower). Items
+21–26 follow the app's newer text, which the guide's copy (p.95, appendix p.116) reproduces and which fits
+exactly (`a = 4`, `b = 1`); no image of the newer p.62 was seen.
+
+**The lessons' own word problems (p.68 10–15, p.69 16–30, p.74 11–13) ride the same machinery.** Each is
+restated in our Arabic with its numbers checked on the page; the guide's copies are p.102, p.103 and p.109,
+with 28–30 in the appendix (p.117).
+
+| Item | Stem | Key | Guide prints | State |
+| --- | --- | --- | --- | --- |
+| 6.2 10 | `f(x) = 2x^2 - 10`, slope 12 | (3, 8) | only `x = 3` | computed |
+| 6.2 11, 14 | `s(t) = t^3 - 6t + 3` | v(t) = 3t² − 6; a(t) = 6t | `v(t)=3t 2 - 6`, `a(t) = 6t` (function answers are not read) | computed |
+| 6.2 13 | the same, v = 6 m/s | t = 2 s | `t = 2` | verified |
+| 6.2 15 | the same, t = 5 | a(5) = 30 m/s² | `30 m/s 2` | verified |
+| 6.2 16, 17 | `f(x) = 0.5x^3 - 3x^2 + 4x` | f′(x) = 1.5x² − 6x + 4; f′(0) = 4, f′(2) = −2, f′(4) = 4 | the same (17 labelled `17)`) | verified |
+| 6.2 19 | `f(x) = 3x^3 + 2`, x = 1 | y = 9x − 4 | `y - 5 = 9(x-1)` | verified |
+| 6.2 20, 21 | `g(x) = 3x^3 - x^2 - 7x + 4` | b = −10; x = −7/9, x = 1 | `b = -10`; a split fraction | 20 verified, 21 computed |
+| 6.2 22 | `y = x^3 - 2ax`, slope −12 at x = 2 | a = 12 | `a = 12` | verified |
+| 6.2 27 | `f(x) = kx(x - 4)`, slope 2 at (4, 0) | k = 1/2 | `k = 0.5` | verified |
+| 6.2 28 | `f(x) = 1/3 x^3 - 5x + 4`, f′ = 4 | (−3, 10), (3, −2) | inside a sentence (p.117) | computed |
+| 6.2 29 | `y = ax^3 + bx^2 + 5`, slope 0 at (2, −3) | a = 2, b = −6 | the working's `b = -6`, `a = 2` (p.117) | verified |
+| 6.2 30 | `s(t) = -4.9t^2 + 147t`, s = 980 m | v(10) = 49 m/s, v(20) = −49 m/s | `v(10) = -98 + 147 = 49 m/s`, … (p.117) | verified |
+| 6.3 11–13 | the arrow `h(t) = 1.2 + 19.6t - 4.9t^2`; `A(x) = x(50 - x)` | v(3) = −9.8 m/s; h = 20.8 m; A = 625 m² | `-9.8 m/s`, `20.8 m`, `625 m 2` | verified |
+
+New reader pieces, each limited to `pair_applied` (no earlier item changed):
+- **Units m, m² and m/s²**, read with their flattened exponent at the end of a part (`m 2`, `m/s 2`).
+- **A printed part that names the answer may leave its unit out** (13's `t = 2` for `t = 2 s`): the name says
+  what it is. A part with neither name nor unit is still bare, and a printed unit must still be the key's. Agreed
+  as a deliberate loosening of the earlier rule ("never the unit").
+- **A line is compared as a line** (`line_part`): two sides in x and y, linear, never a space between x and a
+  digit (a flattened exponent is refused, not read as a product).
+- **A worked line** (`chained_part`, `v(10) = -98 + 147 = 49 m/s`) counts only when every step between the
+  name and the last value is arithmetic equal to that value; `s(t) = -4.9t2 + 147t = 980` is not one.
+- **An entry's item label and trailing comma are dropped** (`17) f '(0) = 4,` is `f'(0) = 4`).
+- Item 16's key is an `f′(x)`, so it goes to the derivative reader (`pair_derivatives`) like p.69's products;
+  with decimals in the stem, keys keep decimal coefficients (`1.5x^2`, `fmt_poly`), and velocities and maxima
+  print `-9.8`, not `-49/5`.
+- Solvers: `points_with_slope`, `zero_slope_x`, `point_value`, `derivative_function`, `acceleration_at`,
+  `x_intercept_slopes`, `fit_point_slope`, `velocity_at_position`; `param_critical` takes a slope other than 0.
+
+The TS suite re-reads every pair apart from SymPy (a line by its y at three x, a worked line by its arithmetic,
+decimal derivative coefficients) and is fed nine corruptions: another value, a bare value, m/s for m/s², m for
+m², another line, a flattened exponent, a wrong step in the working, another derivative, another slope. Every key
+was also re-derived by hand. Left out: **12** (a near-duplicate of 15, 0.89), **23** (of 22, 0.857: one condition,
+two asks), **18** («أحدد على المنحنى», a drawing task; the guide's `x = 2 ± √2` fits a slope of 1, not the −0.5
+the text asks, so one of the two is misprinted), the «أتحقق من فهمي» boxes (not exercises). A probe of lessons
+6.1–6.3's whole pools finds no pair above 0.83.
+
+**How they are verified.** The s2 teacher guide reproduces each student page with its answers printed on
+it (guide p.102 for student p.68, p.103 for p.69, p.112 for p.77). `printed_derivatives` reads every
+`name '(x) = value` there (with its `)15` item number when printed), and `pair_derivatives` verifies an item
+only when the **function name**, the **value** (SymPy) and any printed number agree. Nothing pairs by
+position. `printed_derivatives` fails closed on three layouts a review found (none fired on these pages, but
+each could one day let a cut-off answer verify a misread stem): an entry the next line continues
+(`CONTINUES`: a bare number, an operator then a space as in p.112's `3x 2` over `- 12`, or `1` over `3 x2`;
+deliberately not every line starting with a digit or sign, since p.102 prints the next answer, `-26.8`, on
+the next line); a tab inside a value (a column gap, never an exponent); and, on a page where any entry
+carries an item number, every entry without one. Labelled entries are tried first. The TS suite re-checks
+every verified pair independently, comparing polynomial coefficients (`derivative` in `bookItems.test.ts`),
+because the guide prints terms in its own order (`-2 + 2x` for `2x - 2`); it rejects a lone or doubled sign
+and a printed number that is another item's.
+
+**Smaller changes that came with it.**
+- The book names its functions g, r, i, v, t: `parse_f` takes any one letter and the answer keeps it
+  (`g'(x) = 27x^8`). The existing outputs are byte-identical.
+- A student-book `exercise` cites «كتاب الطالب ص ٦٨، س ٢» / "Student book p. 68, Q2" (`bookCitation`); it
+  would have said «كتاب التمارين». A student-book unit-test question cites its page too, «كتاب الطالب ص ٧٧،
+  اختبار نهاية الوحدة ٦، س ١٥», because the 2021 printing numbers that test one higher.
+- Unit-test ids carry a `t` (`bi-math-s2-student-book-u6l2-t15`): the test's 14–19 overlap the lesson's own
+  practice numbers, which run to 30.
+- An `Entry` takes `page` for a source with no exercise index, `answers` (the guide page) and `unit_test`.
+
+**Verified.** The Python tests failed first, then passed (144; 150 with lesson 6.1; 159 with the lessons' word problems). Every stem was compared by eye with the
+printed pages of a copy of the book: pp.68, 69, 74 and 76 match. **That copy is an older printing (2021): its
+p.77 numbers the derivatives 15–20 (with `2π³` where the app's text, reprinted 2021–2025, has `2π/3` at 14)
+and the multiple choice 31–32, and its p.76 item 4 says `d(t)` where the app's text says `s(t)`.** The
+guide's labels `)14`…`)19` agree with the app's newer numbering, which is what is cited. Every answer key was
+also re-derived by hand. Curriculum `test` (948 with lesson 6.1, 949 with the word problems) and `verify`, monorepo typecheck, api-server build + test
+(3092 after the latest merge of main, unchanged by lesson 6.1 and the word problems; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
+mobile suite (9540 after the latest merge of main, 0 failing; the app does not import book items) pass. A
+`password hasher` failure (its event-loop timing assertion) appeared once while the mobile suite ran in
+parallel; the API suite re-run alone passed 3021/3021, and this branch does not touch that code. **Not checked:** how a multi-line
+max/min key looks in the teacher's paper view in a browser (it is shown as `modelAnswer`, newlines kept).
+
+**API test fixtures that changed, and why.** `bookQuestions.test.ts`: «is never more than what is eligible»
+counted only `exercise` as a short answer — a `unit-test` open question is one too; «on a regeneration the
+dry run avoids what the teacher was shown» assumed lesson 6.2 had no multiple choice, so «shown» is now every
+choice item of both its lessons. Neither assertion was loosened: both still compare exact numbers.
+
+**Not checked:** a drawn book question in a browser end to end (the take screen, the teacher's evaluation, the
+answer review render `body.visual`; nothing else was looked at, and a printed or exported paper may show the
+question without its drawing).
+
+**Not done.** The unit test's graph questions 26–28 (no formula, above) and word problem 8, lesson 6.1's
+figure and table-only exercises (above), the lessons' word problems 12, 18 and 23 (above), and units 5, 7, 8. Users
+see none of this in production yet: book items reach a paper only on the mock path or with
+`BOOK_ITEMS_LIVE=true`, which is off.
+
 ## Set-builder notation and conditional probability read left to right in Arabic — 2026-11-27
 
 The follow-up the bars entry below named. A single `|` is a separator and never joins a run on its own. But in

@@ -334,7 +334,12 @@ sweep in your staged files.
   existing verification pass would badge it «تم التحقق», which says the stem was
   read correctly and nothing has checked that. `verified` exists for book items
   only where the guide prints the answer (the `unit-test` items 6-11 on
-  teacher-guide p.47, 5 of 6): the printed answers come in a different order from
+  teacher-guide p.47, 5 of 6; and since 2026-11-21 the 13 unit-6 derivatives of the
+  semester-2 student book, from the s2 guide's copies of student pp.68, 69, 77,
+  matched by function name and value — `pair_derivatives`; a student-book item
+  cites «كتاب الطالب» (a unit-test one with its page, since printings renumber the
+  test), and its unit-test items' ids carry a `t`, `…-u6l2-t15`, because
+  the test's numbers overlap the lesson's): the printed answers come in a different order from
   the items, so the extractor pairs by VALUE (printed entry equals SymPy's answer
   for the stem it read; a misread stem finds no answer), never by position, and
   leaves an unmatched entry `computed` and listed in `report.json`
@@ -345,7 +350,33 @@ sweep in your staged files.
   hand-written reading (`READINGS`) that is trusted for nothing: it must keep
   exactly the page's characters and brackets and leave exactly one correct
   option, or the item is quarantined. A reading is evidence about a layout, never
-  a key. `SERVED_STATUSES` is the one place
+  a key. The s2 student book's unit-6 multiple choice (pp.76-77) is read the same way
+  (`SB2_READINGS`, keyed by page and number; `«…»` marks sentence residue the gate
+  checks but the stem never serves), and stays `computed`: the guide circles its key.
+  Lesson 6.3's max/min exercises (p.74, `solve_extrema`) are `computed` too, and their
+  key is the one family allowed Arabic beyond «لا يوجد حل»: five fixed labels, each a
+  whole line apart from the maths (`EXTREMA_*_AR`, mirrored in `bookItems.test.ts`).
+  The unit test's max/min (p.77 items 20-22) are `verified` by `pair_extrema` only
+  where the guide's `)n` line holds EXACTLY the computed answer; a constant has none,
+  as the guide says (strict extrema only). A book item may carry a `visual` (a
+  `lib/figure` drawing, in the gate's canonical form) only where the question itself
+  fixes the curve (p.77 items 29, 32-34; `solve_figure` checks the drawing against the
+  question); `buildBookQuestion` puts it in `body.visual`. A graph whose curve the book
+  never states (26-28) is not drawn: a curve of ours would not be the book's picture.
+  The unit test's word problems (p.76-77, `solve_applied`) are restated in our Arabic with
+  every number checked on the page, and `pair_applied` verifies one only when EVERY part
+  of its key equals a printed entry (exact value, same unit, same name if printed); a
+  bare number is never an entry (axis labels), and an entry two items fit verifies neither
+  unless the page prints it as often as they need it. Lesson 6.1's slopes (p.61-62) use the
+  same machinery: the stem keeps the book's «أقدّر» and the key is the exact value; a guide
+  estimate is an entry only with its own words around it («8 أي إجابة قريبة من», «تقريبًا. 1.2»).
+  So do the lessons' own word problems (p.68-69, p.74). A printed part that NAMES the answer
+  may leave its unit out (`t = 2` for `t = 2 s`); a bare one still never counts. A line
+  matches as a line (`y - 5 = 9(x-1)`), and a worked line `v(10) = -98 + 147 = 49 m/s` only
+  when its arithmetic holds.
+  A new book item must not be a near-duplicate (`stemSimilarity` > 0.85) of another
+  in its lesson, or the book plan promises a question the draw cannot deliver —
+  `bookQuestions.test.ts` catches it, but only for draw orders it happens to try. `SERVED_STATUSES` is the one place
   that decides what a paper may draw. Only the API's evaluation generator uses
   book items: the mock path (live AI off), and the live model path only when
   `BOOK_ITEMS_LIVE=true` (off by default, read per request; production runs

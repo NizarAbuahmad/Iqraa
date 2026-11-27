@@ -1,14 +1,28 @@
 {
   "counts": {
-    "computed": 28,
-    "verified": 5,
-    "quarantined": 14
+    "computed": 61,
+    "verified": 46,
+    "quarantined": 18
   },
   "unmatchedPrinted": [
     "(0, 5), (2. 1)"
   ],
   "notes": {
-    "bi-math-s1-teacher-guide-u1l3-8": "the guide prints answers on this page and none equals the computed answer; see unmatchedPrinted"
+    "bi-math-s1-teacher-guide-u1l3-8": "the guide prints answers on this page and none equals the computed answer; see unmatchedPrinted",
+    "bi-math-s2-student-book-u6l1-14": "no printed entries on guide p.94 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l1-16": "no printed entries on guide p.94 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l1-25": "no printed entries on guide p.116 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l1-26": "no printed entries on guide p.116 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-10": "no printed entries on guide p.102 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-11": "no printed entries on guide p.102 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-14": "no printed entries on guide p.102 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-21": "no printed entries on guide p.103 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-28": "no printed entries on guide p.117 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-t5": "no printed entries on guide p.111 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-t6": "no printed entries on guide p.111 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-t7": "no printed entries on guide p.111 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l3-t10": "no printed entries on guide p.111 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l3-t23": "its line on guide p.112 does not hold exactly the computed answer"
   },
   "quarantined": [
     {
@@ -192,6 +206,58 @@
       },
       "family": "derivative_at",
       "reason": "not_a_function_definition"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-7",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 7
+      },
+      "family": "derivative_at",
+      "reason": "not_a_function_definition"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-8",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 8
+      },
+      "family": "derivative_at",
+      "reason": "exponent_out_of_range"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-9",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 9
+      },
+      "family": "derivative_at",
+      "reason": "broken_fraction_or_exponent"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t14",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 14
+      },
+      "family": "derivative",
+      "reason": "broken_fraction_or_exponent"
     }
   ]
 }

@@ -20,6 +20,8 @@ import { bookItemsForLesson, type BookItem } from "@workspace/curriculum/bookIte
 import { QUESTION_TYPES } from "../questionTypes.ts";
 import { validateGenerated } from "../validator.ts";
 import type { CurriculumObjective } from "@workspace/curriculum";
+import { resolveFigure } from "@workspace/figure";
+import { studentVisual } from "../questionVisual.ts";
 
 /** Book lesson 2 of unit 1: systems of equations — it has exercises and a unit-test question. */
 const objective = (lessonId?: string): CurriculumObjective =>
@@ -303,5 +305,49 @@ describe("bookQuestion — the unit-test short-answer kind", () => {
     const kinds: string[] = [];
     draw([unitTestOpen("syn-1")], { slot: kind => (kinds.push(kind), { competency: "application", marks: 3 }) });
     assert.deepEqual(kinds, ["unit-test"]);
+  });
+});
+
+describe("bookQuestion — a book item that carries a drawing", () => {
+  const ALL = ["u6_l1", "u6_l2", "u6_l3"].flatMap(l => bookItemsForLesson(`kbl-math-s2-nccd-${l}`));
+  const drawn = ALL.filter(i => i.visual);
+
+  it("every committed drawing passes the figure gate unchanged", () => {
+    assert.deepEqual(drawn.map(i => i.source.number).sort((a, b) => a - b), [29, 32, 33, 34]);
+    for (const i of drawn) assert.deepEqual(resolveFigure(i.visual), i.visual, i.id);
+  });
+
+  it("puts the item's drawing in body.visual, which the student view keeps", () => {
+    const item = drawn.find(i => i.source.number === 32)!;
+    const q = bookQuestion({
+      objective: objective(item.lessonId),
+      difficulty: "standard",
+      slot: () => ({ competency: "application", marks: 3 }),
+      wantChoice: false,
+      wantShort: true,
+      session: new Set(),
+      rng: () => 0,
+      accepted: [],
+      pool: [item],
+    });
+    assert.ok(q);
+    assert.deepEqual(q.body["visual"], item.visual);
+    assert.deepEqual(studentVisual(q.body), item.visual);
+  });
+
+  it("adds no drawing to an item without one", () => {
+    const q = bookQuestion({
+      objective: objective(LESSON),
+      difficulty: "standard",
+      slot: () => ({ competency: "application", marks: 3 }),
+      wantChoice: false,
+      wantShort: true,
+      session: new Set(),
+      rng: () => 0,
+      accepted: [],
+      pool: [unitTestOpen("syn-plain")],
+    });
+    assert.ok(q);
+    assert.equal("visual" in q.body, false);
   });
 });

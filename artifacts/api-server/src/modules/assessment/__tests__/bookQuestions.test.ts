@@ -127,10 +127,12 @@ describe("planBookDraw", () => {
   });
 
   it("is never more than what is eligible, counted per requested type", () => {
-    const only = (kind: "exercise" | "unit-test-mcq") =>
-      bookItemsForLesson(DERIVATIVES).filter(i => i.kind === kind).length;
-    assert.equal(plan({ objectives: [objective("o1", DERIVATIVES)], assessmentTypes: ["short_answer"], count: 100 }), only("exercise"));
-    // Derivatives have no unit-test choices, so asking only for choices plans none.
+    const only = (...kinds: ("exercise" | "unit-test" | "unit-test-mcq")[]) =>
+      bookItemsForLesson(DERIVATIVES).filter(i => kinds.includes(i.kind)).length;
+    // A short answer is an exercise or an open unit-test question (the student book's unit-6 test).
+    assert.equal(plan({ objectives: [objective("o1", DERIVATIVES)], assessmentTypes: ["short_answer"], count: 100 }), only("exercise", "unit-test"));
+    // Choices plans only the unit-test choices (items 2 and 4 of the same test).
+    assert.equal(only("unit-test-mcq"), 2);
     assert.equal(plan({ objectives: [objective("o1", DERIVATIVES)], assessmentTypes: ["multiple_choice"], count: 100 }), only("unit-test-mcq"));
   });
 
@@ -511,15 +513,19 @@ describe("planBook", () => {
     // u1_l1 has ONE multiple-choice item. A first draw may use it; once it has been
     // shown, the real draw swaps it for an exercise, so a plan that ignored
     // `avoidIds` told the model "understanding 1" for a paper that has none.
-    const mcId = bookItemsForLesson(SYSTEMS).filter(i => i.kind === "unit-test-mcq").map(i => i.id);
-    assert.equal(mcId.length, 1, "the fixture relies on a lesson with a single multiple-choice item");
+    // Since 2026-11-21 the derivatives lesson has multiple choice too (the student book's
+    // unit-6 test, items 2 and 4), so "what the teacher was shown" is every choice item of both.
+    const mcId = [SYSTEMS, DERIVATIVES].flatMap(l => bookItemsForLesson(l)).filter(i => i.kind === "unit-test-mcq").map(i => i.id);
+    assert.equal(mcId.length, 3, "u1_l1's single multiple-choice item and u6_l2's two");
     const avoidIds = new Set(mcId);
     // With the derivatives lesson beside it the pool has enough exercises to take
-    // its place (alone, u1_l1 has only four, so the item would come back as a repeat).
+    // their place (alone, u1_l1 has only four, so the item would come back as a repeat).
     const objectives = [objective("o1", SYSTEMS), objective("o2", DERIVATIVES)];
     const base = { objectives, assessmentTypes: [...BOTH], count: 10, subjectId: "mathematics", enabled: true };
-    // Without avoidIds the plan does include the multiple-choice item (else this proves nothing).
-    assert.deepEqual(planBook(base).supplied.byCompetency, { understanding: 1, application: 4 }, "first plan carries the MC item");
+    // Without avoidIds the plan does include multiple-choice items (else this proves nothing).
+    const first = planBook(base).supplied;
+    assert.ok((first.byType.multiple_choice ?? 0) > 0, "first plan carries an MC item");
+    assert.deepEqual(first.byCompetency, { understanding: first.byType.multiple_choice, application: 5 - first.byType.multiple_choice! });
 
     const planned = planBook({ ...base, avoidIds });
     assert.ok(planned.k > 0);
