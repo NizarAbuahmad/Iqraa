@@ -31,6 +31,7 @@ export type BoardToolbarLabels = {
   deletePage: string;
   save: string;
   exportPdf: string;
+  shareLink: string;
   solve: string;
   solveNext: string;
   solveHideAll: string;
@@ -52,7 +53,7 @@ export function BoardToolbar({
   pageLabel, canPrevPage, canNextPage, canAddPage, canDeletePage,
   onPrevPage, onNextPage, onAddPage, onDeletePage,
   onSave, canSave, saveDirty, saveBusy,
-  onExport, canExport, exportBusy,
+  onExport, canExport, exportBusy, onShare,
   onSolve, canSolve, solution,
 }: {
   isRTL: boolean;
@@ -91,6 +92,7 @@ export function BoardToolbar({
   saveDirty: boolean;
   saveBusy: boolean;
   onExport: () => void;
+  onShare: () => void;
   /** Enabled only when some page has ink. */
   canExport: boolean;
   exportBusy: boolean;
@@ -254,6 +256,9 @@ export function BoardToolbar({
             style={{ opacity: canExport && !exportBusy ? 1 : 0.35 }}
           >
             <Ionicons name="document-outline" size={20} color={DECK_MUTED} />
+          </Pressable>
+          <Pressable onPress={onShare} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.shareLink}>
+            <Ionicons name="link-outline" size={20} color={DECK_MUTED} />
           </Pressable>
         </View>
       </View>

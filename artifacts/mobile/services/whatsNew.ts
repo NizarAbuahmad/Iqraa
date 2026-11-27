@@ -64,6 +64,22 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
     route: '/my-exams',
   },
   {
+    id: 'board-share-link',
+    date: '2026-11-25',
+    roles: ['teacher'],
+    titleKey: 'whatsNewBoardShareTitle',
+    bodyKey: 'whatsNewBoardShareBody',
+    route: '/ai-tools/whiteboard',
+  },
+  {
+    id: 'whiteboard-text-edit',
+    date: '2026-11-25',
+    roles: ['teacher'],
+    titleKey: 'whatsNewBoardTextEditTitle',
+    bodyKey: 'whatsNewBoardTextEditBody',
+    route: '/ai-tools/whiteboard',
+  },
+  {
     id: 'whiteboard-text',
     date: '2026-11-25',
     roles: ['teacher'],

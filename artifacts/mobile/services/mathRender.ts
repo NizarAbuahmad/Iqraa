@@ -524,6 +524,9 @@ const COMBINING_ARROW = String.fromCodePoint(0x20d7);
 // set-builder «{x | x ≤ 3}» — so a bar joins a run only as one of a PAIR around
 // maths (`protectBars`), which becomes stand-ins like an interval's brackets.
 const BAR_STAND_IN = String.fromCodePoint(0xe00d);
+// A single «|» inside set-builder braces or a conditional probability (see
+// SET_BUILDER_RE / COND_PROB_RE).
+const SEP_STAND_IN = String.fromCodePoint(0xe00e);
 const COMMA_STAND_IN: Record<string, string> = { ',': PAIR_COMMA, '،': PAIR_COMMA_AR };
 function protectPair(m: string): string {
   return [...m].map(c => COMMA_STAND_IN[c] ?? c).join('');
@@ -542,10 +545,10 @@ function restoreStandIns(s: string): string {
   for (const map of [COMMA_STAND_IN, INTERVAL_STAND_IN, VECTOR_STAND_IN, DOT_STAND_IN]) {
     for (const [real, standIn] of Object.entries(map)) out = out.replaceAll(standIn, real);
   }
-  out = out.replaceAll(BAR_STAND_IN, '|');
+  out = out.replaceAll(BAR_STAND_IN, '|').replaceAll(SEP_STAND_IN, '|');
   return out;
 }
-const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}${PAIR_COMMA}${PAIR_COMMA_AR}${INTERVAL_CHARS}${VECTOR_CHARS}${COMBINING_ARROW}${BAR_STAND_IN}`;
+const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}${PAIR_COMMA}${PAIR_COMMA_AR}${INTERVAL_CHARS}${VECTOR_CHARS}${COMBINING_ARROW}${BAR_STAND_IN}${SEP_STAND_IN}`;
 const FOREIGN_END = FOREIGN_CHAR.replace('.', '');
 
 /**
@@ -603,6 +606,24 @@ const FOREIGN_ARROW = '→←↔⇒⇐⇔⇌⇄⟶⟵⟷';
 // «(-∞, 0) ∪ [5, ∞)» and «x ∈ [1, 3]» split at the symbol laid their two halves
 // out right to left. Never at the edge, so «الرمز ∪ يعني الاتحاد» is untouched.
 const FOREIGN_SET_OP = '∪∩∈∉';
+
+// Set-builder notation «{x | x ≤ 3}», «{x | x = 6k, k ∈ W, 0 < x < 5}» (found
+// 2026-11-27): its «|» and the commas inside split it, and bidi reordered the
+// pieces. Braces are never prose, so a «{…|…}» whose content is maths (no Arabic
+// letter, only the Arabic comma) has its separator and commas turned into
+// stand-ins. The content class leaves the braces out, so a match cannot run from
+// one set into the next.
+const SET_CONTENT = `[${FOREIGN_CHAR.replace('{}', '')}${FOREIGN_SET_OP} ,،]*`;
+const SET_BUILDER_RE = new RegExp(`[{]${SET_CONTENT}[|]${SET_CONTENT}[}]`, 'g');
+function protectSet(m: string): string {
+  return [...m].map(c => (c === '|' ? SEP_STAND_IN : COMMA_STAND_IN[c] ?? c)).join('');
+}
+// Conditional probability «P(A|B)», «P(B | A)», «P(A′|B)»: a bracket holding two
+// event letters around one bar. Nothing else has that shape.
+const COND_PROB_RE = /[(] *[A-Z][′'ᶜ]? *[|] *[A-Z][′'ᶜ]? *[)]/g;
+function protectCondProb(m: string): string {
+  return m.replace('|', SEP_STAND_IN);
+}
 
 // A multiplication dot «·» / «⋅» (2026-11-27): «⟨a, b⟩ · ⟨c, d⟩», «q = m·c·ΔT» and
 // «2^x · 2^2» split at it, and bidi reordered the halves. But «·» also separates
@@ -664,7 +685,9 @@ export function isolateForeignRuns(line: string): string {
       .replace(BLANK_RE, BLANK)
       .replace(VECTOR_RE, protectVector)
       .replace(INTERVAL_RE, protectInterval)
-      .replace(PAIR_RE, protectPair),
+      .replace(PAIR_RE, protectPair)
+      .replace(SET_BUILDER_RE, protectSet)
+      .replace(COND_PROB_RE, protectCondProb),
   )
     .replace(DOT_RE, protectDot)
     .replace(FOREIGN_RUN_RE, m => {
