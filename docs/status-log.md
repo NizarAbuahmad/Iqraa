@@ -10,6 +10,54 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The question bank writes points with the Latin comma — 2026-11-27
+
+The follow-up the intervals entry below named. The bank (`lib/math-practice`) wrote every point as `(2 ، −1)`. The
+renderer can't lay that out left to right: «،» between numbers is also Arabic prose (a verse citation `(79 ،78)`,
+«المواد المرقمة (3،2،1)»), so `isolateForeignRuns` leaves it alone. The bank's points displayed right to left,
+`(1− ، 2)`, beside left-to-right equations and options. The English prompts (`promptEn`) carried the Arabic comma
+too. A scan of every topic found 43,756 such tuples across 36 topics. Points now print `(2, −1)`.
+
+**What changed** (data only; no renderer change):
+- **The four point helpers:** `pt` in `geometry.ts`, `grade10.ts` and `grade10b.ts`, and `pair` in `algebra.ts`.
+- **The inline templates** in `algebra.ts`, `geometry.ts`, `grade10b.ts`, `proportion.ts` and `stats.ts`: the
+  slope-with-`k` stems, scatter plots, proportional relations, graph interpretation, average speed on `[t1, t2]`,
+  and the `(x, y)` table headers. Each was changed by line, reading every match.
+- **The bank's intervals too:** `(−∞, 5]`, `[−3, ∞)`, `(1, 5]`. An open interval with finite ends, `(1 ، 5)`,
+  looks exactly like a point, so the renderer had left it right to left (the gap the intervals entry left).
+- **`relStr`** joins a relation's pairs with «, », so `{(1, 2), (3, −4)}` is one left-to-right set.
+- **Hand-written items:** 99 tuples in `MATH_BANK` (`index.ts`; among them the systems and `linear_quad` items) and
+  38 in the worked solutions (`steps-math-a.ts`, `steps-math-b.ts`). Only the comma inside a bracketed two-atom
+  tuple changed: the replacement used `latinCommaPoints.test.ts`'s own pattern.
+- **Test parsers** that re-derive answers from stems (`\((−?\d+) ، (−?\d+)\)` and similar, in seven test files)
+  now read the Latin form. One geometry test split `eq` on «, » and now uses the file's point parser. None was
+  loosened: each still recomputes the answer.
+
+**Left on «،», on purpose:**
+- Lists in Arabic sentences, such as the Grade 1 `(10، 20، 30، 40، 50)` and «−3 ، 4» (two roots, or two consecutive
+  integers, with no brackets).
+- Two equations in a system's `eq`.
+- **Vectors `⟨5 ، 2⟩`.** The renderer doesn't recognise `⟨⟩` yet, so a Latin comma alone would not change how they
+  display. That is a renderer change of its own.
+
+**Verified:**
+- `latinCommaPoints.test.ts` (new) fails on any two-atom tuple with «،» in a generated item (every topic, grades
+  1–10, every difficulty), in `MATH_BANK` or in the worked solutions. It failed before the change and passes after.
+- `@workspace/math-practice` tests (1,491) pass, and so do its typecheck, the mobile suite, the api-server build and
+  tests, and the root typecheck.
+- Every topic generated 40 times per grade (9, 10) and difficulty (556,403 texts), through `isolateForeignRuns`:
+  all 21,714 points and 616 intervals come out as one isolate (54 points before; the rest were «،»), and no
+  Arabic-comma point is left.
+- The display path for a Latin-comma point was checked in a browser in «Coordinate pairs read left to right in
+  Arabic» below.
+
+**Not verified / not covered:**
+- No new browser run for this change; it changes the strings, not how they are drawn.
+- **Saved papers and pooled artifacts** made before this keep `(2 ، −1)` and display as before. Only new generation
+  uses the new form.
+- Answer checking already treats the two commas alike (`keyLinking.ts` folds «،» to «,», and `formatsBank.ts`
+  reads `[،,]`), so a key stored either way still matches. That was read in the code, not re-run against old papers.
+
 ## Intervals and set symbols read left to right in Arabic — 2026-11-26
 
 The follow-up the pairs entry below named. An interval printed backwards in the Arabic UI: `[1, 3]` as `[3 ,1]`,
