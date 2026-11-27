@@ -1,0 +1,1 @@
+ALTER TABLE "evaluations" ADD COLUMN "target_total_marks" integer;

@@ -61,8 +61,17 @@ import {
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
 import { inPaperOrder } from "../modules/assessment/paperOrder";
+import { shuffleChoices } from "../modules/assessment/choiceOrder.ts";
+import { fitToTotal, scaleRubric } from "../modules/assessment/marksTotal.ts";
 import { FIRST_GRADE_DEFAULT_TYPES, evaluationTypesForGrade } from "@workspace/exam-paper";
-import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
+import {
+  contradictionWarning,
+  contradictionWarningAr,
+  verificationAfterEdit,
+  verifyAnswerKeys,
+} from "../modules/assessment/keyVerification.ts";
+import * as notes from "../modules/assessment/generationNotes.ts";
+import type { Note } from "../modules/assessment/generationNotes.ts";
 import {
   assembleLivePaper,
   drawBookQuestions,
@@ -215,6 +224,8 @@ const NOT_AI_GENERATABLE: readonly QuestionType[] = ["read_aloud", "dictation"];
 const GENERATABLE_TYPES = ALL_TYPES.filter(t => !NOT_AI_GENERATABLE.includes(t));
 const DIFFICULTIES: Difficulty[] = ["basic", "standard", "advanced"];
 const MAX_QUESTIONS = 50;
+/** The largest total a teacher may ask a paper to be out of. */
+const MAX_TARGET_TOTAL = 200;
 
 /**
  * How long a published exam's link stays open, from the most recent publish.
@@ -379,6 +390,20 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
       return;
     }
 
+    // Optional. Whole marks, at least one per question (`marksTotal.ts`).
+    const rawTotal = req.body?.targetTotalMarks;
+    const targetTotalMarks = rawTotal === undefined || rawTotal === null || rawTotal === "" ? null : Number(rawTotal);
+    if (
+      targetTotalMarks !== null
+      && (!Number.isInteger(targetTotalMarks) || targetTotalMarks < count || targetTotalMarks > MAX_TARGET_TOTAL)
+    ) {
+      res.status(400).json({
+        error: `The paper's total must be a whole number from ${count} (one mark a question) to ${MAX_TARGET_TOTAL}`,
+        code: "target_total_marks",
+      });
+      return;
+    }
+
     const [defaultScale] = await db
       .select({ id: levelScales.id })
       .from(levelScales)
@@ -412,6 +437,7 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
         objectiveIds,
         difficulty,
         targetQuestionCount: count,
+        targetTotalMarks,
         assessmentTypes: requestedTypes,
         // English is examined in English whatever the app's UI language.
         language: book.subjectId === "english" ? "en" : trimmed(req.body?.language) || "ar",
@@ -894,12 +920,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
     let result: GenerationResult;
     let generator: "mock" | "llm" = "mock";
     let modelId: string | null = null;
-    const generationNotes: string[] = [];
+    // Each note in English and Arabic (`generationNotes.ts`): the app shows the
+    // teacher's language from `warningsAr` / `warnings`.
+    const generationNotes: Note[] = [];
     const dropped = stored.assessmentTypes.filter(t => !evaluation.assessmentTypes.includes(t));
     if (dropped.length > 0) {
-      generationNotes.push(
-        `Grade 1: generated with ${evaluation.assessmentTypes.join(", ")}; ${dropped.join(", ")} ask for written answers a Grade 1 child cannot give.`,
-      );
+      generationNotes.push(notes.firstGradeTypesDropped(evaluation.assessmentTypes, dropped));
     }
 
     // The exact request handed to the generator, stored on the evaluation —
@@ -923,17 +949,11 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       // and the prompt then omits the section entirely.
       const grounding = groundingForObjectives(objectives, evaluation.language !== "en");
       if (grounding) {
-        generationNotes.push(
-          `Grounded on ${grounding.sources.map(s => `${s.titleAr} p${s.page}`).join(", ")}.`,
-        );
+        generationNotes.push(notes.groundedOn(grounding.sources));
       } else {
         // Say so, loudly. A paper written without the book reading exactly
         // like one written from it is how ungrounded content slips through.
-        generationNotes.push(
-          "No official-book passages are extracted for these objectives' units — "
-            + "the model wrote from the objectives alone. Review against the book "
-            + "before publishing.",
-        );
+        generationNotes.push(notes.notGrounded());
       }
 
       // What this teacher was already shown, if this is a regeneration — the
@@ -983,17 +1003,23 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             ),
           }
         : undefined;
+      // How many of each competency the model writes, and with it the fixed
+      // marks per competency: the book's quota when the book supplies questions,
+      // otherwise the paper's own target mix (`allocateQuestions`).
+      const quota = supplied?.newByCompetency
+        ?? allocateQuestions(modelCount, evaluation.difficulty);
       // One value for the usage rows and the stored params: every batch of this
-      // paper (first, retry, top-up) carries the same `supplied` or none.
-      const promptVersion = generationPromptVersion({ supplied });
+      // paper (first, retry, top-up) carries the same `supplied` or none, and a quota.
+      const promptVersion = generationPromptVersion({ supplied, quota });
 
-      // `count` defaults to the model's share; the top-up below passes what is missing
-      // and a `suppliedFor` whose quota is rescaled to that count.
+      // `count` defaults to the model's share; the top-up below passes what is missing,
+      // the quota rescaled to it, and a `suppliedFor` whose quota is rescaled the same way.
       const runLlm = (
         avoidList: readonly string[],
         insistent: boolean,
         count = modelCount,
         suppliedFor: LlmSupplied | undefined = supplied,
+        quotaFor: Record<CompetencyKey, number> = quota,
       ) => generateWithModel(
         {
           objectives,
@@ -1006,6 +1032,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           avoid: avoidList,
           insistent,
           ...(suppliedFor ? { supplied: suppliedFor } : {}),
+          quota: suppliedFor?.newByCompetency ?? quotaFor,
         },
         async prompt => {
           const completion = await completeAi({
@@ -1088,9 +1115,11 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
               // The prompt then says the quota is what remains of the model's share.
               alreadyWritten: llm.questions.length,
             },
+            remainingQuota(quota, llm.questions, missing),
           );
           llm.questions.push(...more.questions);
           llm.notes.push(...more.notes);
+          llm.notesAr.push(...more.notesAr);
         } catch (err) {
           logger.warn({ err, evaluationId: evaluation.id }, "evaluation top-up failed - serving the short paper");
         }
@@ -1103,7 +1132,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       generationParams["groundingSources"] = grounding
         ? grounding.sources.map(s => ({ sourceId: s.sourceId, page: s.page }))
         : [];
-      generationNotes.push(...llm.notes);
+      generationNotes.push(...llm.notes.map((en, i) => ({ en, ar: llm.notesAr[i] ?? en })));
 
       // The model's surplus is cut to its share first, then the book's questions
       // are drawn and appended (see assembleLivePaper). With a book share the paper
@@ -1139,19 +1168,13 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         });
       }
       if (assembled.trimmed > 0) {
-        generationNotes.push(
-          `The generator returned ${assembled.trimmed} more question${assembled.trimmed === 1 ? "" : "s"} than the ${modelCount} asked of it; the extra ${assembled.trimmed === 1 ? "one was" : "ones were"} left out.`,
-        );
+        generationNotes.push(notes.modelSurplusTrimmed(assembled.trimmed, modelCount));
       }
       if (assembled.drawn > 0) {
-        generationNotes.push(
-          `${assembled.drawn} question${assembled.drawn === 1 ? " is a" : "s are"} real item${assembled.drawn === 1 ? "" : "s"} from the NCCD books; each is labelled with how its answer was established.`,
-        );
+        generationNotes.push(notes.bookItemsDrawn(assembled.drawn));
       }
       if (assembled.drawn < bookPlanned) {
-        generationNotes.push(
-          `Only ${assembled.drawn} of ${bookPlanned} planned book question${bookPlanned === 1 ? "" : "s"} could be added (the rest of the book's questions repeat ones already on the paper or the model's).`,
-        );
+        generationNotes.push(notes.bookItemsShort(assembled.drawn, bookPlanned));
       }
       result = {
         questions: assembled.questions,
@@ -1161,6 +1184,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         unavailableTypes: [],
         shortfall: Math.max(0, evaluation.targetQuestionCount - assembled.questions.length),
         notes: [],
+        notesAr: [],
         // Still worth carrying: the bank pointer answers "where else could I
         // look", which is useful whether or not the generator declined
         // anything. It just is not a consolation prize here.
@@ -1183,7 +1207,10 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       generationParams["seed"] = result.seed;
     }
 
-    const validation = validateGenerated(result.questions, {
+    // Before the validator, which counts answer positions only among what was
+    // left in its writer's order. The offline generator shuffles on its own seed
+    // (so `generationParams.seed` still replays the paper); live output here.
+    const validation = validateGenerated(live ? shuffleChoices(result.questions) : result.questions, {
       allowedObjectiveIds: evaluation.objectiveIds,
       allowedTypes: evaluation.assessmentTypes,
     });
@@ -1203,9 +1230,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
     const surplus = keyCheck.kept.length - evaluation.targetQuestionCount;
     if (surplus > 0) {
       keyCheck.kept.splice(evaluation.targetQuestionCount);
-      generationNotes.push(
-        `The generator returned ${surplus} more question${surplus === 1 ? "" : "s"} than the ${evaluation.targetQuestionCount} requested; the extra ${surplus === 1 ? "one was" : "ones were"} left out.`,
-      );
+      generationNotes.push(notes.surplusTrimmed(surplus, evaluation.targetQuestionCount));
     }
     // Stored as a ministry paper: one block per type, in the usual order. After
     // the surplus trim above, so which questions were dropped is still the
@@ -1214,7 +1239,9 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
     // After the trim AND the sort, so the warning never names a question that is
     // not on the paper and its positions are the ones the review screen shows.
     const contradiction = contradictionWarning(keyCheck.kept);
-    if (contradiction) generationNotes.push(contradiction);
+    if (contradiction) {
+      generationNotes.push({ en: contradiction, ar: contradictionWarningAr(keyCheck.kept) ?? contradiction });
+    }
     generationParams["keysChecked"] = keyCheck.checked;
     generationParams["keysVerified"] = keyCheck.verified;
     generationParams["keysContradicted"] = keyCheck.contradicted;
@@ -1233,10 +1260,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       && keyCheck.warnings.length === 0
       && paperIsMathematics(objectives)
     ) {
-      generationNotes.push(
-        "No answer key on this maths paper could be checked — the generator supplied none in a form "
-          + "the verifier reads, so every question here is unverified.",
-      );
+      generationNotes.push(notes.noKeyChecked());
     }
 
     // Replace rather than append: generating twice should not silently double
@@ -1282,6 +1306,17 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           .where(eq(evaluationQuestions.id, q.id));
       }
 
+      // The teacher's chosen total, met by the generated questions alone: the
+      // teacher's own questions keep the marks they gave them.
+      const fitted = fitToTotal(
+        keyCheck.kept.map(k => k.question.marks),
+        keep.reduce((s, q) => s + Number(q.marks), 0),
+        evaluation.targetTotalMarks,
+        evaluation.targetQuestionCount,
+      );
+      if (fitted.note) generationNotes.push({ en: fitted.note, ar: fitted.noteAr ?? fitted.note });
+      if (evaluation.targetTotalMarks !== null) generationParams["targetTotalMarks"] = evaluation.targetTotalMarks;
+
       if (keyCheck.kept.length > 0) {
         await tx.insert(evaluationQuestions).values(
           keyCheck.kept.map(({ question: q, verification }, i) => ({
@@ -1290,12 +1325,13 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
             type: q.type,
             body: q.body,
             expectedAnswer: q.expectedAnswer,
-            rubric: q.rubric,
+            // Its criteria carry marks on the question's scale, so they follow it.
+            rubric: scaleRubric(q.rubric, q.marks, fitted.marks[i]!),
             objectiveId: q.objectiveId,
             competencyKey: q.competencyKey,
             skill: q.skill,
             difficulty: q.difficulty,
-            marks: q.marks.toFixed(2),
+            marks: fitted.marks[i]!.toFixed(2),
             gradingMode: q.gradingMode as never,
             source: "ai" as const,
             // The column the schema has described since Phase 3 and nothing
@@ -1352,9 +1388,16 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       rejected: validation.rejected,
       warnings: [
         ...result.notes,
-        ...generationNotes,
+        ...generationNotes.map(n => n.en),
         ...validation.warnings,
         ...keyCheck.warnings,
+      ],
+      // The same warnings in Arabic, one for one and in the same order.
+      warningsAr: [
+        ...result.notesAr,
+        ...generationNotes.map(n => n.ar),
+        ...validation.warningsAr,
+        ...keyCheck.warningsAr,
       ],
     });
   } catch (err) {
