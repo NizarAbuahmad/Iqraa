@@ -730,6 +730,52 @@ describe('isolateForeignRuns — set-builder notation and conditional probabilit
   });
 });
 
+// A set in roster form «{1, 2, 3}» split at every comma (the Latin comma is not
+// in the run class), and an Arabic line reordered its elements. The bank writes
+// «{−2 ، 0 ، 3}» with the Arabic comma, and «…» was outside the class too. Braces
+// are never prose, so a «{…}» of comma-separated maths atoms, either comma, has
+// its commas and ellipses turned into stand-ins (found 2026-11-27).
+describe('isolateForeignRuns — sets in roster form', () => {
+  it('keeps a roster set whole, either comma', () => {
+    assert.equal(isolateForeignRuns('المجموعة {1, 2, 3}'), 'المجموعة ⁦{1, 2, 3}⁩');
+    assert.equal(isolateForeignRuns('المجموعة {0,2}'), 'المجموعة ⁦{0,2}⁩');
+    assert.equal(isolateForeignRuns('مجموعة الحل {−2 ، 0 ، 3}'), 'مجموعة الحل ⁦{−2 ، 0 ، 3}⁩');
+  });
+
+  it('keeps an ellipsis inside the set', () => {
+    assert.equal(isolateForeignRuns('الأعداد الصحيحة {…, -2, -1, 0, 1, 2, …}'), 'الأعداد الصحيحة ⁦{…, -2, -1, 0, 1, 2, …}⁩');
+    assert.equal(isolateForeignRuns('C = {11,13,15,…}'), '⁦C = {11,13,15,…}⁩');
+    assert.equal(isolateForeignRuns('{4, 8, … , 24, 28, 32}'), '⁦{4, 8, … , 24, 28, 32}⁩');
+    assert.equal(isolateForeignRuns('{ ..., -5, -4, -3}'), '⁦{ ..., -5, -4, -3}⁩');
+  });
+
+  it('gives two sets joined by an Arabic word one isolate each', () => {
+    assert.equal(isolateForeignRuns('A = {0, 1} و B = {1, 2}'), '⁦A = {0, 1}⁩ و ⁦B = {1, 2}⁩');
+  });
+
+  it('keeps a set of points whole', () => {
+    assert.equal(isolateForeignRuns('العلاقة {(6, 5), (4, 3)}'), 'العلاقة ⁦{(6, 5), (4, 3)}⁩');
+  });
+
+  // How the bank wrote a function as a relation until 2026-11-27; saved papers carry it.
+  it('keeps a set of points separated by the Arabic comma whole', () => {
+    assert.equal(
+      isolateForeignRuns('ما الاقتران العكسي للاقتران {(1, 2) ، (5, 7) ، (11, 9)}؟'),
+      'ما الاقتران العكسي للاقتران ⁦{(1, 2) ، (5, 7) ، (11, 9)}⁩؟',
+    );
+  });
+
+  it('leaves braces around Arabic words alone', () => {
+    const line = 'الألوان {الأحمر، الأزرق}';
+    assert.equal(isolateForeignRuns(line), line);
+  });
+
+  it('never drops or reorders characters', () => {
+    const original = 'المجموعة {−2 ، 0 ، 3} و {…, -1, 0, 1, …}.';
+    assert.equal(isolateForeignRuns(original).replace(/[⁦⁩]/g, ''), original);
+  });
+});
+
 // The bank stores maths canonically (`5^{10}`, `3^6 = 729`) and its promptAr
 // carries the display form (`5⁷ ÷ 5³`). A printed worksheet mixed the two:
 // stems in real superscripts, options and the whole answer key in raw caret
