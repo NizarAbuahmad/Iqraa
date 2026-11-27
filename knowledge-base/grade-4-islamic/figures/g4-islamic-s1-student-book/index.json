@@ -1,0 +1,373 @@
+{
+  "sourceId": "g4-islamic-s1-student-book",
+  "figures": [
+    {
+      "file": "p006.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 6,
+      "rect": [
+        61.2,
+        124.1,
+        250.0,
+        272.1
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "The Noble Qur'an",
+      "lessonTitleAr": "القُرْآنُ الكَريمُ",
+      "lessonStartPage": 6
+    },
+    {
+      "file": "p006b.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 6,
+      "rect": [
+        49.3,
+        605.4,
+        195.6,
+        741.4
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "The Noble Qur'an",
+      "lessonTitleAr": "القُرْآنُ الكَريمُ",
+      "lessonStartPage": 6
+    },
+    {
+      "file": "p014.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 14,
+      "rect": [
+        64.6,
+        83.3,
+        258.5,
+        272.1
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": "Surat At-Tariq: Verses 1-10",
+      "lessonTitleAr": "سورَةُ الطّارِقِ: الآياتُ الكَريمَةُ (1-10)",
+      "lessonStartPage": 11
+    },
+    {
+      "file": "p020.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 20,
+      "rect": [
+        62.9,
+        336.7,
+        244.9,
+        489.7
+      ],
+      "unit": 1,
+      "lesson": 4,
+      "lessonTitleEn": "One of God's Beautiful Names: Al-Baseer (The All-Seeing)",
+      "lessonTitleAr": "مِنْ أَسْماءِ اللهِ الحُسْنى: البَصيرُ",
+      "lessonStartPage": 18
+    },
+    {
+      "file": "p030.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 30,
+      "rect": [
+        51.0,
+        596.9,
+        244.9,
+        727.8
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": "Surat At-Tariq: Verses 11-17",
+      "lessonTitleAr": "سورَةُ الطّارِقِ: الآياتُ الكَريمَةُ (11-17)",
+      "lessonStartPage": 30
+    },
+    {
+      "file": "p033.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 33,
+      "rect": [
+        62.9,
+        428.5,
+        316.4,
+        549.3
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": "Surat At-Tariq: Verses 11-17",
+      "lessonTitleAr": "سورَةُ الطّارِقِ: الآياتُ الكَريمَةُ (11-17)",
+      "lessonStartPage": 30
+    },
+    {
+      "file": "p040.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 40,
+      "rect": [
+        61.2,
+        156.4,
+        182.0,
+        302.7
+      ],
+      "unit": 2,
+      "lesson": 4,
+      "lessonTitleEn": "Hadith: A Good Word Is Charity",
+      "lessonTitleAr": "الحَديثُ الشَّريفُ: الكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ",
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p040b.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 40,
+      "rect": [
+        56.1,
+        566.3,
+        224.5,
+        736.3
+      ],
+      "unit": 2,
+      "lesson": 4,
+      "lessonTitleEn": "Hadith: A Good Word Is Charity",
+      "lessonTitleAr": "الحَديثُ الشَّريفُ: الكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ",
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p042.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 42,
+      "rect": [
+        66.3,
+        302.7,
+        217.7,
+        455.7
+      ],
+      "unit": 2,
+      "lesson": 4,
+      "lessonTitleEn": "Hadith: A Good Word Is Charity",
+      "lessonTitleAr": "الحَديثُ الشَّريفُ: الكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ",
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p042b.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 42,
+      "rect": [
+        233.0,
+        336.7,
+        365.7,
+        455.7
+      ],
+      "unit": 2,
+      "lesson": 4,
+      "lessonTitleEn": "Hadith: A Good Word Is Charity",
+      "lessonTitleAr": "الحَديثُ الشَّريفُ: الكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ",
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p042c.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 42,
+      "rect": [
+        381.0,
+        336.7,
+        513.7,
+        455.7
+      ],
+      "unit": 2,
+      "lesson": 4,
+      "lessonTitleEn": "Hadith: A Good Word Is Charity",
+      "lessonTitleAr": "الحَديثُ الشَّريفُ: الكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ",
+      "lessonStartPage": 40
+    },
+    {
+      "file": "p050.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 50,
+      "rect": [
+        56.1,
+        173.4,
+        214.3,
+        280.6
+      ],
+      "unit": 2,
+      "lesson": 6,
+      "lessonTitleEn": "Surat Al-Qalam: Verses 44-52",
+      "lessonTitleAr": "سورَةُ القَلَمِ: الآياتُ الكَريمَةُ (44-52)",
+      "lessonStartPage": 50
+    },
+    {
+      "file": "p053.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 53,
+      "rect": [
+        59.5,
+        139.4,
+        265.3,
+        302.9
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": "The Status and Virtue of Prayer in Islam",
+      "lessonTitleAr": "مَكانَةُ الصَّلاةِ وَفَضْلُها في الإسْلامِ",
+      "lessonStartPage": 53
+    },
+    {
+      "file": "p054.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 54,
+      "rect": [
+        51.0,
+        374.1,
+        217.7,
+        489.7
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": "The Status and Virtue of Prayer in Islam",
+      "lessonTitleAr": "مَكانَةُ الصَّلاةِ وَفَضْلُها في الإسْلامِ",
+      "lessonStartPage": 53
+    },
+    {
+      "file": "p055.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 55,
+      "rect": [
+        64.6,
+        222.8,
+        313.0,
+        324.8
+      ],
+      "unit": 3,
+      "lesson": 1,
+      "lessonTitleEn": "The Status and Virtue of Prayer in Islam",
+      "lessonTitleAr": "مَكانَةُ الصَّلاةِ وَفَضْلُها في الإسْلامِ",
+      "lessonStartPage": 53
+    },
+    {
+      "file": "p070.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 70,
+      "rect": [
+        62.9,
+        122.4,
+        267.0,
+        291.1
+      ],
+      "unit": 4,
+      "lesson": 1,
+      "lessonTitleEn": "Hadith: Triumph With Paradise",
+      "lessonTitleAr": "الحَديثُ الشَّريفُ: الفَوْزُ بِالجَنَّةِ",
+      "lessonStartPage": 70
+    },
+    {
+      "file": "p076.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 76,
+      "rect": [
+        56.1,
+        233.0,
+        204.1,
+        350.3
+      ],
+      "unit": 4,
+      "lesson": 2,
+      "lessonTitleEn": "The Story of the Mother of Our Master Moses",
+      "lessonTitleAr": "قِصَّةُ أُمِّ سَيِّدِنا موسى",
+      "lessonStartPage": 74
+    },
+    {
+      "file": "p079.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 79,
+      "rect": [
+        54.4,
+        163.2,
+        272.1,
+        270.4
+      ],
+      "unit": 4,
+      "lesson": 4,
+      "lessonTitleEn": "Etiquette of Sleeping and Waking Up",
+      "lessonTitleAr": "آدابُ النَّوْمِ وَالاسْتيقاظِ",
+      "lessonStartPage": 79
+    },
+    {
+      "file": "p082.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 82,
+      "rect": [
+        54.4,
+        363.9,
+        221.1,
+        465.9
+      ],
+      "unit": 4,
+      "lesson": 4,
+      "lessonTitleEn": "Etiquette of Sleeping and Waking Up",
+      "lessonTitleAr": "آدابُ النَّوْمِ وَالاسْتيقاظِ",
+      "lessonStartPage": 79
+    },
+    {
+      "file": "p084.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 84,
+      "rect": [
+        68.0,
+        115.6,
+        275.5,
+        316.3
+      ],
+      "unit": 4,
+      "lesson": 5,
+      "lessonTitleEn": "Cleanliness of My Country",
+      "lessonTitleAr": "نَظافَةُ بَلَدي",
+      "lessonStartPage": 84
+    },
+    {
+      "file": "p085.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 85,
+      "rect": [
+        69.7,
+        314.6,
+        529.0,
+        518.6
+      ],
+      "unit": 4,
+      "lesson": 5,
+      "lessonTitleEn": "Cleanliness of My Country",
+      "lessonTitleAr": "نَظافَةُ بَلَدي",
+      "lessonStartPage": 84
+    },
+    {
+      "file": "p086.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 86,
+      "rect": [
+        62.9,
+        532.3,
+        529.0,
+        651.3
+      ],
+      "unit": 4,
+      "lesson": 5,
+      "lessonTitleEn": "Cleanliness of My Country",
+      "lessonTitleAr": "نَظافَةُ بَلَدي",
+      "lessonStartPage": 84
+    },
+    {
+      "file": "p087.png",
+      "sourceId": "g4-islamic-s1-student-book",
+      "pdfPage": 87,
+      "rect": [
+        66.3,
+        287.4,
+        260.2,
+        408.1
+      ],
+      "unit": 4,
+      "lesson": 5,
+      "lessonTitleEn": "Cleanliness of My Country",
+      "lessonTitleAr": "نَظافَةُ بَلَدي",
+      "lessonStartPage": 84
+    }
+  ]
+}

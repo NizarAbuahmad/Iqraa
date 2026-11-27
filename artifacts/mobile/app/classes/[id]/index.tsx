@@ -1313,6 +1313,7 @@ export default function ClassDetailScreen() {
                     onPress={async () => {
                       const how = await shareAsText(`${t('joinCodeTitle')}: ${group.joinCode}`, title);
                       if (how === 'copied') setToast(t('messagingCodeCopied'));
+                      else if (how === 'both') setToast(t('sharedAlsoCopied'));
                     }}
                     style={[styles.pickRow, { borderColor: colors.border, flex: 1, justifyContent: 'center', flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                   >

@@ -231,6 +231,19 @@ describe('searching', () => {
     assert.deepEqual(keys('صفحة'), ['book-qr:12:https://example.invalid/v1', 'book-qr:31:http://example.invalid/a1']);
   });
 
+  it('matches extra text the caller knows about a row, such as its lesson and subject names', () => {
+    // A sheet filed under «قانون الجيوب» rarely says so in its own title; a
+    // teacher types the lesson they are preparing. The catalog cannot look
+    // the lesson up itself (it is pure), so the screen hands the names in.
+    const extra = (item: { lessonId?: string; subjectId?: string }) =>
+      `${item.lessonId === 'kbl-g5-science-s1-nccd-u1_l1' ? 'السلاسل الغذائية' : ''} ${item.subjectId === 'arabic' ? 'اللغة العربية' : ''}`;
+    const found = (query: string) => filterResources(items, { query, alsoMatch: extra }).map(i => i.key);
+    assert.deepEqual(found('السلاسل الغذائيه'), ['uploaded:u1', 'uploaded:u5']);
+    assert.deepEqual(found('اللغة العربية'), ['uploaded:u3']);
+    // Without the callback the same query finds nothing: the title alone does not say it.
+    assert.deepEqual(keys('السلاسل الغذائية'), []);
+  });
+
   it('ignores a blank query and combines with the other filters', () => {
     assert.equal(filterResources(items, { query: '   ' }).length, items.length);
     assert.deepEqual(

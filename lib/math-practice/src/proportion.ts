@@ -24,7 +24,7 @@ const eqOpts = (ans: string, cands: string[], near: (k: number) => string) => wr
 
 const unitRate = T('unit_rate', /^معدل الوحده$/, [7, 7], ({ rng, diff }) => {
   const k = pick(rng, [0, 1, 2]);
-  if (k === 0) { const v = int(rng, 20, span(diff, 60, 90, 120)), h = int(rng, 2, 6); return { eq: `${v * h}, ${h}`, answer: String(v), wrongs: ints(v, [v * h, v + h, v * h - h, h]), ar: `قطعت سيارة ${v * h} كم في ${h} ساعات بسرعة ثابتة. ما سرعتها بالكيلومتر لكل ساعة؟`, en: `A car travels ${v * h} km in ${h} hours at a steady speed. What is its speed in km per hour?` }; }
+  if (k === 0) { const v = int(rng, 20, span(diff, 60, 90, 120)), h = int(rng, 2, 6); return { eq: `${v * h}, ${h}`, answer: String(v), wrongs: ints(v, [v * h, v + h, v * h - h, h]), ar: `قطعت سيارة ${v * h} كم في ${h === 2 ? 'ساعتين' : `${h} ساعات`} بسرعة ثابتة. ما سرعتها بالكيلومتر لكل ساعة؟`, en: `A car travels ${v * h} km in ${h} hours at a steady speed. What is its speed in km per hour?` }; }
   if (k === 1) { const p = int(rng, 2, span(diff, 9, 15, 30)), q = int(rng, 3, 9); return { eq: `${p * q}, ${q}`, answer: String(p), wrongs: ints(p, [p * q, p + q, p * q - q, q]), ar: `ثمن ${q} كيلوغرامات من التفاح ${dinars(p * q)}. كم ثمن الكيلوغرام الواحد بالدينار؟`, en: `${q} kg of apples cost ${p * q} dinars. What is the price of 1 kg in dinars?` }; }
   const q1 = int(rng, 2, 5), u1 = int(rng, 3, 9), q2 = q1 + int(rng, 1, 3), u2 = u1 + int(rng, 1, 2);
   // offer 1: q1 kg for q1*u1; offer 2: q2 kg for q2*u2 — compare the unit prices u1 and u2
@@ -67,7 +67,7 @@ const proportionalRelation = T('proportional_relation', /^العلاقات ال�
     const x2 = int(rng, 6, 12);
     if (kind === 2) return { eq: t, answer: String(k * x2), wrongs: ints(k * x2, [yt[3]! + (x2 - xs[3]!), k * x2 + k, x2 + k, yt[3]! + yt[0]!]), ar: `الجدول (x → y) يمثل علاقة تناسبية: ${t}. ما قيمة y عندما x = ${x2}؟`, en: `The table (x → y) shows a proportional relation: ${tEn}. What is y when x = ${x2}?` };
     if (kind === 3) { const ans = `y = ${k}x`; return { eq: t, answer: ans, wrongs: eqOpts(ans, [`y = x + ${yt[0]! - xs[0]!}`, `x = ${k}y`, `y = ${yt[0]}x`], j => `y = ${k + Math.abs(j)}x`), ar: `الجدول (x → y) يمثل علاقة تناسبية: ${t}. ما المعادلة التي تمثل هذه العلاقة؟`, en: `The table (x → y) shows a proportional relation: ${tEn}. Which equation represents it?` }; }
-    if (kind === 4) { const px = int(rng, 2, 6); return { eq: `${px}, ${k * px}`, answer: String(k), wrongs: ints(k, [k * px, k * px - px, px, k + 1]), ar: `يمر المستقيم الذي يمثل علاقة تناسبية في المستوى الإحداثي بنقطة الأصل وبالنقطة (${px} ، ${k * px}). ما ثابت التناسب؟`, en: `The line of a proportional relation in the coordinate plane passes through the origin and (${px}, ${k * px}). What is the constant of proportionality?` }; }
+    if (kind === 4) { const px = int(rng, 2, 6); return { eq: `${px}, ${k * px}`, answer: String(k), wrongs: ints(k, [k * px, k * px - px, px, k + 1]), ar: `يمر المستقيم الذي يمثل علاقة تناسبية في المستوى الإحداثي بنقطة الأصل وبالنقطة (${px}, ${k * px}). ما ثابت التناسب؟`, en: `The line of a proportional relation in the coordinate plane passes through the origin and (${px}, ${k * px}). What is the constant of proportionality?` }; }
     // kind 5: pay proportional to hours worked
     const h = int(rng, 3, 8), h2 = int(rng, 3, 10);
     if (h === h2) return proportionalRelation.make({ rng, diff, grade: 7 });
@@ -168,7 +168,7 @@ const proportionalDivision = T('proportional_division', /^التقسيم الت�
   const big = Math.max(...rs) * unit, small = Math.min(...rs) * unit;
   const ratio = rs.join(' : ');
   const largest = rng() < 0.5;
-  return { eq: `${total}, ${ratio}`, answer: String(largest ? big : small), wrongs: ints(largest ? big : small, [total / parts, largest ? small : big, unit, total - (largest ? big : small)]), ar: `قُسّم مبلغ ${dinars(total)} بين أشخاص بنسبة ${ratio}. كم دينارًا يأخذ صاحب ${largest ? 'النصيب الأكبر' : 'النصيب الأصغر'}؟`, en: `${total} dinars is shared in the ratio ${ratio}. How many dinars does the person with the ${largest ? 'largest' : 'smallest'} share get?` };
+  return { eq: `${total}, ${ratio}`, answer: String(largest ? big : small), wrongs: ints(largest ? big : small, [total / parts, largest ? small : big, unit, total - (largest ? big : small)]), ar: `قُسّم مبلغ ${dinars(total)} بين ${parts === 2 ? 'شخصين' : 'ثلاثة أشخاص'} بنسبة ${ratio}. كم دينارًا يأخذ صاحب ${largest ? 'النصيب الأكبر' : 'النصيب الأصغر'}؟`, en: `${total} dinars is shared in the ratio ${ratio}. How many dinars does the person with the ${largest ? 'largest' : 'smallest'} share get?` };
 });
 
 const financial = T('financial_math', /^تطبيقات ماليه$/, [7, 7], ({ rng, diff }) => {

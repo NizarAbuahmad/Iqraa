@@ -3,19 +3,27 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 // Ionicons has no eraser glyph (its nearest, `backspace`, reads as "delete a character"), so this one icon stays MaterialCommunityIcons.
 import { DECK_ACCENT, DECK_BORDER, DECK_CARD_BG, DECK_MUTED } from '@/services/deckTheme';
-import { PEN_COLORS } from '@/components/classroom/PenLayer';
+import { BOARD_PEN_COLORS } from '@/services/penColors';
 import { BOARD_BACKGROUNDS, STROKE_WIDTHS, type BoardBackground } from '@/services/whiteboardModel';
+
+/** What a touch on the page does: draw, erase (ink and texts), or place and edit typed text. */
+export type BoardTool = 'pen' | 'erase' | 'text';
 
 export type BoardToolbarLabels = {
   close: string;
   pen: string;
   eraser: string;
+  /** The text tool's button. */
+  text: string;
   undo: string;
+  redo: string;
   clear: string;
-  /** One per `PEN_COLORS` entry. */
+  /** One per `BOARD_PEN_COLORS` entry. */
   colors: string[];
   /** One per `STROKE_WIDTHS` entry. */
   widths: string[];
+  /** One per `STROKE_WIDTHS` entry: what the same three dots mean while the text tool is on. */
+  textSizes: string[];
   backgrounds: Record<BoardBackground, string>;
   prevPage: string;
   nextPage: string;
@@ -38,8 +46,8 @@ export type BoardToolbarLabels = {
  */
 export function BoardToolbar({
   isRTL, topInset, bottomInset,
-  color, onColor, width, onWidth, erase, onErase,
-  canUndo, onUndo, hasInk, onClear,
+  color, onColor, width, onWidth, tool, onTool,
+  canUndo, onUndo, canRedo, onRedo, hasInk, onClear,
   background, onBackground, onClose, labels,
   pageLabel, canPrevPage, canNextPage, canAddPage, canDeletePage,
   onPrevPage, onNextPage, onAddPage, onDeletePage,
@@ -54,10 +62,12 @@ export function BoardToolbar({
   onColor: (c: string) => void;
   width: number;
   onWidth: (w: number) => void;
-  erase: boolean;
-  onErase: (on: boolean) => void;
+  tool: BoardTool;
+  onTool: (tool: BoardTool) => void;
   canUndo: boolean;
   onUndo: () => void;
+  canRedo: boolean;
+  onRedo: () => void;
   hasInk: boolean;
   onClear: () => void;
   background: BoardBackground;
@@ -119,15 +129,16 @@ export function BoardToolbar({
           dangling at the end of a row. */}
       <View style={[styles.palette, { bottom: bottomInset + 12 }]}>
         <View style={styles.group}>
-          {PEN_COLORS.map((c, i) => (
+          {BOARD_PEN_COLORS.map((c, i) => (
             <Pressable
               key={c}
-              onPress={() => { onColor(c); onErase(false); }}
+              // A colour is for the pen or for text; picking one while erasing goes back to the pen.
+              onPress={() => { onColor(c); if (tool === 'erase') onTool('pen'); }}
               hitSlop={6}
               accessibilityRole="button"
               accessibilityLabel={labels.colors[i]}
-              aria-selected={!erase && c === color}
-              style={[styles.swatch, { backgroundColor: c }, !erase && c === color && styles.swatchOn]}
+              aria-selected={tool !== 'erase' && c === color}
+              style={[styles.swatch, { backgroundColor: c }, tool !== 'erase' && c === color && styles.swatchOn]}
             />
           ))}
         </View>
@@ -138,7 +149,7 @@ export function BoardToolbar({
               onPress={() => onWidth(w)}
               hitSlop={6}
               accessibilityRole="button"
-              accessibilityLabel={labels.widths[i]}
+              accessibilityLabel={tool === 'text' ? labels.textSizes[i] : labels.widths[i]}
               aria-selected={w === width}
               style={styles.widthSlot}
             >
@@ -147,16 +158,22 @@ export function BoardToolbar({
           ))}
         </View>
         <View style={styles.group}>
-          <Pressable onPress={() => onErase(false)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.pen} aria-selected={!erase}>
-            <Ionicons name={erase ? 'brush-outline' : 'brush'} size={20} color={erase ? DECK_MUTED : DECK_ACCENT} />
+          <Pressable onPress={() => onTool('pen')} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.pen} aria-selected={tool === 'pen'}>
+            <Ionicons name={tool === 'pen' ? 'brush' : 'brush-outline'} size={20} color={tool === 'pen' ? DECK_ACCENT : DECK_MUTED} />
           </Pressable>
-          <Pressable onPress={() => onErase(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.eraser} aria-selected={erase}>
-            <MaterialCommunityIcons name="eraser" size={20} color={erase ? DECK_ACCENT : DECK_MUTED} />
+          <Pressable onPress={() => onTool('erase')} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.eraser} aria-selected={tool === 'erase'}>
+            <MaterialCommunityIcons name="eraser" size={20} color={tool === 'erase' ? DECK_ACCENT : DECK_MUTED} />
+          </Pressable>
+          <Pressable onPress={() => onTool('text')} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.text} aria-selected={tool === 'text'}>
+            <Ionicons name={tool === 'text' ? 'text' : 'text-outline'} size={20} color={tool === 'text' ? DECK_ACCENT : DECK_MUTED} />
           </Pressable>
         </View>
         <View style={styles.group}>
           <Pressable onPress={onUndo} disabled={!canUndo} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.undo} style={{ opacity: canUndo ? 1 : 0.35 }}>
             <Ionicons name="arrow-undo-outline" size={20} color={DECK_MUTED} />
+          </Pressable>
+          <Pressable onPress={onRedo} disabled={!canRedo} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.redo} style={{ opacity: canRedo ? 1 : 0.35 }}>
+            <Ionicons name="arrow-redo-outline" size={20} color={DECK_MUTED} />
           </Pressable>
           <Pressable onPress={onClear} disabled={!hasInk} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.clear} style={{ opacity: hasInk ? 1 : 0.35 }}>
             <Ionicons name="trash-outline" size={20} color={DECK_MUTED} />

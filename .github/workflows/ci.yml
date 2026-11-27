@@ -172,9 +172,16 @@ jobs:
         options: >-
           --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
+      # No history needed: this job installs, runs `generate` and asks `git status`
+      # whether a file changed — a working-tree question. The destructive-SQL check,
+      # which did read history, lived in this job until 2026-10-11 (see
+      # destructive-migration-ack.yml); nothing left here does. A full
+      # `fetch-depth: 0` pulls every branch's history, and on 2026-11-03 this job hit
+      # its 10 minutes inside `git fetch` twice on one PR. The default, the one
+      # commit, is what it needs (run on a depth-1 clone: `generate` reports no
+      # change, and a schema edit with no migration still leaves files in
+      # lib/db/migrations, so the check still fails when it should).
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

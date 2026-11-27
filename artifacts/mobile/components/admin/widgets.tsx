@@ -46,11 +46,16 @@ export function KeyValue({ k, v, isRTL, colors }: { k: string; v: string; isRTL:
   );
 }
 
-export function Bar({ ratio, isRTL, colors }: { ratio: number; isRTL: boolean; colors: any }) {
+/**
+ * A filled bar. By default it turns red at 90% — it was made for "spent of a cap", where a full bar
+ * is a warning. A bar that shows a share of a whole (one platform's part of all minutes) passes
+ * `warn={false}`: there, 100% is just "all of it", not a problem.
+ */
+export function Bar({ ratio, isRTL, colors, warn = true }: { ratio: number; isRTL: boolean; colors: any; warn?: boolean }) {
   const r = Math.max(0, Math.min(1, ratio));
   return (
     <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.muted, overflow: 'hidden', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
-      <View style={{ width: `${r * 100}%`, backgroundColor: r >= 0.9 ? colors.destructive : ACCENT }} />
+      <View style={{ width: `${r * 100}%`, backgroundColor: warn && r >= 0.9 ? colors.destructive : ACCENT }} />
     </View>
   );
 }
@@ -91,20 +96,28 @@ export function FilterChip({ label, active, onPress, colors }: { label: string; 
         borderRadius: colors.radius,
       }]}
     >
-      {/* Android's default highQuality breaking wrapped «هذا الشهر» inside the width
-          measured for one line, clipping «الشهر»; greedy breaking keeps it on the line. */}
-      <Text textBreakStrategy="simple" style={{ color: active ? '#fff' : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
+      {/* Android measured «هذا الشهر» as one line, then drew it wrapped inside that
+          width, so the chip's one-line height cut «الشهر» off. Greedy breaking
+          (textBreakStrategy, 31 Oct) was not enough — it was still clipped on a phone on
+          2 Nov — so a chip label may not wrap at all: one line, and `clip` rather than an
+          ellipsis if the measurement is a pixel short. Pinned by adminFilterChip.test.ts. */}
+      <Text numberOfLines={1} ellipsizeMode="clip" textBreakStrategy="simple" style={{ color: active ? '#fff' : colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13 }}>{label}</Text>
     </Pressable>
   );
 }
 
-/** One bar per day between `from` and `to` (inclusive, 'YYYY-MM-DD'); hover shows the value on web. */
-export function DayBars({ from, to, valueOf, isRTL, colors }: {
+/**
+ * One bar per day between `from` and `to` (inclusive, 'YYYY-MM-DD'); hover shows the value on web.
+ * Bars are capped at 36 px wide, so a short range (a week) sits in one corner of a wide card;
+ * `stretch` drops the cap and lets the days fill the row.
+ */
+export function DayBars({ from, to, valueOf, isRTL, colors, stretch = false }: {
   from: string;
   to: string;
   valueOf: (day: string) => number;
   isRTL: boolean;
   colors: any;
+  stretch?: boolean;
 }) {
   const days: string[] = [];
   for (let t = Date.parse(from); t <= Date.parse(to) && days.length < 400; t += 86_400_000) days.push(new Date(t).toISOString().slice(0, 10));
@@ -116,7 +129,7 @@ export function DayBars({ from, to, valueOf, isRTL, colors }: {
         return (
           <View
             key={d}
-            style={{ flex: 1, maxWidth: 36, height: `${(n / max) * 100}%`, minHeight: n ? 3 : 1, backgroundColor: n ? ACCENT : colors.border, borderRadius: 2 }}
+            style={{ flex: 1, maxWidth: stretch ? undefined : 36, height: `${(n / max) * 100}%`, minHeight: n ? 3 : 1, backgroundColor: n ? ACCENT : colors.border, borderRadius: 2 }}
             {...({ title: `${d}: ${Number.isInteger(n) ? n : n.toFixed(4)}` } as object)}
           />
         );

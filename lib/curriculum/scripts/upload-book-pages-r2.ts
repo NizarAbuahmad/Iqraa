@@ -38,10 +38,15 @@ if (!dir) {
 }
 
 const links = JSON.parse(readFileSync(path.join(ROOT, 'knowledge-base/book-page-links.json'), 'utf8')) as {
-  lessons: Record<string, { startPage: number; endPage: number }>;
+  lessons: Record<string, { startPage: number; endPage: number; rendered?: { dir: string; startPage: number } }>;
 };
-const files = Object.entries(links.lessons).flatMap(([id, l]) =>
-  Array.from({ length: l.endPage - l.startPage + 1 }, (_, n) => `${id}/${n + 1}.jpg`));
+// An entry with `rendered` shows images from another lesson's folder (a range
+// corrected after cutting, see `bookPagesForLesson`); list the files it reads.
+const files = [...new Set(Object.entries(links.lessons).flatMap(([id, l]) => {
+  const dir = l.rendered?.dir ?? id;
+  const first = l.rendered?.startPage ?? l.startPage;
+  return Array.from({ length: l.endPage - l.startPage + 1 }, (_, n) => `${dir}/${l.startPage - first + n + 1}.jpg`);
+}))];
 const { R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
 if (!R2_ENDPOINT || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
   console.error('R2 is not configured — set R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY in .env.');

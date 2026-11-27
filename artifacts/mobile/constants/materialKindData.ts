@@ -11,14 +11,15 @@
  * a table of its own and disagree: the quiz was `help-circle-outline` in rose,
  * the worksheet a brown (`#8A5A00`, in the amber family that means "now"), the
  * activity a green, the lesson plan the brand teal. `MATERIAL_CONCEPT` names
- * the concept; a kind with no entry (the whiteboard) has a look of its own.
+ * the concept. Every kind is one since 2026-11-20, when the whiteboard became
+ * a tool with a card of its own and so a concept (slate, as the board always was).
  */
 import { conceptOf, type ConceptId, type IconName } from './icons.ts';
 import { readableOn } from '../services/readableColor.ts';
 import type { MaterialType } from '@/services/workspace';
 
-/** Which concept each kind is. `board` is not one: the whiteboard is a canvas, not a thing a lesson prep needs. */
-export const MATERIAL_CONCEPT: Partial<Record<MaterialType, ConceptId>> = {
+/** Which concept each kind is. */
+export const MATERIAL_CONCEPT: Record<MaterialType, ConceptId> = {
   lesson: 'lesson-plan',
   worksheet: 'worksheet',
   quiz: 'quiz',
@@ -26,20 +27,12 @@ export const MATERIAL_CONCEPT: Partial<Record<MaterialType, ConceptId>> = {
   activity: 'activity',
   slides: 'slides',
   'prompt-slides': 'prompt-slides',
-};
-
-/** A kind with no concept: slate, the neutral, ≥ 13 CIEDE2000 from every concept colour. */
-const OWN_LOOK: Partial<Record<MaterialType, { icon: IconName; color: string }>> = {
-  board: { icon: 'easel-outline', color: '#475569' },
+  board: 'whiteboard',
 };
 
 const KINDS = ['lesson', 'worksheet', 'quiz', 'flow', 'activity', 'slides', 'prompt-slides', 'board'] as const satisfies readonly MaterialType[];
 
-const lookOf = (kind: MaterialType): { icon: IconName; color: string } => {
-  const concept = MATERIAL_CONCEPT[kind];
-  if (concept) return conceptOf(concept);
-  return OWN_LOOK[kind]!;
-};
+const lookOf = (kind: MaterialType): { icon: IconName; color: string } => conceptOf(MATERIAL_CONCEPT[kind]);
 
 /**
  * The kind's hue. Every one carries white text at 4.5:1 (it is a header band

@@ -24,6 +24,7 @@ import {
   archiveEvaluation,
   closeEvaluation,
   publishEvaluation,
+  setInstantFeedback,
   setResultsReleased,
   setSolutionsShown,
   prepareWorkedSteps,
@@ -109,7 +110,7 @@ export default function EvaluationDetailScreen() {
   /** The question open in the editor; 'new' when writing one from scratch. */
   const [editing, setEditing] = useState<EvaluationQuestion | 'new' | null>(null);
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | 'release' | 'solutions' | 'steps' | 'archive' | null>(null);
+  const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | 'release' | 'solutions' | 'instant' | 'steps' | 'archive' | null>(null);
   /** After «جهّز خطوات الحل»: how many questions the model could not explain. */
   const [stepsMissed, setStepsMissed] = useState<number | null>(null);
   // What the generator said while producing this paper ("2 questions removed:
@@ -315,6 +316,35 @@ export default function EvaluationDetailScreen() {
       );
     } catch {
       setError(t('releaseResultsFailed'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // «تغذية راجعة فورية» — `feedbackReady` on the server. Turning it on asks
+  // first, because on a published exam it also releases the results; turning
+  // it off does not.
+  const onToggleInstant = async () => {
+    if (!id || busy || !evaluation) return;
+    const enabled = !evaluation.instantFeedback;
+    if (enabled) {
+      const ok = await confirm({
+        title: t('instantFeedbackOnBtn'),
+        message: t('instantFeedbackConfirm'),
+        confirmLabel: t('instantFeedbackOnBtn'),
+        cancelLabel: t('cancel'),
+      });
+      if (!ok) return;
+    }
+    setBusy('instant');
+    setError('');
+    try {
+      const updated = await setInstantFeedback(id, enabled);
+      queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
+        prev ? { ...prev, evaluation: updated } : prev,
+      );
+    } catch {
+      setError(t('instantFeedbackFailed'));
     } finally {
       setBusy(null);
     }
@@ -556,6 +586,46 @@ export default function EvaluationDetailScreen() {
               {t('closeEvaluationBtn')}
             </Text>
           </Pressable>
+        </View>
+      )}
+
+      {/* «تغذية راجعة فورية»: any status (a draft keeps it for publishing),
+          never a paper exam — nobody hands one in through the app. */}
+      {evaluation && !paperExam && (
+        <View style={{ marginHorizontal: SPACE.xl, marginTop: SPACE.sm, gap: SPACE.sm }}>
+          <Pressable
+            onPress={onToggleInstant}
+            disabled={busy === 'instant'}
+            accessibilityRole="switch"
+            aria-checked={evaluation.instantFeedback === true}
+            aria-busy={busy === 'instant'}
+            style={[
+              styles.resultsBtn,
+              {
+                borderColor: evaluation.instantFeedback ? colors.border : ACCENT,
+                opacity: busy === 'instant' ? 0.6 : 1,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+              },
+            ]}
+          >
+            <Ionicons
+              name={evaluation.instantFeedback ? 'flash-off-outline' : 'flash-outline'}
+              size={ICON.lg}
+              color={evaluation.instantFeedback ? colors.mutedForeground : ACCENT}
+            />
+            <Text style={{ color: evaluation.instantFeedback ? colors.mutedForeground : ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 15, flexShrink: 1, textAlign: 'center' }}>
+              {t(evaluation.instantFeedback ? 'instantFeedbackOffBtn' : 'instantFeedbackOnBtn')}
+            </Text>
+          </Pressable>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 19, textAlign: align }}>
+            {t(
+              !evaluation.instantFeedback
+                ? 'instantFeedbackOffNote'
+                : evaluation.status !== 'draft' && !evaluation.releaseResultsToStudent
+                  ? 'instantFeedbackPausedNote'
+                  : 'instantFeedbackOnNote',
+            )}
+          </Text>
         </View>
       )}
 

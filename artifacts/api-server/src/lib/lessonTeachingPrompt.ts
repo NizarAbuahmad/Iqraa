@@ -31,6 +31,7 @@ import { DECK_ICON_NAMES, diagramLimitsAr, diagramLimitsEn } from "./promptSlide
 import { PROMPT_EXAMPLE_CHECKS } from "./lessonTeachingChecks.ts";
 import { figureFormatAr, figureFormatEn } from "./figurePrompt.ts";
 import { isMathContext } from "@workspace/math-practice";
+import { firstGradeClauseAr, firstGradeClauseEn } from "./firstGrade.ts";
 
 /** Concept slides asked for. More is a lecture; fewer is not an explanation. */
 export const TEACHING_CONCEPTS_MIN = 3;
@@ -117,7 +118,7 @@ ${figureFormatAr()}
   "workedExample": { "problem": "نص المسألة بمعطياتها", "steps": ["الخطوة الأولى", "الخطوة الثانية"], "answer": "الإجابة النهائية", "check": {"topic":"<evaluate | system_solutions | equation_linear | equation_quadratic | derivative_polynomial>","question":"<ما حسبتَه فعلًا>","answer":"<ناتجه>"} },
   "mistake": { "claim": "قالت سلمى: … (حلّ فيه خطأ واحد)", "hint": "أين تبحث", "answer": "الخطوة الخاطئة وتصحيحها" },
   "practice": { "problem": "مسألة التدريب", "hint": "تلميح", "answer": "الإجابة", "check": {"topic":"<…>","question":"<ما حسبتَه فعلًا>","answer":"<ناتجه>"} }
-}`;
+}${firstGradeClauseAr(b, "explain")}`;
 }
 
 export function lessonTeachingPromptEn(b: any): string {
@@ -187,5 +188,5 @@ Return only JSON in this shape:
   "workedExample": { "problem": "The problem with its givens", "steps": ["Step one", "Step two"], "answer": "The final answer", "check": {"topic":"<evaluate | system_solutions | equation_linear | equation_quadratic | derivative_polynomial>","question":"<what you actually computed>","answer":"<its result>"} },
   "mistake": { "claim": "Salma says: … (a solution with one error)", "hint": "Where to look", "answer": "The wrong step and its correction" },
   "practice": { "problem": "The practice problem", "hint": "A hint", "answer": "The answer", "check": {"topic":"<…>","question":"<what you actually computed>","answer":"<its result>"} }
-}`;
+}${firstGradeClauseEn(b, "explain")}`;
 }

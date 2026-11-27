@@ -98,13 +98,13 @@
       "lessonStartPage": 18
     },
     {
-      "file": "p022.png",
+      "file": "p022b.png",
       "sourceId": "g3-social-s2-student-book",
       "pdfPage": 22,
       "rect": [
-        47.2,
+        299.2,
         132.2,
-        295.6,
+        547.6,
         313.2
       ],
       "unit": 1,
@@ -114,13 +114,13 @@
       "lessonStartPage": 18
     },
     {
-      "file": "p022b.png",
+      "file": "p022.png",
       "sourceId": "g3-social-s2-student-book",
       "pdfPage": 22,
       "rect": [
-        299.2,
+        47.2,
         132.2,
-        547.6,
+        295.6,
         313.2
       ],
       "unit": 1,

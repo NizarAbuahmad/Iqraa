@@ -19,9 +19,16 @@ import { GEOMETRY_TOPICS } from './geometry.ts';
 import { STATS_TOPICS } from './stats.ts';
 import { PROPORTION_TOPICS } from './proportion.ts';
 import { EARLY_TOPICS } from './early.ts';
+import { G10_LESSON_TOPICS } from './grade10.ts';
+import { G4_LESSON_TOPICS } from './grade4b.ts';
+import { G10_TOPICS } from './g10.ts';
+import { G8_TOPICS } from './g8.ts';
+import { G7_TOPICS } from './g7.ts';
+import { G5_TOPICS } from './g5.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
+import { EARLY_CHOICE, EARLY_DRAWS, choosesByDifficulty, pickByDifficulty } from './earlyDifficulty.ts';
 import {
-  gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tier, valueOf, wrongsFrom,
+  dinars, gcd, int, lcm, mixed, nz, numWrongs, numerator, paren, pick, sfrac, signed, sup, tamyiz, tier, valueOf, wrongsFrom,
   type Ctx, type Draft, type Rng, type Topic,
 } from './topicKit.ts';
 
@@ -167,14 +174,27 @@ const roundDec: Topic = {
  * or hundred (the Grade 2 objective), and a word problem.
  */
 const estSum = (id: string, match: RegExp, mode: 'add' | 'sub' | 'both'): Topic => {
+  // Grade 2 numbers stay within three places: an estimated sum once reached 1158 with 1300
+  // among its options (second pass, 2026-11-17). Such a draw is drawn again.
+  const fits = (d: Draft) => [d.ar, d.answer, ...(d.wrongs ?? [])].every(t => (String(t).match(/\d+/g) ?? []).every(n => Number(n) <= 999));
   const make = (c: Ctx): Draft => {
+    for (let i = 0; i < 60; i++) { const d = draw(c); if (c.grade > 2 || fits(d)) return d; }
+    return draw(c);
+  };
+  const draw = (c: Ctx): Draft => {
     const { rng, diff, grade } = c;
-    const digits = Math.min(grade <= 2 ? 3 : 4, diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4);
+    // Grade 4 estimates within hundreds of thousands (u1_l3 rounds to 10, 100, 1000 and 10000; u1_l5 adds
+    // within six places): it drew 2–4 digits and rounded to tens and hundreds only (2026-11-21).
+    const digits = grade === 4 ? (diff === 'easy' ? 4 : diff === 'medium' ? 5 : 6) : Math.min(grade <= 2 ? 3 : 4, diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4);
+    const pickPlace = () => (grade === 4
+      ? pick(rng, [100, 1000, 10000].filter(p => p <= 10 ** (digits - 1) && p >= 10 ** (digits - 4)))
+      : digits === 2 ? 10 : pick(rng, [10, 100]));
     let a = 0, b = 0, add = true;
     do {
-      a = int(rng, 10 ** (digits - 1) + 1, 10 ** digits - 1);
-      b = int(rng, 10 ** (digits - 1) + 1, a);
       add = mode === 'both' ? rng() < 0.5 : mode === 'add';
+      // a sum stays within six places, and so does its estimate (449999 + 449999 → 450000 + 450000)
+      a = int(rng, 10 ** (digits - 1) + 1, grade === 4 && digits === 6 && add ? 449999 : 10 ** digits - 1);
+      b = int(rng, 10 ** (digits - 1) + 1, a);
     } while (!add && lead(a) === lead(b));
     const exact = add ? a + b : a - b;
     const op = add ? '+' : '−';
@@ -182,7 +202,7 @@ const estSum = (id: string, match: RegExp, mode: 'add' | 'sub' | 'both'): Topic 
     const k = pick(rng, [0, 1, 2, 3, 4]);
     if (k === 3) {
       // judging an answer's size: which round number is nearest the real result
-      const place = digits === 2 ? 10 : pick(rng, [10, 100]);
+      const place = pickPlace();
       const ans = roundTo(exact, place);
       if (exact % place === place / 2 || ans <= 0) return make(c);
       const near = shuffle(rng, [ans - place, ans + place]).filter(x => x > 0);
@@ -197,7 +217,7 @@ const estSum = (id: string, match: RegExp, mode: 'add' | 'sub' | 'both'): Topic 
     }
     if (k === 4) {
       // working back from an estimate: the other number, rounded
-      const place = digits === 2 ? 10 : pick(rng, [10, 100]);
+      const place = pickPlace();
       const ra = roundTo(a, place), rb = roundTo(b, place);
       const est = add ? ra + rb : ra - rb;
       if (est <= 0 || rb <= 0) return make(c);
@@ -224,7 +244,7 @@ const estSum = (id: string, match: RegExp, mode: 'add' | 'sub' | 'both'): Topic 
         en: `Estimate ${a} ${op} ${b} by rounding each number to its greatest place.`,
       };
     }
-    const place = digits === 2 ? 10 : pick(rng, [10, 100]);
+    const place = pickPlace();
     const est = add ? roundTo(a, place) + roundTo(b, place) : roundTo(a, place) - roundTo(b, place);
     if (est <= 0) return make(c);
     const P = PLACE_AR[place]!, PE = PLACE_EN[place]!;
@@ -344,10 +364,53 @@ const estProd: Topic = {
   },
 };
 
+/**
+ * Grade 3 «تقدير ناتج القسمة» divides a TWO-digit number by a one-digit one (the
+ * lesson's objective); the shared path below gave Grade 3 «237 ÷ 8». Round the
+ * dividend to the nearest ten when that ten divides evenly (62 ÷ 3 ≈ 60 ÷ 3), or
+ * take the nearest multiple of the divisor — a basic fact (58 ÷ 7 ≈ 56 ÷ 7).
+ */
+function estQuotG3(rng: Rng): Draft {
+  const k = pick(rng, [0, 1, 2]);
+  const ints = (est: number, xs: number[]) => numWrongs(est, xs.filter(x => Number.isInteger(x) && x > 0 && x !== est));
+  for (;;) {
+    const d = int(rng, k === 2 ? 3 : 2, 9), n = int(rng, 11, 99);
+    if (k === 1) {
+      const r = n % d;
+      if (r === 0 || 2 * r === d) continue; // already a fact, or two multiples equally near
+      const M = Math.round(n / d) * d, est = M / d;
+      if (est < 2 || est > 10) continue;
+      return {
+        eq: `${n} ÷ ${d}`, answer: String(est),
+        wrongs: ints(est, [M, est + 1, est - 1, Math.round(n / 10) * 10 / d, n - d]),
+        ar: `قدّر ناتج ${n} ÷ ${d} باستعمال الأعداد المتناغمة (أقرب عدد إلى ${n} من مضاعفات ${d}).`,
+        en: `Estimate ${n} ÷ ${d} using compatible numbers (the multiple of ${d} nearest to ${n}).`,
+      };
+    }
+    const R = Math.round(n / 10) * 10;
+    if (R === n || R % d !== 0 || R / d < 2) continue;
+    const est = R / d;
+    const wrongs = ints(est, [Math.floor(n / d), est * 10, R, (R - 10) / d, (R + 10) / d]);
+    if (k === 2) {
+      return {
+        eq: `${n} ÷ ${d}`, answer: String(est), wrongs,
+        ar: `وُزّع ${counted(n, 'أقلام', 'قلمًا', 'قلم')} بالتساوي على ${d} مجموعات. قدّر عدد أقلام كل مجموعة بتقريب ${n} إلى أقرب عشرة.`,
+        en: `${n} pencils are shared equally among ${d} groups. Estimate how many pencils each group gets by rounding ${n} to the nearest ten.`,
+      };
+    }
+    return {
+      eq: `${n} ÷ ${d}`, answer: String(est), wrongs,
+      ar: `قدّر ناتج ${n} ÷ ${d} بتقريب ${n} إلى أقرب عشرة.`,
+      en: `Estimate ${n} ÷ ${d} by rounding ${n} to the nearest ten.`,
+    };
+  }
+}
+
 /** Estimate by rounding the dividend; with compatible numbers (the Grade 5 objective); and a word problem. */
 const estQuot: Topic = {
   id: 'est_quot', match: /تقدير.*قسم/, grades: [3, 6],
   make({ rng, diff, grade }) {
+    if (grade <= 3) return estQuotG3(rng);
     const k = pick(rng, [0, 1, 2]);
     const d = k === 2 ? int(rng, 3, 9) : int(rng, 2, 9);
     const q = int(rng, 2, 9);
@@ -761,16 +824,33 @@ const lcmT: Topic = {
   },
 };
 
-/** Square and square root; a square's side from its area (or area from side); which number is a perfect square; Grade 6 cubes. */
+/**
+ * Square and square root; a square's side from its area (or area from side); which number is a perfect square; Grade 6 cubes.
+ *
+ * Grade 6's only lesson here is «الجذر التربيعي والجذر التكعيبي» («أجد الجذور التربيعية والتكعيبية للأعداد»). Until
+ * 2026-11-14 a cube was one draw in five, so a 10-question paper could hold none; Grade 6 now draws a cube half the time,
+ * in four kinds: a cube root, a cube, a cube's edge from its volume, and which number is a perfect cube.
+ */
 const squares: Topic = {
   id: 'squares', match: /مربع العدد|الجذر التربيعي/, grades: [5, 6],
   make({ rng, diff, grade }) {
-    const k = pick(rng, grade >= 6 ? [0, 1, 2, 3, 4] : [0, 1, 2, 3]);
+    const k = pick(rng, grade >= 6 ? [0, 1, 2, 3, 4, 4, 4, 4] : [0, 1, 2, 3]);
     if (k === 4) {
       const b = int(rng, 2, diff === 'hard' ? 10 : 6);
-      return rng() < 0.5
-        ? { eq: `∛${b ** 3}`, answer: String(b), wrongs: numWrongs(b, [b * 3, b * b, b + 1]), ar: `أوجد قيمة ∛${b ** 3}.`, en: `Find ∛${b ** 3}.` }
-        : { eq: `${b}³`, answer: String(b ** 3), wrongs: numWrongs(b ** 3, [b * 3, b * b, b ** 3 + b]), ar: `أوجد قيمة ${b}³.`, en: `Find ${b}³.` };
+      const c = b ** 3;
+      const kind = pick(rng, [0, 1, 2, 3]);
+      if (kind === 2) {
+        return { eq: `cube volume ${c}`, answer: String(b), wrongs: numWrongs(b, [c / 3 | 0, c / 6 | 0, b * b, b + 1].filter(x => x !== b)), ar: `مكعب حجمه ${c} سم³. ما طول حرفه بالسنتيمتر؟`, en: `A cube has a volume of ${c} cm³. How long is its edge, in centimetres?` };
+      }
+      if (kind === 3) {
+        const ans = String(c);
+        const wrongs = [c + 1, c - 1, b * b * (b + 1), b * b * 3].filter((x, i, a) => x !== c && a.indexOf(x) === i).slice(0, 3).map(String);
+        const L = listed(rng, ans, wrongs);
+        return { eq: `perfect cube ${L.en}`, answer: ans, wrongs, ar: `أيّ الأعداد الآتية مكعب كامل: ${L.ar}؟`, en: `Which of these numbers is a perfect cube: ${L.en}?` };
+      }
+      return kind === 0
+        ? { eq: `∛${c}`, answer: String(b), wrongs: numWrongs(b, [b * 3, b * b, b + 1]), ar: `أوجد قيمة ∛${c}.`, en: `Find ∛${c}.` }
+        : { eq: `${b}³`, answer: String(c), wrongs: numWrongs(c, [b * 3, b * b, c + b]), ar: `أوجد قيمة ${b}³.`, en: `Find ${b}³.` };
     }
     const b = int(rng, k === 3 ? 4 : 2, diff === 'easy' ? 10 : diff === 'medium' ? 15 : 25);
     if (k === 2) {
@@ -835,9 +915,9 @@ const powers: Topic = {
 
 // ─── order of operations ────────────────────────────────────────────────────
 
-type Tok = number | string; // numbers, '+ − × ÷', '(' ')', or «5²» as a string
+type Tok = number | string; // numbers, '+ − × ÷', '(' ')', or «5²» / «√49» as a string
 
-const val = (t: Tok): number => (typeof t === 'number' ? t : t.endsWith('²') ? Number(t.slice(0, -1)) ** 2 : NaN);
+const val = (t: Tok): number => (typeof t === 'number' ? t : t.endsWith('²') ? Number(t.slice(0, -1)) ** 2 : t.startsWith('√') ? Math.sqrt(Number(t.slice(1))) : NaN);
 
 /** Correct value: parentheses and precedence honoured; null if a division is not exact. */
 function evalPrec(tokens: Tok[]): number | null {
@@ -890,12 +970,15 @@ function opsShape(rng: Rng, diff: DiffTier, grade: number, flat: boolean): { sha
   for (let attempt = 0; attempt < 100; attempt++) {
     const n = () => int(rng, 2, t === 0 ? 9 : 12);
     const [a, b, c, d] = [n(), n(), n(), n()];
+    // Grade 6 names «مقادير تحوي قوى وجذورًا»: a medium paper mixes them in, a hard one always has one
+    // (powers came only on hard and roots never, Grade 6 audit, 2026-11-14).
     const powers = grade >= 6 && t >= 1;
+    const plain: Tok[][] = [['(', a, '+', b, ')', '×', c], ['(', a + c, '−', b, ')', '×', d], [a, '×', b, '−', c * d, '÷', c], [a, '+', b, '×', c, '−', d]];
+    const raised: Tok[][] = [[a, '+', `${b}²`, '×', c], [`${a}²`, '−', '(', b, '+', c, ')', '×', d], [a, '×', '(', b, '+', c, ')', '−', `${d}²`], ['(', a, '+', b, ')', '×', c, '−', `${d}²`],
+      [`√${b * b}`, '+', a, '×', c], [a, '×', `√${c * c}`, '−', d], ['(', `√${a * a}`, '+', b, ')', '×', c], [`${a}²`, '−', `√${b * b}`, '×', c]];
     const shapes: Tok[][] = t === 0
       ? [[a, '+', b, '×', c], [b * c + int(rng, 2, 9), '−', b, '×', c], [a, '+', b * c, '÷', c]]
-      : t === 1 || !powers
-        ? [['(', a, '+', b, ')', '×', c], ['(', a + c, '−', b, ')', '×', d], [a, '×', b, '−', c * d, '÷', c], [a, '+', b, '×', c, '−', d]]
-        : [[a, '+', `${b}²`, '×', c], [`${a}²`, '−', '(', b, '+', c, ')', '×', d], [a, '×', '(', b, '+', c, ')', '−', `${d}²`], ['(', a, '+', b, ')', '×', c, '−', `${d}²`]];
+      : !powers ? plain : t === 1 ? [...plain, ...raised] : raised;
     const shape = pick(rng, flat ? shapes.filter(s => !s.includes('(')) : shapes);
     const v = evalPrec(shape);
     const ltr = evalLtr(shape), np = evalNoParens(shape);
@@ -1196,6 +1279,49 @@ function fracWrongs(answer: string, cands: string[]): string[] {
   return out;
 }
 
+/** «جزأين متساويين», «4 أجزاء متساوية», «12 جزءًا متساويًا». */
+const equalParts = (x: number) => (x === 2 ? 'جزأين متساويين' : x <= 10 ? `${x} أجزاء متساوية` : `${x} جزءًا متساويًا`);
+
+/**
+ * Grade 3 «الكسور المتكافئة» finds them with models and the number line (the
+ * objective), on fraction strips no finer than twelfths. The shared path below
+ * multiplies numerator and denominator by up to 9 («36/45»), a Grade 4 rule.
+ * The missing numerator, which listed fraction is equivalent, two strips, two
+ * number lines.
+ */
+function equivFracG3(rng: Rng): Draft {
+  const d = pick(rng, [2, 3, 4, 6]), k = int(rng, 2, Math.floor(12 / d));
+  let n = int(rng, 1, d - 1);
+  while (gcd(n, d) !== 1) n = int(rng, 1, d - 1);
+  const D = d * k, N = n * k, ans = `${N}/${D}`, kind = pick(rng, [0, 1, 2, 3]);
+  const slips = [`${n}/${D}`, `${N}/${d}`, `${n + k}/${D}`, `${N + 1}/${D}`, `${N - 1}/${D}`, `${n + k}/${d + k}`];
+  if (kind === 1) {
+    const wrongs = fracWrongs(ans, slips);
+    const L = listed(rng, ans, wrongs);
+    return { eq: `${n}/${d}`, answer: ans, wrongs, ar: `أيّ الكسور الآتية يكافئ الكسر ${n}/${d}: ${L.ar}؟`, en: `Which of these fractions is equivalent to ${n}/${d}: ${L.en}?` };
+  }
+  if (kind === 2) {
+    const coloured = n === 1 ? 'جزء واحد' : n === 2 ? 'جزآن' : String(n);
+    return {
+      eq: `${n}/${d} = ?/${D}`, answer: String(N), wrongs: numWrongs(N, [n, n + k, D - N, N + 1, N - 1].filter(x => x > 0 && x !== N)),
+      ar: `شريطان متطابقان: قُسّم الأول إلى ${equalParts(d)} ولُوّن ${coloured} منه، وقُسّم الثاني إلى ${equalParts(D)}. كم جزءًا نلوّن من الشريط الثاني ليكون الجزء الملوّن منه مساويًا للجزء الملوّن من الأول؟`,
+      en: `Two identical strips: the first is cut into ${d} equal parts with ${n} coloured; the second into ${D} equal parts. How many parts of the second must be coloured to colour as much as the first?`,
+    };
+  }
+  if (kind === 3) {
+    return {
+      eq: `${n}/${d} on a line of ${D}ths`, answer: ans, wrongs: fracWrongs(ans, slips),
+      ar: `خطّا أعداد متطابقان من 0 إلى 1: قُسّم الأول إلى ${equalParts(d)}، والثاني إلى ${equalParts(D)}. أيّ كسر على الخط الثاني يقع عند النقطة نفسها التي يقع عندها الكسر ${n}/${d} على الخط الأول؟`,
+      en: `Two identical number lines from 0 to 1: the first is cut into ${d} equal parts, the second into ${D}. Which fraction on the second line is at the same point as ${n}/${d} on the first?`,
+    };
+  }
+  return {
+    eq: `${n}/${d} = ?/${D}`, answer: String(N), wrongs: numWrongs(N, [n + k, n * (k - 1), n + D - d, N + d].filter(x => x > 0 && x !== N)),
+    ar: `أكمل لتحصل على كسرين متكافئين: ${n}/${d} = ؟/${D}`,
+    en: `Complete the equivalent fractions: ${n}/${d} = ?/${D}`,
+  };
+}
+
 /**
  * Equivalent fractions: the missing numerator; which listed fraction is
  * equivalent; multiplying numerator and denominator by the same number; and
@@ -1204,6 +1330,7 @@ function fracWrongs(answer: string, cands: string[]): string[] {
 const equivFrac: Topic = {
   id: 'equiv_frac', match: /الكسور المتكافئه/, grades: [3, 5],
   make({ rng, diff, grade }) {
+    if (grade <= 3) return equivFracG3(rng);
     const d = pick(rng, [2, 3, 4, 5, 6, 8]);
     let n = int(rng, 1, d - 1);
     while (gcd(n, d) !== 1) n = int(rng, 1, d - 1);
@@ -1433,10 +1560,17 @@ const decPlace: Topic = {
     }
     const raw = int(rng, 10 ** places + 1, 10 ** (places + 1) - 1) + int(rng, 1, 9) * 10 ** (places + 1);
     const s = fixedDec(raw, places);
-    const pos = int(rng, 1, places);
-    const idx = s.indexOf('.') + pos;
-    const digit = Number(s[idx]);
-    if (digit === 0) return decPlace.make({ rng, diff, grade: 4 });
+    // A decimal place whose digit is not 0 and occurs nowhere else in the number:
+    // «الرقم 6 في العدد 64.36» has two place values and no single answer
+    // (hand review of the ready-made sheets, 2026-11-20).
+    const digits = s.replace('.', '');
+    const usable = Array.from({ length: places }, (_, i) => i + 1).filter(p => {
+      const c = s[s.indexOf('.') + p]!;
+      return c !== '0' && digits.indexOf(c) === digits.lastIndexOf(c);
+    });
+    if (usable.length === 0) return decPlace.make({ rng, diff, grade: 4 });
+    const pos = pick(rng, usable);
+    const digit = Number(s[s.indexOf('.') + pos]);
     const ans = fmtDec(digit * 10 ** (places - pos), places);
     return {
       eq: s, answer: ans,
@@ -1546,11 +1680,53 @@ const pctConv: Topic = {
     }
     if (kind === 2) {
       const ans = fmtDec(p, 2);
-      return { eq: `${p}%`, answer: ans, wrongs: wrongsFrom(ans, [fmtDec(p, 1), fmtDec(p * 10, 2), String(p)]), ar: `اكتب ${p}% على صورة عدد عشري.`, en: `Write ${p}% as a decimal.` };
+      // `near` formats its own steps: the default «answer ± 1» printed 0.64 + 1 as «1.6400000000000001»
+      return { eq: `${p}%`, answer: ans, wrongs: wrongsFrom(ans, [fmtDec(p, 1), fmtDec(p * 10, 2), String(p)], k => (p + 10 * k > 0 ? fmtDec(p + 10 * k, 2) : '')), ar: `اكتب ${p}% على صورة عدد عشري.`, en: `Write ${p}% as a decimal.` };
     }
     const ans = `${p}%`;
     const dec = fmtDec(p, 2);
     return { eq: dec, answer: ans, wrongs: wrongsFrom(ans, [`${p / 10}%`, `${p * 10}%`, `${Math.round(p / 100)}%`], k => `${p + k}%`), ar: `اكتب العدد العشري ${dec} على صورة نسبة مئوية.`, en: `Write the decimal ${dec} as a percent.` };
+  },
+};
+
+/**
+ * Grade 6 «النسبة المئوية من عدد» (S2 u6_l5): «أجد النسبة المئوية من عدد، ومن كمية». It used to reach the
+ * shared `percent` operation, where about 3 questions in 10 were a conversion or a shaded grid. Every item here
+ * asks a percent of something: a bare number, a measured quantity, a group of people, a price (the discount,
+ * or on hard papers what is left to pay). Every answer is a whole number.
+ */
+const pctOf: Topic = {
+  id: 'pct_of_g6', match: /^النسبه المئويه من عدد$/, grades: [6, 6],
+  make({ rng, diff }) {
+    const p = pick(rng, diff === 'easy' ? [10, 20, 25, 50, 75] : diff === 'medium' ? [5, 15, 30, 40, 60, 80] : [12, 35, 45, 65, 85, 4]);
+    // n a multiple of 100/gcd(p, 100), so p% of n is whole
+    const step = 100 / gcd(p, 100);
+    const lo = Math.ceil((diff === 'easy' ? 20 : 40) / step), hi = Math.max(lo + 1, Math.floor((diff === 'hard' ? 900 : 400) / step));
+    const n = step * int(rng, lo, hi); // never a 4-dinar bicycle
+    const v = (p * n) / 100;
+    const cands = [(p * n) / 10, n - v, p, v * 10, n / p].filter(c => Number.isInteger(c) && c > 0);
+    const kind = pick(rng, diff === 'hard' ? [0, 1, 2, 3, 4] : [0, 1, 2, 3]);
+    if (kind === 1) {
+      const [what, unit, howMany, used, thing, usedEn] = pick(rng, [
+        ['كيس أرز كتلته', 'kg', 'كيلوغرامًا', 'استُهلك', 'a bag of rice of mass', 'used'],
+        ['خزان ماء سعته', 'L', 'لترًا', 'استُعمل', 'a water tank holding', 'used'],
+        ['حبل طوله', 'm', 'مترًا', 'قُطع', 'a rope of length', 'cut off'],
+      ] as const);
+      return { eq: `${p}% of ${n}${unit}`, answer: String(v), wrongs: numWrongs(v, cands), ar: `${what} ${n}${unit}، ${used} ${p}% منه. كم ${howMany} ${used}؟`, en: `From ${thing} ${n}${unit}, ${p}% was ${usedEn}. How many ${unit} was that?` };
+    }
+    if (kind === 2) {
+      return { eq: `${p}% of ${n} students`, answer: String(v), wrongs: numWrongs(v, cands), ar: `في مدرسة ${n} ${tamyiz(n, 'طلاب', 'طالبًا', 'طالب')}، ${p}% منهم يشاركون في النادي العلمي. كم طالبًا يشارك في النادي العلمي؟`, en: `A school has ${n} students and ${p}% of them are in the science club. How many students are in the club?` };
+    }
+    if (kind === 3 || kind === 4) {
+      const after = kind === 4;
+      const ans = after ? n - v : v;
+      return {
+        eq: `${p}% off ${n} ${after ? 'after' : 'discount'}`, answer: String(ans), wrongs: numWrongs(ans, after ? [v, n + v, n - p, ...cands] : cands),
+        ar: `سعر دراجة ${dinars(n)}، وعليها خصم ${p}%. ${after ? 'كم دينارًا يدفع المشتري بعد الخصم؟' : 'كم دينارًا قيمة الخصم؟'}`,
+        en: `A bicycle costs ${n} JD with a ${p}% discount. ${after ? 'How many JD does the buyer pay after the discount?' : 'How many JD is the discount?'}`,
+      };
+    }
+    return { eq: `${p}% × ${n}`, answer: String(v), wrongs: numWrongs(v, cands), ar: `أوجد ${p}% من ${n}.`, en: `Find ${p}% of ${n}.` };
   },
 };
 
@@ -1851,8 +2027,645 @@ const expLaws: Topic = {
   },
 };
 
+// ─── Grade 6: measures with decimals, and «solve a simpler problem» ─────────
+//
+// Both lessons follow the Grade 6 S1 student book (pp. 81-84 and 86-87). All
+// arithmetic is done on whole numbers scaled by a power of ten and printed with
+// `fmtDec`, so no float residue reaches a stem or an answer.
+
+/** A whole number from lo to hi that is not a multiple of 10 — a value with a real tenths digit once divided by 10. */
+const notTens = (rng: Rng, lo: number, hi: number) => { const n = int(rng, lo, hi); return n % 10 === 0 ? n + 1 : n; };
+
+/** [big unit, small unit, small units in a big one, «بالمتر المربع», in English, a square-unit name]. */
+const AREA_UNITS: Array<[string, string, number, string, string]> = [
+  ['m', 'cm', 100, 'بالمتر المربع', 'in square metres'],
+  ['cm', 'mm', 10, 'بالسنتيمتر المربع', 'in square centimetres'],
+];
+/** [big unit, small unit, small units in a big one, sizes of the small portion]. */
+const SHARE_UNITS: Array<[string, string, number, number[]]> = [
+  ['L', 'mL', 1000, [125, 200, 250, 320, 400, 500, 750]],
+  ['kg', 'g', 1000, [40, 125, 200, 250, 400, 500, 800]],
+  ['m', 'cm', 100, [12, 15, 24, 25, 30, 40, 60]],
+];
+/** Grams used per item, for the compound-unit problem («2kg, 800g» of flour, 0.4kg a pie). */
+const PER_ITEM_G = [200, 250, 300, 400, 500, 600, 800];
+
+/**
+ * Grade 6 «القياس: تطبيقات العمليات على الأعداد العشرية»: two measures in
+ * different units are brought to one unit, then multiplied («2.5m × 420cm» in
+ * m², a rug's area) or divided («6.5L ÷ 400mL», how many pies from «2kg, 800g»).
+ */
+const decMeasure: Topic = {
+  id: 'dec_measure', match: /^القياس تطبيقات العمليات علي الاعداد العشريه$/, grades: [6, 6],
+  make({ rng, diff }) {
+    const k = pick(rng, [0, 1, 2, 3]);
+    if (k === 0 || k === 1) {
+      // a big-unit length with a tenths digit, times a small-unit length
+      const [U, u, f, inAr, inEn] = k === 1 ? AREA_UNITS[0]! : pick(rng, AREA_UNITS);
+      // a rug stays rug-sized (2-6m by 1.5-4.5m); the bare product may be larger
+      const a10 = k === 1 ? notTens(rng, 21, 59) : notTens(rng, 11, [60, 120, 350][tier(diff)]!);
+      const b = k === 1 ? 10 * int(rng, 15, 45) : f === 100 ? 10 * int(rng, 12, [40, 70, 95][tier(diff)]!) : int(rng, 12, [40, 70, 95][tier(diff)]!);
+      const n = a10 * b, places = f === 100 ? 3 : 2;
+      const ans = fmtDec(n, places);
+      // no conversion; converted by the wrong power of ten; added instead of multiplied
+      const wrongs = wrongsFrom(ans, [fmtDec(n, 1), fmtDec(n, places - 1), fmtDec(a10 * (f / 10) + b, places - 1)], j => fmtDec(n + 10 ** (places - 1) * Math.abs(j), places));
+      const a = fmtDec(a10, 1);
+      if (k === 1) return { eq: `rug ${a}${U} ${b}${u}`, answer: ans, wrongs, ar: `اشترت هناء سجادة مستطيلة الشكل طولها ${a}${U}، وعرضها ${b}${u}. ما مساحة السجادة بالمتر المربع؟`, en: `Hana bought a rectangular rug ${a}${U} long and ${b}${u} wide. What is its area in square metres?` };
+      return { eq: `${a}${U} × ${b}${u}`, answer: ans, wrongs, ar: `أوجد الناتج ${inAr}: ${a}${U} × ${b}${u}`, en: `Find the result ${inEn}: ${a}${U} × ${b}${u}` };
+    }
+    if (k === 2) {
+      // how many small portions fit in a big-unit amount
+      const [U, u, f, sizes] = pick(rng, SHARE_UNITS);
+      const s = pick(rng, sizes);
+      let q10 = 10 * int(rng, 4, [12, 25, 40][tier(diff)]!);
+      if (diff === 'hard' && (5 * s) % 10 === 0) q10 += 5; // half a portion more, while the amount stays whole small units
+      const total10 = q10 * s; // tenths of a small unit, a multiple of 10
+      const A = fmtDec(total10 / 10, String(f).length - 1);
+      const ans = fmtDec(q10, 1);
+      return {
+        eq: `${A}${U} ÷ ${s}${u}`, answer: ans,
+        wrongs: wrongsFrom(ans, [fmtDec(q10, 2), fmtDec(q10 * 10, 1), fmtDec(q10, 3)], j => fmtDec(q10 + 10 * Math.abs(j), 1)),
+        ar: `أوجد الناتج: ${A}${U} ÷ ${s}${u}`, en: `Find the result: ${A}${U} ÷ ${s}${u}`,
+      };
+    }
+    // a compound unit: «2kg, 800g» of flour, a pie uses 0.4kg
+    for (;;) {
+      const g = pick(rng, PER_ITEM_G), c = int(rng, 4, [9, 14, 20][tier(diff)]!), total = c * g;
+      const K = Math.floor(total / 1000), G = total % 1000;
+      if (K === 0 || G === 0) continue;
+      const per = fmtDec(g, 3);
+      return {
+        eq: `${K}kg, ${G}g ÷ ${per}kg`, answer: String(c),
+        wrongs: wrongsFrom(String(c), [Math.floor((K * 1000) / g), Math.round((K * 1000 + G * 10) / g), c * 10]),
+        ar: `لدى طاهٍ ${K}kg, ${G}g من الطحين، ويستهلك صنع الفطيرة الواحدة ${per}kg منه. كم فطيرةً يمكنه أن يصنع؟`,
+        en: `A cook has ${K}kg, ${G}g of flour, and one pie uses ${per}kg of it. How many pies can he make?`,
+      };
+    }
+  },
+};
+
+/**
+ * Grade 6 «خطة حل المسألة: حل مسألة أبسط»: a rate given with awkward decimals
+ * (236.8km in 3.7 hours) is scaled to a new amount (5.85 hours). The book
+ * rounds to a simpler problem first (240km, 4 hours, 6 hours → 360km), then
+ * solves the real one the same way; the simpler problem's answer is the
+ * distractor a pupil reaches by stopping early.
+ */
+const simplerProblem: Topic = {
+  id: 'simpler_problem', match: /^خطه حل المساله حل مساله ابسط$/, grades: [6, 6],
+  make({ rng, diff }) {
+    const k = pick(rng, [0, 1, 2]);
+    if (k === 0) {
+      const r = int(rng, 45, 95), t1 = notTens(rng, 21, 69);
+      const t2 = diff === 'hard' ? 5 * notTens(rng, 21, 179) : 10 * notTens(rng, 15, 89); // hundredths of an hour
+      const d1 = fmtDec(r * t1, 1), d2n = r * t2, ans = fmtDec(d2n, 2);
+      const simple = (Math.round((r * t1) / 100) * 10 / Math.round(t1 / 10)) * Math.round(t2 / 100);
+      return {
+        eq: `${d1}km / ${fmtDec(t1, 1)}h × ${fmtDec(t2, 2)}h`, answer: ans,
+        wrongs: wrongsFrom(ans, [Number.isInteger(simple) ? simple : r * Math.round(t2 / 100), r * Math.round(t2 / 100), fmtDec(r * t1 * t2, 3)], j => fmtDec(d2n + 100 * Math.abs(j) * 5, 2)),
+        // both times are never whole (notTens), and a decimal count takes the singular: «3.7 ساعة», not «3.7 ساعات»
+        ar: `قطع يزيد بشاحنته مسافة ${d1}km في ${fmtDec(t1, 1)} ساعة. كم كيلومترًا يقطع في ${fmtDec(t2, 2)} ساعة إذا سار بالسرعة نفسها؟`,
+        en: `Yazeed drove his truck ${d1}km in ${fmtDec(t1, 1)} hours. How many kilometres will he drive in ${fmtDec(t2, 2)} hours at the same speed?`,
+      };
+    }
+    if (k === 1) {
+      // ρ litres per 100km; distances in tenths of a km, so litres need at most three decimals
+      const rho = int(rng, 5, 12), x1 = notTens(rng, 305, 995), x2 = notTens(rng, 1205, [2995, 4995, 6995][tier(diff)]!);
+      const f1 = fmtDec(rho * x1, 3), f2n = rho * x2, ans = fmtDec(f2n, 3);
+      return {
+        eq: `${f1}L / ${fmtDec(x1, 1)}km × ${fmtDec(x2, 1)}km`, answer: ans,
+        // the simpler problem (distance to the nearest 10km); a power of ten off; the extra distance only
+        wrongs: wrongsFrom(ans, [fmtDec(rho * Math.round(x2 / 100), 1), fmtDec(f2n, 2), fmtDec(rho * (x2 - x1), 3)], j => fmtDec(f2n + 1000 * Math.abs(j), 3)),
+        ar: `تستهلك سيارة ${f1}L من الوقود لقطع مسافة ${fmtDec(x1, 1)}km. كم لترًا من الوقود تستهلك لقطع مسافة ${fmtDec(x2, 1)}km؟`,
+        en: `A car uses ${f1}L of fuel to travel ${fmtDec(x1, 1)}km. How many litres does it use to travel ${fmtDec(x2, 1)}km?`,
+      };
+    }
+    // a price per kg in piastres (even, so any multiple of 50g costs whole fils)
+    const P = 2 * int(rng, 75, 450), m10 = notTens(rng, 11, 49), g2 = 50 * int(rng, 3, 19);
+    const c1 = fmtDec(P * m10, 3), ans = fmtDec((P * g2) / 100, 3);
+    return {
+      eq: `${c1}JD / ${fmtDec(m10, 1)}kg × ${g2}g`, answer: ans,
+      wrongs: wrongsFrom(ans, [fmtDec(P * g2, 2), fmtDec((P * g2) / 10, 3), fmtDec(P, 2)], j => fmtDec((P * g2) / 100 + 10 * Math.abs(j), 3)),
+      // a whole price agrees with its number («11 دينارًا», «5 دنانير»); a decimal one keeps «دينار». P·m10 ≥ 1650,
+      // so the price is never 1 or 2 dinars, which would be written as the noun alone
+      ar: `إذا كان سعر ${fmtDec(m10, 1)}kg من الجبن ${(P * m10) % 1000 === 0 ? dinars((P * m10) / 1000) : `${c1} دينار`}، فما سعر ${g2}g من الجبن نفسه بالدينار؟`,
+      en: `If ${fmtDec(m10, 1)}kg of cheese costs ${c1} JD, what does ${g2}g of the same cheese cost, in JD?`,
+    };
+  },
+};
+
+// ─── Grade 4: the two «خطة حل المسألة» lessons ──────────────────────────────
+//
+// Both follow the Grade 4 student book (S1 pp. 44-45, S2 pp. 126-127): the
+// worked example and the «أتدرب» problems give each kind. The distractor that
+// matters is the pupil who stops after the first step (one month, one week,
+// one album) or adds the two groups of a Venn diagram without taking off the
+// overlap; it is always offered.
+
+/** Three positive whole-number wrong options: the candidates that are above zero, then the answer plus a step. */
+const posWrongs = (ans: number, cands: number[], step: number) =>
+  wrongsFrom(String(ans), cands.filter(x => x > 0), k => String(ans + step * Math.abs(k)));
+
+/** Months as the Jordanian calendar names them, with their days. February is left out: it has two lengths. */
+const MONTHS: Array<[string, string, number]> = [
+  ['كانون الثاني', 'January', 31], ['آذار', 'March', 31], ['نيسان', 'April', 30], ['أيار', 'May', 31],
+  ['حزيران', 'June', 30], ['تموز', 'July', 31], ['آب', 'August', 31], ['أيلول', 'September', 30],
+  ['تشرين الأول', 'October', 31], ['تشرين الثاني', 'November', 30], ['كانون الأول', 'December', 31],
+];
+/** A typing time in words, its English, and its minutes. */
+const DURATIONS: Array<[string, string, number]> = [
+  ['نصف ساعة', 'half an hour', 30], ['ساعة وربعًا', 'an hour and a quarter', 75],
+  ['ساعة ونصفًا', 'an hour and a half', 90], ['ساعتين', 'two hours', 120],
+];
+
+/**
+ * Grade 4 «خطة حل المسألة: الحل بأكثر من خطوة»: a problem that needs two
+ * operations — a daily amount over two named months (the book's Rami swims 23
+ * laps a day in August and September), pay per hour over a year's 52 weeks,
+ * books on two kinds of shelf, words a minute over «ساعة وربعًا», photos in
+ * several albums.
+ */
+const multiStep: Topic = {
+  id: 'multi_step', match: /^خطه حل المساله الحل باكثر من خطوه$/, grades: [4, 4],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const k = pick(rng, [0, 1, 2, 3, 4]);
+    if (k === 0) {
+      const i = int(rng, 0, MONTHS.length - 2);
+      const [m1, e1, d1] = MONTHS[i]!, [m2, e2, d2] = MONTHS[i + 1]!;
+      const n = int(rng, [11, 15, 25][t]!, [25, 45, 95][t]!);
+      const ans = n * (d1 + d2);
+      return {
+        eq: `${n} × (${d1} + ${d2})`, answer: String(ans), wrongs: posWrongs(ans, [n * d1, d1 + d2, n + d1 + d2], 10),
+        ar: `يسبح رامي ${n} لفّةً في المسبح كل يوم. كم لفّةً يسبح في شهري ${m1} و${m2}؟`,
+        en: `Rami swims ${n} laps of the pool every day. How many laps does he swim in ${e1} and ${e2}?`,
+      };
+    }
+    if (k === 1) {
+      const r = int(rng, 3, 9), h = int(rng, 3, [4, 5, 6][t]!), ans = r * h * 52;
+      return {
+        eq: `${r} × ${h} × 52`, answer: String(ans), wrongs: posWrongs(ans, [r * h, r * h * 12, r * 52], 10),
+        ar: `تعمل سمر في شركة، وتتلقى ${r} دنانير عن كل ساعة عمل إضافي. إذا كانت تعمل ${h} ساعات إضافية كل أسبوع، فكم دينارًا تستحق عن العمل الإضافي في العام الواحد؟`,
+        en: `Samar earns ${r} JD for every hour of overtime. If she works ${h} hours of overtime every week, how many JD does she earn for overtime in one year?`,
+      };
+    }
+    if (k === 2) {
+      const a = int(rng, 11, [25, 45, 60][t]!), b = int(rng, 11, [20, 30, 40][t]!), c = int(rng, 11, [15, 20, 25][t]!);
+      const ans = (a + b) * c;
+      return {
+        eq: `(${a} + ${b}) × ${c}`, answer: String(ans), wrongs: posWrongs(ans, [a + b, a * c, a + b * c], 10),
+        ar: `تحتوي مكتبة على ${a} رفًّا لكتب الخيال العلمي، و${b} رفًّا لكتب التاريخ. إذا كان يوضع على الرف الواحد ${c} كتابًا، فكم كتابًا يمكن أن يوضع على رفوف المكتبة؟`,
+        en: `A library has ${a} shelves of science-fiction books and ${b} shelves of history books. If each shelf holds ${c} books, how many books can the library's shelves hold?`,
+      };
+    }
+    if (k === 3) {
+      const [dAr, dEn, min] = pick(rng, t === 0 ? DURATIONS.slice(0, 2) : DURATIONS);
+      const w = int(rng, [11, 20, 40][t]!, [40, 70, 99][t]!), ans = w * min;
+      return {
+        eq: `${w} × ${min}`, answer: String(ans), wrongs: posWrongs(ans, [w * 60, w + min, w * (min + 15)], 10),
+        ar: `يستطيع هشام طباعة ${w} كلمةً في الدقيقة. إذا استغرقت ${dAr} لطباعة تقرير، فكم كلمةً في التقرير؟`,
+        en: `Hisham can type ${w} words a minute. If typing a report took him ${dEn}, how many words are in the report?`,
+      };
+    }
+    const p = int(rng, 4, [6, 8, 9][t]!), g = int(rng, 11, [40, 90, 150][t]!), n = int(rng, 3, 5), ans = p * g * n;
+    return {
+      eq: `${p} × ${g} × ${n}`, answer: String(ans), wrongs: posWrongs(ans, [p * g, g * n, p + g + n], 10),
+      ar: `تتسع صفحة ألبوم الصور لـ ${p} صور، ويحتوي الألبوم الواحد على ${g} صفحةً. كم صورةً يمكن أن تضع ريم في ${n} ألبومات؟`,
+      en: `A photo-album page holds ${p} photos, and one album has ${g} pages. How many photos can Reem put in ${n} albums?`,
+    };
+  },
+};
+
+/** One Venn-diagram setting: who, the two groups, and how each question about them is worded. */
+interface VennCtx {
+  total(a: number, b: number, c: number): [string, string];
+  only(a: number, b: number, c: number): [string, string];
+}
+const VENN: VennCtx[] = [
+  {
+    total: (a, b, c) => [
+      `يفضّل ${a} طالبًا من طلبة الصف الرابع مشاهدة مباريات كرة القدم، ويفضّل ${b} طالبًا مشاهدة أفلام الكرتون، بينما يفضّل ${c} منهم مشاهدة الاثنين معًا. إذا كان كل طالب يفضّل واحدًا منهما على الأقل، فما عدد طلبة الصف؟`,
+      `${a} pupils in Grade 4 like watching football matches, ${b} like watching cartoons, and ${c} of them like both. If every pupil likes at least one of the two, how many pupils are in the class?`],
+    only: (a, b, c) => [
+      `يفضّل ${a} طالبًا من طلبة الصف الرابع مشاهدة مباريات كرة القدم، ويفضّل ${b} طالبًا مشاهدة أفلام الكرتون، بينما يفضّل ${c} منهم مشاهدة الاثنين معًا. ما عدد الطلبة الذين يفضّلون مشاهدة مباريات كرة القدم فقط؟`,
+      `${a} pupils like watching football matches, ${b} like watching cartoons, and ${c} of them like both. How many pupils like watching football matches only?`],
+  },
+  {
+    total: (a, b, c) => [
+      `لاحظت مربّية في إحدى الحضانات أن ${a} طفلًا يحبون الحليب، و${b} طفلًا يحبون العصير، و${c} منهم يحبون الحليب والعصير معًا. إذا كان كل طفل يحب واحدًا منهما على الأقل، فما عدد الأطفال في الحضانة؟`,
+      `A nursery carer noticed that ${a} children like milk, ${b} like juice, and ${c} of them like both. If every child likes at least one of the two, how many children are in the nursery?`],
+    only: (a, b, c) => [
+      `لاحظت مربّية في إحدى الحضانات أن ${a} طفلًا يحبون الحليب، و${b} طفلًا يحبون العصير، و${c} منهم يحبون الحليب والعصير معًا. ما عدد الأطفال الذين يحبون الحليب فقط؟`,
+      `${a} children in a nursery like milk, ${b} like juice, and ${c} of them like both. How many children like milk only?`],
+  },
+  {
+    total: (a, b, c) => [
+      `في نادٍ رياضي قاعة للأجهزة ومسبح. في أحد الأيام استعمل ${a} زائرًا قاعة الأجهزة، و${b} زائرًا المسبح، و${c} منهم استعملوا الاثنين. إذا كان كل زائر استعمل أحدهما على الأقل، فكم زائرًا زار النادي في ذلك اليوم؟`,
+      `A sports club has a gym and a pool. One day ${a} visitors used the gym, ${b} used the pool, and ${c} of them used both. If every visitor used at least one, how many visitors came to the club that day?`],
+    only: (a, b, c) => [
+      `في نادٍ رياضي قاعة للأجهزة ومسبح. في أحد الأيام استعمل ${a} زائرًا قاعة الأجهزة، و${b} زائرًا المسبح، و${c} منهم استعملوا الاثنين. كم زائرًا استعمل قاعة الأجهزة فقط؟`,
+      `One day ${a} visitors used a club's gym, ${b} used its pool, and ${c} of them used both. How many visitors used the gym only?`],
+  },
+];
+
+/**
+ * Grade 4 «خطة حل المسألة: استعمال شكل ڤن»: two groups and their overlap. The
+ * book's example asks for the class size (20 + 30 − 15); its exercises also
+ * ask for one group only (18 − 4), and the reverse — the total and one group
+ * known, the other wanted.
+ */
+const vennPlan: Topic = {
+  id: 'venn_plan', match: /^خطه حل المساله استعمال شكل ڤن$/, grades: [4, 4],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const k = pick(rng, [0, 1, 2]);
+    if (k === 2) {
+      const T = int(rng, [20, 25, 30][t]!, [30, 40, 45][t]!), x = int(rng, 11, T - 5), both = int(rng, 2, Math.min(x - 1, [6, 9, 14][t]!));
+      const ans = T - x + both;
+      return {
+        eq: `${T} − ${x} + ${both}`, answer: String(ans), wrongs: posWrongs(ans, [T - x, T - x - both, x + both], 1),
+        ar: `في صف ${T} طالبًا، جميعهم يشتركون في النشاط الرياضي أو في نشاط المسرح أو في كليهما. إذا كان ${x} طالبًا يشتركون في النشاط الرياضي، و${both} منهم يشتركون في النشاطين معًا، فكم طالبًا يشترك في نشاط المسرح؟`,
+        en: `In a class of ${T} pupils, every pupil takes part in sport or drama or both. If ${x} pupils take part in sport and ${both} of them take part in both, how many pupils take part in drama?`,
+      };
+    }
+    const a = int(rng, [11, 15, 20][t]!, [30, 60, 99][t]!), b = int(rng, [11, 15, 20][t]!, [30, 60, 99][t]!);
+    const c = int(rng, 2, Math.min(a, b) - 1 > [9, 14, 30][t]! ? [9, 14, 30][t]! : Math.min(a, b) - 1);
+    const ctx = pick(rng, VENN);
+    if (k === 0) {
+      const ans = a + b - c, [ar, en] = ctx.total(a, b, c);
+      return { eq: `${a} + ${b} − ${c}`, answer: String(ans), wrongs: posWrongs(ans, [a + b, a + b + c, a + b - 2 * c], 1), ar, en };
+    }
+    const ans = a - c, [ar, en] = ctx.only(a, b, c);
+    return { eq: `${a} − ${c}`, answer: String(ans), wrongs: posWrongs(ans, [a, a + c, b - c], 1), ar, en };
+  },
+};
+
+// ─── Grade 3: the four lessons that had no offline questions ────────────────
+//
+// «الأرقام الهندية» (S1 u1_l7), «خطة حل المسألة: التخمين والتحقق» (S2 u7_l6),
+// «مهارة حل المسألة: استعمال الخطوات الأربع» (S2 u8_l6, pp. 36-37: the meaning
+// of the remainder) and «الكسور والقسمة» (S2 u9_l8: a unit fraction of a
+// two-digit number by division, no remainder). Each wrong option is a slip the
+// lesson is about.
+
+const HINDI_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+const toHindi = (n: number | string) => String(n).replace(/[0-9]/g, d => HINDI_DIGITS[Number(d)]!);
+/** Digits a pupil confuses with each: ٢/٣, ٤/٦, ٧/٨, ٠/٥, ١/٩. */
+const LOOKALIKE: Record<number, number[]> = { 0: [5, 1], 1: [9, 7], 2: [3, 6], 3: [2, 4], 4: [6, 3], 5: [0, 6], 6: [4, 2], 7: [8, 1], 8: [7, 9], 9: [1, 8] };
+/** The same digits in another order, or one digit changed: what a pupil writes when reading or copying them wrongly. */
+function digitSlips(rng: Rng, n: number): number[] {
+  const s = String(n), out: number[] = [];
+  const add = (t: string) => { const v = Number(t); if (t[0] !== '0' && v !== n && !out.includes(v)) out.push(v); };
+  add([...s].reverse().join(''));
+  for (let i = 0; i + 1 < s.length; i++) add(s.slice(0, i) + s[i + 1] + s[i] + s.slice(i + 2));
+  for (let i = 0; i < s.length; i++) for (const d of LOOKALIKE[Number(s[i])]!) add(s.slice(0, i) + d + s.slice(i + 1));
+  return shuffle(rng, out).slice(0, 3);
+}
+const g3Number = (rng: Rng, diff: DiffTier): number => {
+  const n = int(rng, [100, 1000, 1000][tier(diff)]!, [999, 4999, 9999][tier(diff)]!);
+  const s = String(n), once = [...s].some(c => c !== '0' && s.split(c).length === 2);
+  return new Set(s).size > 1 && once ? n : g3Number(rng, diff); // a repdigit has no reordering, and a place question needs a digit that appears once
+};
+
+const PLACE_G3: Array<[number, string, string]> = [[1, 'الآحاد', 'ones'], [10, 'العشرات', 'tens'], [100, 'المئات', 'hundreds'], [1000, 'الألوف', 'thousands']];
+
+/**
+ * Grade 3 «الأرقام الهندية»: read numbers up to the thousands written in the
+ * digits ٠-٩. Every question needs the Hindi digits READ, and none asks for
+ * them WRITTEN: marking folds ٧ and 7 to one value (`answersMatch` in the API,
+ * `toLatinDigits` in the app), so «اكتب 4708 بالأرقام الهندية» would mark
+ * «4708» right. Writing them is the teacher's to check.
+ */
+const hindiNumerals: Topic = {
+  id: 'hindi_numerals', match: /^الارقام الهنديه$/, grades: [3, 3],
+  make({ rng, diff }) {
+    const k = pick(rng, [0, 1, 2, 3]);
+    const n = g3Number(rng, diff);
+    if (k === 0 || k === 1) {
+      // the greatest or smallest of four numbers made of the same digits
+      const set = shuffle(rng, [n, ...digitSlips(rng, n)]);
+      const pickV = k === 0 ? Math.max(...set) : Math.min(...set);
+      const [ar, en] = k === 0 ? ['أكبر', 'greatest'] : ['أصغر', 'smallest'];
+      return {
+        eq: `${k === 0 ? 'max' : 'min'}(${set.join(', ')})`, answer: toHindi(pickV), wrongs: set.filter(x => x !== pickV).map(toHindi),
+        ar: `ما ${ar} عدد بين الأعداد الآتية: ${set.map(toHindi).join('، ')}؟`,
+        en: `Which is the ${en} of these numbers: ${set.map(toHindi).join(', ')}?`,
+      };
+    }
+    // a digit that is not zero and appears once, in a place the number has: «٤» in ١٠٤٤ would be 40 and 4 at once
+    const digitAt = (q: number) => Math.floor(n / q) % 10;
+    const count = (d: number) => PLACE_G3.filter(([q]) => q <= n && digitAt(q) === d).length;
+    const places = PLACE_G3.filter(([p]) => p <= n && digitAt(p) !== 0 && count(digitAt(p)) === 1);
+    const [p, pAr, pEn] = pick(rng, places);
+    const dig = Math.floor(n / p) % 10;
+    if (k === 2) {
+      // its value: «٧» in ٤٧٠٨ is 700; the wrong options are the digit alone and the other places' values
+      const value = dig * p;
+      const others = PLACE_G3.map(([q]) => dig * q).filter(v => v !== value);
+      return {
+        eq: `${dig} × ${p} in ${n}`, answer: toHindi(value), wrongs: wrongsFrom(toHindi(value), [dig, ...others].map(toHindi)),
+        ar: `ما قيمة الرقم ${toHindi(dig)} في العدد ${toHindi(n)}؟`,
+        en: `What is the value of the digit ${toHindi(dig)} in the number ${toHindi(n)}?`,
+      };
+    }
+    // the digit in a place: a different place's digit, or a look-alike, is the slip
+    const otherDigits = PLACE_G3.filter(([q]) => q !== p && q <= n).map(([q]) => Math.floor(n / q) % 10);
+    const cands = [...new Set([...otherDigits, ...LOOKALIKE[dig]!, ...range(0, 9)])].filter(x => x !== dig);
+    return {
+      eq: `digit at ${p} of ${n}`, answer: toHindi(dig), wrongs: cands.slice(0, 3).map(toHindi),
+      ar: `ما الرقم الذي في منزلة ${pAr} في العدد ${toHindi(n)}؟`,
+      en: `Which digit is in the ${pEn} place of ${toHindi(n)}?`,
+    };
+  },
+};
+
+/** Grade 3 «خطة حل المسألة: التخمين والتحقق»: problems on multiplication solved by guessing, checking and guessing again. */
+const guessCheck: Topic = {
+  id: 'guess_check', match: /^خطه حل المساله التخمين والتحقق$/, grades: [3, 3],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const k = pick(rng, [0, 1, 2, 3]);
+    if (k === 0) {
+      const a = int(rng, 2, [6, 8, 9][t]!), b = int(rng, a + 1, [7, 9, 10][t]! + (a >= [7, 9, 10][t]! ? 1 : 0));
+      const S = a + b, P = a * b, pair = (x: number, y: number) => `${Math.min(x, y)} و ${Math.max(x, y)}`;
+      const cands = [pair(a - 1, b + 1), pair(a + 1, b - 1), pair(1, P), pair(a, b + 1), pair(a - 1, b)]
+        .filter(s => s !== pair(a, b) && !s.startsWith('0 ') && !s.includes(' 0'));
+      return {
+        eq: `x + y = ${S}, x × y = ${P}`, answer: pair(a, b), wrongs: [...new Set(cands)].slice(0, 3),
+        ar: `عددان مجموعهما ${S} وحاصل ضربهما ${P}. ما العددان؟`,
+        en: `Two numbers add up to ${S} and multiply to ${P}. What are they?`,
+      };
+    }
+    if (k === 1) {
+      const H = int(rng, [5, 6, 8][t]!, [8, 10, 12][t]!), sheep = int(rng, 1, H - 1), L = 4 * sheep + 2 * (H - sheep);
+      return {
+        eq: `4s + 2(${H} − s) = ${L}`, answer: String(sheep), wrongs: posWrongs(sheep, [H - sheep, Math.floor(L / 4), H], 1),
+        ar: `في مزرعة دجاج وخراف، عددها معًا ${H}، وعدد أرجلها ${L}. كم خروفًا في المزرعة؟`,
+        en: `A farm has chickens and sheep, ${H} animals in all with ${L} legs. How many sheep are there?`,
+      };
+    }
+    if (k === 2) {
+      for (;;) {
+        const a = int(rng, 3, 6), b = int(rng, a + 1, 9), N = int(rng, 4, [6, 8, 10][t]!), nb = int(rng, 1, N - 1);
+        const T = a * (N - nb) + b * nb;
+        if (T < 11) continue;
+        return {
+          eq: `${a}(${N} − n) + ${b}n = ${T}`, answer: String(nb), wrongs: posWrongs(nb, [N - nb, N, Math.floor(T / b)], 1),
+          ar: `اشترت سلمى أقلامًا ثمن الواحد منها ${counted(a, 'دنانير', 'دينارًا', 'دينار')}، ودفاتر ثمن الواحد منها ${counted(b, 'دنانير', 'دينارًا', 'دينار')}، فاشترت ${counted(N, 'قطع', 'قطعةً', 'قطعة')} ودفعت ${T} دينارًا. كم دفترًا اشترت؟`,
+          en: `Salma bought pens at ${a} JD each and notebooks at ${b} JD each: ${N} items for ${T} JD. How many notebooks did she buy?`,
+        };
+      }
+    }
+    const n = int(rng, [2, 4, 6][t]!, [6, 9, 10][t]!), sq = n * n;
+    return {
+      eq: `n × n = ${sq}`, answer: String(n), wrongs: posWrongs(n, [sq % 2 === 0 ? sq / 2 : 2 * n, n + 1, n - 1], 1),
+      ar: `ما العدد الذي إذا ضُرب في نفسه كان الناتج ${sq}؟`, en: `Which number multiplied by itself makes ${sq}?`,
+    };
+  },
+};
+
+/**
+ * Grade 3 «مهارة حل المسألة: استعمال الخطوات الأربع» (S2 pp. 36-37): a
+ * division with a remainder, and what the remainder means. 56 people at
+ * tables of 6 need 10 tables (round up); with 37 JD at 4 JD each you can buy 9
+ * (round down); or the question is the remainder itself.
+ */
+const fourSteps: Topic = {
+  id: 'four_steps', match: /^مهاره حل المساله استعمال الخطوات الاربع$/, grades: [3, 3],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    let k = 0, N = 0;
+    for (;;) {
+      k = int(rng, 3, [6, 8, 9][t]!); N = int(rng, 20, [50, 80, 99][t]!);
+      if (N % k !== 0) break;
+    }
+    const q = Math.floor(N / k), r = N % k, up = q + 1;
+    const kind = pick(rng, [0, 0, 1, 1, 2]);
+    if (kind === 0) {
+      const [ar, en] = pick(rng, [
+        [`يحضر ${N} شخصًا حفلًا، وتتسع الطاولة الواحدة لـ ${k} أشخاص. ما عدد الطاولات اللازمة ليجلس الحضور جميعهم؟`, `${N} people come to a party and each table seats ${k}. How many tables are needed so everyone can sit?`],
+        [`تُباع عبوات الماء في صناديق، في كل صندوق ${k} عبوات. يحتاج أحمد إلى ${N} عبوةً. ما عدد الصناديق التي يجب أن يشتريها؟`, `Water bottles come in boxes of ${k}. Ahmad needs ${N} bottles. How many boxes must he buy?`],
+        [`تقرأ ياسمين ${k} كتب كل شهر. كم شهرًا تحتاج لقراءة ${N} كتابًا؟`, `Yasmeen reads ${k} books a month. How many months does she need to read ${N} books?`],
+      ] as const);
+      return { eq: `⌈${N} ÷ ${k}⌉`, answer: String(up), wrongs: posWrongs(up, [q, r, up + 1], 1), ar, en };
+    }
+    if (kind === 1) {
+      const [ar, en] = pick(rng, [
+        [`مع سلمى ${N} دينارًا، وثمن القصة الواحدة ${k} دنانير. ما أكبر عدد من القصص يمكنها أن تشتري؟`, `Salma has ${N} JD and one story book costs ${k} JD. What is the greatest number of books she can buy?`],
+        [`لدى خبّاز ${N} بيضةً، ويحتاج كل قالب كعك إلى ${k} بيضات. ما أكبر عدد من القوالب يمكنه أن يصنع؟`, `A baker has ${N} eggs and each cake needs ${k} eggs. What is the greatest number of cakes he can make?`],
+      ] as const);
+      return { eq: `⌊${N} ÷ ${k}⌋`, answer: String(q), wrongs: posWrongs(q, [up, r, q - 1], 1), ar, en };
+    }
+    return {
+      eq: `${N} mod ${k}`, answer: String(r), wrongs: posWrongs(r, [q, k - r, up], 1),
+      ar: `قُسّم ${N} طالبًا إلى مجموعات، في كل مجموعة ${k} طلاب. كم طالبًا يبقى دون مجموعة كاملة؟`,
+      en: `${N} pupils are put into groups of ${k}. How many pupils are left without a full group?`,
+    };
+  },
+};
+
+/** Grade 3 «الكسور والقسمة»: a unit fraction of a two-digit number, found by dividing (no remainder). */
+const fracDiv: Topic = {
+  id: 'frac_div', match: /^الكسور والقسمه$/, grades: [3, 3],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const d = int(rng, 2, [5, 8, 10][t]!);
+    const q = int(rng, Math.ceil(10 / d), Math.min(Math.floor(99 / d), [10, 12, 20][t]!));
+    const N = d * q;
+    const k = pick(rng, [0, 1, 2]);
+    if (k === 2) {
+      return {
+        eq: `${N} ÷ ${d}`, answer: `${N} ÷ ${d}`,
+        wrongs: [`${N} × ${d}`, `${d} ÷ ${N}`, d === 2 ? `${N} − ${d}` : `${N} ÷ 2`],
+        ar: `ما جملة القسمة التي نجد بها 1/${d} من العدد ${N}؟`, en: `Which division finds 1/${d} of ${N}?`,
+      };
+    }
+    const wrongs = posWrongs(q, [N * d, N - d, d], 1);
+    if (k === 0) return { eq: `${N} ÷ ${d}`, answer: String(q), wrongs, ar: `ما 1/${d} من العدد ${N}؟`, en: `What is 1/${d} of ${N}?` };
+    return {
+      eq: `${N} ÷ ${d}`, answer: String(q), wrongs,
+      ar: `لدى سلمى ${counted(N, 'أقلام', 'قلمًا', 'قلم')}، أعطت 1/${d} منها لأخيها. كم قلمًا أعطته؟`,
+      en: `Salma has ${N} pens and gave 1/${d} of them to her brother. How many pens did she give him?`,
+    };
+  },
+};
+
+// ─── Grade 2: the four problem-solving lessons ───────────────────────────────
+// «التخمين والتحقق» (S1 u3_l7) and «الحل بأكثر من خطوة» (S1 u4_l7) sit in the
+// addition and subtraction units, within 999; «البحث عن نمط» (S2 u6_l8) in the
+// multiplication unit and «اختيار العملية» (S2 u7_l8) in the division unit, on
+// the tables the book teaches (2, 3, 4, 5, 10). Grade 2 audit, 2026-11-14.
+
+/** Positive options no bigger than Grade 2's 999. */
+const g2Wrongs = (ans: number, cands: number[]) => posWrongs(ans, cands.filter(x => x <= 999), 1);
+const G2_STEPS = [2, 3, 4, 5, 10];
+const qirshG2 = (n: number) => counted(n, 'قروش', 'قرشًا', 'قرش');
+const ridersG2 = (n: number) => counted(n, 'ركاب', 'راكبًا', 'راكب');
+const pagesG2 = (n: number) => counted(n, 'صفحات', 'صفحةً', 'صفحة');
+const pensG2 = (n: number) => counted(n, 'أقلام', 'قلمًا', 'قلم');
+const applesG2 = (n: number) => counted(n, 'تفاحات', 'تفاحةً', 'تفاحة');
+const boxesG2 = (n: number) => counted(n, 'صناديق', 'صندوقًا', 'صندوق');
+const studentsG2 = (n: number) => counted(n, 'طلاب', 'طالبًا', 'طالب');
+
+/**
+ * Two numbers from their sum and difference; which two of four numbers make a
+ * total (one pair only); the number that, added to itself, makes N. Each is
+ * solved by guessing and checking the guess against both conditions.
+ */
+const guessCheckG2: Topic = {
+  id: 'guess_check_g2', match: /^خطه حل المساله التخمين والتحقق$/, grades: [2, 2],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const k = pick(rng, [0, 1, 2]);
+    if (k === 0) {
+      const a = int(rng, [10, 20, 50][t]!, [40, 99, 300][t]!), D = int(rng, 3, [10, 30, 90][t]!), b = a + D, S = a + b;
+      // each wrong pair breaks one of the two conditions
+      const pairs = [[a + 1, b - 1], [a - 1, b + 1], [a, b + 1], [a + D, b + D]].map(([x, y]) => `${x} و ${y}`);
+      return {
+        eq: `${S}, ${D}`, answer: `${a} و ${b}`, wrongs: wrongsFrom(`${a} و ${b}`, pairs, j => `${a} و ${b + 2 * Math.abs(j)}`),
+        ar: `عددان مجموعهما ${S} والفرق بينهما ${D}. ما العددان؟ (اكتب الأصغر أولًا)`,
+        en: `Two numbers add up to ${S} and differ by ${D}. What are they? (smaller first)`,
+      };
+    }
+    if (k === 1) {
+      const [lo, hi] = [[10, 50], [20, 99], [100, 450]][t]!;
+      for (;;) {
+        const xs = shuffle(rng, Array.from({ length: hi! - lo! + 1 }, (_, i) => lo! + i)).slice(0, 4);
+        const sums = new Map<number, string[]>();
+        for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) {
+          const s = xs[i]! + xs[j]!, key = [xs[i]!, xs[j]!].sort((p, q) => p - q).join(' و ');
+          sums.set(s, [...(sums.get(s) ?? []), key]);
+        }
+        const unique = [...sums].filter(([, ps]) => ps.length === 1);
+        if (unique.length < 4) continue;
+        const [T, [ans]] = pick(rng, unique) as [number, string[]];
+        const others = [...sums.values()].flat().filter(x => x !== ans);
+        return {
+          eq: `${xs.join(',')}; ${T}`, answer: ans!, wrongs: shuffle(rng, others).slice(0, 3),
+          ar: `أي عددين من الأعداد ${xs.join('، ')} مجموعهما ${T}؟ (اكتب الأصغر أولًا)`,
+          en: `Which two of the numbers ${xs.join(', ')} add up to ${T}? (smaller first)`,
+        };
+      }
+    }
+    const h = int(rng, [5, 20, 100][t]!, [50, 99, 450][t]!), N = 2 * h;
+    return {
+      eq: `x + x = ${N}`, answer: String(h), wrongs: g2Wrongs(h, [N, h + 10, h - 10, h + 1]),
+      ar: `ما العدد الذي إذا جمعناه مع نفسه كان الناتج ${N}؟`, en: `What number added to itself makes ${N}?`,
+    };
+  },
+};
+
+/**
+ * Two steps of adding and subtracting: money after a gift and a purchase,
+ * riders on a bus, pages two children read. The number a child gets by
+ * stopping after the first step is always an option.
+ */
+const multiStepG2: Topic = {
+  id: 'multi_step_g2', match: /^خطه حل المساله الحل باكثر من خطوه$/, grades: [2, 2],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const k = pick(rng, [0, 1, 2]);
+    if (k === 0) {
+      const A = int(rng, [20, 50, 150][t]!, [60, 200, 500][t]!), B = int(rng, [10, 20, 50][t]!, [30, 90, 300][t]!);
+      const C = int(rng, 11, A + B - 5), r = A + B - C;
+      return {
+        eq: `${A} + ${B} − ${C}`, answer: String(r), wrongs: g2Wrongs(r, [A + B, A + B + C, A - C, r + 10]),
+        ar: `مع ليلى ${qirshG2(A)}، أعطتها أمها ${qirshG2(B)}، ثم اشترت قصة بـ ${qirshG2(C)}. كم قرشًا بقي معها؟`,
+        en: `Layla has ${A} qirsh. Her mother gives her ${B} qirsh, then she buys a story book for ${C} qirsh. How many qirsh are left?`,
+      };
+    }
+    if (k === 1) {
+      const A = int(rng, [20, 40, 100][t]!, [50, 99, 400][t]!), B = int(rng, 11, A - 5), C = int(rng, 11, [30, 60, 300][t]!), r = A - B + C;
+      return {
+        eq: `${A} − ${B} + ${C}`, answer: String(r), wrongs: g2Wrongs(r, [A - B, A + B + C, A + C, r - 10]),
+        ar: `في حافلة ${ridersG2(A)}، نزل منهم ${ridersG2(B)} في المحطة الأولى، ثم صعد ${ridersG2(C)}. كم راكبًا في الحافلة الآن؟`,
+        en: `A bus has ${A} passengers. ${B} get off at the first stop, then ${C} get on. How many passengers are on the bus now?`,
+      };
+    }
+    const A = int(rng, [10, 20, 50][t]!, [40, 99, 300][t]!), B = int(rng, 3, [10, 30, 90][t]!), r = A + A + B;
+    return {
+      eq: `${A} + (${A} + ${B})`, answer: String(r), wrongs: g2Wrongs(r, [A + B, A + A, A + B + B, r + 10]),
+      ar: `قرأ سامي ${pagesG2(A)}، وقرأ خالد ${pagesG2(B)} أكثر منه. كم صفحةً قرأ الاثنان معًا؟`,
+      en: `Sami read ${A} pages and Khaled read ${B} pages more than him. How many pages did they read altogether?`,
+    };
+  },
+};
+
+/** Skip counting by a times-table step: the next number, a missing one, and a pattern of boxes continued. */
+const findPatternG2: Topic = {
+  id: 'find_pattern_g2', match: /^خطه حل المساله البحث عن نمط$/, grades: [2, 2],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const k = pick(rng, [0, 1, 2]);
+    if (k === 1) {
+      const s = pick(rng, [3, 4, 5, 10]), n = int(rng, 4, 10), r = s * n;
+      return {
+        eq: `${s} × ${n}`, answer: String(r), wrongs: g2Wrongs(r, [s * (n - 1), s * (n + 1), s + n, r + 1]),
+        ar: `صندوق فيه ${pensG2(s)}، وصندوقان فيهما ${pensG2(2 * s)}، و3 صناديق فيها ${pensG2(3 * s)}، ويستمر النمط. كم قلمًا في ${n} صناديق؟`,
+        en: `One box holds ${s} pens, two boxes ${2 * s}, three boxes ${3 * s}, and the pattern goes on. How many pens are in ${n} boxes?`,
+      };
+    }
+    const s = pick(rng, t === 0 ? [2, 5, 10] : G2_STEPS), start = s * int(rng, 1, [5, 10, 20][t]!);
+    const terms = Array.from({ length: 5 }, (_, i) => start + s * i);
+    const gap = k === 0 ? 4 : int(rng, 1, 3), ans = terms[gap]!;
+    const cells = terms.map((v, i) => (i === gap ? '___' : String(v)));
+    return {
+      eq: `${terms.join(',')} @${gap}`, answer: String(ans), wrongs: g2Wrongs(ans, [ans + 1, ans - 1, ans + s, ans - s]),
+      ar: `ما العدد ${k === 0 ? 'التالي' : 'الناقص'} في النمط: ${cells.join('، ')}؟`,
+      en: `What is the ${k === 0 ? 'next' : 'missing'} number in the pattern: ${cells.join(', ')}?`,
+    };
+  },
+};
+
+const OPS_G2 = ['الجمع', 'الطرح', 'الضرب', 'القسمة'] as const;
+/**
+ * One-step stories, one per operation: name the operation that solves it, or
+ * solve it. A solved story's wrong options are what the other operations give
+ * on the same two numbers — the slip the lesson is about.
+ */
+const chooseOpG2: Topic = {
+  id: 'choose_op_g2', match: /^مهاره حل المساله اختيار العمليه$/, grades: [2, 2],
+  make({ rng, diff }) {
+    const t = tier(diff);
+    const op = int(rng, 0, 3);
+    let x: number, y: number, ar: string, en: string;
+    if (op === 0) {
+      x = int(rng, 11, [40, 90, 400][t]!); y = int(rng, 11, [30, 60, 400][t]!);
+      ar = `في سلة ${applesG2(x)}، ثم وُضع فيها ${applesG2(y)}. كم تفاحةً أصبحت في السلة؟`;
+      en = `A basket has ${x} apples, then ${y} more are put in. How many apples are in the basket now?`;
+    } else if (op === 1) {
+      x = int(rng, 20, [60, 99, 800][t]!); y = int(rng, 11, x - 3);
+      ar = `في سلة ${applesG2(x)}، أُكل منها ${applesG2(y)}. كم تفاحةً بقيت في السلة؟`;
+      en = `A basket has ${x} apples and ${y} are eaten. How many apples are left?`;
+    } else if (op === 2) {
+      x = int(rng, 3, 10); y = pick(rng, [3, 4, 5, 10]);
+      ar = `في ${boxesG2(x)}، في كل صندوق ${pensG2(y)}. كم قلمًا في الصناديق كلها؟`;
+      en = `There are ${x} boxes with ${y} pens in each. How many pens are there altogether?`;
+    } else {
+      y = pick(rng, [3, 4, 5]); x = y * int(rng, 3, 10);
+      ar = `وُزّع ${pensG2(x)} بالتساوي على ${studentsG2(y)}. كم قلمًا يأخذ كل طالب؟`;
+      en = `${x} pens are shared equally among ${y} students. How many pens does each student get?`;
+    }
+    if (pick(rng, [0, 1]) === 0) {
+      return {
+        eq: `op:${ar}`, answer: OPS_G2[op]!, wrongs: OPS_G2.filter((_, i) => i !== op),
+        ar: `أي عملية نستعمل لحل المسألة الآتية: الجمع، أم الطرح، أم الضرب، أم القسمة؟ ${ar}`,
+        en: `Which operation solves this problem: addition, subtraction, multiplication or division? ${en}`,
+      };
+    }
+    const results = [x + y, x - y, x * y, x / y];
+    const r = results[op]!;
+    return {
+      eq: `${x} ${['+', '−', '×', '÷'][op]} ${y}`, answer: String(r),
+      wrongs: g2Wrongs(r, [...results.filter((v, i) => i !== op && Number.isInteger(v)), r + 1, r + 10]),
+      ar, en,
+    };
+  },
+};
+
 /** Specific titles first; the more general patterns after. */
 export const TOPICS: readonly Topic[] = [
+  ...G4_LESSON_TOPICS,
   roundDec, roundWhole, estSumDec,
   estSum('est_sum', /تقدير.*(?:مجموع|فرق)/, 'both'), estSum('est_add', /تقدير.*جمع/, 'add'), estSum('est_sub', /تقدير.*طرح/, 'sub'),
   estProd, estQuot, tensMul, tensDiv,
@@ -1861,14 +2674,21 @@ export const TOPICS: readonly Topic[] = [
   intOp('int_add', /جمع الاعداد الصحيحه/, '+'), intOp('int_sub', /طرح الاعداد الصحيحه/, '−'), intOp('int_muldiv', /ضرب الاعداد الصحيحه/, '×÷'),
   equivFrac,
   mixedOp('mixed_addsub', /(?:جمع|طرح).*الاعداد الكسريه/, ['+', '−']), mixedOp('mixed_mul', /ضرب الاعداد الكسريه/, ['×']), mixedOp('mixed_div', /قسمه الاعداد الكسريه/, ['÷']),
-  mixedImproper, fracDec, decPlace, pctConv, ratioEquiv, ratioSimplest,
+  mixedImproper, fracDec, decPlace, pctConv, pctOf, ratioEquiv, ratioSimplest,
   ratCompare, ratOp('rat_addsub', /جمع الاعداد النسبيه/, ['+', '−']), ratOp('rat_muldiv', /ضرب الاعداد النسبيه/, ['×', '÷']),
   repeating, expLaws,
+  decMeasure, simplerProblem, multiStep, vennPlan, hindiNumerals, guessCheck, fourSteps, fracDiv,
+  guessCheckG2, multiStepG2, findPatternG2, chooseOpG2,
   ...ALGEBRA_TOPICS,
   ...GEOMETRY_TOPICS,
   ...STATS_TOPICS,
   ...PROPORTION_TOPICS,
   ...EARLY_TOPICS,
+  ...G10_LESSON_TOPICS,
+  ...G10_TOPICS,
+  ...G8_TOPICS,
+  ...G7_TOPICS,
+  ...G5_TOPICS,
 ];
 
 /** The generator for a lesson title and grade, or null when none is about it. */
@@ -1895,25 +2715,40 @@ export function topicFor(title: string, grade: number): Topic | null {
  * nearly every paper, and «أعد التجهيز» could no longer find a paper that
  * avoids the last one (`quizRegenerateStems.test.ts`). A generator makes new
  * numbers on every draw, so nothing is lost here.
+ *
+ * Grades 1–4 draw more and choose by difficulty among the least-served kinds
+ * (`pickByDifficulty`, `earlyDifficulty.ts`): their generators take their
+ * numbers from the lesson's range and mostly ignored `diff`, so an easy and a
+ * hard paper drew the same questions (Grade 1–4 sweep, 2026-11-13).
  */
-export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used: Set<string>, rng: Rng = Math.random): ConcreteItem {
+export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used: Set<string>, rng: Rng = Math.random, opts: { word?: boolean } = {}): ConcreteItem {
   const served = servedFrames(used);
   let d: Draft | null = null;
   let best: Draft | null = null;
   let bestServed = Infinity;
   let fresh = 0;
-  for (let attempt = 0; attempt < 25 && fresh < FRESH_DRAWS; attempt++) {
-    d = topic.make({ rng, diff, grade });
+  const byDifficulty = choosesByDifficulty(grade) && !topic.ownsDifficulty;
+  /** Grades 1–4: every fresh draw of the least-served kinds, to choose among. */
+  let least: Draft[] = [];
+  const draws = byDifficulty ? EARLY_DRAWS : FRESH_DRAWS;
+  // Grades 1–4 go on drawing until the least-served kinds offer a choice of
+  // `EARLY_CHOICE`, so a later item of a paper is chosen by difficulty too.
+  const enough = () => fresh >= draws && (!byDifficulty || least.length >= EARLY_CHOICE);
+  for (let attempt = 0; attempt < 6 * draws && !enough(); attempt++) {
+    d = topic.make({ rng, diff, grade, ...(opts.word ? { word: true } : {}) });
     if (used.has(`stem:${d.ar}`)) continue;
     fresh += 1;
     const n = spreadScore(stemFrame(d.ar), served);
     if (n < bestServed) {
       best = d;
       bestServed = n;
+      least = [d];
+    } else if (n === bestServed && !least.some(x => x.ar === d!.ar)) {
+      least.push(d);
     }
-    if (n === 0) break;
+    if (n === 0 && !byDifficulty) break;
   }
-  d = best ?? d;
+  d = byDifficulty && least.length > 0 ? pickByDifficulty(least, diff, rng, x => x) : best ?? d;
   used.add(`stem:${d!.ar}`);
   used.add(`ask:${d!.ar}`);
   const wrongs = d!.wrongs.filter(w => w !== d!.answer).slice(0, 3);
@@ -1921,5 +2756,6 @@ export function makeTopicItem(topic: Topic, grade: number, diff: DiffTier, used:
     id: `topic-${topic.id}-${grade}-${used.size}-${int(rng, 0, 9)}`,
     family: 'topic', diff, eq: d!.eq, answer: d!.answer, wrongs,
     promptAr: d!.ar, promptEn: d!.en,
+    ...(d!.word ? { kind: 'word' as const, wordAr: d!.ar, wordEn: d!.en } : {}),
   };
 }

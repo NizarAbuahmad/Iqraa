@@ -34,6 +34,7 @@ import { Router, type Response } from "express";
 import { systemDb as db } from "@workspace/db";
 import {
   attemptAnswers,
+  attemptQuestionGrades,
   attemptResults,
   attempts,
   classMemberships,
@@ -75,6 +76,7 @@ import {
   isPastDeadline,
 } from "../modules/assessment/studentResponse.ts";
 import { gradeSubmission } from "../modules/assessment/attemptGrading.ts";
+import { feedbackItems, feedbackReady, type ReviewQuestion } from "../modules/assessment/answerReview.ts";
 import { attemptAudioKey, deleteAttemptAudio } from "../lib/attemptAudio.ts";
 import { inAudience } from "../modules/assessment/audience.ts";
 import { evaluationAudience } from "../lib/evaluationAudience.ts";
@@ -999,7 +1001,28 @@ router.post("/take/attempt/submit", async (req, res) => {
  * closed "not yet" either way — the response never distinguishes "the teacher
  * has not opted in" from "grading is still open", so a student cannot use this
  * endpoint to learn how far along marking is.
+ *
+ * The one exception is an exam the teacher put on «تغذية راجعة فورية»
+ * (`feedbackReady`): then `feedback` lists each question right or wrong — with
+ * no answer key (`feedbackItems`) — whether or not the paper is fully marked,
+ * and a question still waiting for the teacher shows as such. That is the
+ * teacher's choice for that exam, made knowing it.
  */
+async function feedbackFor(attempt: { id: string; questionSnapshot: unknown }, isAr: boolean) {
+  const [answers, grades] = await Promise.all([
+    db.select().from(attemptAnswers).where(eq(attemptAnswers.attemptId, attempt.id)),
+    db.select().from(attemptQuestionGrades).where(eq(attemptQuestionGrades.attemptId, attempt.id)),
+  ]);
+  return feedbackItems({
+    snapshot: (attempt.questionSnapshot as ReviewQuestion[]) ?? [],
+    answers,
+    grades,
+    stepsById: new Map(),
+    isAr,
+    attemptId: attempt.id,
+  });
+}
+
 router.get("/take/attempt/result", async (req, res) => {
   try {
     const attempt = await attemptForToken(req.headers.authorization);
@@ -1013,7 +1036,11 @@ router.get("/take/attempt/result", async (req, res) => {
     }
 
     const [evaluation] = await db
-      .select({ releaseResultsToStudent: evaluations.releaseResultsToStudent })
+      .select({
+        releaseResultsToStudent: evaluations.releaseResultsToStudent,
+        instantFeedback: evaluations.instantFeedback,
+        language: evaluations.language,
+      })
       .from(evaluations)
       .where(eq(evaluations.id, attempt.evaluationId))
       .limit(1);
@@ -1023,12 +1050,20 @@ router.get("/take/attempt/result", async (req, res) => {
       .where(eq(attemptResults.attemptId, attempt.id))
       .limit(1);
 
+    const feedback = feedbackReady({
+      instantFeedback: evaluation?.instantFeedback ?? false,
+      released: evaluation?.releaseResultsToStudent ?? false,
+      submitted: true,
+    })
+      ? await feedbackFor(attempt, evaluation?.language !== "en")
+      : undefined;
+
     if (!studentResultReady({ released: evaluation?.releaseResultsToStudent ?? false, result })) {
-      res.json({ ready: false });
+      res.json(feedback ? { ready: false, feedback } : { ready: false });
       return;
     }
 
-    res.json({ ready: true, result: sanitizeResultForStudent(result!) });
+    res.json({ ready: true, result: sanitizeResultForStudent(result!), ...(feedback ? { feedback } : {}) });
   } catch (err) {
     logger.error({ err }, "student result lookup failed");
     res.status(500).json({ error: "Failed to load your result" });

@@ -159,9 +159,17 @@ function renderBlock(passages: Passage[], isAr: boolean): { block: string; used:
  * as authoritative and is worse than no grounding at all.
  */
 export function groundingFor(
-  input: { unitId?: unknown; topic?: unknown; scope?: unknown },
+  input: { unitId?: unknown; topic?: unknown; scope?: unknown; lessonId?: unknown; grounding?: unknown },
   isAr: boolean,
 ): Grounding | null {
+  // The app's verdict that no lesson grounds this request: it searched the
+  // teacher's own grade and subject and found none, and its context already
+  // says «الموضوع غير موجود في المنهاج». The title match below is unscoped, so
+  // it handed «الصداقة» for a grade 5 worksheet the grade 2 Islamic book, and
+  // the prompt then said both "not in the curriculum" and "here is the book".
+  // Absent (every older client) changes nothing.
+  if (input.grounding === "none") return null;
+
   // A wide scope names its own units. Its topic is a label («الفصل الأول
   // كاملًا»), not a lesson — resolving it by title would attach some other
   // unit's book to a prompt that reads as authoritative, so there is no
@@ -178,8 +186,14 @@ export function groundingFor(
   const unitId = explicit ?? resolveUnitByTopic(topic)?.unitId ?? null;
   if (!unitId) return null;
 
+  // The lesson the teacher picked, so its own pages outrank the unit opener's.
+  // `passagesForUnit` ignores a lesson outside `unitId`, and finds it from an
+  // exact title on its own when none is sent. Not `resolveUnitByTopic`'s
+  // lessonId: on a containment match that is the first of possibly two lessons.
+  const lessonId = typeof input.lessonId === "string" && input.lessonId ? input.lessonId : undefined;
   const passages = passagesForUnit({
     unitId,
+    lessonId,
     terms: topic ? [topic] : [],
     limit: PASSAGE_LIMIT,
     quotableOnly: true,

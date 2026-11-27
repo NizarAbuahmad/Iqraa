@@ -9,8 +9,11 @@
  * Why the offline generator rather than the live model
  *   `MockAIService` is the template-and-bank generator the app already falls
  *   back to, and for a manifest that is a feature rather than a compromise: it
- *   is free, it is instant, and it is deterministic, so re-running this
- *   produces a reviewable diff instead of 33 freshly-worded sheets. Its maths
+ *   is free, it is instant, and — seeded per lesson (`seedFor`, since
+ *   2026-11-20) — deterministic, so re-running this produces a reviewable diff
+ *   instead of freshly-drawn sheets. It was not before: the generator draws with
+ *   `Math.random`, and a rebuild changed every number on every sheet, so a
+ *   sheet that had been read by hand was not the sheet that shipped. Its maths
  *   items come from the concrete bank (`lib/math-practice`) with answers
  *   computed alongside the question, not asserted afterwards.
  *
@@ -58,6 +61,10 @@ import {
   type NccdKbLesson,
 } from '@workspace/curriculum/catalogs/g10MathSem1';
 import { buildNccdSem2Catalog } from '@workspace/curriculum/catalogs/g10MathSem2';
+import { getVisibleGrades } from '@workspace/curriculum';
+import { getLessonById, getLessonsForUnit, getUnitsForSubjectGrade } from '../services/knowledgeBase.ts';
+import { unanswerableQuestions } from '../services/premadeSheetGate.ts';
+import { mathBankCovers } from '@workspace/math-practice';
 import type {
   KeyVerification,
   PremadeLevel,
@@ -81,7 +88,18 @@ const LEVELS: readonly PremadeLevel[] = ['easy', 'medium', 'hard'];
  * chemistry title. An unknown subject is refused rather than guessed.
  */
 const SUBJECT_NAME_AR: Record<string, string> = { mathematics: 'الرياضيات' };
-const GRADE_NAME_AR: Record<string, string> = { 'grade-10': 'الصف العاشر' };
+
+/**
+ * Grades this script builds for. Grade 10 enumerates its NCCD catalogs; Grades
+ * 1–9 take their lessons from the knowledge base, which is where the offline
+ * maths bank looks them up too (`mathBankCovers` covers all 450 on 2026-11-20).
+ * The grade's NAME is what the generator is handed, read from the catalog
+ * rather than typed here, so «الصف الأول» cannot drift from the app's own.
+ */
+const BUILDABLE_GRADES = new Set(Array.from({ length: 10 }, (_, i) => `grade-${i + 1}`));
+function gradeNameAr(gradeId: string): string | undefined {
+  return getVisibleGrades().find(grade => grade.id === gradeId)?.nameAr;
+}
 
 /**
  * Lessons held back because `detectMathFamily` picks the wrong branch of maths
@@ -111,6 +129,25 @@ const HELD_BACK: Record<string, string> = {
   'kbl-math-s2-nccd-u6_l1': 'تقدير ميل المنحنى detects as system_graph — serves line intersections',
   'kbl-math-s2-nccd-u7_l2': 'جمع المتجهات وطرحها detects as trig — serves sin/cos values',
   'kbl-math-s2-nccd-u8_l1': 'أشكال الانتشار detects as system_graph — serves system solving',
+
+  // Grades 1–9, from the hand review of every built sheet (2026-11-20). Held
+  // where the lesson's own skill is missing or 3+ of 10 questions belong to
+  // another lesson or grade. Each is a bank generator to fix, then `--only`.
+  'kbl-g2-math-s2-nccd-u6_l3': 'الشبكات والضرب: no grid or array in any question — the repeated-addition sheet again',
+  'kbl-g3-math-s1-nccd-u4_l7': 'الضرب في 6 و9: all ten are ×6, no ×9 at all',
+  'kbl-g3-math-s1-nccd-u4_l8': 'الضرب في 7 و8: all ten are ×7; ×8 only as 7×8',
+  'kbl-g3-math-s1-nccd-u6_l2': 'الزوايا: classifies angles by degree (13°, 134°); grade 3 has right/acute/obtuse only',
+  'kbl-g4-math-s1-nccd-u2_l3': 'ضرب الأعداد: 2 of 10 practise 3-digit × 1-digit; the rest are repeated addition and division facts',
+  'kbl-g4-math-s1-nccd-u3_l4': 'القسمة مع وجود أصفار في الناتج: no quotient has a zero in it',
+  'kbl-g4-math-s1-nccd-u5_l2': 'قياس الزوايا ورسمها: angle arithmetic, nothing measured; 2 are the grade 5 «angles on a line»',
+  'kbl-g4-math-s2-nccd-u7_l1': 'أجزاء العشرة: 5 of 10 are hundredths, the next lessons',
+  'kbl-g4-math-s2-nccd-u7_l7': 'تقريب الأعداد العشرية: 4 of 10 round thousandths, a grade 5 skill',
+  'kbl-g5-math-s1-nccd-u4_l5': 'ضرب الكسور: 4 of 10 are missing-factor items that need division of fractions (the next lesson)',
+  'kbl-g5-math-s2-nccd-u6_l7': 'ضرب الأعداد العشرية وقسمتها (by 10/100/1000): 4 are decimal × decimal, grade 6',
+  'kbl-g7-math-s1-nccd-u1_l2': 'كتابة العدد النسبي بالصورة العشرية: 7 of 10 are the u1_l1 sheet',
+  'kbl-g8-math-s2-nccd-u7_l3': 'تمييز متوازي الأضلاع: 7 of 10 give one condition and ask what makes ABCD a parallelogram',
+  'kbl-g9-math-s1-nccd-u4_l1': 'المسافة في المستوى الإحداثي: 6 of 10 are the midpoint; the objectives are distance only',
+  'kbl-g9-math-s2-nccd-u8_l3': 'المدرجات التكرارية: 8 of 10 are grouped tables — the u8_l2 sheet again',
 };
 
 /** Questions per sheet — the generator screen's middle option. */
@@ -197,21 +234,56 @@ function parseArgs(argv: string[]): Args {
 /**
  * Every Grade 10 maths lesson, both semesters.
  *
- * `order === 0` entries are the GeoGebra lab lessons — an activity to run, not
- * a lesson to set questions on — so they get no sheet. That is why this yields
- * 33 and not the grade's 36.
+ * The GeoGebra lab lessons (ids ending `_lab`) are an activity to run, not a
+ * lesson to set questions on, so they get no sheet. Matched by id, not by
+ * `order === 0`: labs are ordered where the book prints them (S2 `u8_lab` is
+ * second in its unit), and «حل معادلات خاصة» (S1 `u1_l5`) now opens unit 1.
  */
-function lessonsFor(gradeId: string, subjectId: string): NccdKbLesson[] {
-  if (!SUBJECT_NAME_AR[subjectId] || !GRADE_NAME_AR[gradeId]) {
+type SheetLesson = Pick<NccdKbLesson, 'id' | 'unitId' | 'titleAr' | 'titleEn'>;
+
+function lessonsFor(gradeId: string, subjectId: string): SheetLesson[] {
+  if (!SUBJECT_NAME_AR[subjectId] || !BUILDABLE_GRADES.has(gradeId) || !gradeNameAr(gradeId)) {
     fail(
-      `only grade-10 mathematics is published today (asked for ${gradeId}/${subjectId}). ` +
-        'Chemistry needs its question bank first.',
+      `only mathematics, grades 1–10, is built today (asked for ${gradeId}/${subjectId}). ` +
+        'Another subject needs a question bank first: the offline generator has templates, not questions, for it.',
     );
   }
-  return [...buildNccdSem1Catalog().lessons, ...buildNccdSem2Catalog().lessons].filter(
-    lesson => lesson.order !== 0,
-  );
+  const lessons: SheetLesson[] =
+    gradeId === 'grade-10'
+      ? [...buildNccdSem1Catalog().lessons, ...buildNccdSem2Catalog().lessons]
+      : getUnitsForSubjectGrade(subjectId, gradeId).flatMap(unit => getLessonsForUnit(unit.id));
+  const level = Number(gradeId.replace('grade-', ''));
+  return lessons.filter(lesson => {
+    if (lesson.id.endsWith('_lab')) return false;
+    // A lesson the bank has nothing about would be served the generic
+    // fallback, which is a sheet about some other piece of maths.
+    if (level <= 9 && !mathBankCovers(lesson.titleAr, getLessonById(lesson.id) as never, level)) {
+      console.log(`  skipped ${lesson.id} — the maths bank has no items about «${lesson.titleAr}»`);
+      return false;
+    }
+    return true;
+  });
 }
+
+/**
+ * A seeded stand-in for `Math.random`: FNV-1a over the key, then mulberry32.
+ * Not for anything secret — it only has to make a sheet reproducible.
+ */
+function seedFor(key: string): () => number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < key.length; i += 1) h = Math.imul(h ^ key.charCodeAt(i), 0x01000193);
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Draws per lesson before a sheet that keeps failing the gate is refused. */
+const MAX_DRAWS = 8;
 
 /** Fail closed: a malformed sheet must never reach the manifest. */
 function problemsWith(id: string, content: WorksheetOutput): string[] {
@@ -291,7 +363,7 @@ async function main(): Promise<void> {
   const held = lessons.filter(lesson => HELD_BACK[lesson.id]);
   lessons = lessons.filter(lesson => !HELD_BACK[lesson.id]);
   if (held.length) {
-    console.log(`held back ${held.length} lesson(s) — wrong maths family detected:`);
+    console.log(`held back ${held.length} lesson(s) — the sheet would not fit the lesson (HELD_BACK):`);
     for (const lesson of held) console.log(`  ${lesson.id}  ${HELD_BACK[lesson.id]}`);
     console.log('');
   }
@@ -309,22 +381,44 @@ async function main(): Promise<void> {
     const id = `pw-${lesson.id}-${args.level}`;
     const position = `[${index + 1}/${lessons.length}]`;
     try {
-      const content = await service.generateWorksheet({
-        grade: GRADE_NAME_AR[args.gradeId]!,
-        subject: SUBJECT_NAME_AR[args.subjectId]!,
-        topic: lesson.titleAr,
-        // The id, not just the title. Four of these 33 titles exist verbatim
-        // elsewhere in the curriculum — «جمع المتجهات وطرحها» is also a Grade
-        // 10 physics lesson — so grounding by title alone built maths sheets
-        // from another grade's or another subject's key terms.
-        lessonId: lesson.id,
-        unitId: lesson.unitId,
-        language: 'arabic',
-        difficulty: args.level,
-        numQuestions: NUM_QUESTIONS,
-        questionTypes: QUESTION_TYPES,
-        contextSource: 'curriculum',
-      } as never);
+      let drawNo = 0;
+      const draw = () => {
+        // Every random choice the generator and the bank make goes through
+        // Math.random; seeding it per lesson and per draw makes the sheet a
+        // function of (lesson, level, draw number, code) alone.
+        Math.random = seedFor(`${id}:${drawNo++}`);
+        return service.generateWorksheet({
+          grade: gradeNameAr(args.gradeId)!,
+          subject: SUBJECT_NAME_AR[args.subjectId]!,
+          topic: lesson.titleAr,
+          // The id, not just the title. Four of the 33 Grade 10 titles exist
+          // verbatim elsewhere in the curriculum — «جمع المتجهات وطرحها» is
+          // also a Grade 10 physics lesson — so grounding by title alone built
+          // maths sheets from another grade's or another subject's key terms.
+          lessonId: lesson.id,
+          unitId: lesson.unitId,
+          language: 'arabic',
+          difficulty: args.level,
+          numQuestions: NUM_QUESTIONS,
+          questionTypes: QUESTION_TYPES,
+          contextSource: 'curriculum',
+        } as never);
+      };
+
+      // Draw again while a question cannot be answered from the page
+      // (`premadeSheetGate.ts`); refuse the lesson if it never comes clean.
+      let content = await draw();
+      let draws = 1;
+      while (unanswerableQuestions(content).length && draws < MAX_DRAWS) {
+        content = await draw();
+        draws += 1;
+      }
+      const unanswerable = unanswerableQuestions(content);
+      if (unanswerable.length) {
+        problems.push(`${id}: ${MAX_DRAWS} draws, still unanswerable: ${unanswerable.join(' | ')}`);
+        console.log(`${position} ${id}  REFUSED — unanswerable from the page after ${MAX_DRAWS} draws`);
+        continue;
+      }
 
       const sheetProblems = problemsWith(id, content);
       if (sheetProblems.length) {

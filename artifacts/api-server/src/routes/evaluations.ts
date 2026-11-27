@@ -61,6 +61,7 @@ import {
 } from "../modules/assessment/mockGenerator";
 import { validateGenerated } from "../modules/assessment/validator";
 import { inPaperOrder } from "../modules/assessment/paperOrder";
+import { FIRST_GRADE_DEFAULT_TYPES, evaluationTypesForGrade } from "@workspace/exam-paper";
 import { contradictionWarning, verificationAfterEdit, verifyAnswerKeys } from "../modules/assessment/keyVerification.ts";
 import {
   assembleLivePaper,
@@ -108,7 +109,7 @@ import {
 import { extractJSON } from "../lib/generationShape.ts";
 import { groundingForObjectives } from "../lib/grounding.ts";
 import { claimGeneration, releaseBeforeResponding } from "../lib/generationClaim.ts";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { completeAi } from "../lib/aiComplete.ts";
 import { recommendationsFor } from "../modules/assessment/recommend";
 import {
   buildScanPrompt,
@@ -134,7 +135,7 @@ import {
   workedStepsPrompt,
   workedStepsSystemPrompt,
 } from "../modules/assessment/workedSteps.ts";
-import { correctAnswerText, solutionsDecision } from "../modules/assessment/answerReview.ts";
+import { correctAnswerText, instantFeedbackDecision, solutionsDecision } from "../modules/assessment/answerReview.ts";
 import { announceResultsRelease } from "../lib/resultsReleaseNotify.ts";
 import { pushWithin } from "../lib/pushWithin.ts";
 import { announceExamDate, announcePaperResults } from "../lib/familyPushEvents.ts";
@@ -354,11 +355,21 @@ router.post("/evaluations", async (req: AuthenticatedRequest, res) => {
       ? req.body.difficulty
       : "standard";
 
-    const requestedTypes: QuestionType[] = Array.isArray(req.body?.assessmentTypes)
+    const askedTypes: QuestionType[] = Array.isArray(req.body?.assessmentTypes)
       ? req.body.assessmentTypes.filter((t: QuestionType) => GENERATABLE_TYPES.includes(t))
       : [];
-    if (requestedTypes.length === 0) {
+    if (askedTypes.length === 0) {
       res.status(400).json({ error: "Select at least one assessment type" });
+      return;
+    }
+    // A Grade 1 paper is answered by choosing, matching, one word in a blank or a
+    // task the teacher watches — never written sentences (`evaluationTypesForGrade`).
+    const requestedTypes = evaluationTypesForGrade(book.gradeId, askedTypes);
+    if (requestedTypes.length === 0) {
+      res.status(400).json({
+        error: "A Grade 1 evaluation takes multiple choice, true/false, matching, fill in the blank or a practical task",
+        code: "grade1_types",
+      });
       return;
     }
 
@@ -449,7 +460,8 @@ router.post("/evaluations/from-worksheet", async (req: AuthenticatedRequest, res
       return;
     }
 
-    const converted = convertWorksheet(worksheet, language);
+    // A Grade 1 paper holds only the types a six-year-old can answer (`fromWorksheet.ts`).
+    const converted = convertWorksheet(worksheet, language, { firstGrade: book.gradeId === "grade-1" });
     if (!converted.ok) {
       res.status(400).json({ error: "Some questions have no answer in the key", missingKey: converted.missingKey });
       return;
@@ -496,13 +508,17 @@ router.post("/evaluations/from-worksheet", async (req: AuthenticatedRequest, res
           objectiveIds: [objectiveId],
           difficulty: "standard",
           targetQuestionCount: converted.questions.length,
-          assessmentTypes: [...new Set(converted.questions.map(q => q.type))],
+          // The converter already keeps a Grade 1 paper to its types; this is the backstop.
+          assessmentTypes: evaluationTypesForGrade(book.gradeId, [...new Set(converted.questions.map(q => q.type))]),
           language: book.subjectId === "english" ? "en" : language,
           levelScaleId: defaultScale.id,
           classGroupId,
           generator: "worksheet",
           generationParams: { fromWorksheet: true },
           totalMarks: total.toFixed(2),
+          // A worksheet sent to the class is practice: students see where they
+          // went wrong the moment they hand it in (the teacher can turn it off).
+          instantFeedback: true,
         })
         .returning();
       await tx.insert(evaluationQuestions).values(
@@ -567,10 +583,9 @@ router.post("/evaluations/scan-paper", scanLimiter, async (req: AuthenticatedReq
     const prompt = buildPaperScanPrompt(
       found.map(o => ({ id: o.id, label: o.descriptionAr || o.description })),
     );
-    const model = getGenerationModel();
-    const completion = await openai.chat.completions.create({
-      model,
-      max_completion_tokens: 3000,
+    const completion = await completeAi({
+      model: getGenerationModel(),
+      maxTokens: 3000,
       messages: [
         { role: "system", content: prompt.system },
         {
@@ -582,6 +597,9 @@ router.post("/evaluations/scan-paper", scanLimiter, async (req: AuthenticatedReq
         },
       ],
     });
+    // The model that answered, which an expired key on the first provider can make
+    // the other one: spend is recorded, and the response named, against it.
+    const model = completion.model;
     recordUsage(completion.usage, model, {
       kind: "quiz",
       promptVersion: "scan-paper-1",
@@ -589,7 +607,7 @@ router.post("/evaluations/scan-paper", scanLimiter, async (req: AuthenticatedReq
     });
 
     const parsed = parsePaperScanResponse(
-      extractJSON(completion.choices[0]?.message?.content ?? "{}"),
+      extractJSON(completion.text ?? "{}"),
       found.map(o => o.id),
     );
     // `saved: false` is stated in the response so a client cannot present these
@@ -817,15 +835,22 @@ router.patch("/evaluations/:id", async (req: AuthenticatedRequest, res) => {
 
 router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedRequest, res) => {
   try {
-    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
-    if (!evaluation) {
+    const stored = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!stored) {
       res.status(404).json({ error: "Evaluation not found" });
       return;
     }
-    if (evaluation.status !== "draft") {
+    if (stored.status !== "draft") {
       res.status(409).json({ error: "Only a draft can be generated into" });
       return;
     }
+    // A Grade 1 evaluation saved before its types were limited (or by an old app)
+    // is generated with the Grade 1 ones: what it kept, else choice and صح/خطأ.
+    const gradeTypes = evaluationTypesForGrade(stored.gradeId, stored.assessmentTypes);
+    const evaluation = {
+      ...stored,
+      assessmentTypes: gradeTypes.length > 0 ? gradeTypes : [...FIRST_GRADE_DEFAULT_TYPES] as QuestionType[],
+    };
 
     const { found: objectives, missing } = resolveObjectiveIds(evaluation.objectiveIds);
     if (objectives.length === 0) {
@@ -870,6 +895,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
     let generator: "mock" | "llm" = "mock";
     let modelId: string | null = null;
     const generationNotes: string[] = [];
+    const dropped = stored.assessmentTypes.filter(t => !evaluation.assessmentTypes.includes(t));
+    if (dropped.length > 0) {
+      generationNotes.push(
+        `Grade 1: generated with ${evaluation.assessmentTypes.join(", ")}; ${dropped.join(", ")} ask for written answers a Grade 1 child cannot give.`,
+      );
+    }
 
     // The exact request handed to the generator, stored on the evaluation —
     // the schema has promised this since Phase 3 and nothing ever wrote it.
@@ -977,27 +1008,29 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           ...(suppliedFor ? { supplied: suppliedFor } : {}),
         },
         async prompt => {
-          const model = getGenerationModel();
-          const completion = await openai.chat.completions.create({
-            model,
+          const completion = await completeAi({
+            model: getGenerationModel(),
             // Room for a full paper of questions with options and rubrics. A
             // truncated response parses to something plausible, which is worse
             // than an error.
             // Scaled to the paper: 30 questions with options and rubrics do not
             // fit the 8000 that suits ten, and reasoning tokens bill against it.
-            max_completion_tokens: Math.min(24000, Math.max(8000, 2000 + 700 * evaluation.targetQuestionCount)),
+            maxTokens: Math.min(24000, Math.max(8000, 2000 + 700 * evaluation.targetQuestionCount)),
             messages: [
               { role: "system", content: prompt.system },
               { role: "user", content: prompt.user },
             ],
           });
+          // The model that answered, not the one asked for: a paper written by the
+          // other provider after a dead key must not be recorded as the first's.
+          const model = completion.model;
           recordUsage(completion.usage, model, {
             kind: "quiz",
             promptVersion,
             userId: req.user!.id,
           });
           return {
-            parsed: extractJSON(completion.choices[0]?.message?.content ?? "{}"),
+            parsed: extractJSON(completion.text ?? "{}"),
             model,
           };
         },
@@ -1891,6 +1924,12 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
                 // And it is being sat again, so its answers go back out of view
                 // (`modules/assessment/answerReview.ts`).
                 showSolutionsToStudent: false,
+                // «تغذية راجعة فورية» shows a mark per question, which needs the
+                // results released (`feedbackReady`). Only on the FIRST publish:
+                // nobody has handed in yet, so there is nothing to announce. A
+                // re-publish leaves the release as the teacher last set it — results
+                // they hid on purpose must not come back because the exam reopened.
+                ...(locked.instantFeedback && !locked.publishedAt ? { releaseResultsToStudent: true } : {}),
                 updatedAt: new Date(),
                 totalMarks: total.toFixed(2),
                 shareCode: locked.shareCode ?? generateShareCode(),
@@ -2070,6 +2109,59 @@ router.post("/evaluations/:id/results-release", async (req: AuthenticatedRequest
 });
 
 /**
+ * «تغذية راجعة فورية» on or off — see `feedbackReady` in
+ * modules/assessment/answerReview.ts. Any status: a draft keeps it for
+ * publishing, which releases the results then.
+ *
+ * Turning it on for an exam already published or closed releases the results
+ * too, since a mark per question is a mark — the same conditional update and
+ * announcement as `/results-release`, so students who already handed in hear
+ * of it once. Turning it off leaves the results as they are: hiding a mark is
+ * the release button's job, and nobody who turns feedback off has asked for it.
+ */
+router.post("/evaluations/:id/instant-feedback", async (req: AuthenticatedRequest, res) => {
+  try {
+    const evaluation = await ownedEvaluation(req.params["id"] as string, req.user!.id);
+    if (!evaluation) {
+      res.status(404).json({ error: "Evaluation not found" });
+      return;
+    }
+    const decision = instantFeedbackDecision(req.body);
+    if (!decision.ok) {
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+    if (evaluation.archivedAt) {
+      res.status(409).json({ error: "This evaluation was removed from your list", code: "archived" });
+      return;
+    }
+    const live = evaluation.status === "published" || evaluation.status === "closed";
+    const [turnedOn] =
+      decision.enabled && live
+        ? await db
+            .update(evaluations)
+            .set({ instantFeedback: true, releaseResultsToStudent: true, updatedAt: new Date() })
+            .where(and(eq(evaluations.id, evaluation.id), eq(evaluations.releaseResultsToStudent, false)))
+            .returning()
+        : [];
+    const [updated] = turnedOn
+      ? [turnedOn]
+      : await db
+          .update(evaluations)
+          .set({ instantFeedback: decision.enabled, updatedAt: new Date() })
+          .where(eq(evaluations.id, evaluation.id))
+          .returning();
+    // Before answering, not after: work after `res.json` may never run on Cloud
+    // Run (CLAUDE.md, «Work after `res.json`…»). Capped and never throws.
+    if (turnedOn) await pushWithin("instant feedback released results", () => announceResultsRelease(turnedOn));
+    res.json({ evaluation: updated });
+  } catch (err) {
+    logger.error({ err }, "instant feedback toggle failed");
+    res.status(500).json({ error: "Failed to update instant feedback" });
+  }
+});
+
+/**
  * Let students review this exam's answers (or stop) — see
  * modules/assessment/answerReview.ts. A closed exam only.
  */
@@ -2119,7 +2211,7 @@ router.post("/evaluations/:id/worked-steps", aiLimiter, async (req: Authenticate
     const todo = (await liveQuestions(evaluation.id)).filter(q => needsWorkedSteps(q, isAr));
     if (todo.length > 0) assertLiveModeEnabled();
 
-    const model = getGenerationModel();
+    const askedModel = getGenerationModel();
     let missed = 0;
     // ponytail: five at a time keeps a 20-question paper near one model call's
     // latency per batch; a background job if papers grow past the request timeout.
@@ -2129,20 +2221,20 @@ router.post("/evaluations/:id/worked-steps", aiLimiter, async (req: Authenticate
           assertBudgetAvailable();
           await assertUserQuotaAvailable(req.user!.id);
           try {
-            const completion = await openai.chat.completions.create({
-              model,
-              max_completion_tokens: WORKED_STEPS_TOKENS,
+            const completion = await completeAi({
+              model: askedModel,
+              maxTokens: WORKED_STEPS_TOKENS,
               messages: [
                 { role: "system", content: workedStepsSystemPrompt(isAr) },
                 { role: "user", content: workedStepsPrompt(stepsProblemText(q)!, correctAnswerText(q, isAr)!, isAr) },
               ],
             });
-            recordUsage(completion.usage, model, {
+            recordUsage(completion.usage, completion.model, {
               kind: "solve",
               promptVersion: "worked-steps-1",
               userId: req.user!.id,
             });
-            const steps = parseWorkedSteps(extractJSON(completion.choices[0]?.message?.content ?? "{}"));
+            const steps = parseWorkedSteps(extractJSON(completion.text ?? "{}"));
             if (!steps) {
               missed++;
               return;
@@ -2537,10 +2629,9 @@ router.post(
       const roster = await scanRoster(evaluation);
 
       const prompt = buildScanPrompt(questions, { readName: true });
-      const model = getGenerationModel();
-      const completion = await openai.chat.completions.create({
-        model,
-        max_completion_tokens: 1500,
+      const completion = await completeAi({
+        model: getGenerationModel(),
+        maxTokens: 1500,
         messages: [
           { role: "system", content: prompt.system },
           {
@@ -2552,13 +2643,14 @@ router.post(
           },
         ],
       });
+      const model = completion.model;
       recordUsage(completion.usage, model, {
         kind: "quiz",
         promptVersion: "scan-class-paper-1",
         userId: req.user!.id,
       });
 
-      const raw = extractJSON(completion.choices[0]?.message?.content ?? "{}");
+      const raw = extractJSON(completion.text ?? "{}");
       const parsed = parseScanResponse(raw, questions);
       const nameRead = parseNameRead(raw);
       res.json({

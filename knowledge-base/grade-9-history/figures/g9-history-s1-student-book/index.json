@@ -146,22 +146,6 @@
       "lessonStartPage": 47
     },
     {
-      "file": "p064.png",
-      "sourceId": "g9-history-s1-student-book",
-      "pdfPage": 64,
-      "rect": [
-        361.9,
-        91.4,
-        595.3,
-        545.7
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 64
-    },
-    {
       "file": "p064b-v2.png",
       "sourceId": "g9-history-s1-student-book",
       "pdfPage": 64,

@@ -25,6 +25,7 @@
 import type { AIRequest, LessonPlanOutput } from './AIService.ts';
 import { arMinutes } from './lessonPlanTypes.ts';
 import { englishOnly } from '../englishText.ts';
+import { WRITING_LIMIT, type EarlyGrade } from './lessonPlanFirstGrade.ts';
 import {
   leftOutSentence, revisionPhrase, revisionUnits, revisionUnitsFromLessons, scopeFromKey, splitShown,
   REVISION_SHOWN_PER_UNIT, type RevisionUnit,
@@ -42,6 +43,8 @@ export type RevisionPlanInput = {
   duration: number;
   /** The teacher's own objectives, one per line — used verbatim, as on a single-lesson plan. */
   customObjectives?: string;
+  /** A Grade 1, 2 or 3 scope: six- to eight-year-olds — see `firstGradeRevision`. */
+  earlyGrade?: EarlyGrade;
 };
 
 export type RevisionPlanFields = Pick<
@@ -355,10 +358,81 @@ function materials(style: RevisionStyle, c: Ctx): string[] {
   return [c.one ? 'Textbook (the unit\'s review pages)' : 'Textbook (each unit\'s review pages)', 'Board and coloured markers', `An example card per ${part}`, `Individual review sheet with a question from each ${part}`];
 }
 
+
+// ─── Grade 1 ─────────────────────────────────────────────────────────────────
+// A Grade 1 review is six-year-olds going back over what they learned: pictures,
+// objects and saying it aloud, never a written review sheet or an exit card
+// (swept 2026-11-13: «يعمل كل طالب بمفرده على ورقة مراجعة», «بطاقة خروج», and
+// homework «اكتب الفكرة الرئيسة في جملتين»). The objectives stay, and the
+// introduction still says what the session leaves out.
+
+type FirstGradeRevision = Omit<RevisionPlanFields, 'objectives'>;
+
+/** The review's principle line: how much a child writes in it, by grade. */
+const REVIEW_PRINCIPLE_AR: Record<EarlyGrade, string> = {
+  1: 'مراجعة قصيرة محسوسة لكل طفل، لا يكتب فيها إلا حرفًا أو كلمة أو عددًا.',
+  2: 'مراجعة قصيرة محسوسة لكل طفل، لا يكتب فيها إلا كلمات أو جملة قصيرة.',
+  3: 'مراجعة قصيرة لكل طفل، يحلّ فيها أمثلة أو يكتب جملتين أو ثلاثًا على الأكثر.',
+};
+
+function firstGradeRevision(style: RevisionStyle, c: Ctx, left: string | null, grade: EarlyGrade = 1): FirstGradeRevision {
+  const limit = WRITING_LIMIT[grade];
+  // What the session leaves out is said here too, as in every review.
+  const tail = left ? ` ${left}` : '';
+  const m = c.label(c.min(0.4)), g = c.label(c.min(0.2)), ind = c.label(c.min(0.15)), t = c.label(c.min(0.1));
+  const rounds = (line: (u: RevisionUnit, i: number) => string) => c.units.map(line).join('\n');
+  const titles = c.list(c.units.map(u => c.q(u.title)));
+  if (c.isAr) {
+    const part = c.one ? 'درس من دروس الوحدة' : 'وحدة';
+    const mainActivity = style === 'inquiry'
+      ? `(${m}) – مراجعة بالاكتشاف، ${c.one ? 'جولة للوحدة' : 'جولة لكل وحدة'}:\n\n`
+        + rounds((u, i) => `${roundHead(c, u, i)}: سأضع أمام الأطفال صورًا أو بطاقات من دروس ${shownTitles(c, u)} دون أن أسمّيها، وسأسأل: «ماذا تتذكّرون؟»، ويقول كل طفل كلمة، ثم سأسمّي ما تذكّروه.`)
+      : style === 'collaborative'
+        ? `(${m}) – مراجعة في ثنائيات، بطاقة مصوّرة لكل ثنائي:\n\n`
+          + rounds((u, i) => `${roundHead(c, u, i)}: بطاقة مصوّرة من دروس ${shownTitles(c, u)}؛ طفل يُري الصورة وصاحبه يقول ما يتذكّره، ثم يتبادلان.`)
+          + '\nوبعد كل جولة سأسأل طفلًا من ثنائي مختلف سؤالًا شفويًا قصيرًا.'
+        : `(${m}) – مراجعة بالصور والأمثلة، ${c.one ? 'جولة للوحدة' : 'جولة لكل وحدة'}:\n\n`
+          + rounds((u, i) => `${roundHead(c, u, i)}: سأعرض صورة أو مثالًا محسوسًا من دروس ${shownTitles(c, u)} وأسمّيه بكلمة واضحة، ثم سأسأل سؤالًا قصيرًا يجيب عنه الأطفال معًا بصوت واحد أو بالإشارة.`);
+    return {
+      introduction: `(${c.label(c.min(0.1))}) سأبدأ بأنشودة قصيرة، ثم سأقول للأطفال إننا سنتذكّر اليوم ما تعلّمناه في ${titles}، وسأرفع صورة من كل ${part} ويقول الأطفال ما يتذكّرونه بكلمة.${tail}`,
+      materials: ['صور وبطاقات من دروس المراجعة', 'أشياء محسوسة للعدّ أو للعرض', 'كتاب الطالب', 'ألوان'],
+      mainActivity,
+      guidedPractice: `(${g}) – نفعل معًا:\n\n• سأختار من كل ${part} مثالًا واحدًا من الكتاب، ونحلّه معًا بالأشياء أو بالإشارة، والأطفال يقولون كل خطوة بصوت واحد.\n• وسأصحّح فورًا وبلطف، وأمدح المحاولة.`,
+      independentPractice: `(${ind}) – كل طفل وحده:\n\n• ${grade === 3 ? `يحلّ كل طفل في دفتره مثالًا من كل ${part} أو يكتب عنه جملتين` : grade === 2 ? `يكتب كل طفل في دفتره جملة قصيرة أو مثالًا واحدًا من كل ${part}` : `يلوّن كل طفل أو يصل أو ينسخ في كتابه مثالًا واحدًا من كل ${part}`} (${titles}).\n• وسأمرّ على كل طفل وأسأله سؤالًا شفويًا قصيرًا.`,
+      closure: `(${t}) غلق الحصة: سنلعب «صح أم خطأ» بجملة من كل ${part}، يقف الأطفال للصح ويجلسون للخطأ، ثم سأختم بأنشودة أو بجملة قصيرة عمّا راجعناه.`,
+      assessment: 'سأقيّم بالملاحظة: من أجاب في الجولات وفي «صح أم خطأ»، وسأسأل كل طفل سؤالًا شفويًا واحدًا وأسجّل في قائمة الصف من يحتاج إلى إعادة.\n' + limit.ar,
+      differentiation: 'دعم: سأُجلس من يحتاج قريبًا مني، وأعطيه صورًا وأشياء أكثر ومثالًا أسهل من كل وحدة.\nتحدٍّ: سأعطي من ينهي مبكرًا مثالًا إضافيًا، أو دور «المعلّم الصغير» في جولة.\nالمبدأ: ' + REVIEW_PRINCIPLE_AR[grade],
+      homework: `يُري الطفل أسرته مثالًا واحدًا من كل ${part} في كتابه، ويقوله لهم بصوته.`,
+    };
+  }
+  const part = c.one ? 'lesson of the unit' : 'unit';
+  const mainActivity = style === 'inquiry'
+    ? `(${m}) – Review by remembering, ${c.one ? 'one round for the unit' : 'one round per unit'}:\n\n`
+      + rounds((u, i) => `${roundHead(c, u, i)}: I will put pictures or cards from ${shownTitles(c, u)} in front of the children without naming them and ask “What do you remember?”; each child says a word, then I name what they remembered.`)
+    : style === 'collaborative'
+      ? `(${m}) – Review in pairs, one picture card per pair:\n\n`
+        + rounds((u, i) => `${roundHead(c, u, i)}: a picture card from ${shownTitles(c, u)}; one child shows the picture and the other says what they remember, then they swap.`)
+        + '\nAfter each round I will ask a child from a different pair one short spoken question.'
+      : `(${m}) – Review with pictures and examples, ${c.one ? 'one round for the unit' : 'one round per unit'}:\n\n`
+        + rounds((u, i) => `${roundHead(c, u, i)}: I will show a picture or a concrete example from ${shownTitles(c, u)} and name it clearly, then ask a short question the children answer together, aloud or by pointing.`);
+  return {
+    introduction: `(${c.label(c.min(0.1))}) I will start with a short song, then tell the children that today we remember what we learned in ${titles}, and hold up a picture from each ${part}; the children say in a word what they remember.${tail}`,
+    materials: ['Pictures and cards from the review lessons', 'Concrete objects to count or show', 'Student book', 'Crayons'],
+    mainActivity,
+    guidedPractice: `(${g}) – Together:\n\n• I will pick one textbook example from each ${part} and we work it together with objects or by pointing, the children saying each step in one voice.\n• I will correct straight away and gently, and praise the try.`,
+    independentPractice: `(${ind}) – Each child alone:\n\n• ${grade === 3 ? `Each child solves one example from each ${part} in their notebook or writes two sentences about it` : grade === 2 ? `Each child writes a short sentence or one example from each ${part} in their notebook` : `Each child colours, matches or copies in the book one example from each ${part}`} (${titles}).\n• I will go round and ask each child one short spoken question.`,
+    closure: `(${t}) Closing: we will play “true or false” with one sentence from each ${part} — children stand for true and sit for false — then I will end with a song or one short sentence about what we reviewed.`,
+    assessment: 'I will assess by watching: who answered in the rounds and in “true or false”; I will ask each child one spoken question and note on the class list who needs to go over it again.\n' + limit.en,
+    differentiation: 'Support: I will seat children who need it near me with more pictures and objects and an easier example from each unit.\nChallenge: early finishers get one more example, or the job of “little teacher” in a round.\nPrinciple: a short, concrete review for every child, with no written review sheet.',
+    homework: `The child shows the family one example from each ${part} in the book and says it aloud.`,
+  };
+}
+
 /** Every text field of a revision plan, for the units given. */
 export function buildRevisionPlan(input: RevisionPlanInput): RevisionPlanFields {
   const c = ctxFor(input);
   const style = styleOf(input.style);
+  if (input.earlyGrade) return { objectives: objectives(input, c), ...firstGradeRevision(style, c, leftOutSentence(c.units, REVISION_SHOWN_PER_UNIT, input.lang), input.earlyGrade) };
   return {
     objectives: objectives(input, c),
     materials: materials(style, c),
@@ -415,6 +489,9 @@ export function revisionPlanFromRequest(req: AIRequest): LessonPlanOutput {
   const duration = req.duration ?? 45;
   const fields = buildRevisionPlan({
     units: lang === 'en' ? englishUnits(units) : units, phrase, lang, style: req.teachingStyle ?? 'direct', duration, customObjectives: req.objectives,
+    earlyGrade: sel?.gradeId === 'grade-1' || (req.coverage?.lessons ?? []).some(l => /^kbl-g1-/.test(l.id)) ? 1
+      : sel?.gradeId === 'grade-2' || (req.coverage?.lessons ?? []).some(l => /^kbl-g2-/.test(l.id)) ? 2
+      : sel?.gradeId === 'grade-3' || (req.coverage?.lessons ?? []).some(l => /^kbl-g3-/.test(l.id)) ? 3 : undefined,
   });
   return {
     title: lang === 'ar'

@@ -321,7 +321,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نجمع x ونطرح 1: 2x = 2، إذن x = 1',
       'نعوّض في y = x + 1: y = 1 + 1 = 2',
       'نتحقق في المعادلة الثانية: −1 + 3 = 2',
-      'إذن نقطة التقاطع (1 ، 2)',
+      'إذن نقطة التقاطع (1, 2)',
     ],
     en: [
       'At the intersection y is the same in both equations, so set them equal: x + 1 = −x + 3',
@@ -337,7 +337,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نضيف x إلى الطرفين: 3x = 6، إذن x = 2',
       'نعوّض في y = 2x: y = 2 × 2 = 4',
       'نتحقق في المعادلة الثانية: −2 + 6 = 4',
-      'إذن نقطة التقاطع (2 ، 4)',
+      'إذن نقطة التقاطع (2, 4)',
     ],
     en: [
       'Set the two values of y equal: 2x = −x + 6',
@@ -354,7 +354,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نحلّل: (x − 2)(x + 1) = 0',
       'كل عامل يساوي صفراً: x = 2 أو x = −1',
       'نجد y من y = x + 2: عندما x = −1 فإن y = 1، وعندما x = 2 فإن y = 4',
-      'إذن (−1 ، 1) و (2 ، 4)، أي نقطتا تقاطع',
+      'إذن (−1, 1) و (2, 4)، أي نقطتا تقاطع',
     ],
     en: [
       'Set the two values of y equal: x² = x + 2',
@@ -371,7 +371,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نحلّل فرق مربعين: (x − 2)(x + 2) = 0',
       'كل عامل يساوي صفراً: x = 2 أو x = −2',
       'وفي الحالتين y = 0 لأنهما على المحور السيني',
-      'إذن (−2 ، 0) و (2 ، 0)',
+      'إذن (−2, 0) و (2, 0)',
     ],
     en: [
       'On the x-axis y = 0, so substitute into the curve: x² − 4 = 0',
@@ -388,7 +388,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نحلّل: (x − 3)(x + 1) = 0',
       'كل عامل يساوي صفراً: x = 3 أو x = −1',
       'نجد y من y = 2x + 2: عندما x = −1 فإن y = 0، وعندما x = 3 فإن y = 8',
-      'إذن (−1 ، 0) و (3 ، 8)',
+      'إذن (−1, 0) و (3, 8)',
     ],
     en: [
       'Set the two values of y equal: x² − 1 = 2x + 2',
@@ -406,7 +406,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نخرج العامل المشترك x ولا نقسم عليه كي لا نفقد الحل x = 0: x(x − 3) = 0',
       'كل عامل يساوي صفراً: x = 0 أو x = 3',
       'نجد y من y = x: عندما x = 0 فإن y = 0، وعندما x = 3 فإن y = 3',
-      'إذن (0 ، 0) و (3 ، 3)',
+      'إذن (0, 0) و (3, 3)',
     ],
     en: [
       'Set the two values of y equal: x² − 2x = x',
@@ -423,7 +423,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نجمع x² ونطرح 1: 2x² = 2، إذن x² = 1',
       'نأخذ الجذر التربيعي مع الإشارتين: x = 1 أو x = −1',
       'نجد y من y = x² + 1: في الحالتين y = 1 + 1 = 2',
-      'إذن (−1 ، 2) و (1 ، 2)',
+      'إذن (−1, 2) و (1, 2)',
     ],
     en: [
       'Set the two values of y equal: x² + 1 = −x² + 3',
@@ -458,7 +458,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نخرج العامل المشترك x ولا نقسم عليه كي لا نفقد الحل x = 0: x(x − 1) = 0',
       'كل عامل يساوي صفراً: x = 0 أو x = 1',
       'نجد y من y = x: عندما x = 0 فإن y = 0، وعندما x = 1 فإن y = 1',
-      'إذن (0 ، 0) و (1 ، 1)',
+      'إذن (0, 0) و (1, 1)',
     ],
     en: [
       'Substitute y = x into the second equation: x = x²',
@@ -475,7 +475,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نضيف 2 إلى الطرفين: x² = 4',
       'نأخذ الجذر التربيعي مع الإشارتين: x = 2 أو x = −2',
       'قيمة y ثابتة في الحالتين: y = 2',
-      'إذن (−2 ، 2) و (2 ، 2)',
+      'إذن (−2, 2) و (2, 2)',
     ],
     en: [
       'Substitute y = 2 into the second equation: 2 = x² − 2',
@@ -492,7 +492,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نحلّل: (x − 1)(x − 3) = 0',
       'كل عامل يساوي صفراً: x = 1 أو x = 3',
       'نجد y من y = x + 1: عندما x = 1 فإن y = 2، وعندما x = 3 فإن y = 4',
-      'إذن (1 ، 2) و (3 ، 4)',
+      'إذن (1, 2) و (3, 4)',
     ],
     en: [
       'Set the two values of y equal: x + 1 = x² − 3x + 4',
@@ -509,7 +509,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نضيف x إلى الطرفين: 4 = x²',
       'نأخذ الجذر التربيعي مع الإشارتين: x = 2 أو x = −2',
       'نجد y من y = −x + 4: عندما x = 2 فإن y = 2، وعندما x = −2 فإن y = 6',
-      'إذن (−2 ، 6) و (2 ، 2)',
+      'إذن (−2, 6) و (2, 2)',
     ],
     en: [
       'Set the two values of y equal: −x + 4 = x² − x',
@@ -526,7 +526,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نخرج العامل المشترك x ولا نقسم عليه كي لا نفقد الحل x = 0: x(x − 2) = 0',
       'كل عامل يساوي صفراً: x = 0 أو x = 2',
       'نجد y من y = 3x − 1: عندما x = 0 فإن y = −1، وعندما x = 2 فإن y = 5',
-      'إذن (0 ، −1) و (2 ، 5)',
+      'إذن (0, −1) و (2, 5)',
     ],
     en: [
       'Set the two values of y equal: 3x − 1 = x² + x − 1',
@@ -544,7 +544,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نحلّل: (x + 3)(x − 2) = 0',
       'كل عامل يساوي صفراً: x = 2 أو x = −3',
       'نجد y من y = x² − 1: عندما x = 2 فإن y = 3، وعندما x = −3 فإن y = 8',
-      'إذن (2 ، 3) و (−3 ، 8)',
+      'إذن (2, 3) و (−3, 8)',
     ],
     en: [
       'From x + y = 5 we can write y = 5 − x; or substitute y = x² − 1 directly: x + (x² − 1) = 5',
@@ -560,7 +560,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نساوي قيمتي y: x² = 4',
       'نأخذ الجذر التربيعي مع الإشارتين: x = 2 أو x = −2',
       'قيمة y ثابتة في الحالتين: y = 4',
-      'إذن (−2 ، 4) و (2 ، 4)',
+      'إذن (−2, 4) و (2, 4)',
     ],
     en: [
       'Set the two values of y equal: x² = 4',
@@ -575,7 +575,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نجمع x² ونضيف 4 إلى الطرفين: 2x² = 8، إذن x² = 4',
       'نأخذ الجذر التربيعي مع الإشارتين: x = 2 أو x = −2',
       'نجد y من y = x² − 4: في الحالتين y = 4 − 4 = 0',
-      'إذن (−2 ، 0) و (2 ، 0)',
+      'إذن (−2, 0) و (2, 0)',
     ],
     en: [
       'Set the two values of y equal: x² − 4 = −x² + 4',
@@ -591,7 +591,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نطرح x² ونضيف 3 إلى الطرفين: 4 = x²',
       'نأخذ الجذر التربيعي مع الإشارتين: x = 2 أو x = −2',
       'نجد y من y = x² + 1: في الحالتين y = 4 + 1 = 5',
-      'إذن (−2 ، 5) و (2 ، 5)',
+      'إذن (−2, 5) و (2, 5)',
     ],
     en: [
       'Set the two values of y equal: x² + 1 = 2x² − 3',
@@ -603,7 +603,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
   },
   'qq-v1': {
     ar: [
-      'نعوّض النقطة (2 ، 4) في المعادلة الأولى y = x²: 4 = 2² = 4، تتحقق',
+      'نعوّض النقطة (2, 4) في المعادلة الأولى y = x²: 4 = 2² = 4، تتحقق',
       'نعوّضها في المعادلة الثانية y = x + 2: 4 = 2 + 2 = 4، تتحقق',
       'إذن: نعم، لأنها تحقق المعادلتين',
     ],
@@ -615,7 +615,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
   },
   'qq-v2': {
     ar: [
-      'نعوّض النقطة (1 ، 0) في المعادلة الأولى y = x² − 1: 0 = 1² − 1 = 0، تتحقق',
+      'نعوّض النقطة (1, 0) في المعادلة الأولى y = x² − 1: 0 = 1² − 1 = 0، تتحقق',
       'نعوّضها في المعادلة الثانية y = −x² + 7: −1² + 7 = 6 ≠ 0، لا تتحقق',
       'إذن: لا، لأنها لا تحقق المعادلة الثانية',
     ],
@@ -627,7 +627,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
   },
   'qq-v3': {
     ar: [
-      'نعوّض النقطة (3 ، 6) في المعادلة الأولى y = x² − x: 3² − 3 = 6، تتحقق',
+      'نعوّض النقطة (3, 6) في المعادلة الأولى y = x² − x: 3² − 3 = 6، تتحقق',
       'نعوّضها في المعادلة الثانية y = 2x² − 4x: 2 × 3² − 4 × 3 = 18 − 12 = 6، تتحقق',
       'إذن: نعم، لأنها تحقق المعادلتين',
     ],
@@ -670,7 +670,7 @@ export const MATH_A_STEPS: Record<string, SolutionSteps> = {
       'نقسم على 2: x² − x − 2 = 0',
       'نحلّل: (x − 2)(x + 1) = 0، فـ x = 2 أو x = −1',
       'نجد y من y = −x² + 4: عندما x = −1 فإن y = 3، وعندما x = 2 فإن y = 0',
-      'إذن (−1 ، 3) و (2 ، 0)',
+      'إذن (−1, 3) و (2, 0)',
     ],
     en: [
       'Set the two values of y equal: x² − 2x = −x² + 4',

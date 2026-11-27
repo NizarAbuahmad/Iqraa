@@ -19,6 +19,7 @@ import { goBack } from '@/services/navigation';
 import { BackButton } from '@/components/ui/BackButton';
 import { artifactText } from '@/services/artifactText';
 import { readableOn } from '@/services/readableColor';
+import { TYPE } from '@/constants/theme';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['system_admin'];
@@ -34,6 +35,8 @@ type Report = {
   artifactRetiredAt: string | null;
   reporterId: string;
   reporterName: string;
+  /** What the reporter said was wrong. Empty when they sent none (and for every report before 2026-11-11). */
+  reason?: string;
   content?: unknown;
   /** Readable kind / lesson / grade·subject, from the API's artifactReportLabel. */
   label?: { kindAr: string; kindEn: string; lessonAr: string; lessonEn: string; contextAr: string; contextEn: string };
@@ -231,6 +234,20 @@ function ReportCard({
         {ar ? 'أبلغ عنه: ' : 'Reported by '}{report.reporterName}
         {' · '}{new Date(report.createdAt).toLocaleString()}
       </Text>
+
+      {report.reason ? (
+        <View style={{ marginTop: 10, padding: 12, borderRadius: colors.radius, backgroundColor: colors.background }}>
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', fontSize: TYPE.caption, textAlign: align }}>
+            {ar ? 'سبب البلاغ' : 'Reason given'}
+          </Text>
+          <Text
+            selectable
+            style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 23, marginTop: 4, textAlign: align }}
+          >
+            {report.reason}
+          </Text>
+        </View>
+      ) : null}
 
       <View style={[styles.badges, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Badge text={statusLabel(report.status, ar)} color={open ? colors.warning : colors.mutedForeground} colors={colors} />

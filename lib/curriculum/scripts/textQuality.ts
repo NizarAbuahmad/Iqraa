@@ -140,6 +140,39 @@ export const WORD_TRANSPOSITION_LIMIT = 0.5;
 export const MIN_ARABIC_WORDS_TO_JUDGE = 4_000;
 
 /**
+ * Above this share of word-initial ة, the text is in visual order.
+ *
+ * Some NCCD books store each line as it is drawn, right to left, so pdf-parse
+ * hands back every word backwards: «ةَيِبَرَعْلِ ا ةَرَزيجْلُ ا هْبِشْ» for «شبه
+ * الجزيرة العربية». ة ends a word and never begins one, so of the words that
+ * carry it at one edge, reversed text has it at the front. Measured over the
+ * 178 extractions with real Arabic (2026-11-13): the eleven fully reversed books
+ * (social, vocational and art student books, Grades 4-6) score 0.76-0.87, the
+ * partly reversed ones 0.45-0.64, clean ones 0.1-0.3 (stray splits at ligatures).
+ * 0.5 — more words begin with ة than end with it — is a line no real Arabic
+ * crosses; it catches the eleven and two partly reversed books (Grade 6 PE,
+ * Grade 5 vocational S2). Partly reversed books under it still pass.
+ */
+export const REVERSED_WORD_LIMIT = 0.5;
+
+/** Diacritics, superscript alef and tatweel: dropped before reading a word's edges. */
+const EDGE_MARKS = /[ً-ْٰـ]/g;
+
+/**
+ * Of the Arabic words that start or end with ة, the share that start with it,
+ * or `null` with fewer than 100 such words to judge.
+ */
+export function reversedWordRate(text: string): number | null {
+  const words = text.replace(EDGE_MARKS, '').match(/[ء-ي]{2,}/g) ?? [];
+  let start = 0, end = 0;
+  for (const w of words) {
+    if (w.startsWith('ة')) start++;
+    else if (w.endsWith('ة')) end++;
+  }
+  return start + end < 100 ? null : start / (start + end);
+}
+
+/**
  * Whitespace tokens carrying base-block Arabic, tashkeel stripped as above.
  *
  * Its own un-flagged regex rather than `BASIC_ARABIC_RE`: that one carries `g`
@@ -193,7 +226,7 @@ export function englishFunctionWordShare(text: string): number | null {
 }
 
 /**
- * Whichever of the six quality gates the text fails, or `null` when it
+ * Whichever of the seven quality gates the text fails, or `null` when it
  * passes all of them. Shared between `extract-text.ts`'s pdf-parse attempt
  * and its OCR fallback so both are held to the same bar — OCR output that
  * happens to be garbage gets rejected exactly like a broken font cmap would
@@ -234,6 +267,14 @@ export function rejectReason(allText: string): string | null {
   const basicArabic = (allText.match(BASIC_ARABIC_RE) ?? []).length;
   if (presentationForms > basicArabic) {
     return 'Arabic in reversed presentation-form glyphs, not the base Arabic block — unusable without un-shaping';
+  }
+  // Base-block Arabic, every word backwards: the line was stored in visual
+  // order. Passed every gate here until 2026-11-13, when the Grade 6 social
+  // studies and vocational books (ingested 2026-09-15) were found to ground
+  // nothing — no title can match text spelled backwards.
+  const reversed = reversedWordRate(allText);
+  if (reversed !== null && reversed > REVERSED_WORD_LIMIT) {
+    return `Arabic stored in visual order, each word spelled backwards (${(reversed * 100).toFixed(0)}% of the words with ة begin with it) — not quotable`;
   }
   // Subtler than the two checks above, and it slips past both: the text is
   // real base-block Arabic with no control characters, only with the

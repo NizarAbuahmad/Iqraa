@@ -31,6 +31,8 @@ import { goBack } from '@/services/navigation';
 import { readableOn } from '@/services/readableColor';
 import { palette } from '@/constants/colors';
 import { BackButton } from '@/components/ui/BackButton';
+import { SourceCredit } from '@/components/ui/SourceCredit';
+import { IQRA_CHAT_ENABLED } from '@/services/features';
 
 const BLOOMS_COLORS: Record<string, string> = {
   Remember: '#6366F1',
@@ -191,6 +193,7 @@ export default function LessonDetailScreen() {
               {prepOpen ? t('prepInlineHide') : t('generateAILesson')}
             </Text>
           </Pressable>
+          {IQRA_CHAT_ENABLED ? (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -212,6 +215,7 @@ export default function LessonDetailScreen() {
               {t('askIqra')}
             </Text>
           </Pressable>
+          ) : null}
           {/* The lesson's pages of the student book, to project with the pen. */}
           {hasBookPages ? (
             <Pressable
@@ -380,6 +384,8 @@ export default function LessonDetailScreen() {
             );
           })}
         </Section>
+
+        <SourceCredit />
       </View>
     </ScrollView>
   );

@@ -73,7 +73,7 @@ function chain(clause: string, x: number): boolean {
   return ops.every((o, i) => cmp(vals[i]!, o, vals[i + 1]!));
 }
 const inInterval = (s: string, x: number) => {
-  const m = s.match(/^([([])(.+?) ، (.+?)([)\]])$/)!;
+  const m = s.match(/^([([])(.+?), (.+?)([)\]])$/)!;
   const lo = m[2] === '−∞' ? -Infinity : num(m[2]!), hi = m[3] === '∞' ? Infinity : num(m[3]!);
   return (m[1] === '(' ? x > lo : x >= lo) && (m[4] === ')' ? x < hi : x <= hi);
 };
@@ -177,6 +177,16 @@ describe('algebra generators: answers', () => {
       assert.match(item.eq, /^x² [+−] \d*x [+−] \d+$/, item.eq);
       assert.ok(!item.wrongs.some(w => /[+−] 0\)/.test(w)), item.wrongs.join(' | '));
     }
+    // A special product is factored completely: no bracket keeps a common
+    // factor. At the hard tier `m` and `a` were drawn apart, so m = a = 3 keyed
+    // «9x² + 18x + 9» as «(3x + 3)²», not 9(x + 1)² (hand review, 2026-11-20).
+    for (const item of draws('factor_special', 600).filter(i => /^حلّل/.test(stem(i)))) {
+      for (const [, k, c] of item.answer.matchAll(/\((\d*)x [+−] (\d+)\)/g)) {
+        const kk = Number(k || 1), cc = Number(c);
+        const g = [kk, cc].reduce((x, y) => { while (y) [x, y] = [y, x % y]; return x; });
+        assert.equal(g, 1, `${item.eq} → ${item.answer}: a bracket still has a common factor`);
+      }
+    }
     // the GCF really is the greatest
     for (const item of draws('factor_gcf').filter(factoring)) {
       const g = Number(item.answer.match(/^(\d+)/)![1]);
@@ -227,7 +237,7 @@ describe('algebra generators: answers', () => {
         const eqs = item.eq.split(' ، ');
         assert.equal(eqs.length, 2);
         const sat = (p: string) => {
-          const [px, py] = p.slice(1, -1).split(' ، ').map(num);
+          const [px, py] = p.slice(1, -1).split(', ').map(num);
           return eqs.every(e => { const [l, r] = e.split(' = '); return same(fn(l!)(px!, py!), fn(r!)(px!, py!)); });
         };
         assert.ok(sat(item.answer), `${id}: ${item.eq} → ${item.answer}`);
@@ -238,20 +248,20 @@ describe('algebra generators: answers', () => {
 
   it('lines', () => {
     for (const item of draws('line_slope', 300).filter(i => has(stem(i), 'أوجد ميل'))) {
-      const [[x1, y1], [x2, y2]] = [...item.eq.matchAll(/\((−?\d+) ، (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)]) as [number, number][];
+      const [[x1, y1], [x2, y2]] = [...item.eq.matchAll(/\((−?\d+), (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)]) as [number, number][];
       const v = (s: string) => (s.includes('/') ? num(s.split('/')[0]!) / num(s.split('/')[1]!) : num(s));
       assert.ok(same(v(item.answer), (y2! - y1!) / (x2! - x1!)), item.eq);
       for (const w of item.wrongs) assert.ok(!same(v(w), (y2! - y1!) / (x2! - x1!)), `${w} is also the slope`);
     }
     const onLine = (eq: string, x: number, y: number) => { const [l, r] = eq.split(' = '); return same(fn(l!)(x, y), fn(r!)(x, y)); };
     for (const item of draws('line_slope_int', 300)) {
-      const pts = [...item.promptAr!.matchAll(/\((−?\d+) ، (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)]) as [number, number][];
+      const pts = [...item.promptAr!.matchAll(/\((−?\d+), (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)]) as [number, number][];
       if (pts.length === 2) assert.ok(pts.every(([x, y]) => onLine(item.answer, x, y!)), `${item.answer} misses ${pts}`);
       else if (has(stem(item), 'ميله')) { const [, m, b] = item.promptAr!.match(/ميله (−?\d+) .* عند (−?\d+)/)!; assert.ok(onLine(item.answer, 0, num(b!)) && onLine(item.answer, 1, num(b!) + num(m!)), item.promptAr); }
     }
     for (const item of draws('line_point_slope', 300).filter(i => has(stem(i), 'ميله'))) {
       const m = num(item.promptAr!.match(/ميله (−?\d+)/)![1]!);
-      const [x1, y1] = item.promptAr!.match(/\((−?\d+) ، (−?\d+)\)/)!.slice(1).map(num) as [number, number];
+      const [x1, y1] = item.promptAr!.match(/\((−?\d+), (−?\d+)\)/)!.slice(1).map(num) as [number, number];
       assert.ok(onLine(item.answer, x1, y1) && onLine(item.answer, x1 + 1, y1 + m) && !onLine(item.answer, x1 + 1, y1), item.answer);
       for (const w of item.wrongs) assert.ok(!(onLine(w, x1, y1) && onLine(w, x1 + 1, y1 + m)), `${w} is also the line`);
     }
@@ -262,7 +272,7 @@ describe('algebra generators: answers', () => {
         assert.ok(same(v * m, -1), `${item.eq}: ${item.answer}`);
       } else if (item.promptAr!.includes('ما ميل')) assert.equal(num(item.answer), m);
       else {
-        const [x1, y1] = item.promptAr!.match(/\((−?\d+) ، (−?\d+)\)/)!.slice(1).map(num) as [number, number];
+        const [x1, y1] = item.promptAr!.match(/\((−?\d+), (−?\d+)\)/)!.slice(1).map(num) as [number, number];
         assert.ok(onLine(item.answer, x1, y1) && onLine(item.answer, x1 + 1, y1 + m), item.answer);
       }
     }
@@ -330,7 +340,7 @@ describe('algebra generators: answers', () => {
     }
     for (const item of draws('quad_vertex', 300).filter(i => has(stem(i), 'ما رأس'))) {
       const f = fn(item.eq.slice(4));
-      const [h, k] = item.answer.slice(1, -1).split(' ، ').map(num) as [number, number];
+      const [h, k] = item.answer.slice(1, -1).split(', ').map(num) as [number, number];
       assert.ok(same(f(h), k), `${item.eq} → ${item.answer}`);
       // a vertex is an extremum: the value one step either way is on the same side
       assert.ok((f(h + 1) - k) * (f(h - 1) - k) > 0 && same(f(h + 1), f(h - 1)), item.eq);
@@ -393,8 +403,8 @@ const sgn = (v: number) => (v < 0 ? `−${-v}` : String(v));
 const setOf = (xs: number[]) => `{${[...new Set(xs)].sort((a, b) => a - b).map(sgn).join(' ، ')}}`;
 const gcdN = (a: number, b: number): number => (b ? gcdN(b, a % b) : Math.abs(a));
 const rootVal = (s: string) => (s.includes('/') ? num(s.split('/')[0]!) / num(s.split('/')[1]!) : num(s));
-const pairsIn = (s: string) => [...s.matchAll(/\((−?\d+) ، (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)] as [number, number]);
-const pairStrs = (s: string) => [...s.matchAll(/\(−?\d+ ، −?\d+\)/g)].map(m => m[0]);
+const pairsIn = (s: string) => [...s.matchAll(/\((−?\d+), (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)] as [number, number]);
+const pairStrs = (s: string) => [...s.matchAll(/\(−?\d+, −?\d+\)/g)].map(m => m[0]);
 const unitsOf = (s: string) => (s === 'وحدة واحدة' ? 1 : s === 'وحدتين' ? 2 : Number(s.split(' ')[0]));
 const vertexOf = (f: string): [number, number] => { const [, b, a] = quad(f); const h = -b / (2 * a); return [h, fn(f)(h)]; };
 const satisfies = (eq: string, x: number, y = 0) => { const [l, r] = eq.split(' = '); return same(fn(l!)(x, y), fn(r!)(x, y)); };
@@ -430,7 +440,12 @@ describe('algebra generators: kinds added 2026-10-16', () => {
           assert.ok([3, 7.5, 13].every(v => same(inX(item.answer)(v), want(v))), `${p} → ${item.answer}`);
           for (const w of item.wrongs) assert.ok(![3, 7.5, 13].every(v => same(inX(w)(v), want(v))), `${w} also says ${p}`);
         } else if (k === 'numeric') assert.equal(Number(item.answer), fn(p.split('العددي ')[1]!.replace(/\.$/, ''))(0), p);
-        else if (k === 'shopper') { const [a, b, n] = nums(p); assert.equal(Number(item.answer), a! * n! + b!, p); }
+        else if (k === 'shopper') {
+          // two books are «كتابين», never «2 من الكتب» (2026-11-14)
+          assert.ok(!/ \d+ من الكتب/.test(p), `the count does not agree: ${p}`);
+          const [a, b, n = has(p, 'كتابين') ? 2 : NaN] = nums(p);
+          assert.equal(Number(item.answer), a! * n! + b!, p);
+        }
       }
       assert.equal(kinds.size, id === 'expr_g4' ? 5 : 3, `${id}: ${[...kinds]}`);
     }
@@ -680,7 +695,7 @@ describe('algebra generators: kinds added 2026-10-16', () => {
     kinds = new Set();
     for (const item of draws('intervals', 300)) {
       const p = stem(item);
-      const k = kindOf(p, { toInterval: /على صورة فترة/, toInequality: /^اكتب الفترة/, roster: /بطريقة سرد/, type: /^ما نوع الفترة/, builder: /الصفة المميزة/ });
+      const k = kindOf(p, { toInterval: /على صورة فترة/, toInequality: /^اكتب الفترة/, roster: /بطريقة سرد/, type: /^حدّد نوع المجموعة/, builder: /الصفة المميزة/ });
       kinds.add(k);
       if (k === 'toInequality') {
         const iv = p.match(/الفترة (.+) على صورة/)![1]!;
@@ -727,7 +742,7 @@ describe('algebra generators: kinds added 2026-10-16', () => {
       if (k === 'rate') { const [h1, t1, h2, t2] = nums(p); assert.equal(num(item.answer), (h2! - h1!) / (t2! - t1!), p); }
       else if (k === 'missing') {
         const [[x1, y1]] = pairsIn(p) as [[number, number]];
-        const x2 = num(p.match(/\((−?\d+) ، k\)/)![1]!), m = num(p.match(/يساوي (−?\d+)/)![1]!);
+        const x2 = num(p.match(/\((−?\d+), k\)/)![1]!), m = num(p.match(/يساوي (−?\d+)/)![1]!);
         assert.equal(num(item.answer), y1 + m * (x2 - x1), p);
       }
     }
@@ -1102,14 +1117,32 @@ describe('algebra generators: kinds added for thin lessons', () => {
     assert.equal(kinds.size, 2, [...kinds].join());
   });
 
-  it('Grade 9 sets and intervals: the type of an interval, a solution set in set-builder form', () => {
+  // The book's «أنواع المجموعات» are empty, singleton, finite and infinite (student book S1 p.10; its
+  // exercise: «أحدد ما إذا كانت خالية، أم مفردة، أم منتهية، أم غير منتهية»). The kind used to ask
+  // «ما نوع الفترة» — closed, open, half-open — terms the book never uses for an interval (found
+  // 2026-11-14, Grade 9 review).
+  it('Grade 9 sets and intervals: the type of a set, a solution set in set-builder form', () => {
     const kinds = new Set<string>();
+    const setTypes = new Set<string>();
+    const num = (s: string) => Number(s.replace('−', '-'));
     for (const item of draws('intervals', 300)) {
       const p = stem(item);
-      if (has(p, 'ما نوع الفترة')) {
+      assert.ok(!has(p, 'ما نوع الفترة'), p);
+      if (has(p, 'حدّد نوع المجموعة')) {
         kinds.add('type');
-        const [, l, r] = p.match(/([[(])−?\d+ ، −?\d+([\])])؟$/)!;
-        assert.equal(item.answer, l === '[' && r === ']' ? 'فترة مغلقة' : l === '(' && r === ')' ? 'فترة مفتوحة' : 'فترة نصف مفتوحة', p);
+        const body = p.match(/\{x \| x ∈ Z، ([^}]+)\}/)![1]!;
+        const two = body.match(/^(−?\d+) (<|≤) x (<|≤) (−?\d+)$/);
+        let want: string;
+        if (two) {
+          const lo = num(two[1]!) + (two[2] === '<' ? 1 : 0), hi = num(two[4]!) - (two[3] === '<' ? 1 : 0);
+          const n = Math.max(0, hi - lo + 1);
+          want = n === 0 ? 'خالية' : n === 1 ? 'مفردة' : 'منتهية';
+        } else {
+          assert.match(body, /^x (<|≤|>|≥) −?\d+$/, p);
+          want = 'غير منتهية';
+        }
+        assert.equal(item.answer, want, p);
+        setTypes.add(want);
       } else if (has(p, 'الصفة المميزة')) {
         // the set {x | x o b} must hold exactly where the printed inequality holds
         kinds.add('builder');
@@ -1120,6 +1153,7 @@ describe('algebra generators: kinds added for thin lessons', () => {
       }
     }
     assert.equal(kinds.size, 2, [...kinds].join());
+    assert.equal(setTypes.size, 4, [...setTypes].join());
   });
 });
 
@@ -1128,7 +1162,7 @@ describe('algebra generators: kinds added for thin lessons', () => {
 describe('algebra routing', () => {
   const cases: Array<[string, number, string | null]> = [
     ['المقادير والمتغيرات', 4, 'expr_g4'], ['معادلات الجمع والطرح', 5, 'eq_add_sub'], ['معادلات الضرب والقسمة', 5, 'eq_mul_div'],
-    ['المعادلات', 6, 'eq_mixed'], ['الخصائص الجبرية', 6, 'distribute'], ['المتتاليات', 7, 'seq_basic'], ['المتتاليات', 10, null],
+    ['المعادلات', 6, 'eq_mixed'], ['الخصائص الجبرية', 6, 'distribute'], ['المتتاليات', 7, 'seq_basic'], ['المتتاليات', 10, 'g10_sequences'],
     ['جمع المقادير الجبرية وطرحها', 7, 'poly_addsub'], ['ضرب المقادير الجبرية', 7, 'poly_mul'], ['حالات خاصة من ضرب المقادير الجبرية', 7, 'poly_special'],
     ['حل المعادلات', 7, 'solve_eq'], ['حل المتباينات بالجمع والطرح', 8, 'ineq_add'], ['حل المتباينات متعددة الخطوات', 8, 'ineq_multi'],
     ['حل نظام من معادلتين خطيتين بالحذف', 8, 'sys_elim'], ['التحليل بإخراج العامل المشترك الأكبر', 8, 'factor_gcf'],

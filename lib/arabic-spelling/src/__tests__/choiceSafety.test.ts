@@ -58,7 +58,7 @@ describe("dictationOnly", () => {
     const perRule: Record<string, number> = {};
     for (const { rule } of flagged) perRule[rule.id] = (perRule[rule.id] ?? 0) + 1;
     assert.deepEqual(perRule, {
-      "hamza-wasl-qat": 3,
+      "hamza-wasl-qat": 4,
       "alif-fariqa": 5,
       "hamzat-al-madd": 6,
       "hamza-mutawassita": 2,

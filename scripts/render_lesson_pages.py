@@ -21,6 +21,11 @@ view and `upload-book-pages-r2` need no change.
     IQRAA_PDF_ROOT=/path/to/pdfs python scripts/render_lesson_pages.py <page_map.json> <out_dir> [--min-score 0.9]
 
 Resumable: a lesson whose pages are all in <out_dir> is not re-rendered.
+
+A lesson's own folder may already be read by other lessons (`rendered.dir`, a
+range corrected after cutting). Writing there would replace their pages, so
+such a lesson goes into `<kbLessonId>-v2` and its entry names that folder
+(`target_dir`, `entry_for`; tests in `test_render_lesson_pages.py`).
 """
 from __future__ import annotations
 
@@ -28,14 +33,49 @@ import json
 import os
 import sys
 
-import fitz  # PyMuPDF
-
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LINKS = os.path.join(ROOT, "knowledge-base", "book-page-links.json")
 WIDTH = 1400
 
 
+def target_dir(lessons: dict, kb_id: str) -> str:
+    """The bucket folder a lesson's pages are rendered into.
+
+    Its own, unless another lesson reads that folder through `rendered.dir`
+    (a range corrected without re-cutting, see `bookPagesForLesson`): writing
+    there would replace the pages that lesson shows, and the uploader replaces
+    any image whose size changed. Then the next free `<kb_id>-vN`.
+    """
+    read = {e["rendered"]["dir"] for k, e in lessons.items() if e.get("rendered") and k != kb_id}
+    if kb_id not in read:
+        return kb_id
+    n = 2
+    while f"{kb_id}-v{n}" in read:
+        n += 1
+    return f"{kb_id}-v{n}"
+
+
+def book_entry(prev: dict | None, kb_book_id: str, pages: int) -> dict:
+    """The book record. One cut from the live copy (`pdfUrl` set) is kept: that
+    copy's pagination was checked against ours figure by figure, and
+    `verify_book_pages.py` keeps a book whose URL is unchanged — rewriting it as
+    «our copy» would make that script re-cut every lesson of the book."""
+    if prev and prev.get("pdfUrl"):
+        return prev
+    return {"bookId": kb_book_id, "pdfUrl": None, "pages": pages, "source": "our copy of the student book"}
+
+
+def entry_for(sid: str, kb_id: str, folder: str, first: int, last: int, aspect: float) -> dict:
+    """The page-link entry for pages first..last rendered into `folder`."""
+    entry = {"sourceId": sid, "startPage": first, "endPage": last, "aspect": aspect}
+    if folder != kb_id:
+        entry["rendered"] = {"dir": folder, "startPage": first, "endPage": last}
+    return entry
+
+
 def main() -> None:
+    import fitz  # PyMuPDF; imported here so the helpers above load without it
+
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import extract_book_figures as E
 
@@ -52,12 +92,12 @@ def main() -> None:
         if not todo:
             continue
         doc = fitz.open(str(E.resolve_pdf(book["pdf"])))
-        books[sid] = {"bookId": book["kbBookId"], "pdfUrl": None, "pages": doc.page_count,
-                      "source": "our copy of the student book"}
+        books[sid] = book_entry(books.get(sid), book["kbBookId"], doc.page_count)
         done = 0
         for kb_id, rng in todo.items():
             first, last = rng["start"], rng["end"]
-            target = os.path.join(out_dir, kb_id)
+            folder = target_dir(lessons, kb_id)
+            target = os.path.join(out_dir, folder)
             os.makedirs(target, exist_ok=True)
             aspect = None
             for n, page_no in enumerate(range(first, last + 1), start=1):
@@ -70,7 +110,7 @@ def main() -> None:
                 zoom = WIDTH / rect.width
                 pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
                 open(path, "wb").write(pix.tobytes("jpeg", jpg_quality=75))
-            lessons[kb_id] = {"sourceId": sid, "startPage": first, "endPage": last, "aspect": aspect}
+            lessons[kb_id] = entry_for(sid, kb_id, folder, first, last, aspect)
             done += 1
         doc.close()
         print(f"{sid}: {done} lessons rendered")

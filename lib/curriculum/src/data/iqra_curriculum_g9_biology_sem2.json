@@ -7,7 +7,7 @@
     "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
     "semester_covered": 2,
     "schema_version": "1.0",
-    "provenance_note": "نُقلت الوحدتان ودروسُهما الخمسةُ من كتاب الطالب (sourceId: g9-biology-s2-student-book) في 2026-09-08. الوحدةُ من صفحةِ افتتاحِها (ص 7 و35)، والدرسُ من صفحةِ افتتاحِه (ص 10 و21 و38 و49 و55). رقما الوحدتين 3 و4: الترقيمُ يمتدُّ عبرَ الفصلينِ، والرقمانِ مطبوعانِ على صفحتَي الافتتاح.",
+    "provenance_note": "نُقلت الوحدتان ودروسُهما الخمسةُ من كتاب الطالب (sourceId: g9-biology-s2-student-book) في 2026-09-08. الوحدةُ من صفحةِ افتتاحِها (ص 7 و35)، والدرسُ من صفحةِ افتتاحِه (ص 10 و21 و38 و49 و55). «الفكرةُ العامّةُ» للوحدةِ (general_idea_ar) منقولةٌ من الصفحةِ التي تلي صفحةَ الافتتاحِ (ص 8 و36) حيثُ يطبعُها الكتابُ بهذا العنوانِ، لا من فقرةِ «أتأمَّلُ الصورةَ» على صفحةِ الافتتاحِ. رقما الوحدتين 3 و4: الترقيمُ يمتدُّ عبرَ الفصلينِ، والرقمانِ مطبوعانِ على صفحتَي الافتتاح.",
     "source_books": {
       "student_book": "كتاب الطالب - العلوم الحياتية - الصف التاسع - الفصل الدراسي الثاني - المركز الوطني لتطوير المناهج والتقويم (sourceId: g9-biology-s2-student-book، 86 صفحة)",
       "teacher_guide_unregistered": "دليل المعلم - العلوم الحياتية - الصف التاسع - الفصل الثاني موجودٌ على القرصِ ولم يُسجَّلْ بعدُ؛ منه تُؤخذُ أعدادُ الحصصِ لاحقًا."
@@ -24,7 +24,7 @@
       "number": 3,
       "title_ar": "الأنسجةُ الحيوانيةُ والأنسجةُ النباتيةُ",
       "title_en": "Animal & Plant Tissues",
-      "general_idea_ar": "تحتوي أجسامُ معظمِ الحيواناتِ على أنسجةٍ عديدةٍ، منْها النسيجُ العصبيُّ الذي يتكوَّنُ منْ خلايا عصبيةٍ (عصبوناتٍ)، وخلايا دبقيةٍ. فما وظائفُ هذا النسيجِ؟ وما الأنسجةُ الأُخرى التي تُكوِّنُ أجسامَ معظمِ الحيواناتِ؟",
+      "general_idea_ar": "تتكوَّنُ أجسامُ النباتاتِ ومعظمِ الحيواناتِ منْ خلايا مُتنوِّعةٍ تُكوِّنُ أنسجةً لها وظائفُ مُحدَّدةٌ، وهي تتكاملُ في ما بينَها لتكوينِ أعضاءٍ وأجهزةٍ.",
       "total_periods": null,
       "data_tier": "lesson-level (student book only: main idea, learning outcomes and bilingual vocabulary printed per lesson opener; the semester's teacher guide is on disk but unregistered, so no periods yet)",
       "prior_knowledge": [],
@@ -83,7 +83,7 @@
       "number": 4,
       "title_ar": "العلاقاتُ البيئيةُ في الأنظمةِ البيئيةِ",
       "title_en": "Ecological Interactions in Ecosystems",
-      "general_idea_ar": "تعيشُ الأشناتُ والحزازياتُ في غابةٍ، مُكوِّنةً معًا نظــامًا بيئيًّا. فمــا مُكــوِّناتُ النظامِ البيئيِّ؟ وما العلاقاتُ التي تربطُ بينَ مُكوِّناتِ هذا النظامِ؟",
+      "general_idea_ar": "يعتمدُ علماءُ البيئةِ على المنهجيةِ العلميةِ في دراسةِ مُكوِّناتِ الأنظمةِ البيئيةِ، واستدامةِ انتقالِ الطاقةِ والموادِّ في هذهِ الأنظمةِ.",
       "total_periods": null,
       "data_tier": "lesson-level (student book only: main idea, learning outcomes and bilingual vocabulary printed per lesson opener; the semester's teacher guide is on disk but unregistered, so no periods yet)",
       "prior_knowledge": [],

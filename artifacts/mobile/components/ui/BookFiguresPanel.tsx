@@ -16,6 +16,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { TapToEnlarge } from '@/components/ui/ImageViewer';
+import { SourceCredit } from '@/components/ui/SourceCredit';
 import type { BookFigureRef } from '@/services/exportHtml';
 import { EXPORT_FIGURE_MAX } from '@/services/exportHtml';
 
@@ -74,6 +75,7 @@ export function BookFiguresPanel({ figures, isRTL, colors, labels }: Props) {
           </View>
         ))}
       </View>
+      <SourceCredit />
     </View>
   );
 }

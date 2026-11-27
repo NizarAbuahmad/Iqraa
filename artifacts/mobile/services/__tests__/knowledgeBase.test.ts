@@ -177,24 +177,27 @@ describe('resolveGroundedKbLesson — confidence gate', () => {
     assert.strictEqual(lesson!.id, 'kbl-math-s2-nccd-u5_l3');
   });
 
-  it('unwired semester-1 equations topic is NOT grounded (no silent substitute)', () => {
+  it('the book lesson «حل معادلات خاصة» is wired as u1_l5 (added 2026-11-13)', () => {
     const lesson = resolveGroundedKbLesson('المعادلات-حل معادلات خاصة', 'ar');
-    assert.equal(
-      lesson,
-      null,
-      `Expected null (ungrounded), got "${lesson?.id}" / "${lesson?.titleAr}"`,
-    );
+    assert.ok(lesson, 'Expected the book lesson to ground');
+    assert.equal(lesson!.id, 'kbl-math-s1-nccd-u1_l5');
+  });
+
+  it('a topic no lesson carries is still NOT grounded (no silent substitute)', () => {
+    // matrices are a recorded gap in the Semester 1 data: no lesson, so nothing may stand in
+    const lesson = resolveGroundedKbLesson('المصفوفات-ضرب المصفوفات', 'ar');
+    assert.equal(lesson, null, `Expected null (ungrounded), got "${lesson?.id}" / "${lesson?.titleAr}"`);
   });
 
   it('weak fuzzy hit via searchKB must still fail grounding', () => {
-    const ranked = searchKB('المعادلات-حل معادلات خاصة', 'ar');
+    const ranked = searchKB('المصفوفات-ضرب المصفوفات', 'ar');
     // search may still return weak hits — grounding must reject them
-    const grounded = resolveGroundedKbLesson('المعادلات-حل معادلات خاصة', 'ar');
+    const grounded = resolveGroundedKbLesson('المصفوفات-ضرب المصفوفات', 'ar');
     assert.equal(grounded, null);
     if (ranked.length > 0) {
       assert.notEqual(
         ranked[0].titleAr,
-        'المعادلات-حل معادلات خاصة',
+        'المصفوفات-ضرب المصفوفات',
         'Sanity: top fuzzy hit is not an exact title match',
       );
     }
@@ -207,13 +210,14 @@ describe('resolveGroundedKbLesson — confidence gate', () => {
     assert.ok(lesson!.objectives.length > 0, 'Unit 1 lesson should have per-lesson objectives');
   });
 
-  it('TopicSelector data path: Sem1 Unit 1 is الأسس والمعادلات with 5 NCCD lessons', () => {
+  it('TopicSelector data path: Sem1 Unit 1 is الأسس والمعادلات with 6 NCCD lessons', () => {
     const units = getUnitsForSubjectGrade('mathematics', 'grade-10');
     const u1 = units.find(u => u.id === 'kbu-math-s1-nccd-u1');
     assert.ok(u1, 'Expected NCCD Sem1 unit 1 in TopicSelector unit list');
     assert.equal(u1!.titleAr, 'الأسس والمعادلات');
     const lessons = getLessonsForUnit(u1!.id);
-    assert.equal(lessons.length, 5);
+    assert.equal(lessons.length, 6);
+    assert.ok(lessons.some(l => l.titleAr === 'حل معادلات خاصة'));
     assert.ok(lessons.some(l => l.titleAr === 'تبسيط المقادير الأسية'));
     assert.ok(lessons.some(l => l.titleAr === 'حل المعادلة الأسية'));
     assert.equal(KB_UNITS.some(u => u.id === 'kbu-math-s2-1'), false, 'legacy المعادلات unit must not be exported');

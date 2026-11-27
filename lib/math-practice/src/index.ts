@@ -28,8 +28,10 @@ import { subjectIdFromName } from './subjects.ts';
 import { stepsFor } from './steps.ts';
 import { elementaryOpsForTitle, makeElementaryItem } from './elementary.ts';
 import { makeTopicItem, topicFor } from './topics.ts';
+import { G10_LESSON_FIRST } from './grade10.ts';
 import { servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
 
+import { isUnlistedPick } from './picks.ts';
 export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
 export type { ChemFamily } from './chemistry.ts';
 export { subjectIdFromName } from './subjects.ts';
@@ -43,6 +45,8 @@ export type { Misstep } from './missteps.ts';
 export { detectElementaryOp, elementaryOpsForTitle } from './elementary.ts';
 export { topicFor } from './topics.ts';
 export { sameKind, stemFrame } from './stemFrame.ts';
+export { isPick, isUnlistedPick } from './picks.ts';
+export { difficultyLoad } from './earlyDifficulty.ts';
 
 export interface PracticeLesson {
   id: string;
@@ -156,6 +160,17 @@ function topicForLesson(topic: string, kb: KBLesson | null, grade: number) {
   return null;
 }
 
+/**
+ * The lesson's own generator when it is one of the thin Grade 10 lessons in
+ * `G10_LESSON_FIRST` (see `./grade10.ts`), else null. Read by title, exactly as
+ * `topicForLesson`, so every other lesson — including every other Grade 10
+ * lesson — goes on to its bank family unchanged.
+ */
+function g10LessonFirst(topic: string, kb: KBLesson | null) {
+  const gen = topicForLesson(topic, kb, 10);
+  return gen && G10_LESSON_FIRST.has(gen.id) ? gen : null;
+}
+
 export function lessonTextBlob(topic: string, kb: KBLesson | null): string {
   return [
     topic,
@@ -244,7 +259,7 @@ const FAMILY_BY_TITLE: Array<[RegExp, MathFamily]> = [
   [/معادلتين\s*تربيعيتين|two\s*quadratic/i, 'quad_system'],
   [/جيوجبرا|geogebra|بيانيا|graphically/i, 'system_graph'],
   [/تبسيط.*أسي|مقادير\s*أسية|simplify.*exponent|rational\s*exponent/i, 'simplify_exp'],
-  [/قانون\s*الجيوب|جيب\s*التمام|law\s*of\s*(?:sines|cosines)/i, 'trig_apps'],
+  [/قانون\s*الجيوب|جيو?ب\s*(?:ال)?تمام|law\s*of\s*(?:sines|cosines)/i, 'trig_apps'],
   [/معادلة\s*الدائرة|الدائرة\s*ومعادلتها|الأقواس|القطاعات?|محيط\s*الدائرة|مساحة\s*الدائرة|^\s*(?:ال)?دائرة\s*$|equation\s*of\s*a\s*circle/i, 'circle'],
   [/متجه|vector|الضرب\s*القياسي/i, 'vectors'],
   [/النسب\s*المثلثية|المعادلات\s*المثلثية|trigonometric\s*(?:ratio|equation)/i, 'trig'],
@@ -289,7 +304,7 @@ export function mathBankCovers(topic: string, kb: KBLesson | null, grade: number
     return (grade <= 6 && elementaryOpsForTitle(title).length > 0) || topicForLesson(topic, kb, grade) !== null;
   }
   // Grade 10 has the banked families; a lesson none of them is about may still have a generator
-  return matchMathFamily(topic, kb) !== null || (grade === 10 && topicForLesson(topic, kb, grade) !== null);
+  return matchMathFamily(topic, kb) !== null || g10LessonFirst(topic, kb) !== null || (grade === 10 && topicForLesson(topic, kb, grade) !== null);
 }
 
 function placeCorrect(correct: string, wrongs: string[]): string[] {
@@ -375,13 +390,13 @@ export const MATH_BANK: ConcreteItem[] = [
   },
 
   // ── Graphical systems (GeoGebra lab) ──
-  { id: 'g-e1', family: 'system_graph', diff: 'easy', eq: 'y = x + 1', eq2: 'y = −x + 3', answer: '(1 ، 2)', wrongs: ['(2 ، 1)', '(0 ، 1)', '(3 ، 0)'], kind: 'graph', promptAr: 'أوجد نقطة تقاطع المستقيمين بيانياً أو جبرياً:\ny = x + 1\ny = −x + 3', promptEn: 'Find the intersection of:\ny = x + 1\ny = −x + 3' },
-  { id: 'g-e2', family: 'system_graph', diff: 'easy', eq: 'y = 2x', eq2: 'y = −x + 6', answer: '(2 ، 4)', wrongs: ['(3 ، 6)', '(1 ، 2)', '(0 ، 6)'], kind: 'graph', promptAr: 'أوجد نقطة تقاطع:\ny = 2x\ny = −x + 6', promptEn: 'Find the intersection of:\ny = 2x\ny = −x + 6' },
-  { id: 'g-m1', family: 'system_graph', diff: 'medium', eq: 'y = x²', eq2: 'y = x + 2', answer: '(−1 ، 1) و (2 ، 4)', wrongs: ['(0 ، 0) فقط', '(1 ، 1) و (2 ، 4)', 'لا تقاطع'], kind: 'graph', promptAr: 'كم نقطة تقاطع للمنحنى y = x² والمستقيم y = x + 2؟ أوجدها.', promptEn: 'How many intersections does y = x² have with y = x + 2? Find them.' },
-  { id: 'g-m2', family: 'system_graph', diff: 'medium', eq: 'y = x² − 4', eq2: 'y = 0', answer: '(−2 ، 0) و (2 ، 0)', wrongs: ['(0 ، −4) فقط', '(4 ، 0)', 'لا تقاطع'], kind: 'graph', promptAr: 'أوجد نقاط تقاطع y = x² − 4 مع المحور السيني (y = 0).', promptEn: 'Find where y = x² − 4 meets the x-axis (y = 0).' },
-  { id: 'g-m3', family: 'system_graph', diff: 'medium', eq: 'y = x² − 1', eq2: 'y = 2x + 2', answer: '(−1 ، 0) و (3 ، 8)', wrongs: ['(1 ، 0)', '(0 ، −1)', 'لا تقاطع'], kind: 'graph', promptAr: 'حل النظام بيانياً/جبرياً:\ny = x² − 1\ny = 2x + 2', promptEn: 'Solve graphically/algebraically:\ny = x² − 1\ny = 2x + 2' },
-  { id: 'g-h1', family: 'system_graph', diff: 'hard', eq: 'y = x² − 2x', eq2: 'y = x', answer: '(0 ، 0) و (3 ، 3)', wrongs: ['(1 ، 1)', '(2 ، 2)', 'لا تقاطع'], kind: 'graph', promptAr: 'أوجد حلول النظام:\ny = x² − 2x\ny = x', promptEn: 'Solve:\ny = x² − 2x\ny = x' },
-  { id: 'g-h2', family: 'system_graph', diff: 'hard', eq: 'y = x² + 1', eq2: 'y = −x² + 3', answer: '(−1 ، 2) و (1 ، 2)', wrongs: ['(0 ، 1)', '(2 ، 5)', 'لا تقاطع'], kind: 'graph', promptAr: 'أوجد نقاط تقاطع المنحنيَين:\ny = x² + 1\ny = −x² + 3', promptEn: 'Find intersections of:\ny = x² + 1\ny = −x² + 3' },
+  { id: 'g-e1', family: 'system_graph', diff: 'easy', eq: 'y = x + 1', eq2: 'y = −x + 3', answer: '(1, 2)', wrongs: ['(2, 1)', '(0, 1)', '(3, 0)'], kind: 'graph', promptAr: 'أوجد نقطة تقاطع المستقيمين بيانياً أو جبرياً:\ny = x + 1\ny = −x + 3', promptEn: 'Find the intersection of:\ny = x + 1\ny = −x + 3' },
+  { id: 'g-e2', family: 'system_graph', diff: 'easy', eq: 'y = 2x', eq2: 'y = −x + 6', answer: '(2, 4)', wrongs: ['(3, 6)', '(1, 2)', '(0, 6)'], kind: 'graph', promptAr: 'أوجد نقطة تقاطع:\ny = 2x\ny = −x + 6', promptEn: 'Find the intersection of:\ny = 2x\ny = −x + 6' },
+  { id: 'g-m1', family: 'system_graph', diff: 'medium', eq: 'y = x²', eq2: 'y = x + 2', answer: '(−1, 1) و (2, 4)', wrongs: ['(0, 0) فقط', '(1, 1) و (2, 4)', 'لا تقاطع'], kind: 'graph', promptAr: 'كم نقطة تقاطع للمنحنى y = x² والمستقيم y = x + 2؟ أوجدها.', promptEn: 'How many intersections does y = x² have with y = x + 2? Find them.' },
+  { id: 'g-m2', family: 'system_graph', diff: 'medium', eq: 'y = x² − 4', eq2: 'y = 0', answer: '(−2, 0) و (2, 0)', wrongs: ['(0, −4) فقط', '(4, 0)', 'لا تقاطع'], kind: 'graph', promptAr: 'أوجد نقاط تقاطع y = x² − 4 مع المحور السيني (y = 0).', promptEn: 'Find where y = x² − 4 meets the x-axis (y = 0).' },
+  { id: 'g-m3', family: 'system_graph', diff: 'medium', eq: 'y = x² − 1', eq2: 'y = 2x + 2', answer: '(−1, 0) و (3, 8)', wrongs: ['(1, 0)', '(0, −1)', 'لا تقاطع'], kind: 'graph', promptAr: 'حل النظام بيانياً/جبرياً:\ny = x² − 1\ny = 2x + 2', promptEn: 'Solve graphically/algebraically:\ny = x² − 1\ny = 2x + 2' },
+  { id: 'g-h1', family: 'system_graph', diff: 'hard', eq: 'y = x² − 2x', eq2: 'y = x', answer: '(0, 0) و (3, 3)', wrongs: ['(1, 1)', '(2, 2)', 'لا تقاطع'], kind: 'graph', promptAr: 'أوجد حلول النظام:\ny = x² − 2x\ny = x', promptEn: 'Solve:\ny = x² − 2x\ny = x' },
+  { id: 'g-h2', family: 'system_graph', diff: 'hard', eq: 'y = x² + 1', eq2: 'y = −x² + 3', answer: '(−1, 2) و (1, 2)', wrongs: ['(0, 1)', '(2, 5)', 'لا تقاطع'], kind: 'graph', promptAr: 'أوجد نقاط تقاطع المنحنيَين:\ny = x² + 1\ny = −x² + 3', promptEn: 'Find intersections of:\ny = x² + 1\ny = −x² + 3' },
   {
     id: 'g-h3', family: 'system_graph', diff: 'hard', eq: 'y = 2x + 1', eq2: 'y = x² − 3', answer: 'نقطتا تقاطع', wrongs: ['لا تقاطع', 'نقطة واحدة', 'ثلاث نقاط'], kind: 'word',
     wordAr: 'باستخدام جيوجبرا (أو بالرسم): مثّل y = 2x + 1 و y = x² − 3. كم نقطة تقاطع تظهر؟ ثم تحقق جبرياً.',
@@ -389,12 +404,12 @@ export const MATH_BANK: ConcreteItem[] = [
   },
 
   // ── Linear + quadratic system ──
-  { id: 'lq-e1', family: 'linear_quad', diff: 'easy', eq: 'y = x', eq2: 'y = x²', answer: '(0 ، 0) و (1 ، 1)', wrongs: ['(2 ، 2)', 'لا حل', '(−1 ، −1)'], kind: 'system', promptAr: 'حل النظام:\ny = x\ny = x²', promptEn: 'Solve:\ny = x\ny = x²' },
-  { id: 'lq-e2', family: 'linear_quad', diff: 'easy', eq: 'y = 2', eq2: 'y = x² − 2', answer: '(−2 ، 2) و (2 ، 2)', wrongs: ['(0 ، −2)', '(1 ، 2)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\ny = 2\ny = x² − 2', promptEn: 'Solve:\ny = 2\ny = x² − 2' },
-  { id: 'lq-m1', family: 'linear_quad', diff: 'medium', eq: 'y = x + 1', eq2: 'y = x² − 3x + 4', answer: '(1 ، 2) و (3 ، 4)', wrongs: ['(0 ، 1)', '(2 ، 3)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\ny = x + 1\ny = x² − 3x + 4', promptEn: 'Solve:\ny = x + 1\ny = x² − 3x + 4' },
-  { id: 'lq-m2', family: 'linear_quad', diff: 'medium', eq: 'y = −x + 4', eq2: 'y = x² − x', answer: '(−2 ، 6) و (2 ، 2)', wrongs: ['(0 ، 4)', '(1 ، 3)', 'لا حل'], kind: 'system' },
-  { id: 'lq-h1', family: 'linear_quad', diff: 'hard', eq: 'y = 3x − 1', eq2: 'y = x² + x − 1', answer: '(0 ، −1) و (2 ، 5)', wrongs: ['(1 ، 2)', '(−1 ، −4)', 'لا حل'], kind: 'system' },
-  { id: 'lq-h2', family: 'linear_quad', diff: 'hard', eq: 'x + y = 5', eq2: 'y = x² − 1', answer: '(2 ، 3) و (−3 ، 8)', wrongs: ['(1 ، 4)', '(0 ، 5)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\nx + y = 5\ny = x² − 1', promptEn: 'Solve:\nx + y = 5\ny = x² − 1' },
+  { id: 'lq-e1', family: 'linear_quad', diff: 'easy', eq: 'y = x', eq2: 'y = x²', answer: '(0, 0) و (1, 1)', wrongs: ['(2, 2)', 'لا حل', '(−1, −1)'], kind: 'system', promptAr: 'حل النظام:\ny = x\ny = x²', promptEn: 'Solve:\ny = x\ny = x²' },
+  { id: 'lq-e2', family: 'linear_quad', diff: 'easy', eq: 'y = 2', eq2: 'y = x² − 2', answer: '(−2, 2) و (2, 2)', wrongs: ['(0, −2)', '(1, 2)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\ny = 2\ny = x² − 2', promptEn: 'Solve:\ny = 2\ny = x² − 2' },
+  { id: 'lq-m1', family: 'linear_quad', diff: 'medium', eq: 'y = x + 1', eq2: 'y = x² − 3x + 4', answer: '(1, 2) و (3, 4)', wrongs: ['(0, 1)', '(2, 3)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\ny = x + 1\ny = x² − 3x + 4', promptEn: 'Solve:\ny = x + 1\ny = x² − 3x + 4' },
+  { id: 'lq-m2', family: 'linear_quad', diff: 'medium', eq: 'y = −x + 4', eq2: 'y = x² − x', answer: '(−2, 6) و (2, 2)', wrongs: ['(0, 4)', '(1, 3)', 'لا حل'], kind: 'system' },
+  { id: 'lq-h1', family: 'linear_quad', diff: 'hard', eq: 'y = 3x − 1', eq2: 'y = x² + x − 1', answer: '(0, −1) و (2, 5)', wrongs: ['(1, 2)', '(−1, −4)', 'لا حل'], kind: 'system' },
+  { id: 'lq-h2', family: 'linear_quad', diff: 'hard', eq: 'x + y = 5', eq2: 'y = x² − 1', answer: '(2, 3) و (−3, 8)', wrongs: ['(1, 4)', '(0, 5)', 'لا حل'], kind: 'system', promptAr: 'حل النظام:\nx + y = 5\ny = x² − 1', promptEn: 'Solve:\nx + y = 5\ny = x² − 1' },
   // How many solutions, the tangent case, and the real-life model — the lesson's
   // other two objectives («تعرُّف عدد الحلول الممكنة»، «نمذجة مسألة حياتية»), which
   // the solve items above never asked (2026-10-15). Answers checked in SymPy.
@@ -407,25 +422,25 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'lq-w2', family: 'linear_quad', diff: 'hard', eq: '2(l + w) = 20', eq2: 'lw = 24', answer: '4 م و 6 م', wrongs: ['3 م و 8 م', '2 م و 12 م', '5 م و 5 م'], kind: 'word', wordAr: 'قطعة أرض مستطيلة الشكل محيطها 20 م ومساحتها 24 م². ما بُعداها؟', wordEn: 'A rectangular plot has perimeter 20 m and area 24 m². What are its dimensions?' },
 
   // ── Two quadratics ──
-  { id: 'qq-e1', family: 'quad_system', diff: 'easy', eq: 'y = x²', eq2: 'y = 4', answer: '(−2 ، 4) و (2 ، 4)', wrongs: ['(4 ، 16)', '(0 ، 0)', 'لا حل'], kind: 'system' },
-  { id: 'qq-m1', family: 'quad_system', diff: 'medium', eq: 'y = x² − 4', eq2: 'y = −x² + 4', answer: '(−2 ، 0) و (2 ، 0)', wrongs: ['(0 ، −4)', '(1 ، −3)', 'لا حل'], kind: 'system' },
-  { id: 'qq-m2', family: 'quad_system', diff: 'medium', eq: 'y = x² + 1', eq2: 'y = 2x² − 3', answer: '(−2 ، 5) و (2 ، 5)', wrongs: ['(0 ، 1)', '(1 ، 2)', 'لا حل'], kind: 'system' },
-  { id: 'qq-h1', family: 'quad_system', diff: 'hard', eq: 'y = x² − 2x', eq2: 'y = −x² + 4', answer: '(−1 ، 3) و (2 ، 0)', wrongs: ['(0 ، 0)', '(1 ، −1)', 'لا حل'], kind: 'system' },
+  { id: 'qq-e1', family: 'quad_system', diff: 'easy', eq: 'y = x²', eq2: 'y = 4', answer: '(−2, 4) و (2, 4)', wrongs: ['(4, 16)', '(0, 0)', 'لا حل'], kind: 'system' },
+  { id: 'qq-m1', family: 'quad_system', diff: 'medium', eq: 'y = x² − 4', eq2: 'y = −x² + 4', answer: '(−2, 0) و (2, 0)', wrongs: ['(0, −4)', '(1, −3)', 'لا حل'], kind: 'system' },
+  { id: 'qq-m2', family: 'quad_system', diff: 'medium', eq: 'y = x² + 1', eq2: 'y = 2x² − 3', answer: '(−2, 5) و (2, 5)', wrongs: ['(0, 1)', '(1, 2)', 'لا حل'], kind: 'system' },
+  { id: 'qq-h1', family: 'quad_system', diff: 'hard', eq: 'y = x² − 2x', eq2: 'y = −x² + 4', answer: '(−1, 3) و (2, 0)', wrongs: ['(0, 0)', '(1, −1)', 'لا حل'], kind: 'system' },
   // More systems to solve (the family held four), how many solutions, and the
   // subtraction step the lesson teaches for equal x² coefficients. Checked in SymPy.
-  { id: 'qq-m3', family: 'quad_system', diff: 'medium', eq: 'y = x² + 2x', eq2: 'y = x² − 4x + 6', answer: '(1 ، 3)', wrongs: ['(3 ، 15)', '(1 ، 3) و (−1 ، −1)', 'لا حل'], kind: 'system' },
-  { id: 'qq-m4', family: 'quad_system', diff: 'medium', eq: 'y = x² − 2x + 1', eq2: 'y = −x² + 2x + 1', answer: '(0 ، 1) و (2 ، 1)', wrongs: ['(0 ، 1)', '(1 ، 0)', 'لا حل'], kind: 'system' },
-  { id: 'qq-h2', family: 'quad_system', diff: 'hard', eq: 'y = x² + x', eq2: 'y = −x² + 3x + 4', answer: '(−1 ، 0) و (2 ، 6)', wrongs: ['(1 ، 2) و (−2 ، 2)', '(−1 ، 0)', 'لا حل'], kind: 'system' },
-  { id: 'qq-h3', family: 'quad_system', diff: 'hard', eq: 'y = 2x² − x', eq2: 'y = x² + x + 3', answer: '(−1 ، 3) و (3 ، 15)', wrongs: ['(1 ، 1) و (3 ، 15)', '(−1 ، 3)', 'لا حل'], kind: 'system' },
+  { id: 'qq-m3', family: 'quad_system', diff: 'medium', eq: 'y = x² + 2x', eq2: 'y = x² − 4x + 6', answer: '(1, 3)', wrongs: ['(3, 15)', '(1, 3) و (−1, −1)', 'لا حل'], kind: 'system' },
+  { id: 'qq-m4', family: 'quad_system', diff: 'medium', eq: 'y = x² − 2x + 1', eq2: 'y = −x² + 2x + 1', answer: '(0, 1) و (2, 1)', wrongs: ['(0, 1)', '(1, 0)', 'لا حل'], kind: 'system' },
+  { id: 'qq-h2', family: 'quad_system', diff: 'hard', eq: 'y = x² + x', eq2: 'y = −x² + 3x + 4', answer: '(−1, 0) و (2, 6)', wrongs: ['(1, 2) و (−2, 2)', '(−1, 0)', 'لا حل'], kind: 'system' },
+  { id: 'qq-h3', family: 'quad_system', diff: 'hard', eq: 'y = 2x² − x', eq2: 'y = x² + x + 3', answer: '(−1, 3) و (3, 15)', wrongs: ['(1, 1) و (3, 15)', '(−1, 3)', 'لا حل'], kind: 'system' },
   { id: 'qq-n1', family: 'quad_system', diff: 'easy', eq: 'y = x² − 1', eq2: 'y = −x² + 1', answer: 'حلّان', wrongs: ['حل واحد', 'لا يوجد حل', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x² − 1\ny = −x² + 1', promptEn: 'How many solutions does this system have?\ny = x² − 1\ny = −x² + 1' },
   { id: 'qq-n2', family: 'quad_system', diff: 'medium', eq: 'y = x²', eq2: 'y = −x²', answer: 'حل واحد', wrongs: ['حلّان', 'لا يوجد حل', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x²\ny = −x²', promptEn: 'How many solutions does this system have?\ny = x²\ny = −x²' },
   { id: 'qq-n3', family: 'quad_system', diff: 'medium', eq: 'y = x² + 1', eq2: 'y = −x² − 1', answer: 'لا يوجد حل', wrongs: ['حل واحد', 'حلّان', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x² + 1\ny = −x² − 1', promptEn: 'How many solutions does this system have?\ny = x² + 1\ny = −x² − 1' },
   // Checking a point by substitution — 8 of this family's 12 items asked
   // «أوجد حل النظام» (measured 2026-10-17).
-  { id: 'qq-v1', family: 'quad_system', diff: 'easy', eq: 'y = x²', eq2: 'y = x + 2', answer: 'نعم، لأنها تحقق المعادلتين', wrongs: ['لا، لأنها لا تحقق المعادلة الأولى', 'لا، لأنها لا تحقق المعادلة الثانية', 'لا، لأن للنظام حلًّا واحدًا فقط'], promptAr: 'هل النقطة (2 ، 4) حل للنظام الآتي؟ علّل.\ny = x²\ny = x + 2', promptEn: 'Is the point (2, 4) a solution of this system? Explain.\ny = x²\ny = x + 2' },
-  { id: 'qq-v2', family: 'quad_system', diff: 'medium', eq: 'y = x² − 1', eq2: 'y = −x² + 7', answer: 'لا، لأنها لا تحقق المعادلة الثانية', wrongs: ['نعم، لأنها تحقق المعادلتين', 'لا، لأنها لا تحقق المعادلة الأولى', 'لا، لأنها لا تحقق أيًّا من المعادلتين'], promptAr: 'هل النقطة (1 ، 0) حل للنظام الآتي؟ علّل.\ny = x² − 1\ny = −x² + 7', promptEn: 'Is the point (1, 0) a solution of this system? Explain.\ny = x² − 1\ny = −x² + 7' },
+  { id: 'qq-v1', family: 'quad_system', diff: 'easy', eq: 'y = x²', eq2: 'y = x + 2', answer: 'نعم، لأنها تحقق المعادلتين', wrongs: ['لا، لأنها لا تحقق المعادلة الأولى', 'لا، لأنها لا تحقق المعادلة الثانية', 'لا، لأن للنظام حلًّا واحدًا فقط'], promptAr: 'هل النقطة (2, 4) حل للنظام الآتي؟ علّل.\ny = x²\ny = x + 2', promptEn: 'Is the point (2, 4) a solution of this system? Explain.\ny = x²\ny = x + 2' },
+  { id: 'qq-v2', family: 'quad_system', diff: 'medium', eq: 'y = x² − 1', eq2: 'y = −x² + 7', answer: 'لا، لأنها لا تحقق المعادلة الثانية', wrongs: ['نعم، لأنها تحقق المعادلتين', 'لا، لأنها لا تحقق المعادلة الأولى', 'لا، لأنها لا تحقق أيًّا من المعادلتين'], promptAr: 'هل النقطة (1, 0) حل للنظام الآتي؟ علّل.\ny = x² − 1\ny = −x² + 7', promptEn: 'Is the point (1, 0) a solution of this system? Explain.\ny = x² − 1\ny = −x² + 7' },
   { id: 'qq-n4', family: 'quad_system', diff: 'hard', eq: 'y = x² + 2x + 3', eq2: 'y = −x² − 2x + 1', answer: 'حل واحد', wrongs: ['حلّان', 'لا يوجد حل', 'أربعة حلول'], promptAr: 'كم حلًّا للنظام الآتي؟\ny = x² + 2x + 3\ny = −x² − 2x + 1', promptEn: 'How many solutions does this system have?\ny = x² + 2x + 3\ny = −x² − 2x + 1' },
-  { id: 'qq-v3', family: 'quad_system', diff: 'hard', eq: 'y = x² − x', eq2: 'y = 2x² − 4x', answer: 'نعم، لأنها تحقق المعادلتين', wrongs: ['لا، لأنها لا تحقق المعادلة الأولى', 'لا، لأنها لا تحقق المعادلة الثانية', 'لا، لأن للنظام حلًّا واحدًا فقط'], promptAr: 'هل النقطة (3 ، 6) حل للنظام الآتي؟ علّل.\ny = x² − x\ny = 2x² − 4x', promptEn: 'Is the point (3, 6) a solution of this system? Explain.\ny = x² − x\ny = 2x² − 4x' },
+  { id: 'qq-v3', family: 'quad_system', diff: 'hard', eq: 'y = x² − x', eq2: 'y = 2x² − 4x', answer: 'نعم، لأنها تحقق المعادلتين', wrongs: ['لا، لأنها لا تحقق المعادلة الأولى', 'لا، لأنها لا تحقق المعادلة الثانية', 'لا، لأن للنظام حلًّا واحدًا فقط'], promptAr: 'هل النقطة (3, 6) حل للنظام الآتي؟ علّل.\ny = x² − x\ny = 2x² − 4x', promptEn: 'Is the point (3, 6) a solution of this system? Explain.\ny = x² − x\ny = 2x² − 4x' },
   { id: 'qq-s2', family: 'quad_system', diff: 'medium', eq: 'y = x² + 3x', eq2: 'y = x² − x + 8', answer: '2', wrongs: ['−2', '8', '4'], promptAr: 'في النظام الآتي اطرح المعادلتين للتخلص من x². ما قيمة x الناتجة؟\ny = x² + 3x\ny = x² − x + 8', promptEn: 'Subtract the two equations to eliminate x². What value of x do you get?\ny = x² + 3x\ny = x² − x + 8' },
   { id: 'qq-s1', family: 'quad_system', diff: 'easy', eq: 'y = x² + 4x', eq2: 'y = x² − 2x + 12', answer: '2', wrongs: ['−2', '12', '6'], promptAr: 'في النظام الآتي اطرح المعادلتين للتخلص من x². ما قيمة x الناتجة؟\ny = x² + 4x\ny = x² − 2x + 12', promptEn: 'Subtract the two equations to eliminate x². What value of x do you get?\ny = x² + 4x\ny = x² − 2x + 12' },
 
@@ -452,9 +467,9 @@ export const MATH_BANK: ConcreteItem[] = [
   // ── Circle ──
   { id: 'c-e1', family: 'circle', diff: 'easy', eq: 'r = 5', answer: 'محيط = 10π', wrongs: ['5π', '25π', '20π'], promptAr: 'دائرة نصف قطرها 5. أوجد محيطها بدلالة π.', promptEn: 'A circle has radius 5. Find its circumference in terms of π.' },
   { id: 'c-e2', family: 'circle', diff: 'easy', eq: 'r = 4', answer: 'مساحة = 16π', wrongs: ['8π', '4π', '32π'], promptAr: 'دائرة نصف قطرها 4. أوجد مساحتها بدلالة π.', promptEn: 'A circle has radius 4. Find its area in terms of π.' },
-  { id: 'c-m1', family: 'circle', diff: 'medium', eq: '(x−2)² + (y+1)² = 9', answer: 'المركز (2 ، −1) ، r = 3', wrongs: ['(−2 ، 1) ، r = 9', '(2 ، 1) ، r = 3', '(0 ، 0) ، r = 3'], promptAr: 'من معادلة الدائرة (x−2)² + (y+1)² = 9 أوجد المركز ونصف القطر.', promptEn: 'From (x−2)² + (y+1)² = 9 find centre and radius.' },
+  { id: 'c-m1', family: 'circle', diff: 'medium', eq: '(x−2)² + (y+1)² = 9', answer: 'المركز (2, −1) ، r = 3', wrongs: ['(−2, 1) ، r = 9', '(2, 1) ، r = 3', '(0, 0) ، r = 3'], promptAr: 'من معادلة الدائرة (x−2)² + (y+1)² = 9 أوجد المركز ونصف القطر.', promptEn: 'From (x−2)² + (y+1)² = 9 find centre and radius.' },
   { id: 'c-m2', family: 'circle', diff: 'medium', eq: 'r = 6, θ = 60°', answer: 'طول القوس = 2π', wrongs: ['π', '6π', '3π'], promptAr: 'دائرة r = 6 وقطاع زاويته المركزية 60°. أوجد طول القوس بدلالة π.', promptEn: 'Circle r = 6, central angle 60°. Find arc length in terms of π.' },
-  { id: 'c-h1', family: 'circle', diff: 'hard', eq: 'x² + y² − 6x + 4y − 3 = 0', answer: 'المركز (3 ، −2) ، r = 4', wrongs: ['(−3 ، 2) ، r = 4', '(3 ، 2) ، r = √3', '(6 ، −4) ، r = 3'], promptAr: 'حوّل x² + y² − 6x + 4y − 3 = 0 إلى الصورة القياسية ثم أوجد المركز و r.', promptEn: 'Rewrite x² + y² − 6x + 4y − 3 = 0 in standard form; find centre and r.' },
+  { id: 'c-h1', family: 'circle', diff: 'hard', eq: 'x² + y² − 6x + 4y − 3 = 0', answer: 'المركز (3, −2) ، r = 4', wrongs: ['(−3, 2) ، r = 4', '(3, 2) ، r = √3', '(6, −4) ، r = 3'], promptAr: 'حوّل x² + y² − 6x + 4y − 3 = 0 إلى الصورة القياسية ثم أوجد المركز و r.', promptEn: 'Rewrite x² + y² − 6x + 4y − 3 = 0 in standard form; find centre and r.' },
 
   // ── Trig ──
   { id: 't-e1', family: 'trig', diff: 'easy', eq: 'sin 30°', answer: '1/2', wrongs: ['√3/2', '√2/2', '0'], promptAr: 'أوجد قيمة sin 30°.', promptEn: 'Find sin 30°.' },
@@ -505,15 +520,15 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'd-h3', family: 'derivative', diff: 'hard', eq: 'f(x)=x³ − 12x', answer: 'قيم حرجة عند x = ±2', wrongs: ['x = 0 فقط', 'x = ±4', 'لا قيم حرجة'], promptAr: 'أوجد القيم الحرجة لـ f(x) = x³ − 12x.', promptEn: 'Find the critical points of f(x) = x³ − 12x.' },
   { id: 'd-h4', family: 'derivative', diff: 'hard', eq: 'f(x)=−x² + 6x, maximum value', answer: '9', wrongs: ['3', '6', '18'], promptAr: 'ما القيمة العظمى للاقتران f(x) = −x² + 6x؟', promptEn: 'What is the maximum value of f(x) = −x² + 6x?' },
   { id: 'd-h5', family: 'derivative', diff: 'hard', eq: 'f(x)=x³ − 3x²', answer: 'قيم حرجة عند x = 0 و x = 2', wrongs: ['x = 0 فقط', 'x = 2 فقط', 'x = 3'], promptAr: 'أوجد القيم الحرجة لـ f(x) = x³ − 3x².', promptEn: 'Find the critical points of f(x) = x³ − 3x².' },
-  { id: 'd-h6', family: 'derivative', diff: 'hard', eq: 'f(x)=x³ − 3x on [0,2], absolute maximum', answer: '2', wrongs: ['0', '−2', '8'], promptAr: 'أوجد القيمة العظمى المطلقة للاقتران f(x) = x³ − 3x على الفترة [0 ، 2].', promptEn: 'Find the absolute maximum of f(x) = x³ − 3x on the interval [0, 2].' },
+  { id: 'd-h6', family: 'derivative', diff: 'hard', eq: 'f(x)=x³ − 3x on [0,2], absolute maximum', answer: '2', wrongs: ['0', '−2', '8'], promptAr: 'أوجد القيمة العظمى المطلقة للاقتران f(x) = x³ − 3x على الفترة [0, 2].', promptEn: 'Find the absolute maximum of f(x) = x³ − 3x on the interval [0, 2].' },
   { id: 'd-h7', family: 'derivative', diff: 'hard', eq: 'f(x)=x² − 4x, decreasing', answer: 'متناقص عندما x < 2', wrongs: ['متناقص عندما x > 2', 'متزايد عندما x < 2', 'متناقص عندما x < 4'], promptAr: 'متى يكون الاقتران f(x) = x² − 4x متناقصًا؟', promptEn: 'When is f(x) = x² − 4x decreasing?' },
 
   // ── Vectors ──
-  { id: 'v-e1', family: 'vectors', diff: 'easy', eq: 'A(1,2), B(4,6)', answer: 'AB⃗ = ⟨3 ، 4⟩', wrongs: ['⟨5 ، 8⟩', '⟨−3 ، −4⟩', '⟨4 ، 3⟩'], promptAr: 'أوجد المتجه AB⃗ من A(1,2) إلى B(4,6).', promptEn: 'Find vector AB from A(1,2) to B(4,6).' },
-  { id: 'v-e2', family: 'vectors', diff: 'easy', eq: '⟨3,4⟩', answer: '|v| = 5', wrongs: ['7', '12', '1'], promptAr: 'أوجد مقدار المتجه ⟨3 ، 4⟩.', promptEn: 'Find the magnitude of ⟨3, 4⟩.' },
-  { id: 'v-m1', family: 'vectors', diff: 'medium', eq: 'u=⟨1,2⟩, v=⟨3,−1⟩', answer: 'u+v = ⟨4 ، 1⟩', wrongs: ['⟨2 ، 1⟩', '⟨4 ، 3⟩', '⟨3 ، 2⟩'], promptAr: 'إذا كان u = ⟨1 ، 2⟩ و v = ⟨3 ، −1⟩، أوجد u + v.', promptEn: 'If u = ⟨1, 2⟩ and v = ⟨3, −1⟩, find u + v.' },
-  { id: 'v-m2', family: 'vectors', diff: 'medium', eq: 'u=⟨2,3⟩, v=⟨4,−1⟩', answer: 'u·v = 5', wrongs: ['8', '−3', '7'], promptAr: 'أوجد الضرب القياسي ⟨2 ، 3⟩ · ⟨4 ، −1⟩.', promptEn: 'Find the dot product ⟨2, 3⟩ · ⟨4, −1⟩.' },
-  { id: 'v-h1', family: 'vectors', diff: 'hard', eq: 'u=⟨1,0⟩, v=⟨0,1⟩', answer: 'متعامدان (الضرب القياسي = 0)', wrongs: ['متوازيان', 'نفس الاتجاه', 'غير معرّف'], promptAr: 'هل ⟨1 ، 0⟩ و ⟨0 ، 1⟩ متعامدان؟ برّر بالضرب القياسي.', promptEn: 'Are ⟨1, 0⟩ and ⟨0, 1⟩ perpendicular? Justify with the dot product.' },
+  { id: 'v-e1', family: 'vectors', diff: 'easy', eq: 'A(1,2), B(4,6)', answer: 'AB⃗ = ⟨3, 4⟩', wrongs: ['⟨5, 8⟩', '⟨−3, −4⟩', '⟨4, 3⟩'], promptAr: 'أوجد المتجه AB⃗ من A(1,2) إلى B(4,6).', promptEn: 'Find vector AB from A(1,2) to B(4,6).' },
+  { id: 'v-e2', family: 'vectors', diff: 'easy', eq: '⟨3,4⟩', answer: '|v| = 5', wrongs: ['7', '12', '1'], promptAr: 'أوجد مقدار المتجه ⟨3, 4⟩.', promptEn: 'Find the magnitude of ⟨3, 4⟩.' },
+  { id: 'v-m1', family: 'vectors', diff: 'medium', eq: 'u=⟨1,2⟩, v=⟨3,−1⟩', answer: 'u+v = ⟨4, 1⟩', wrongs: ['⟨2, 1⟩', '⟨4, 3⟩', '⟨3, 2⟩'], promptAr: 'إذا كان u = ⟨1, 2⟩ و v = ⟨3, −1⟩، أوجد u + v.', promptEn: 'If u = ⟨1, 2⟩ and v = ⟨3, −1⟩, find u + v.' },
+  { id: 'v-m2', family: 'vectors', diff: 'medium', eq: 'u=⟨2,3⟩, v=⟨4,−1⟩', answer: 'u·v = 5', wrongs: ['8', '−3', '7'], promptAr: 'أوجد الضرب القياسي ⟨2, 3⟩ · ⟨4, −1⟩.', promptEn: 'Find the dot product ⟨2, 3⟩ · ⟨4, −1⟩.' },
+  { id: 'v-h1', family: 'vectors', diff: 'hard', eq: 'u=⟨1,0⟩, v=⟨0,1⟩', answer: 'متعامدان (الضرب القياسي = 0)', wrongs: ['متوازيان', 'نفس الاتجاه', 'غير معرّف'], promptAr: 'هل ⟨1, 0⟩ و ⟨0, 1⟩ متعامدان؟ برّر بالضرب القياسي.', promptEn: 'Are ⟨1, 0⟩ and ⟨0, 1⟩ perpendicular? Justify with the dot product.' },
 
   // ── Stats / probability ──
   { id: 's-e1', family: 'stats', diff: 'easy', eq: '2,4,6,8', answer: 'المتوسط = 5', wrongs: ['4', '6', '8'], promptAr: 'أوجد المتوسط الحسابي للبيانات: 2، 4، 6، 8.', promptEn: 'Find the mean of 2, 4, 6, 8.' },
@@ -581,6 +596,15 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
   const isAr = lang === 'ar';
   const stem = itemStem(item, isAr);
 
+  // A «which one» item whose choices are not in its text keeps its options in
+  // every slot. Filed as short answer it printed «أيّ وحدة أنسب لقياس طول
+  // الكتاب؟» keyed «مشبك الورق», with nothing to pick from and several right
+  // answers (`picks.ts`; found building the ready-made sheets, 2026-11-20).
+  if (type !== 'multiple_choice' && type !== 'true_false' && item.wrongs.length && isUnlistedPick(stem, item.answer)) {
+    const level = levelOptionShape(item.answer, item.wrongs);
+    return { text: stem, options: placeCorrect(level.correct, level.wrongs), answer: level.correct };
+  }
+
   if (type === 'word_problem') {
     if (item.kind === 'word' && (item.wordAr || item.wordEn)) {
       return { text: isAr ? (item.wordAr as string) : (item.wordEn as string), answer: item.answer };
@@ -627,6 +651,9 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
   }
 
   if (type === 'fill_blank') {
+    // A stem that already has its blank («8 + ___ = 10») is the fill-blank
+    // itself; a second «الإجابة: ____» line under it asks for two answers.
+    if (/_{3,}/.test(stem)) return { text: stem, answer: item.answer };
     return {
       text: isAr
         ? `${stem}\n\nالإجابة: __________`
@@ -637,6 +664,14 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
 
   // short_answer default
   return { text: stem, answer: item.answer };
+}
+
+/**
+ * One bank item as a question of the given type, exactly as a worksheet or quiz
+ * receives it. Exported for the tests that pin what a slot prints.
+ */
+export function formatConcreteItem(item: ConcreteItem, lang: Lang, type: QType): { text: string; options?: string[]; answer: string } {
+  return formatItem(item, lang, type);
 }
 
 /** The ask an item puts, whatever type it is formatted as — what kinds are counted on. */
@@ -775,6 +810,11 @@ export function takeConcreteMath(
   /** See `takeFromBank` — false for the worksheet path, true everywhere else. */
   allowRepeat: boolean = true,
 ): PracticeWQ | null {
+  // The thin Grade 10 lessons are served by their own generator, ahead of the
+  // family they share with a sibling lesson (`G10_LESSON_FIRST`). A generator
+  // never runs dry, so `allowRepeat` has nothing to decide for them.
+  const own = takeG10LessonMath(type, topic, kb, diff, lang, points, session);
+  if (own) return own;
   const family = matchMathFamily(topic, kb);
   if (!family) return null;
   return takeFromBank(
@@ -788,6 +828,27 @@ export function takeConcreteMath(
     session ?? usedIds,
     allowRepeat,
   );
+}
+
+/**
+ * An item from the lesson's own generator when the lesson (by title) is one of
+ * the Grade 10 lessons in `G10_LESSON_FIRST`; null for every other lesson.
+ * `takeConcreteMath` calls this first; the API's evaluation generator calls it
+ * with the objective's lesson title, since the topic it passes the bank is the
+ * objective's own wording.
+ */
+export function takeG10LessonMath(
+  type: QType,
+  topic: string,
+  kb: KBLesson | null,
+  diff: DiffTier,
+  lang: Lang,
+  points: number,
+  session?: Set<string>,
+): PracticeWQ | null {
+  const gen = g10LessonFirst(topic, kb);
+  if (!gen) return null;
+  return { ...formatItem(makeTopicItem(gen, 10, diff, session ?? usedIds), lang, type), points };
 }
 
 /**
@@ -808,15 +869,24 @@ export function takeElementaryMath(
   session?: Set<string>,
 ): PracticeWQ | null {
   const title = lessonTitleBlob(topic, kb);
+  // A lesson with a generator of its own gets it before the grade's generic
+  // operation drill: «جمع العشرات» names addition, and the drill served it
+  // «3 + ؟ = 4» with no ten in sight (Grade 1 sweep, 2026-11-13). Checked
+  // then: the eight Grade 1 lessons in `earlyG1Ops.test.ts` are the only ones
+  // in grades 1–6 that have both, so no other lesson changes.
+  const gen = topicForLesson(topic, kb, grade);
   // A lesson none of the generators is about gets no items, not the grade's
   // default mix of arithmetic.
-  if (grade <= 6 && elementaryOpsForTitle(title).length > 0) {
+  if (!gen && grade <= 6 && elementaryOpsForTitle(title).length > 0) {
     const item = makeElementaryItem(title, grade, diff, session ?? usedIds);
     return { ...formatItem(item, lang, type), points };
   }
-  const gen = topicForLesson(topic, kb, grade);
   if (!gen) return null;
-  return { ...formatItem(makeTopicItem(gen, grade, diff, session ?? usedIds), lang, type), points };
+  // A word-problem slot asks the generator for a story (`Ctx.word`); one that
+  // writes them returns one, rather than a bare «60 + ___ = 80» with «اكتب الحل
+  // موضّحًا الخطوات» under it. Generators without stories ignore the flag.
+  const item = makeTopicItem(gen, grade, diff, session ?? usedIds, Math.random, { word: type === 'word_problem' });
+  return { ...formatItem(item, lang, type), points };
 }
 
 /**

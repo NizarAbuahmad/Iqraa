@@ -28,7 +28,8 @@ const deg = (ans: number, cands: number[]) =>
 const PI = (k: number) => (k === 1 ? 'π' : `${k}π`);
 const piOpts = (ans: number, cands: number[]) =>
   wrongsFrom(PI(ans), cands.filter(c => Number.isInteger(c) && c > 0).map(PI), k => PI(ans + Math.abs(k)));
-const pt = (x: number, y: number) => `(${signed(x)} ، ${signed(y)})`;
+/** «(−3, 4)» — the Latin comma: see latinCommaPoints.test.ts. */
+const pt = (x: number, y: number) => `(${signed(x)}, ${signed(y)})`;
 const ptOpts = (ans: [number, number], cands: Array<[number, number]>) =>
   wrongsFrom(pt(...ans), cands.map(c => pt(...c)), k => pt(ans[0] + Math.abs(k), ans[1]));
 /** A name answer with three other names from the same list. */
@@ -50,7 +51,29 @@ const isIntPt = (c: [number, number]) => Number.isInteger(c[0]) && Number.isInte
 
 const perimeter = T('perimeter', /^المحيط$/, [3, 4], ({ rng, diff, grade }) => {
   const m = grade === 3 ? span(diff, 8, 12, 15) : span(diff, 15, 25, 40);
-  const k = pick(rng, grade >= 4 && diff !== 'easy' ? [0, 1, 2, 3] : [0, 1, 2]);
+  // Grade 4's objective is the perimeter of a «مربع أو مستطيل» and an estimate on a square grid (u9_l5):
+  // a third of its items were triangles, which are Grade 3's. It now asks a square or rectangle, the
+  // missing side, an L-shape cut from a rectangle, and a rectangle on a grid (2026-11-21).
+  if (grade >= 4) {
+    const g = pick(rng, diff === 'easy' ? [0, 1, 4, 5] : [0, 1, 2, 3, 4, 5]);
+    if (g === 2) {
+      const l = int(rng, 4, m), w = int(rng, 2, l - 1), P = 2 * (l + w);
+      return { eq: `${P}, ${l}`, answer: String(w), wrongs: pos(w, [P - l, P / 2 + l, P - 2 * l, w + l]), ar: `محيط مستطيل ${P} سم وطوله ${l} سم. ما عرضه؟`, en: `A rectangle has perimeter ${P} cm and length ${l} cm. What is its width?` };
+    }
+    if (g === 3) {
+      const s = int(rng, 2, m);
+      return { eq: `P ${4 * s}`, answer: String(s), wrongs: pos(s, [2 * s, 4 * s, s + 4, s * s, s + 1]), ar: `محيط مربع ${4 * s} سم. ما طول ضلعه؟`, en: `A square has perimeter ${4 * s} cm. What is its side?` };
+    }
+    if (g === 4) {
+      const l = int(rng, 5, m), w = int(rng, 4, l);
+      return { eq: `L ${l}, ${w}`, answer: String(2 * (l + w)), wrongs: pos(2 * (l + w), [l + w, l * w, 2 * l + w, 2 * (l + w) + 4, 2 * (l + w) - 4]), ar: `شكل على صورة حرف L، يمكن رسمه داخل مستطيل طوله ${l} سم وعرضه ${w} سم بعد قصّ مربع من إحدى زواياه. ما محيطه بالسنتيمتر؟`, en: `An L-shape fits inside a rectangle ${l} cm by ${w} cm after a square is cut from one corner. What is its perimeter, in cm?` };
+    }
+    if (g === 5) {
+      const l = int(rng, 3, 10), w = int(rng, 3, 10);
+      return { eq: `grid ${l}, ${w}`, answer: String(2 * (l + w)), wrongs: pos(2 * (l + w), [l + w, l * w, 2 * l + w, 2 * (l + w) + 2]), ar: `مستطيل مرسوم على شبكة مربعات، طوله ${l} مربعات وعرضه ${w} مربعات، وطول ضلع كل مربع 1 سم. ما محيطه بالسنتيمتر؟`, en: `A rectangle on a square grid is ${l} squares long and ${w} squares wide, each square 1 cm. What is its perimeter, in cm?` };
+    }
+  }
+  const k = pick(rng, grade >= 4 ? [0, 1] : [0, 1, 2]);
   if (k === 0) {
     const l = int(rng, 3, m), w = int(rng, 2, m - 1);
     const a = 2 * (l + w);
@@ -72,7 +95,12 @@ const perimeter = T('perimeter', /^المحيط$/, [3, 4], ({ rng, diff, grade }
 const area = T('area_rect', /^(?:المساحه|مساحه المستطيل)$/, [3, 4], ({ rng, diff, grade }) => {
   const m = grade === 3 ? span(diff, 6, 9, 12) : span(diff, 9, 15, 25);
   // 3: count unit squares, 4: a room's floor, 5 (Grade 4): compare a rectangle with a square.
-  const k = pick(rng, grade >= 4 ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4]);
+  const k = pick(rng, grade >= 4 ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4]);
+  if (k === 6) {
+    // «أستعمل شبكة المربعات لتقدير مساحة شكل» (u9_l6): full squares plus half the partial ones
+    const f = int(rng, 11, 40), p = pick(rng, [4, 6, 8, 10]), ans = f + p / 2;
+    return { eq: `est ${f}, ${p}`, answer: String(ans), wrongs: pos(ans, [f + p, f, ans + 1, ans - 1, f + 2 * p]), ar: `غُطّي شكل غير منتظم على شبكة مربعات بـ ${f} مربعًا كاملًا و ${p} مربعات غير كاملة. قدّر مساحته بالمربعات الوحدة، علمًا أن كل مربعين غير كاملين يُعدّان مربعًا واحدًا.`, en: `An irregular shape on a square grid covers ${f} whole squares and ${p} part squares. Estimate its area in unit squares, counting every two part squares as one.` };
+  }
   if (k === 0) {
     const l = int(rng, 2, m), w = int(rng, 2, m);
     return { eq: `${l}, ${w}`, answer: String(l * w), wrongs: pos(l * w, [2 * (l + w), l + w, l * w + l, l * w - w]), ar: `ما مساحة مستطيل طوله ${l} سم وعرضه ${w} سم (بالسنتيمتر المربع)؟`, en: `What is the area, in cm², of a rectangle ${l} cm long and ${w} cm wide?` };
@@ -97,6 +125,32 @@ const area = T('area_rect', /^(?:المساحه|مساحه المستطيل)$/, 
   }
   const l = int(rng, 3, m), w = int(rng, 2, m);
   return { eq: `${l * w}, ${l}`, answer: String(w), wrongs: pos(w, [l * w - l, l * w + l, l + w, l]), ar: `مساحة مستطيل ${l * w} سم² وطوله ${l} سم. ما عرضه؟`, en: `A rectangle has area ${l * w} cm² and length ${l} cm. What is its width?` };
+});
+
+/**
+ * Grade 3 «المساحة»: area as the unit squares a shape covers — counted in rows,
+ * added over a shape of two parts, compared, in cm² on squared paper, a missing
+ * row length, and floor tiles. The formula is the next lesson's («مساحة
+ * المستطيل», still `area_rect`). Rows 3–6 and 3–9 squares a row keep every
+ * counted noun in its 3–10 plural.
+ */
+const areaUnits = T('area_units_g3', /^المساحه$/, [3, 3], ({ rng }) => {
+  const r = int(rng, 3, 6), c = int(rng, 3, 9), A = r * c, k = pick(rng, [0, 1, 2, 3, 4, 5]);
+  const slips = [2 * (r + c), r + c, A + r, A - c];
+  if (k === 1) {
+    const r2 = int(rng, 3, 6), c2 = int(rng, 3, 9), t = A + r2 * c2;
+    return { eq: `${r} × ${c} + ${r2} × ${c2}`, answer: String(t), wrongs: pos(t, [A, r2 * c2, r + c + r2 + c2, (r + r2) * Math.max(c, c2), t + c]), ar: `شكل مرسوم على شبكة مربعات، يتكوّن من جزأين: في الجزء الأول ${r} صفوف، في كل صف ${c} مربعات، وفي الجزء الثاني ${r2} صفوف، في كل صف ${c2} مربعات. ما مساحة الشكل بالوحدات المربعة؟`, en: `A shape on a square grid has two parts: ${r} rows of ${c} squares, and ${r2} rows of ${c2} squares. What is its area in square units?` };
+  }
+  if (k === 2) {
+    let r2 = 0, c2 = 0;
+    do { r2 = int(rng, 3, 6); c2 = int(rng, 3, 9); } while (r2 * c2 === A);
+    const gap = Math.abs(A - r2 * c2);
+    return { eq: `|${r} × ${c} − ${r2} × ${c2}|`, answer: String(gap), wrongs: pos(gap, [A, r2 * c2, Math.abs(r + c - r2 - c2), A + r2 * c2, gap + r]), ar: `الشكل (أ) على شبكة مربعات فيه ${r} صفوف، في كل صف ${c} مربعات، والشكل (ب) فيه ${r2} صفوف، في كل صف ${c2} مربعات. بكم وحدة مربعة تزيد مساحة الشكل الأكبر على مساحة الشكل الأصغر؟`, en: `Shape A on a square grid has ${r} rows of ${c} squares; shape B has ${r2} rows of ${c2} squares. By how many square units is the larger area greater than the smaller?` };
+  }
+  if (k === 3) return { eq: `${r} × ${c} × 1 cm²`, answer: String(A), wrongs: pos(A, slips), ar: `رُسم مستطيل على ورق مربعات طول ضلع كل مربع فيه 1 سم، فغطّى ${r} صفوف، في كل صف ${c} مربعات. ما مساحة المستطيل بالسنتيمتر المربع؟`, en: `A rectangle drawn on 1 cm squared paper covers ${r} rows of ${c} squares. What is its area in square centimetres?` };
+  if (k === 4) return { eq: `${A} ÷ ${r}`, answer: String(c), wrongs: pos(c, [A - r, r, c + 1, c - 1, A]), ar: `شكل مستطيل مساحته ${A} من الوحدات المربعة، مرسوم على شبكة مربعات في ${r} صفوف متساوية. كم مربعًا في كل صف؟`, en: `A rectangle of area ${A} square units is drawn on a grid in ${r} equal rows. How many squares are in each row?` };
+  if (k === 5) return { eq: `${r} × ${c} tiles`, answer: String(A), wrongs: pos(A, slips), ar: `غُطّيت أرضية مستطيلة ببلاط مربع، فكان فيها ${r} صفوف، في كل صف ${c} بلاطات. كم بلاطة غطّت الأرضية؟`, en: `A rectangular floor is covered with square tiles: ${r} rows of ${c} tiles. How many tiles cover the floor?` };
+  return { eq: `grid ${r} × ${c}`, answer: String(A), wrongs: pos(A, slips), ar: `شكل مستطيل مرسوم على شبكة مربعات، فيه ${r} صفوف، في كل صف ${c} مربعات وحدة. كم مربع وحدة يغطي الشكل؟`, en: `A rectangle on a square grid has ${r} rows with ${c} unit squares in each. How many unit squares does it cover?` };
 });
 
 const composite = T('composite_L', /^محيط الشكل المركب ومساحته$/, [5, 5], ({ rng, diff }) => {
@@ -208,6 +262,50 @@ const circleParts = T('circle_parts', /^الدائره واجزاؤها$/, [6, 6
     return { eq: `tri ${rr}, ${c}`, answer: String(P), wrongs: pos(P, [rr + c, 2 * rr, 2 * (rr + c), 4 * rr + c, P + rr]), ar: `النقطة M مركز دائرة نصف قطرها ${rr} سم، و AB وتر فيها طوله ${c} سم. ما محيط المثلث MAB؟`, en: `M is the centre of a circle of radius ${rr} cm, and AB is a chord of it ${c} cm long. What is the perimeter of triangle MAB?` };
   }
   return { eq: `${r}`, answer: String(2 * r), wrongs: pos(2 * r, [r, r * r, 4 * r, 3 * r]), ar: `ما طول أطول وتر في دائرة نصف قطرها ${r} سم؟`, en: `What is the length of the longest chord in a circle with radius ${r} cm?` };
+});
+
+/** «7.5» for 15/2, «8» for 16/2. */
+const half = (n: number) => (n % 2 ? `${(n - 1) / 2}.5` : String(n / 2));
+
+/**
+ * Grade 6 «إنشاءات هندسية» (S1 pp. 117-124): the perpendicular bisector cuts a
+ * segment into two congruent parts at a right angle, and an angle bisector cuts
+ * an angle into two congruent angles (the book's question 13: «PQ ينصّف
+ * ∠NPM» — so m∠NPM = 2 m∠QPM). The drawing itself is done with a ruler and
+ * compasses; these are the measures it guarantees.
+ */
+const constructions = T('constructions', /^انشاءات هندسيه$/, [6, 6], ({ rng, diff }) => {
+  const k = pick(rng, [0, 1, 2, 3]);
+  if (k === 0) {
+    const L = int(rng, 4, span(diff, 14, 24, 40)), ans = half(L);
+    return {
+      eq: `AM ${L}`, answer: ans, wrongs: wrongsFrom(ans, [L, 2 * L, half(L + 2)], j => half(L + 2 * Math.abs(j))),
+      ar: `رُسم العمود المنصف للقطعة المستقيمة AB التي طولها ${L} سم، فقطعها في النقطة M. ما طول AM بالسنتيمتر؟`,
+      en: `The perpendicular bisector of segment AB, which is ${L} cm long, meets it at M. How long is AM, in centimetres?`,
+    };
+  }
+  if (k === 1) {
+    const a = 2 * int(rng, 10, span(diff, 45, 70, 85));
+    return {
+      eq: `∠ABC ${a} / 2`, answer: `${a / 2}°`, wrongs: deg(a / 2, [a, 90 - a / 2, 180 - a, a / 2 + 10]),
+      ar: `زاوية ABC قياسها ${a}°، رُسم منصفها BD. ما قياس الزاوية ABD؟`,
+      en: `Angle ABC measures ${a}° and BD is its bisector. What is the measure of angle ABD?`,
+    };
+  }
+  if (k === 2) {
+    const x = int(rng, 10, span(diff, 45, 70, 89));
+    return {
+      eq: `∠QPM ${x} × 2`, answer: `${2 * x}°`, wrongs: deg(2 * x, [x, 90 + x, 180 - 2 * x, 2 * x + 10]),
+      ar: `الشعاع PQ ينصّف الزاوية NPM، وقياس الزاوية QPM يساوي ${x}°. ما قياس الزاوية NPM؟`,
+      en: `Ray PQ bisects angle NPM, and angle QPM measures ${x}°. What is the measure of angle NPM?`,
+    };
+  }
+  const L = int(rng, 4, span(diff, 14, 24, 40));
+  return {
+    eq: `⊥ CD ${L}`, answer: '90°', wrongs: deg(90, [45, 180, 60, L]),
+    ar: `رُسم العمود المنصف للقطعة المستقيمة CD التي طولها ${L} سم. ما قياس الزاوية التي يصنعها العمود المنصف مع القطعة CD؟`,
+    en: `The perpendicular bisector of segment CD, which is ${L} cm long, is drawn. What angle does it make with CD?`,
+  };
 });
 
 const SECTOR_ANGLES = [30, 45, 60, 72, 90, 120, 180, 240, 270];
@@ -322,11 +420,14 @@ const prismCylinderSurface = T('surface_prism_cyl', /^مساحه سطح المن
   return { eq: `${r}, ${h}`, answer: PI(N), wrongs: piOpts(N, [2 * r * h, 2 * r * r, r * r * h, r * (r + h), N + 2 * r]), ar: `ما مساحة السطح الكلية لأسطوانة نصف قطر قاعدتها ${r} سم وارتفاعها ${h} سم؟ (اترك الإجابة بدلالة π)`, en: `What is the total surface area of a cylinder with base radius ${r} cm and height ${h} cm? (Leave your answer in terms of π)` };
 });
 
+// A regular pyramid's slant height is more than half its base side, or the faces never
+// meet at the apex: «ضلعها 11 سم، وارتفاعه المائل 3 سم» was keyed 66 for a pyramid that
+// cannot exist (hand review of the ready-made sheets, 2026-11-20).
 const pyramidConeSurface = T('surface_pyr_cone', /^مساحه سطح الهرم والمخروط$/, [7, 7], ({ rng, diff }) => {
   // 0 pyramid total, 1 cone total; 2 pyramid lateral, 3 cone lateral, 4 a paper hat (cone lateral, real life).
   const k = pick(rng, [0, 1, 2, 3, 4]);
   if (k === 2) {
-    const b = int(rng, 3, span(diff, 8, 12, 16)), l = int(rng, 3, span(diff, 10, 14, 18));
+    const b = int(rng, 3, span(diff, 8, 12, 16)), l = int(rng, Math.max(3, Math.floor(b / 2) + 1), span(diff, 10, 14, 18));
     return { eq: `lat ${b}, ${l}`, answer: String(2 * b * l), wrongs: pos(2 * b * l, [b * b + 2 * b * l, 4 * b * l, b * l, b * b + b * l]), ar: `ما المساحة الجانبية لهرم منتظم قاعدته مربعة طول ضلعها ${b} سم، وارتفاعه المائل ${l} سم؟`, en: `What is the lateral surface area of a regular pyramid with a square base of side ${b} cm and slant height ${l} cm?` };
   }
   if (k === 3 || k === 4) {
@@ -336,7 +437,7 @@ const pyramidConeSurface = T('surface_pyr_cone', /^مساحه سطح الهرم 
     return { eq: `hat ${r}, ${l}`, answer: PI(r * l), wrongs: wr, ar: `قبعة على شكل مخروط بلا قاعدة، نصف قطر فتحتها ${r} سم وارتفاعها المائل ${l} سم. ما مساحة الورق اللازم لصنعها؟ (اترك الإجابة بدلالة π)`, en: `A party hat is a cone with no base, opening radius ${r} cm and slant height ${l} cm. How much paper does it take? (Leave your answer in terms of π)` };
   }
   if (k === 0) {
-    const b = int(rng, 3, span(diff, 8, 12, 16)), l = int(rng, 3, span(diff, 10, 14, 18));
+    const b = int(rng, 3, span(diff, 8, 12, 16)), l = int(rng, Math.max(3, Math.floor(b / 2) + 1), span(diff, 10, 14, 18));
     const s = b * b + 2 * b * l;
     return { eq: `${b}, ${l}`, answer: String(s), wrongs: pos(s, [4 * b * l, b * b + 4 * b * l, b * b + b * l, s + b]), ar: `ما مساحة السطح الكلية لهرم قاعدته مربعة طول ضلعها ${b} سم وارتفاع كل وجه جانبي (الارتفاع المائل) ${l} سم؟`, en: `What is the total surface area of a pyramid with a square base of side ${b} cm and slant height ${l} cm?` };
   }
@@ -487,9 +588,70 @@ const QUADS: Array<[string, string, string]> = [
   ['شبه منحرف', 'زوج واحد فقط من الأضلاع المتقابلة متوازٍ', 'exactly one pair of parallel sides'],
 ];
 const quadName = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng }) => {
+  // Grade 6 «الأشكال الرباعية» is about the angle sum (Grade 6 audit, 2026-11-14): half its items use it.
+  if (grade >= 6 && rng() < 0.6) return quadAngles(rng);
+  // Grade 5 «تصنيف الأشكال الرباعية» classifies by sides and angles; naming alone ran out at five (2026-11-14).
+  if (grade === 5 && rng() < 0.6) return quadClassify(rng);
   const [n, ar, en] = pick(rng, QUADS);
   return { eq: n, answer: n, wrongs: names(rng, n, QUADS.map(q => q[0])), ar: `أي شكل رباعي له الخصائص الآتية: ${ar}؟`, en: `Which quadrilateral has these properties: ${en}?` };
 });
+/**
+ * Grade 5 «تصنيف الأشكال الرباعية» («أصنف الأشكال الرباعية حسب أضلاعها وزواياها»): a shape from its four side lengths
+ * and one angle, which «every X is a Y» statement is true (or false), and how many pairs of parallel sides a shape has.
+ */
+const QUAD_TRUE = ['كل مربع مستطيل', 'كل مربع معين', 'كل مستطيل متوازي أضلاع', 'كل معين متوازي أضلاع', 'كل مربع متوازي أضلاع'];
+const QUAD_FALSE = ['كل مستطيل مربع', 'كل معين مربع', 'كل متوازي أضلاع مستطيل', 'كل شبه منحرف متوازي أضلاع', 'كل متوازي أضلاع معين', 'كل مستطيل معين'];
+function quadClassify(rng: Rng): Draft {
+  const k = pick(rng, [0, 0, 1, 2]);
+  if (k === 0) {
+    // sides a, b, a, b (a = b for the equal-sided shapes) and one angle
+    const kind = pick(rng, ['مربع', 'مستطيل', 'معين', 'متوازي أضلاع'] as const);
+    const a = int(rng, 3, 12);
+    let b = a;
+    if (kind === 'مستطيل' || kind === 'متوازي أضلاع') { b = int(rng, 3, 12); if (b === a) b = a + 2; }
+    const angle = kind === 'مربع' || kind === 'مستطيل' ? 90 : pick(rng, [50, 60, 70, 75, 80, 110, 120]);
+    const sides = `${a} سم، ${b} سم، ${a} سم، ${b} سم`;
+    return {
+      eq: `classify ${a},${b} ${angle}`, answer: kind, wrongs: names(rng, kind, ['مربع', 'مستطيل', 'معين', 'متوازي أضلاع', 'شبه منحرف']),
+      ar: `شكل رباعي فيه كل ضلعين متقابلين متوازيان، وأطوال أضلاعه بالترتيب ${sides}، وقياس إحدى زواياه ${angle}°. ما أدق اسم لهذا الشكل؟`,
+      en: `A quadrilateral has both pairs of opposite sides parallel, sides of ${a} cm, ${b} cm, ${a} cm and ${b} cm in order, and one angle of ${angle}°. What is its most exact name?`,
+    };
+  }
+  if (k === 1) {
+    const askTrue = rng() < 0.6;
+    const ans = pick(rng, askTrue ? QUAD_TRUE : QUAD_FALSE);
+    return {
+      eq: `statement ${askTrue ? 'true' : 'false'} ${ans}`, answer: ans, wrongs: shuffle(rng, askTrue ? QUAD_FALSE : QUAD_TRUE).slice(0, 3),
+      ar: `أيّ العبارات الآتية ${askTrue ? 'صحيحة' : 'خاطئة'}؟`,
+      en: `Which of these statements is ${askTrue ? 'true' : 'false'}?`,
+    };
+  }
+  const [shape, pairs] = pick(rng, [['المربع', 2], ['المستطيل', 2], ['المعين', 2], ['متوازي الأضلاع', 2], ['شبه المنحرف', 1]] as const);
+  return {
+    eq: `parallel pairs ${shape}`, answer: String(pairs), wrongs: ['3', '4', String(3 - pairs)],
+    ar: `كم زوجًا من الأضلاع المتقابلة المتوازية في ${shape}؟`,
+    en: `How many pairs of parallel opposite sides does a ${{ 'المربع': 'square', 'المستطيل': 'rectangle', 'المعين': 'rhombus', 'متوازي الأضلاع': 'parallelogram', 'شبه المنحرف': 'trapezoid' }[shape]} have?`,
+  };
+}
+
+/** The 360° angle sum: the fourth angle, three equal angles, a parallelogram's neighbouring angle, the sum itself. */
+function quadAngles(rng: Rng) {
+  const k = pick(rng, [0, 0, 1, 2, 3]);
+  if (k === 0) {
+    let a = 0, b = 0, c = 0, d = 0;
+    do { a = int(rng, 50, 140); b = int(rng, 50, 140); c = int(rng, 50, 140); d = 360 - a - b - c; } while (d < 40 || d > 160);
+    return { eq: `quad ${a}, ${b}, ${c}`, answer: `${d}°`, wrongs: deg(d, [360 - a - b, 180 - d, d + 10, d - 10]), ar: `قياسات ثلاث زوايا في شكل رباعي ${a}° و ${b}° و ${c}°. ما قياس الزاوية الرابعة؟`, en: `Three angles of a quadrilateral measure ${a}°, ${b}° and ${c}°. What does the fourth angle measure?` };
+  }
+  if (k === 1) {
+    const x = pick(rng, [70, 75, 80, 85, 95, 100, 105, 110]), d = 360 - 3 * x;
+    return { eq: `quad 3x + ${d}`, answer: `${x}°`, wrongs: deg(x, [(180 - d) / 3, 360 - d, d, x + 10]), ar: `في شكل رباعي ثلاث زوايا متساوية في القياس، وقياس الزاوية الرابعة ${d}°. ما قياس كل من الزوايا الثلاث المتساوية؟`, en: `A quadrilateral has three equal angles and a fourth angle of ${d}°. What does each of the equal angles measure?` };
+  }
+  if (k === 2) {
+    const a = int(rng, 40, 140); const ans = 180 - a;
+    return { eq: `para ${a}`, answer: `${ans}°`, wrongs: deg(ans, [a, 360 - a, ans + 10, ans - 10]), ar: `في متوازي الأضلاع ABCD قياس الزاوية A يساوي ${a}°. ما قياس الزاوية B؟`, en: `In parallelogram ABCD, angle A measures ${a}°. What does angle B measure?` };
+  }
+  return { eq: 'quad sum', answer: '360°', wrongs: ['180°', '90°', '540°'], ar: 'ما مجموع قياسات الزوايا الداخلية لأي شكل رباعي؟', en: 'What is the sum of the interior angles of any quadrilateral?' };
+}
 
 const SHAPE_BASES: Array<[number, string, string]> = [[3, 'مثلثية', 'triangular'], [4, 'رباعية', 'square'], [5, 'خماسية', 'pentagonal'], [6, 'سداسية', 'hexagonal']];
 /** The solid's name by its base, and a net's base faces: [one, two of them]. */
@@ -717,7 +879,7 @@ const parallelProof = T('parallel_proof', /^اثبات توازي المستقي
   if (kind === 1) { const c2 = 180 - (p + q) * x - c1; if (c2 <= 0) return parallelProof.make({ rng, diff, grade: 8 }); return { eq: `${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, (180 - c1 - c2) / (p + q) + 2 | 0, 180 - c1 - c2]), ar: `قياسا زاويتين متحالفتين (${p}x + ${c1})° و (${q === 1 ? '' : q}x + ${c2})°. ما قيمة x التي تجعل المستقيمين متوازيين؟`, en: `Two co-interior angles measure (${p}x + ${c1})° and (${q === 1 ? '' : q}x + ${c2})°. What value of x makes the lines parallel?` }; }
   const c2 = 90 - (p + q) * x - c1;
   if (c2 <= 0) return parallelProof.make({ rng, diff, grade: 8 });
-  return { eq: `${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, (90 - c1 - c2) / (p + q) + 2 | 0, 90 - c1 - c2]), ar: `زاويتان متجاورتان قياسهما (${p}x + ${c1})° و (${q === 1 ? '' : q}x + ${c2})°. ما قيمة x التي تجعل المستقيمين متعامدين؟`, en: `Two adjacent angles measure (${p}x + ${c1})° and (${q === 1 ? '' : q}x + ${c2})°. What value of x makes the lines perpendicular?` };
+  return { eq: `${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, (90 - c1 - c2) / (p + q) + 2 | 0, 90 - c1 - c2]), ar: `زاويتان متجاورتان تكوّنان معًا الزاوية بين مستقيمين، قياساهما (${p}x + ${c1})° و (${q === 1 ? '' : q}x + ${c2})°. ما قيمة x التي تجعل المستقيمين متعامدين؟`, en: `Two adjacent angles measure (${p}x + ${c1})° and (${q === 1 ? '' : q}x + ${c2})°. What value of x makes the lines perpendicular?` };
 });
 
 const isosceles = T('isosceles', /^المثلثات المتطابقه الضلعين والمثلثات المتطابقه الاضلاع$/, [8, 8], ({ rng, diff }) => {
@@ -738,8 +900,69 @@ const congruence = (id: string, match: RegExp, answers: string[]) => T(id, match
   };
   const ans = pick(rng, answers);
   const all = ['SSS', 'SAS', 'HL', 'ASA', 'AAS'];
-  return { eq: ans, answer: ans, wrongs: names(rng, ans, all), ar: `إذا كان ${DESC[ans]![0]}، فبأي حالة تتطابق المثلثان؟`, en: `If ${DESC[ans]![1]}, by which criterion are the triangles congruent?` };
+  return { eq: ans, answer: ans, wrongs: names(rng, ans, all), ar: `${['SSS', 'ASA', 'AAS'].includes(ans) ? 'إذا كانت' : 'إذا كان'} ${DESC[ans]![0]}، فبأي حالة يتطابق المثلثان؟`, en: `If ${DESC[ans]![1]}, by which criterion are the triangles congruent?` };
 });
+
+/** The vertex of DEF that corresponds to each of ABC's, for a side «AB» or an angle «A». */
+const corrOf = (v: string) => v.split('').map(c => 'DEF'['ABC'.indexOf(c)]).join('');
+
+/** From △ABC ≅ △DEF: the angle F (3), a side (4), x from two corresponding sides (5). Shared by both congruence lessons. */
+function congruenceCalc(k: 3 | 4 | 5, rng: Rng, diff: D): Draft {
+  if (k === 4) {
+    let s = [0, 0, 0];
+    do s = [int(rng, 3, 15), int(rng, 3, 15), int(rng, 3, 15)]; while (s[0]! + s[1]! <= s[2]! || s[0]! + s[2]! <= s[1]! || s[1]! + s[2]! <= s[0]! || new Set(s).size < 3);
+    const [ab, bc, ac] = s as [number, number, number], i = int(rng, 0, 2), ask = ['DE', 'EF', 'DF'][i]!, ans = s[i]!;
+    return { eq: `sides ${ab}, ${bc}, ${ac} ${ask}`, answer: String(ans), wrongs: pos(ans, s.filter(v => v !== ans).concat(ab + bc + ac, ans + 1)), ar: `إذا كان △ABC ≅ △DEF، وكانت أطوال أضلاع المثلث ABC هي AB = ${ab} سم و BC = ${bc} سم و AC = ${ac} سم، فما طول الضلع ${ask}؟`, en: `If △ABC ≅ △DEF with AB = ${ab} cm, BC = ${bc} cm and AC = ${ac} cm, how long is ${ask}?` };
+  }
+  if (k === 5) {
+    const x = int(rng, 2, span(diff, 8, 12, 15)), p = int(rng, 2, 5), q = int(rng, 1, p - 1), c1 = int(rng, 1, 12), c2 = c1 + (p - q) * x;
+    const side = pick(rng, ['AB', 'BC', 'AC']);
+    return { eq: `x ${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, c2 - c1, p * x + c1, (c1 + c2) / (p + q) | 0]), ar: `المثلثان ABC و DEF متطابقان (△ABC ≅ △DEF). إذا كان ${side} = (${lin(p, c1)}) سم و ${corrOf(side)} = (${lin(q, c2)}) سم، فما قيمة x؟`, en: `Triangles ABC and DEF are congruent (△ABC ≅ △DEF). If ${side} = (${lin(p, c1)}) cm and ${corrOf(side)} = (${lin(q, c2)}) cm, what is x?` };
+  }
+  const a = int(rng, 30, 90), b = int(rng, 25, 150 - a), c = 180 - a - b;
+  return { eq: `angle ${a}, ${b}`, answer: `${c}°`, wrongs: deg(c, [a, b, a + b, 180 - a]), ar: `إذا كان △ABC ≅ △DEF، وكان قياس الزاوية A يساوي ${a}° وقياس الزاوية B يساوي ${b}°، فما قياس الزاوية F؟`, en: `If △ABC ≅ △DEF, angle A = ${a}° and angle B = ${b}°, what does angle F measure?` };
+}
+
+/**
+ * SSS, SAS and HL (u4_l1) used to be one kind — name the criterion from its
+ * description — so a quiz of ten had three distinct questions. Now also: name it
+ * from marked parts (1), pick the extra part a criterion needs (2), and the
+ * three computations the ASA lesson already asks (3 angle, 4 side, 5 x).
+ */
+const congruenceSss = (id: string, match: RegExp) => {
+  const base = congruence(id, match, ['SSS', 'SAS', 'HL']);
+  const all = ['SSS', 'SAS', 'HL', 'ASA', 'AAS'];
+  const side = (p: string, q: string) => [p, q].sort().join('');
+  const pair = (s: string) => `${s} ≅ ${corrOf(s)}`;
+  const ang = (v: string) => `∠${v} ≅ ∠${corrOf(v)}`;
+  return T(id, match, [8, 8], ({ rng, diff, grade }) => {
+    const k = pick(rng, [0, 1, 1, 2, 3, 4, 5]);
+    if (k >= 3) return congruenceCalc(k as 3 | 4 | 5, rng, diff);
+    if (k === 1) {
+      const crit = pick(rng, ['SSS', 'SAS', 'HL']);
+      const v = pick(rng, ['A', 'B', 'C']), rest = 'ABC'.replace(v, '').split('') as [string, string];
+      let facts: string[], enFacts: string[];
+      if (crit === 'SSS') { facts = ['AB', 'BC', 'AC'].map(pair); enFacts = facts; }
+      else if (crit === 'SAS') { facts = [pair(side(v, rest[0])), pair(side(v, rest[1])), ang(v)]; enFacts = facts; }
+      else {
+        // a right angle at v: the hypotenuse is the side opposite v, and one leg runs through v
+        facts = [`∠${v} = ∠${corrOf(v)} = 90°`, pair(side(rest[0], rest[1])), pair(side(v, pick(rng, rest)))];
+        enFacts = facts;
+      }
+      return { eq: `parts ${crit} ${v}`, answer: crit, wrongs: names(rng, crit, all), ar: `في المثلثين ABC و DEF: ${facts.join(' و ')}. بأي حالة يتطابق المثلثان؟`, en: `In triangles ABC and DEF: ${enFacts.join(', ')}. By which criterion are the triangles congruent?` };
+    }
+    if (k === 2) {
+      // AB ≅ DE and the other side through v are given; SSS needs the third side, SAS the angle between the two
+      const v = pick(rng, ['A', 'B', 'C']), rest = 'ABC'.replace(v, '').split('') as [string, string];
+      const s1 = side(v, rest[0]), s2 = side(v, rest[1]), third = side(rest[0], rest[1]);
+      const sss = rng() < 0.5;
+      const right = sss ? pair(third) : ang(v);
+      const wrongs = sss ? ['A', 'B', 'C'].map(ang) : [pair(third), ...rest.map(ang)];
+      return { eq: `need ${v} ${sss ? 'SSS' : 'SAS'}`, answer: right, wrongs, ar: `في المثلثين ABC و DEF: ${pair(s1)} و ${pair(s2)}. ما التطابق الإضافي الذي يلزم لإثبات تطابق المثلثين بحالة ${sss ? 'SSS' : 'SAS'}؟`, en: `In triangles ABC and DEF: ${pair(s1)} and ${pair(s2)}. Which extra congruence proves the triangles congruent by ${sss ? 'SSS' : 'SAS'}?` };
+    }
+    return base.make({ rng, diff, grade });
+  });
+};
 
 /**
  * ASA and AAS: besides naming the criterion from its description (0), name it
@@ -767,21 +990,7 @@ const congruenceAsa = (id: string, match: RegExp) => {
       const sides = ['AB', 'BC', 'AC'].filter(s => s !== side).map(s => `${s} ≅ ${corr(s)}`);
       return { eq: `need ${angle} ${side} ${asa ? 'ASA' : 'AAS'}`, answer: ans, wrongs: [`∠${asa ? off : other} ≅ ∠${corr(asa ? off : other)}`, ...sides], ar: `في المثلثين ABC و DEF: ∠${angle} ≅ ∠${corr(angle)} و ${side} ≅ ${corr(side)}. ما التطابق الإضافي الذي يلزم لإثبات تطابق المثلثين بحالة ${asa ? 'ASA' : 'AAS'}؟`, en: `In triangles ABC and DEF, ∠${angle} ≅ ∠${corr(angle)} and ${side} ≅ ${corr(side)}. Which extra congruence proves the triangles congruent by ${asa ? 'ASA' : 'AAS'}?` };
     }
-    if (k === 4) {
-      let s = [0, 0, 0];
-      do s = [int(rng, 3, 15), int(rng, 3, 15), int(rng, 3, 15)]; while (s[0]! + s[1]! <= s[2]! || s[0]! + s[2]! <= s[1]! || s[1]! + s[2]! <= s[0]! || new Set(s).size < 3);
-      const [ab, bc, ac] = s as [number, number, number], i = int(rng, 0, 2), ask = ['DE', 'EF', 'DF'][i]!, ans = s[i]!;
-      return { eq: `sides ${ab}, ${bc}, ${ac} ${ask}`, answer: String(ans), wrongs: pos(ans, s.filter(v => v !== ans).concat(ab + bc + ac, ans + 1)), ar: `إذا كان △ABC ≅ △DEF، وكانت أطوال أضلاع المثلث ABC هي AB = ${ab} سم و BC = ${bc} سم و AC = ${ac} سم، فما طول الضلع ${ask}؟`, en: `If △ABC ≅ △DEF with AB = ${ab} cm, BC = ${bc} cm and AC = ${ac} cm, how long is ${ask}?` };
-    }
-    if (k === 5) {
-      const x = int(rng, 2, span(diff, 8, 12, 15)), p = int(rng, 2, 5), q = int(rng, 1, p - 1), c1 = int(rng, 1, 12), c2 = c1 + (p - q) * x;
-      const side = pick(rng, ['AB', 'BC', 'AC']);
-      return { eq: `x ${p}, ${c1}, ${q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, c2 - c1, p * x + c1, (c1 + c2) / (p + q) | 0]), ar: `المثلثان ABC و DEF متطابقان (△ABC ≅ △DEF). إذا كان ${side} = (${lin(p, c1)}) سم و ${corr(side)} = (${lin(q, c2)}) سم، فما قيمة x؟`, en: `Triangles ABC and DEF are congruent (△ABC ≅ △DEF). If ${side} = (${lin(p, c1)}) cm and ${corr(side)} = (${lin(q, c2)}) cm, what is x?` };
-    }
-    if (k === 3) {
-      const a = int(rng, 30, 90), b = int(rng, 25, 150 - a), c = 180 - a - b;
-      return { eq: `angle ${a}, ${b}`, answer: `${c}°`, wrongs: deg(c, [a, b, a + b, 180 - a]), ar: `إذا كان △ABC ≅ △DEF، وكان قياس الزاوية A يساوي ${a}° وقياس الزاوية B يساوي ${b}°، فما قياس الزاوية F؟`, en: `If △ABC ≅ △DEF, angle A = ${a}° and angle B = ${b}°, what does angle F measure?` };
-    }
+    if (k >= 3) return congruenceCalc(k as 3 | 4 | 5, rng, diff);
     return base.make({ rng, diff, grade });
   });
 };
@@ -825,24 +1034,63 @@ const pyth = T('pythagoras', /^نظريه فيثاغورس$/, [8, 8], ({ rng, di
 
 // ─── transformations and the coordinate plane ───────────────────────────────
 
-const reflectLine = T('reflect_line', /^الانعكاس$/, [4, 4], ({ rng, diff }) => {
-  const a = int(rng, 3, 8), x = int(rng, 1, a - 1), y = int(rng, 1, 9);
-  const dx = a - x;
-  // 0 in a vertical line, 1 in a horizontal line, 2 find the mirror line from a point and its image, 3 how far a point is from its image.
-  const k = pick(rng, [0, 1, 2, 3]);
+/**
+ * Grade 4 «الانعكاس» (S1 pp. 115-117, «أرسم صورة شكل بالانعكاس حول محور، وأصفه»). The book reflects a shape on a
+ * square grid in a drawn vertical or horizontal mirror line: each vertex and its image are the same number of squares
+ * from the line, on its other side, and no measure changes. It prints no coordinates and no equations, so until
+ * 2026-11-14 this generator's «(3 ، 4)» points and «x = 7» lines were Grade 6 work in a Grade 4 stem.
+ */
+const squaresAr = (n: number) => `${n} ${tamyiz(n, 'مربعات', 'مربعًا', 'مربع')}`;
+const reflectLine: Topic = { ...T('reflect_line', /^الانعكاس$/, [4, 4], ({ rng, diff }) => {
+  // 0 where the image of a vertex lies, 1 squares between a vertex and its image, 2 the grid line the image is on,
+  // 3 a side's length after the reflection, 4 what a reflection keeps.
+  const k = pick(rng, diff === 'easy' ? [0, 0, 1, 3] : [0, 1, 2, 3, 4]);
+  const n = int(rng, 3, diff === 'hard' ? 9 : 6);
+  const vertical = rng() < 0.5;
+  const [side, other, axis] = vertical
+    ? (rng() < 0.5 ? ['يمين', 'يسار', 'رأسي'] : ['يسار', 'يمين', 'رأسي'])
+    : (rng() < 0.5 ? ['فوق', 'أسفل', 'أفقي'] : ['أسفل', 'فوق', 'أفقي']);
+  if (k === 0) {
+    const ans = `على بُعد ${squaresAr(n)} ${other} المحور`;
+    return {
+      eq: `image ${n} ${side} ${axis}`, answer: ans,
+      wrongs: [`على بُعد ${squaresAr(n)} ${side} المحور`, `على بُعد ${squaresAr(2 * n)} ${other} المحور`, 'على المحور نفسه'],
+      ar: `على شبكة مربعات، يقع رأس شكل على بُعد ${squaresAr(n)} ${side} محور انعكاس ${axis}. أين تقع صورة هذا الرأس بالانعكاس حول المحور؟`,
+      en: `On a square grid, a vertex of a shape is ${n} squares ${{ يمين: 'to the right of', يسار: 'to the left of', فوق: 'above', أسفل: 'below' }[side]} a ${vertical ? 'vertical' : 'horizontal'} mirror line. Where is its image?`,
+    };
+  }
   if (k === 1) {
-    const b = int(rng, 3, 8), yy = int(rng, 1, b - 1), xx = int(rng, 1, 9);
-    const img: [number, number] = [xx, 2 * b - yy];
-    return { eq: `h ${pt(xx, yy)}, ${b}`, answer: pt(...img), wrongs: ptOpts(img, [[xx, yy], [xx, b], [2 * b - yy, xx], [2 * b - xx, yy], [xx, b + yy]]), ar: `انعكاس النقطة ${pt(xx, yy)} حول المستقيم الأفقي y = ${b}. ما إحداثيات صورتها؟`, en: `Reflect the point ${pt(xx, yy)} in the horizontal line y = ${b}. What are the coordinates of the image?` };
+    return {
+      eq: `between ${n}`, answer: String(2 * n), wrongs: pos(2 * n, [n, n + 1, 2 * n + 1, 2 * n - 1]),
+      ar: `على شبكة مربعات، يبعد رأس شكل ${squaresAr(n)} عن محور الانعكاس. كم مربعًا بين هذا الرأس وصورته بالانعكاس؟`,
+      en: `On a square grid, a vertex is ${n} squares from the mirror line. How many squares are there between the vertex and its image?`,
+    };
   }
   if (k === 2) {
-    const x2 = a + dx;
-    return { eq: `mirror ${pt(x, y)}, ${pt(x2, y)}`, answer: `x = ${a}`, wrongs: wrongsFrom(`x = ${a}`, [`x = ${x2 - x}`, `y = ${y}`, `x = ${x + x2}`, `y = ${a}`], j => `x = ${a + Math.abs(j)}`), ar: `صورة النقطة ${pt(x, y)} بالانعكاس حول مستقيم رأسي هي النقطة ${pt(x2, y)}. ما معادلة محور الانعكاس؟`, en: `The image of ${pt(x, y)} after a reflection in a vertical line is ${pt(x2, y)}. What is the equation of the line of reflection?` };
+    // numbered vertical grid lines; the mirror is line a, the vertex on line c < a; the image is on 2a − c
+    const a = int(rng, 6, 12), c = int(rng, Math.max(1, 2 * a - 20), a - 2);
+    const ans = 2 * a - c;
+    return {
+      eq: `grid line ${a} ${c}`, answer: String(ans), wrongs: pos(ans, [a + c, a - c + a - 1, c, a + (a - c) + 1, 2 * a]),
+      ar: `على شبكة مربعات خطوطها الرأسية مرقّمة من اليسار إلى اليمين، محور الانعكاس هو الخط الرأسي رقم ${a}، ورأس شكل على الخط الرأسي رقم ${c}. على أي خط رأسي تقع صورة هذا الرأس؟`,
+      en: `On a square grid whose vertical lines are numbered from left to right, the mirror line is vertical line ${a} and a vertex is on vertical line ${c}. On which vertical line is its image?`,
+    };
   }
-  if (k === 3) return { eq: `dist ${pt(x, y)}, ${a}`, answer: String(2 * dx), wrongs: pos(2 * dx, [dx, a, 2 * a, x + a, 2 * dx + 1]), ar: `ما المسافة بالوحدات بين النقطة ${pt(x, y)} وصورتها بالانعكاس حول المستقيم الرأسي x = ${a}؟`, en: `What is the distance, in units, between ${pt(x, y)} and its image after a reflection in the vertical line x = ${a}?` };
-  const ans: [number, number] = [a + dx, y];
-  return { eq: pt(x, y), answer: pt(...ans), wrongs: ptOpts(ans, [[x, y], [a, y], [x + dx, y], [y, a + dx], [a + dx, -y]]), ar: `انعكاس النقطة ${pt(x, y)} حول المستقيم الرأسي x = ${a}. ما إحداثيات صورتها؟`.replace(`x = ${a}`, `x = ${a}`), en: `Reflect the point ${pt(x, y)} in the vertical line x = ${a}. What are the coordinates of the image?` };
-});
+  if (k === 3) {
+    const L = int(rng, 3, 12), W = int(rng, 2, L - 1);
+    return {
+      eq: `keeps ${L} ${W}`, answer: String(L), wrongs: pos(L, [2 * L, L + W, W, L - 1]),
+      ar: `مستطيل طوله ${L} سم وعرضه ${W} سم، رُسمت صورته بالانعكاس حول محور. كم سنتيمترًا طول صورة المستطيل؟`,
+      en: `A rectangle is ${L} cm long and ${W} cm wide. Its image is drawn by a reflection in a mirror line. How many centimetres long is the image?`,
+    };
+  }
+  return {
+    eq: 'what a reflection keeps', answer: 'أطوال الأضلاع وقياسات الزوايا',
+    wrongs: ['اتجاه الشكل يمينًا ويسارًا', 'موقع الشكل على الشبكة', 'بُعد الشكل عن المحور يتضاعف'],
+    ar: 'أيّ مما يأتي يبقى كما هو في صورة الشكل بالانعكاس حول محور؟',
+    en: 'Which of these stays the same in the image of a shape after a reflection in a mirror line?',
+  };
+}), ownsDifficulty: true };
 
 const translate = (id: string, match: RegExp, grade: number) => T(id, match, [grade, grade], ({ rng, diff }) => {
   const m = span(diff, 5, 8, 10);
@@ -899,8 +1147,8 @@ const coordPlane5 = T('coord_plane_g5', /^المستوي الاحداثي$/, [5,
   const x = int(rng, 1, 9), y = int(rng, 1, 9);
   // 0–1 read a coordinate, 2 a distance along a grid line; 3 plot a point from moves, 4 a rectangle's fourth vertex.
   const k = pick(rng, [0, 1, 2, 3, 4]);
-  if (k === 0) return { eq: pt(x, y), answer: String(x), wrongs: pos(x, [y, x + 1, x * y, x + y]), ar: `ما الإحداثي السيني للنقطة (${x} ، ${y})؟`, en: `What is the x-coordinate of the point (${x}, ${y})?` };
-  if (k === 1) return { eq: pt(x, y), answer: String(y), wrongs: pos(y, [x, y + 1, x * y, x + y]), ar: `ما الإحداثي الصادي للنقطة (${x} ، ${y})؟`, en: `What is the y-coordinate of the point (${x}, ${y})?` };
+  if (k === 0) return { eq: pt(x, y), answer: String(x), wrongs: pos(x, [y, x + 1, x * y, x + y]), ar: `ما الإحداثي السيني للنقطة (${x}, ${y})؟`, en: `What is the x-coordinate of the point (${x}, ${y})?` };
+  if (k === 1) return { eq: pt(x, y), answer: String(y), wrongs: pos(y, [x, y + 1, x * y, x + y]), ar: `ما الإحداثي الصادي للنقطة (${x}, ${y})؟`, en: `What is the y-coordinate of the point (${x}, ${y})?` };
   if (k === 3) {
     const dx = int(rng, 1, 9), dy = int(rng, 1, 9), ans: [number, number] = [dx, dy];
     return { eq: `walk ${pt(dx, dy)}`, answer: pt(...ans), wrongs: ptOpts(ans, [[dy, dx], [dx, 0], [0, dy], [dx + dy, dy], [dx, dx + dy]]), ar: `انطلق سامر من نقطة الأصل، فتحرّك ${unitAr(dx)} إلى اليمين ثم ${unitAr(dy)} إلى الأعلى. ما إحداثيات النقطة التي وصل إليها؟`, en: `Samer starts at the origin and moves ${unitEn(dx)} right, then ${unitEn(dy)} up. What are the coordinates of the point he reaches?` };
@@ -913,7 +1161,7 @@ const coordPlane5 = T('coord_plane_g5', /^المستوي الاحداثي$/, [5,
     return { eq: `rect ${given.map(c => pt(...c)).join(', ')}`, answer: pt(...ans), wrongs: ptOpts(ans, [[ans[1], ans[0]], [xo, yo], [ans[0] + (x2 - x1), ans[1] + (y2 - y1)], [ans[0], yo + (y2 - y1)]].filter(c => c[0] > 0 && c[1] > 0) as Array<[number, number]>), ar: `النقاط ${given.map(c => pt(...c)).join(' و ')} ثلاثة رؤوس لمستطيل. ما إحداثيات الرأس الرابع؟`, en: `The points ${given.map(c => pt(...c)).join(', ')} are three vertices of a rectangle. What are the coordinates of the fourth vertex?` };
   }
   const y2 = y + int(rng, 1, span(diff, 5, 7, 9));
-  return { eq: `${pt(x, y)}, ${pt(x, y2)}`, answer: String(y2 - y), wrongs: pos(y2 - y, [y2 + y, y2, y + 1, y2 - y + 1]), ar: `ما المسافة بين النقطتين (${x} ، ${y}) و (${x} ، ${y2}) بالوحدات؟`, en: `What is the distance, in units, between the points (${x}, ${y}) and (${x}, ${y2})?` };
+  return { eq: `${pt(x, y)}, ${pt(x, y2)}`, answer: String(y2 - y), wrongs: pos(y2 - y, [y2 + y, y2, y + 1, y2 - y + 1]), ar: `ما المسافة بين النقطتين (${x}, ${y}) و (${x}, ${y2}) بالوحدات؟`, en: `What is the distance, in units, between the points (${x}, ${y}) and (${x}, ${y2})?` };
 });
 
 const rotate = T('rotate', /^الدوران$/, [7, 7], ({ rng }) => {
@@ -1058,7 +1306,12 @@ const proportionalParts = T('proportional_parts', /^الاجزاء المتنا�
 });
 
 const bisector = T('angle_bisector_thm', /^منصفات في المثلث$/, [9, 9], ({ rng, diff }) => {
-  const a = int(rng, 2, 7), k = int(rng, 2, 4), bd = int(rng, 2, span(diff, 6, 9, 12));
+  // AB = a, AC = ak, BC = bd(1 + k): a triangle only when bd < a and bd(k + 1) > a(k − 1).
+  // Drawn apart, AB = 6, AC = 24, BD = 12 keyed DC = 48 for sides 6, 24, 60 — no such
+  // triangle (hand review of the ready-made sheets, 2026-11-20).
+  const a = int(rng, 3, span(diff, 7, 9, 12)), k = int(rng, 2, 4);
+  const fits = Array.from({ length: a - 2 }, (_, i) => i + 2).filter(n => n * (k + 1) > a * (k - 1));
+  const bd = pick(rng, fits.length ? fits : [a - 1]);
   const b = a * k, dc = bd * k;
   // 0 the angle bisector theorem; 1 a point on a perpendicular bisector, 2 a point on an angle bisector (both equidistant); 3 the incentre's distance from a side.
   const kind = pick(rng, [0, 1, 2, 3]);
@@ -1108,6 +1361,33 @@ const medians = T('medians_centroid', /^القطع المتوسطه والارت
   const k = kind === 0 || (kind === 4 && rng() < 0.5);
   const ans = k ? (2 * m) / 3 : m / 3;
   return { eq: `${m}`, answer: String(ans), wrongs: pos(ans, [m / 2, m, k ? m / 3 : (2 * m) / 3, ans + 1, m - 1]), ar: `في المثلث ABC، القطعة المتوسطة من الرأس A طولها ${m} سم، ومركز المثلث G. ما طول ${k ? 'AG' : 'GD (حيث D منتصف BC)'}؟`, en: `In triangle ABC the median from vertex A is ${m} cm long, and G is the centroid. What is the length of ${k ? 'AG' : 'GD (where D is the midpoint of BC)'}?` };
+});
+
+/**
+ * Grade 9 GeoGebra lab «توسع: مثلث القطع المنصفة» (added 2026-11-13): the triangle
+ * the three midsegments make has a quarter of the area and half the perimeter of
+ * the triangle they are drawn in, whatever its shape.
+ */
+const midsegmentTriangle = T('midsegment_triangle', /^(?:معمل برمجيه جيوجبرا (?:توسع )?)?مثلث القطع المنصفه$/, [9, 9], ({ rng, diff }) => {
+  // 0 area of the midsegment triangle; 1 area of the triangle; 2 perimeter; 3 area from coordinates; 4 the ratio
+  const kind = pick(rng, [0, 1, 2, 3, 4]);
+  if (kind === 2) {
+    const a = int(rng, 3, 9), b = int(rng, 3, 9), c = int(rng, Math.abs(a - b) + 1, a + b - 1), h = a + b + c;
+    return { eq: `${2 * a}, ${2 * b}, ${2 * c}`, answer: String(h), wrongs: pos(h, [2 * h, a + b, b + c, a + c, h + a]), ar: `أطوال أضلاع المثلث ABC هي ${2 * a} سم و ${2 * b} سم و ${2 * c} سم. ما محيط مثلث القطع المنصفة له بالسنتمتر؟`, en: `The sides of triangle ABC are ${2 * a} cm, ${2 * b} cm and ${2 * c} cm. What is the perimeter, in cm, of its midsegment triangle?` };
+  }
+  if (kind === 3) {
+    let p = int(rng, 1, 6), v = int(rng, 1, 6);
+    if ((p * v) % 2) v = v === 6 ? 5 : v + 1;
+    const u = int(rng, -3, 6), m = (p * v) / 2;
+    return { eq: `${p}, ${u}, ${v}`, answer: String(m), wrongs: pos(m, [2 * p * v, p * v, (p * v) / 4, 4 * m + 2, m + 1]), ar: `رؤوس المثلث ABC هي A${pt(0, 0)} و B${pt(2 * p, 0)} و C${pt(2 * u, 2 * v)}. ما مساحة مثلث القطع المنصفة له بوحدة المساحة؟`, en: `Triangle ABC has vertices A${pt(0, 0)}, B${pt(2 * p, 0)} and C${pt(2 * u, 2 * v)}. What is the area, in square units, of its midsegment triangle?` };
+  }
+  if (kind === 4) {
+    const shape = pick(rng, [['حاد الزوايا', 'acute'], ['قائم الزاوية', 'right-angled'], ['مختلف الأضلاع', 'scalene']] as const);
+    return { eq: shape[1], answer: '1 : 4', wrongs: ['1 : 2', '1 : 3', '1 : 8'], ar: `في مثلث ${shape[0]}، ما نسبة مساحة مثلث القطع المنصفة إلى مساحة المثلث الأصلي؟`, en: `In a ${shape[1]} triangle, what is the ratio of the area of the midsegment triangle to the area of the original triangle?` };
+  }
+  const m = int(rng, 2, span(diff, 9, 15, 24));
+  if (kind === 1) return { eq: `${m}`, answer: String(4 * m), wrongs: pos(4 * m, [2 * m, 3 * m, 8 * m, m * m, m + 4]), ar: `مساحة مثلث القطع المنصفة للمثلث ABC تساوي ${m} سم². ما مساحة المثلث ABC؟`, en: `The midsegment triangle of triangle ABC has area ${m} cm². What is the area of triangle ABC?` };
+  return { eq: `${4 * m}`, answer: String(m), wrongs: pos(m, [2 * m, 3 * m, 4 * m, 8 * m, m + 1]), ar: `مساحة المثلث ABC تساوي ${4 * m} سم². ما مساحة مثلث القطع المنصفة له؟`, en: `Triangle ABC has area ${4 * m} cm². What is the area of its midsegment triangle?` };
 });
 
 const TRI9: Array<[number, number, number]> = [[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25]];
@@ -1289,31 +1569,35 @@ const bigAmount = (set: string, n: number) => (set === 'volume' ? `${n} ${tamyiz
 const bigTarget = (set: string) => (set === 'volume' ? 'لترات' : UNIT_WORDS[set]!.big);
 const bigMin = (set: string, min: number) => (set === 'volume' ? Math.max(3, min) : min);
 /** «كم غرامًا في 3 كغ و 250 غ؟» — a compound measure written in the small unit. */
-const unitCompound = (rng: Rng, diff: D, set: string): Draft => {
+/** `cap` keeps a lesson inside its grade's numbers (Grade 3 stays within 9999), options included. */
+const unitCompound = (rng: Rng, diff: D, set: string, cap = Infinity): Draft => {
   const [, , bigEn, smallEn, f] = UNIT_SETS[set]!, w = UNIT_WORDS[set]!;
-  const a = int(rng, bigMin(set, 1), span(diff, 5, 9, 15)), b = f === 100 ? int(rng, 1, 99) : 10 * int(rng, 1, 99);
-  return { eq: `${a}, ${b}`, answer: String(a * f + b), wrongs: pos(a * f + b, [a + b, a * f * b, a * 10 + b, (a * f + b) * 10, a * f - b]), ar: `كم ${w.acc} في ${bigAmount(set, a)} و ${b} ${w.small}؟`, en: `How many ${smallEn} are in ${a} ${bigEn} ${b} ${smallEn}?` };
+  const a = int(rng, bigMin(set, 1), Math.min(span(diff, 5, 9, 15), Math.floor((cap - 990) / f))), b = f === 100 ? int(rng, 1, 99) : 10 * int(rng, 1, 99);
+  return { eq: `${a}, ${b}`, answer: String(a * f + b), wrongs: pos(a * f + b, [a + b, a * f * b, a * 10 + b, (a * f + b) * 10, a * f - b, (a + 1) * f + b].filter(c => c <= cap)), ar: `كم ${w.acc} في ${bigAmount(set, a)} و ${b} ${w.small}؟`, en: `How many ${smallEn} are in ${a} ${bigEn} ${b} ${smallEn}?` };
 };
 /** A whole number of the big unit, less a part in the small unit: convert, then subtract. */
-const unitStory = (rng: Rng, diff: D, set: string): Draft => {
+const unitStory = (rng: Rng, diff: D, set: string, cap = Infinity): Draft => {
   const f = UNIT_SETS[set]![4];
-  const n = int(rng, bigMin(set, 2), span(diff, 5, 9, 15)), p = f === 100 ? 10 * int(rng, 1, 9) : 50 * int(rng, 1, 19);
+  const n = int(rng, bigMin(set, 2), Math.min(span(diff, 5, 9, 15), Math.floor((cap - f) / f))), p = f === 100 ? 10 * int(rng, 1, 9) : 50 * int(rng, 1, 19);
   const left = n * f - p;
   const [ar, en] = UNIT_WORDS[set]!.story(n, p);
-  return { eq: `left ${n}, ${p}`, answer: String(left), wrongs: pos(left, [n * f + p, n * f, n * f - 10 * p, (n - 1) * f, left + f / 10]), ar, en };
+  return { eq: `left ${n}, ${p}`, answer: String(left), wrongs: pos(left, [n * f + p, n * f, n * f - 10 * p, (n - 1) * f, left + f / 10].filter(c => c <= cap)), ar, en };
 };
+// Grade 3 (its only grade) works «ضمن الألوف»: it converted 18 km and offered 4860000 (2026-11-20).
+const G3_CAP = 9999;
 const convertGen = (id: string, match: RegExp, sets: string[], grades: [number, number]) => T(id, match, grades, ({ rng, diff }) => {
   const set = pick(rng, sets);
   const [, , bigEn, smallEn, f] = UNIT_SETS[set]!;
+  const fit = (cands: number[]) => cands.filter(c => c <= G3_CAP);
   // 0 big → small, 1 small → big; 2 a compound measure in the small unit, 3 what is left (real life).
   const k = pick(rng, [0, 1, 2, 3]);
-  if (k === 2) return unitCompound(rng, diff, set);
-  if (k === 3) return unitStory(rng, diff, set);
-  const n = int(rng, bigMin(set, 2), span(diff, 9, 25, 90));
-  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, [n * f * 10, (n * f) / 10, n + f, n * f / 100 | 0, n * 10]), ar: `حوّل ${bigAmount(set, n)} إلى ${UNIT_WORDS[set]!.small}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
-  const q = int(rng, 2, span(diff, 9, 25, 60));
+  if (k === 2) return unitCompound(rng, diff, set, G3_CAP);
+  if (k === 3) return unitStory(rng, diff, set, G3_CAP);
+  const n = int(rng, bigMin(set, 2), Math.min(span(diff, 9, 25, 90), Math.floor(G3_CAP / f)));
+  if (k === 0) return { eq: `${n}`, answer: String(n * f), wrongs: pos(n * f, fit([n * f * 10, (n * f) / 10, n + f, n * f / 100 | 0, n * 10, (n - 1) * f])), ar: `حوّل ${bigAmount(set, n)} إلى ${UNIT_WORDS[set]!.small}.`, en: `Convert ${n} ${bigEn} to ${smallEn}.` };
+  const q = int(rng, 2, Math.min(span(diff, 9, 25, 60), Math.floor(G3_CAP / f)));
   const small = q * f;
-  return { eq: `${small}`, answer: String(q), wrongs: pos(q, [q * 10, small / 10, q * 100, q + 1, small]), ar: `حوّل ${small} ${UNIT_WORDS[set]!.small} إلى ${bigTarget(set)}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
+  return { eq: `${small}`, answer: String(q), wrongs: pos(q, fit([q * 10, small / 10, q * 100, q + 1, small])), ar: `حوّل ${small} ${UNIT_WORDS[set]!.small} إلى ${bigTarget(set)}.`, en: `Convert ${small} ${smallEn} to ${bigEn}.` };
 });
 
 /** The lesson names the quantity — length, mass or capacity — and only that quantity's units appear. */
@@ -1381,23 +1665,73 @@ const clockWords = T('time_words', /^قراءه الوقت/, [3, 3], ({ rng }) =
   return { eq: `${HOURS_AR[h]} ${word}`, answer: clock(h2, m2), wrongs: wrongsFrom(clock(h2, m2), [clock(...addMinutes(h, 0, -off)), clock(h, 0), clock(...addMinutes(h, 0, off + 5)), clock(...addMinutes(h, 0, off - 5))], j => clock(...addMinutes(h, 0, off + 5 * Math.abs(j) + 10))), ar: `كيف تُكتب الساعة «${HOURS_AR[h]} ${word}» بالأرقام؟`, en: `How is the time «${HOURS_AR[h]} ${word}» (Arabic wording) written in digits?` };
 });
 
+const TICK_AR = ['', 'الأولى', 'الثانية', 'الثالثة', 'الرابعة'];
+/**
+ * Grade 3 «الوقت بالدقائق» — reading the clock to the minute, which is the
+ * lesson's objective: the minute hand a few small marks past a number, counting
+ * on by fives then ones, the time read in words, and a few minutes later across
+ * the hour («4:63» is the slip). Until 2026-11-14 the lesson drew the elapsed-time
+ * questions of the lessons after it.
+ */
+const clockMinutes = T('clock_minutes_g3', /^الوقت بالدقائق$/, [3, 3], ({ rng }) => {
+  const h = int(rng, 1, 11), nx = h + 1, k = pick(rng, [0, 1, 2, 3]);
+  if (k === 0) {
+    const n = int(rng, 1, 11), s = int(rng, 1, 4), m = 5 * n + s;
+    return { eq: `${h}, ${n}+${s}`, answer: clock(h, m), wrongs: wrongsFrom(clock(h, m), [clock(h, n + s), clock(nx, m), clock(h, 5 * n - s), ...(n < 11 ? [clock(h, 5 * (n + 1) + s)] : [])], j => clock(h, (m + 5 * Math.abs(j)) % 60)), ar: `يشير عقرب الدقائق إلى التدريجة ${TICK_AR[s]} بعد العدد ${n}، ويقع عقرب الساعات بين العددين ${h} و ${nx}. ما الوقت؟ (بين كل عددين متتاليين على الساعة 5 تدريجات، كل تدريجة دقيقة واحدة)`, en: `The minute hand points to the ${['', 'first', 'second', 'third', 'fourth'][s]} small mark after ${n}, and the hour hand is between ${h} and ${nx}. What time is it? (each small mark is one minute)` };
+  }
+  if (k === 1) {
+    const n = int(rng, 2, 11), s = int(rng, 1, 4), m = 5 * n + s;
+    return { eq: `5 × ${n} + ${s}`, answer: String(m), wrongs: pos(m, [n + s, 5 * n, 5 * (n + s), 5 * n - s, 10 * n + s]), ar: `يعدّ فارس دقائق الساعة: عدّ بالخمسات من العدد 12 حتى العدد ${n}، ثم عدّ ${minAr(s)} أخرى. كم دقيقة مضت بعد بداية الساعة؟`, en: `Fares counts in fives from 12 to ${n}, then counts on ${s} more minute${s === 1 ? '' : 's'}. How many minutes past the hour is it?` };
+  }
+  if (k === 2) {
+    let m = 0;
+    do m = int(rng, 11, 59); while (m % 5 === 0);
+    const say = (hr: number, mm: number) => `${HOURS_AR[hr]} و ${minAr(mm)}`;
+    const swap = (m % 10) * 10 + Math.floor(m / 10);
+    const ans = say(h, m);
+    return { eq: clock(h, m), answer: ans, wrongs: wrongsFrom(ans, [say(nx, m), say(h, 60 - m), ...(swap < 60 && swap > 10 && swap !== m ? [say(h, swap)] : [])], j => say(h, ((m + 5 * Math.abs(j)) % 49) + 11)), ar: `كيف نقرأ الوقت ${clock(h, m)}؟`, en: `How do we read the time ${clock(h, m)} in Arabic words?` };
+  }
+  const m = int(rng, 52, 59), d = int(rng, 61 - m, 9), m2 = m + d - 60;
+  return { eq: `${clock(h, m)} + ${d}`, answer: clock(nx, m2), wrongs: wrongsFrom(clock(nx, m2), [`${h}:${m + d}`, clock(h, m2), clock(nx, m + d - 50)], j => clock(nx, m2 + Math.abs(j))), ar: `تشير الساعة إلى ${clock(h, m)}. إلى أي وقت تشير بعد ${minAr(d)}؟`, en: `A clock shows ${clock(h, m)}. What will it show ${d} minutes later?` };
+});
+
+/**
+ * Grade 3 «الفترات الزمنية (1)»: elapsed time in minutes within one hour — the
+ * lesson's own limit, which the shared elapsed-time generator ignored (it crossed
+ * hours and asked how many minutes are in «5 ساعات و 35 دقيقة»). How long, when it
+ * ended, when it started, and which of two activities was longer.
+ */
+const elapsedInHour = T('elapsed_hour_g3', /^الفترات الزمنيه \(1\)$/, [3, 3], ({ rng, diff }) => {
+  const h = int(rng, 1, 11), step = diff === 'easy' ? 5 : 1;
+  const span2 = () => { const a = step * int(rng, 0, Math.floor(40 / step)); const b = step * int(rng, Math.ceil((a + 5) / step), Math.floor(59 / step)); return [a, b] as const; };
+  const [m1, m2] = span2(), d = m2 - m1, k = pick(rng, [0, 1, 2, 3]);
+  if (k === 0) return { eq: `${clock(h, m2)} − ${clock(h, m1)}`, answer: String(d), wrongs: pos(d, [m2, m1 + m2, d + 10, d - 10, 60 - d]), ar: `بدأت حصة الرسم الساعة ${clock(h, m1)} وانتهت الساعة ${clock(h, m2)}. كم دقيقة استغرقت؟`, en: `An art class starts at ${clock(h, m1)} and ends at ${clock(h, m2)}. How many minutes does it last?` };
+  if (k === 1) return { eq: `${clock(h, m1)} + ${d}`, answer: clock(h, m2), wrongs: wrongsFrom(clock(h, m2), [clock(h, d), clock(h + 1, m2), ...(m1 >= d ? [clock(h, m1 - d)] : []), ...(m2 + 10 < 60 ? [clock(h, m2 + 10)] : [])], j => clock(h, (m2 + Math.abs(j)) % 60)), ar: `بدأ سامي حلّ واجبه الساعة ${clock(h, m1)}، واستمر ${minAr(d)}. متى انتهى؟`, en: `Sami starts his homework at ${clock(h, m1)} and works for ${d} minutes. When does he finish?` };
+  if (k === 2) return { eq: `${clock(h, m2)} − ${d}`, answer: clock(h, m1), wrongs: wrongsFrom(clock(h, m1), [clock(h, d), clock(h - 1 || 12, m1), ...(m2 + d < 60 ? [clock(h, m2 + d)] : []), clock(h, m1 + 5)], j => clock(h, (m1 + 5 * Math.abs(j) + 5) % 60)), ar: `انتهت مباراة الساعة ${clock(h, m2)}، وقد استمرت ${minAr(d)}. متى بدأت؟`, en: `A match ends at ${clock(h, m2)} after lasting ${d} minutes. When did it start?` };
+  let [a1, a2] = span2(), [b1, b2] = span2();
+  while (a2 - a1 === b2 - b1) [b1, b2] = span2();
+  const [lw, lf, lt, sw, sf, st] = a2 - a1 > b2 - b1 ? ['قراءة ليلى', a1, a2, 'رسم سامي', b1, b2] as const : ['رسم سامي', b1, b2, 'قراءة ليلى', a1, a2] as const;
+  const gap = (lt - lf) - (st - sf);
+  return { eq: `(${lt} − ${lf}) − (${st} − ${sf})`, answer: String(gap), wrongs: pos(gap, [lt - lf, st - sf, lt - st, gap + 5, gap + 10]), ar: `قرأت ليلى من الساعة ${clock(h, a1)} إلى الساعة ${clock(h, a2)}، ورسم أخوها سامي من الساعة ${clock(h, b1)} إلى الساعة ${clock(h, b2)}. بكم دقيقة تزيد مدة ${lw} على مدة ${sw}؟`, en: `Laila reads from ${clock(h, a1)} to ${clock(h, a2)}, and her brother Sami draws from ${clock(h, b1)} to ${clock(h, b2)}. By how many minutes is ${lw === 'قراءة ليلى' ? "Laila's reading" : "Sami's drawing"} longer than ${sw === 'قراءة ليلى' ? "Laila's reading" : "Sami's drawing"}?` };
+});
+
 export const GEOMETRY_TOPICS: readonly Topic[] = [
-  perimeter, area, composite, parallelogramArea, triangleArea, trapezoidArea, rectPrism,
-  circleParts, sector, circumference, circleArea,
+  perimeter, areaUnits, area, composite, parallelogramArea, triangleArea, trapezoidArea, rectPrism,
+  circleParts, sector, circumference, circleArea, constructions,
   prismCylinderVolume, pyramidConeVolume, prismCylinderSurface, pyramidConeSurface, sphere,
   angleKind, lineAndPoint, triBySides, triByAngles,
   quadName('quad_name_g5', /^تصنيف الاشكال الرباعيه$/, 5), quadName('quad_name_g6', /^الاشكال الرباعيه$/, 6),
   prismPyramid, symmetry, complement, transversal, triangleAngles, polygonAngles,
   parallelogram, parallelogramTest, specialParallelograms, parallelProof, isosceles,
-  congruence('congruence_a', /^تطابق المثلثات \(SSS SAS HL\)$/, ['SSS', 'SAS', 'HL']), congruenceAsa('congruence_b', /^تطابق المثلثات \(ASA AAS\)$/),
+  congruenceSss('congruence_a', /^تطابق المثلثات \(SSS SAS HL\)$/), congruenceAsa('congruence_b', /^تطابق المثلثات \(ASA AAS\)$/),
   similarity, pyth,
   reflectLine, translate('translate_g5', /^الانسحاب$/, 5), translate('translate_g6', /^الانسحاب في المستوي الاحداثي$/, 6), reflectAxes, coordPlane5, coordPlane6, rotate,
   dilate('dilate_g7', /^التكبير$/, 7), dilate('dilate_g8', /^التمدد$/, 8),
-  distance, pointLine, proportionalParts, bisector, medians, trigRatios, trigApplications,
+  distance, pointLine, proportionalParts, midsegmentTriangle, bisector, medians, trigRatios, trigApplications,
   circleChords, circleAngles, bearing, sineArea,
   convertGen('units_m', /^المتر والسنتيمتر$/, ['length_m'], [3, 3]), convertGen('units_km', /^الكيلومتر$/, ['length_km'], [3, 3]),
   convertGen('units_mass', /^الغرام والكيلوغرام$/, ['mass'], [3, 3]), convertGen('units_volume', /^اللتر والمليلتر$/, ['volume'], [3, 3]),
   unitsMixed('units_length', /^وحدات قياس الطول$/, ['length_m', 'length_km']), unitsMixed('units_mass_g45', /^وحدات قياس الكتله$/, ['mass']),
   unitsMixed('units_capacity', /^وحدات قياس السعه$/, ['volume']), unitsMixed('units_capacity_length', /^وحدات قياس السعه والطول$/, ['length_m', 'volume']),
-  timeGen('time_g3', /^(?:الوقت بالدقائق|الفترات الزمنيه)/, [3, 3]), timeGen('time_g45', /^الزمن$/, [4, 5]), clockWords,
+  timeGen('time_g3', /^الفترات الزمنيه \(2\)$/, [3, 3]), timeGen('time_g45', /^الزمن$/, [4, 5]), clockWords, clockMinutes, elapsedInHour,
 ];

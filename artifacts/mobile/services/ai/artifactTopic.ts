@@ -49,6 +49,10 @@ const NOUNS = [
 const QUALIFIERS = [
   `كامل${ACC}`, 'كاملة', `صفي${ACC}`, 'صفية', `منزلي${ACC}`, 'منزلية',
   `قصير${ACC}`, 'قصيرة', `سريع${ACC}`, 'سريعة',
+  // How the activity runs, not what it is about: «نشاط ممتع» has no topic.
+  // Arabic only: "fun" and "interactive" are as often part of an English
+  // topic ("fun facts about space") as a description of the activity.
+  `ممتع${ACC}`, 'ممتعة', `تفاعلي${ACC}`, 'تفاعلية', `جماعي${ACC}`, 'جماعية', `فردي${ACC}`, 'فردية',
   // 'class' on its own is deliberately absent: it strips «Class Management»
   // down to «Management». Bare, it is likelier to be part of a topic than a
   // description of the artifact, and «صفية» / 'in-class' / 'classroom' already
@@ -59,8 +63,10 @@ const QUALIFIERS = [
 /** Prepositions that introduce the topic, with the colon the chips add. */
 const LEAD_IN = ['عن', 'حول', 'بخصوص', 'about', 'for', 'on'];
 
+// A colon may follow the noun directly («نشاط: لو كنت…»); it is left behind
+// and taken off the front below.
 const STRIP = new RegExp(
-  `(^|\\s)(?:${[...VERBS, ...NOUNS, ...QUALIFIERS].join('|')})(?=\\s|$)`,
+  `(^|\\s)(?:${[...VERBS, ...NOUNS, ...QUALIFIERS].join('|')})(?=[\\s:\uFF1A،,]|$)`,
   'gi',
 );
 const LEAD_IN_RE = new RegExp(
@@ -85,6 +91,31 @@ const SCOPE_PHRASE_RE = new RegExp(
 );
 
 /**
+ * Minutes that are the lesson, not the length of the activity: «الوقت لأقرب 5
+ * دقائق» (a grade 2 maths lesson), «تحويل 120 دقيقة إلى ساعات», "to the nearest 5
+ * minutes". Shared with `durationFromAsk` (examAsk.ts).
+ */
+export const NOT_A_LENGTH_BEFORE = '(?:أقرب|لأقرب|اقرب|لاقرب|nearest|every|each|كل)';
+export const NOT_A_LENGTH_AFTER = '\\s+(?:إلى|الى|الي|إلي|to|into|in\\s+hours?|بالساعات|ساعة|ساعات|hours?)(?=\\s|$)';
+
+/**
+ * A length the ask names — «15 دقيقة», «لمدة ٢٠ دقائق», «ربع ساعة», "a 15-minute",
+ * "for 20 minutes". It is how long, not what about: left in, «15 دقيقة» headed
+ * the activity. `durationFromAsk` (examAsk.ts) reads the number.
+ */
+const DURATION_RE = new RegExp(
+  [
+    '(?:(?:لمدة|مدته|مدتها|مدة|بمدة|في|خلال)\\s+)?[0-9٠-٩]{1,3}\\s*(?:-\\s*)?(?:دقيقة|دقيقه|دقائق|د)',
+    '(?:(?:لمدة|مدته|مدتها|مدة|بمدة|في|خلال)\\s+)?(?:ربع|نصف|ثلث)\\s+ساعة',
+    '(?:(?:for|of|in|lasting)\\s+)?(?:a\\s+)?[0-9]{1,3}\\s*(?:-\\s*)?(?:minutes?|mins?)(?:\\s+long)?',
+  ].map(p => `(^|\\s)(?<!${NOT_A_LENGTH_BEFORE}\\s*)${p}(?=[\\s:،,.؟?!]|$)(?!${NOT_A_LENGTH_AFTER})`).join('|'),
+  'gi',
+);
+
+/** «لو سمحت» / «لو تكرمت» anywhere: polite, and never part of a topic. */
+const POLITE_RE = /(^|\s)لو\s+(?:سمحت|سمحتي|سمحتِ|سمحتوا|سمحتم|تكرمت|تكرمتي|تكرمتم)(?=[\s:،,.؟?!]|$)/g;
+
+/**
  * Words that ask politely but name nothing. Trimmed from the edges only, never
  * the middle, so a topic that contains one («Vitamin A») keeps it. Without
  * this, "make me a quiz" resolved to the topic «me a» and beat the lesson the
@@ -95,7 +126,9 @@ const EDGE_FILLER = new Set([
   'will', 'you', 'i', 'need', 'want', 'give', 'get', 'just', 'my', 'our', 'to',
   'now', 'thanks', 'another', 'new', 'one',
   'لي', 'لنا', 'أريد', 'اريد', 'أبغى', 'ابغى', 'بدي', 'بدنا', 'ممكن', 'من', 'فضلك',
-  'لو', 'سمحت', 'أعطني', 'اعطني', 'عطيني', 'هات', 'الرجاء', 'رجاء', 'رجاءً',
+  // «لو» alone is not here: it opens a topic («لو كنت وزير التربية…») as
+  // often as it opens «لو سمحت», which `POLITE_RE` takes out whole.
+  'سمحت', 'أعطني', 'اعطني', 'عطيني', 'هات', 'الرجاء', 'رجاء', 'رجاءً',
   'جديد', 'جديدة', 'آخر', 'أخرى', 'اخرى', 'لطلابي', 'لصفي', 'للطلاب', 'الآن', 'الان',
 ]);
 
@@ -159,9 +192,38 @@ const CURRENT_LESSON_REF = new RegExp(
   'i',
 );
 
+/**
+ * «عليه», «عنها», «أكثر», «آخر»: words that point back at what the chat is
+ * already talking about. With the generic nouns below they make «ورقة عمل
+ * عليه», «أعطني أمثلة عليه», «مثال آخر» — follow-ups, not topics. Left as a
+ * topic, «عليه» titled a worksheet and was built as a free topic, and the
+ * search matched it to «موسى عليه السلام», which read as another subject and
+ * dropped the lesson the conversation was on.
+ */
+const POINTER_WORDS = new Set([
+  'عليه', 'عليها', 'عنه', 'عنها', 'فيه', 'فيها', 'منه', 'منها', 'به', 'بها', 'له', 'لها',
+  'أكثر', 'اكثر', 'آخر', 'اخر', 'أخرى', 'اخرى', 'غيره', 'غيرها', 'كمان', 'زيادة', 'مزيد',
+  'إضافي', 'إضافية', 'اضافي', 'اضافية', 'إضافيه', 'اضافيه',
+  'it', 'more', 'another', 'again',
+]);
+/** What a follow-up asks for, which names no topic beside a pointer. */
+const FOLLOW_UP_NOUNS = new Set([
+  'أمثلة', 'امثلة', 'أمثله', 'امثله', 'مثال', 'مثالا', 'تمارين', 'تمرين', 'أسئلة', 'اسئلة', 'سؤال',
+  'حل', 'شرح', 'اشرح', 'وضح', 'فسر', 'على', 'عن', 'في', 'من',
+  'examples', 'example', 'exercises', 'exercise', 'questions', 'question', 'on', 'about', 'of',
+]);
+
+function isPointerOnly(s: string): boolean {
+  // Lower-cased except «IT», which is a subject ("a quiz on IT"), not "it".
+  const words = s.replace(/[ً-ْـ]/g, '').split(/\s+/).filter(Boolean)
+    .map(w => (w === 'IT' ? w : w.toLowerCase()));
+  return words.some(w => POINTER_WORDS.has(w))
+    && words.every(w => POINTER_WORDS.has(w) || FOLLOW_UP_NOUNS.has(w) || ASKING_ONLY.has(w));
+}
+
 function isCurrentLessonRef(s: string): boolean {
   // Vowel marks and tatweel are typing noise here, not part of the pointer.
-  return CURRENT_LESSON_REF.test(s.replace(/[ً-ْـ]/g, '').trim());
+  return CURRENT_LESSON_REF.test(s.replace(/[ً-ْـ]/g, '').trim()) || isPointerOnly(s);
 }
 
 /**
@@ -185,7 +247,11 @@ export function stripScopePhrases(query: string): string {
 export function topicFromQuery(query: string): string {
   // Trailing «؟» / "?" glued to the last word hid it from the whole-word strip
   // («خطة درس؟» left «درس؟»).
-  let out = query.replace(/[?؟!.]+/g, ' ').replace(SCOPE_PHRASE_RE, '$1');
+  let out = query
+    .replace(/[?؟!.]+/g, ' ')
+    .replace(SCOPE_PHRASE_RE, '$1')
+    .replace(DURATION_RE, '$1')
+    .replace(POLITE_RE, '$1');
   for (let pass = 0; pass < 4; pass += 1) {
     const before = out;
     out = out.replace(STRIP, '$1').replace(/\s+/g, ' ').trim();
@@ -203,7 +269,8 @@ export function topicFromQuery(query: string): string {
     .replace(/^(?:a|an|the)\s+/i, '')
     .trim();
   const topic = trimEdgeFiller(out.replace(HOW_LEAD, ''));
-  return isOnlyAsking(topic) || isCurrentLessonRef(topic) ? '' : topic;
+  // Before the trim too: it takes «آخر» off «مثال آخر», leaving a bare «مثال».
+  return isOnlyAsking(topic) || isCurrentLessonRef(topic) || isPointerOnly(out) ? '' : topic;
 }
 
 const QUOTED_TOPIC_RE = /«([^«»]+)»|“([^“”]+)”|"([^"]+)"/;

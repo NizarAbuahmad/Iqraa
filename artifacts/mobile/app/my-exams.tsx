@@ -533,7 +533,7 @@ function ExamRow({
       >
         <Ionicons name="school-outline" size={ICON.lg} color={ACCENT} />
         <Text style={{ flex: 1, color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textAlign: align }}>
-          {t('reviewOpenBtn')}
+          {t(exam.reviewMode === 'feedback' ? 'feedbackOpenBtn' : 'reviewOpenBtn')}
         </Text>
         <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={ACCENT} />
       </Pressable>

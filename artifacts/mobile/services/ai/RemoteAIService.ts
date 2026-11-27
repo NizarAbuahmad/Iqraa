@@ -23,6 +23,7 @@ import { MockAIService } from './generators';
 import { appendFormats, requestWithoutFormats, splitFormatTypes } from './worksheetFormats.ts';
 import { applyClassroomSetup } from '@/services/classroomRouting';
 import { ApiError, apiFetch } from '../apiClient';
+import { reportRequestBody } from '../reportReason';
 import { describeAiError, generateWithProvenance, recordGeneration } from './aiProvenance.ts';
 import { streamChat, type ChatParams } from './chatStreamClient';
 import type { BoardSolution } from '@workspace/math-verify';
@@ -60,6 +61,11 @@ class TimeoutError extends Error {
  * default would end those requests on the teacher's screen while the server was
  * still working, and `prompt-slides` has no offline fallback to hide it. Only
  * these four calls get the longer wait; everything else keeps the default.
+ *
+ * The activity is the fifth (2026-11-20): two production requests in a row came
+ * back as the offline template while the server allows the model 120 s per
+ * attempt. A timeout there is not visible — the fallback hides it behind
+ * sample content — so the wait has to cover what the server will.
  */
 const DOCUMENT_TIMEOUT_MS = 90_000;
 
@@ -162,7 +168,7 @@ export class RemoteAIService extends AIService {
     // reads markdown, so it would print as asterisks.
     return plainActivity(await generateWithProvenance(
       'activity',
-      () => postJSON<ActivityOutput>('/generate/activity', req, opts),
+      () => postJSON<ActivityOutput>('/generate/activity', req, opts, DOCUMENT_TIMEOUT_MS),
       () => this.fallback.generateActivity(req),
     ));
   }
@@ -311,9 +317,10 @@ export class RemoteAIService extends AIService {
    * that one did *not* leave the report queued and saying otherwise would be
    * a lie the teacher acts on.
    */
-  async reportVariant(variantId: string): Promise<boolean> {
+  async reportVariant(variantId: string, reason?: string): Promise<boolean> {
     const res = await apiFetch(`/generate/variants/${encodeURIComponent(variantId)}/retire`, {
       method: 'POST',
+      body: reportRequestBody(reason),
     });
     if (res.status === 404) return false;
     if (!res.ok) {

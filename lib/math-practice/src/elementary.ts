@@ -13,9 +13,10 @@
  */
 import type { ConcreteItem, DiffTier } from './index.ts';
 import { FRESH_DRAWS, servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
+import { EARLY_CHOICE, EARLY_DRAWS, choosesByDifficulty, pickByDifficulty } from './earlyDifficulty.ts';
 
 export type ElementaryOp =
-  | 'add' | 'sub' | 'mul' | 'div' | 'compare' | 'place'
+  | 'add' | 'sub' | 'mul' | 'div' | 'compare' | 'compare_only' | 'order_only' | 'place'
   | 'frac' | 'frac_sub' | 'frac_mul' | 'frac_div' | 'frac_compare'
   | 'dec' | 'dec_sub' | 'dec_mul' | 'dec_div' | 'dec_compare'
   | 'percent';
@@ -50,19 +51,34 @@ const UNSERVED = new RegExp([
  * fraction addition. An empty list is a refusal, not a fallback — the caller
  * says there is no bank for the lesson rather than invent one.
  *
- * «جمع البيانات» is collecting data, not addition.
+ * «جمع البيانات» is collecting data, not addition. «الضرب كجمع متكرر» and
+ * «القسمة كطرح متكرر» are multiplication and division: the «as repeated
+ * addition/subtraction» names the method, and reading it as a second topic
+ * filled the Grade 2 lessons with unrelated three-digit sums.
  */
 export function elementaryOpsForTitle(title: string): ElementaryOp[] {
-  const t = fold(title).replace(/جمع\s*البيانات|data\s*collection/gi, ' ');
+  const t = fold(title)
+    .replace(/جمع\s*البيانات|data\s*collection/gi, ' ')
+    .replace(/ك(?:جمع|طرح)\s*متكرر|as\s*repeated\s*(?:addition|subtraction)/gi, ' ');
 
   if (/مقارنه|ترتيب|compar|order/i.test(t)) {
     if (/صحيحه/.test(t)) return [];
     if (/كسور|كسر|fraction/i.test(t)) return ['frac_compare'];
     if (/عشري|decimal/i.test(t)) return ['dec_compare'];
-    return /الاعداد|numbers/i.test(t) ? ['compare'] : [];
+    if (!/الاعداد|numbers/i.test(t)) return [];
+    // Grades 1–3 teach comparing and ordering as two lessons; Grades 4, 5 and 7 as one.
+    const compares = /مقارنه|compar/i.test(t);
+    const orders = /ترتيب|order/i.test(t);
+    return compares && orders ? ['compare'] : compares ? ['compare_only'] : ['order_only'];
   }
-  if (/مئوي|percent/i.test(t)) return /والكسور/.test(t) ? [] : ['percent'];
+  // «النسبة المئوية والكسور…» converts (pct_conv); Grade 6 «النسبة المئوية من عدد» has its own generator (pct_of_g6),
+  // since the shared op is a third conversions and grids
+  if (/مئوي|percent/i.test(t)) return /والكسور|من عدد/.test(t) ? [] : ['percent'];
   if (UNSERVED.test(t)) return [];
+  // Grade 1's tens and two-digit lessons have their own generators (early.ts
+  // `tensG1`, `twoDigitG1`); as plain add/sub they drew sums within 20. Not
+  // anchored at the end: from a lesson the blob is «title titleEn».
+  if (/^(?:جمع|طرح) (?:العشرات|عددين من منزلتين)(?=\s|$)/.test(t.trim())) return [];
   if (/منزلي|place\s*value/i.test(t)) return ['place'];
 
   const kind = /كسور|كسر|fraction/i.test(t) ? 'frac' : /عشري|decimal/i.test(t) ? 'dec' : 'whole';
@@ -75,6 +91,10 @@ export function elementaryOpsForTitle(title: string): ElementaryOp[] {
   // Regrouping in a product is a two-digit factor, which the times-table items
   // are not.
   if (named.mul && /اعاده/.test(t)) return [];
+  // A sum or difference «مع إعادة التجميع» / «مع وجود أصفار» is about one column
+  // regrouping, which the drill hits only by chance (half the time; a zero in
+  // under one in ten): early.ts `columnTopics` draws until it does.
+  if (/^(?:ال)?(?:جمع|طرح) مع (?:اعاده التجميع|وجود اصفار)/.test(t.trim())) return [];
 
   // «الكسور والقسمة» names a fraction and a division but is not dividing
   // fractions: an operation only counts when it is applied to the fractions.
@@ -115,8 +135,12 @@ const DEFAULT_OPS: Record<number, ElementaryOp[]> = {
 const ADD_MAX: Record<number, number> = { 1: 20, 2: 999, 3: 9999, 4: 99999, 5: 999999, 6: 999999 };
 /** Times tables for × and ÷ by grade (Grade 2 teaches 2–5). */
 const TABLE_MAX: Record<number, number> = { 1: 2, 2: 5, 3: 10, 4: 10, 5: 10, 6: 10 };
+/** The widest number a grade's place-value lesson names: G3 «ضمن الألوف», G4 «ضمن مئات الألوف», G5 «ضمن الملايين». */
+const PLACE_DIGITS: Record<number, number> = { 1: 2, 2: 3, 3: 4, 4: 6, 5: 8, 6: 7 };
 
 const TIER_SCALE: Record<DiffTier, number> = { easy: 0.1, medium: 0.5, hard: 1 };
+/** Grade 1 compares and orders two-digit numbers: 10 up to this, by tier. */
+const G1_COMPARE_MAX: Record<DiffTier, number> = { easy: 30, medium: 60, hard: 99 };
 
 export type Rng = () => number;
 export const int = (rng: Rng, lo: number, hi: number) => lo + Math.floor(rng() * (hi - lo + 1));
@@ -211,6 +235,18 @@ function unlikePair(rng: Rng): [number, number, number, number] {
  * The times table a lesson is about — «الضرب في 2», «القسمة على 5»,
  * "multiplying by 3" — or null. Such a lesson drills that table only.
  */
+export function lessonTables(blob: string): number[] | null {
+  // «الضرب في 6 و9»: both tables (only the first was ever drilled; 2026-11-20)
+  const t = blob.replace(TASHKEEL, '');
+  const m = t.match(/(?:ضرب|قسمة)\s*(?:في|على)\s*(\d{1,2})\s*و\s*(\d{1,2})/);
+  if (m) {
+    const ns = [Number(m[1]), Number(m[2])].filter(n => n >= 2 && n <= 12);
+    if (ns.length) return ns;
+  }
+  const one = lessonTable(blob);
+  return one === null ? null : [one];
+}
+
 export function lessonTable(blob: string): number | null {
   const t = blob.replace(TASHKEEL, '');
   const m = t.match(/(?:ضرب|قسمة)\s*(?:في|على)\s*(\d{1,2})/) ?? t.match(/(?:multipl\w*|divid\w*)\s*by\s*(\d{1,2})/i);
@@ -286,6 +322,9 @@ const STUDENT = noun('طالب', 'طالبان', 'طلاب', 'طالبًا');
 /** Genitive dual: «على طالبَين». */
 const STUDENT_GEN = noun('طالب', 'طالبَين', 'طلاب', 'طالبًا');
 const SCHOOL_GEN = noun('مدرسة', 'مدرستَين', 'مدارس', 'مدرسة');
+const SEAT = noun('مقعد', 'مقعدان', 'مقاعد', 'مقعدًا');
+/** Genitive dual, after «على»: «على مجموعتَين». */
+const GROUP_GEN = noun('مجموعة', 'مجموعتَين', 'مجموعات', 'مجموعةً');
 
 /** «n noun» as Arabic counts it. `n` is at least 2 — no word problem here counts one thing. */
 function counted(n: number, w: Noun): string {
@@ -300,8 +339,9 @@ const listAr = (xs: readonly (string | number)[]) => xs.join('، ');
 const listEn = (xs: readonly (string | number)[]) => xs.join(', ');
 const q = (s: string) => s.replace(/؟/g, '?');
 
-const PLACE_AR = ['الآحاد', 'العشرات', 'المئات', 'الألوف'];
-const PLACE_EN = ['ones', 'tens', 'hundreds', 'thousands'];
+// Up to millions: Grade 4 asks within «مئات الألوف», Grade 5 within «الملايين».
+const PLACE_AR = ['الآحاد', 'العشرات', 'المئات', 'الألوف', 'عشرات الألوف', 'مئات الألوف', 'الملايين', 'عشرات الملايين'];
+const PLACE_EN = ['ones', 'tens', 'hundreds', 'thousands', 'ten thousands', 'hundred thousands', 'millions', 'ten millions'];
 
 /** «345» → «300 + 40 + 5», zero digits left out. */
 const expanded = (digits: number[]) =>
@@ -429,8 +469,8 @@ function addKinds(base: Base, max: number, rng: Rng): ConcreteItem {
   }
 }
 
-function subKinds(base: Base, max: number, rng: Rng): ConcreteItem {
-  const a = int(rng, 2, max);
+function subKinds(base: Base, max: number, rng: Rng, lo = 2): ConcreteItem {
+  const a = int(rng, lo, max);
   const b = int(rng, 1, a - 1);
   const d = a - b;
   switch (int(rng, 1, 4)) {
@@ -447,7 +487,7 @@ function subKinds(base: Base, max: number, rng: Rng): ConcreteItem {
     }
     case 2:
     case 3: {
-      const x = int(rng, 6, Math.max(6, max));
+      const x = int(rng, Math.max(6, lo), Math.max(6, max));
       const y = int(rng, 3, x - 3);
       const t = x - y;
       const wr = wrongNums(t, rng, [x + y, t + 10, t - 10, t + 1, t - 1]);
@@ -484,11 +524,13 @@ function subKinds(base: Base, max: number, rng: Rng): ConcreteItem {
   }
 }
 
-function mulKinds(base: Base, a: number, bMax: number, rng: Rng): ConcreteItem {
-  switch (int(rng, 1, 3)) {
+function mulKinds(base: Base, a: number, bMax: number, rng: Rng, bMin = 2): ConcreteItem {
+  const kind = int(rng, 1, 3);
+  // «735 + 735 + … = ؟ × 735» is the Grade 2 meaning of ×, not a Grade 5 drill
+  switch (kind === 2 && a >= 100 ? 3 : kind) {
     case 1: {
       // The missing factor; the lesson's table stays the known one.
-      const b = int(rng, 2, bMax);
+      const b = int(rng, bMin, bMax);
       const p = a * b;
       const eq = rng() < 0.5 ? `${a} × ؟ = ${p}` : `؟ × ${a} = ${p}`;
       return ask(base, eq, String(b), wrongNums(b, rng, [b + 1, b - 1, p - a, a]),
@@ -503,7 +545,7 @@ function mulKinds(base: Base, a: number, bMax: number, rng: Rng): ConcreteItem {
         `أكمل بالعدد المناسب: ${eq}`, `Fill in the missing number: ${q(eq)}`);
     }
     default: {
-      const b = int(rng, 3, Math.max(3, bMax));
+      const b = int(rng, Math.max(3, bMin), Math.max(3, bMax));
       const p = a * b;
       const wr = wrongNums(p, rng, [a + b, p + a, p - a, p + 10]);
       const eq = `word:${b} × ${a}`;
@@ -587,14 +629,17 @@ function divKinds(base: Base, b: number, q0: number, grade: number, diff: DiffTi
   }
 }
 
-function compareKinds(base: Base, max: number, rng: Rng): ConcreteItem {
+function compareKinds(base: Base, max: number, rng: Rng, lo = 0, maxDigits = 4): ConcreteItem {
   const show = (v: number) => String(v);
   const what = { ar: 'الأعداد', one: 'العدد', en: 'numbers' };
   const k = int(rng, 1, 3);
-  if (k === 1) return orderItem(base, distinctInts(rng, 3, 0, max), show, rng() < 0.5, what);
-  if (k === 2 || max < 100) return extremeItem(base, distinctInts(rng, 4, 0, max), show, rng() < 0.5, what);
-  // The greatest / least number made from given digits — place value deciding order.
-  const L = Math.min(4, String(max).length);
+  if (k === 1) return orderItem(base, distinctInts(rng, 3, lo, max), show, rng() < 0.5, what);
+  if (k === 2 || max < 100) return extremeItem(base, distinctInts(rng, 4, lo, max), show, rng() < 0.5, what);
+  return digitsItem(base, Math.min(maxDigits, String(max).length), rng);
+}
+
+/** The greatest / least number made from given digits — place value deciding order. */
+function digitsItem(base: Base, L: number, rng: Rng): ConcreteItem {
   const digits = distinctInts(rng, L, 1, 9);
   const big = rng() < 0.5;
   const desc = [...digits].sort((x, y) => y - x);
@@ -605,6 +650,84 @@ function compareKinds(base: Base, max: number, rng: Rng): ConcreteItem {
     wrongStrs(key.join(''), [(big ? asc : desc).join(''), swap(key, L - 2), swap(key, 0)]),
     `ما ${big ? 'أكبر' : 'أصغر'} عدد يمكن تكوينه من الأرقام ${listAr(digits)}، إذا استُعمل كل رقم مرة واحدة؟`,
     `What is the ${big ? 'greatest' : 'least'} number you can make from the digits ${listEn(digits)}, using each digit once?`);
+}
+
+/**
+ * Grade 1's numbers have two places, so its digits question picks two of three
+ * digits: «ما أكبر عدد من منزلتين يمكن تكوينه من الأرقام 3، 7، 5…» is 75.
+ */
+function twoPlaceDigitsItem(base: Base, rng: Rng): ConcreteItem {
+  const digits = distinctInts(rng, 3, 1, 9);
+  const big = rng() < 0.5;
+  const [a, b, c] = [...digits].sort((x, y) => (big ? y - x : x - y)) as [number, number, number];
+  const key = `${a}${b}`;
+  return ask(base, `digits2:${big ? 'max' : 'min'}:${digits.join(',')}`, key,
+    wrongStrs(key, [`${b}${a}`, `${a}${c}`, `${c}${a}`]),
+    `ما ${big ? 'أكبر' : 'أصغر'} عدد من منزلتين يمكن تكوينه من الأرقام ${listAr(digits)}، إذا استُعمل كل رقم مرة واحدة على الأكثر؟`,
+    `What is the ${big ? 'greatest' : 'least'} two-digit number you can make from the digits ${listEn(digits)}, using each digit at most once?`);
+}
+
+/** The numbers a Grade 1–3 compare or order lesson names: G1 «ضمن منزلتين», G2 «ضمن 3 منازل», G3 «ضمن 4 منازل». */
+function compareRange(grade: number, diff: DiffTier, max: number): [number, number] {
+  if (grade === 1) return [10, G1_COMPARE_MAX[diff]];
+  if (grade === 2) return [100, 999];
+  // Grade 3 (u1_l3, u1_l4) showed 91 and 392 when it drew from 0 (2026-11-20).
+  if (grade === 3) return [1000, 9999];
+  // Grade 4 compares and orders «ضمن مئات الألوف» (u1_l2): it drew 0–99999 and showed 91 and 3206 (2026-11-21).
+  if (grade === 4) return [10000, diff === 'easy' ? 99999 : 999999];
+  return [0, max];
+}
+
+const shuffleInts = (rng: Rng, xs: number[]) => {
+  const ys = [...xs];
+  for (let i = ys.length - 1; i > 0; i--) { const j = int(rng, 0, i); [ys[i], ys[j]] = [ys[j]!, ys[i]!]; }
+  return ys;
+};
+
+/** «مقارنة الأعداد» alone: a sign between two numbers, the greatest / least of four, or the one past a bound. */
+function compareOnly(base: Base, lo: number, hi: number, rng: Rng): ConcreteItem {
+  const what = { ar: 'الأعداد', one: 'العدد', en: 'numbers' };
+  const r = rng();
+  if (r < 0.4) {
+    const a = int(rng, lo, hi);
+    const b = rng() < 0.15 ? a : int(rng, lo, hi);
+    const sign = a > b ? '>' : a < b ? '<' : '=';
+    return {
+      ...base, eq: `${a} ___ ${b}`, answer: sign,
+      wrongs: ['>', '<', '='].filter(s => s !== sign),
+      promptAr: `ضع الإشارة المناسبة (> أو < أو =):\n${a} ___ ${b}`,
+      promptEn: `Write the correct sign (>, < or =):\n${a} ___ ${b}`,
+    };
+  }
+  if (r < 0.7) return extremeItem(base, distinctInts(rng, 4, lo, hi), String, rng() < 0.5, what);
+  // Exactly one of four is past the bound; the bound itself is a distractor that is not.
+  const greater = rng() < 0.5;
+  const span = Math.max(3, Math.round((hi - lo) / 6));
+  const n = int(rng, lo + 2, hi - 2);
+  const key = greater ? int(rng, n + 1, Math.min(hi, n + span)) : int(rng, Math.max(lo, n - span), n - 1);
+  const others = greater ? distinctInts(rng, 3, Math.max(lo, n - span), n) : distinctInts(rng, 3, n, Math.min(hi, n + span));
+  const shown = shuffleInts(rng, [key, ...others]);
+  return ask(base, `${greater ? 'gt' : 'lt'}:${n}:${shown.join(',')}`, String(key), others.map(String),
+    `أيّ الأعداد الآتية ${greater ? 'أكبر' : 'أصغر'} من ${n}: ${listAr(shown)}؟`,
+    `Which of these numbers is ${greater ? 'greater' : 'less'} than ${n}: ${listEn(shown)}?`);
+}
+
+/** «ترتيب الأعداد» alone: order a list, name the number in a place of the order, or build the greatest / least number. */
+function orderOnly(base: Base, grade: number, lo: number, hi: number, hard: boolean, rng: Rng): ConcreteItem {
+  const r = rng();
+  if (r < 0.4) return orderItem(base, distinctInts(rng, hard ? 4 : 3, lo, hi), String, rng() < 0.5, { ar: 'الأعداد', en: 'numbers' });
+  if (r < 0.7) {
+    const values = distinctInts(rng, 4, lo, hi);
+    const up = rng() < 0.5;
+    const second = rng() < 0.5;
+    const sorted = [...values].sort((x, y) => (up ? x - y : y - x));
+    const key = sorted[second ? 1 : 2]!;
+    return ask(base, `nth:${up ? 'up' : 'down'}:${second ? 2 : 3}:${values.join(',')}`, String(key),
+      values.filter(v => v !== key).map(String),
+      `رتّب الأعداد الآتية ${up ? 'تصاعديًّا' : 'تنازليًّا'}، ثم اكتب العدد الذي يأتي ${second ? 'ثانيًا' : 'ثالثًا'}: ${listAr(values)}`,
+      `Order these numbers from ${up ? 'least to greatest' : 'greatest to least'}, then write the number that comes ${second ? 'second' : 'third'}: ${listEn(values)}`);
+  }
+  return grade === 1 ? twoPlaceDigitsItem(base, rng) : digitsItem(base, Math.min(4, String(hi).length), rng);
 }
 
 function placeKinds(base: Base, digits: number, rng: Rng): ConcreteItem {
@@ -829,7 +952,7 @@ function fracDivKinds(base: Base, rng: Rng): ConcreteItem {
     }
     default: {
       // A fraction divided by a whole number.
-      const [a, b, n] = [int(rng, 1, 5), int(rng, 2, 9), int(rng, 2, 6)];
+      const b = int(rng, 2, 9), n = int(rng, 2, 6), a = int(rng, 1, Math.min(5, b - 1)); // never «3/3 ÷ n»
       return withText(fractionItem(base, `bywhole:${a}/${b} ÷ ${n}`, a, b * n, [frac(a * n, b), frac(a, b + n), frac(n, a * b)]),
         `أوجد ناتج قسمة الكسر ${a}/${b} على العدد ${n}.`, `Divide the fraction ${a}/${b} by ${n}.`);
     }
@@ -1005,8 +1128,10 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       };
     }
     case 'sub': {
-      if (int(rng, 0, 4) > 0) return subKinds(base, max, rng);
-      const a = int(rng, 2, max);
+      // Grade 2 «الطرح» takes a 2- or 3-digit number FROM a 3-digit one: an easy paper asked «11 − 4».
+      const [lo, hi] = grade === 2 ? [100, 999] : [2, max];
+      if (int(rng, 0, 4) > 0) return subKinds(base, hi, rng, lo);
+      const a = int(rng, lo, hi);
       const b = int(rng, 1, a - 1);
       const d = a - b;
       return {
@@ -1018,34 +1143,53 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
     }
     case 'mul': {
       // Grades 4+ go past the tables: a two-digit factor on medium/hard.
-      const a = table ?? (grade >= 4 && diff !== 'easy' ? int(rng, 11, diff === 'hard' ? 99 : 30) : int(rng, 2, tableMax));
-      const bMax = grade >= 5 && diff === 'hard' ? 99 : 10;
-      if (int(rng, 0, 3) > 0) return mulKinds(base, a, bMax, rng);
-      const b = int(rng, 2, bMax);
+      // Grade 5 «ضرب الأعداد» names up to 3 digits × 2 digits: a 2-digit by a
+      // 1-digit number on easy, a 3-digit by a 1-digit or a 2-digit by a
+      // 2-digit on medium, a 3-digit by a 2-digit on hard (Grade 5 audit).
+      const g5 = grade === 5 && table === null;
+      const wide = g5 && (diff === 'hard' || (diff === 'medium' && rng() < 0.5));
+      const a = table ?? (g5
+        ? (diff === 'easy' ? int(rng, 12, 99) : diff === 'hard' || !wide ? int(rng, 100, 999) : int(rng, 11, 99))
+        : grade >= 4 && diff !== 'easy' ? int(rng, 11, diff === 'hard' ? 99 : 30) : int(rng, 2, tableMax));
+      const bMax = g5 ? (wide ? 99 : 9) : grade >= 5 && diff === 'hard' ? 99 : 10;
+      const bMin = wide ? 11 : 2;
+      if (int(rng, 0, 3) > 0) return mulKinds(base, a, bMax, rng, bMin);
+      const b = int(rng, bMin, bMax);
       const p = a * b;
       return {
         ...base, eq: `${a} × ${b}`, answer: String(p),
         wrongs: numericWrongs(p, rng, [a, -a, b, -b, 10]),
-        wordAr: `في الصف ${a} صفوف من المقاعد، وفي كل صف ${b} مقاعد. كم مقعدًا في الصف؟`,
+        // not shown today (no `kind: 'word'`), but agreeing in case it is: «في الصف 25 صفوف» was the old text
+        wordAr: `في الصف ${counted(a, ROW)} من المقاعد، وفي كل صف ${counted(b, SEAT)}. كم مقعدًا في الصف؟`,
         wordEn: `A classroom has ${a} rows with ${b} seats each. How many seats are there?`,
       };
     }
     case 'div': {
-      const b = table ?? int(rng, 2, tableMax);
-      const q = table ? int(rng, 1, 10) : grade >= 4 && diff !== 'easy' ? int(rng, 11, diff === 'hard' ? 250 : 60) : int(rng, 1, 10);
+      // Grade 5 «قسمة الأعداد» divides a number of up to 3 digits by one of one
+      // or two digits; Grade 4 keeps a one-digit divisor (Grade 5 audit).
+      const g5 = grade === 5 && table === null;
+      const twoDigit = g5 && (diff === 'hard' || (diff === 'medium' && rng() < 0.5));
+      const b = table ?? (twoDigit ? int(rng, 11, diff === 'hard' ? 49 : 25) : int(rng, 2, g5 ? 9 : tableMax));
+      const q = table ? int(rng, 1, 10)
+        : g5 ? (twoDigit ? int(rng, 2, Math.floor(999 / b)) : diff === 'easy' ? int(rng, 2, 10) : int(rng, 11, Math.floor(999 / b)))
+        : grade >= 4 && diff !== 'easy' ? int(rng, 11, diff === 'hard' ? 250 : 60) : int(rng, 1, 10);
       if (int(rng, 0, 5) > 0) return divKinds(base, b, q, grade, diff, rng);
       const a = b * q;
       return {
         ...base, eq: `${a} ÷ ${b}`, answer: String(q),
         wrongs: numericWrongs(q, rng, [1, -1, 2, b, -2]),
-        wordAr: `وُزِّع ${a} قلمًا بالتساوي على ${b} مجموعات. كم قلمًا لكل مجموعة؟`,
+        wordAr: `وُزِّع ${counted(a, PEN)} بالتساوي على ${counted(b, GROUP_GEN)}. كم قلمًا لكل مجموعة؟`,
         wordEn: `${a} pencils are shared equally among ${b} groups. How many does each group get?`,
       };
     }
     case 'compare': {
-      if (int(rng, 0, 3) > 0) return compareKinds(base, max, rng);
-      const a = int(rng, 0, max);
-      const b = rng() < 0.15 ? a : int(rng, 0, max);
+      // Grade 1 compares and orders «ضمن منزلتين» (u2_l4, u2_l5): the add range
+      // (0–10 at easy and medium) never showed a two-digit number (review, 2026-11-15).
+      // Grade 2 compares and orders numbers «ضمن 3 منازل»: an easy paper asked about «10، 6، 22، 20».
+      const [lo, hi] = compareRange(grade, diff, max);
+      if (int(rng, 0, 3) > 0) return compareKinds(base, hi, rng, lo, grade === 4 ? 6 : 4);
+      const a = int(rng, lo, hi);
+      const b = rng() < 0.15 ? a : int(rng, lo, hi);
       const sign = a > b ? '>' : a < b ? '<' : '=';
       return {
         ...base, eq: `${a} ___ ${b}`, answer: sign,
@@ -1054,8 +1198,25 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
         promptEn: `Write the correct sign (>, < or =):\n${a} ___ ${b}`,
       };
     }
+    // Grades 1–3 teach «مقارنة الأعداد» and «ترتيب الأعداد» as two lessons, and drew one mix
+    // for both (review, 2026-11-13): each now asks only its own skill.
+    case 'compare_only': {
+      const [lo, hi] = compareRange(grade, diff, max);
+      return compareOnly(base, lo, hi, rng);
+    }
+    case 'order_only': {
+      const [lo, hi] = compareRange(grade, diff, max);
+      return orderOnly(base, grade, lo, hi, diff === 'hard', rng);
+    }
     case 'place': {
-      const digits = Math.min(String(ADD_MAX[grade]).length, diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4);
+      // Grades 4 and 5 name a wider range («ضمن مئات الألوف», «ضمن الملايين»):
+      // their tiers start higher, or a Grade 4 paper never passed 4 digits.
+      // Grades 1–3 keep 2/3/4 capped by the grade.
+      const top = PLACE_DIGITS[grade] ?? 4;
+      // Grade 3's lesson is «ضمن الألوف»: an easy paper asked about «الرقم 8 في العدد 18».
+      // Grade 2's is «لأرقام عدد مكوّن من 3 منازل»: an easy paper wrote «10 + 2» in expanded form.
+      const digits = grade === 2 ? 3 : grade === 3 ? (diff === 'easy' ? 3 : 4)
+        : Math.min(top, (diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4) + Math.max(0, top - 4));
       if (int(rng, 0, 3) > 0) return placeKinds(base, digits, rng);
       // The digit asked about must occur once: «الرقم 4 في العدد 344» has two
       // place values and no single answer.
@@ -1065,7 +1226,8 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       for (let t = 0; t < 50 && once.length === 0; t++) {
         n = int(rng, 10 ** (digits - 1), 10 ** digits - 1);
         s = String(n);
-        once = [...s].flatMap((c, i) => (s.indexOf(c) === s.lastIndexOf(c) ? [i] : []));
+        // and is not a zero: «القيمة المنزلية للرقم 0» has nothing to find
+        once = [...s].flatMap((c, i) => (c !== '0' && s.indexOf(c) === s.lastIndexOf(c) ? [i] : []));
       }
       if (once.length === 0) { n = Number('1234'.slice(0, digits)); s = String(n); once = [0]; }
       const pos = choose(rng, once);
@@ -1142,7 +1304,9 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
       // fractions — «2/6 ÷ 3/2» is Grade 5 work.
       if (grade <= 3) return unitFractionOf(base, rng);
       if (int(rng, 0, 3) > 0) return fracDivKinds(base, rng);
-      const [a, b, c, d] = [int(rng, 1, 5), int(rng, 2, 9), int(rng, 1, 5), int(rng, 2, 9)];
+      // proper fractions: «2/2 ÷ 3/3» was possible (Grade 5 maths, 2026-11-13)
+      const b = int(rng, 2, 9), d = int(rng, 2, 9);
+      const a = int(rng, 1, Math.min(5, b - 1)), c = int(rng, 1, Math.min(5, d - 1));
       return fractionItem(base, `${a}/${b} ÷ ${c}/${d}`, a * d, b * c, [
         frac(a * c, b * d), frac(b * c, a * d), `${a * d}/${b + c}`, frac(a * d + 1, b * c),
       ]);
@@ -1196,11 +1360,16 @@ function build(op: ElementaryOp, grade: number, diff: DiffTier, rng: Rng, id: st
     }
     case 'frac_compare': {
       if (int(rng, 0, 2) > 0) return fracCompareKinds(base, grade, rng);
-      // Different denominators, compared by cross-multiplying.
+      // Different denominators, compared by cross-multiplying — from Grade 4. Grade 3 compares
+      // «باستعمال النماذج وخط الأعداد»: one denominator, or one numerator (it asked 6/7 against 5/8).
       let [n1, d1, n2, d2] = [0, 0, 0, 0];
       do {
         d1 = int(rng, 2, 12); d2 = int(rng, 2, 12);
         n1 = int(rng, 1, d1 - 1); n2 = int(rng, 1, d2 - 1);
+        if (grade <= 3) {
+          if (rng() < 0.5) { d2 = d1; n2 = int(rng, 1, d1 - 1); } // same denominator, both proper
+          else { const n = int(rng, 1, Math.min(d1, d2) - 1); n1 = n; n2 = n; }
+        }
       } while (d1 === d2 && n1 === n2);
       const l = n1 * d2;
       const r = n2 * d1;
@@ -1261,17 +1430,23 @@ export function makeElementaryItem(
 ): ConcreteItem {
   const g = Math.min(6, Math.max(1, Math.round(grade)));
   const named = elementaryOpsForTitle(blob);
-  const table = lessonTable(blob);
+  const tables = lessonTables(blob);
   const pool = named.length > 0 ? named : DEFAULT_OPS[g]!;
   const served = servedFrames(used);
   let item: ConcreteItem | null = null;
   let best: ConcreteItem | null = null;
   let bestScore = Infinity;
   let fresh = 0;
-  for (let attempt = 0; attempt < 25 && fresh < FRESH_DRAWS; attempt++) {
+  // Grades 1–4 choose by difficulty among the least-served kinds (`earlyDifficulty.ts`).
+  const byDifficulty = choosesByDifficulty(g);
+  let least: ConcreteItem[] = [];
+  const draws = byDifficulty ? EARLY_DRAWS : FRESH_DRAWS;
+  const enough = () => fresh >= draws && (!byDifficulty || least.length >= EARLY_CHOICE);
+  for (let attempt = 0; attempt < 6 * draws && !enough(); attempt++) {
     const op = pool[int(rng, 0, pool.length - 1)]!;
     // The id's last digit decides a true/false item's claim (see
     // `formatItem`); a fixed suffix made every one of them «صح».
+    const table = tables ? tables[int(rng, 0, tables.length - 1)]! : null;
     item = build(op, g, diff, rng, `arith-${g}-${op}-${used.size}-${attempt}-${int(rng, 0, 9)}`, table);
     if (used.has(`stem:${item.eq}`)) continue;
     fresh += 1;
@@ -1279,10 +1454,15 @@ export function makeElementaryItem(
     if (score < bestScore) {
       best = item;
       bestScore = score;
+      least = [item];
+    } else if (score === bestScore && !least.some(x => x.eq === item!.eq)) {
+      least.push(item);
     }
-    if (score === 0) break;
+    if (score === 0 && !byDifficulty) break;
   }
-  item = best ?? item;
+  item = byDifficulty && least.length > 0
+    ? pickByDifficulty(least, diff, rng, x => ({ ar: x.promptAr ?? x.eq, answer: x.answer }))
+    : best ?? item;
   used.add(`stem:${item!.eq}`);
   used.add(`ask:${item!.promptAr ?? item!.eq}`);
   return item!;

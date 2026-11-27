@@ -13,21 +13,23 @@
  * words and the options are Arabic whatever the UI language is; only the prompt
  * and the explanation's lead-in are localised.
  *
- * ## Only five rules, on purpose
+ * ## Which questions are safe
  *
  * The tile shows a rule name and the options are bare words, so nothing tells the
  * child WHICH word is meant. That is only safe where a wrong option is never a
- * word of its own. An audit of 135 questions the full bank can serve (the
- * options against every word of the Arabic books, then read by hand) found about
- * half offering a real word as a wrong option: قلم beside قلمًا, رمي beside رمى,
- * أبني beside ابني, أستمع beside استمع, ضوء beside ضوءًا, ذاهب beside ذهب, إله
- * beside الله. A child who reads the other word is marked wrong. The five rules
- * below offer only non-words (مدرسه, ألشمس, بإلكتاب, هاذا) apart from one word,
- * «ذلك» (its derived option «دلك» is a verb), which is dropped.
- * Excluded rules come back when the bank can say which word is meant (a
- * sentence per word) or a word-list check exists. `alif-tathniya-baad-hamza` is
- * also out for its content: it marks شيآن / هواآن as correct and شيئان / هواءان
- * as wrong, against its own بدءان / جزءان — check it against the book first.
+ * word of its own: a child who reads «قلم» beside «قلمًا» is right, and is marked
+ * wrong. The bank marks such words `dictationOnly` (50+ of its 174, each read by
+ * hand, with a reason), and `takeSpellingItems` never builds a choice from one, so
+ * this game gets only the words whose misspellings were read and are not words.
+ * It served five rules, then every rule that has such words.
+ *
+ * One rule is left out whatever its words: `alif-tathniya-baad-hamza` marks
+ * شيآن / هواآن as correct and شيئان / هواءان as wrong, against its own بدءان /
+ * جزءان. By standard spelling the key looks wrong, and nobody has checked the
+ * Ministry book. A rule with no choice-safe word at all (the plural «يدعوا», the
+ * ى/ي verbs, همزة الاستفهام) never appears, by design. Words nobody flagged are
+ * read, not proven: «أبن», «هده» and «بير» stay as wrong options because a pupil
+ * would not know them.
  *
  * ## Marks
  *
@@ -40,18 +42,9 @@ import { SPELLING_RULES, takeSpellingItems, type SpellingItem, type SpellingRule
 import { shuffle } from './rng.ts';
 import type { TextQuestion } from './textQuiz.ts';
 
-/** The rules this game serves; see the header for why the other fourteen are not. */
-export const SPELLING_GAME_RULE_IDS = [
-  'taa-marbuta-haa',
-  'lam-shamsiya-qamariya',
-  'ittissal-huruf-bi-al',
-  'asma-mabdua-bi-al',
-  'hatha-hathihi',
-] as const;
-const GAME_RULES = SPELLING_RULES.filter(r => (SPELLING_GAME_RULE_IDS as readonly string[]).includes(r.id));
-
-/** Answers never asked: a derived wrong option is itself a word («دلك», to rub). */
-export const SPELLING_DROPPED_ANSWERS: readonly string[] = ['ذلك'];
+/** Rules never served, whatever their words: see the header. */
+export const SPELLING_EXCLUDED_RULE_IDS = ['alif-tathniya-baad-hamza'] as const;
+const GAME_RULES = SPELLING_RULES.filter(r => !(SPELLING_EXCLUDED_RULE_IDS as readonly string[]).includes(r.id));
 
 /** At most this many questions from one rule in a round, so a round is not one lesson. */
 export const SPELLING_PER_RULE = 3;
@@ -87,7 +80,7 @@ function toQuestion(rule: SpellingRule, item: SpellingItem, lang: 'ar' | 'en'): 
 
 /**
  * `count` questions on different words, at most `SPELLING_PER_RULE` from any one
- * rule, from `SPELLING_GAME_RULE_IDS` only. A word with fewer than two wrong
+ * rule, never from an excluded one. A word with fewer than two wrong
  * options (وجه / وجة) makes no choice question in the bank and is skipped.
  */
 export function buildSpellingRound(lang: 'ar' | 'en', count: number, rng: () => number = Math.random): TextQuestion[] {
@@ -97,7 +90,7 @@ export function buildSpellingRound(lang: 'ar' | 'en', count: number, rng: () => 
     const seed = Math.floor(rng() * 0x7fffffff) + 1;
     for (const item of takeSpellingItems(rule, SPELLING_PER_RULE, { kinds: ['choose'], seed })) {
       const q = toQuestion(rule, item, lang);
-      if (!q || seen.has(q.correctId) || SPELLING_DROPPED_ANSWERS.includes(q.correctId)) continue;
+      if (!q || seen.has(q.correctId)) continue;
       seen.add(q.correctId);
       drawn.push(q);
     }

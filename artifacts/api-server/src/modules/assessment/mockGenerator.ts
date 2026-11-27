@@ -48,7 +48,7 @@ import {
   type CompetencyKey,
 } from "./competency.ts";
 import type { AnswerKeyCheck } from "@workspace/math-verify";
-import { takeConcreteChem, takeConcreteMath, takeElementaryMath, type DiffTier } from "@workspace/math-practice";
+import { takeConcreteChem, takeConcreteMath, takeElementaryMath, takeG10LessonMath, type DiffTier } from "@workspace/math-practice";
 import { mockableTypes, QUESTION_TYPES } from "./questionTypes.ts";
 // A runtime import, not a cycle: validator.ts takes `GeneratedQuestion` from
 // this file with `import type`, which is erased.
@@ -421,7 +421,13 @@ function bankMultipleChoice(
   // would otherwise reach the maths bank's family detection and come back
   // with a quadratic.
   const primary = Number(gradeId?.match(/^grade-(\d+)$/)?.[1]);
-  const banked = subjectId !== "chemistry" && primary >= 1 && primary <= 9
+  // A thin Grade 10 lesson is served by its own generator ahead of the family
+  // it shares (`G10_LESSON_FIRST` in lib/math-practice), found by the lesson's
+  // title: `topic` is the objective's wording, which no generator matches.
+  const own = subjectId !== "chemistry" && primary === 10
+    ? takeG10LessonMath("multiple_choice", objective.lessonTitleAr ?? "", null, BANK_TIER[difficulty], "ar", marks, session)
+    : null;
+  const banked = own ?? (subjectId !== "chemistry" && primary >= 1 && primary <= 9
     ? takeElementaryMath("multiple_choice", topic, null, primary, BANK_TIER[difficulty], "ar", marks, session)
     : (subjectId === "chemistry" ? takeConcreteChem : takeConcreteMath)(
       "multiple_choice",
@@ -431,7 +437,7 @@ function bankMultipleChoice(
       "ar",
       marks,
       session,
-    );
+    ));
   // Grade 10: a lesson none of the banked families is about may still have a generator
   const item = banked ?? (subjectId !== "chemistry" && primary === 10
     ? takeElementaryMath("multiple_choice", topic, null, 10, BANK_TIER[difficulty], "ar", marks, session)

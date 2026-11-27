@@ -264,6 +264,8 @@ export type ReportOutcome =
 export async function reportVariant(args: {
   artifactId: string;
   reporterUserId: string;
+  /** What the reporter says is wrong — optional, already normalised by the route. */
+  reason?: string;
 }): Promise<ReportOutcome> {
   try {
     const { db, aiArtifacts, aiArtifactReports } = await import("@workspace/db");
@@ -297,7 +299,7 @@ export async function reportVariant(args: {
     }
     const [row] = await db
       .insert(aiArtifactReports)
-      .values({ artifactId: args.artifactId, reporterUserId: args.reporterUserId })
+      .values({ artifactId: args.artifactId, reporterUserId: args.reporterUserId, reason: args.reason ?? "" })
       .returning({ id: aiArtifactReports.id });
     lastFailure = null;
     return { ok: true, reportId: row.id, kind: artifact.kind, lessonRef: artifact.lessonRef };

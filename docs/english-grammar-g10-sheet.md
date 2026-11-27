@@ -62,14 +62,20 @@ Not reviewed yet — shown to nobody.
 
 | Sentence | Choose | True or false: wrong sentence |
 |---|---|---|
-| She has an umbrella. | **an** / a | _She has a umbrella._ |
-| I eat an apple every day. | **an** / a | _I eat a apple every day._ |
-| He is an engineer. | **an** / a | _He is a engineer._ |
-| It was an easy test. | **an** / a | _It was a easy test._ |
-| She wears a uniform to school. | **a** / an | _She wears an uniform to school._ |
-| We waited for an hour. | **an** / a | _We waited for a hour._ |
-| My brother studies at a university. | **a** / an | _My brother studies at an university._ |
-| He told me an interesting story. | **an** / a | _He told me a interesting story._ |
+| My mother is a teacher. | **a teacher** / teacher | _My mother is teacher._ |
+| He works as a pilot. | **a pilot** / pilot | _He works as pilot._ |
+| I want to be an engineer. | **an engineer** / engineer | _I want to be engineer._ |
+| Her sister is a dentist. | **a dentist** / dentist | _Her sister is dentist._ |
+| My uncle works as a driver. | **a driver** / driver | _My uncle works as driver._ |
+| She wants to be a journalist. | **a journalist** / journalist | _She wants to be journalist._ |
+| She is the best player in the team. | **the best** / best | _She is best player in the team._ |
+| This is the highest mountain in Jordan. | **the highest** / highest | _This is highest mountain in Jordan._ |
+| This is the third time he has called. | **the third** / third | _This is third time he has called._ |
+| We live on the second floor. | **the second** / second | _We live on second floor._ |
+| Flared trousers were popular in the 1970s. | **the 1970s** / 1970s | _Flared trousers were popular in 1970s._ |
+| My grandfather was born in the 1950s. | **the 1950s** / 1950s | _My grandfather was born in 1950s._ |
+| He is the youngest boy in our class. | **the youngest** / youngest | _He is youngest boy in our class._ |
+| It was the worst film of the year. | **the worst** / worst | _It was worst film of the year._ |
 | I saw a cat. The cat was black. | **The** / A | _I saw a cat. A cat was black._ |
 | I bought a shirt, but the shirt was small. | **the** / a | _I bought a shirt, but a shirt was small._ |
 | She had a dog. The dog was very friendly. | **The** / A | _She had a dog. A dog was very friendly._ |
@@ -80,28 +86,22 @@ Not reviewed yet — shown to nobody.
 | My uncle has a car. The car is red. | **The** / A | _My uncle has a car. A car is red._ |
 | I found a key. Is the key yours? | **the** / a | _I found a key. Is a key yours?_ |
 | She wrote a poem. The poem won a prize. | **The** / A | _She wrote a poem. A poem won a prize._ |
-| We bought a cake, but the cake was dry. | **the** / a | _We bought a cake, but a cake was dry._ |
-| A man knocked. The man wanted directions. | **The** / A | _A man knocked. A man wanted directions._ |
 | The sun rises in the east. | **The** / A | _A sun rises in the east._ |
 | The moon goes round the Earth. | **The** / A | _A moon goes round the Earth._ |
 | There are no clouds in the sky. | **the** / a | _There are no clouds in a sky._ |
 | The internet is very useful. | **The** / An | _An internet is very useful._ |
 | He wants to travel around the world. | **the** / a | _He wants to travel around a world._ |
 | Never look directly at the sun. | **the** / a | _Never look directly at a sun._ |
-| The Earth is our home. | **The** / An | _An Earth is our home._ |
-| We watched the moon last night. | **the** / a | _We watched a moon last night._ |
 | The sky is very blue today. | **The** / A | _A sky is very blue today._ |
 | The world is getting warmer. | **The** / A | _A world is getting warmer._ |
 | My brother plays football after school. | **football** / the football | _My brother plays the football after school._ |
-| We have breakfast at seven. | **breakfast** / the breakfast | _We have the breakfast at seven._ |
-| She speaks Arabic and English. | **Arabic** / the Arabic | _She speaks the Arabic and English._ |
-| I study maths and science. | **maths** / the maths | _I study the maths and science._ |
 | They live in Amman. | **Amman** / the Amman | _They live in the Amman._ |
-| My cousin is learning French. | **French** / the French | _My cousin is learning the French._ |
-| History is my favourite subject. | **History** / The history | _The history is my favourite subject._ |
 | We visited Petra last year. | **Petra** / the Petra | _We visited the Petra last year._ |
-| Owls hunt at night. | **night** / the night | _Owls hunt at the night._ |
-| I go to school on foot. | **foot** / the foot | _I go to school on the foot._ |
+| Asia is the biggest continent. | **Asia** / The Asia | _The Asia is the biggest continent._ |
+| Africa has many different countries. | **Africa** / The Africa | _The Africa has many different countries._ |
+| My cousin lives in Jordan. | **Jordan** / the Jordan | _My cousin lives in the Jordan._ |
+| She flew to Aqaba yesterday. | **Aqaba** / the Aqaba | _She flew to the Aqaba yesterday._ |
+| Europe is far from here. | **Europe** / The Europe | _The Europe is far from here._ |
 
 ## Semester 1 · Unit 2 — The digital mind
 
@@ -161,13 +161,9 @@ Not reviewed yet — shown to nobody.
 | Would you mind opening the window? | **opening** / to open | _Would you mind to open the window?_ |
 | They avoid flying at night. | **flying** / to fly | _They avoid to fly at night._ |
 | I keep forgetting his name. | **forgetting** / to forget | _I keep to forget his name._ |
-| We practise speaking English every day. | **speaking** / to speak | _We practise to speak English every day._ |
-| She suggested meeting at the library. | **meeting** / to meet | _She suggested to meet at the library._ |
-| The company is considering using drones for delivery. | **using** / to use | _The company is considering to use drones for delivery._ |
 | I miss playing football with my cousins. | **playing** / to play | _I miss to play football with my cousins._ |
 | He gave up eating sweets. | **eating** / to eat | _He gave up to eat sweets._ |
 | Imagine flying above the clouds! | **flying** / to fly | _Imagine to fly above the clouds!_ |
-| They risked losing everything. | **losing** / to lose | _They risked to lose everything._ |
 | She denied breaking the window. | **breaking** / to break | _She denied to break the window._ |
 | Do you fancy watching a film? | **watching** / to watch | _Do you fancy to watch a film?_ |
 | I want to learn French. | **to learn** / learning | _I want learning French._ |
@@ -177,25 +173,29 @@ Not reviewed yet — shown to nobody.
 | He refused to answer the question. | **to answer** / answering | _He refused answering the question._ |
 | I promise to call you tonight. | **to call** / calling | _I promise calling you tonight._ |
 | He seems to know the answer. | **to know** / knowing | _He seems knowing the answer._ |
-| Did you manage to finish the project? | **to finish** / finishing | _Did you manage finishing the project?_ |
 | My uncle offered to drive us home. | **to drive** / driving | _My uncle offered driving us home._ |
-| We can't afford to buy a new car. | **to buy** / buying | _We can't afford buying a new car._ |
-| They plan to use drones for weather forecasting. | **to use** / using | _They plan using drones for weather forecasting._ |
 | I would like to try aerial photography. | **to try** / trying | _I would like trying aerial photography._ |
-| He pretended to be asleep. | **to be** / being | _He pretended being asleep._ |
-| The drone failed to take off. | **to take** / taking | _The drone failed taking off._ |
+| She expects to finish by Friday. | **to finish** / finishing | _She expects finishing by Friday._ |
+| The film made me cry. | **cry** / to cry | _The film made me to cry._ |
+| Our teacher lets us use dictionaries. | **use** / to use | _Our teacher lets us to use dictionaries._ |
+| Loud music always makes him feel tired. | **feel** / to feel | _Loud music always makes him to feel tired._ |
+| Her parents never let her stay out late. | **stay** / to stay | _Her parents never let her to stay out late._ |
+| You must tell the truth. | **tell** / to tell | _You must to tell the truth._ |
+| We should leave before the rain starts. | **leave** / to leave | _We should to leave before the rain starts._ |
+| She might call you tonight. | **call** / to call | _She might to call you tonight._ |
+| The sun will rise at six. | **rise** / to rise | _The sun will to rise at six._ |
+| Dad let me drive his car. | **drive** / to drive | _Dad let me to drive his car._ |
+| Don't make me laugh! | **laugh** / to laugh | _Don't make me to laugh!_ |
 | The baby finally stopped crying. | **crying** / to cry | _The baby finally stopped to cry._ |
 | It stopped raining at six o'clock. | **raining** / to rain | _It stopped to rain at six o'clock._ |
 | Please stop making that noise. | **making** / to make | _Please stop to make that noise._ |
-| The phone stopped ringing. | **ringing** / to ring | _The phone stopped to ring._ |
 | On the way home, we stopped to buy bread. | **to buy** / buying | _On the way home, we stopped buying bread._ |
-| Stop talking! The exam has started. | **talking** / to talk | _Stop to talk! The exam has started._ |
-| I remember meeting your father last year. | **meeting** / to meet | _I remember to meet your father last year._ |
-| Remember to lock the door tonight. | **to lock** / locking | _Remember locking the door tonight._ |
-| Please remember to bring your camera tomorrow. | **to bring** / bringing | _Please remember bringing your camera tomorrow._ |
 | I remember visiting Petra when I was seven. | **visiting** / to visit | _I remember to visit Petra when I was seven._ |
-| Don't forget to call your uncle tomorrow. | **to call** / calling | _Don't forget calling your uncle tomorrow._ |
+| Remember to lock the door tonight. | **to lock** / locking | _Remember locking the door tonight._ |
 | I forgot to buy milk, so we have none. | **to buy** / buying | _I forgot buying milk, so we have none._ |
+| She regrets spending all her money on shoes. | **spending** / to spend | _She regrets to spend all her money on shoes._ |
+| They regret buying such an old car. | **buying** / to buy | _They regret to buy such an old car._ |
+| She tried hard to stay awake. | **to stay** / staying | _She tried hard staying awake._ |
 
 ## Semester 1 · Unit 3 — Active and healthy
 
@@ -349,29 +349,25 @@ Not reviewed yet — shown to nobody.
 | You mustn't cheat in exams. It's against the rules. | **mustn't** / don't have to | _You don't have to cheat in exams. It's against the rules._ |
 | You mustn't touch the wires. They're live. | **mustn't** / don't have to | _You don't have to touch the wires. They're live._ |
 | You mustn't drive without a licence. It's illegal. | **mustn't** / don't have to | _You don't have to drive without a licence. It's illegal._ |
-| You mustn't play with fire. It's dangerous. | **mustn't** / don't have to | _You don't have to play with fire. It's dangerous._ |
-| Visitors mustn't feed the animals. It's not allowed. | **mustn't** / don't have to | _Visitors don't have to feed the animals. It's not allowed._ |
 | You don't have to pay. It's free. | **don't have to** / mustn't | _You mustn't pay. It's free._ |
 | You don't have to come, but you can. | **don't have to** / mustn't | _You mustn't come, but you can._ |
 | The trip is optional. You don't have to go. | **don't have to** / mustn't | _The trip is optional. You mustn't go._ |
-| You don't have to stay, but you're welcome to. | **don't have to** / mustn't | _You mustn't stay, but you're welcome to._ |
-| The museum is free. Visitors don't have to pay. | **don't have to** / mustn't | _The museum is free. Visitors mustn't pay._ |
 | Ties aren't required. You don't have to wear one. | **don't have to** / mustn't | _Ties aren't required. You mustn't wear one._ |
 | Sport isn't compulsory. You don't have to play. | **don't have to** / mustn't | _Sport isn't compulsory. You mustn't play._ |
 | He could swim when he was five. | **could** / can | _He can swim when he was five._ |
 | When I was little, I couldn't stay up late. | **couldn't** / can't | _When I was little, I can't stay up late._ |
 | Yesterday, I was able to finish early. | **was able to** / am able to | _Yesterday, I am able to finish early._ |
 | Next year, she will be able to drive. | **will be able to** / was able to | _Next year, she was able to drive._ |
-| Last year, we could wear jeans on Fridays. | **could** / can | _Last year, we can wear jeans on Fridays._ |
-| When I was ten, I couldn't ride a bike. | **couldn't** / can't | _When I was ten, I can't ride a bike._ |
 | Last night, we weren't able to book a flight. | **weren't able to** / aren't able to | _Last night, we aren't able to book a flight._ |
-| Years ago, my grandfather could run very fast. | **could** / can | _Years ago, my grandfather can run very fast._ |
-| Ten years ago, we couldn't buy tickets online. | **couldn't** / can't | _Ten years ago, we can't buy tickets online._ |
 | Tomorrow, we will be able to visit Petra. | **will be able to** / were able to | _Tomorrow, we were able to visit Petra._ |
-| Last week, I couldn't find my passport. | **couldn't** / can't | _Last week, I can't find my passport._ |
-| When we were young, we could play outside. | **could** / can | _When we were young, we can play outside._ |
-| Two days ago, he wasn't able to walk. | **wasn't able to** / isn't able to | _Two days ago, he isn't able to walk._ |
-| Last month, she couldn't see clearly. | **couldn't** / can't | _Last month, she can't see clearly._ |
+| Could I borrow your pen, please? | **Could I** / Could you | _Could you borrow your pen, please?_ |
+| May I use your phone for a moment? | **May I** / May you | _May you use your phone for a moment?_ |
+| Can I borrow your charger, please? | **Can I** / Can you | _Can you borrow your charger, please?_ |
+| May I leave the room, please? | **May I** / May you | _May you leave the room, please?_ |
+| Could you open the door for me, please? | **Could you** / Could I | _Could I open the door for me, please?_ |
+| Can you help me with this bag? | **Can you** / Can I | _Can I help me with this bag?_ |
+| Could you lend me your notes, please? | **Could you** / Could I | _Could I lend me your notes, please?_ |
+| Can you pass me the salt, please? | **Can you** / Can I | _Can I pass me the salt, please?_ |
 | You must wear a helmet. | **wear** / to wear | _You must to wear a helmet._ |
 | You must fasten your seatbelt. | **fasten** / fastens | _You must fastens your seatbelt._ |
 | She can speak three languages. | **speak** / speaks | _She can speaks three languages._ |
@@ -384,6 +380,10 @@ Not reviewed yet — shown to nobody.
 | Could you help me, please? | **help** / to help | _Could you to help me, please?_ |
 | I had to wait for an hour. | **wait** / waited | _I had to waited for an hour._ |
 | He wasn't able to come yesterday. | **come** / came | _He wasn't able to came yesterday._ |
+| It can be very hot in Aqaba. | **be** / to be | _It can to be very hot in Aqaba._ |
+| Flights can be late in bad weather. | **be** / being | _Flights can being late in bad weather._ |
+| Winter in Irbid can get very cold. | **get** / gets | _Winter in Irbid can gets very cold._ |
+| It can rain a lot in winter. | **rain** / raining | _It can raining a lot in winter._ |
 
 ## Semester 1 · Unit 4 — Time to move
 
@@ -446,8 +446,6 @@ Not reviewed yet — shown to nobody.
 | Wait, I'll help you with that. | **I'll help** / I help | _Wait, I help you with that._ |
 | You look tired. I'll make you some tea. | **I'll make** / I make | _You look tired. I make you some tea._ |
 | I forgot to call Mum! I'll do it now. | **I'll do** / I do | _I forgot to call Mum! I do it now._ |
-| We've got no milk. I'll buy some. | **I'll buy** / I buy | _We've got no milk. I buy some._ |
-| Sorry, I don't understand this. I'll ask the teacher. | **I'll ask** / I ask | _Sorry, I don't understand this. I ask the teacher._ |
 | Look at those clouds! It's going to rain. | **It's going to rain** / It rains | _Look at those clouds! It rains._ |
 | Watch out! That glass is going to fall. | **is going to fall** / falls | _Watch out! That glass falls._ |
 | Be careful! You're going to drop it. | **You're going to drop** / You drop | _Be careful! You drop it._ |
@@ -456,28 +454,30 @@ Not reviewed yet — shown to nobody.
 | Look at the sky! It's going to snow. | **It's going to snow** / It snows | _Look at the sky! It snows._ |
 | Mind the step! You're going to trip. | **You're going to trip** / You trip | _Mind the step! You trip._ |
 | Stop! The milk is going to boil over. | **is going to boil** / boils | _Stop! The milk boils over._ |
-| Careful! You're going to spill your tea. | **You're going to spill** / You spill | _Careful! You spill your tea._ |
-| Look out! That ladder is going to fall. | **is going to fall** / falls | _Look out! That ladder falls._ |
 | The train leaves at nine tomorrow. | **leaves** / leave | _The train leave at nine tomorrow._ |
 | I'm meeting my cousin tonight. | **meeting** / meet | _I'm meet my cousin tonight._ |
 | We are flying to Aqaba on Friday. | **flying** / fly | _We are fly to Aqaba on Friday._ |
 | The film starts at eight. | **starts** / start | _The film start at eight._ |
 | What time does the bus leave? | **leave** / leaves | _What time does the bus leaves?_ |
-| She is starting her new job on Monday. | **is** / are | _She are starting her new job on Monday._ |
 | Are you coming to the party tonight? | **coming** / come | _Are you come to the party tonight?_ |
-| The museum opens at nine tomorrow. | **opens** / open | _The museum open at nine tomorrow._ |
-| My exams begin next week. | **begin** / begins | _My exams begins next week._ |
-| They are having a party on Saturday. | **having** / have | _They are have a party on Saturday._ |
-| When does the term start? | **start** / starts | _When does the term starts?_ |
-| I'm seeing the dentist at four. | **seeing** / see | _I'm see the dentist at four._ |
 | I'm going to study medicine. | **study** / studying | _I'm going to studying medicine._ |
-| She will be a responsible leader one day. | **be** / is | _She will is a responsible leader one day._ |
 | They are going to visit Petra. | **are** / is | _They is going to visit Petra._ |
 | Will you help me tomorrow? | **help** / helps | _Will you helps me tomorrow?_ |
 | My sister is going to be a doctor. | **be** / to be | _My sister is going to to be a doctor._ |
-| I think you will win the competition. | **win** / to win | _I think you will to win the competition._ |
 | We aren't going to give up. | **give** / giving | _We aren't going to giving up._ |
 | Are you going to apply for the job? | **Are** / Is | _Is you going to apply for the job?_ |
+| Hurry! The film is about to start. | **to start** / starting | _Hurry! The film is about starting._ |
+| Be quiet! The teacher is about to speak. | **to speak** / speaking | _Be quiet! The teacher is about speaking._ |
+| Don't leave! We are about to eat. | **to eat** / eating | _Don't leave! We are about eating._ |
+| The plane is about to take off. | **to take** / taking | _The plane is about taking off._ |
+| I might study medicine next year. | **study** / to study | _I might to study medicine next year._ |
+| It may rain this evening. | **rain** / to rain | _It may to rain this evening._ |
+| We could visit Petra in spring. | **visit** / visiting | _We could visiting Petra in spring._ |
+| She might not come to the party. | **come** / to come | _She might not to come to the party._ |
+| I think you will win the competition. | **win** / to win | _I think you will to win the competition._ |
+| I am sure you will pass the exam. | **pass** / passes | _I am sure you will passes the exam._ |
+| She will be a responsible leader one day. | **be** / is | _She will is a responsible leader one day._ |
+| It probably won't snow tomorrow. | **probably won't** / won't probably | _It won't probably snow tomorrow._ |
 
 ## Semester 1 · Unit 5 — The next step
 
@@ -556,22 +556,22 @@ Not reviewed yet — shown to nobody.
 | If she spoke French, she would teach it. | **would teach** / would taught | _If she spoke French, she would taught it._ |
 | What would you do if you lost your phone? | **do** / to do | _What would you to do if you lost your phone?_ |
 | I wouldn't worry if I were you. | **worry** / worried | _I wouldn't worried if I were you._ |
-| Imagine you had wings. You would fly. | **would fly** / will fly | _Imagine you had wings. You will fly._ |
-| Imagine we had no phones. Life would be quiet. | **would be** / will be | _Imagine we had no phones. Life will be quiet._ |
-| Imagine you were invisible. Nobody would see you. | **would see** / will see | _Imagine you were invisible. Nobody will see you._ |
-| Imagine I could fly. I would never walk. | **would never walk** / will never walk | _Imagine I could fly. I will never walk._ |
-| Imagine you lived on the moon. You would float. | **would float** / will float | _Imagine you lived on the moon. You will float._ |
-| Imagine there were no cars. Cities would be quieter. | **would be** / will be | _Imagine there were no cars. Cities will be quieter._ |
-| Imagine you spoke every language. You would travel everywhere. | **would travel** / will travel | _Imagine you spoke every language. You will travel everywhere._ |
-| Suppose it snowed in Aqaba. We would build snowmen. | **would build** / will build | _Suppose it snowed in Aqaba. We will build snowmen._ |
-| Suppose you met a dinosaur. You would run. | **would run** / will run | _Suppose you met a dinosaur. You will run._ |
-| Just imagine we lived underwater. We'd need gills. | **We'd need** / We'll need | _Just imagine we lived underwater. We'll need gills._ |
-| Suppose you were famous. Everyone would know you. | **would know** / will know | _Suppose you were famous. Everyone will know you._ |
-| Imagine the sun never set. We would never sleep. | **would never sleep** / will never sleep | _Imagine the sun never set. We will never sleep._ |
-| Suppose animals could talk. My cat would complain. | **would complain** / will complain | _Suppose animals could talk. My cat will complain._ |
-| Imagine we had no school. We would get bored. | **would get** / will get | _Imagine we had no school. We will get bored._ |
-| Suppose the internet stopped working. We would read more. | **would read** / will read | _Suppose the internet stopped working. We will read more._ |
-| Imagine you were a giant. Houses would look tiny. | **would look** / will look | _Imagine you were a giant. Houses will look tiny._ |
+| If I won a prize, I would help others. | **would help** / will help | _If I won a prize, I will help others._ |
+| If I were a bird, I would fly home. | **would fly** / will fly | _If I were a bird, I will fly home._ |
+| If she were my daughter, I would call her. | **would call** / will call | _If she were my daughter, I will call her._ |
+| If we lived on Mars, we would need oxygen. | **would need** / will need | _If we lived on Mars, we will need oxygen._ |
+| If I had wings, I would visit every country. | **would visit** / will visit | _If I had wings, I will visit every country._ |
+| If animals could talk, my cat would complain. | **would complain** / will complain | _If animals could talk, my cat will complain._ |
+| If I were president, I would build more schools. | **would build** / will build | _If I were president, I will build more schools._ |
+| If you were rich, what would you buy? | **would** / will | _If you were rich, what will you buy?_ |
+| If you were invisible, nobody would see you. | **would see** / will see | _If you were invisible, nobody will see you._ |
+| If there were no cars, cities would be quieter. | **would be** / will be | _If there were no cars, cities will be quieter._ |
+| If I were you, I would apologise. | **were** / am | _If I am you, I would apologise._ |
+| If I were you, I wouldn't wait. | **were** / am | _If I am you, I wouldn't wait._ |
+| If I were you, I would ask the teacher. | **were** / am | _If I am you, I would ask the teacher._ |
+| If I were you, I would study more. | **were** / am | _If I am you, I would study more._ |
+| If I were in your place, I would stay. | **were** / am | _If I am in your place, I would stay._ |
+| If I were you, I would take the bus. | **were** / am | _If I am you, I would take the bus._ |
 
 ## Semester 2 · Unit 6 — Do the right thing
 
@@ -580,45 +580,45 @@ Not reviewed yet — shown to nobody.
 | Sentence | Choose | True or false: wrong sentence |
 |---|---|---|
 | If you heat ice, it melts. | **melts** / melt | _If you heat ice, it melt._ |
-| If you eat late, you sleep badly. | **sleep** / sleeps | _If you eat late, you sleeps badly._ |
 | If you boil water, it turns into steam. | **turns** / turning | _If you boil water, it turning into steam._ |
 | If it rains, the ground gets wet. | **gets** / get | _If it rains, the ground get wet._ |
 | If you press this button, the machine stops. | **stops** / stopping | _If you press this button, the machine stopping._ |
 | If you drop glass, it breaks. | **breaks** / broken | _If you drop glass, it broken._ |
-| If people eat too much sugar, they gain weight. | **gain** / gains | _If people eat too much sugar, they gains weight._ |
 | If you put oil in water, it floats. | **floats** / float | _If you put oil in water, it float._ |
-| If you leave milk out, it goes bad. | **goes** / go | _If you leave milk out, it go bad._ |
-| If babies are hungry, they cry. | **cry** / cries | _If babies are hungry, they cries._ |
-| If you exercise every day, you feel better. | **feel** / feels | _If you exercise every day, you feels better._ |
 | If iron gets wet, it rusts. | **gets** / get | _If iron get wet, it rusts._ |
-| If the traffic light is red, cars stop. | **stop** / stops | _If the traffic light is red, cars stops._ |
 | If you heat butter, it becomes liquid. | **becomes** / is becomes | _If you heat butter, it is becomes liquid._ |
 | Plants die when they get no water. | **get** / gets | _Plants die when they gets no water._ |
 | When you heat water, it boils. | **boils** / boil | _When you heat water, it boil._ |
-| When it gets dark, the street lights come on. | **come** / comes | _When it gets dark, the street lights comes on._ |
-| When I drink coffee, I can't sleep. | **drink** / drinks | _When I drinks coffee, I can't sleep._ |
 | Metal expands when you heat it. | **expands** / expand | _Metal expand when you heat it._ |
 | When you mix blue and yellow, you get green. | **mix** / mixes | _When you mixes blue and yellow, you get green._ |
 | My dog barks when someone knocks. | **knocks** / knock | _My dog barks when someone knock._ |
-| When the bell rings, the students leave. | **rings** / ringing | _When the bell ringing, the students leave._ |
 | Fish die when the water is dirty. | **is** / are | _Fish die when the water are dirty._ |
-| When people are tired, they make mistakes. | **make** / makes | _When people are tired, they makes mistakes._ |
-| When it snows, the roads become dangerous. | **become** / becomes | _When it snows, the roads becomes dangerous._ |
 | Milk turns sour when it gets warm. | **turns** / turn | _Milk turn sour when it gets warm._ |
-| When you press the switch, the light comes on. | **comes** / come | _When you press the switch, the light come on._ |
 | When water freezes, it becomes ice. | **freezes** / frozen | _When water frozen, it becomes ice._ |
 | What happens if you freeze water? | **freeze** / freezes | _What happens if you freezes water?_ |
 | If you don't water plants, they die. | **die** / dies | _If you don't water plants, they dies._ |
 | What happens when you drop an egg? | **happens** / happen | _What happen when you drop an egg?_ |
 | Do cats purr when they are happy? | **purr** / purrs | _Do cats purrs when they are happy?_ |
-| If you don't sleep, you feel tired. | **don't** / doesn't | _If you doesn't sleep, you feel tired._ |
-| Buses don't run if it snows. | **don't** / doesn't | _Buses doesn't run if it snows._ |
 | What does your cat do when it's hungry? | **does** / do | _What do your cat do when it's hungry?_ |
 | Iron doesn't float if you put it in water. | **float** / floats | _Iron doesn't floats if you put it in water._ |
 | Why do leaves fall when it gets cold? | **fall** / falls | _Why do leaves falls when it gets cold?_ |
 | If it doesn't rain, the grass turns brown. | **doesn't** / don't | _If it don't rain, the grass turns brown._ |
-| Do you get a headache if you don't eat? | **get** / gets | _Do you gets a headache if you don't eat?_ |
-| A car doesn't start if the battery is flat. | **start** / starts | _A car doesn't starts if the battery is flat._ |
+| Plants die unless they get water. | **unless** / if | _Plants die if they get water._ |
+| You can't enter unless you have a ticket. | **unless** / if | _You can't enter if you have a ticket._ |
+| Ice doesn't melt unless it gets warm. | **unless** / if | _Ice doesn't melt if it gets warm._ |
+| The engine doesn't start unless you press the button. | **unless** / if | _The engine doesn't start if you press the button._ |
+| Your phone does not work unless it is charged. | **unless** / if | _Your phone does not work if it is charged._ |
+| As soon as the bell rings, we leave. | **As soon as** / Unless | _Unless the bell rings, we leave._ |
+| As soon as it rains, we go inside. | **As soon as** / Unless | _Unless it rains, we go inside._ |
+| Borrow it as long as you return it. | **as long as** / unless | _Borrow it unless you return it._ |
+| You can stay provided that you are quiet. | **provided that** / unless | _You can stay unless you are quiet._ |
+| We swim as long as the sea is calm. | **as long as** / unless | _We swim unless the sea is calm._ |
+| Provided that it is safe, we can try it. | **Provided that** / Unless | _Unless it is safe, we can try it._ |
+| Wait here until I call you. | **until** / as soon as | _Wait here as soon as I call you._ |
+| I will wait until I have heard from you. | **until** / as soon as | _I will wait as soon as I have heard from you._ |
+| I brush my teeth before I go to bed. | **before** / after | _I brush my teeth after I go to bed._ |
+| Switch off the engine before you leave the car. | **before** / after | _Switch off the engine after you leave the car._ |
+| The match ends after the final whistle. | **after** / before | _The match ends before the final whistle._ |
 
 ## Semester 2 · Unit 7 — In the spotlight
 
@@ -626,46 +626,46 @@ Not reviewed yet — shown to nobody.
 
 | Sentence | Choose | True or false: wrong sentence |
 |---|---|---|
-| She promised to call me. | **to call** / calling | _She promised calling me._ |
-| He offered to carry my bag. | **to carry** / carrying | _He offered carrying my bag._ |
-| They refused to pay for the damage. | **to pay** / paying | _They refused paying for the damage._ |
-| My brother agreed to help me. | **to help** / helping | _My brother agreed helping me._ |
-| The boy promised to return the book. | **to return** / returning | _The boy promised returning the book._ |
-| Dad offered to drive us to Amman. | **to drive** / driving | _Dad offered driving us to Amman._ |
-| She refused to answer my question. | **to answer** / answering | _She refused answering my question._ |
-| We agreed to meet at the library. | **to meet** / meeting | _We agreed meeting at the library._ |
-| He threatened to tell the teacher. | **to tell** / telling | _He threatened telling the teacher._ |
-| The shop agreed to replace the phone. | **to replace** / replacing | _The shop agreed replacing the phone._ |
-| She offered to lend me her notes. | **to lend** / lending | _She offered lending me her notes._ |
-| I promised not to be late. | **not to be** / not being | _I promised not being late._ |
-| He claimed to know the answer. | **to know** / knowing | _He claimed knowing the answer._ |
-| My sister refused to share her sweets. | **to share** / sharing | _My sister refused sharing her sweets._ |
-| The teacher agreed to postpone the test. | **to postpone** / postponing | _The teacher agreed postponing the test._ |
-| Mum promised to make a cake. | **to make** / make | _Mum promised make a cake._ |
-| He denied breaking the vase. | **breaking** / to break | _He denied to break the vase._ |
-| She admitted taking my pen. | **taking** / to take | _She admitted to take my pen._ |
-| She suggested going by bus. | **going** / to go | _She suggested to go by bus._ |
-| The boy admitted cheating in the test. | **cheating** / to cheat | _The boy admitted to cheat in the test._ |
-| They denied making the mess. | **making** / to make | _They denied to make the mess._ |
-| He apologised for being late. | **being** / to be | _He apologised for to be late._ |
-| Dad suggested eating out tonight. | **eating** / to eat | _Dad suggested to eat out tonight._ |
-| She denied eating the last biscuit. | **eating** / to eat | _She denied to eat the last biscuit._ |
-| I admitted forgetting my homework. | **forgetting** / to forget | _I admitted to forget my homework._ |
-| We apologised for making so much noise. | **making** / to make | _We apologised for to make so much noise._ |
-| The teacher suggested reading the story again. | **reading** / to read | _The teacher suggested to read the story again._ |
-| He admitted losing the keys. | **losing** / to lose | _He admitted to lose the keys._ |
-| She denied telling anyone the secret. | **telling** / to tell | _She denied to tell anyone the secret._ |
-| Mum suggested visiting our grandparents. | **visiting** / to visit | _Mum suggested to visit our grandparents._ |
-| Mum told me to wait. | **told me** / said me | _Mum said me to wait._ |
-| The teacher told us to sit down. | **to sit** / sitting | _The teacher told us sitting down._ |
-| Dad warned me not to touch the oven. | **not to touch** / not touching | _Dad warned me not touching the oven._ |
-| She reminded me to bring my book. | **to bring** / bringing | _She reminded me bringing my book._ |
-| The coach told the players to rest. | **told the players** / said the players | _The coach said the players to rest._ |
-| She asked me to open the window. | **to open** / opening | _She asked me opening the window._ |
-| The doctor advised me to drink water. | **to drink** / drink | _The doctor advised me drink water._ |
-| Our teacher reminded us to switch off our phones. | **reminded us** / reminded | _Our teacher reminded to switch off our phones._ |
-| He told his sister to close the door. | **told his sister** / told to his sister | _He told to his sister to close the door._ |
-| The guide warned us to stay together. | **to stay** / staying | _The guide warned us staying together._ |
+| He said he was watching the news. | **was watching** / were watching | _He said he were watching the news._ |
+| She said she needed a dictionary. | **needed** / needing | _She said she needing a dictionary._ |
+| He told me he had crashed his car. | **had crashed** / had crash | _He told me he had crash his car._ |
+| She said she had won the race. | **had won** / had win | _She said she had win the race._ |
+| He said he would write the report. | **would write** / would wrote | _He said he would wrote the report._ |
+| She said she could not remember his name. | **could not remember** / could not remembered | _She said she could not remembered his name._ |
+| They said they had to tidy their rooms. | **had to** / had must | _They said they had must tidy their rooms._ |
+| My aunt said she had lost her purse. | **had lost** / had lose | _My aunt said she had lose her purse._ |
+| He said he had seen her. | **had seen** / had saw | _He said he had saw her._ |
+| She said she would like some water. | **would like** / would liking | _She said she would liking some water._ |
+| She said she had seen him the day before. | **the day before** / tomorrow | _She said she had seen him tomorrow._ |
+| He said he had finished the week before. | **the week before** / next week | _He said he had finished next week._ |
+| She said she had moved there the year before. | **the year before** / next year | _She said she had moved there next year._ |
+| They said they had arrived the night before. | **the night before** / tomorrow night | _They said they had arrived tomorrow night._ |
+| He said he had called her the previous day. | **the previous day** / tomorrow | _He said he had called her tomorrow._ |
+| She said she had visited Petra the month before. | **the month before** / next month | _She said she had visited Petra next month._ |
+| Dad told my uncle he liked his new watch. | **told my uncle** / told to my uncle | _Dad told to my uncle he liked his new watch._ |
+| Mum told me that dinner was ready. | **told me** / said me | _Mum said me that dinner was ready._ |
+| She said she was sorry. | **said** / told | _She told she was sorry._ |
+| He told his friends he was leaving. | **told his friends** / said his friends | _He said his friends he was leaving._ |
+| Dad said that he was proud of us. | **said that** / said us that | _Dad said us that he was proud of us._ |
+| The teacher told us the answer. | **told us** / said us | _The teacher said us the answer._ |
+| She told me not to forget. | **not to forget** / don't forget | _She told me don't forget._ |
+| The teacher asked us to be quiet. | **to be** / be | _The teacher asked us be quiet._ |
+| Dad told me to remember my keys. | **to remember** / remember | _Dad told me remember my keys._ |
+| Mum asked him not to shout. | **not to shout** / not shout | _Mum asked him not shout._ |
+| The guard told us not to enter. | **not to enter** / do not enter | _The guard told us do not enter._ |
+| He asked me to open the door. | **to open** / opening | _He asked me opening the door._ |
+| She told them to wait outside. | **to wait** / waiting | _She told them waiting outside._ |
+| Our teacher asked us not to talk. | **not to talk** / not talking | _Our teacher asked us not talking._ |
+| She explained that she had lost her keys. | **explained that** / explained me that | _She explained me that she had lost her keys._ |
+| He admitted that he had made a mistake. | **admitted that** / admitted me that | _He admitted me that he had made a mistake._ |
+| The boy claimed that he had seen it. | **claimed that** / claimed me that | _The boy claimed me that he had seen it._ |
+| She complained that the room was cold. | **complained that** / complained me that | _She complained me that the room was cold._ |
+| She added that she had enjoyed it. | **added that** / added me that | _She added me that she had enjoyed it._ |
+| He replied that he was ready. | **replied that** / replied him that | _He replied him that he was ready._ |
+| She predicted that it would rain. | **predicted that** / predicted me that | _She predicted me that it would rain._ |
+| He pointed out that the shop was closed. | **pointed out that** / pointed out me that | _He pointed out me that the shop was closed._ |
+| She confessed that she had broken it. | **confessed that** / confessed me that | _She confessed me that she had broken it._ |
+| They agreed that the plan was good. | **agreed that** / agreed me that | _They agreed me that the plan was good._ |
 
 ## Semester 2 · Unit 7 — In the spotlight
 
@@ -727,39 +727,39 @@ Not reviewed yet — shown to nobody.
 | Rice is grown in many hot countries. | **grown** / grew | _Rice is grew in many hot countries._ |
 | My bike was stolen last night. | **stolen** / stole | _My bike was stole last night._ |
 | The windows are cleaned every week. | **are** / is | _The windows is cleaned every week._ |
-| The story was told by my grandmother. | **told** / tell | _The story was tell by my grandmother._ |
 | These photos were taken in Petra. | **taken** / took | _These photos were took in Petra._ |
 | The car is washed every Friday. | **is washed** / is wash | _The car is wash every Friday._ |
-| The winners were given medals. | **given** / gave | _The winners were gave medals._ |
-| Our house was painted last year. | **was painted** / was paint | _Our house was paint last year._ |
 | Arabic is taught at every school. | **is taught** / is teach | _Arabic is teach at every school._ |
-| The song was sung by the whole class. | **sung** / sang | _The song was sang by the whole class._ |
 | The door must be locked. | **be locked** / be lock | _The door must be lock._ |
 | Phones must be switched off. | **be switched** / switched | _Phones must switched off._ |
 | This medicine should be kept cold. | **be kept** / be keep | _This medicine should be keep cold._ |
 | The homework must be finished today. | **must be** / must to be | _The homework must to be finished today._ |
 | The tickets can be bought online. | **be bought** / be buy | _The tickets can be buy online._ |
 | Plastic bottles can be recycled. | **can be** / can | _Plastic bottles can recycled._ |
-| The rules must be followed by everyone. | **be followed** / be follow | _The rules must be follow by everyone._ |
 | The work will be done tomorrow. | **will be done** / will be did | _The work will be did tomorrow._ |
-| Students must be told about the test. | **must be told** / must told | _Students must told about the test._ |
-| The letter might be sent tomorrow. | **be sent** / be send | _The letter might be send tomorrow._ |
 | This room can't be used today. | **be used** / been used | _This room can't been used today._ |
-| The plants should be watered every day. | **should be** / should | _The plants should watered every day._ |
 | Were the letters sent yesterday? | **Were** / Did | _Did the letters sent yesterday?_ |
 | Was the window broken by the wind? | **Was** / Did | _Did the window broken by the wind?_ |
 | The match wasn't cancelled. | **wasn't cancelled** / wasn't cancel | _The match wasn't cancel._ |
 | Are cars made in Jordan? | **Are** / Do | _Do cars made in Jordan?_ |
 | Where was this photo taken? | **taken** / took | _Where was this photo took?_ |
-| The sandwiches weren't eaten at the party. | **weren't** / didn't | _The sandwiches didn't eaten at the party._ |
-| When was the school built? | **was** / did | _When did the school built?_ |
 | Are the rooms cleaned every day? | **Are** / Do | _Do the rooms cleaned every day?_ |
 | The emails were not sent. | **were not** / not were | _The emails not were sent._ |
 | The homework isn't checked on Fridays. | **isn't checked** / isn't check | _The homework isn't check on Fridays._ |
-| Why was the trip cancelled? | **cancelled** / cancel | _Why was the trip cancel?_ |
-| Is this bread made locally? | **made** / make | _Is this bread make locally?_ |
-| The new rules weren't explained to us. | **explained** / explain | _The new rules weren't explain to us._ |
-| Who was the prize given to? | **given** / gave | _Who was the prize gave to?_ |
+| A new logo is being designed. | **being** / been | _A new logo is been designed._ |
+| The road is being repaired now. | **being repaired** / been repaired | _The road is been repaired now._ |
+| My phone is being fixed today. | **is being** / is been | _My phone is been fixed today._ |
+| Our new school is being built. | **is being built** / is been built | _Our new school is been built._ |
+| While the jingle was being recorded, he coughed. | **was being** / was been | _While the jingle was been recorded, he coughed._ |
+| The bridge was being built last year. | **was being built** / was been built | _The bridge was been built last year._ |
+| Dinner was being cooked when we arrived. | **was being** / was been | _Dinner was been cooked when we arrived._ |
+| The ads were being filmed in Amman. | **were being** / were been | _The ads were been filmed in Amman._ |
+| The new slogan has been announced. | **has been** / has being | _The new slogan has being announced._ |
+| Three new shops have been opened. | **have been** / have being | _Three new shops have being opened._ |
+| The tickets have been sold out. | **have been sold** / have being sold | _The tickets have being sold out._ |
+| The letter has been sent already. | **has been** / has being | _The letter has being sent already._ |
+| Many trees have been planted here. | **been** / being | _Many trees have being planted here._ |
+| My bike has been repaired. | **has been repaired** / has be repaired | _My bike has be repaired._ |
 
 ## Semester 2 · Unit 8 — The evolution of advertising
 

@@ -29,3 +29,28 @@ export async function plantVerificationCode(email: string, code: string): Promis
     );
   });
 }
+
+/**
+ * A material in a teacher's own files (ملفاتي), as the app's save would leave it.
+ * Generating one through the UI is its own journey (and a slow one); the share
+ * link only needs a saved row to share.
+ */
+export async function insertSavedMaterial(
+  email: string,
+  m: { type: string; title: string; content: unknown; formState?: unknown },
+): Promise<string> {
+  return withDb(async (c) => {
+    const { rows } = await c.query(
+      `insert into saved_materials (user_id, type, title, subject, grade, topic, language, content, form_state)
+       select id, $2, $3, 'Mathematics', 'الصف العاشر', $3, 'en', $4::jsonb, $5::jsonb from users where lower(email) = lower($1)
+       returning id`,
+      [email, m.type, m.title, JSON.stringify(m.content), JSON.stringify(m.formState ?? {})],
+    );
+    if (!rows[0]) throw new Error(`insertSavedMaterial: no user ${email}`);
+    return rows[0].id as string;
+  });
+}
+
+/** The material's share-link code, or null while it is not shared. */
+export const shareCodeOf = (id: string) =>
+  withDb(async (c) => (await c.query("select share_code from saved_materials where id = $1", [id])).rows[0]?.share_code as string | null);

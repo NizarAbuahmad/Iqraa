@@ -43,6 +43,7 @@ import { Celebrate } from '@/components/ui/Celebrate';
 import { Band } from '@/components/ui/Band';
 import { useSurface } from '@/components/ui/Surface';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { trackEvent } from '@/services/analytics';
 import { BRAND_BAND, subjectChipColor, subjectTheme } from '@/services/subjectTheme';
 import { periodClassLabel } from '@/services/classSubjects';
 import { className, classNameFor } from '@/services/materialClass';
@@ -52,6 +53,7 @@ import { PhoneToday } from '@/components/today/PhoneToday';
 import { TourTarget } from '@/components/tour/TourTarget';
 import { SPACE } from '@/constants/theme';
 import { readableOn } from '@/services/readableColor';
+import { IQRA_CHAT_ENABLED } from '@/services/features';
 
 const START_CLASS_COLOR = palette.live;
 const SIDE_PANEL_WIDTH = 356;
@@ -210,7 +212,7 @@ function LessonWorkspace() {
                 <Text style={[s.nudgeText, { color: colors.foreground, textAlign: align }]}>
                   {setup.step === 'timetable'
                     ? t('homeSetupTimetable')
-                    : t('homeSetupPlan', periodClassLabel(classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en'), setup.subjectId, lang) ?? '')}
+                    : t(setup.step === 'schedule' ? 'homeSetupSchedule' : 'homeSetupPlan', periodClassLabel(classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en'), setup.subjectId, lang) ?? '')}
                 </Text>
                 <Pressable
                   onPress={() =>
@@ -225,7 +227,7 @@ function LessonWorkspace() {
                   accessibilityRole="button"
                 >
                   <Text style={[s.nudgeBtnText, { color: colors.primaryForeground }]}>
-                    {t(setup.step === 'timetable' ? 'homeSetupTimetableCta' : 'homeSetupPlanCta')}
+                    {t(setup.step === 'timetable' ? 'homeSetupTimetableCta' : setup.step === 'schedule' ? 'homeSetupScheduleCta' : 'homeSetupPlanCta')}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -285,7 +287,10 @@ function LessonWorkspace() {
             {quickTools.map(tool => (
               <PressableScale
                 key={tool.id}
-                onPress={() => router.push({ pathname: tool.route as never, params: toolParams as never })}
+                onPress={() => {
+                  trackEvent('tool_opened', { toolId: tool.id, source: 'today' });
+                  router.push({ pathname: tool.route as never, params: toolParams as never });
+                }}
                 style={[s.tool, surface]}
                 accessibilityLabel={t(tool.titleKey as never)}
               >
@@ -326,6 +331,8 @@ function LessonWorkspace() {
         </ScrollView>
 
         {/* ─── Assistant panel ───────────────────────────────────── */}
+        {/* Hidden while the chat is off (`IQRA_CHAT_ENABLED`): every control in it leads there. */}
+        {IQRA_CHAT_ENABLED ? (
         <View style={[s.side, surface]}>
           <View style={[{ flexDirection: rowDir, alignItems: 'center', gap: 9 }]}>
             <IqraaMark size={28} tone="soft" />
@@ -387,6 +394,7 @@ function LessonWorkspace() {
             <Text style={[s.openChat, { color: colors.primary, textAlign: align }]}>{t('homeOpenChat')} {align === 'right' ? '←' : '→'}</Text>
           </Pressable>
         </View>
+        ) : null}
       </View>
       <Celebrate visible={today.prepJustReady} size="small" message={t('celebratePrepReady')} onDone={today.clearPrepJustReady} />
     </View>

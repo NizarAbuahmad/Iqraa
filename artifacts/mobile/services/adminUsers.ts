@@ -50,3 +50,39 @@ export const NEW_USERS_HREF = '/admin/users?new=1';
 export function parseNewUsersParam(param: string | string[] | undefined): boolean {
   return (Array.isArray(param) ? param[0] : param) === '1';
 }
+
+/** The users screen's «انضم عبر» chips: `app` is either store platform (`channelOf` 'mobile'). */
+export type ChannelFilter = 'all' | 'web' | 'app' | 'unknown';
+/** The users screen's «جدد / عائدون» chips — how the API reads the date range (`?cohort=`). */
+export type CohortFilter = 'all' | 'new' | 'returning';
+type DayRange = { from: string; to: string };
+
+/**
+ * New and returning are relative to a window, so picking either with no start day
+ * opens the new-user window (the «٧ أيام» chip), keeping any end day.
+ */
+export function rangeForCohort(cohort: CohortFilter, range: DayRange, today: string): DayRange {
+  return cohort !== 'all' && !range.from ? { from: newUsersFrom(today), to: range.to } : range;
+}
+
+/** And clearing the start day («الكل») drops new/returning, which then mean nothing. */
+export function cohortForRange(range: DayRange, cohort: CohortFilter): CohortFilter {
+  return range.from ? cohort : 'all';
+}
+
+/** The query string for GET /admin/users (routes/admin.ts). */
+export function usersListQuery(f: {
+  q: string;
+  onlySuspended: boolean;
+  range: DayRange;
+  channel: ChannelFilter;
+  cohort: CohortFilter;
+  offset: number;
+}): string {
+  return `q=${encodeURIComponent(f.q)}&status=${f.onlySuspended ? 'suspended' : 'all'}&offset=${f.offset}`
+    + (f.range.from ? `&from=${f.range.from}` : '')
+    + (f.range.to ? `&to=${f.range.to}` : '')
+    + (f.channel !== 'all' ? `&channel=${f.channel}` : '')
+    // The API refuses `returning` with no start day; never send one.
+    + (f.cohort !== 'all' && f.range.from ? `&cohort=${f.cohort}` : '');
+}

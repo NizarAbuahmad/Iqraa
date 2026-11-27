@@ -5,6 +5,7 @@
     "subject": "الرياضيات",
     "subject_en": "Mathematics",
     "curriculum_authority": "المركز الوطني لتطوير المناهج والتقويم (NCCD) - وزارة التربية والتعليم الأردنية",
+    "semester_covered": 2,
     "schema_version": "1.0",
     "source_books": [
       "كتاب الطالب لمادة الرياضيات الصف الأول الفصل الثاني (g1-math-s2-student-book)"

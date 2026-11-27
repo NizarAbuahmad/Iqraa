@@ -146,22 +146,6 @@
    "lessonStartPage": 26
   },
   {
-   "file": "p041-v2.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 41,
-   "rect": [
-    30.0,
-    286.5,
-    255.6,
-    453.5
-   ],
-   "unit": 1,
-   "lesson": 3,
-   "lessonTitleEn": "Graphing Linear Inequalities in Two Variables",
-   "lessonTitleAr": null,
-   "lessonStartPage": 26
-  },
-  {
    "file": "p042b.png",
    "sourceId": "g9-math-s1-student-book",
    "pdfPage": 42,
@@ -266,22 +250,6 @@
     481.8,
     381.2,
     582.0
-   ],
-   "unit": 2,
-   "lesson": 1,
-   "lessonTitleEn": "Functions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 42
-  },
-  {
-   "file": "p047-v2.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 47,
-   "rect": [
-    21.0,
-    16.7,
-    428.0,
-    410.9
    ],
    "unit": 2,
    "lesson": 1,
@@ -498,22 +466,6 @@
    "lessonStartPage": 64
   },
   {
-   "file": "p065-v2.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 65,
-   "rect": [
-    21.0,
-    0.0,
-    437.0,
-    222.2
-   ],
-   "unit": 2,
-   "lesson": 3,
-   "lessonTitleEn": "Quadratic Function",
-   "lessonTitleAr": null,
-   "lessonStartPage": 64
-  },
-  {
    "file": "p066-v2.png",
    "sourceId": "g9-math-s1-student-book",
    "pdfPage": 66,
@@ -626,22 +578,6 @@
    "lessonStartPage": 64
   },
   {
-   "file": "p073.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 73,
-   "rect": [
-    32.5,
-    54.5,
-    430.7,
-    426.0
-   ],
-   "unit": 2,
-   "lesson": 3,
-   "lessonTitleEn": "Quadratic Function",
-   "lessonTitleAr": null,
-   "lessonStartPage": 64
-  },
-  {
    "file": "p073b-v2.png",
    "sourceId": "g9-math-s1-student-book",
    "pdfPage": 73,
@@ -730,22 +666,6 @@
     638.1,
     156.4,
     742.9
-   ],
-   "unit": 2,
-   "lesson": 3,
-   "lessonTitleEn": "Quadratic Function",
-   "lessonTitleAr": null,
-   "lessonStartPage": 64
-  },
-  {
-   "file": "p076-v2.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 76,
-   "rect": [
-    74.0,
-    289.1,
-    380.0,
-    513.9
    ],
    "unit": 2,
    "lesson": 3,
@@ -1026,86 +946,6 @@
    "lessonStartPage": 77
   },
   {
-   "file": "p088-v2.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 88,
-   "rect": [
-    202.5,
-    386.2,
-    290.0,
-    514.3
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Transformations of Quadratic Function",
-   "lessonTitleAr": null,
-   "lessonStartPage": 77
-  },
-  {
-   "file": "p088b-v2.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 88,
-   "rect": [
-    391.0,
-    431.2,
-    472.0,
-    535.0
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Transformations of Quadratic Function",
-   "lessonTitleAr": null,
-   "lessonStartPage": 77
-  },
-  {
-   "file": "p088c-v2.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 88,
-   "rect": [
-    156.3,
-    491.0,
-    291.0,
-    582.0
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Transformations of Quadratic Function",
-   "lessonTitleAr": null,
-   "lessonStartPage": 77
-  },
-  {
-   "file": "p089.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 89,
-   "rect": [
-    316.8,
-    514.4,
-    405.9,
-    647.0
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Transformations of Quadratic Function",
-   "lessonTitleAr": null,
-   "lessonStartPage": 77
-  },
-  {
-   "file": "p089b-v2.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 89,
-   "rect": [
-    160.0,
-    587.3,
-    264.1,
-    697.0
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Transformations of Quadratic Function",
-   "lessonTitleAr": null,
-   "lessonStartPage": 77
-  },
-  {
    "file": "p093.png",
    "sourceId": "g9-math-s1-student-book",
    "pdfPage": 93,
@@ -1282,22 +1122,6 @@
    "lessonStartPage": 108
   },
   {
-   "file": "p119.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 119,
-   "rect": [
-    415.2,
-    256.7,
-    548.5,
-    361.1
-   ],
-   "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Quadratic Equations Using the Quadratic Formula",
-   "lessonTitleAr": null,
-   "lessonStartPage": 116
-  },
-  {
    "file": "p119b.png",
    "sourceId": "g9-math-s1-student-book",
    "pdfPage": 119,
@@ -1386,38 +1210,6 @@
     399.1,
     517.0,
     514.8
-   ],
-   "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Quadratic Equations Using the Quadratic Formula",
-   "lessonTitleAr": null,
-   "lessonStartPage": 116
-  },
-  {
-   "file": "p128.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 128,
-   "rect": [
-    308.0,
-    98.1,
-    420.6,
-    213.9
-   ],
-   "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Quadratic Equations Using the Quadratic Formula",
-   "lessonTitleAr": null,
-   "lessonStartPage": 116
-  },
-  {
-   "file": "p129.png",
-   "sourceId": "g9-math-s1-student-book",
-   "pdfPage": 129,
-   "rect": [
-    289.6,
-    481.1,
-    390.4,
-    590.0
    ],
    "unit": 3,
    "lesson": 4,

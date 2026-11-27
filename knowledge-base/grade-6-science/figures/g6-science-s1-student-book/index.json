@@ -18,22 +18,6 @@
       "lessonStartPage": 10
     },
     {
-      "file": "p013-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 13,
-      "rect": [
-        103.1,
-        255.8,
-        401.8,
-        553.4
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
       "file": "p014-v2.png",
       "sourceId": "g6-science-s1-student-book",
       "pdfPage": 14,
@@ -42,38 +26,6 @@
         218.4,
         304.0,
         386.9
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
-      "file": "p015-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 15,
-      "rect": [
-        227.2,
-        440.7,
-        471.0,
-        590.0
-      ],
-      "unit": 1,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 10
-    },
-    {
-      "file": "p015b-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 15,
-      "rect": [
-        99.0,
-        440.7,
-        297.2,
-        616.0
       ],
       "unit": 1,
       "lesson": 1,
@@ -204,42 +156,10 @@
         526.0
       ],
       "unit": 1,
-      "lesson": 3,
+      "lesson": 2,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
-      "lessonStartPage": 22
-    },
-    {
-      "file": "p029c-v2.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 29,
-      "rect": [
-        119.0,
-        426.0,
-        499.2,
-        675.2
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 22
-    },
-    {
-      "file": "p029d.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 29,
-      "rect": [
-        396.4,
-        422.7,
-        504.4,
-        528.1
-      ],
-      "unit": 1,
-      "lesson": 3,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 22
+      "lessonStartPage": 17
     },
     {
       "file": "p030.png",
@@ -315,11 +235,11 @@
         462.6,
         514.8
       ],
-      "unit": 1,
-      "lesson": 3,
+      "unit": 2,
+      "lesson": 1,
       "lessonTitleEn": null,
       "lessonTitleAr": null,
-      "lessonStartPage": 22
+      "lessonStartPage": 36
     },
     {
       "file": "p037b-v2.png",
@@ -386,54 +306,6 @@
       "lessonStartPage": 42
     },
     {
-      "file": "p063.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 63,
-      "rect": [
-        60.0,
-        111.3,
-        234.7,
-        220.1
-      ],
-      "unit": 3,
-      "lesson": 1,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 58
-    },
-    {
-      "file": "p075.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 75,
-      "rect": [
-        185.8,
-        234.4,
-        299.0,
-        330.5
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 66
-    },
-    {
-      "file": "p075b.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 75,
-      "rect": [
-        303.5,
-        244.8,
-        416.8,
-        330.5
-      ],
-      "unit": 3,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 66
-    },
-    {
       "file": "p077b-v2.png",
       "sourceId": "g6-science-s1-student-book",
       "pdfPage": 77,
@@ -448,22 +320,6 @@
       "lessonTitleEn": null,
       "lessonTitleAr": null,
       "lessonStartPage": 66
-    },
-    {
-      "file": "p101.png",
-      "sourceId": "g6-science-s1-student-book",
-      "pdfPage": 101,
-      "rect": [
-        41.9,
-        479.1,
-        323.2,
-        727.9
-      ],
-      "unit": 4,
-      "lesson": 2,
-      "lessonTitleEn": null,
-      "lessonTitleAr": null,
-      "lessonStartPage": 92
     }
   ]
 }

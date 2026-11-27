@@ -19,8 +19,11 @@ import {
   itemsForUnitTags,
   questionBanks,
   usePolicy,
+  bankTagsForUnit,
   type LicenseId,
 } from '../bank.ts';
+import { UNITS } from '../catalog.ts';
+import { hasExtractedText } from '../passages.ts';
 
 const usable = bankItems();
 
@@ -40,6 +43,33 @@ describe('manifest shape', () => {
     // makes it invisible to the lesson-driven paths that matter most.
     for (const s of G10_SOURCES) {
       assert.ok(s.unitTags.length > 0, `${s.id} has no unitTags`);
+    }
+  });
+
+  it('scopes every book with text to tags a catalog unit actually derives', () => {
+    // The tags are matched against `bankTagsForUnit(unit)`, so a spelling the
+    // catalog never derives makes the book invisible to grounding with no error
+    // anywhere. Grade 10 history, civics and art sat that way (`history-s1`
+    // against the units' `hist-s1`, `civic-s1` against `civ-s1`,
+    // `art-g10-general` against `arts-s1`): their text was extracted and no
+    // prompt ever received a page of it.
+    const reachable = new Set(UNITS.flatMap(u => bankTagsForUnit(u.id)));
+    const UNSCOPED: Record<string, string> = {
+      // Whole-subject reference material, deliberately not tied to a unit.
+      'chem-loss-recovery': 'subject-wide reference',
+      'bio-worksheet-answers': 'subject-wide reference',
+      // Filed as Grade 10 vocational part 2, but the text is a 2015 Grade 9
+      // book (ISBN 978-9957-84-641-1); no Grade 10 S2 vocational unit exists.
+      'vocational-p2-student-book': 'wrong book on file',
+      // An older Ministry guide for a different, art-only course (painting,
+      // portrait, art history, murals, wood burning, theatre) — not the NCCD
+      // art, music and theatre book the catalog follows, so it must not ground
+      // a prompt about it.
+      'art-teacher-guide': 'guide for a different course',
+    };
+    for (const s of G10_SOURCES) {
+      if (s.status !== 'ingested' || !hasExtractedText(s.id) || s.id in UNSCOPED) continue;
+      assert.ok(s.unitTags.some(t => reachable.has(t)), `${s.id} carries ${JSON.stringify(s.unitTags)}, which no catalog unit derives`);
     }
   });
 
@@ -79,7 +109,8 @@ describe('manifest shape', () => {
       // grade) carries the bare `arabic-s1` form; every other grade is explicit.
       arabic: /^(arabic-s[12]|g\d+-arabic-s[12])$/,
       islamic: /^(islamic-s[12]|g\d+-islamic-s[12])$/,
-      history: /^history-s[12]$/,
+      // Slug is `hist`, not `history` — the units derive `hist-s1`.
+      history: /^(hist-s[12]|g\d+-hist-s[12])$/,
       // Combined «العلوم», taught as one subject at Grade 8 and below. No bare
       // form: Grade 10 (the implicit grade) splits science into the four
       // subjects above, so `science-s1` would name a book that cannot exist.
@@ -94,12 +125,16 @@ describe('manifest shape', () => {
       // Grade 6 joined 2026-09-15. Slug is `digital`, not this record's
       // `digital-literacy` key.
       'digital-literacy': /^(digital-s[12]|g\d+-digital-s[12])$/,
-      civic: /^civic-s[12]$/,
+      // Slug is `civ`, not `civic` — the units derive `civ-s1`.
+      civic: /^(civ-s[12]|g\d+-civ-s[12])$/,
       // Grade 6 joined 2026-09-15. The id slug is `arts`, not this record's
       // `art` key — one of the spellings the comment above warns about.
-      art: /^(art-g10-general|g\d+-arts-s[12])$/,
-      // Slug is `voc`, not `vocational`.
-      vocational: /^(vocational-s[12]|g\d+-voc-s[12])$/,
+      // `art-g10-general` only on the old Ministry guide, kept out of grounding.
+      art: /^(arts-s[12]|art-g10-general|g\d+-arts-s[12])$/,
+      // Slug is `voc`, not `vocational`. Grade 10 (the implicit grade) takes
+      // the bare `voc-s1` form since 2026-11-13 (vocational-p1-student-book);
+      // `vocational-s2` is still the Grade 9 Part 2 file filed under Grade 10.
+      vocational: /^(vocational-s[12]|voc-s[12]|g\d+-voc-s[12])$/,
       'physical-education': /^(pe-s[12]|g\d+-pe-s[12])$/,
     };
     for (const s of G10_SOURCES) {

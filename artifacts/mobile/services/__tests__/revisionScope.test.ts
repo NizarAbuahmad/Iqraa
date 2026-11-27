@@ -42,10 +42,11 @@ describe('revisionUnits — real Grade 10 maths', () => {
   }
 
   it('the first outcome of each lesson comes first, and a lab with nothing to review comes last', () => {
-    // Semester 1, unit 1 opens with a GeoGebra lab (no concepts, no terms) and then four lessons.
+    // Semester 1, unit 1 holds a GeoGebra lab (no concepts, no terms). Since 2026-11-13 it is second, after
+    // «حل معادلات خاصة», as the book prints it — so a thin lesson that is not first must still give way.
     const u = revisionUnits(sem(1), 'ar')[0]!;
     const thin = u.lessons.filter(l => l.thin);
-    assert.ok(thin.length >= 1 && u.lessons[0]!.thin, 'probe: unit 1 should open with a thin lesson');
+    assert.ok(thin.length >= 1, 'probe: unit 1 should hold a thin lesson');
     const rich = u.lessons.filter(l => !l.thin).map(l => getLessonById(l.id)!);
     assert.deepEqual(u.outcomes, rich.slice(0, 3).map(l => curriculumObjectivesFor(l)[0]!));
   });

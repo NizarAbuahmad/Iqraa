@@ -43,6 +43,8 @@ export type GenerationRecord = {
    *  regeneration reads to find a variant this teacher has not seen. */
   artifactId?: string | null;
   promptTokens: number;
+  /** The part of `promptTokens` the provider served from its prompt cache. */
+  cachedPromptTokens?: number;
   completionTokens: number;
   costUsd: number;
   /** Wall time of the model call, when the caller timed it. */
@@ -95,6 +97,7 @@ export async function recordGeneration(row: GenerationRecord): Promise<void> {
       cacheStatus: row.cacheStatus,
       artifactId: row.artifactId ?? null,
       promptTokens: row.promptTokens,
+      cachedPromptTokens: row.cachedPromptTokens ?? 0,
       completionTokens: row.completionTokens,
       costUsd: row.costUsd.toFixed(6),
       durationMs: row.durationMs ?? null,
@@ -142,6 +145,31 @@ export async function readUserPeriodSpendUsd(userId: string): Promise<number | n
     const total = Number(rows[0]?.total ?? 0);
     if (!Number.isFinite(total)) return null;
     return total;
+  } catch (err) {
+    note(err, "read");
+    return null;
+  }
+}
+
+/**
+ * This account's own monthly allowance (`users.ai_budget_usd`) and the last day
+ * it applies (`users.ai_budget_until`), as stored. Null means "use the role
+ * default" — including when the row cannot be read, so a database blip falls
+ * back to the default cap rather than to no cap. Whether it is still in force
+ * is decided by `pickUserBudgetLimitUsd` (aiBudget.ts).
+ */
+export async function readUserBudgetOverride(
+  userId: string,
+): Promise<{ usd: number | null; until: string | null } | null> {
+  try {
+    const { db, users } = await import("@workspace/db");
+    const { eq } = await import("drizzle-orm");
+    const [row] = await db
+      .select({ usd: users.aiBudgetUsd, until: users.aiBudgetUntil })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    return row ? { usd: row.usd ?? null, until: row.until ?? null } : null;
   } catch (err) {
     note(err, "read");
     return null;

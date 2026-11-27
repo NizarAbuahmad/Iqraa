@@ -18,6 +18,8 @@ import {
 import { QUIZ_TYPE_ORDER, type QuizType } from "./generationShape.ts";
 import { coverageClauseAr, coverageClauseEn } from "./coverage.ts";
 import { revisionClauseAr, revisionClauseEn } from "./revision.ts";
+import { FIRST_GRADE_DIFFICULTY_AR, FIRST_GRADE_DIFFICULTY_EN, firstGradeClauseAr, firstGradeClauseEn, isFirstGrade } from "./firstGrade.ts";
+import { earlyDifficultyAr, earlyDifficultyEn, earlyGradeOf } from "./earlyGrade.ts";
 
 /** «السؤال الأول» … — how a ministry paper numbers its question blocks. */
 const ORDINAL_AR = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس"];
@@ -275,7 +277,7 @@ export function lessonPlanPromptAr(b: any): string {
   return `أنشئ خطة درس كاملة لمادة ${b.subject} للصف ${b.grade} حول موضوع "${b.topic}"، مدتها ${b.duration ?? 45} دقيقة.
 ${b.objectives ? `الأهداف المحددة:\n${b.objectives}` : ""}
 ${b.additionalContext ? `سياق إضافي: ${b.additionalContext}` : ""}
-${lessonStyleClauseAr(b)}${kindBlockAr(b)}${revisionClauseAr(b, "plan")}
+${lessonStyleClauseAr(b)}${kindBlockAr(b)}${revisionClauseAr(b, "plan")}${firstGradeClauseAr(b, "plan")}
 ${teacherVoiceAr(b, hasPriorReview)}
 ${hasPriorReview ? `
 خصّص 5-10 دقائق في بداية الحصة لمراجعة معارف سابقة قد لا يتقنها بعض الطلبة، واكتب خطة هذه المراجعة في حقل "priorReview". هذه مراجعة تمهيدية وليست من أهداف هذا الدرس، فلا تُدرجها ضمن "objectives".
@@ -317,7 +319,7 @@ export function lessonPlanPromptEn(b: any): string {
   return `Create a complete lesson plan for ${b.subject}, ${b.grade}, on the topic "${b.topic}", duration ${b.duration ?? 45} minutes.
 ${b.objectives ? `Specified objectives:\n${b.objectives}` : ""}
 ${b.additionalContext ? `Additional context: ${b.additionalContext}` : ""}
-${lessonStyleClauseEn(b)}${kindBlockEn(b)}${revisionClauseEn(b, "plan")}
+${lessonStyleClauseEn(b)}${kindBlockEn(b)}${revisionClauseEn(b, "plan")}${firstGradeClauseEn(b, "plan")}
 ${hasPriorReview ? `
 Set aside 5-10 minutes at the start of the lesson to review prior material some students may not have fully grasped, and put that review plan in a "priorReview" field. This is a warm-up review, not one of this lesson's own objectives — do not list it under "objectives".
 ${priorConcepts ? `Curriculum concepts to review verbatim (do not invent others):\n- ${priorConcepts.join("\n- ")}` : ""}
@@ -437,8 +439,9 @@ export function worksheetPromptAr(b: any): string {
   const isHW = b.homework;
   const types = worksheetModelTypes(b.questionTypes);
   const wantsWP = types.includes("word_problem");
-  // Worked example, half-solved question and `solution` rows only where there is a calculation to model.
-  const example = !isHW && usesWorkedExample(b);
+  // Worked example, half-solved question and `solution` rows only where there is a calculation to model —
+  // and never for Grade 1, whose clause forbids multi-step working and «explain» items.
+  const example = !isHW && usesWorkedExample(b) && !isFirstGrade(b);
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
     : null;
@@ -450,7 +453,7 @@ ${difficultyClauseAr(b)}
 ${wantsWP ? "\nيجب تضمين مسألة حياتية واحدة على الأقل (سيناريو واقعي يتطلب تطبيق مفاهيم الدرس، بأسلوب «حل مسائل حياتية»)." : ""}
 ${prior ? `\nابدأ بقسم «مراجعة سابقة» فيه سؤالان أو ثلاثة فقط مبنية حرفيًا على هذه المفاهيم السابقة (لا تختلق غيرها):\n- ${prior.join("\n- ")}` : ""}${coverageClauseAr(b, !!example)}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
-${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}
+${example ? workedExampleRuleAr(n) : isHW ? "" : worksheetKindRuleAr(b, n)}${firstGradeClauseAr(b, "paper")}
 أعد JSON بالشكل الآتي (بالعربية):
 {
   "title": "عنوان الورقة",
@@ -482,7 +485,7 @@ export function worksheetPromptEn(b: any): string {
   const isHW = b.homework;
   const types = worksheetModelTypes(b.questionTypes);
   const wantsWP = types.includes("word_problem");
-  const example = !isHW && usesWorkedExample(b);
+  const example = !isHW && usesWorkedExample(b) && !isFirstGrade(b);
   const prior = b.includePriorReview && Array.isArray(b.priorKnowledge) && b.priorKnowledge.length
     ? b.priorKnowledge
     : null;
@@ -494,7 +497,7 @@ ${worksheetTypeShapesEn(types)}
 ${wantsWP ? "\nInclude at least one real-life word problem (a realistic scenario that requires applying the lesson concepts)." : ""}
 ${prior ? `\nStart with a "Prior knowledge review" section of 2–3 questions drawn only from these concepts (do not invent others):\n- ${prior.join("\n- ")}` : ""}${coverageClauseEn(b, !!example)}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
-${example ? workedExampleRuleEn(n) : isHW ? "" : worksheetKindRuleEn(b, n)}
+${example ? workedExampleRuleEn(n) : isHW ? "" : worksheetKindRuleEn(b, n)}${firstGradeClauseEn(b, "paper")}
 Return JSON in this exact shape:
 {
   "title": "Worksheet title",
@@ -592,7 +595,7 @@ ${quizDifficultyClauseAr(b)}
 ${types.map(t => `- ${QUIZ_TYPE_CONTRACT_AR[t]}`).join("\n")}
 العلامات: مجموع "points" لكل الأسئلة يساوي ${marks} بالضبط؛ أسئلة الاختيار وصح/خطأ وأكمل علامة أو علامتان للسؤال، والأسئلة المفتوحة أكثر.
 
-${QUIZ_VARIETY_RULE_AR}${coverageClauseAr(b)}
+${QUIZ_VARIETY_RULE_AR}${coverageClauseAr(b)}${firstGradeClauseAr(b, "paper")}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي (استخدمه لصياغة أسئلة دقيقة ومرتبطة بالمنهج):\n${b.additionalContext}` : ""}
 أعد JSON بالشكل الآتي (بالعربية):
 {
@@ -628,7 +631,7 @@ The JSON shape of each type:
 ${types.map(t => `- ${QUIZ_TYPE_CONTRACT_EN[t]}`).join("\n")}
 Marks: the "points" of all questions sum to exactly ${marks}; choice, true/false and fill-blank items carry one or two marks each, open questions more.
 
-${QUIZ_VARIETY_RULE_EN}${coverageClauseEn(b)}
+${QUIZ_VARIETY_RULE_EN}${coverageClauseEn(b)}${firstGradeClauseEn(b, "paper")}
 ${b.additionalContext ? `\nTextbook context (use this to craft accurate, curriculum-aligned questions):\n${b.additionalContext}` : ""}
 Return JSON in this exact shape:
 {
@@ -749,6 +752,22 @@ const WORKSHEET_BAND: Record<string, [string, string, string]> = {
   hard: ["medium", "hard", "hard"],
 };
 
+/**
+ * The level meanings for this request: Grade 1 has its own
+ * (`FIRST_GRADE_DIFFICULTY_*`), grades 2–4 theirs (`earlyGrade.ts`), and grade 5
+ * and up the ones above.
+ */
+const meaningAr = (b: any) => {
+  if (isFirstGrade(b)) return FIRST_GRADE_DIFFICULTY_AR;
+  const g = earlyGradeOf(b);
+  return g ? earlyDifficultyAr(g) : DIFFICULTY_MEANING_AR;
+};
+const meaningEn = (b: any) => {
+  if (isFirstGrade(b)) return FIRST_GRADE_DIFFICULTY_EN;
+  const g = earlyGradeOf(b);
+  return g ? earlyDifficultyEn(g) : DIFFICULTY_MEANING_EN;
+};
+
 function difficultyKey(b: any): string {
   const d = b.difficulty;
   return d === "easy" || d === "hard" || d === "mixed" ? d : "medium";
@@ -756,19 +775,19 @@ function difficultyKey(b: any): string {
 
 export function difficultyClauseAr(b: any): string {
   const key = difficultyKey(b);
-  if (key === "mixed") return `\nالمستوى: متنوّع. ${DIFFICULTY_MEANING_AR.mixed}`;
+  if (key === "mixed") return `\nالمستوى: متنوّع. ${meaningAr(b).mixed}`;
   const band = WORKSHEET_BAND[key];
   const label: Record<string, string> = { easy: "سهل", medium: "متوسط", hard: "صعب" };
-  return `\nالمستوى المطلوب: ${label[key]} — ${DIFFICULTY_MEANING_AR[key]}
+  return `\nالمستوى المطلوب: ${label[key]} — ${meaningAr(b)[key]}
 تدرّج الورقة (التزم به): القسم الأول ${label[band[0]]}، الثاني ${label[band[1]]}، الثالث ${label[band[2]]}.
 لا تجعل الأقسام الثلاثة بالمستوى نفسه — التدرّج هو الهدف، والمستوى المطلوب ينقل النطاق لا يلغيه.`;
 }
 
 export function difficultyClauseEn(b: any): string {
   const key = difficultyKey(b);
-  if (key === "mixed") return `\nDifficulty: mixed. ${DIFFICULTY_MEANING_EN.mixed}`;
+  if (key === "mixed") return `\nDifficulty: mixed. ${meaningEn(b).mixed}`;
   const band = WORKSHEET_BAND[key];
-  return `\nRequested difficulty: ${key} — ${DIFFICULTY_MEANING_EN[key]}
+  return `\nRequested difficulty: ${key} — ${meaningEn(b)[key]}
 Worksheet progression (follow it): section 1 ${band[0]}, section 2 ${band[1]}, section 3 ${band[2]}.
 Do not make all three sections the same level — the progression is the point; the requested level shifts the band rather than removing it.`;
 }
@@ -776,12 +795,12 @@ Do not make all three sections the same level — the progression is the point; 
 export function quizDifficultyClauseAr(b: any): string {
   const key = difficultyKey(b);
   const label: Record<string, string> = { easy: "سهل", medium: "متوسط", hard: "صعب", mixed: "متنوّع" };
-  return `\nمستوى الأسئلة: ${label[key]} — ${DIFFICULTY_MEANING_AR[key]}`;
+  return `\nمستوى الأسئلة: ${label[key]} — ${meaningAr(b)[key]}`;
 }
 
 export function quizDifficultyClauseEn(b: any): string {
   const key = difficultyKey(b);
-  return `\nQuestion difficulty: ${key} — ${DIFFICULTY_MEANING_EN[key]}`;
+  return `\nQuestion difficulty: ${key} — ${meaningEn(b)[key]}`;
 }
 
 // ─── Activity prompt builders ────────────────────────────────────────────────
@@ -804,7 +823,8 @@ const ACTIVITY_FORMAT_RULES_AR: Record<string, string> = {
   group: `هذا نشاط تعلّم تعاوني بنية جيقسو حقيقية. يجب أن يتضمن: مجموعات أساسية من 4 يأخذ كل فرد فيها مهمة **مختلفة** عن زملائه (اذكر المهام الأربع صراحة)، ثم مجموعات خبراء يجتمع فيها أصحاب المهمة نفسها، ثم عودة كل خبير ليعلّم جزءه، ثم مساءلة فردية عشوائية يُسحب فيها رقم فيعرض صاحبه إجابة مجموعته كاملة.
 اشترط أن إجابة المجموعة لا تكتمل بغياب أي جزء — هذا هو الاعتماد المتبادل، وبدونه يعمل طالب واحد ويشاهد ثلاثة.`,
   discussion: `هذا نقاش صفّي، وليس عملًا في مجموعات. يجب أن يتضمن: ادعاءً واحدًا قابلًا للجدل مصاغًا كجملة تقريرية (خطأ شائع معقول، لا عبارة صحيحة يتفق عليها الجميع)، تصويتًا أوليًا، دقيقتَي تفكير فردي صامت يكتب فيهما الطالب موقفه وسببًا واحدًا، مرحلة ثنائية يعيد فيها كل طالب صياغة سبب زميله قبل الرد، نقاشًا صفّيًا تديره بعبارات إدارة الحوار (من يعيد صياغة ما قاله زميله؟ ما دليلك؟ متى يفشل هذا الادعاء؟)، ثم تصويتًا ثانيًا يُقارن بالأول.
-ممنوع: أوراق العمل، الأدوار داخل المجموعة، العروض. لا تكشف الحكم على الادعاء قبل الخطوة الأخيرة.`,
+ممنوع: أوراق العمل، الأدوار داخل المجموعة، العروض. لا تكشف الحكم على الادعاء قبل الخطوة الأخيرة.
+إن كان في هدف النشاط سؤال كتبه المعلم، فاجعله هو سؤال النقاش المكتوب على السبورة بنصّه، بدل ادعاء من عندك؛ وبما أنه سؤال مفتوح، يصبح التصويتان تصويتًا على أقوى الإجابات، مع إبقاء التفكير الفردي الصامت والمرحلة الثنائية وعبارات إدارة الحوار.`,
   "hands-on": `هذا نشاط تطبيقي عملي بمواد ملموسة. يجب أن يُنتج الطلبة شيئًا ماديًا يناسب المادة: في الرياضيات شكلًا يُقاس أو بطاقات تمثّل المسألة، وفي العلوم (الكيمياء والفيزياء والأحياء) نموذجًا مبنيًا من كرات وعيدان أو صلصال، وفي اللغات والمواد الاجتماعية بطاقات من مفاهيم الدرس تُرتَّب أو تُطابَق على لوح. يجب أن يتضمن خطوة يقارن فيها الطلبة ما أنتجوه بما تنص عليه القاعدة أو الصيغة أو **صفحة الكتاب**، ويفسّرون أي فرق أو اختلاف.
 قائمة المواد يجب أن تكون أدوات حقيقية تناسب المادة (ورق مقوّى، مقص، كرات وعيدان، صلصال، بطاقات، شريط لاصق، صفحة الكتاب…) لا «أوراق عمل مطبوعة» فقط. لا تشترط المسطرة أو المنقلة إلا إذا كان الدرس يتضمن قياسًا. نشاط يُحلّ كله على الورق ليس نشاطًا تطبيقيًا.`,
   game: `هذه لعبة تعليمية تنافسية، ولا تكفي تسميتها لعبة. يجب أن تتضمن صراحةً: قواعد مكتوبة تُعلن قبل البدء، فرقًا مسمّاة، جولتين على الأقل بنظام نقاط مختلف بينهما (الثانية بمخاطرة/رهان يعلنه الفريق قبل رؤية السؤال)، لوحة نتائج محدَّثة أمام الجميع، مؤقتًا لكل سؤال، وشرط فوز واضح.
@@ -820,7 +840,8 @@ Materials must be individual tools (notebook, worked-example card, worksheet), n
   group: `This is a cooperative activity with a real JIGSAW structure. It must contain: home groups of 4 where each member takes a **different** task from their teammates (state all four tasks explicitly); expert groups where students holding the same task meet; a return where each expert teaches their part; and random individual accountability where a drawn number decides who reports the group's whole answer.
 Require that the group answer cannot be completed if any part is missing — that interdependence is the point; without it one student works and three watch.`,
   discussion: `This is a whole-class DISCUSSION, not group work. It must contain: one contestable claim written as an assertion (a plausible misconception, not a true statement everyone agrees with); an initial vote; two minutes of silent individual thinking where each student writes a position plus one reason; a paired stage where each student restates their partner's reason before responding; a whole-class discussion run with talk moves (who can restate that? what is your evidence? when does this claim fail?); and a second vote compared with the first.
-Forbidden: worksheets, in-group roles, presentations. Do not settle the claim before the final step.`,
+Forbidden: worksheets, in-group roles, presentations. Do not settle the claim before the final step.
+If the activity objective contains a question the teacher wrote, make that question, word for word, the discussion question on the board instead of a claim of your own; since it is an open question, the votes become a vote on the strongest answers, keeping the silent individual thinking, the paired stage and the talk moves.`,
   "hands-on": `This is a HANDS-ON activity with physical materials. Students must produce something physical that suits the subject: in maths a figure to measure, or cards that represent the problem; in the sciences (chemistry, physics, biology) a model built from balls and sticks or clay; in languages and the humanities, cards made from the lesson's concepts, sorted or matched on a board. It must contain a step where students compare what they produced with what the rule, formula or **textbook page** says, and account for any gap or difference.
 The materials list must be real equipment that suits the subject (card stock, scissors, balls and sticks, clay, cards, adhesive tape, the textbook page…), not just "printed worksheets". Do not require a ruler or protractor unless the lesson involves measuring. An activity done entirely on paper is not hands-on.`,
   game: `This is a competitive learning GAME — calling it a game is not enough. It must explicitly contain: written rules announced before play; named teams; at least two rounds scored differently (the second with a wager the team declares before seeing the question); a scoreboard updated in full view; a timer per question; and a clear win condition.
@@ -848,7 +869,7 @@ ${b.objectives ? `هدف النشاط: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additionalContext}` : ""}
 
 بنية هذا النوع من الأنشطة — التزم بها ولا تستبدلها ببنية عامة:
-${rule}${revisionClauseAr(b, "activity")}
+${rule}${revisionClauseAr(b, "activity")}${firstGradeClauseAr(b, "activity")}
 
 قواعد عامة:
 - مجموع durationMin لكل الخطوات يجب أن يساوي ${dur} بالضبط.
@@ -882,7 +903,7 @@ ${b.objectives ? `Lesson objective: ${b.objectives}` : ""}
 ${b.additionalContext ? `\nTextbook context:\n${b.additionalContext}` : ""}
 
 Structure required for this format — follow it, do not substitute a generic one:
-${rule}${revisionClauseEn(b, "activity")}
+${rule}${revisionClauseEn(b, "activity")}${firstGradeClauseEn(b, "activity")}
 
 General rules:
 - The durationMin values must sum to exactly ${dur}.
@@ -940,7 +961,7 @@ ${b.additionalContext ? `\nسياق الكتاب المدرسي:\n${b.additional
   "keyFacts": [{ "label": "مصطلح", "value": "تعريف قصير" }],
   "sections": [{ "heading": "عنوان القسم", "icon": "bulb-outline", "points": ["نقطة 1", "نقطة 2"] }],
   "takeaway": "الفكرة الأهم في جملة"
-}`;
+}${firstGradeClauseAr(b, "visual")}`;
 }
 
 export function infographicPromptEn(b: any): string {
@@ -962,5 +983,5 @@ Return JSON in this exact shape:
   "keyFacts": [{ "label": "Term", "value": "Short definition" }],
   "sections": [{ "heading": "Section heading", "icon": "bulb-outline", "points": ["point 1", "point 2"] }],
   "takeaway": "The single most important idea"
-}`;
+}${firstGradeClauseEn(b, "visual")}`;
 }

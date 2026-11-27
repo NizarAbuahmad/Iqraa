@@ -45,7 +45,7 @@ import type { LessonMediaItem } from '@/services/lessonMedia';
 import type { LessonMediaItem as UploadedAttachment } from '@/services/lessonMediaApi';
 import type { DeckVideo } from '@/services/youtubeVideo';
 import { summarizeVerification } from '@/services/quizVerification';
-import { confirm } from '@/services/confirm';
+import { ReportProblemSheet } from '@/components/ui/ReportProblemSheet';
 import { pooledVariantId, regenerationFields } from '@/services/ai/regeneration';
 import { slidesChecksRequest, slidesLessonFields, slidesPlanRequest, slidesTeachingRequest, type SlidesLessonFields } from '@/services/slidesRequests';
 import { useAbortOnUnmount } from '@/hooks/useAbortOnUnmount';
@@ -259,6 +259,7 @@ export default function SlidesScreen() {
    */
   const [teachingVariantId, setTeachingVariantId] = useState<string | undefined>(undefined);
   const [reportingTeaching, setReportingTeaching] = useState(false);
+  const [teachingReportOpen, setTeachingReportOpen] = useState(false);
   const [grounded, setGrounded] = useState(false);
   const [groundedLesson, setGroundedLesson] = useState('');
   /** A generation that ran and failed — shown by GenerationStatus, with Retry. */
@@ -999,19 +1000,14 @@ export default function SlidesScreen() {
    * replacement; rebuilding without withdrawing would leave it in the pool
    * for every other teacher who asks for this lesson.
    */
-  const reportTeachingProblem = async () => {
+  const reportTeachingProblem = async (reason: string) => {
     if (!teachingVariantId || reportingTeaching) return;
-    const ok = await confirm({
-      title: t('reportArtifactTitle'),
-      message: t('reportArtifactMsg'),
-      confirmLabel: t('reportArtifactConfirm'),
-      cancelLabel: t('cancel'),
-      destructive: true,
-    });
-    if (!ok) return;
     setReportingTeaching(true);
     try {
-      const queued = await aiService.reportVariant(teachingVariantId);
+      const queued = await aiService.reportVariant(teachingVariantId, reason);
+      // Closed as soon as the report is queued, not after the rebuild below:
+      // that takes a while and the sheet has nothing left to say.
+      setTeachingReportOpen(false);
       showToast(queued ? t('reportArtifactDone') : t('reportArtifactGone'));
       await generate(regenerationFields(true, { variantId: teachingVariantId }));
     } catch {
@@ -1330,7 +1326,7 @@ export default function SlidesScreen() {
                   Quiz should still recognise this control. */}
               {!!teachingVariantId && (
                 <Pressable
-                  onPress={reportTeachingProblem}
+                  onPress={() => setTeachingReportOpen(true)}
                   disabled={reportingTeaching}
                   style={({ pressed }) => [
                     styles.reportBtn,
@@ -1348,6 +1344,12 @@ export default function SlidesScreen() {
                   </Text>
                 </Pressable>
               )}
+              <ReportProblemSheet
+                visible={teachingReportOpen}
+                busy={reportingTeaching}
+                onClose={() => setTeachingReportOpen(false)}
+                onSubmit={(reason) => { void reportTeachingProblem(reason); }}
+              />
 
               <DeckOutline
                 slides={deck.slides}

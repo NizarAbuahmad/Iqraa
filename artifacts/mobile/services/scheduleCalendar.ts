@@ -216,21 +216,7 @@ export function nextPeriodLesson(
     });
     if (!period) continue;
 
-    // A class taking several subjects has one plan per subject. A period
-    // that names its subject reads only that subject's plan — borrowing
-    // another subject's lesson would put maths on the card for an Arabic
-    // period. A period that names none (older slots, one-subject classes)
-    // pools every plan on the class and lets today's lesson win.
-    const primary = classes.find(c => c.id === period.classGroupId)?.subjectId ?? '';
-    const entries = plans
-      .filter(p => p.classGroupId === period.classGroupId)
-      .filter(p => {
-        if (!period.subjectId) return true;
-        const planSubject = p.subjectId || primary;
-        // Unresolvable (no subject, class not loaded): pool it rather than hide it.
-        return !planSubject || planSubject === period.subjectId;
-      })
-      .flatMap(p => normalizePlanEntries(p.entries));
+    const entries = plansForPeriod(period, plans, classes).flatMap(p => normalizePlanEntries(p.entries));
     const before = entries.filter(e => e.date <= date).sort((a, b) => b.date.localeCompare(a.date));
     const lessonId = (before[0] ?? nextEntry(entries, date))?.lessonId ?? null;
     return {
@@ -243,24 +229,60 @@ export function nextPeriodLesson(
   return null;
 }
 
+/**
+ * The plans that speak for a period. A class taking several subjects has one
+ * plan per subject. A period that names its subject reads only that subject's
+ * plan — borrowing another subject's lesson would put maths on the card for an
+ * Arabic period. A period that names none (older slots, one-subject classes)
+ * pools every plan on the class and lets today's lesson win.
+ *
+ * The one rule behind both the card's lesson (`nextPeriodLesson`) and the
+ * setup nudge (`timetableSetupStep`), so the nudge can never say "no plan" about
+ * a plan the card is reading, or the reverse.
+ */
+function plansForPeriod<P extends { classGroupId?: string | null; subjectId?: string }>(
+  period: { classGroupId: string; subjectId?: string },
+  plans: readonly P[],
+  classes: readonly { id: string; subjectId: string }[],
+): P[] {
+  const primary = classes.find(c => c.id === period.classGroupId)?.subjectId ?? '';
+  return plans
+    .filter(p => p.classGroupId === period.classGroupId)
+    .filter(p => {
+      if (!period.subjectId) return true;
+      const planSubject = p.subjectId || primary;
+      // Unresolvable (no subject, class not loaded): pool it rather than hide it.
+      return !planSubject || planSubject === period.subjectId;
+    });
+}
+
 export type TimetableSetupStep =
   | { step: 'timetable' }
   /** `subjectId` '' when the period does not name one. */
-  | { step: 'plan'; classGroupId: string; subjectId: string };
+  | { step: 'plan'; classGroupId: string; subjectId: string }
+  /** The class has a plan for this period but no dated lesson in it yet. */
+  | { step: 'schedule'; classGroupId: string; subjectId: string };
 
 /**
  * What stops the home card from following the timetable, as the one next
  * thing to set up: no class in any period yet → the timetable; the next
- * period's class has no lesson in a plan → that class's plan. Null when the
- * card already has a lesson, or when classes are timetabled but none meets
- * within the week (nothing a nudge could fix).
+ * period's class has no plan → that class's plan; it has a plan with no dated
+ * lesson (a plan can be saved with a title and a class alone) → put lessons in
+ * it. Null when the card already has a lesson, or when classes are timetabled
+ * but none meets within the week (nothing a nudge could fix).
  */
 export function timetableSetupStep(
   slots: readonly ScheduleSlotLike[],
   next: NextPeriodLesson | null,
+  plans: readonly (PlanLike & { classGroupId?: string | null; subjectId?: string })[] = [],
+  /** As for `nextPeriodLesson`: resolves a plan with no subject of its own to its class's primary one. */
+  classes: readonly { id: string; subjectId: string }[] = [],
 ): TimetableSetupStep | null {
   if (!slots.some(s => s.classGroupId)) return { step: 'timetable' };
-  if (next && !next.lessonId) return { step: 'plan', classGroupId: next.classGroupId, subjectId: next.subjectId ?? '' };
+  if (next && !next.lessonId) {
+    const where = { classGroupId: next.classGroupId, subjectId: next.subjectId ?? '' };
+    return plansForPeriod(next, plans, classes).length > 0 ? { step: 'schedule', ...where } : { step: 'plan', ...where };
+  }
   return null;
 }
 

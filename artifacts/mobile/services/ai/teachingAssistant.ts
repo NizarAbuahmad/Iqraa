@@ -108,6 +108,27 @@ export type ChatSessionMemory = {
   prepCompleted: PrepStepId[];
   /** Most recently completed step — drives the next recommendation. */
   lastCompletedPrepStep: PrepStepId | null;
+  /**
+   * The topic the last material was built on when no lesson grounded it
+   * («لو كنت وزير التربية ليوم واحد»), so «اجعله أقصر» changes that material and
+   * not the lesson on the card. Cleared when a lesson is pinned (`pinLesson`).
+   */
+  freeTopic?: string | null;
+  /**
+   * The lesson the conversation is on when it is not the selected one above
+   * (`chatLessonFocus.ts`). `activeLessonId` is the lesson the teacher picked
+   * (the card, the top bar); a question about another lesson moves this, never
+   * that. Absent / null: the conversation is on the selected lesson.
+   * `{ lessonId: null }`: the conversation left it («خلينا نتكلم عن…», or a
+   * question on a topic no lesson grounded). `record`: what the conversation
+   * made while it was away, kept off the selected lesson's card.
+   */
+  conversation?: {
+    lessonId: string | null;
+    record?: Pick<ChatSessionMemory,
+      | 'generatedResources' | 'discussedArtifacts' | 'lastGeneratedResource'
+      | 'prepLessonId' | 'prepCompleted' | 'lastCompletedPrepStep'>;
+  } | null;
 };
 
 export type TeachingAssistantInput = {

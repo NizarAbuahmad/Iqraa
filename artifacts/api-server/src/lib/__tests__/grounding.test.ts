@@ -52,6 +52,22 @@ describe("groundingFor", () => {
     assert.ok(g.sources.every(s => s.sourceId.startsWith("chem-")), "a maths book answered a chemistry unit");
   });
 
+  it("grounds on the picked lesson's own pages when the app sends its id", () => {
+    // Grade 4 maths S1 unit 3: «قسمة مضاعفات 10, 100, 1000» is student-book
+    // pp. 50-52. The unit id alone ranks the unit's plan pages first.
+    const unitId = "kbu-g4-math-s1-nccd-u3";
+    const lessonId = "kbl-g4-math-s1-nccd-u3_l1";
+    const pages = (g: ReturnType<typeof groundingFor>) => (g?.sources ?? []).map(s => `${s.sourceId}:${s.page}`);
+    const picked = groundingFor({ unitId, lessonId }, true);
+    assert.ok(picked?.sources.some(s => s.sourceId === "g4-math-s1-student-book" && s.page >= 50 && s.page <= 52));
+    assert.notDeepEqual(pages(picked), pages(groundingFor({ unitId }, true)));
+    // A lesson from another unit changes nothing.
+    assert.deepEqual(
+      pages(groundingFor({ unitId, lessonId: "kbl-g4-math-s1-nccd-u1_l1" }, true)),
+      pages(groundingFor({ unitId }, true)),
+    );
+  });
+
   it("ignores a unit id that is not one", () => {
     // The KB's legacy rows carry ids like `kbu-chem-1`. Falling back to the
     // topic is right; treating the string as a unit would find nothing and
@@ -120,6 +136,23 @@ describe("groundingFor", () => {
     assert.equal(groundingFor({ topic: "المشتقات" }, true), null);
   });
 
+  it("grounds nothing when the client says there is no lesson", () => {
+    // The app already searched the teacher's grade and subject and found no
+    // lesson for this topic (chat's free topic, a tool screen's ungrounded
+    // topic). A title match over the whole catalog here attached another
+    // grade's book to a prompt the app had labelled «غير موجود في المنهاج».
+    assert.ok(groundingFor({ topic: CIRCLE_LESSON }, true), "the topic alone grounds (precondition)");
+    assert.equal(groundingFor({ topic: CIRCLE_LESSON, grounding: "none" }, true), null);
+    // It wins over anything else the body carries: «none» is the client's verdict.
+    assert.equal(groundingFor({ topic: CIRCLE_LESSON, unitId: CIRCLE, grounding: "none" }, true), null);
+    assert.equal(
+      groundingFor({ topic: "الفصل الأول كاملًا", scope: { kind: "semester", scopeKey: "k", unitIds: [CIRCLE] }, grounding: "none" }, true),
+      null,
+    );
+    // Any other value is not a verdict, and changes nothing.
+    assert.ok(groundingFor({ topic: CIRCLE_LESSON, grounding: "auto" }, true));
+  });
+
   it("answers in the requested language", () => {
     const en = groundingFor({ unitId: CIRCLE }, false);
     assert.ok(en);
@@ -142,6 +175,13 @@ describe("withGrounding", () => {
     // Not "an empty block appended". An ungrounded request must be exactly the
     // request that was sent, or the fallback is its own silent edit.
     const sent = { topic: "لا شيء", additionalContext: "سياق المعلم", grade: "الصف العاشر" };
+    const { body, grounding } = withGrounding(sent, true);
+    assert.equal(grounding, null);
+    assert.deepEqual(body, sent);
+  });
+
+  it("sends a «no lesson» body exactly as it came", () => {
+    const sent = { topic: CIRCLE_LESSON, additionalContext: "تنبيه: الموضوع غير موجود في المنهاج", grounding: "none" };
     const { body, grounding } = withGrounding(sent, true);
     assert.equal(grounding, null);
     assert.deepEqual(body, sent);

@@ -50,7 +50,7 @@ import {
   todayISO,
   type PlanEntry,
 } from '@/services/planEntries';
-import { getLessonById, getLessonsForUnit, getUnitForLesson, getUnitsForSubjectGrade } from '@/services/knowledgeBase';
+import { getLessonById, getLessonsForUnit, getMainUnitsForSubjectGrade, getUnitForLesson, getUnitsForSubjectGrade, unitTitleWithTrack } from '@/services/knowledgeBase';
 import { stagesFromLessonPlan, type MinistryLessonPage } from '@/services/ministryPlan';
 import { exportMinistryPlanWord } from '@/services/share';
 import { useAuth } from '@/context/AuthContext';
@@ -435,8 +435,14 @@ export default function TeachingPlansScreen() {
       }))
     : [];
   // Flattened in the same unit → lesson order the list above renders, since
-  // that order is what "lay out the term" means for auto-scheduling.
-  const scheduleLessons = scheduleUnits.flatMap(({ lessons }) => lessons.map(l => ({ id: l.id, periods: l.periods })));
+  // that order is what "lay out the term" means for auto-scheduling. Only the
+  // subject's own book: a track book (Grade 10's vocational English,
+  // `KBBook.track`) stays in the list to date by hand, but laying out an English
+  // class's term must not append four vocational coursebooks to it.
+  const mainUnitIds = new Set(planClass ? getMainUnitsForSubjectGrade(formSubjectId, planClass.gradeId).map(u => u.id) : []);
+  const scheduleLessons = scheduleUnits
+    .filter(({ unit }) => mainUnitIds.has(unit.id))
+    .flatMap(({ lessons }) => lessons.map(l => ({ id: l.id, periods: l.periods })));
 
   const onAutoSchedule = async () => {
     if (!isValidPlanDate(scheduleStartDate) || scheduleDays.length === 0 || scheduleLessons.length === 0) return;
@@ -578,7 +584,10 @@ export default function TeachingPlansScreen() {
         const lesson = lessons[i + k];
         if (!cls) return;
         try {
-          const g = resolveGeneratorGrounding(lesson.titleAr, 'ar');
+          // By id: a title does not identify a lesson (every grade 8 English
+          // unit opens with «المفردات والقواعد»), and a title match on the
+          // wrong lesson left the guard below sending no context at all.
+          const g = resolveGeneratorGrounding(lesson.titleAr, 'ar', { lessonId: lesson.id });
           const out = await service.generateLessonPlan({
             grade: page.grade,
             subject: SUBJECTS.find(x => x.id === subjectId)?.name ?? '',
@@ -1014,7 +1023,7 @@ export default function TeachingPlansScreen() {
                       {scheduleUnits.map(({ unit, lessons }) => (
                         <View key={unit.id} style={{ gap: 4, marginTop: 6 }}>
                           <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>
-                            {lang === 'ar' ? unit.titleAr : unit.titleEn}
+                            {unitTitleWithTrack(unit, lang === 'ar' ? 'ar' : 'en')}
                           </Text>
                           {lessons.map(lesson => (
                             <LessonDateRow

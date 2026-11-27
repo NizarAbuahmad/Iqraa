@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
@@ -9,20 +10,46 @@ import { listThreads, markAllThreadsRead, type ChatThreadSummary } from '@/servi
 import { relativeTime } from '@/services/relativeTime';
 import { Avatar } from '@/components/ui/Avatar';
 import { ICON } from '@/constants/icons';
+import { isTeacherRole, useAuth } from '@/context/AuthContext';
+import { useStudentAccountsEnabled } from '@/services/features';
+import { getLinkRequestSummary } from '@/services/roster';
+import { linkRequestSummaryQueryKey } from '@/services/rosterQueryKeys';
+import { linkRequestRows } from '@/services/linkRequests';
 
 const PANEL_WIDTH = 360;
+/** How often a teacher's bell re-asks for waiting join requests. A minute: a request is not a chat message. */
+const JOIN_REQUESTS_POLL_MS = 60_000;
 
 /**
  * Bell with an unread-message count. Opens a panel of the unread
  * conversations in place — it used to jump straight to the inbox, which read
  * as "the bell takes me to chat" rather than "show me what is new".
  * `onDark` draws it in white for a dark header band (phone Today).
+ *
+ * A teacher's bell also counts students waiting on a class-code pick and leads
+ * the panel with a «طلبات الانضمام» row: a phone gets a push for each
+ * (api-server lib/joinRequestNotify.ts), but the web gets none, so this is how
+ * a teacher at a desk hears of them. The app-icon badge stays messages only.
  */
 export function NotificationBell({ size = ICON.xl, onDark = false }: { size?: number; onDark?: boolean }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const unread = useUnreadMessages();
-  const label = badgeLabel(unread);
+  const { user } = useAuth();
+  const studentAccounts = useStudentAccountsEnabled();
+  const countsRequests = studentAccounts && isTeacherRole(user?.role);
+  const joinRequests = useQuery({
+    queryKey: linkRequestSummaryQueryKey,
+    queryFn: getLinkRequestSummary,
+    enabled: countsRequests,
+    refetchInterval: JOIN_REQUESTS_POLL_MS,
+  });
+  // A failed read counts nothing: the bell must not invent requests, and the class banner is still there.
+  // Gated on the same condition as the query: a disabled query keeps its last data.
+  const waiting = countsRequests && joinRequests.data && !joinRequests.isError ? joinRequests.data : null;
+  const waitingRows = waiting ? linkRequestRows(waiting, lang === 'ar' ? 'ar' : 'en') : [];
+  const waitingCount = waiting?.total ?? 0;
+  const label = badgeLabel(unread + waitingCount);
   const { width: winW } = useWindowDimensions();
   const btnRef = useRef<View>(null);
   const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
@@ -43,6 +70,7 @@ export function NotificationBell({ size = ICON.xl, onDark = false }: { size?: nu
     setThreads(null);
     setFailed(false);
     setMarkFailed(false);
+    if (joinRequests.isFetched) void joinRequests.refetch();
     listThreads()
       .then(list => {
         setThreads(list.filter(th => th.unreadCount > 0));
@@ -77,9 +105,13 @@ export function NotificationBell({ size = ICON.xl, onDark = false }: { size?: nu
         hitSlop={8}
         style={styles.btn}
         accessibilityRole="button"
-        accessibilityLabel={unread > 0 ? `${t('bellTitle')}: ${t('unread', unread)}` : t('bellTitle')}
+        accessibilityLabel={[
+          t('bellTitle'),
+          unread > 0 ? t('unread', unread) : '',
+          waitingCount > 0 ? t('bellJoinRequests', waitingCount, '') : '',
+        ].filter(Boolean).join(lang === 'ar' ? '، ' : ', ')}
       >
-        <Ionicons name={unread > 0 ? 'notifications' : 'notifications-outline'} size={size} color={onDark ? '#FFFFFF' : unread > 0 ? colors.primary : colors.foreground} />
+        <Ionicons name={unread + waitingCount > 0 ? 'notifications' : 'notifications-outline'} size={size} color={onDark ? '#FFFFFF' : unread + waitingCount > 0 ? colors.primary : colors.foreground} />
         {label ? (
           <View style={[styles.badge, { backgroundColor: colors.destructive }]}>
             <Text style={styles.badgeText}>{label}</Text>
@@ -111,6 +143,32 @@ export function NotificationBell({ size = ICON.xl, onDark = false }: { size?: nu
             {markFailed ? (
               <Text style={[styles.markError, { color: colors.destructive, textAlign: align }]}>{t('bellMarkFailed')}</Text>
             ) : null}
+
+            {waitingRows.map(r => (
+              <Pressable
+                key={r.key}
+                onPress={() => go(r.route)}
+                accessibilityRole="button"
+                style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                  styles.item,
+                  styles.joinRow,
+                  { flexDirection: row, borderBottomColor: colors.border, backgroundColor: hovered || pressed ? colors.secondary : 'transparent' },
+                ]}
+              >
+                <View style={[styles.groupIcon, { backgroundColor: colors.secondary }]}>
+                  <Ionicons name="person-add-outline" size={ICON.lg} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.name, { color: colors.foreground, textAlign: align }]} numberOfLines={1}>{t('linkRequestsTitle')}</Text>
+                  <Text style={[styles.preview, { color: colors.mutedForeground, textAlign: align }]} numberOfLines={2}>
+                    {t('bellJoinRequests', r.count, r.className)}
+                  </Text>
+                </View>
+                <View style={[styles.count, { backgroundColor: colors.primary }]}>
+                  <Text style={[styles.badgeText, { color: colors.primaryForeground }]}>{badgeLabel(r.count)}</Text>
+                </View>
+              </Pressable>
+            ))}
 
             {failed ? (
               <Text style={[styles.empty, { color: colors.mutedForeground }]}>{t('messagingLoadError')}</Text>
@@ -200,6 +258,7 @@ const styles = StyleSheet.create({
   markError: { fontSize: 12, fontFamily: 'Almarai_400Regular', paddingHorizontal: 14, paddingBottom: 6 },
   empty: { fontSize: 14, fontFamily: 'Almarai_400Regular', textAlign: 'center', paddingVertical: 20, paddingHorizontal: 14 },
   item: { alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  joinRow: { borderBottomWidth: StyleSheet.hairlineWidth },
   groupIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   name: { flex: 1, fontSize: 14, fontFamily: 'ReadexPro_600SemiBold' },
   time: { fontSize: 11, fontFamily: 'Almarai_400Regular', marginStart: 6 },

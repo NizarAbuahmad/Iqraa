@@ -37,6 +37,9 @@ import datetime, glob, io, json, os, re, subprocess, sys, tempfile
 import fitz  # PyMuPDF
 from PIL import Image, ImageOps
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from unit_openers import trim_end  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'knowledge-base', 'book-page-links.json')
 MAX_PAGES = 20
@@ -74,8 +77,12 @@ def parse_source_id(source_id):
     return (grade, subject, int(m.group(3))) if subject else None
 
 
-def lesson_ranges(figures, kb_of, pages):
-    """kbLessonId -> (first, last) 1-based pages, from the book-lesson starts."""
+def lesson_ranges(figures, kb_of, pages, text_of=None):
+    """kbLessonId -> (first, last) 1-based pages, from the book-lesson starts.
+
+    `text_of(page)` is the page's text. Given, a lesson whose next start opens a new
+    unit stops before that unit's cover and overview (`unit_openers.trim_end`)
+    instead of ending on them."""
     start_of = {}  # (unit, lesson) -> start page
     for f in figures:
         if f.get('lessonStartPage'):
@@ -90,7 +97,12 @@ def lesson_ranges(figures, kb_of, pages):
     for kb, s in groups.items():
         first, last_start = min(s), max(s)
         nxt = next((p for p in starts if p > last_start), pages + 1)
-        ranges[kb] = (first, min(nxt - 1, first + MAX_PAGES - 1, pages))
+        last = min(nxt - 1, first + MAX_PAGES - 1, pages)
+        units_here = {u for (u, l) in start_of if kb_of.get((u, l)) == kb}
+        units_next = {u for (u, l), st in start_of.items() if st == nxt}
+        if text_of and units_next and not units_next & units_here:
+            last = trim_end(first, last, text_of)
+        ranges[kb] = (first, last)
     return ranges
 
 
@@ -168,7 +180,8 @@ def main():
             if not ok:
                 continue
             coords = {(u, l): kb for (s, u, l), kb in kb_of.items() if s == source_id}
-            for kb, (first, last) in lesson_ranges(data['figures'], coords, doc.page_count).items():
+            for kb, (first, last) in lesson_ranges(data['figures'], coords, doc.page_count,
+                                                    lambda p: doc[p - 1].get_text()).items():
                 os.makedirs(os.path.join(out_dir, kb), exist_ok=True)
                 for n, pno in enumerate(range(first - 1, last), start=1):
                     page = doc[pno]

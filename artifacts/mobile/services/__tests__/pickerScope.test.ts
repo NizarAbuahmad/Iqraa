@@ -63,11 +63,14 @@ describe('picker scope — grade/subject pairs with no book', () => {
 
   // The reported case, pinned by name: it is the PAIR that fails, so the same
   // subject must stay pickable on the grade whose book does exist.
-  it('hides vocational education for grade-10 but not for grade-9', () => {
-    const idx = getPickerSubjects().findIndex(s => s.id === 'vocational-education');
-    assert.ok(idx >= 0, 'vocational-education is expected in the MVP picker list');
-    assert.equal(subjectsWithoutCurriculum('grade-10')[idx], true);
-    assert.equal(subjectsWithoutCurriculum('grade-9')[idx], false);
+  // Vocational education was the worked example until its Grade 10 book
+  // arrived (2026-11-13); chemistry has no Grade 8 book (a general-science
+  // year), and is still in KNOWN_BOOKLESS.
+  it('hides chemistry for grade-8 but not for grade-10', () => {
+    const idx = getPickerSubjects().findIndex(s => s.id === 'chemistry');
+    assert.ok(idx >= 0, 'chemistry is expected in the MVP picker list');
+    assert.equal(subjectsWithoutCurriculum('grade-8')[idx], true);
+    assert.equal(subjectsWithoutCurriculum('grade-10')[idx], false);
   });
 
   it('leaves the grades own subjects alone', () => {
@@ -147,16 +150,16 @@ describe('picker scope — the generate-time backstop', () => {
   // The pickers grey the pair out, but gradeIdx/subjectIdx also arrive from
   // formState and bookmarked URLs written before they did.
   it('names the offending pair so the message can say which', () => {
-    const scope = scopeWithoutCurriculum('grade-10', 'vocational-education', 'ar');
-    assert.ok(scope, 'grade-10 + vocational-education must be refused');
-    assert.equal(scope.subject, 'التربية المهنية');
-    assert.equal(scope.grade, 'الصف العاشر');
+    const scope = scopeWithoutCurriculum('grade-8', 'chemistry', 'ar');
+    assert.ok(scope, 'grade-8 + chemistry must be refused');
+    assert.equal(scope.subject, 'الكيمياء');
+    assert.equal(scope.grade, 'الصف الثامن');
   });
 
   it('answers in the display language', () => {
-    const scope = scopeWithoutCurriculum('grade-10', 'vocational-education', 'en');
+    const scope = scopeWithoutCurriculum('grade-8', 'chemistry', 'en');
     assert.ok(scope);
-    assert.equal(scope.subject, 'Vocational Education');
+    assert.equal(scope.subject, 'Chemistry');
   });
 
   it('passes a pair that has a book', () => {
@@ -165,6 +168,7 @@ describe('picker scope — the generate-time backstop', () => {
     assert.equal(scopeWithoutCurriculum('grade-10', 'geography', 'ar'), null);
     assert.equal(scopeWithoutCurriculum('grade-10', 'history', 'ar'), null);
     assert.equal(scopeWithoutCurriculum('grade-10', 'civic-education', 'ar'), null);
+    assert.equal(scopeWithoutCurriculum('grade-10', 'vocational-education', 'ar'), null);
     assert.equal(scopeWithoutCurriculum('grade-10', 'mathematics', 'ar'), null);
     assert.equal(scopeWithoutCurriculum('grade-9', 'mathematics', 'ar'), null);
   });

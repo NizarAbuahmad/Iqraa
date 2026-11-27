@@ -181,7 +181,7 @@ const hamzaWaslQat: SpellingRule = {
     { grade: 2, correct: "أَكَلَ", wrong: ["اكل"], sentenceAr: "أَكَلَ الطِّفْلُ تُفَّاحَةً" },
     { grade: 2, correct: "أَرْنَب", wrong: ["ارنب"] },
     { grade: 2, correct: "أُسْرَة", wrong: ["اسرة"], sentenceAr: "أُسْرَةُ خَالِدٍ كَبِيرَةٌ" },
-    { grade: 2, correct: "أَحْمَد", wrong: ["احمد"] },
+    { grade: 2, correct: "أَحْمَد", wrong: ["احمد"], dictationOnly: "«احمد» is a real imperative (احمد الله)" },
     { grade: 2, correct: "أَخَذَ", wrong: ["اخذ"] },
     { grade: 3, correct: "إِلَى", wrong: ["الى"] },
     { grade: 3, correct: "إِبْرَاهِيم", wrong: ["ابراهيم"] },

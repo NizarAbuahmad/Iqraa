@@ -19,10 +19,14 @@ import { apiJson } from '@/services/apiClient';
 import { confirm } from '@/services/confirm';
 import { LEGAL_CONTACT_EMAIL } from '@/constants/legal';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
-import { DateRange, EMPTY_RANGE, rangeQuery, type Range } from '@/components/admin/DateRange';
+import { DateRange, EMPTY_RANGE, type Range } from '@/components/admin/DateRange';
+import { FilterChip } from '@/components/admin/widgets';
 import { BackButton } from '@/components/ui/BackButton';
 import { TYPE } from '@/constants/theme';
-import { channelOf, isNewUser, newUsersFrom, parseNewUsersParam } from '@/services/adminUsers';
+import {
+  channelOf, cohortForRange, isNewUser, newUsersFrom, parseNewUsersParam, rangeForCohort, usersListQuery,
+  type ChannelFilter, type CohortFilter,
+} from '@/services/adminUsers';
 
 const ACCENT = '#4F46E5';
 const ADMIN_ROLES = ['school_admin', 'system_admin'];
@@ -43,7 +47,24 @@ type UserRow = {
   suspendedReason: string;
   schoolName: string | null;
   monthSpendUsd: number;
+  /** This account's own monthly AI allowance; null = the role default. */
+  aiBudgetUsd: number | null;
+  /** Last Amman day (YYYY-MM-DD) that limit applies; null = no end date. */
+  aiBudgetUntil: string | null;
 };
+
+/** [value, Arabic, English] for each chip row. */
+const CHANNELS: [ChannelFilter, string, string][] = [
+  ['all', 'الكل', 'All'],
+  ['web', 'ويب', 'Web'],
+  ['app', 'تطبيق', 'App'],
+  ['unknown', 'غير معروف', 'Unknown'],
+];
+const COHORTS: [CohortFilter, string, string][] = [
+  ['all', 'الجميع', 'Everyone'],
+  ['new', 'جدد', 'New'],
+  ['returning', 'عائدون', 'Returning'],
+];
 
 /** What the blocked person is shown — written to them, editable per block. */
 const DEFAULT_REASON =
@@ -80,25 +101,34 @@ export default function AdminUsersScreen() {
   const ar = lang === 'ar';
   const { user, isLoading: authLoading } = useAuth();
   const isAdmin = !!user && ADMIN_ROLES.includes(user.role);
+  // Only a system_admin may change how much one account may spend (the API agrees).
+  const canSetBudget = user?.role === 'system_admin';
 
   const [q, setQ] = useState('');
   const [onlySuspended, setOnlySuspended] = useState(false);
   // The dashboard's «جدد» tile links here with ?new=1: open on the new window, which
   // is the «٧ أيام» chip (dayAgo(6)) so that chip lights up.
   const params = useLocalSearchParams<{ new?: string | string[] }>();
-  const [range, setRange] = useState<Range>(() => (parseNewUsersParam(params.new) ? { from: newUsersFrom(today), to: '' } : EMPTY_RANGE));
+  const [range, setRangeState] = useState<Range>(() => (parseNewUsersParam(params.new) ? { from: newUsersFrom(today), to: '' } : EMPTY_RANGE));
+  const [channel, setChannel] = useState<ChannelFilter>('all');
+  const [cohort, setCohortState] = useState<CohortFilter>(() => (parseNewUsersParam(params.new) ? 'new' : 'all'));
+  // New and returning only mean something against a start day: picking one opens the
+  // new-user window if there is none, and clearing the start day drops it.
+  const setCohort = (c: CohortFilter) => { setCohortState(c); setRangeState(r => rangeForCohort(c, r, today)); };
+  const setRange = (r: Range) => { setRangeState(r); setCohortState(c => cohortForRange(r, c)); };
   const [items, setItems] = useState<UserRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [blocking, setBlocking] = useState<{ id: string; reason: string } | null>(null);
+  const [budgetEdit, setBudgetEdit] = useState<{ id: string; value: string; until: string } | null>(null);
   const load = useCallback(async (offset: number) => {
-    const params = `q=${encodeURIComponent(q)}&status=${onlySuspended ? 'suspended' : 'all'}&offset=${offset}${rangeQuery(range)}`;
-    const res = await apiJson<{ items: UserRow[]; total: number }>(`/admin/users?${params}`);
+    const query = usersListQuery({ q, onlySuspended, range, channel, cohort, offset });
+    const res = await apiJson<{ items: UserRow[]; total: number }>(`/admin/users?${query}`);
     setItems(cur => (offset === 0 ? res.items : [...cur, ...res.items]));
     setTotal(res.total);
-  }, [q, onlySuspended, range]);
+  }, [q, onlySuspended, range, channel, cohort]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -149,6 +179,11 @@ export default function AdminUsersScreen() {
     if (ok) await run(u.id, () => apiJson(`/moderation/users/${u.id}/unsuspend`, { method: 'POST' }));
   };
 
+  const saveBudget = async (u: UserRow, usd: number | null, until: string | null = null) => {
+    setBudgetEdit(null);
+    await run(u.id, () => apiJson(`/admin/users/${u.id}/ai-budget`, { method: 'PUT', body: JSON.stringify({ usd, until }) }));
+  };
+
   if (authLoading) {
     return <View style={[styles.center, { backgroundColor: colors.background }]}><ActivityIndicator color={ACCENT} /></View>;
   }
@@ -180,7 +215,9 @@ export default function AdminUsersScreen() {
               onChangeText={setQ}
               placeholder={ar ? 'ابحث بالاسم أو البريد' : 'Search name or email'}
               placeholderTextColor={colors.mutedForeground}
-              style={[styles.input, { flex: 1, borderColor: colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: align }]}
+              // minWidth 0: a web <input> will not shrink below its default ~20 characters,
+              // which pushed «المحظورون فقط» off a 360px screen.
+              style={[styles.input, { flex: 1, minWidth: 0, borderColor: colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: align }]}
             />
             <Pressable
               onPress={() => setOnlySuspended(v => !v)}
@@ -191,7 +228,26 @@ export default function AdminUsersScreen() {
               </Text>
             </Pressable>
           </View>
+          <View style={[styles.filterRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>{ar ? 'انضم عبر' : 'Joined via'}</Text>
+            {CHANNELS.map(([value, a, e]) => (
+              <FilterChip key={value} label={ar ? a : e} active={channel === value} onPress={() => setChannel(value)} colors={colors} />
+            ))}
+          </View>
+          <View style={[styles.filterRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>{ar ? 'المستخدمون' : 'Users'}</Text>
+            {COHORTS.map(([value, a, e]) => (
+              <FilterChip key={value} label={ar ? a : e} active={cohort === value} onPress={() => setCohort(value)} colors={colors} />
+            ))}
+          </View>
           <DateRange value={range} onChange={setRange} ar={ar} isRTL={isRTL} colors={colors} />
+          <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, lineHeight: 18, textAlign: align }}>
+            {cohort === 'returning'
+              ? (ar ? 'عائدون: حساباتهم أقدم من هذه الفترة، وعادوا خلالها — سجّلوا الدخول، أو أنشؤوا محتوى بالذكاء الاصطناعي، أو حفظوا مادة.' : 'Returning: accounts made before this period that came back during it — signed in, generated with AI, or saved a material.')
+              : cohort === 'new'
+                ? (ar ? 'جدد: أنشؤوا حساباتهم خلال هذه الفترة.' : 'New: accounts made during this period.')
+                : (ar ? 'الفترة هنا تاريخ إنشاء الحساب.' : 'The period is when the account was made.')}
+          </Text>
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
             {ar ? `${total} حساب` : `${total} accounts`}
           </Text>
@@ -214,6 +270,9 @@ export default function AdminUsersScreen() {
                     </Text>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18, textAlign: align }}>
                       {ar ? 'انضم' : 'Joined'} {date(u.createdAt)} · {ar ? 'آخر دخول' : 'Last login'} {date(u.lastLogin)} · AI ${u.monthSpendUsd.toFixed(3)}
+                      {u.aiBudgetUsd != null
+                        ? ` / $${u.aiBudgetUsd} ${ar ? '(حد خاص' : '(own limit'}${u.aiBudgetUntil ? (ar ? ` حتى ${u.aiBudgetUntil}` : ` until ${u.aiBudgetUntil}`) : ''})`
+                        : ''}
                     </Text>
                     <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                       <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, lineHeight: 18 }}>
@@ -247,6 +306,64 @@ export default function AdminUsersScreen() {
                     </Pressable>
                   )}
                 </View>
+                {canSetBudget && busyId !== u.id && budgetEdit?.id !== u.id && (
+                  <Pressable
+                    onPress={() => setBudgetEdit({ id: u.id, value: u.aiBudgetUsd != null ? String(u.aiBudgetUsd) : '', until: u.aiBudgetUntil ?? '' })}
+                    style={[styles.chip, { alignSelf: isRTL ? 'flex-end' : 'flex-start', borderRadius: colors.radius, borderColor: ACCENT }]}
+                  >
+                    <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{ar ? 'حد الذكاء الاصطناعي الشهري' : 'Monthly AI limit'}</Text>
+                  </Pressable>
+                )}
+                {budgetEdit?.id === u.id && (() => {
+                  const usd = Number(budgetEdit.value);
+                  const until = budgetEdit.until.trim();
+                  // The server checks the date is real and not past; this only catches the shape.
+                  const untilOk = until === '' || /^\d{4}-\d{2}-\d{2}$/.test(until);
+                  const valid = budgetEdit.value.trim() !== '' && Number.isFinite(usd) && usd > 0 && usd <= 100 && untilOk;
+                  return (
+                    <View style={{ gap: 8 }}>
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                        {ar ? 'الحد الشهري لهذا الحساب بالدولار (حتى 100). «الافتراضي» يعيده إلى حد دوره.' : "This account's monthly limit in USD (up to 100). Default returns it to its role's limit."}
+                      </Text>
+                      <TextInput
+                        value={budgetEdit.value}
+                        onChangeText={value => setBudgetEdit({ ...budgetEdit, value })}
+                        keyboardType="decimal-pad"
+                        placeholder="15"
+                        placeholderTextColor={colors.mutedForeground}
+                        style={[styles.input, { borderColor: colors.border, borderRadius: colors.radius, color: colors.foreground, textAlign: align }]}
+                      />
+                      <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
+                        {ar ? 'ينتهي بعد يوم (اختياري، YYYY-MM-DD) — بعده يعود الحد الافتراضي وحده:' : 'Ends after (optional, YYYY-MM-DD) — then the default returns by itself:'}
+                      </Text>
+                      <TextInput
+                        value={budgetEdit.until}
+                        onChangeText={until => setBudgetEdit({ ...budgetEdit, until })}
+                        placeholder="2026-12-31"
+                        placeholderTextColor={colors.mutedForeground}
+                        autoCapitalize="none"
+                        style={[styles.input, { borderColor: untilOk ? colors.border : colors.destructive, borderRadius: colors.radius, color: colors.foreground, textAlign: align }]}
+                      />
+                      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                        <Pressable
+                          disabled={!valid}
+                          onPress={() => saveBudget(u, usd, until || null)}
+                          style={[styles.chip, { borderRadius: colors.radius, backgroundColor: ACCENT, borderColor: ACCENT, opacity: valid ? 1 : 0.5 }]}
+                        >
+                          <Text style={{ color: '#fff', fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{ar ? 'حفظ' : 'Save'}</Text>
+                        </Pressable>
+                        {u.aiBudgetUsd != null && (
+                          <Pressable onPress={() => saveBudget(u, null)} style={[styles.chip, { borderRadius: colors.radius, borderColor: ACCENT }]}>
+                            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{ar ? 'الافتراضي' : 'Default'}</Text>
+                          </Pressable>
+                        )}
+                        <Pressable onPress={() => setBudgetEdit(null)} style={[styles.chip, { borderRadius: colors.radius, borderColor: colors.border }]}>
+                          <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption }}>{ar ? 'إلغاء' : 'Cancel'}</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  );
+                })()}
                 {blocking?.id === u.id && (
                   <View style={{ gap: 8 }}>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 12, textAlign: align }}>
@@ -288,5 +405,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 20 },
   card: { padding: 12, borderWidth: 1, gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1.5 },
+  filterRow: { flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  filterLabel: { fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption },
   input: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 9, fontFamily: 'Almarai_400Regular', fontSize: 13 },
 });

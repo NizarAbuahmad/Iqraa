@@ -3,7 +3,9 @@
  * (users, saved materials, evaluations, feedback), not a second analytics
  * pipeline. Deep usage/trace data (screens visited, tool opens) lives in
  * PostHog already; this endpoint deliberately doesn't try to duplicate it —
- * see STATUS.md.
+ * see STATUS.md. The one exception, since 2026-11-19, is coarse time spent
+ * (minutes per app area per day, `usage_minutes`), read by
+ * routes/adminInsights.ts — see «Admin user insights» in the log.
  */
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { hashPassword } from "../lib/passwordHash.js";
@@ -23,11 +25,11 @@ import {
   users,
 } from "@workspace/db";
 import { and, asc, desc, eq, getTableColumns, gte, ilike, inArray, isNotNull, isNull, lt, or, sql, type SQL } from "drizzle-orm";
-import { getBudgetStatus, getUserBudgetLimitUsd } from "../lib/aiBudget.js";
+import { getBudgetStatus, getUserBudgetLimitUsd, parseUserBudgetOverride } from "../lib/aiBudget.js";
 import { currentPeriodStart } from "../lib/aiUsageLog.js";
 import { RATE_LIMITS } from "../lib/rateLimit.js";
 import { parseSchoolAssignment, parseSchoolIdFilter, parseSchoolInput } from "../lib/adminSchools.js";
-import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
+import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, parseUserChannel, parseUserCohort, siteKeyMatches, toCsv, UUID } from "../lib/adminMetrics.js";
 import { notifyAdminsOfWaitlistSignup } from "../lib/adminNotify.js";
 import { AMMAN_OFFSET_HOURS, addDays, ammanDay, ammanDayStart, buildDailySeries, parseDays } from "../lib/dailyActivity.js";
 import { configuredAutoMetrics } from "../lib/autoMetrics.js";
@@ -399,8 +401,9 @@ const offsetOf = (v: unknown) => {
 };
 
 /**
- * GET /admin/users?q=&status=all|suspended&role=&schoolId=&offset=
+ * GET /admin/users?q=&status=all|suspended&role=&schoolId=&from=&to=&channel=all|web|app|unknown&cohort=all|new|returning&offset=
  * Newest first, with this month's AI spend so a heavy user stands out.
+ * `from`/`to` is when the account was made, unless `cohort=returning` (parseUserCohort).
  */
 router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (req, res) => {
   try {
@@ -418,14 +421,39 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
       res.status(400).json({ error: String(msg) });
       return;
     }
+    const channel = parseUserChannel(req.query["channel"]);
+    if ("error" in channel) {
+      res.status(400).json({ error: channel.error });
+      return;
+    }
+    const cohort = parseUserCohort(req.query["cohort"], !!range.from);
+    if ("error" in cohort) {
+      res.status(400).json({ error: cohort.error });
+      return;
+    }
+    // Inside the range, on both ends; `to` is already the day after (parseDateRange).
+    const inRange = (col: SQL) =>
+      and(range.from ? sql`${col} >= ${range.from}` : undefined, range.to ? sql`${col} < ${range.to}` : undefined) ?? sql`true`;
+    // Came back inside the range: signed in, or did what the daily-activity chart counts
+    // as active. Table names written out for the same reason as `spend` below.
+    const cameBack = or(
+      inRange(sql`"users"."last_login"`),
+      sql`exists (select 1 from "ai_generations" where "ai_generations"."user_id" = "users"."id" and ${inRange(sql`"ai_generations"."created_at"`)})`,
+      sql`exists (select 1 from "saved_materials" where "saved_materials"."user_id" = "users"."id" and ${inRange(sql`"saved_materials"."created_at"`)})`,
+    );
     const where = and(
       q ? or(ilike(users.email, like), ilike(users.firstName, like), ilike(users.lastName, like)) : undefined,
       req.query["status"] === "suspended" ? isNotNull(users.suspendedAt) : undefined,
       // The schools screen lists teachers, and a school's own teachers.
       typeof req.query["role"] === "string" && req.query["role"] ? eq(users.role, req.query["role"]) : undefined,
       schoolId ? eq(users.schoolId, schoolId) : undefined,
-      range.from ? gte(users.createdAt, range.from) : undefined,
-      range.to ? lt(users.createdAt, range.to) : undefined,
+      channel.channel === "web" ? eq(users.signupPlatform, "web") : undefined,
+      channel.channel === "app" ? inArray(users.signupPlatform, ["android", "ios"]) : undefined,
+      channel.channel === "unknown" ? isNull(users.signupPlatform) : undefined,
+      // Returning: made before the range, back inside it. Otherwise the range is when it was made.
+      cohort.cohort === "returning" ? and(lt(users.createdAt, range.from!), cameBack) : undefined,
+      cohort.cohort !== "returning" && range.from ? gte(users.createdAt, range.from) : undefined,
+      cohort.cohort !== "returning" && range.to ? lt(users.createdAt, range.to) : undefined,
     );
     // Table names written out, not interpolated. In a single-table select drizzle
     // renders interpolated columns unqualified, so this once read `user_id = id`
@@ -454,6 +482,10 @@ router.get("/admin/users", authMiddleware, requireRole(...ADMIN_ROLES), async (r
           schoolId: users.schoolId,
           schoolName: schools.name,
           monthSpendUsd: spend,
+          // This account's own monthly allowance; null = the role default.
+          aiBudgetUsd: users.aiBudgetUsd,
+          // Last Amman day it applies; null = no end date.
+          aiBudgetUntil: users.aiBudgetUntil,
         })
         .from(users)
         .leftJoin(schools, eq(schools.id, users.schoolId))
@@ -574,6 +606,54 @@ router.put(
     } catch (err) {
       logger.error({ err }, "admin set school failed");
       res.status(500).json({ error: "Failed to update the school" });
+    }
+  },
+);
+
+/**
+ * PUT /admin/users/:id/ai-budget { usd: number | null, until?: "YYYY-MM-DD" | null }
+ *
+ * One account's own monthly AI allowance, replacing the role default
+ * (`AI_USER_BUDGET_USD` / `AI_STUDENT_BUDGET_USD`) for that account only. Null
+ * returns it to the default. `until` ends it by itself after that Amman day.
+ * system_admin only: it decides how much of the
+ * project's money one person may spend. Stored on the user, so a deploy (which
+ * resets the env vars) does not undo it.
+ */
+router.put(
+  "/admin/users/:id/ai-budget",
+  authMiddleware,
+  requireRole("system_admin"),
+  async (req: AuthenticatedRequest, res) => {
+    const targetId = req.params["id"] as string;
+    if (!UUID.test(targetId)) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    let usd: number | null;
+    let until: string | null;
+    try {
+      ({ usd, until } = parseUserBudgetOverride(req.body, ammanDay(new Date())));
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+      return;
+    }
+    try {
+      const updated = await db
+        .update(users)
+        .set({ aiBudgetUsd: usd, aiBudgetUntil: until })
+        .where(eq(users.id, targetId))
+        .returning({ id: users.id });
+      if (updated.length === 0) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      // ponytail: the log line is the audit trail, as for set-password above.
+      logger.info({ actorId: req.user!.id, targetId, aiBudgetUsd: usd, aiBudgetUntil: until }, "admin set user AI budget");
+      res.json({ ok: true, aiBudgetUsd: usd, aiBudgetUntil: until });
+    } catch (err) {
+      logger.error({ err }, "admin set AI budget failed");
+      res.status(500).json({ error: "Failed to update the AI limit" });
     }
   },
 );
@@ -940,10 +1020,11 @@ router.get("/admin/ai-costs", authMiddleware, requireRole(...ADMIN_ROLES), async
   const hits = sql<number>`count(*) filter (where ${aiGenerations.cacheStatus} = 'hit')::int`;
   const costUsd = sql<number>`coalesce(sum(${aiGenerations.costUsd}), 0)::float`;
   const promptTokens = sql<number>`coalesce(sum(${aiGenerations.promptTokens}), 0)::int`;
+  const cachedPromptTokens = sql<number>`coalesce(sum(${aiGenerations.cachedPromptTokens}), 0)::int`;
   const completionTokens = sql<number>`coalesce(sum(${aiGenerations.completionTokens}), 0)::int`;
   try {
     const [[totals], byDay, byKind, byModel, byUser, byPlatform] = await Promise.all([
-      db.select({ calls, hits, costUsd, promptTokens, completionTokens }).from(aiGenerations).where(where),
+      db.select({ calls, hits, costUsd, promptTokens, cachedPromptTokens, completionTokens }).from(aiGenerations).where(where),
       db
         .select({ day: sql<string>`to_char(${aiGenerations.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`, calls, costUsd })
         .from(aiGenerations)
@@ -964,7 +1045,7 @@ router.get("/admin/ai-costs", authMiddleware, requireRole(...ADMIN_ROLES), async
         .groupBy(aiGenerations.kind)
         .orderBy(desc(sql`4`)),
       db
-        .select({ model: aiGenerations.model, calls, costUsd, promptTokens, completionTokens })
+        .select({ model: aiGenerations.model, calls, costUsd, promptTokens, completionTokens, cachedPromptTokens })
         .from(aiGenerations)
         .where(where)
         .groupBy(aiGenerations.model)

@@ -259,11 +259,11 @@ Not reviewed yet — shown to nobody.
 | While he was driving, he listened to music. | **was driving** / were driving | _While he were driving, he listened to music._ |
 | The children were sleeping while it rained. | **were sleeping** / was sleeping | _The children was sleeping while it rained._ |
 | I was waiting for the bus at eight. | **was waiting** / were waiting | _I were waiting for the bus at eight._ |
-| While she was cleaning, she found a coin. | **was cleaning** / were cleaning | _While she were cleaning, she found a coin._ |
+| As she was cleaning, she found a coin. | **was cleaning** / were cleaning | _As she were cleaning, she found a coin._ |
 | He was talking while the teacher was writing. | **was talking** / were talking | _He were talking while the teacher was writing._ |
-| While we were swimming, it got cold. | **were swimming** / was swimming | _While we was swimming, it got cold._ |
+| As we were swimming, it got cold. | **were swimming** / was swimming | _As we was swimming, it got cold._ |
 | They were shopping while I was working. | **were shopping** / was shopping | _They was shopping while I was working._ |
-| While I was running, I lost my keys. | **was running** / were running | _While I were running, I lost my keys._ |
+| As I was running, I lost my keys. | **was running** / were running | _As I were running, I lost my keys._ |
 | What were you doing at nine o'clock? | **were you doing** / was you doing | _What was you doing at nine o'clock?_ |
 | My sister was studying while I was cooking. | **was studying** / were studying | _My sister were studying while I was cooking._ |
 | I was sleeping when the phone rang. | **rang** / ring | _I was sleeping when the phone ring._ |
@@ -388,6 +388,26 @@ Not reviewed yet — shown to nobody.
 | Jam is more popular than honey. | **more popular** / popular | — | — |
 | Salmon is tastier than rice. | **tastier** / tasty | — | — |
 | Grapes are more popular than melons. | **more popular** / popular | — | — |
+| Doughnuts are not as healthy as carrots. | **not as** / not more | _Carrots are not as healthy as doughnuts._ | — |
+| Muffins are not as healthy as cucumbers. | **not as** / not more | _Cucumbers are not as healthy as muffins._ | — |
+| Cucumbers are not as fattening as doughnuts. | **not as** / not more | _Doughnuts are not as fattening as cucumbers._ | — |
+| Melons are not as fattening as croissants. | **not as** / not more | _Croissants are not as fattening as melons._ | — |
+| Croissants are not as nutritious as carrots. | **not as** / not more | _Carrots are not as nutritious as croissants._ | — |
+| Bread is not as expensive as salmon. | **not as** / not more | _Salmon is not as expensive as bread._ | — |
+| Sugar is not as expensive as honey. | **not as** / not more | _Honey is not as expensive as sugar._ | — |
+| Salmon is not as cheap as bread. | **not as** / not more | _Bread is not as cheap as salmon._ | — |
+| Honey is not as cheap as sugar. | **not as** / not more | _Sugar is not as cheap as honey._ | — |
+| Water is not as filling as porridge. | **not as** / not more | _Porridge is not as filling as water._ | — |
+| Salmon is too expensive for me. | **too** / enough | — | — |
+| Doughnuts are too fattening for me. | **too** / enough | — | — |
+| Porridge is too filling for me. | **too** / enough | — | — |
+| Honey is too expensive for me. | **too** / enough | — | — |
+| Croissants are too fattening for me. | **too** / enough | — | — |
+| Water is cheap enough for me. | **enough** / too | — | — |
+| Bread is cheap enough for me. | **enough** / too | — | — |
+| Rice is filling enough for me. | **enough** / too | — | — |
+| Pancakes are tasty enough for me. | **enough** / too | — | — |
+| Carrots are nutritious enough for me. | **enough** / too | — | — |
 
 ## Semester 1 · Unit 4 — A good buy
 
@@ -476,6 +496,53 @@ Not reviewed yet — shown to nobody.
 | I'd like a little milk, please. | **a little** / a few | — |
 | I'd like a little rice, please. | **a little** / a few | — |
 
+## Semester 1 · Unit 4 — A good buy
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Choose | True or false: wrong sentence |
+|---|---|---|
+| I need an umbrella. | **an** / a | _I need a umbrella._ |
+| She has a brother. | **a** / an | _She has an brother._ |
+| He ate an apple. | **an** / a | _He ate a apple._ |
+| This is a good idea. | **a** / an | _This is an good idea._ |
+| We saw an elephant at the zoo. | **an** / a | _We saw a elephant at the zoo._ |
+| My father is a doctor. | **a** / an | _My father is an doctor._ |
+| I have an exam today. | **an** / a | _I have a exam today._ |
+| She wants an orange. | **an** / a | _She wants a orange._ |
+| He is a student at my school. | **a** / an | _He is an student at my school._ |
+| It was an interesting film. | **an** / a | _It was a interesting film._ |
+| Dad drives a taxi. | **a** / an | _Dad drives an taxi._ |
+| We waited for an hour. | **an** / a | _We waited for a hour._ |
+| There is a muffin in the cupboard. | **a** / the | _There is the muffin in the cupboard._ |
+| There was an old car outside. | **an** / the | _There was the old car outside._ |
+| There is a bag under my desk. | **a** / the | _There is the bag under my desk._ |
+| There was a spider in the bath. | **a** / the | _There was the spider in the bath._ |
+| There is an exam on Monday. | **an** / the | _There is the exam on Monday._ |
+| There is a shop near my house. | **a** / the | _There is the shop near my house._ |
+| There was a cat on the roof. | **a** / the | _There was the cat on the roof._ |
+| There is an apple in my bag. | **an** / the | _There is the apple in my bag._ |
+| I saw a dog. The dog was big. | **The** / A | _I saw a dog. A dog was big._ |
+| We had an exam. The exam was hard. | **The** / A | _We had an exam. A exam was hard._ |
+| She wrote a letter. She posted the letter. | **the** / a | _She wrote a letter. She posted a letter._ |
+| He bought a phone. The phone was cheap. | **The** / A | _He bought a phone. A phone was cheap._ |
+| I met a girl. The girl was kind. | **The** / A | _I met a girl. A girl was kind._ |
+| We stayed in a hotel. The hotel was clean. | **The** / A | _We stayed in a hotel. A hotel was clean._ |
+| I ordered a pizza. I ate the pizza quickly. | **the** / a | _I ordered a pizza. I ate a pizza quickly._ |
+| She has a cat. The cat is white. | **The** / A | _She has a cat. A cat is white._ |
+| I found a key. I kept the key. | **the** / a | _I found a key. I kept a key._ |
+| He drew a picture. The picture was nice. | **The** / A | _He drew a picture. A picture was nice._ |
+| They built a house. The house is big. | **The** / A | _They built a house. A house is big._ |
+| I read a book. I liked the book. | **the** / a | _I read a book. I liked a book._ |
+| Look at the sky. | **the** / a | _Look at a sky._ |
+| Tonight the moon is very bright. | **the** / a | _Tonight a moon is very bright._ |
+| Amman is the capital of Jordan. | **the** / a | _Amman is a capital of Jordan._ |
+| She is the youngest child in my family. | **the** / a | _She is a youngest child in my family._ |
+| He is the tallest boy in my class. | **the** / a | _He is a tallest boy in my class._ |
+| Aqaba is the only port in Jordan. | **the** / a | _Aqaba is a only port in Jordan._ |
+| Petra is the most famous place in Jordan. | **the** / a | _Petra is a most famous place in Jordan._ |
+| Amman is the biggest city in Jordan. | **the** / a | _Amman is a biggest city in Jordan._ |
+
 ## Semester 1 · Unit 5 — Fit and well
 
 Not reviewed yet — shown to nobody.
@@ -529,46 +596,46 @@ Not reviewed yet — shown to nobody.
 
 | Sentence | Choose | True or false: wrong sentence |
 |---|---|---|
-| He should have studied harder. | **should have studied** / should studied | _He should studied harder._ |
-| You should have called me. | **should have called** / should called | _You should called me._ |
-| We should have left earlier. | **should have left** / should have leave | _We should have leave earlier._ |
-| She shouldn't have lied. | **shouldn't have lied** / shouldn't lied | _She shouldn't lied._ |
-| I should have taken an umbrella. | **should have taken** / should have took | _I should have took an umbrella._ |
-| They should have asked first. | **should have asked** / should have ask | _They should have ask first._ |
-| You shouldn't have eaten it all. | **shouldn't have eaten** / shouldn't have eat | _You shouldn't have eat it all._ |
-| He should have told his parents. | **should have told** / should have tell | _He should have tell his parents._ |
-| We should have booked a table. | **should have booked** / should booked | _We should booked a table._ |
-| I shouldn't have said that. | **shouldn't have said** / shouldn't said | _I shouldn't said that._ |
-| She should have gone to bed. | **should have gone** / should have went | _She should have went to bed._ |
-| You should have listened to me. | **should have listened** / should listened | _You should listened to me._ |
-| They should have won the game. | **should have won** / should have win | _They should have win the game._ |
-| I should have known better. | **should have known** / should have knew | _I should have knew better._ |
-| I could have won the race. | **could have won** / could won | _I could won the race._ |
-| She could have called me. | **could have called** / could called | _She could called me._ |
-| We could have gone by bus. | **could have gone** / could have go | _We could have go by bus._ |
-| He could have been hurt. | **could have been** / could have be | _He could have be hurt._ |
-| You could have asked for help. | **could have asked** / could have ask | _You could have ask for help._ |
-| They could have stayed longer. | **could have stayed** / could stayed | _They could stayed longer._ |
-| I could have eaten more. | **could have eaten** / could eaten | _I could eaten more._ |
-| She could have passed the test. | **could have passed** / could passed | _She could passed the test._ |
-| We couldn't have known. | **couldn't have known** / couldn't known | _We couldn't known._ |
-| He could have taken the train. | **could have taken** / could have took | _He could have took the train._ |
-| It could have been worse. | **could have been** / could been | _It could been worse._ |
-| You could have told me earlier. | **could have told** / could have tell | _You could have tell me earlier._ |
-| He must have forgotten the key. | **must have forgotten** / must forgotten | _He must forgotten the key._ |
-| She can't have finished already. | **can't have finished** / can't finished | _She can't finished already._ |
-| They must have left early. | **must have left** / must have leave | _They must have leave early._ |
-| It can't have been Dad. | **can't have been** / can't been | _It can't been Dad._ |
-| You must have been very tired. | **must have been** / must have be | _You must have be very tired._ |
-| He can't have seen us. | **can't have seen** / can't have saw | _He can't have saw us._ |
-| She must have missed the bus. | **must have missed** / must missed | _She must missed the bus._ |
-| They can't have arrived yet. | **can't have arrived** / can't arrived | _They can't arrived yet._ |
-| I must have lost my phone. | **must have lost** / must have lose | _I must have lose my phone._ |
-| He must have heard the news. | **must have heard** / must heard | _He must heard the news._ |
-| She can't have known the answer. | **can't have known** / can't have knew | _She can't have knew the answer._ |
-| We must have taken the wrong road. | **must have taken** / must have took | _We must have took the wrong road._ |
-| It must have rained last night. | **must have rained** / must rained | _It must rained last night._ |
-| You can't have forgotten my birthday. | **can't have forgotten** / can't have forget | _You can't have forget my birthday._ |
+| When I was six, I could swim. | **could swim** / could swam | _When I was six, I could swam._ |
+| We couldn't open the door yesterday. | **couldn't open** / couldn't opened | _We couldn't opened the door yesterday._ |
+| She could read when she was four. | **could read** / could reading | _She could reading when she was four._ |
+| Last year, I couldn't ride a bike. | **couldn't ride** / couldn't rode | _Last year, I couldn't rode a bike._ |
+| As a child, he could run very fast. | **could run** / could ran | _As a child, he could ran very fast._ |
+| They couldn't leave school at lunchtime. | **couldn't leave** / couldn't left | _They couldn't left school at lunchtime._ |
+| Ten years ago, we could play outside. | **could play** / could to play | _Ten years ago, we could to play outside._ |
+| As a student, I could eat when I wanted. | **could eat** / could ate | _As a student, I could ate when I wanted._ |
+| She couldn't find her keys yesterday. | **couldn't find** / couldn't found | _She couldn't found her keys yesterday._ |
+| My grandfather could speak three languages. | **could speak** / could spoke | _My grandfather could spoke three languages._ |
+| He couldn't hear the teacher. | **couldn't hear** / couldn't heard | _He couldn't heard the teacher._ |
+| At the age of ten, I could cook. | **could cook** / could cooked | _At the age of ten, I could cooked._ |
+| Could you swim when you were five? | **Could you swim** / Could you swam | _Could you swam when you were five?_ |
+| We could go out with our family. | **could go** / could went | _We could went out with our family._ |
+| He had to wear a uniform to school. | **had to wear** / had to wore | _He had to wore a uniform to school._ |
+| I had to get up early yesterday. | **had to get** / had to got | _I had to got up early yesterday._ |
+| We had to buy food and cook it. | **had to buy** / had to bought | _We had to bought food and cook it._ |
+| She had to write a list. | **had to write** / had to wrote | _She had to wrote a list._ |
+| They had to leave school at sixteen. | **had to leave** / had to left | _They had to left school at sixteen._ |
+| My brother had to clean the bathroom. | **had to clean** / had to cleaned | _My brother had to cleaned the bathroom._ |
+| I had to finish my homework first. | **had to finish** / had to finishing | _I had to finishing my homework first._ |
+| Last week, we had to wait outside. | **had to wait** / had to waiting | _Last week, we had to waiting outside._ |
+| Our parents had to work very hard. | **had to work** / had to worked | _Our parents had to worked very hard._ |
+| You had to be there at 8.30. | **had to be** / had to being | _You had to being there at 8.30._ |
+| Why did you have to pay? | **did you have to** / did you had to | _Why did you had to pay?_ |
+| What time did he have to leave? | **did he have to** / did he had to | _What time did he had to leave?_ |
+| Suddenly I didn't have to go to class. | **didn't have to** / didn't had to | _Suddenly I didn't had to go to class._ |
+| We didn't have to wear a uniform. | **didn't have to** / didn't had to | _We didn't had to wear a uniform._ |
+| She didn't have to cook dinner. | **didn't have to** / didn't has to | _She didn't has to cook dinner._ |
+| He didn't have to pay for it. | **didn't have to** / didn't has to | _He didn't has to pay for it._ |
+| They didn't have to get up early. | **didn't have to** / didn't had to | _They didn't had to get up early._ |
+| I didn't have to eat school dinners. | **didn't have to** / didn't had to | _I didn't had to eat school dinners._ |
+| You didn't have to wait for me. | **didn't have to** / didn't had to | _You didn't had to wait for me._ |
+| My parents didn't have to wear a uniform. | **didn't have to** / didn't had to | _My parents didn't had to wear a uniform._ |
+| We didn't have to do any washing-up. | **didn't have to** / didn't had to | _We didn't had to do any washing-up._ |
+| The students didn't have to pay. | **didn't have to** / didn't had to | _The students didn't had to pay._ |
+| I didn't have to clean my room. | **didn't have to** / didn't had to | _I didn't had to clean my room._ |
+| My sister didn't have to take the bus. | **didn't have to** / didn't has to | _My sister didn't has to take the bus._ |
+| He didn't have to ask for help. | **didn't have to** / didn't has to | _He didn't has to ask for help._ |
+| We didn't have to write a list. | **didn't have to** / didn't had to | _We didn't had to write a list._ |
 
 ## Semester 2 · Unit 6 — A new you
 
@@ -963,9 +1030,6 @@ Not reviewed yet — shown to nobody.
 | The film is shown at eight. | **is shown** / is show | _The film is show at eight._ |
 | Dinner is served at seven. | **is served** / is serve | _Dinner is serve at seven._ |
 | Paper is made from wood. | **is made** / is make | _Paper is make from wood._ |
-| These apples are picked by hand. | **are picked** / are pick | _These apples are pick by hand._ |
-| The tickets are sold online. | **are sold** / are sell | _The tickets are sell online._ |
-| Tea is drunk all day here. | **is drunk** / is drink | _Tea is drink all day here._ |
 | The bridge was built in 1990. | **was built** / was build | _The bridge was build in 1990._ |
 | The window was broken yesterday. | **was broken** / was break | _The window was break yesterday._ |
 | My phone was stolen last week. | **was stolen** / was steal | _My phone was steal last week._ |
@@ -977,9 +1041,6 @@ Not reviewed yet — shown to nobody.
 | The castle was destroyed long ago. | **was destroyed** / was destroy | _The castle was destroy long ago._ |
 | My bag was found under the bed. | **was found** / was find | _My bag was find under the bed._ |
 | The letters were sent yesterday. | **were sent** / were send | _The letters were send yesterday._ |
-| The prize was won by a student. | **was won** / was win | _The prize was win by a student._ |
-| All the tickets were sold quickly. | **were sold** / were sell | _All the tickets were sell quickly._ |
-| The song was written by my uncle. | **was written** / was write | _The song was write by my uncle._ |
 | Was the window broken by the storm? | **Was the window broken** / Was the window break | _Was the window break by the storm?_ |
 | Were the letters sent yesterday? | **Were the letters sent** / Were the letters send | _Were the letters send yesterday?_ |
 | The letter wasn't sent. | **wasn't sent** / wasn't send | _The letter wasn't send._ |
@@ -990,8 +1051,14 @@ Not reviewed yet — shown to nobody.
 | Was the door locked last night? | **Was the door locked** / Was the door lock | _Was the door lock last night?_ |
 | The food wasn't cooked well. | **wasn't cooked** / wasn't cook | _The food wasn't cook well._ |
 | Where was the film made? | **was the film made** / was the film make | _Where was the film make?_ |
-| Those rooms aren't used often. | **aren't used** / aren't use | _Those rooms aren't use often._ |
-| When were the pyramids built? | **were the pyramids built** / were the pyramids build | _When were the pyramids build?_ |
+| The window has been broken. | **has been broken** / has been break | _The window has been break._ |
+| These books have been sold. | **have been sold** / have been sell | _These books have been sell._ |
+| The letter has been sent already. | **has been sent** / has been send | _The letter has been send already._ |
+| My bike has been stolen! | **has been stolen** / has been steal | _My bike has been steal!_ |
+| Many novels have been published so far. | **have been published** / have been publish | _Many novels have been publish so far._ |
+| The room has been cleaned this morning. | **has been cleaned** / has been clean | _The room has been clean this morning._ |
+| Has the film been made yet? | **Has the film been made** / Has the film been make | _Has the film been make yet?_ |
+| The cakes haven't been eaten. | **haven't been eaten** / haven't been eat | _The cakes haven't been eat._ |
 
 ## Semester 2 · Unit 10 — Helping others
 

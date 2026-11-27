@@ -1,0 +1,645 @@
+{
+  "sourceId": "g4-pe-s1-student-book",
+  "figures": [
+    {
+      "file": "p007.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 7,
+      "rect": [
+        45.9,
+        118.7,
+        270.4,
+        235.6
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "Ball Familiarization",
+      "lessonTitleAr": "الْإِحْساسُ بِالْكُرَةِ",
+      "lessonStartPage": 7
+    },
+    {
+      "file": "p007b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 7,
+      "rect": [
+        44.6,
+        396.9,
+        553.6,
+        690.5
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "Ball Familiarization",
+      "lessonTitleAr": "الْإِحْساسُ بِالْكُرَةِ",
+      "lessonStartPage": 7
+    },
+    {
+      "file": "p008.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 8,
+      "rect": [
+        64.6,
+        369.8,
+        544.3,
+        488.4
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "Ball Familiarization",
+      "lessonTitleAr": "الْإِحْساسُ بِالْكُرَةِ",
+      "lessonStartPage": 7
+    },
+    {
+      "file": "p009.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 9,
+      "rect": [
+        49.3,
+        146.2,
+        248.3,
+        285.5
+      ],
+      "unit": 1,
+      "lesson": 1,
+      "lessonTitleEn": "Ball Familiarization",
+      "lessonTitleAr": "الْإِحْساسُ بِالْكُرَةِ",
+      "lessonStartPage": 7
+    },
+    {
+      "file": "p010.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 10,
+      "rect": [
+        86.7,
+        111.8,
+        265.3,
+        263.1
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": "Passing the Ball with the Inside of the Foot",
+      "lessonTitleAr": "تَمْريرُ الْكُرَةِ بِالْوَجْهِ الدّاخِلِيِّ لِلْقَدَمِ",
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p010b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 10,
+      "rect": [
+        44.6,
+        388.7,
+        553.6,
+        706.0
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": "Passing the Ball with the Inside of the Foot",
+      "lessonTitleAr": "تَمْريرُ الْكُرَةِ بِالْوَجْهِ الدّاخِلِيِّ لِلْقَدَمِ",
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p011.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 11,
+      "rect": [
+        151.4,
+        338.8,
+        280.6,
+        476.4
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": "Passing the Ball with the Inside of the Foot",
+      "lessonTitleAr": "تَمْريرُ الْكُرَةِ بِالْوَجْهِ الدّاخِلِيِّ لِلْقَدَمِ",
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p011b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 11,
+      "rect": [
+        82.9,
+        174.6,
+        285.7,
+        301.4
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": "Passing the Ball with the Inside of the Foot",
+      "lessonTitleAr": "تَمْريرُ الْكُرَةِ بِالْوَجْهِ الدّاخِلِيِّ لِلْقَدَمِ",
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p012.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 12,
+      "rect": [
+        59.5,
+        154.4,
+        288.3,
+        321.2
+      ],
+      "unit": 1,
+      "lesson": 2,
+      "lessonTitleEn": "Passing the Ball with the Inside of the Foot",
+      "lessonTitleAr": "تَمْريرُ الْكُرَةِ بِالْوَجْهِ الدّاخِلِيِّ لِلْقَدَمِ",
+      "lessonStartPage": 10
+    },
+    {
+      "file": "p013.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 13,
+      "rect": [
+        51.0,
+        108.3,
+        253.4,
+        258.0
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": "Running with the Ball",
+      "lessonTitleAr": "الْجَرْيُ بِالْكُرَةِ",
+      "lessonStartPage": 13
+    },
+    {
+      "file": "p013b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 13,
+      "rect": [
+        44.6,
+        388.7,
+        553.6,
+        706.0
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": "Running with the Ball",
+      "lessonTitleAr": "الْجَرْيُ بِالْكُرَةِ",
+      "lessonStartPage": 13
+    },
+    {
+      "file": "p014.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 14,
+      "rect": [
+        69.7,
+        381.8,
+        335.1,
+        519.4
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": "Running with the Ball",
+      "lessonTitleAr": "الْجَرْيُ بِالْكُرَةِ",
+      "lessonStartPage": 13
+    },
+    {
+      "file": "p015.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 15,
+      "rect": [
+        49.3,
+        189.2,
+        221.1,
+        306.1
+      ],
+      "unit": 1,
+      "lesson": 3,
+      "lessonTitleEn": "Running with the Ball",
+      "lessonTitleAr": "الْجَرْيُ بِالْكُرَةِ",
+      "lessonStartPage": 13
+    },
+    {
+      "file": "p016.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 16,
+      "rect": [
+        61.2,
+        94.6,
+        212.6,
+        299.2
+      ],
+      "unit": 1,
+      "lesson": 4,
+      "lessonTitleEn": "Controlling the Ball with the Sole of the Foot",
+      "lessonTitleAr": "السَّيْطَرَةُ عَلى الْكُرَةِ بِأَسْفَلِ الْقَدَمِ",
+      "lessonStartPage": 16
+    },
+    {
+      "file": "p016b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 16,
+      "rect": [
+        44.6,
+        388.7,
+        553.6,
+        714.2
+      ],
+      "unit": 1,
+      "lesson": 4,
+      "lessonTitleEn": "Controlling the Ball with the Sole of the Foot",
+      "lessonTitleAr": "السَّيْطَرَةُ عَلى الْكُرَةِ بِأَسْفَلِ الْقَدَمِ",
+      "lessonStartPage": 16
+    },
+    {
+      "file": "p017.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 17,
+      "rect": [
+        49.3,
+        330.2,
+        369.1,
+        448.9
+      ],
+      "unit": 1,
+      "lesson": 4,
+      "lessonTitleEn": "Controlling the Ball with the Sole of the Foot",
+      "lessonTitleAr": "السَّيْطَرَةُ عَلى الْكُرَةِ بِأَسْفَلِ الْقَدَمِ",
+      "lessonStartPage": 16
+    },
+    {
+      "file": "p019.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 19,
+      "rect": [
+        66.3,
+        120.4,
+        270.4,
+        273.5
+      ],
+      "unit": 1,
+      "lesson": 5,
+      "lessonTitleEn": "Linking Skills with Drills in Football",
+      "lessonTitleAr": "رَبْطُ الْمَهاراتِ بِالتَّدْريباتِ في كُرَةِ الْقَدَمِ",
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p019b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 19,
+      "rect": [
+        49.3,
+        395.6,
+        246.6,
+        706.8
+      ],
+      "unit": 1,
+      "lesson": 5,
+      "lessonTitleEn": "Linking Skills with Drills in Football",
+      "lessonTitleAr": "رَبْطُ الْمَهاراتِ بِالتَّدْريباتِ في كُرَةِ الْقَدَمِ",
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p020.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 20,
+      "rect": [
+        66.3,
+        369.8,
+        250.0,
+        517.7
+      ],
+      "unit": 1,
+      "lesson": 5,
+      "lessonTitleEn": "Linking Skills with Drills in Football",
+      "lessonTitleAr": "رَبْطُ الْمَهاراتِ بِالتَّدْريباتِ في كُرَةِ الْقَدَمِ",
+      "lessonStartPage": 19
+    },
+    {
+      "file": "p024.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 24,
+      "rect": [
+        66.3,
+        115.2,
+        263.6,
+        292.4
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": "The Forehand Grip",
+      "lessonTitleAr": "الْقَبْضَةُ الْأَمامِيَّةُ",
+      "lessonStartPage": 23
+    },
+    {
+      "file": "p024b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 24,
+      "rect": [
+        44.6,
+        384.8,
+        553.6,
+        710.3
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": "The Forehand Grip",
+      "lessonTitleAr": "الْقَبْضَةُ الْأَمامِيَّةُ",
+      "lessonStartPage": 23
+    },
+    {
+      "file": "p025.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 25,
+      "rect": [
+        61.2,
+        338.8,
+        170.1,
+        576.1
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": "The Forehand Grip",
+      "lessonTitleAr": "الْقَبْضَةُ الْأَمامِيَّةُ",
+      "lessonStartPage": 23
+    },
+    {
+      "file": "p026.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 26,
+      "rect": [
+        59.5,
+        170.3,
+        226.2,
+        283.8
+      ],
+      "unit": 2,
+      "lesson": 1,
+      "lessonTitleEn": "The Forehand Grip",
+      "lessonTitleAr": "الْقَبْضَةُ الْأَمامِيَّةُ",
+      "lessonStartPage": 23
+    },
+    {
+      "file": "p027.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 27,
+      "rect": [
+        49.3,
+        111.8,
+        263.6,
+        304.4
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": "The Backhand Grip",
+      "lessonTitleAr": "الْقَبْضَةُ الْخَلْفِيَّةُ",
+      "lessonStartPage": 27
+    },
+    {
+      "file": "p027b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 27,
+      "rect": [
+        44.6,
+        376.6,
+        553.6,
+        714.2
+      ],
+      "unit": 2,
+      "lesson": 2,
+      "lessonTitleEn": "The Backhand Grip",
+      "lessonTitleAr": "الْقَبْضَةُ الْخَلْفِيَّةُ",
+      "lessonStartPage": 27
+    },
+    {
+      "file": "p030.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 30,
+      "rect": [
+        76.5,
+        108.3,
+        246.6,
+        283.8
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": "Getting a Feel for the Racket and Shuttlecock",
+      "lessonTitleAr": "الْإِحْساسُ بِالْمِضْرَبِ وَالرِّيشَةِ",
+      "lessonStartPage": 30
+    },
+    {
+      "file": "p030b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 30,
+      "rect": [
+        100.4,
+        388.7,
+        275.5,
+        720.6
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": "Getting a Feel for the Racket and Shuttlecock",
+      "lessonTitleAr": "الْإِحْساسُ بِالْمِضْرَبِ وَالرِّيشَةِ",
+      "lessonStartPage": 30
+    },
+    {
+      "file": "p032.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 32,
+      "rect": [
+        77.4,
+        186.2,
+        309.6,
+        289.4
+      ],
+      "unit": 2,
+      "lesson": 3,
+      "lessonTitleEn": "Getting a Feel for the Racket and Shuttlecock",
+      "lessonTitleAr": "الْإِحْساسُ بِالْمِضْرَبِ وَالرِّيشَةِ",
+      "lessonStartPage": 30
+    },
+    {
+      "file": "p033.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 33,
+      "rect": [
+        64.6,
+        161.7,
+        270.4,
+        301.0
+      ],
+      "unit": 2,
+      "lesson": 4,
+      "lessonTitleEn": "The Ready Stance",
+      "lessonTitleAr": "وِقْفَةُ الِاسْتِعْدادِ",
+      "lessonStartPage": 33
+    },
+    {
+      "file": "p033b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 33,
+      "rect": [
+        101.2,
+        404.6,
+        553.6,
+        718.0
+      ],
+      "unit": 2,
+      "lesson": 4,
+      "lessonTitleEn": "The Ready Stance",
+      "lessonTitleAr": "وِقْفَةُ الِاسْتِعْدادِ",
+      "lessonStartPage": 33
+    },
+    {
+      "file": "p035.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 35,
+      "rect": [
+        59.5,
+        158.2,
+        246.6,
+        278.6
+      ],
+      "unit": 2,
+      "lesson": 4,
+      "lessonTitleEn": "The Ready Stance",
+      "lessonTitleAr": "وِقْفَةُ الِاسْتِعْدادِ",
+      "lessonStartPage": 33
+    },
+    {
+      "file": "p046.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 46,
+      "rect": [
+        74.8,
+        115.2,
+        256.8,
+        249.4
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": "Preventing Sport Injuries",
+      "lessonTitleAr": "الْوِقايَةُ مِنَ الْإِصاباتِ الرِّياضِيَّةِ",
+      "lessonStartPage": 46
+    },
+    {
+      "file": "p046b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 46,
+      "rect": [
+        85.0,
+        402.4,
+        277.2,
+        571.0
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": "Preventing Sport Injuries",
+      "lessonTitleAr": "الْوِقايَةُ مِنَ الْإِصاباتِ الرِّياضِيَّةِ",
+      "lessonStartPage": 46
+    },
+    {
+      "file": "p047b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 47,
+      "rect": [
+        44.6,
+        170.3,
+        553.6,
+        726.2
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": "Preventing Sport Injuries",
+      "lessonTitleAr": "الْوِقايَةُ مِنَ الْإِصاباتِ الرِّياضِيَّةِ",
+      "lessonStartPage": 46
+    },
+    {
+      "file": "p048.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 48,
+      "rect": [
+        44.6,
+        170.3,
+        553.6,
+        726.2
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": "Preventing Sport Injuries",
+      "lessonTitleAr": "الْوِقايَةُ مِنَ الْإِصاباتِ الرِّياضِيَّةِ",
+      "lessonStartPage": 46
+    },
+    {
+      "file": "p049.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 49,
+      "rect": [
+        86.3,
+        396.9,
+        282.8,
+        571.4
+      ],
+      "unit": 3,
+      "lesson": 2,
+      "lessonTitleEn": "Preventing Sport Injuries",
+      "lessonTitleAr": "الْوِقايَةُ مِنَ الْإِصاباتِ الرِّياضِيَّةِ",
+      "lessonStartPage": 46
+    },
+    {
+      "file": "p050.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 50,
+      "rect": [
+        62.9,
+        116.9,
+        255.1,
+        249.4
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": "Handling Emergencies at School",
+      "lessonTitleAr": "التَّعامُلُ مَعَ الْحَوادِثِ الطّارِئَةِ في الْمَدْرَسَةِ",
+      "lessonStartPage": 50
+    },
+    {
+      "file": "p050b.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 50,
+      "rect": [
+        86.7,
+        404.2,
+        280.6,
+        596.8
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": "Handling Emergencies at School",
+      "lessonTitleAr": "التَّعامُلُ مَعَ الْحَوادِثِ الطّارِئَةِ في الْمَدْرَسَةِ",
+      "lessonStartPage": 50
+    },
+    {
+      "file": "p051.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 51,
+      "rect": [
+        163.3,
+        291.6,
+        333.4,
+        737.8
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": "Handling Emergencies at School",
+      "lessonTitleAr": "التَّعامُلُ مَعَ الْحَوادِثِ الطّارِئَةِ في الْمَدْرَسَةِ",
+      "lessonStartPage": 50
+    },
+    {
+      "file": "p052.png",
+      "sourceId": "g4-pe-s1-student-book",
+      "pdfPage": 52,
+      "rect": [
+        44.6,
+        134.6,
+        553.6,
+        654.4
+      ],
+      "unit": 3,
+      "lesson": 3,
+      "lessonTitleEn": "Handling Emergencies at School",
+      "lessonTitleAr": "التَّعامُلُ مَعَ الْحَوادِثِ الطّارِئَةِ في الْمَدْرَسَةِ",
+      "lessonStartPage": 50
+    }
+  ]
+}

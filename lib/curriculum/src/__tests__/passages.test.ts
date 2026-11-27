@@ -15,7 +15,9 @@ import {
   resolveUnitByTopic,
   searchForm,
   hasExtractedText,
+  type Passage,
 } from '../passages.ts';
+import { getObjectivesForUnit } from '../objectives.ts';
 
 const CIRCLE = 'kbu-math-s1-nccd-u2';
 const TRIG = 'kbu-math-s1-nccd-u3';
@@ -153,6 +155,46 @@ describe('passagesForUnit', () => {
     assert.deepEqual(passagesForUnit({ unitId: 'not-a-unit' }), []);
   });
 
+  it('finds a unit\'s pages from its lesson titles when the book prints no objectives', () => {
+    // Grade 9 Islamic Studies prints no learning outcomes, so a unit-wide paper
+    // and the exam generator — both call with no `terms` — searched with nothing
+    // and got no pages for 8 of 8 units, while a single lesson (which passes its
+    // title) found them. The unit's own lesson titles are the description left.
+    const unit = 'kbu-g9-islamic-s1-nccd-u1';
+    assert.ok(hasExtractedText('g9-islamic-s1-student-book'));
+    const ps = passagesForUnit({ unitId: unit, limit: 4, quotableOnly: true });
+    assert.ok(ps.length > 0, 'a unit with extracted text and no objectives still gets pages');
+    for (const p of ps) assert.equal(p.sourceId, 'g9-islamic-s1-student-book');
+    // Page 4 is the contents page, which lists every lesson title in the book
+    // and so outscored the unit's own pages for every unit before it was skipped.
+    assert.ok(!ps.some(p => p.page === 4), 'the contents page is not a passage');
+    // Unit 1 is PDF pages 6-33 by that contents page; unit 4 repeats unit 1's
+    // lesson types (Surat al-Isra', recitation), whose pages used to leak in.
+    for (const p of ps) assert.ok(p.page >= 6 && p.page <= 33, `page ${p.page} is outside unit 1`);
+  });
+
+  it('never serves the front matter, and keeps the last unit in its own pages', () => {
+    // Page 3 is the book's introduction, which names every unit's topics; it
+    // was once returned as a unit-2 source. Unit 4 is PDF pages 82 on.
+    for (const n of [1, 2, 3, 4]) {
+      for (const p of passagesForUnit({ unitId: `kbu-g9-islamic-s1-nccd-u${n}`, limit: 4, quotableOnly: true })) {
+        assert.ok(p.page > 5, `unit ${n} got front-matter page ${p.page}`);
+      }
+    }
+    const last = passagesForUnit({ unitId: 'kbu-g9-islamic-s1-nccd-u4', limit: 4, quotableOnly: true });
+    assert.ok(last.length > 0);
+    for (const p of last) assert.ok(p.page >= 82, `page ${p.page} is outside unit 4`);
+  });
+
+  it('gives a unit nothing rather than a sibling unit\'s pages when its titles are not its own', () => {
+    // Grade 6 Arabic heads every unit with the same skill names («أستمع
+    // بانتباه»…) and prints no outcomes, so only the title fallback describes a
+    // unit. Unit 2 has no two words of its own on any page: it gets nothing,
+    // where scoring on the shared names handed it other units' pages.
+    assert.equal(getObjectivesForUnit('kbu-g6-arabic-s1-nccd-u2').length, 0, 'still a fallback unit');
+    assert.deepEqual(passagesForUnit({ unitId: 'kbu-g6-arabic-s1-nccd-u2', limit: 4, quotableOnly: true }), []);
+  });
+
   it('knows which sources have text', () => {
     assert.ok(hasExtractedText('math-s1-student-book'));
     // math-s1-support-material used to stand here as the un-fetched case; it
@@ -161,6 +203,64 @@ describe('passagesForUnit', () => {
     // text layer at all and OCR is not something this project has, so it will
     // not go stale the way a pending fetch does.
     assert.ok(!hasExtractedText('math-u1-answers-alkhatib'));
+  });
+});
+
+describe('passagesForUnit for one lesson', () => {
+  // Grade 4 maths S1 unit 3. Student-book pages from book-page-links.json,
+  // where PDF page = printed page (checked on every opener, 2026-11-13).
+  const G4_DIV = 'kbu-g4-math-s1-nccd-u3';
+  const DIV_MULTIPLES = 'kbl-g4-math-s1-nccd-u3_l1'; // «قِسْمَةُ مُضاعَفاتِ 10, 100, 1000», pp. 50-52
+  const DIV_ESTIMATE = 'kbl-g4-math-s1-nccd-u3_l2'; // «تَقْديرُ ناتِجِ القِسْمَةِ», pp. 53-55
+  const ownPage = (ps: Passage[], from: number, to: number) =>
+    ps.some(p => p.sourceId === 'g4-math-s1-student-book' && p.page >= from && p.page <= to);
+
+  it("returns the lesson's own pages, not only the unit opener's", () => {
+    // Before the lesson's own terms were weighted, every lesson of this unit got
+    // the same four pages: the guide's unit plan and the unit extract.
+    assert.ok(ownPage(passagesForUnit({ unitId: G4_DIV, lessonId: DIV_MULTIPLES, quotableOnly: true }), 50, 52));
+    assert.ok(ownPage(passagesForUnit({ unitId: G4_DIV, lessonId: DIV_ESTIMATE, quotableOnly: true }), 53, 55));
+  });
+
+  it('finds the lesson from an exact title when no id is sent', () => {
+    const ps = passagesForUnit({ unitId: G4_DIV, terms: ['تقدير ناتج القسمة'], quotableOnly: true });
+    assert.ok(ownPage(ps, 53, 55));
+  });
+
+  it('ignores a lesson from another unit', () => {
+    const plain = passagesForUnit({ unitId: G4_DIV, quotableOnly: true });
+    const foreign = passagesForUnit({ unitId: G4_DIV, lessonId: 'kbl-g4-math-s1-nccd-u1_l1', quotableOnly: true });
+    assert.deepEqual(foreign.map(p => `${p.sourceId}:${p.page}`), plain.map(p => `${p.sourceId}:${p.page}`));
+  });
+
+  const pageIn = (ps: Passage[], sourceId: string, from: number, to: number) =>
+    ps.some(p => p.sourceId === sourceId && p.page >= from && p.page <= to);
+
+  it("reads a title's three-letter word", () => {
+    // «قِصَّةُ نَبِيِّ اللهِ سَيِّدِنا آدَمَ», pp. 22-26: «آدم» is the word that names
+    // it, and a four-letter floor left only «قصة», «نبي»… to find it with.
+    const ps = passagesForUnit({ unitId: 'kbu-g4-islamic-s1-nccd-u1', lessonId: 'kbl-g4-islamic-s1-nccd-u1_l5', quotableOnly: true });
+    assert.ok(pageIn(ps, 'g4-islamic-s1-student-book', 22, 26));
+  });
+
+  it('ignores a three-letter stopword in a title', () => {
+    const unitId = 'kbu-g4-islamic-s1-nccd-u1';
+    const plain = passagesForUnit({ unitId, terms: ['آدم'], quotableOnly: true });
+    const padded = passagesForUnit({ unitId, terms: ['آدم على'], quotableOnly: true });
+    assert.deepEqual(padded.map(p => `${p.sourceId}:${p.page}`), plain.map(p => `${p.sourceId}:${p.page}`));
+  });
+
+  it('finds «صلاة» in a book whose text layer spells it «صالة»', () => {
+    // The Grade 4 Islamic student books never spell «صلاة» right; their
+    // teacher guides do. «شروط صحة الصلاة» is pp. 58-62 and found no page at all.
+    const ps = passagesForUnit({ unitId: 'kbu-g4-islamic-s1-nccd-u3', lessonId: 'kbl-g4-islamic-s1-nccd-u3_l3', quotableOnly: true });
+    assert.ok(pageIn(ps, 'g4-islamic-s1-student-book', 58, 62));
+  });
+
+  it('falls back to the title when the lesson id is not in the unit', () => {
+    const viaTitle = passagesForUnit({ unitId: G4_DIV, terms: ['تقدير ناتج القسمة'], quotableOnly: true });
+    const legacyId = passagesForUnit({ unitId: G4_DIV, terms: ['تقدير ناتج القسمة'], lessonId: 'kbl-chem-1-1', quotableOnly: true });
+    assert.deepEqual(legacyId.map(p => `${p.sourceId}:${p.page}`), viaTitle.map(p => `${p.sourceId}:${p.page}`));
   });
 });
 

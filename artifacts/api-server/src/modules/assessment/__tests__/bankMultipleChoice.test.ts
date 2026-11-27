@@ -20,7 +20,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { generateMockEvaluation } from "../mockGenerator.ts";
 import { QUESTION_TYPES } from "../questionTypes.ts";
-import type { CurriculumObjective } from "@workspace/curriculum";
+import { getObjectivesForLesson, type CurriculumObjective } from "@workspace/curriculum";
 
 const objective = (id: string, descriptionAr: string): CurriculumObjective =>
   ({
@@ -252,5 +252,59 @@ describe("mock generator — primary grades", () => {
       seed: 5,
     });
     assert.ok(res.questions.some(q => /\^|x/.test(JSON.stringify(q.body))));
+  });
+
+  // The thin Grade 10 lessons (lib/math-practice `G10_LESSON_FIRST`). The bank
+  // is reached with the objective's wording, which no lesson generator
+  // matches, so a paper on «قانون الجيوب» held 4 questions (3 distinct, one on
+  // the cosine rule) and «حل مسائل ثلاثية الأبعاد» got trigonometry ratios
+  // because an objective mentions «النسب المثلثية» (measured 2026-11-13).
+  const OWN: Array<[string, RegExp]> = [
+    ["kbl-math-s1-nccd-u4_l2", /في المثلث ABC/],
+    ["kbl-math-s1-nccd-u4_l5", /متوازي المستطيلات|متوازي مستطيلات|هرم رباعي/],
+    ["kbl-math-s2-nccd-u5_l1", /كثير الحدود|s\(t\)|معامل/],
+    ["kbl-math-s2-nccd-u5_l2", /قسمة|مجال الاقتران|خط التقارب|فجوة/],
+  ];
+  for (const [lessonId, about] of OWN) {
+    it(`serves ${lessonId} from its own lesson generator`, () => {
+      const objectives = getObjectivesForLesson(lessonId);
+      assert.ok(objectives.length > 0, lessonId);
+      const res = generateMockEvaluation({
+        objectives,
+        assessmentTypes: ["multiple_choice"],
+        count: 10,
+        difficulty: "standard",
+        subjectId: "mathematics",
+        gradeId: "grade-10",
+        seed: 3,
+      });
+      const banked = res.questions.filter(q => /concrete maths bank/.test(String(q.aiMetadata?.["note"] ?? "")));
+      assert.ok(banked.length >= 8, `only ${banked.length} bank questions for ${lessonId}`);
+      const stems = banked.map(q => String(q.body["stem"]));
+      assert.equal(new Set(stems).size, stems.length, `repeats: ${stems.join(" | ")}`);
+      const grade = QUESTION_TYPES["multiple_choice"].grade!;
+      for (const q of banked) {
+        assert.match(String(q.body["stem"]), about, `not this lesson's question: ${q.body["stem"]}`);
+        const draft = { type: q.type, body: q.body, expectedAnswer: q.expectedAnswer, rubric: q.rubric } as never;
+        assert.deepEqual(QUESTION_TYPES["multiple_choice"].validate(draft), []);
+        assert.equal(grade(draft, { optionIds: q.expectedAnswer["optionIds"] as string[] }).status, "correct");
+      }
+    });
+  }
+
+  it("keeps an untouched Grade 10 lesson on its banked family", () => {
+    const res = generateMockEvaluation({
+      objectives: getObjectivesForLesson("kbl-math-s1-nccd-u1_l4"),
+      assessmentTypes: ["multiple_choice"],
+      count: 6,
+      difficulty: "standard",
+      subjectId: "mathematics",
+      gradeId: "grade-10",
+      seed: 3,
+    });
+    const banked = res.questions.filter(q => /concrete maths bank/.test(String(q.aiMetadata?.["note"] ?? "")));
+    assert.ok(banked.length > 0);
+    // the exponential-equations family writes powers as «3^x»
+    assert.ok(banked.every(q => /\^/.test(JSON.stringify(q.body))), banked.map(q => q.body["stem"]).join(" | "));
   });
 });

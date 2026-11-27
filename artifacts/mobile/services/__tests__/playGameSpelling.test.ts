@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SPELLING_RULES } from '@workspace/arabic-spelling';
+import { SPELLING_RULES, takeSpellingItems } from '@workspace/arabic-spelling';
 import { makeRng } from '../publicGames/rng.ts';
 import {
-  SPELLING_DROPPED_ANSWERS, SPELLING_GAME_RULE_IDS, SPELLING_PER_RULE, buildSpellingRound, stripMarks,
+  SPELLING_EXCLUDED_RULE_IDS, SPELLING_PER_RULE, buildSpellingRound, stripMarks,
 } from '../publicGames/spelling.ts';
 import { assertWellFormed } from './playQuizAsserts.ts';
 
@@ -90,34 +90,31 @@ test('the round is deterministic for a seed and varies between seeds', () => {
   assert.ok(firsts.size > 10, 'rounds barely vary');
 });
 
-test('only the allowed rules are served, every one of them is reachable, and none is renamed away', () => {
-  const ids = new Set(SPELLING_RULES.map(r => r.id));
-  for (const id of SPELLING_GAME_RULE_IDS) assert.ok(ids.has(id), `${id} is no longer a bank rule`);
-  const allowedNames = new Set(SPELLING_RULES.filter(r => (SPELLING_GAME_RULE_IDS as readonly string[]).includes(r.id)).map(r => r.nameAr));
+test('every rule is served except the excluded ones, and every rule that can make a choice is reachable', () => {
+  const byId = new Map(SPELLING_RULES.map(r => [r.id, r]));
+  for (const id of SPELLING_EXCLUDED_RULE_IDS) assert.ok(byId.has(id), `${id} is no longer a bank rule`);
+  const excludedNames = new Set(SPELLING_EXCLUDED_RULE_IDS.map(id => byId.get(id)!.nameAr));
+  // A rule can appear if the bank can build a choice from at least one of its unflagged words.
+  const capable = new Set(
+    SPELLING_RULES.filter(r => !(SPELLING_EXCLUDED_RULE_IDS as readonly string[]).includes(r.id) &&
+      takeSpellingItems(r, r.words.length, { kinds: ['choose'], seed: 1 }).length > 0).map(r => r.nameAr),
+  );
+  assert.ok(capable.size >= 14, `only ${capable.size} rules can be served: the widening was lost`);
   const seen = new Set<string>();
-  for (const round of rounds('ar', 300)) for (const q of round) {
-    assert.ok(allowedNames.has(q.subject!), `${q.subject} is not an allowed rule`);
+  for (const round of rounds('ar', 400)) for (const q of round) {
+    assert.ok(!excludedNames.has(q.subject!), `${q.subject} is an excluded rule`);
     seen.add(q.subject!);
   }
-  assert.equal(seen.size, SPELLING_GAME_RULE_IDS.length, 'a rule is never drawn');
+  assert.deepEqual([...seen].sort(), [...capable].sort(), 'a servable rule is never drawn');
 });
 
-test('a dropped answer is never asked, and the round is still full without it', () => {
+test('a word the bank marks dictation-only is never asked, and rounds stay full', () => {
   for (const round of rounds('ar', 300)) {
     assert.equal(round.length, 8);
-    for (const q of round) assert.ok(!SPELLING_DROPPED_ANSWERS.includes(q.correctId), q.correctId);
-  }
-});
-
-test('no wrong option is a word of its own: the options of the served rules, read once by hand', () => {
-  // The audit behind SPELLING_GAME_RULE_IDS found «دلك» (a verb) offered beside «ذلك». These are the
-  // non-words the five rules offer; a new one in the bank has to be read before it joins this list.
-  const KNOWN_REAL_WORDS = ['دلك'];
-  for (const round of rounds('ar', 300)) {
     for (const q of round) {
-      for (const o of q.options) {
-        if (o.id !== q.correctId) assert.ok(!KNOWN_REAL_WORDS.includes(o.label), `${o.label} offered beside ${q.correctId}`);
-      }
+      const rule = RULE_BY_NAME.get(q.subject!)!;
+      const word = rule.words.find(w => stripMarks(w.correct) === q.correctId)!;
+      assert.equal(word.dictationOnly, undefined, `«${word.correct}» is dictation-only (${word.dictationOnly})`);
     }
   }
 });

@@ -140,8 +140,8 @@
         {
           "id": "u2_l2",
           "order": 2,
-          "title_ar": "المفردات",
-          "title_en": "Vocabulary",
+          "title_ar": "المفردات: التعليم",
+          "title_en": "Vocabulary: Education",
           "main_idea_ar": "I can talk about learning and studying.",
           "periods": null,
           "objectives": [
@@ -200,8 +200,8 @@
         {
           "id": "u2_l7",
           "order": 7,
-          "title_ar": "الكتابة",
-          "title_en": "Writing",
+          "title_ar": "الكتابة: سيرة حياة",
+          "title_en": "Writing: A biography",
           "main_idea_ar": "I can write a short biography.",
           "periods": null,
           "objectives": [
@@ -296,8 +296,8 @@
         {
           "id": "u3_l7",
           "order": 7,
-          "title_ar": "الكتابة والمفردات: تدوينة «The world is your oyster»",
-          "title_en": "Writing and Vocabulary: A blog post The world is your oyster",
+          "title_ar": "الكتابة والمفردات: تدوينة",
+          "title_en": "Writing and Vocabulary: A blog post",
           "main_idea_ar": "I can write a blog post.",
           "periods": null,
           "objectives": [

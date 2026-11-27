@@ -48,6 +48,9 @@ from collections import Counter
 
 import fitz  # PyMuPDF
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from unit_openers import trim_end  # noqa: E402
+
 # "dict" extraction carries every image's bytes by default, which made one 150-page
 # book take over a minute; the title is text, so ask for text only.
 TEXT_FLAGS = fitz.TEXTFLAGS_DICT & ~fitz.TEXT_PRESERVE_IMAGES
@@ -362,18 +365,27 @@ def with_table(found: list[dict], table: list[dict], unit_sizes: list[int] | Non
     return out
 
 
-def ranges(found: list[dict], page_count: int, back_matter: int | None) -> list[tuple[int, int] | None]:
+def ranges(found: list[dict], page_count: int, back_matter: int | None,
+           units: list[int] | None = None, text_of=None) -> list[tuple[int, int] | None]:
     """(first, last) page per lesson: from its opener to the page before the next
-    opener, capped at MAX_PAGES and at the book's own back matter."""
+    opener, capped at MAX_PAGES and at the book's own back matter.
+
+    With `units` (each lesson's unit, in the same order) and `text_of(page)`, a
+    lesson whose next mapped lesson is in another unit stops before that unit's
+    cover and overview (`unit_openers.trim_end`) instead of ending on them."""
     starts = [f["page"] for f in found]
     out: list[tuple[int, int] | None] = []
     for i, s in enumerate(starts):
         if s is None:
             out.append(None)
             continue
-        nxt = next((x for x in starts[i + 1:] if x), None)
+        j = next((k for k in range(i + 1, len(starts)) if starts[k]), None)
+        nxt = starts[j] if j is not None else None
         end = (nxt - 1) if nxt else (back_matter or page_count)
-        out.append((s, max(s, min(end, s + MAX_PAGES - 1, page_count))))
+        end = max(s, min(end, s + MAX_PAGES - 1, page_count))
+        if units and text_of and j is not None and units[j] != units[i]:
+            end = trim_end(s, end, text_of)
+        out.append((s, end))
     return out
 
 
@@ -462,7 +474,8 @@ def main() -> None:
         ids = [l["id"] for u in b["units"] for l in u["lessons"]]
         doc = fitz.open(pdf)
         found = locate(doc, titles, [len(u["lessons"]) for u in b["units"]])
-        rng = ranges(found, doc.page_count, None)
+        units = [n for n, u in enumerate(b["units"]) for _ in u["lessons"]]
+        rng = ranges(found, doc.page_count, None, units, lambda p: doc[p - 1].get_text())
         mapped = sum(1 for f in found if f["page"])
         sure = sum(1 for f in found if f["how"] in ("title", "table"))
         print(f"{b['sourceId']:34} {mapped:>3}/{len(titles):<3} mapped ({sure} sure)  pages {doc.page_count}", flush=True)

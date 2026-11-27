@@ -23,10 +23,12 @@
  */
 import { logger } from "./logger.ts";
 import { getCacheFailure, type CacheOperation } from "./artifactCache.ts";
+import { ammanDay } from "./dailyActivity.ts";
 import {
   currentPeriodStart,
   getPersistenceFailure,
   readPeriodSpendUsd,
+  readUserBudgetOverride,
   readUserPeriodSpendUsd,
   recordGeneration,
 } from "./aiUsageLog.ts";
@@ -411,7 +413,7 @@ export class AiUserQuotaExceededError extends Error {
     const envVar = role === "student" ? "AI_STUDENT_BUDGET_USD" : "AI_USER_BUDGET_USD";
     super(
       `${who} has used $${spentUsd.toFixed(4)} of their $${limitUsd.toFixed(2)} monthly ` +
-        `allowance. Raise ${envVar} to change it.`,
+        `allowance. Raise ${envVar}, or set this account's own limit on the admin Users screen.`,
     );
     this.name = "AiUserQuotaExceededError";
   }
@@ -458,11 +460,77 @@ export async function assertUserQuotaAvailable(
   userId: string | null | undefined,
   role?: string | null,
 ): Promise<void> {
-  const limit = getUserBudgetLimitUsd(role);
-  if (!limit || !userId) return;
-  const spent = await readUserPeriodSpendUsd(userId);
-  if (spent === null) return;
+  if (!userId) return;
+  const [limit, spent] = await Promise.all([resolveUserBudgetLimitUsd(userId, role), readUserPeriodSpendUsd(userId)]);
+  if (!limit || spent === null) return;
   if (spent >= limit) throw new AiUserQuotaExceededError(spent, limit, role);
+}
+
+/**
+ * The allowance that governs this account: its own `users.ai_budget_usd` when a
+ * system_admin set one and its end date (`ai_budget_until`, an Amman calendar
+ * day, inclusive) has not passed, else the role default from the env. An
+ * override is used even when the role default is 0 (no cap), so it can also
+ * tighten one account.
+ */
+export async function resolveUserBudgetLimitUsd(
+  userId: string,
+  role?: string | null,
+  now: Date = new Date(),
+): Promise<number> {
+  return pickUserBudgetLimitUsd(await readUserBudgetOverride(userId), role, ammanDay(now));
+}
+
+/** Pure half of `resolveUserBudgetLimitUsd`, for tests. `today` is an Amman YYYY-MM-DD. */
+export function pickUserBudgetLimitUsd(
+  override: { usd: number | null; until: string | null } | null | undefined,
+  role: string | null | undefined,
+  today: string,
+): number {
+  const usd = override?.usd;
+  const live = typeof usd === "number" && Number.isFinite(usd) && usd > 0;
+  // YYYY-MM-DD strings order the same as the days they name.
+  const expired = !!override?.until && override.until < today;
+  return live && !expired ? usd : getUserBudgetLimitUsd(role);
+}
+
+/** Highest per-account allowance an admin may set — a guard against a typo (150 for 15.0), not a policy. */
+export const MAX_USER_BUDGET_OVERRIDE_USD = 100;
+
+const CALENDAR_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Body of `PUT /admin/users/:id/ai-budget`:
+ * `{ usd: number | null, until?: "YYYY-MM-DD" | null }`. Null (or 0) `usd`
+ * clears the override, returning the account to its role default, and clears
+ * the end date with it. `until` is the last Amman day the amount applies,
+ * inclusive; absent or null means no end date. A day before `today` is refused:
+ * it would save a limit that is already over.
+ */
+export function parseUserBudgetOverride(
+  body: unknown,
+  today: string,
+): { usd: number | null; until: string | null } {
+  const b = body as { usd?: unknown; until?: unknown } | null | undefined;
+  const raw = b?.usd;
+  if (raw === null || raw === 0) return { usd: null, until: null };
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) {
+    throw new Error("usd must be a positive number, or null to use the default");
+  }
+  if (raw > MAX_USER_BUDGET_OVERRIDE_USD) {
+    throw new Error(`usd may be at most ${MAX_USER_BUDGET_OVERRIDE_USD}`);
+  }
+  let until: string | null = null;
+  if (b?.until !== undefined && b.until !== null && b.until !== "") {
+    const u = b.until;
+    // Round-trip through Date so 2026-02-30 is refused, not rolled into March.
+    if (typeof u !== "string" || !CALENDAR_DAY.test(u) || new Date(`${u}T00:00:00Z`).toISOString().slice(0, 10) !== u) {
+      throw new Error("until must be a real date in YYYY-MM-DD form, or null");
+    }
+    if (u < today) throw new Error("until is in the past");
+    until = u;
+  }
+  return { usd: Math.round(raw * 100) / 100, until };
 }
 
 /**
@@ -536,6 +604,33 @@ export type GenerationDetail = {
   durationMs?: number | null;
 };
 
+/** What a provider reports for one completion; OpenAI adds the cached part of the prompt. */
+export type ProviderUsage = {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  prompt_tokens_details?: { cached_tokens?: number } | null;
+};
+
+/**
+ * How many of a completion's input tokens the provider served from its prompt
+ * cache (OpenAI does this on its own for a repeated prefix, such as a chat's
+ * system prompt and book context on every turn after the first).
+ *
+ * Recorded, not priced. Those tokens are billed below the standard input rate,
+ * so `costUsd` overstates a turn that has them; the admin AI costs page shows
+ * the share so the estimate can be read against the provider's invoice. Pricing
+ * them needs a cached-input rate per model read from the provider's price list;
+ * until one is in the table, every input token is billed here at the full rate,
+ * which can only trip a cap early.
+ *
+ * Never more than the prompt, and a bad number is zero.
+ */
+export function cachedPromptTokensOf(usage: ProviderUsage | undefined | null): number {
+  const cached = usage?.prompt_tokens_details?.cached_tokens;
+  if (typeof cached !== "number" || !Number.isFinite(cached) || cached <= 0) return 0;
+  return Math.min(Math.floor(cached), Math.max(0, usage?.prompt_tokens ?? 0));
+}
+
 /**
  * Call once per completion, after a successful response, to add its cost to
  * the running total, and to record the row behind it.
@@ -546,7 +641,7 @@ export type GenerationDetail = {
  * whichever direction the two prices differ.
  */
 export function recordUsage(
-  usage: { prompt_tokens?: number; completion_tokens?: number } | undefined | null,
+  usage: ProviderUsage | undefined | null,
   model: string,
   detail?: GenerationDetail,
 ): void {
@@ -580,6 +675,7 @@ export function recordUsage(
     cacheStatus: detail.cacheStatus ?? "miss",
     artifactId: detail.artifactId ?? null,
     promptTokens,
+    cachedPromptTokens: cachedPromptTokensOf(usage),
     completionTokens,
     costUsd: cost,
     durationMs: detail.durationMs ?? null,

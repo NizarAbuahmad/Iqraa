@@ -318,6 +318,12 @@ import {
   isG4DigitalSem1TitleOnlyLesson,
 } from './catalogs/g4DigitalSem1.ts';
 import {
+  G4_DIGITAL_S2_CURRICULUM_BOOK_ID,
+  buildG4DigitalSem2BrowserCatalog,
+  isG4DigitalSem2TitleOnlyUnit,
+  isG4DigitalSem2TitleOnlyLesson,
+} from './catalogs/g4DigitalSem2.ts';
+import {
   G4_ISLAMIC_S1_CURRICULUM_BOOK_ID,
   buildG4IslamicSem1BrowserCatalog,
 } from './catalogs/g4IslamicSem1.ts';
@@ -844,6 +850,10 @@ import {
   buildG10PeSem1BrowserCatalog,
 } from './catalogs/g10PeSem1.ts';
 import {
+  G10_VOC_S1_CURRICULUM_BOOK_ID,
+  buildG10VocSem1BrowserCatalog,
+} from './catalogs/g10VocationalSem1.ts';
+import {
   G4_PE_S1_CURRICULUM_BOOK_ID,
   buildG4PhysicalEducationSem1BrowserCatalog,
 } from './catalogs/g4PhysicalEducationSem1.ts';
@@ -933,6 +943,13 @@ export interface LearningOutcome {
   descriptionAr: string;
   bloomsLevel: 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create';
   skills: string[];
+  /**
+   * Set only on an exam-only target for a book that prints no outcomes list
+   * (`examTargetsFromBook` in catalogs/nccdCatalog.ts): the text is the lesson's
+   * «الفكرة الرئيسة» or its printed self-assessment box, not an official outcome.
+   * Absent on every real outcome.
+   */
+  examTargetSource?: 'main-idea' | 'self-assessment';
 }
 
 // ─── Grades ───────────────────────────────────────────────────────────────────
@@ -1074,7 +1091,7 @@ export const SUBJECTS: Subject[] = [
   // 1 book was supplied directly by the user; see g9VocationalSem1.ts.
   // APPENDED, matching this array's own pattern of adding grades as their
   // books land rather than reordering to stay numeric.
-  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-5', 'grade-9'] },
+  { id: 'vocational-education', name: 'Vocational Education', nameAr: 'التربية المهنية', icon: 'construct-outline', color: '#B91C1C', grades: ['grade-4', 'grade-6', 'grade-7', 'grade-8', 'grade-5', 'grade-9', 'grade-10'] },
 ];
 
 /**
@@ -1698,6 +1715,16 @@ export const MVP_BOOK_IDS: readonly string[] = [
   // g9VocationalSem2.ts.
   G9_VOC_S1_CURRICULUM_BOOK_ID,
   G9_VOC_S2_CURRICULUM_BOOK_ID,
+  // Grade 4 Digital Skills, Semester 2 — units 6-10 of the same activity book,
+  // split out of semester 1 on 2026-11-13 (see g4DigitalSem2.ts). Appended,
+  // not placed beside S1, because this list's order is the picker's.
+  G4_DIGITAL_S2_CURRICULUM_BOOK_ID,
+  // Grade 10 Vocational Education, Semester 1 only (2016 MoE edition; the
+  // Part 2 file is a Grade 9 book, so no Semester 2). 'vocational-education'
+  // extended to grade-10 in SUBJECTS.grades above. Appended, not placed
+  // beside the other vocational books, because this list's order is the
+  // picker's. See g10VocationalSem1.ts.
+  G10_VOC_S1_CURRICULUM_BOOK_ID,
 ];
 
 /**
@@ -3019,6 +3046,21 @@ export const BOOKS: Book[] = [
     hasKnowledgeBase: true,
     audience: 'all',
     semester: 1,
+  },
+  // Grade 4 Digital Skills, Semester 2 — units 6-10 of the same activity
+  // book, which covers the whole year. See g4DigitalSem2.ts.
+  {
+    id: G4_DIGITAL_S2_CURRICULUM_BOOK_ID,
+    title: 'Digital Skills – Grade 4, Semester 2',
+    titleAr: 'المهارات الرقمية – الصف الرابع – الفصل الثاني',
+    subjectId: 'digital-literacy',
+    gradeId: 'grade-4',
+    academicYear: '2024-2025',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 2,
   },
   // Grade 4 Islamic Education, both semesters — the third Grade 4 subject.
   // Reads cleanly through PyMuPDF, same convention as g5IslamicSem1.ts. See
@@ -4585,6 +4627,26 @@ export const BOOKS: Book[] = [
     // Verified 2026-09-16: HEAD on nccd.gov.jo returned 200.
     pdfUrl: 'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D9%87%D9%86%D9%8A%D8%A9/8/2/%D9%85%D9%87%D9%86%D9%8A%20%D8%AB%D8%A7%D9%85%D9%86%20%D9%812%202025%20.pdf',
   },
+  // ── Vocational Education Grade 10 – Semester 1 ────────────────────────────
+  // Ministry of Education 2016 edition (reprinted 2017-2019), not an NCCD
+  // book: four units, nine «chapters» (lessons). Objectives are each
+  // chapter's own «يتوقع منك» list; no main idea or glossary is printed. The
+  // Part 2 file on disk is a Grade 9 book, so Semester 2 waits — see
+  // g10VocationalSem1.ts and the JSON's known_gaps. No pdfUrl: the book is
+  // not hosted by NCCD.
+  {
+    id: G10_VOC_S1_CURRICULUM_BOOK_ID,
+    title: 'Vocational Education – Grade 10, Semester 1',
+    titleAr: 'التربية المهنية – الصف العاشر – الفصل الأول',
+    subjectId: 'vocational-education',
+    gradeId: 'grade-10',
+    academicYear: '2016-2017',
+    language: 'Arabic',
+    edition: '1st',
+    hasKnowledgeBase: true,
+    audience: 'all',
+    semester: 1,
+  },
   // ── Vocational Education Grade 9 – Semester 1 ─────────────────────────────
   // Eight units across six vocational tracks (life skills, home economics
   // ×3, entrepreneurship, agriculture, security/health/safety, tourism).
@@ -5573,13 +5635,13 @@ const _HARDCODED_LESSONS: Lesson[] = [
     estimatedDuration: 45,
     objectives: [
       "State the postulates of Bohr's model",
-      'Calculate energy levels using E = −13.6/n² eV',
+      'Calculate energy levels using Eₙ = −R_H/n², R_H = 2.18 × 10⁻¹⁸ J',
       'Explain the line emission spectrum of hydrogen',
       'Distinguish between absorption and emission spectra',
     ],
     objectivesAr: [
       'يذكر مسلّمات نموذج بور',
-      'يحسب مستويات الطاقة باستخدام E = −13.6/n²',
+      'يحسب مستويات الطاقة باستخدام Eₙ = −R_H/n² حيث R_H = 2.18 × 10⁻¹⁸ J',
       'يفسر الطيف الخطي لانبعاث الهيدروجين',
       'يميز بين طيفَي الامتصاص والانبعاث',
     ],
@@ -5613,7 +5675,10 @@ const _HARDCODED_LESSONS: Lesson[] = [
     teacherNotes: 'Use 3D orbital models or interactive software. Have students practice writing configurations for the first 20 elements.',
     teacherNotesAr: 'استخدم النماذج ثلاثية الأبعاد للأفلاك. دع الطلاب يتدربون على كتابة التوزيع الإلكتروني لأول 20 عنصرًا.',
     outcomes: [
-      { id: 'o-chem-2-1', lessonId: 'lesson-chem-2', description: 'Students write correct electron configurations for elements 1-36', descriptionAr: 'يكتب الطلاب التوزيعات الإلكترونية الصحيحة للعناصر 1-36', bloomsLevel: 'Apply', skills: ['Pattern recognition'] },
+      // Merged onto «النموذج الميكانيكي الموجي» by title. Writing configurations
+      // is the NEXT book lesson (chem S1 pp.30–31), so this outcome is the
+      // quantum-number one the book states for this lesson (p.20).
+      { id: 'o-chem-2-1', lessonId: 'lesson-chem-2', description: 'Students use the four quantum numbers to describe an electron’s main level, sublevel, orbital and spin', descriptionAr: 'يستعمل الطلاب أعداد الكم الأربعة لوصف المستوى الرئيس والمستوى الفرعي والفلك واتجاه الغزل للإلكترون', bloomsLevel: 'Apply', skills: ['Pattern recognition'] },
     ],
   },
   {
@@ -6312,6 +6377,7 @@ const _g4MathSem2Browser = buildG4MathSem2BrowserCatalog();
 const _g4ScienceSem1Browser = buildG4ScienceSem1BrowserCatalog();
 const _g4ScienceSem2Browser = buildG4ScienceSem2BrowserCatalog();
 const _g4DigitalSem1Browser = buildG4DigitalSem1BrowserCatalog();
+const _g4DigitalSem2Browser = buildG4DigitalSem2BrowserCatalog();
 const _g4IslamicSem1Browser = buildG4IslamicSem1BrowserCatalog();
 const _g4IslamicSem2Browser = buildG4IslamicSem2BrowserCatalog();
 const _g4SocialSem1Browser = buildG4SocialSem1BrowserCatalog();
@@ -6383,6 +6449,7 @@ const _engSem2Browser = buildEngSem2BrowserCatalog();
 const _g5PhysicalEducationSem1Browser = buildG5PhysicalEducationSem1BrowserCatalog();
 const _g5PhysicalEducationSem2Browser = buildG5PhysicalEducationSem2BrowserCatalog();
 const _g10PeSem1Browser = buildG10PeSem1BrowserCatalog();
+const _g10VocSem1Browser = buildG10VocSem1BrowserCatalog();
 const _g4PhysicalEducationSem1Browser = buildG4PhysicalEducationSem1BrowserCatalog();
 const _g8PeSem1Browser = buildG8PeSem1BrowserCatalog();
 
@@ -6645,6 +6712,7 @@ export const UNITS: Unit[] = [
   ..._g4ScienceSem1Browser.units,
   ..._g4ScienceSem2Browser.units,
   ..._g4DigitalSem1Browser.units,
+  ..._g4DigitalSem2Browser.units,
   ..._g4IslamicSem1Browser.units,
   ..._g4IslamicSem2Browser.units,
   ..._g4SocialSem1Browser.units,
@@ -6689,6 +6757,7 @@ export const UNITS: Unit[] = [
   ..._g5PhysicalEducationSem1Browser.units,
   ..._g5PhysicalEducationSem2Browser.units,
   ..._g10PeSem1Browser.units,
+  ..._g10VocSem1Browser.units,
   ..._g4PhysicalEducationSem1Browser.units,
   ..._g8PeSem1Browser.units,
 ];
@@ -6848,6 +6917,7 @@ export const LESSONS: Lesson[] = [
   ..._g4ScienceSem1Browser.lessons,
   ..._g4ScienceSem2Browser.lessons,
   ..._g4DigitalSem1Browser.lessons,
+  ..._g4DigitalSem2Browser.lessons,
   ..._g4IslamicSem1Browser.lessons,
   ..._g4IslamicSem2Browser.lessons,
   ..._g4SocialSem1Browser.lessons,
@@ -6892,6 +6962,7 @@ export const LESSONS: Lesson[] = [
   ..._g5PhysicalEducationSem1Browser.lessons,
   ..._g5PhysicalEducationSem2Browser.lessons,
   ..._g10PeSem1Browser.lessons,
+  ..._g10VocSem1Browser.lessons,
   ..._g4PhysicalEducationSem1Browser.lessons,
   ..._g8PeSem1Browser.lessons,
 ];
@@ -6923,6 +6994,7 @@ export function isBrowserUnitTitleOnly(unitId: string): boolean {
     || isG6DigitalSem1TitleOnlyUnit(unitId)
     || isG5DigitalSem1TitleOnlyUnit(unitId)
     || isG4DigitalSem1TitleOnlyUnit(unitId)
+    || isG4DigitalSem2TitleOnlyUnit(unitId)
     || isG6VocationalSem1TitleOnlyUnit(unitId)
     || isG6VocationalSem2TitleOnlyUnit(unitId)
     || isG6PhysicalEducationSem1TitleOnlyUnit(unitId)
@@ -6957,6 +7029,7 @@ export function isBrowserLessonTitleOnly(lessonId: string): boolean {
     || isG6DigitalSem1TitleOnlyLesson(lessonId)
     || isG5DigitalSem1TitleOnlyLesson(lessonId)
     || isG4DigitalSem1TitleOnlyLesson(lessonId)
+    || isG4DigitalSem2TitleOnlyLesson(lessonId)
     || isG6VocationalSem1TitleOnlyLesson(lessonId)
     || isG6VocationalSem2TitleOnlyLesson(lessonId)
     || isG6PhysicalEducationSem1TitleOnlyLesson(lessonId)

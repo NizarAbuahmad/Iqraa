@@ -104,8 +104,8 @@
         {
           "id": "u6_l7",
           "order": 7,
-          "title_ar": "الكتابة",
-          "title_en": "Writing",
+          "title_ar": "الكتابة: دعوة غير رسمية",
+          "title_en": "Writing: An informal invitation",
           "main_idea_ar": "I can write a reply in an email or letter accepting or declining an invitation.",
           "periods": null,
           "objectives": [
@@ -478,18 +478,18 @@
           "order": 6,
           "title_ar": "القراءة والمفردات",
           "title_en": "Reading and Vocabulary",
-          "main_idea_ar": "I can fi nd specific details in a short story and talk about it.",
+          "main_idea_ar": "I can find specific details in a short story and talk about it.",
           "periods": null,
           "objectives": [
-            "I can fi nd specific details in a short story and talk about it."
+            "I can find specific details in a short story and talk about it."
           ],
           "vocabulary": []
         },
         {
           "id": "u10_l7",
           "order": 7,
-          "title_ar": "الكتابة: قصة «In December»",
-          "title_en": "Writing: A story In December",
+          "title_ar": "الكتابة: قصة",
+          "title_en": "Writing: A story",
           "main_idea_ar": "I can write a true or invented story.",
           "periods": null,
           "objectives": [

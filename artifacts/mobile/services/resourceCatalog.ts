@@ -89,6 +89,13 @@ export interface ResourceFilter {
    */
   subjectIds?: readonly string[];
   query?: string;
+  /**
+   * More text a row answers `query` to, which the catalog cannot know itself
+   * because it is pure: the screen passes the row's lesson title and subject
+   * name, so a teacher who types the lesson they are preparing finds a sheet
+   * filed under it whose own title says something else.
+   */
+  alsoMatch?: (item: ResourceItem) => string;
 }
 
 function fromUploaded(item: LibraryItem): ResourceItem | null {
@@ -187,7 +194,7 @@ export function filterResources(items: ResourceItem[], filter: ResourceFilter): 
       // and a bare «35» all find it; digits fold to Latin in `normalizeArabic`.
       const page = item.page === undefined ? '' : `صفحة ${item.page} page ${item.page}`;
       const haystack = normalizeArabic(
-        `${item.titleAr} ${item.titleEn} ${item.description ?? ''} ${item.bookTitle ?? ''} ${page}`,
+        `${item.titleAr} ${item.titleEn} ${item.description ?? ''} ${item.bookTitle ?? ''} ${page} ${filter.alsoMatch?.(item) ?? ''}`,
       );
       if (!haystack.includes(query)) return false;
     }

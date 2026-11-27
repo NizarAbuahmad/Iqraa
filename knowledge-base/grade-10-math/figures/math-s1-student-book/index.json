@@ -2,22 +2,6 @@
  "sourceId": "math-s1-student-book",
  "figures": [
   {
-   "file": "p001b.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 1,
-   "rect": [
-    346.5,
-    454.8,
-    523.8,
-    586.6
-   ],
-   "unit": null,
-   "lesson": null,
-   "lessonTitleEn": null,
-   "lessonTitleAr": null,
-   "lessonStartPage": null
-  },
-  {
    "file": "p007.png",
    "sourceId": "math-s1-student-book",
    "pdfPage": 7,
@@ -186,22 +170,6 @@
     526.4,
     211.5,
     736.0
-   ],
-   "unit": 1,
-   "lesson": 3,
-   "lessonTitleEn": "Solving a System of Two Quadratic Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 25
-  },
-  {
-   "file": "p027-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 27,
-   "rect": [
-    294.1,
-    482.0,
-    556.7,
-    714.3
    ],
    "unit": 1,
    "lesson": 3,
@@ -1554,182 +1522,6 @@
    "lessonStartPage": 54
   },
   {
-   "file": "p062.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 62,
-   "rect": [
-    117.6,
-    113.5,
-    228.9,
-    225.9
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p062b-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 62,
-   "rect": [
-    373.8,
-    153.7,
-    536.2,
-    283.1
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p062c.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 62,
-   "rect": [
-    117.0,
-    332.1,
-    227.8,
-    445.1
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p062d-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 62,
-   "rect": [
-    380.6,
-    368.1,
-    480.0,
-    462.1
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p062e-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 62,
-   "rect": [
-    373.0,
-    557.8,
-    487.1,
-    664.0
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p063.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 63,
-   "rect": [
-    347.9,
-    231.5,
-    493.9,
-    342.8
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p063b-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 63,
-   "rect": [
-    57.0,
-    306.0,
-    173.0,
-    414.0
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p063d-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 63,
-   "rect": [
-    300.6,
-    378.6,
-    418.0,
-    480.0
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p063e-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 63,
-   "rect": [
-    419.6,
-    378.6,
-    538.0,
-    480.0
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p063f-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 63,
-   "rect": [
-    292.0,
-    568.2,
-    417.0,
-    714.3
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 54
-  },
-  {
-   "file": "p065.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 65,
-   "rect": [
-    31.4,
-    207.1,
-    201.9,
-    366.3
-   ],
-   "unit": 2,
-   "lesson": 4,
-   "lessonTitleEn": "Equation of a Circle",
-   "lessonTitleAr": null,
-   "lessonStartPage": 54
-  },
-  {
    "file": "p067-v2.png",
    "sourceId": "math-s1-student-book",
    "pdfPage": 67,
@@ -1738,22 +1530,6 @@
     70.2,
     225.5,
     204.1
-   ],
-   "unit": 3,
-   "lesson": 1,
-   "lessonTitleEn": "Trigonometric Ratios",
-   "lessonTitleAr": null,
-   "lessonStartPage": 66
-  },
-  {
-   "file": "p068-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 68,
-   "rect": [
-    50.0,
-    481.4,
-    439.0,
-    637.0
    ],
    "unit": 3,
    "lesson": 1,
@@ -2178,86 +1954,6 @@
    "lessonStartPage": 88
   },
   {
-   "file": "p096-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 96,
-   "rect": [
-    64.0,
-    402.9,
-    281.8,
-    550.0
-   ],
-   "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 88
-  },
-  {
-   "file": "p097-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 97,
-   "rect": [
-    39.0,
-    210.3,
-    288.0,
-    315.0
-   ],
-   "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 88
-  },
-  {
-   "file": "p097b-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 97,
-   "rect": [
-    36.5,
-    435.1,
-    287.0,
-    669.1
-   ],
-   "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 88
-  },
-  {
-   "file": "p099-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 99,
-   "rect": [
-    39.0,
-    196.3,
-    230.9,
-    340.0
-   ],
-   "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 88
-  },
-  {
-   "file": "p099b-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 99,
-   "rect": [
-    54.0,
-    359.0,
-    220.0,
-    467.0
-   ],
-   "unit": 3,
-   "lesson": 4,
-   "lessonTitleEn": "Solving Trigonometric Equations",
-   "lessonTitleAr": null,
-   "lessonStartPage": 88
-  },
-  {
    "file": "p101-v2.png",
    "sourceId": "math-s1-student-book",
    "pdfPage": 101,
@@ -2442,54 +2138,6 @@
     344.0,
     340.0,
     489.0
-   ],
-   "unit": 4,
-   "lesson": 5,
-   "lessonTitleEn": "Solving Problems in Three Dimensions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 124
-  },
-  {
-   "file": "p131.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 131,
-   "rect": [
-    32.2,
-    289.9,
-    266.6,
-    434.8
-   ],
-   "unit": 4,
-   "lesson": 5,
-   "lessonTitleEn": "Solving Problems in Three Dimensions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 124
-  },
-  {
-   "file": "p132.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 132,
-   "rect": [
-    333.0,
-    154.4,
-    536.2,
-    291.3
-   ],
-   "unit": 4,
-   "lesson": 5,
-   "lessonTitleEn": "Solving Problems in Three Dimensions",
-   "lessonTitleAr": null,
-   "lessonStartPage": 124
-  },
-  {
-   "file": "p132b-v2.png",
-   "sourceId": "math-s1-student-book",
-   "pdfPage": 132,
-   "rect": [
-    340.0,
-    562.6,
-    536.2,
-    690.0
    ],
    "unit": 4,
    "lesson": 5,

@@ -1,6 +1,6 @@
 /**
  * A best-effort first-frame thumbnail for a video that isn't YouTube (mainly
- * self-hosted R2 uploads — see `youtubeThumbnail` in curriculum/resources.tsx
+ * self-hosted R2 uploads — see `videoCoverFromUrl` in services/resourceThumbnail.ts
  * for the YouTube case, which needs no extraction). Native decodes on-device
  * via expo-video-thumbnails; web has no such native module, so it grabs a
  * frame from an offscreen `<video>` + `<canvas>` instead. Never throws — a

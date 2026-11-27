@@ -1,7 +1,42 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, signupSource, siteKeyMatches, toCsv } from "../adminMetrics.ts";
+import { parseDateRange, parseMetricInput, parsePublicIdea, parseSiteSignup, parseUserChannel, parseUserCohort, signupSource, siteKeyMatches, toCsv } from "../adminMetrics.ts";
+
+describe("parseUserChannel", () => {
+  it("is no filter when absent, empty or all", () => {
+    assert.deepEqual(parseUserChannel(undefined), {});
+    assert.deepEqual(parseUserChannel(""), {});
+    assert.deepEqual(parseUserChannel("all"), {});
+  });
+  it("takes web, app and unknown", () => {
+    assert.deepEqual(parseUserChannel("web"), { channel: "web" });
+    assert.deepEqual(parseUserChannel("app"), { channel: "app" });
+    assert.deepEqual(parseUserChannel("unknown"), { channel: "unknown" });
+  });
+  it("refuses anything else, including a raw store platform or a repeated param", () => {
+    assert.ok("error" in parseUserChannel("android"));
+    assert.ok("error" in parseUserChannel(["web", "app"]));
+  });
+});
+
+describe("parseUserCohort", () => {
+  it("is no filter when absent, empty or all", () => {
+    assert.deepEqual(parseUserCohort(undefined, false), {});
+    assert.deepEqual(parseUserCohort("all", false), {});
+  });
+  it("takes new with or without a range", () => {
+    assert.deepEqual(parseUserCohort("new", false), { cohort: "new" });
+    assert.deepEqual(parseUserCohort("new", true), { cohort: "new" });
+  });
+  it("needs a start day for returning, since it means made before the range", () => {
+    assert.deepEqual(parseUserCohort("returning", true), { cohort: "returning" });
+    assert.ok("error" in parseUserCohort("returning", false));
+  });
+  it("refuses anything else", () => {
+    assert.ok("error" in parseUserCohort("old", true));
+  });
+});
 
 describe("parseDateRange", () => {
   it("is open-ended when absent and makes `to` inclusive of its day", () => {

@@ -27,6 +27,7 @@ import { Band } from '@/components/ui/Band';
 import { BRAND_BAND, subjectTheme } from '@/services/subjectTheme';
 import { Surface, useSurface } from '@/components/ui/Surface';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { trackEvent } from '@/services/analytics';
 import { Entrance } from '@/components/ui/Entrance';
 import { IqraaMark } from '@/components/ui/IqraaMark';
 import { JordanFlag } from '@/components/ui/JordanFlag';
@@ -40,6 +41,7 @@ import { className, classNameFor } from '@/services/materialClass';
 import { todayLabel } from '@/services/dateLabels';
 import { greetingKey } from '@/services/greeting';
 import { readableOn } from '@/services/readableColor';
+import { IQRA_CHAT_ENABLED } from '@/services/features';
 
 const START_CLASS_COLOR = palette.live;
 const ON_NAVY = '#FFFFFF';
@@ -194,7 +196,7 @@ export function PhoneToday() {
                 <Text style={[s.nudgeText, { color: colors.foreground, textAlign: align }]}>
                   {setup.step === 'timetable'
                     ? t('homeSetupTimetable')
-                    : t('homeSetupPlan', periodClassLabel(classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en'), setup.subjectId, lang) ?? '')}
+                    : t(setup.step === 'schedule' ? 'homeSetupSchedule' : 'homeSetupPlan', periodClassLabel(classNameFor(classes, setup.classGroupId, lang as 'ar' | 'en'), setup.subjectId, lang) ?? '')}
                 </Text>
                 <PressableScale
                   onPress={() =>
@@ -208,7 +210,7 @@ export function PhoneToday() {
                   style={[s.nudgeBtn, { backgroundColor: colors.primary }]}
                 >
                   <Text style={[s.nudgeBtnText, { color: colors.primaryForeground }]}>
-                    {t(setup.step === 'timetable' ? 'homeSetupTimetableCta' : 'homeSetupPlanCta')}
+                    {t(setup.step === 'timetable' ? 'homeSetupTimetableCta' : setup.step === 'schedule' ? 'homeSetupScheduleCta' : 'homeSetupPlanCta')}
                   </Text>
                 </PressableScale>
                 <Pressable
@@ -275,7 +277,10 @@ export function PhoneToday() {
                 {quickTools.map(tool => (
                   <PressableScale
                     key={tool.id}
-                    onPress={() => router.push({ pathname: tool.route as never, params: toolParams as never })}
+                    onPress={() => {
+                      trackEvent('tool_opened', { toolId: tool.id, source: 'today' });
+                      router.push({ pathname: tool.route as never, params: toolParams as never });
+                    }}
                     style={[s.tool, surface]}
                   >
                     <View style={[s.toolIcon, { backgroundColor: tool.color + '1A' }]}>
@@ -290,6 +295,8 @@ export function PhoneToday() {
             </View>
           </Entrance>
 
+          {/* Hidden while the chat is off (`IQRA_CHAT_ENABLED`): it only leads there. */}
+          {IQRA_CHAT_ENABLED ? (
           <Entrance index={section++}>
             {/* Hands off rather than holding its own thread: one conversation per
                 teacher, and it lives in the chat. Sending opens it with the
@@ -350,6 +357,7 @@ export function PhoneToday() {
             </Surface>
             </TourTarget>
           </Entrance>
+          ) : null}
 
           <Entrance index={section++}>
             <View style={s.group}>

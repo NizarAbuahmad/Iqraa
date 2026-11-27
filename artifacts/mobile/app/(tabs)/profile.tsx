@@ -18,6 +18,8 @@ import { IconTile } from '@/components/ui/IconTile';
 import { useReplayTour } from '@/hooks/useTour';
 import { GRADES, SUBJECTS } from '@/services/curriculumData';
 import { AR_LATIN } from '@/services/dateLabels';
+import { openExternal } from '@/services/externalLinks';
+import { SOCIAL_LINKS, SOCIAL_PLATFORMS, socialLinkLabel } from '@/services/socialLinks';
 
 function InfoRow({ icon, label, value, color, isRTL }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; color: string; isRTL: boolean }) {
   const colors = useColors();
@@ -57,7 +59,7 @@ function SettingRow({ icon, glyph, label, onPress, destructive, isRTL, colors }:
 export default function ProfileScreen() {
   const colors = useColors();
   const surface = useSurface();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const { user, logout, uploadAvatar, removeAvatar } = useAuth();
   const { canReplay, replay } = useReplayTour();
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -356,6 +358,8 @@ export default function ProfileScreen() {
               <SettingRow icon="clipboard-outline" label={t('myTeachingPlans')} onPress={() => router.push('/teaching-plans' as any)} isRTL={isRTL} colors={colors} />
               <SettingRow icon="time-outline" label={t('myWeeklySchedule')} onPress={() => router.push('/schedule' as any)} isRTL={isRTL} colors={colors} />
               <SettingRow icon="calendar-outline" label={t('myCalendar')} onPress={() => router.push('/calendar' as any)} isRTL={isRTL} colors={colors} />
+              {/* The optional «عنك» questions (app/teacher-profile.tsx) — teachers only, never a student or parent. */}
+              <SettingRow icon="person-circle-outline" label={t('teacherProfileRow')} onPress={() => router.push('/teacher-profile' as any)} isRTL={isRTL} colors={colors} />
             </View>
           </>
         ) : null}
@@ -435,6 +439,33 @@ export default function ProfileScreen() {
           />
           <SettingRow icon="log-out-outline" label={t('signOut')} onPress={handleLogout} destructive isRTL={isRTL} colors={colors} />
         </View>
+
+        {/* «تابعنا»: Iqrra's own accounts (services/socialLinks.ts), every
+            role. Hidden until an account is listed there. */}
+        {SOCIAL_LINKS.length > 0 ? (
+          <>
+            <Text style={[styles.section, { color: colors.mutedForeground, fontFamily: 'ReadexPro_500Medium', marginTop: 20, textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('followUs')}
+            </Text>
+            <View style={[styles.socialRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              {SOCIAL_LINKS.map(link => (
+                <PressableScale
+                  key={link.platform}
+                  onPress={() => { void openExternal(link.url); }}
+                  accessibilityRole="link"
+                  accessibilityLabel={socialLinkLabel(link.platform, lang)}
+                  style={[styles.socialButton, surface]}
+                >
+                  <Ionicons
+                    name={SOCIAL_PLATFORMS[link.platform].icon as keyof typeof Ionicons.glyphMap}
+                    size={24}
+                    color={colors.primary}
+                  />
+                </PressableScale>
+              ))}
+            </View>
+          </>
+        ) : null}
       </View>
     </ScrollView>
     <Toast visible={toastVisible} message={toastMsg} onHide={() => setToastVisible(false)} />
@@ -492,4 +523,7 @@ const styles = StyleSheet.create({
   tagText: { fontSize: 12 },
   settingRow: { alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12 },
   settingLabel: { fontSize: 15 },
+  socialRow: { flexWrap: 'wrap', gap: 10 },
+  // 48 > the 44-point minimum target.
+  socialButton: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
 });

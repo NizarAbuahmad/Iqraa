@@ -1,0 +1,277 @@
+{
+ "g6-social-s1-student-book": {
+  "pdf": "knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الأول.pdf",
+  "kbBookId": "kb-social-6-s1",
+  "lessons": {
+   "kbl-g6-social-s1-nccd-u1_l1": {
+    "start": 8,
+    "end": 14,
+    "score": 1.0
+   },
+   "kbl-g6-social-s1-nccd-u1_l2": {
+    "start": 15,
+    "end": 18,
+    "score": 1.0
+   },
+   "kbl-g6-social-s1-nccd-u1_l3": {
+    "start": 19,
+    "end": 24,
+    "score": 1.0
+   },
+   "kbl-g6-social-s1-nccd-u2_l2": {
+    "start": 36,
+    "end": 40,
+    "score": 1.0
+   },
+   "kbl-g6-social-s1-nccd-u2_l3": {
+    "start": 41,
+    "end": 47,
+    "score": 1.0
+   },
+   "kbl-g6-social-s1-nccd-u3_l2": {
+    "start": 59,
+    "end": 65,
+    "score": 1.0
+   },
+   "kbl-g6-social-s1-nccd-u3_l3": {
+    "start": 66,
+    "end": 70,
+    "score": 1.0
+   },
+   "kbl-g6-social-s1-nccd-u3_l4": {
+    "start": 71,
+    "end": 77,
+    "score": 1.0
+   },
+   "kbl-g6-social-s1-nccd-u4_l1": {
+    "start": 82,
+    "end": 87,
+    "score": 1.0
+   },
+   "kbl-g6-social-s1-nccd-u4_l2": {
+    "start": 88,
+    "end": 94,
+    "score": 1.0
+   },
+   "kbl-g6-social-s1-nccd-u4_l3": {
+    "start": 95,
+    "end": 99,
+    "score": 1.0
+   },
+   "kbl-g6-social-s1-nccd-u5_l1": {
+    "start": 104,
+    "end": 108,
+    "score": 1.0
+   },
+   "kbl-g6-social-s1-nccd-u5_l3": {
+    "start": 113,
+    "end": 117,
+    "score": 1.0
+   }
+  }
+ },
+ "g6-social-s2-student-book": {
+  "pdf": "knowledge-base/grade-6-social/support-pdfs/كتاب الطالب لمادة الدراسات الاجتماعية للصف السادس الفصل الثاني.pdf",
+  "kbBookId": "kb-social-6-s2",
+  "lessons": {
+   "kbl-g6-social-s2-nccd-u7_l1": {
+    "start": 26,
+    "end": 35,
+    "score": 1.0
+   },
+   "kbl-g6-social-s2-nccd-u7_l2": {
+    "start": 36,
+    "end": 42,
+    "score": 1.0
+   },
+   "kbl-g6-social-s2-nccd-u7_l3": {
+    "start": 43,
+    "end": 49,
+    "score": 1.0
+   },
+   "kbl-g6-social-s2-nccd-u7_l4": {
+    "start": 50,
+    "end": 54,
+    "score": 1.0
+   },
+   "kbl-g6-social-s2-nccd-u8_l1": {
+    "start": 60,
+    "end": 66,
+    "score": 1.0
+   },
+   "kbl-g6-social-s2-nccd-u8_l2": {
+    "start": 67,
+    "end": 74,
+    "score": 1.0
+   },
+   "kbl-g6-social-s2-nccd-u8_l3": {
+    "start": 75,
+    "end": 79,
+    "score": 1.0
+   },
+   "kbl-g6-social-s2-nccd-u9_l1": {
+    "start": 84,
+    "end": 89,
+    "score": 1.0
+   },
+   "kbl-g6-social-s2-nccd-u10_l1": {
+    "start": 104,
+    "end": 110,
+    "score": 1.0
+   },
+   "kbl-g6-social-s2-nccd-u10_l2": {
+    "start": 111,
+    "end": 118,
+    "score": 1.0
+   },
+   "kbl-g6-social-s2-nccd-u10_l3": {
+    "start": 119,
+    "end": 125,
+    "score": 1.0
+   }
+  }
+ },
+ "digital-6-s1-student-book": {
+  "pdf": "knowledge-base/grade-6-digital-literacy/support-pdfs/كتاب الأنشطة لمادة المهارات الرقمية الصف السادس الفصل الأول.pdf",
+  "kbBookId": "kb-digital-6-s1",
+  "lessons": {
+   "kbl-g6-digital-s1-nccd-u1_l1": {
+    "start": 6,
+    "end": 7,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u1_l2": {
+    "start": 8,
+    "end": 18,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u1_l3": {
+    "start": 19,
+    "end": 19,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u1_l4": {
+    "start": 20,
+    "end": 23,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u2_l1": {
+    "start": 24,
+    "end": 25,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u2_l2": {
+    "start": 26,
+    "end": 33,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u2_l3": {
+    "start": 34,
+    "end": 36,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u2_l4": {
+    "start": 37,
+    "end": 39,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u2_l5": {
+    "start": 40,
+    "end": 47,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u3_l1": {
+    "start": 48,
+    "end": 49,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u3_l2": {
+    "start": 50,
+    "end": 56,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u3_l3": {
+    "start": 57,
+    "end": 60,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u3_l4": {
+    "start": 61,
+    "end": 65,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u4_l1": {
+    "start": 66,
+    "end": 79,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u5_l1": {
+    "start": 80,
+    "end": 97,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u8_l4": {
+    "start": 133,
+    "end": 143,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u9_l1": {
+    "start": 144,
+    "end": 157,
+    "score": 1.0
+   },
+   "kbl-g6-digital-s1-nccd-u10_l1": {
+    "start": 158,
+    "end": 175,
+    "score": 1.0
+   }
+  }
+ },
+ "g6-math-s1-student-book": {
+  "pdf": "knowledge-base/grade-6-math/support-pdfs/كتاب الطالب لمادة الرياضيات الصف السادس الفصل الأول.pdf",
+  "kbBookId": "kb-math-6-s1",
+  "lessons": {
+   "kbl-g6-math-s1-nccd-u1_l4": {
+    "start": 26,
+    "end": 30,
+    "score": 1.0
+   },
+   "kbl-g6-math-s1-nccd-u1_l5": {
+    "start": 31,
+    "end": 37,
+    "score": 1.0
+   },
+   "kbl-g6-math-s1-nccd-u3_l1": {
+    "start": 67,
+    "end": 72,
+    "score": 1.0
+   },
+   "kbl-g6-math-s1-nccd-u3_l2": {
+    "start": 74,
+    "end": 80,
+    "score": 1.0
+   },
+   "kbl-g6-math-s1-nccd-u3_l3": {
+    "start": 81,
+    "end": 85,
+    "score": 1.0
+   },
+   "kbl-g6-math-s1-nccd-u3_l4": {
+    "start": 86,
+    "end": 87,
+    "score": 1.0
+   }
+  }
+ },
+ "g6-science-s1-student-book": {
+  "pdf": "knowledge-base/grade-6-science/support-pdfs/كتاب الطالب لمادة العلوم الصف السادس الفصل الأول.pdf",
+  "kbBookId": "book-science-6-s1",
+  "lessons": {
+   "kbl-g6-science-s1-nccd-u4_l1": {
+    "start": 82,
+    "end": 91,
+    "score": 1.0
+   }
+  }
+ }
+}
