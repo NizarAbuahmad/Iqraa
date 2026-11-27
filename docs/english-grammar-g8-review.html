@@ -1,0 +1,2203 @@
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مراجعة قواعد الصف الثامن</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Readex+Pro:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: an A4 review form — instructions first, then one section per unit, each ending in a sign-off strip. */
+  :root {
+    --paper: #FBFCFB;
+    --ink: #13302C;
+    --muted: #4E6661;
+    --rule: #D3E2DE;
+    --tint: #EAF3F1;
+    --teal: #006D65;
+    --right: #17643A;
+    --right-bg: #E3F2E8;
+    --wrong: #9B2C25;
+    --wrong-bg: #F8E6E4;
+    --display: "Readex Pro", "Almarai", "Noto Sans Arabic", system-ui, sans-serif;
+    --body: "Almarai", "Readex Pro", "Noto Sans Arabic", system-ui, sans-serif;
+    --latin: "Readex Pro", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0E1A18; --ink: #E3EFEC; --muted: #9DB5AF; --rule: #2A3D39; --tint: #15302C;
+      --teal: #2DD4BF; --right: #7FD8A1; --right-bg: #173726; --wrong: #F2A099; --wrong-bg: #3A1D1A;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0E1A18; --ink: #E3EFEC; --muted: #9DB5AF; --rule: #2A3D39; --tint: #15302C;
+    --teal: #2DD4BF; --right: #7FD8A1; --right-bg: #173726; --wrong: #F2A099; --wrong-bg: #3A1D1A;
+    color-scheme: dark;
+  }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 15px; line-height: 1.7;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 28px 56px;
+  }
+  .sheet { max-width: 1040px; margin-inline: auto; display: grid; gap: 40px; }
+  h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; }
+  h1 { font-size: 1.85rem; line-height: 1.3; font-weight: 700; }
+  .eyebrow { font-family: var(--display); color: var(--teal); font-weight: 600; font-size: .9rem; }
+  .intro { display: grid; gap: 18px; max-width: 880px; }
+  .intro > p { max-width: 70ch; }
+  .intro p { margin: 0; }
+  .lead { font-size: 1.05rem; }
+  .card { border: 1px solid var(--rule); border-radius: 10px; padding: 16px 20px; background: var(--tint); }
+  .card h3 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 8px; }
+  .card ol, .card ul { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 6px; }
+  .card ol { list-style-type: arabic-indic; }
+  .acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .act { border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; }
+  .act b { font-family: var(--display); display: block; color: var(--teal); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .92rem; }
+  .meta-line { color: var(--muted); font-size: .9rem; }
+
+  .unit { display: grid; gap: 14px; }
+  .unit-head { display: grid; gap: 6px; border-bottom: 3px solid var(--teal); padding-bottom: 12px; }
+  .unit-meta { color: var(--teal); font-family: var(--display); font-weight: 600; font-size: .9rem; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .unit-meta span + span::before { content: "·"; margin-inline-end: 14px; color: var(--muted); }
+  h2 { font-size: 1.45rem; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+  h2 [dir="ltr"] { font-family: var(--latin); }
+  .unit-ar { color: var(--muted); font-size: 1.05rem; font-weight: 400; font-family: var(--body); }
+  .patterns { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .patterns li { font-family: var(--latin); font-size: .9rem; border: 1px solid var(--rule); border-radius: 999px; padding: 2px 12px; }
+  .unit-note { margin: 0; font-size: .92rem; color: var(--muted); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; min-width: 780px; font-variant-numeric: tabular-nums; }
+  th, td { border-bottom: 1px solid var(--rule); padding: 7px 10px; text-align: start; vertical-align: middle; }
+  thead th { background: var(--tint); font-family: var(--display); font-weight: 600; font-size: .85rem; line-height: 1.35; }
+  thead th small { display: block; font-weight: 400; color: var(--muted); font-size: .75rem; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { width: 2.2em; color: var(--muted); text-align: center; }
+  td.sentence { font-family: var(--latin); font-size: 1.02rem; font-weight: 500; text-align: left; white-space: nowrap; }
+  .pic { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
+  .pic-art { font-size: 1.45rem; letter-spacing: 2px; font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; }
+  .pic-word { font-family: var(--latin); font-size: .72rem; color: var(--muted); }
+  .none { color: var(--muted); font-size: .85rem; }
+  td.choose { white-space: nowrap; }
+  .opt { display: inline-block; font-family: var(--latin); font-size: .88rem; border-radius: 6px; padding: 1px 8px; margin: 2px; }
+  .opt-right { background: var(--right-bg); color: var(--right); font-weight: 600; }
+  .opt-wrong { background: var(--wrong-bg); color: var(--wrong); text-decoration: line-through; text-decoration-thickness: 1px; }
+  th.tick, td.tick { width: 2.6em; text-align: center; }
+  .box { display: inline-block; width: 18px; height: 18px; border: 1.5px solid var(--ink); border-radius: 3px; vertical-align: -3px; }
+  th.note, td.note { width: 26%; }
+
+  .signoff { display: grid; gap: 12px; border: 1.5px dashed var(--teal); border-radius: 10px; padding: 14px 18px; }
+  .verdict { display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: var(--display); font-size: .95rem; }
+  .verdict span { display: inline-flex; gap: 8px; align-items: center; }
+  .lines { display: flex; flex-wrap: wrap; gap: 14px 28px; }
+  .lines span { display: inline-flex; gap: 6px; align-items: baseline; flex: 1 1 200px; }
+  .lines i { flex: 1; border-bottom: 1px solid var(--ink); min-width: 80px; height: 1.2em; }
+
+  @page { size: A4 landscape; margin: 12mm; }
+  @media print {
+    :root { --paper: #fff; --ink: #111; --muted: #4d4d4d; --rule: #bbb; --tint: #F1F5F4; color-scheme: light; }
+    body { padding: 0; font-size: 12px; }
+    .sheet { gap: 0; max-width: none; }
+    .intro { max-width: none; }
+    .unit { break-before: page; }
+    /* A grid places the sign-off where the table would have ended without the page break, over its last rows. */
+    .unit { display: block; }
+    .unit > * + * { margin-top: 14px; }
+    .table-wrap { overflow: visible; border-radius: 0; }
+    table { min-width: 0; }
+    tr, .signoff { break-inside: avoid; }
+    thead { display: table-header-group; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  .yn { display: block; font-family: var(--latin); font-size: .88rem; white-space: nowrap; }
+  .yn-yes { color: var(--right); }
+  .yn-no { color: var(--wrong); }
+  td.yesno { white-space: nowrap; }
+  .not-covered { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
+  .not-covered [dir="ltr"] { font-family: var(--latin); }
+  .kind { font-family: var(--latin); font-size: .82rem; border-radius: 6px; padding: 1px 8px; border: 1px solid var(--rule); }
+  .kind-form { background: var(--wrong-bg); color: var(--wrong); }
+  .kind-meaning { background: var(--tint); color: var(--teal); }
+  .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
+  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }
+  @media print {
+    td.sentence, .yn { white-space: normal; }
+    th.note, td.note { width: 12%; }
+    td.sentence { font-size: .9rem; }
+    th, td { padding: 4px 5px; }
+    .yn, .opt { font-size: .82rem; }
+  }
+</style>
+</head>
+<body>
+<main class="sheet" dir="rtl" lang="ar">
+  <section class="intro">
+    <div class="eyebrow">إقرأ · ركن اللغة الإنجليزية · الصف الثامن</div>
+    <h1>مراجعة جمل القواعد قبل عرضها على الطلاب</h1>
+    <p class="lead">هذه مراجعة قواعد الصف الثامن، الفصل الأول: ٥ دروس كُتبت جملها واحدةً واحدة، لكل جملة إجابتها الصحيحة وخيار مموِّه. الكتاب يعطي هدفًا لكل درس دون جمل نموذجية، فكل جملة هنا كتبناها نحن، وتُراجَع هنا قبل أي ظهور لها. أغلب الجمل يختبر الشكل (جمع الفعل، did مع المصدر، much أو many)، وبعضها يختبر الاختيار بين صيغتين بكلمة في الجملة (المضارع البسيط والمستمر، الماضي البسيط، can أو can't)، فنوع المموِّه مطبوع لكل جملة: <b>form</b> غير سليم لغويًا، و <b>meaning</b> سليم لكن كلمة في الجملة نفسها تستبعده. لا صور في أي درس. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه</b>، ودرس الماضي البسيط (الأسئلة والنفي) لا مفردات له، فلا يظهر في الركن إلا بعد توقيعكم. هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ٢٠٠ جملة.</p>
+
+    <div class="acts">
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: الإجابة الصحيحة أمام المموِّه، مثل <span dir="ltr">walks / walk</span> أو <span dir="ltr">many / much</span>.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات.</div>
+      <div class="act"><b>صح أم خطأ</b>تُعرض الجملة نفسها، أو توأمها الخاطئ باستبدال الإجابة بالمموِّه. <b>هذا النشاط صامت:</b> لا يُسمَع فيه أي جملة، صحيحة أو خاطئة، حتى لا يسمع الطالب إنجليزية خاطئة ولا يدل الصمت على الجواب.</div>
+    </div>
+
+    <div class="card">
+      <h3>ما المطلوب في كل جملة</h3>
+      <ol>
+        <li>هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟</li>
+        <li>هل رقم الدرس يطابق صفحة الكتاب؟ (يقول الكتاب بالإنجليزية في أعلى كل صفحة.)</li>
+        <li>في الجمل من نوع meaning: هل الكلمة المحدِّدة في الجملة تستبعد المموِّه فعلًا؟ وهل يمكن أن يقبل طالب جيد المموِّه؟</li>
+        <li>هل أي مموِّه من نوع form مقبول أحيانًا في صفك؟</li>
+        <li>في درس المضارع المستمر والماضي البسيط وجمل can و can't: هل الجمل واضحة دون سياق أوسع؟</li>
+        <li>في «الكلمات خارج قوائم المفردات»: وافقوا على الكلمات المناسبة للصف الثامن واشطبوا الباقي.</li>
+        <li>هل طول الجمل مناسب لـ «رتّب الجملة»؟</li>
+        <li>هل مموِّهات التهجئة (runing و studyed) سؤال عادل لطلاب الصف الثامن، أم تُترك التهجئة؟</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h3>طريقة التعبئة</h3>
+      <ul>
+        <li>ضعوا ✓ في المربع إذا كانت الجملة سليمة، أو اكتبوا الملاحظة في عمود «ملاحظات».</li>
+        <li>في آخر كل وحدة اختاروا: موافق، أو موافق بعد التعديلات، أو غير موافق، مع الاسم والتاريخ.</li>
+        <li>يمكن مراجعة وحدة واحدة في كل مرة؛ كل وحدة تُفعَّل وحدها بعد الموافقة عليها.</li>
+      </ul>
+    </div>
+
+    <div class="legend">
+      <span>✅ لديّ / أحب</span>
+      <span>❌ ليس لديّ / لا أحب</span>
+      <span>👦 He</span>
+      <span>👧 She</span>
+      <span>صورتان من الشيء = جمع (are / They're)</span>
+      <span><span class="opt opt-right" dir="ltr">right</span> الخيار الصحيح</span>
+      <span><span class="opt opt-wrong" dir="ltr">wrong</span> الخيار الخاطئ</span>
+    </div>
+    <p class="meta-line">«لا يظهر» تعني أن الجملة لا تُستخدم في هذا النشاط (لا توجد صورة واضحة لها). الصور هي الرموز التي تظهر في التطبيق نفسه.</p>
+  </section>
+
+  <section class="unit" id="unit-1">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ١</span><span>٤٠ جملة</span></div>
+      <h2><span dir="ltr">The things we do</span> <span class="unit-ar">الأشياء التي نقوم بها</span> <span class="lesson-id" dir="ltr">s1-nccd-u1_l1</span></h2>
+      <p class="unit-note"><b>تأكدوا أولًا:</b> هل يطابق هذا الدرس صفحة الكتاب؟ يقول الكتاب: <span dir="ltr">«I can use the Present Simple to talk about daily routines.»</span></p>
+      <ul class="patterns" dir="ltr"><li>third-person-s</li><li>spelling-es</li><li>negatives</li></ul>
+      <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
+      <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">amman, baby, drives, father, finishes, finishs, leave, leaves, lives, mother, students, teaches, teachs</span></p>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>المضارع البسيط للروتين اليومي: -<span dir="ltr">s</span> أو -<span dir="ltr">es</span> مع <span dir="ltr">he</span> و <span dir="ltr">she</span> و <span dir="ltr">it</span>، والنفي بـ <span dir="ltr">doesn't</span> أو <span dir="ltr">don't</span> مع المصدر؛ الخيارات الخاطئة كلها في الشكل. المضارع المستمر غير مشمول هنا لأنه موضوع الوحدة الرابعة.</li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>«اختر الكلمة»<small>الإجابة الصحيحة ثم المموِّه</small></th>
+            <th>«صح أم خطأ»<small>الجملة الخاطئة (بلا صوت)</small></th>
+            <th>النوع</th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">third-person-s</span> · ١٤</th></tr>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">She walks to school.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">walks</span><span class="opt opt-wrong" dir="ltr">walk</span></td>
+          <td><span class="yn yn-no" dir="ltr">She walk to school.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">He gets up at six.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">gets</span><span class="opt opt-wrong" dir="ltr">get</span></td>
+          <td><span class="yn yn-no" dir="ltr">He get up at six.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">My brother plays football after school.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">plays</span><span class="opt opt-wrong" dir="ltr">play</span></td>
+          <td><span class="yn yn-no" dir="ltr">My brother play football after school.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">Mum cooks dinner at six.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">cooks</span><span class="opt opt-wrong" dir="ltr">cook</span></td>
+          <td><span class="yn yn-no" dir="ltr">Mum cook dinner at six.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">Dad drives to work every day.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">drives</span><span class="opt opt-wrong" dir="ltr">drive</span></td>
+          <td><span class="yn yn-no" dir="ltr">Dad drive to work every day.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">The bus leaves at seven.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">leaves</span><span class="opt opt-wrong" dir="ltr">leave</span></td>
+          <td><span class="yn yn-no" dir="ltr">The bus leave at seven.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">Our teacher starts the lesson at eight.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">starts</span><span class="opt opt-wrong" dir="ltr">start</span></td>
+          <td><span class="yn yn-no" dir="ltr">Our teacher start the lesson at eight.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">He eats breakfast with his family.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">eats</span><span class="opt opt-wrong" dir="ltr">eat</span></td>
+          <td><span class="yn yn-no" dir="ltr">He eat breakfast with his family.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">My sister reads a book at night.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">reads</span><span class="opt opt-wrong" dir="ltr">read</span></td>
+          <td><span class="yn yn-no" dir="ltr">My sister read a book at night.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">The shop opens at nine.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">opens</span><span class="opt opt-wrong" dir="ltr">open</span></td>
+          <td><span class="yn yn-no" dir="ltr">The shop open at nine.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">She helps her mother in the kitchen.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">helps</span><span class="opt opt-wrong" dir="ltr">help</span></td>
+          <td><span class="yn yn-no" dir="ltr">She help her mother in the kitchen.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">It rains a lot in winter.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">rains</span><span class="opt opt-wrong" dir="ltr">rain</span></td>
+          <td><span class="yn yn-no" dir="ltr">It rain a lot in winter.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">My uncle works in a bank.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">works</span><span class="opt opt-wrong" dir="ltr">work</span></td>
+          <td><span class="yn yn-no" dir="ltr">My uncle work in a bank.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">He lives in Amman.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">lives</span><span class="opt opt-wrong" dir="ltr">live</span></td>
+          <td><span class="yn yn-no" dir="ltr">He live in Amman.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">spelling-es</span> · ١٢</th></tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">He watches TV at night.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">watches</span><span class="opt opt-wrong" dir="ltr">watchs</span></td>
+          <td><span class="yn yn-no" dir="ltr">He watchs TV at night.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">She studies English every day.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">studies</span><span class="opt opt-wrong" dir="ltr">studys</span></td>
+          <td><span class="yn yn-no" dir="ltr">She studys English every day.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">My father goes to work early.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">goes</span><span class="opt opt-wrong" dir="ltr">gos</span></td>
+          <td><span class="yn yn-no" dir="ltr">My father gos to work early.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">She washes the dishes after dinner.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">washes</span><span class="opt opt-wrong" dir="ltr">washs</span></td>
+          <td><span class="yn yn-no" dir="ltr">She washs the dishes after dinner.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">The teacher teaches us maths.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">teaches</span><span class="opt opt-wrong" dir="ltr">teachs</span></td>
+          <td><span class="yn yn-no" dir="ltr">The teacher teachs us maths.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">He tries hard in every lesson.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">tries</span><span class="opt opt-wrong" dir="ltr">trys</span></td>
+          <td><span class="yn yn-no" dir="ltr">He trys hard in every lesson.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢١</td>
+          <td class="sentence" dir="ltr">Dad fixes the car on Fridays.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">fixes</span><span class="opt opt-wrong" dir="ltr">fixs</span></td>
+          <td><span class="yn yn-no" dir="ltr">Dad fixs the car on Fridays.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٢</td>
+          <td class="sentence" dir="ltr">Mum brushes her hair in the morning.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">brushes</span><span class="opt opt-wrong" dir="ltr">brushs</span></td>
+          <td><span class="yn yn-no" dir="ltr">Mum brushs her hair in the morning.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٣</td>
+          <td class="sentence" dir="ltr">The baby cries at night.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">cries</span><span class="opt opt-wrong" dir="ltr">crys</span></td>
+          <td><span class="yn yn-no" dir="ltr">The baby crys at night.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٤</td>
+          <td class="sentence" dir="ltr">She finishes work at five.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">finishes</span><span class="opt opt-wrong" dir="ltr">finishs</span></td>
+          <td><span class="yn yn-no" dir="ltr">She finishs work at five.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٥</td>
+          <td class="sentence" dir="ltr">My sister carries the bag to school.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">carries</span><span class="opt opt-wrong" dir="ltr">carrys</span></td>
+          <td><span class="yn yn-no" dir="ltr">My sister carrys the bag to school.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٦</td>
+          <td class="sentence" dir="ltr">She relaxes at home after school.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">relaxes</span><span class="opt opt-wrong" dir="ltr">relaxs</span></td>
+          <td><span class="yn yn-no" dir="ltr">She relaxs at home after school.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">negatives</span> · ١٤</th></tr>
+        <tr>
+          <td class="num">٢٧</td>
+          <td class="sentence" dir="ltr">She doesn't play tennis.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">doesn't play</span><span class="opt opt-wrong" dir="ltr">doesn't plays</span></td>
+          <td><span class="yn yn-no" dir="ltr">She doesn't plays tennis.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٨</td>
+          <td class="sentence" dir="ltr">He doesn't eat meat.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">doesn't eat</span><span class="opt opt-wrong" dir="ltr">doesn't eats</span></td>
+          <td><span class="yn yn-no" dir="ltr">He doesn't eats meat.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٩</td>
+          <td class="sentence" dir="ltr">We don't go to school on Fridays.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't go</span><span class="opt opt-wrong" dir="ltr">don't goes</span></td>
+          <td><span class="yn yn-no" dir="ltr">We don't goes to school on Fridays.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٠</td>
+          <td class="sentence" dir="ltr">They don't watch TV at night.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't watch</span><span class="opt opt-wrong" dir="ltr">don't watches</span></td>
+          <td><span class="yn yn-no" dir="ltr">They don't watches TV at night.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣١</td>
+          <td class="sentence" dir="ltr">My father doesn't work on Fridays.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">doesn't work</span><span class="opt opt-wrong" dir="ltr">doesn't works</span></td>
+          <td><span class="yn yn-no" dir="ltr">My father doesn't works on Fridays.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٢</td>
+          <td class="sentence" dir="ltr">I don't drink milk.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't drink</span><span class="opt opt-wrong" dir="ltr">don't drinks</span></td>
+          <td><span class="yn yn-no" dir="ltr">I don't drinks milk.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٣</td>
+          <td class="sentence" dir="ltr">The bank doesn't open at night.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">doesn't open</span><span class="opt opt-wrong" dir="ltr">doesn't opens</span></td>
+          <td><span class="yn yn-no" dir="ltr">The bank doesn't opens at night.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٤</td>
+          <td class="sentence" dir="ltr">Mum doesn't cook fish.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">doesn't cook</span><span class="opt opt-wrong" dir="ltr">doesn't cooks</span></td>
+          <td><span class="yn yn-no" dir="ltr">Mum doesn't cooks fish.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٥</td>
+          <td class="sentence" dir="ltr">My sisters don't like maths.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't like</span><span class="opt opt-wrong" dir="ltr">not like</span></td>
+          <td><span class="yn yn-no" dir="ltr">My sisters not like maths.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٦</td>
+          <td class="sentence" dir="ltr">It doesn't rain in summer.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">doesn't rain</span><span class="opt opt-wrong" dir="ltr">doesn't rains</span></td>
+          <td><span class="yn yn-no" dir="ltr">It doesn't rains in summer.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٧</td>
+          <td class="sentence" dir="ltr">My brother doesn't like carrots.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">doesn't like</span><span class="opt opt-wrong" dir="ltr">not like</span></td>
+          <td><span class="yn yn-no" dir="ltr">My brother not like carrots.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٨</td>
+          <td class="sentence" dir="ltr">We don't have school today.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't have</span><span class="opt opt-wrong" dir="ltr">not have</span></td>
+          <td><span class="yn yn-no" dir="ltr">We not have school today.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٩</td>
+          <td class="sentence" dir="ltr">The students don't wear jeans.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">don't wear</span><span class="opt opt-wrong" dir="ltr">don't wears</span></td>
+          <td><span class="yn yn-no" dir="ltr">The students don't wears jeans.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٠</td>
+          <td class="sentence" dir="ltr">Dad doesn't drive to work.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">doesn't drive</span><span class="opt opt-wrong" dir="ltr">doesn't drives</span></td>
+          <td><span class="yn yn-no" dir="ltr">Dad doesn't drives to work.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="unit-2">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ١</span><span>٤٠ جملة</span></div>
+      <h2><span dir="ltr">The things we do</span> <span class="unit-ar">الأشياء التي نقوم بها</span> <span class="lesson-id" dir="ltr">s1-nccd-u1_l3</span></h2>
+      <p class="unit-note"><b>تأكدوا أولًا:</b> هل يطابق هذا الدرس صفحة الكتاب؟ يقول الكتاب: <span dir="ltr">«I can ask and answer questions about everyday life and use adverbs of frequency.»</span></p>
+      <ul class="patterns" dir="ltr"><li>do-does-questions</li><li>question-words</li><li>adverb-position</li></ul>
+      <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
+      <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">amman, aqaba, comes, drives, father, mother, newspaper, petra, speak, students, tired</span></p>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>أسئلة <span dir="ltr">do</span> و <span dir="ltr">does</span> وكلمات الاستفهام وموضع ظرف التكرار (<span dir="ltr">she is always late</span> لا <span dir="ltr">she always is late</span>)؛ الخيارات الخاطئة كلها في الشكل أو الترتيب. وكلمة <span dir="ltr">sometimes</span> غير مشمولة لأنها تقبل أكثر من موضع في الجملة.</li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>«اختر الكلمة»<small>الإجابة الصحيحة ثم المموِّه</small></th>
+            <th>«صح أم خطأ»<small>الجملة الخاطئة (بلا صوت)</small></th>
+            <th>النوع</th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">do-does-questions</span> · ١٤</th></tr>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">Does he walk to school?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Does he walk</span><span class="opt opt-wrong" dir="ltr">Do he walk</span></td>
+          <td><span class="yn yn-no" dir="ltr">Do he walk to school?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">Do you like pizza?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Do you like</span><span class="opt opt-wrong" dir="ltr">Does you like</span></td>
+          <td><span class="yn yn-no" dir="ltr">Does you like pizza?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">Does she play tennis?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Does she play</span><span class="opt opt-wrong" dir="ltr">Does she plays</span></td>
+          <td><span class="yn yn-no" dir="ltr">Does she plays tennis?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">Do they live in Amman?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Do they live</span><span class="opt opt-wrong" dir="ltr">Does they live</span></td>
+          <td><span class="yn yn-no" dir="ltr">Does they live in Amman?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">Does your father work in a bank?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Does your father work</span><span class="opt opt-wrong" dir="ltr">Do your father work</span></td>
+          <td><span class="yn yn-no" dir="ltr">Do your father work in a bank?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">Do we have maths today?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Do we have</span><span class="opt opt-wrong" dir="ltr">Does we have</span></td>
+          <td><span class="yn yn-no" dir="ltr">Does we have maths today?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">Does the bus stop here?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Does the bus stop</span><span class="opt opt-wrong" dir="ltr">Do the bus stop</span></td>
+          <td><span class="yn yn-no" dir="ltr">Do the bus stop here?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">Do you walk to school?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Do you walk</span><span class="opt opt-wrong" dir="ltr">Do you walks</span></td>
+          <td><span class="yn yn-no" dir="ltr">Do you walks to school?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">Does it rain in Aqaba?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Does it rain</span><span class="opt opt-wrong" dir="ltr">Does it rains</span></td>
+          <td><span class="yn yn-no" dir="ltr">Does it rains in Aqaba?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">Do your friends play football?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Do your friends play</span><span class="opt opt-wrong" dir="ltr">Do your friends plays</span></td>
+          <td><span class="yn yn-no" dir="ltr">Do your friends plays football?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">Does Mum cook on Fridays?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Does Mum cook</span><span class="opt opt-wrong" dir="ltr">Do Mum cook</span></td>
+          <td><span class="yn yn-no" dir="ltr">Do Mum cook on Fridays?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">Do the students wear a uniform?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Do the students wear</span><span class="opt opt-wrong" dir="ltr">Does the students wear</span></td>
+          <td><span class="yn yn-no" dir="ltr">Does the students wear a uniform?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">Does she have a brother?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Does she have</span><span class="opt opt-wrong" dir="ltr">Does she has</span></td>
+          <td><span class="yn yn-no" dir="ltr">Does she has a brother?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">Do you speak Arabic?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Do you speak</span><span class="opt opt-wrong" dir="ltr">Does you speak</span></td>
+          <td><span class="yn yn-no" dir="ltr">Does you speak Arabic?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">question-words</span> · ١٢</th></tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">Where do you live?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">do you live</span><span class="opt opt-wrong" dir="ltr">you live</span></td>
+          <td><span class="yn yn-no" dir="ltr">Where you live?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">What time does the lesson start?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">does the lesson start</span><span class="opt opt-wrong" dir="ltr">the lesson start</span></td>
+          <td><span class="yn yn-no" dir="ltr">What time the lesson start?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">Why does she walk to school?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">does she walk</span><span class="opt opt-wrong" dir="ltr">do she walk</span></td>
+          <td><span class="yn yn-no" dir="ltr">Why do she walk to school?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">What do you eat for breakfast?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">do you eat</span><span class="opt opt-wrong" dir="ltr">you eat</span></td>
+          <td><span class="yn yn-no" dir="ltr">What you eat for breakfast?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">When does your father come home?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">does your father come</span><span class="opt opt-wrong" dir="ltr">your father comes</span></td>
+          <td><span class="yn yn-no" dir="ltr">When your father comes home?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">How do you go to school?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">do you go</span><span class="opt opt-wrong" dir="ltr">you go</span></td>
+          <td><span class="yn yn-no" dir="ltr">How you go to school?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢١</td>
+          <td class="sentence" dir="ltr">Who does he play with?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">does he play</span><span class="opt opt-wrong" dir="ltr">he plays</span></td>
+          <td><span class="yn yn-no" dir="ltr">Who he plays with?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٢</td>
+          <td class="sentence" dir="ltr">Where does Mum work?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">does Mum work</span><span class="opt opt-wrong" dir="ltr">Mum works</span></td>
+          <td><span class="yn yn-no" dir="ltr">Where Mum works?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٣</td>
+          <td class="sentence" dir="ltr">What do they watch on Fridays?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">do they watch</span><span class="opt opt-wrong" dir="ltr">they watch</span></td>
+          <td><span class="yn yn-no" dir="ltr">What they watch on Fridays?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٤</td>
+          <td class="sentence" dir="ltr">Why do you study English?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">do you study</span><span class="opt opt-wrong" dir="ltr">does you study</span></td>
+          <td><span class="yn yn-no" dir="ltr">Why does you study English?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٥</td>
+          <td class="sentence" dir="ltr">How often does she visit Petra?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">does she visit</span><span class="opt opt-wrong" dir="ltr">do she visit</span></td>
+          <td><span class="yn yn-no" dir="ltr">How often do she visit Petra?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٦</td>
+          <td class="sentence" dir="ltr">Which bus do you take?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">do you take</span><span class="opt opt-wrong" dir="ltr">you take</span></td>
+          <td><span class="yn yn-no" dir="ltr">Which bus you take?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">adverb-position</span> · ١٤</th></tr>
+        <tr>
+          <td class="num">٢٧</td>
+          <td class="sentence" dir="ltr">She is always late.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is always</span><span class="opt opt-wrong" dir="ltr">always is</span></td>
+          <td><span class="yn yn-no" dir="ltr">She always is late.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٨</td>
+          <td class="sentence" dir="ltr">He usually walks to school.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">usually walks</span><span class="opt opt-wrong" dir="ltr">walks usually</span></td>
+          <td><span class="yn yn-no" dir="ltr">He walks usually to school.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٩</td>
+          <td class="sentence" dir="ltr">We often play football after school.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">often play</span><span class="opt opt-wrong" dir="ltr">play often</span></td>
+          <td><span class="yn yn-no" dir="ltr">We play often football after school.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٠</td>
+          <td class="sentence" dir="ltr">They are never late for class.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">are never</span><span class="opt opt-wrong" dir="ltr">never are</span></td>
+          <td><span class="yn yn-no" dir="ltr">They never are late for class.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣١</td>
+          <td class="sentence" dir="ltr">My father always drives to work.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">always drives</span><span class="opt opt-wrong" dir="ltr">drives always</span></td>
+          <td><span class="yn yn-no" dir="ltr">My father drives always to work.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٢</td>
+          <td class="sentence" dir="ltr">Mum is usually at home on Fridays.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is usually</span><span class="opt opt-wrong" dir="ltr">usually is</span></td>
+          <td><span class="yn yn-no" dir="ltr">Mum usually is at home on Fridays.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٣</td>
+          <td class="sentence" dir="ltr">I never eat breakfast at school.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">never eat</span><span class="opt opt-wrong" dir="ltr">eat never</span></td>
+          <td><span class="yn yn-no" dir="ltr">I eat never breakfast at school.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٤</td>
+          <td class="sentence" dir="ltr">The shop is always open.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is always</span><span class="opt opt-wrong" dir="ltr">always is</span></td>
+          <td><span class="yn yn-no" dir="ltr">The shop always is open.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٥</td>
+          <td class="sentence" dir="ltr">She often helps her mother.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">often helps</span><span class="opt opt-wrong" dir="ltr">helps often</span></td>
+          <td><span class="yn yn-no" dir="ltr">She helps often her mother.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٦</td>
+          <td class="sentence" dir="ltr">My brother is often tired.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is often</span><span class="opt opt-wrong" dir="ltr">often is</span></td>
+          <td><span class="yn yn-no" dir="ltr">My brother often is tired.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٧</td>
+          <td class="sentence" dir="ltr">We usually have lunch at two.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">usually have</span><span class="opt opt-wrong" dir="ltr">have usually</span></td>
+          <td><span class="yn yn-no" dir="ltr">We have usually lunch at two.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٨</td>
+          <td class="sentence" dir="ltr">He never plays chess.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">never plays</span><span class="opt opt-wrong" dir="ltr">plays never</span></td>
+          <td><span class="yn yn-no" dir="ltr">He plays never chess.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٩</td>
+          <td class="sentence" dir="ltr">The students are always quiet.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">are always</span><span class="opt opt-wrong" dir="ltr">always are</span></td>
+          <td><span class="yn yn-no" dir="ltr">The students always are quiet.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٠</td>
+          <td class="sentence" dir="ltr">Dad usually reads the newspaper.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">usually reads</span><span class="opt opt-wrong" dir="ltr">reads usually</span></td>
+          <td><span class="yn yn-no" dir="ltr">Dad reads usually the newspaper.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="unit-3">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٢</span><span>٤٠ جملة</span></div>
+      <h2><span dir="ltr">No place like home</span> <span class="unit-ar">لا مكان كالمنزل</span> <span class="lesson-id" dir="ltr">s1-nccd-u2_l1</span></h2>
+      <p class="unit-note"><b>تأكدوا أولًا:</b> هل يطابق هذا الدرس صفحة الكتاب؟ يقول الكتاب: <span dir="ltr">«I can use there is/there are and some and any to talk about my home.»</span></p>
+      <ul class="patterns" dir="ltr"><li>there-is-are</li><li>some-any</li><li>questions-negatives</li></ul>
+      <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
+      <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">flowers, lamp, lamps, near, pictures, plates</span></p>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li><span dir="ltr">there is</span> مع المفرد وغير المعدود و <span dir="ltr">there are</span> مع الجمع، و <span dir="ltr">some</span> في الإثبات و <span dir="ltr">any</span> في النفي والسؤال. جملة مثل <span dir="ltr">Would you like some tea?</span> غير مشمولة لأن <span dir="ltr">some</span> تأتي فيها في سؤال.</li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>«اختر الكلمة»<small>الإجابة الصحيحة ثم المموِّه</small></th>
+            <th>«صح أم خطأ»<small>الجملة الخاطئة (بلا صوت)</small></th>
+            <th>النوع</th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">there-is-are</span> · ١٤</th></tr>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">There are two beds in my room.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">are</span><span class="opt opt-wrong" dir="ltr">is</span></td>
+          <td><span class="yn yn-no" dir="ltr">There is two beds in my room.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">There is a sofa in the living room.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are a sofa in the living room.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">There are three chairs in the kitchen.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">are</span><span class="opt opt-wrong" dir="ltr">is</span></td>
+          <td><span class="yn yn-no" dir="ltr">There is three chairs in the kitchen.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">There is a big window in my room.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are a big window in my room.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">There are many books on the shelf.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">are</span><span class="opt opt-wrong" dir="ltr">is</span></td>
+          <td><span class="yn yn-no" dir="ltr">There is many books on the shelf.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">There is a garden behind our house.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are a garden behind our house.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">There are four bedrooms in our flat.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">are</span><span class="opt opt-wrong" dir="ltr">is</span></td>
+          <td><span class="yn yn-no" dir="ltr">There is four bedrooms in our flat.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">There is a lamp next to the bed.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are a lamp next to the bed.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">There is some milk in the fridge.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are some milk in the fridge.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">There are some pictures on the wall.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">are</span><span class="opt opt-wrong" dir="ltr">is</span></td>
+          <td><span class="yn yn-no" dir="ltr">There is some pictures on the wall.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">There is a carpet on the floor.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are a carpet on the floor.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">There are some plates on the table.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">are</span><span class="opt opt-wrong" dir="ltr">is</span></td>
+          <td><span class="yn yn-no" dir="ltr">There is some plates on the table.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">There is some water in the bottle.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are some water in the bottle.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">There is a TV in the living room.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are a TV in the living room.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">some-any</span> · ١٤</th></tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">There are some books on the desk.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">any</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are any books on the desk.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">There is some bread on the table.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">any</span></td>
+          <td><span class="yn yn-no" dir="ltr">There is any bread on the table.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">We have some chairs in the garden.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">any</span></td>
+          <td><span class="yn yn-no" dir="ltr">We have any chairs in the garden.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">There are some flowers in the garden.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">any</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are any flowers in the garden.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">We have some cups in the kitchen.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">any</span></td>
+          <td><span class="yn yn-no" dir="ltr">We have any cups in the kitchen.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">There is some cheese in the fridge.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">any</span></td>
+          <td><span class="yn yn-no" dir="ltr">There is any cheese in the fridge.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢١</td>
+          <td class="sentence" dir="ltr">There are some chairs in the living room.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">any</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are any chairs in the living room.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٢</td>
+          <td class="sentence" dir="ltr">There aren't any chairs.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">any</span><span class="opt opt-wrong" dir="ltr">some</span></td>
+          <td><span class="yn yn-no" dir="ltr">There aren't some chairs.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٣</td>
+          <td class="sentence" dir="ltr">There isn't any rice in the kitchen.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">any</span><span class="opt opt-wrong" dir="ltr">some</span></td>
+          <td><span class="yn yn-no" dir="ltr">There isn't some rice in the kitchen.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٤</td>
+          <td class="sentence" dir="ltr">We don't have any plants.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">any</span><span class="opt opt-wrong" dir="ltr">some</span></td>
+          <td><span class="yn yn-no" dir="ltr">We don't have some plants.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٥</td>
+          <td class="sentence" dir="ltr">There aren't any windows in the bathroom.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">any</span><span class="opt opt-wrong" dir="ltr">some</span></td>
+          <td><span class="yn yn-no" dir="ltr">There aren't some windows in the bathroom.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٦</td>
+          <td class="sentence" dir="ltr">I don't have any brothers.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">any</span><span class="opt opt-wrong" dir="ltr">some</span></td>
+          <td><span class="yn yn-no" dir="ltr">I don't have some brothers.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٧</td>
+          <td class="sentence" dir="ltr">There isn't any carpet in my room.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">any</span><span class="opt opt-wrong" dir="ltr">some</span></td>
+          <td><span class="yn yn-no" dir="ltr">There isn't some carpet in my room.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٨</td>
+          <td class="sentence" dir="ltr">There aren't any lamps in the kitchen.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">any</span><span class="opt opt-wrong" dir="ltr">some</span></td>
+          <td><span class="yn yn-no" dir="ltr">There aren't some lamps in the kitchen.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">questions-negatives</span> · ١٢</th></tr>
+        <tr>
+          <td class="num">٢٩</td>
+          <td class="sentence" dir="ltr">Are there any books on the shelf?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Are there</span><span class="opt opt-wrong" dir="ltr">Is there</span></td>
+          <td><span class="yn yn-no" dir="ltr">Is there any books on the shelf?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٠</td>
+          <td class="sentence" dir="ltr">Is there a park near your house?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Is there</span><span class="opt opt-wrong" dir="ltr">Are there</span></td>
+          <td><span class="yn yn-no" dir="ltr">Are there a park near your house?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣١</td>
+          <td class="sentence" dir="ltr">Are there any chairs in the kitchen?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Are there</span><span class="opt opt-wrong" dir="ltr">Is there</span></td>
+          <td><span class="yn yn-no" dir="ltr">Is there any chairs in the kitchen?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٢</td>
+          <td class="sentence" dir="ltr">Is there any milk in the fridge?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Is there</span><span class="opt opt-wrong" dir="ltr">Are there</span></td>
+          <td><span class="yn yn-no" dir="ltr">Are there any milk in the fridge?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٣</td>
+          <td class="sentence" dir="ltr">Is there a garden behind the house?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Is there</span><span class="opt opt-wrong" dir="ltr">Are there</span></td>
+          <td><span class="yn yn-no" dir="ltr">Are there a garden behind the house?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٤</td>
+          <td class="sentence" dir="ltr">Are there two beds in your room?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Are there</span><span class="opt opt-wrong" dir="ltr">Is there</span></td>
+          <td><span class="yn yn-no" dir="ltr">Is there two beds in your room?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٥</td>
+          <td class="sentence" dir="ltr">There isn't a sofa in my room.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">isn't</span><span class="opt opt-wrong" dir="ltr">aren't</span></td>
+          <td><span class="yn yn-no" dir="ltr">There aren't a sofa in my room.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٦</td>
+          <td class="sentence" dir="ltr">There aren't two bathrooms in our flat.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">aren't</span><span class="opt opt-wrong" dir="ltr">isn't</span></td>
+          <td><span class="yn yn-no" dir="ltr">There isn't two bathrooms in our flat.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٧</td>
+          <td class="sentence" dir="ltr">There isn't a lift in our building.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">isn't</span><span class="opt opt-wrong" dir="ltr">aren't</span></td>
+          <td><span class="yn yn-no" dir="ltr">There aren't a lift in our building.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٨</td>
+          <td class="sentence" dir="ltr">There aren't three bedrooms in the flat.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">aren't</span><span class="opt opt-wrong" dir="ltr">isn't</span></td>
+          <td><span class="yn yn-no" dir="ltr">There isn't three bedrooms in the flat.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٩</td>
+          <td class="sentence" dir="ltr">How many beds are there in your room?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">are</span><span class="opt opt-wrong" dir="ltr">is</span></td>
+          <td><span class="yn yn-no" dir="ltr">How many beds is there in your room?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٠</td>
+          <td class="sentence" dir="ltr">Is there any water in the bottle?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Is there</span><span class="opt opt-wrong" dir="ltr">Are there</span></td>
+          <td><span class="yn yn-no" dir="ltr">Are there any water in the bottle?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="unit-4">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٢</span><span>٤٠ جملة</span></div>
+      <h2><span dir="ltr">No place like home</span> <span class="unit-ar">لا مكان كالمنزل</span> <span class="lesson-id" dir="ltr">s1-nccd-u2_l3</span></h2>
+      <p class="unit-note"><b>تأكدوا أولًا:</b> هل يطابق هذا الدرس صفحة الكتاب؟ يقول الكتاب: <span dir="ltr">«I can use can and can't to talk about household chores.»</span></p>
+      <ul class="patterns" dir="ltr"><li>can-form</li><li>can-questions</li><li>can-vs-cant</li></ul>
+      <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
+      <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">asleep, baby, broom, children, makes, mother, outside, takes</span></p>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li><span dir="ltr">can</span> للقدرة والمساعدة في أعمال المنزل: الفعل بعد <span dir="ltr">can</span> بلا <span dir="ltr">to</span> وبلا -<span dir="ltr">s</span>، والسؤال <span dir="ltr">Can you</span>؟. في صفوف <span dir="ltr">can</span> و <span dir="ltr">can't</span> الخيار الخاطئ سليم لغويًا لكن جملة بعده تبدأ بـ <span dir="ltr">so</span> أو <span dir="ltr">but</span> تستبعده، وهي أحكام يراجعها المعلم.</li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>«اختر الكلمة»<small>الإجابة الصحيحة ثم المموِّه</small></th>
+            <th>«صح أم خطأ»<small>الجملة الخاطئة (بلا صوت)</small></th>
+            <th>النوع</th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">can-form</span> · ١٤</th></tr>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">She can cook dinner.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can cook</span><span class="opt opt-wrong" dir="ltr">can cooks</span></td>
+          <td><span class="yn yn-no" dir="ltr">She can cooks dinner.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">He can wash the car.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can wash</span><span class="opt opt-wrong" dir="ltr">can washes</span></td>
+          <td><span class="yn yn-no" dir="ltr">He can washes the car.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">I can help my mother.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can help</span><span class="opt opt-wrong" dir="ltr">can to help</span></td>
+          <td><span class="yn yn-no" dir="ltr">I can to help my mother.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">We can clean the kitchen.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can clean</span><span class="opt opt-wrong" dir="ltr">can cleaning</span></td>
+          <td><span class="yn yn-no" dir="ltr">We can cleaning the kitchen.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">My brother can fix the bike.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can fix</span><span class="opt opt-wrong" dir="ltr">can fixes</span></td>
+          <td><span class="yn yn-no" dir="ltr">My brother can fixes the bike.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">They can carry the bags.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can carry</span><span class="opt opt-wrong" dir="ltr">can to carry</span></td>
+          <td><span class="yn yn-no" dir="ltr">They can to carry the bags.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">My sister can wash the dishes.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can wash</span><span class="opt opt-wrong" dir="ltr">can washes</span></td>
+          <td><span class="yn yn-no" dir="ltr">My sister can washes the dishes.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">Dad can paint the wall.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can paint</span><span class="opt opt-wrong" dir="ltr">can to paint</span></td>
+          <td><span class="yn yn-no" dir="ltr">Dad can to paint the wall.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">I can make the beds.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can make</span><span class="opt opt-wrong" dir="ltr">can makes</span></td>
+          <td><span class="yn yn-no" dir="ltr">I can makes the beds.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">She can sweep the floor.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can sweep</span><span class="opt opt-wrong" dir="ltr">can sweeps</span></td>
+          <td><span class="yn yn-no" dir="ltr">She can sweeps the floor.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">We can tidy our room.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can tidy</span><span class="opt opt-wrong" dir="ltr">can tidies</span></td>
+          <td><span class="yn yn-no" dir="ltr">We can tidies our room.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">Mum can't lift the heavy table.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can't lift</span><span class="opt opt-wrong" dir="ltr">can't lifts</span></td>
+          <td><span class="yn yn-no" dir="ltr">Mum can't lifts the heavy table.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">I can't iron my shirt.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can't iron</span><span class="opt opt-wrong" dir="ltr">can't irons</span></td>
+          <td><span class="yn yn-no" dir="ltr">I can't irons my shirt.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">He can take out the rubbish.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can take</span><span class="opt opt-wrong" dir="ltr">can takes</span></td>
+          <td><span class="yn yn-no" dir="ltr">He can takes out the rubbish.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">can-questions</span> · ١٢</th></tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">Can you wash the car?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Can you</span><span class="opt opt-wrong" dir="ltr">Do you can</span></td>
+          <td><span class="yn yn-no" dir="ltr">Do you can wash the car?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">Can she cook dinner?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Can she</span><span class="opt opt-wrong" dir="ltr">Does she can</span></td>
+          <td><span class="yn yn-no" dir="ltr">Does she can cook dinner?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">Can your brother fix the bike?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Can your brother fix</span><span class="opt opt-wrong" dir="ltr">Can your brother fixes</span></td>
+          <td><span class="yn yn-no" dir="ltr">Can your brother fixes the bike?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">Can they help me today?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Can they</span><span class="opt opt-wrong" dir="ltr">Do they can</span></td>
+          <td><span class="yn yn-no" dir="ltr">Do they can help me today?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">Can he carry the bags?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Can he carry</span><span class="opt opt-wrong" dir="ltr">Can he to carry</span></td>
+          <td><span class="yn yn-no" dir="ltr">Can he to carry the bags?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">Can you open the window?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Can you open</span><span class="opt opt-wrong" dir="ltr">Can you to open</span></td>
+          <td><span class="yn yn-no" dir="ltr">Can you to open the window?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢١</td>
+          <td class="sentence" dir="ltr">Can we clean the kitchen now?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Can we</span><span class="opt opt-wrong" dir="ltr">Do we can</span></td>
+          <td><span class="yn yn-no" dir="ltr">Do we can clean the kitchen now?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٢</td>
+          <td class="sentence" dir="ltr">Can I help you?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Can I</span><span class="opt opt-wrong" dir="ltr">Do I can</span></td>
+          <td><span class="yn yn-no" dir="ltr">Do I can help you?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٣</td>
+          <td class="sentence" dir="ltr">Can your sister make the beds?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Can your sister</span><span class="opt opt-wrong" dir="ltr">Does your sister can</span></td>
+          <td><span class="yn yn-no" dir="ltr">Does your sister can make the beds?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٤</td>
+          <td class="sentence" dir="ltr">Can she sweep the floor?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Can she sweep</span><span class="opt opt-wrong" dir="ltr">Can she sweeps</span></td>
+          <td><span class="yn yn-no" dir="ltr">Can she sweeps the floor?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٥</td>
+          <td class="sentence" dir="ltr">Can the children tidy the room?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Can the children</span><span class="opt opt-wrong" dir="ltr">Do the children can</span></td>
+          <td><span class="yn yn-no" dir="ltr">Do the children can tidy the room?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٦</td>
+          <td class="sentence" dir="ltr">Can you take out the rubbish?</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">Can you take</span><span class="opt opt-wrong" dir="ltr">Can you takes</span></td>
+          <td><span class="yn yn-no" dir="ltr">Can you takes out the rubbish?</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">can-vs-cant</span> · ١٤</th></tr>
+        <tr>
+          <td class="num">٢٧</td>
+          <td class="sentence" dir="ltr">He is three, so he can't wash dishes.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can't</span><span class="opt opt-wrong" dir="ltr">can</span></td>
+          <td><span class="yn yn-no" dir="ltr">He is three, so he can wash dishes.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٨</td>
+          <td class="sentence" dir="ltr">She is strong, so she can carry boxes.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can</span><span class="opt opt-wrong" dir="ltr">can't</span></td>
+          <td><span class="yn yn-no" dir="ltr">She is strong, so she can't carry boxes.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٩</td>
+          <td class="sentence" dir="ltr">My hand hurts, so I can't wash the dishes.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can't</span><span class="opt opt-wrong" dir="ltr">can</span></td>
+          <td><span class="yn yn-no" dir="ltr">My hand hurts, so I can wash the dishes.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٠</td>
+          <td class="sentence" dir="ltr">I have a broom, so I can sweep.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can</span><span class="opt opt-wrong" dir="ltr">can't</span></td>
+          <td><span class="yn yn-no" dir="ltr">I have a broom, so I can't sweep.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣١</td>
+          <td class="sentence" dir="ltr">The baby is asleep, so I can't vacuum now.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can't</span><span class="opt opt-wrong" dir="ltr">can</span></td>
+          <td><span class="yn yn-no" dir="ltr">The baby is asleep, so I can vacuum now.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٢</td>
+          <td class="sentence" dir="ltr">It is raining, so I can't dry clothes outside.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can't</span><span class="opt opt-wrong" dir="ltr">can</span></td>
+          <td><span class="yn yn-no" dir="ltr">It is raining, so I can dry clothes outside.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٣</td>
+          <td class="sentence" dir="ltr">The oven is broken, so Mum can't bake today.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can't</span><span class="opt opt-wrong" dir="ltr">can</span></td>
+          <td><span class="yn yn-no" dir="ltr">The oven is broken, so Mum can bake today.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٤</td>
+          <td class="sentence" dir="ltr">I am tall, so I can reach the shelf.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can</span><span class="opt opt-wrong" dir="ltr">can't</span></td>
+          <td><span class="yn yn-no" dir="ltr">I am tall, so I can't reach the shelf.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٥</td>
+          <td class="sentence" dir="ltr">Mum is busy today, so she can't make dinner.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can't</span><span class="opt opt-wrong" dir="ltr">can</span></td>
+          <td><span class="yn yn-no" dir="ltr">Mum is busy today, so she can make dinner.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٦</td>
+          <td class="sentence" dir="ltr">He can wash cars, but he can't paint walls.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can't</span><span class="opt opt-wrong" dir="ltr">can</span></td>
+          <td><span class="yn yn-no" dir="ltr">He can wash cars, but he can paint walls.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٧</td>
+          <td class="sentence" dir="ltr">She can iron shirts, but she can't sew buttons.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can't</span><span class="opt opt-wrong" dir="ltr">can</span></td>
+          <td><span class="yn yn-no" dir="ltr">She can iron shirts, but she can sew buttons.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٨</td>
+          <td class="sentence" dir="ltr">The box is heavy, so I can't lift it.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can't</span><span class="opt opt-wrong" dir="ltr">can</span></td>
+          <td><span class="yn yn-no" dir="ltr">The box is heavy, so I can lift it.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٩</td>
+          <td class="sentence" dir="ltr">Dad has a ladder, so he can clean windows.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can</span><span class="opt opt-wrong" dir="ltr">can't</span></td>
+          <td><span class="yn yn-no" dir="ltr">Dad has a ladder, so he can't clean windows.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٠</td>
+          <td class="sentence" dir="ltr">My arms are strong, so I can lift boxes.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">can</span><span class="opt opt-wrong" dir="ltr">can't</span></td>
+          <td><span class="yn yn-no" dir="ltr">My arms are strong, so I can't lift boxes.</span></td>
+          <td><span class="kind kind-meaning" dir="ltr">meaning</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+  <section class="unit" id="unit-5">
+    <header class="unit-head">
+      <div class="unit-meta"><span>الفصل الأول</span><span>الوحدة ٣</span><span>٤٠ جملة</span></div>
+      <h2><span dir="ltr">Eat in – eat out</span> <span class="unit-ar">بين البيت والمطعم</span> <span class="lesson-id" dir="ltr">s1-nccd-u3_l1</span></h2>
+      <p class="unit-note"><b>تأكدوا أولًا:</b> هل يطابق هذا الدرس صفحة الكتاب؟ يقول الكتاب: <span dir="ltr">«I can use countable and uncountable nouns to talk about diets.»</span></p>
+      <ul class="patterns" dir="ltr"><li>plural-nouns</li><li>uncountable</li><li>a-an-some</li></ul>
+      <p class="unit-note">النوع: <b dir="ltr">form</b> = المموِّه غير سليم لغويًا؛ <b dir="ltr">meaning</b> = المموِّه سليم لغويًا لكن الجملة نفسها تستبعده.</p>
+      <p class="unit-note"><b>الكلمات خارج قوائم المفردات</b> (وافقوا عليها أو اشطبوها): <span dir="ltr">children, dates, mother, onion, oranges, pan, pear, please, soup, want</span></p>
+      <p class="unit-note"><b>غير مشمول، ولماذا:</b></p><ul class="not-covered"><li>لا صور ولا «نعم أم لا» في هذا الدرس: الجملة تُحدِّد الصيغة، والأسئلة عن القواعد لا عن المعلومات.</li><li>«صح أم خطأ» صامت عمدًا: الجملة الخاطئة غير سليمة لغويًا فلا نُسمعها. «اختر الكلمة» و«رتّب الجملة» يقرآن الجملة الصحيحة بعد الإجابة.</li><li>المعدود (<span dir="ltr">an apple</span>، <span dir="ltr">three eggs</span>) وغير المعدود (<span dir="ltr">some rice</span>، <span dir="ltr">water</span>) ولا جمع لغير المعدود في الجمل. لا تُستخدم أسماء لها جمع مقبول مثل <span dir="ltr">sugar</span> أو <span dir="ltr">fruit</span> أو <span dir="ltr">paper.</span></li></ul>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>الجملة</th>
+            <th>«اختر الكلمة»<small>الإجابة الصحيحة ثم المموِّه</small></th>
+            <th>«صح أم خطأ»<small>الجملة الخاطئة (بلا صوت)</small></th>
+            <th>النوع</th>
+            <th class="tick">✓</th>
+            <th class="note">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">plural-nouns</span> · ١٢</th></tr>
+        <tr>
+          <td class="num">١</td>
+          <td class="sentence" dir="ltr">I need three apples.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">apples</span><span class="opt opt-wrong" dir="ltr">apple</span></td>
+          <td><span class="yn yn-no" dir="ltr">I need three apple.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢</td>
+          <td class="sentence" dir="ltr">My brother eats two eggs for breakfast.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">eggs</span><span class="opt opt-wrong" dir="ltr">egg</span></td>
+          <td><span class="yn yn-no" dir="ltr">My brother eats two egg for breakfast.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣</td>
+          <td class="sentence" dir="ltr">There are five oranges in the bag.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">oranges</span><span class="opt opt-wrong" dir="ltr">orange</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are five orange in the bag.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤</td>
+          <td class="sentence" dir="ltr">My mother buys six bananas.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">bananas</span><span class="opt opt-wrong" dir="ltr">banana</span></td>
+          <td><span class="yn yn-no" dir="ltr">My mother buys six banana.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٥</td>
+          <td class="sentence" dir="ltr">He eats two sandwiches at lunch.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">sandwiches</span><span class="opt opt-wrong" dir="ltr">sandwich</span></td>
+          <td><span class="yn yn-no" dir="ltr">He eats two sandwich at lunch.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٦</td>
+          <td class="sentence" dir="ltr">We need four tomatoes.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">tomatoes</span><span class="opt opt-wrong" dir="ltr">tomato</span></td>
+          <td><span class="yn yn-no" dir="ltr">We need four tomato.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٧</td>
+          <td class="sentence" dir="ltr">She cuts three carrots for the soup.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">carrots</span><span class="opt opt-wrong" dir="ltr">carrot</span></td>
+          <td><span class="yn yn-no" dir="ltr">She cuts three carrot for the soup.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٨</td>
+          <td class="sentence" dir="ltr">He eats five dates every day.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">dates</span><span class="opt opt-wrong" dir="ltr">date</span></td>
+          <td><span class="yn yn-no" dir="ltr">He eats five date every day.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٩</td>
+          <td class="sentence" dir="ltr">We buy ten potatoes every week.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">potatoes</span><span class="opt opt-wrong" dir="ltr">potato</span></td>
+          <td><span class="yn yn-no" dir="ltr">We buy ten potato every week.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٠</td>
+          <td class="sentence" dir="ltr">There are many lemons in the garden.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">lemons</span><span class="opt opt-wrong" dir="ltr">lemon</span></td>
+          <td><span class="yn yn-no" dir="ltr">There are many lemon in the garden.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١١</td>
+          <td class="sentence" dir="ltr">We have three meals a day.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">meals</span><span class="opt opt-wrong" dir="ltr">meal</span></td>
+          <td><span class="yn yn-no" dir="ltr">We have three meal a day.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٢</td>
+          <td class="sentence" dir="ltr">Two children are eating lunch.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">children</span><span class="opt opt-wrong" dir="ltr">child</span></td>
+          <td><span class="yn yn-no" dir="ltr">Two child are eating lunch.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">uncountable</span> · ١٤</th></tr>
+        <tr>
+          <td class="num">١٣</td>
+          <td class="sentence" dir="ltr">Mum buys some rice every week.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some rice</span><span class="opt opt-wrong" dir="ltr">a rice</span></td>
+          <td><span class="yn yn-no" dir="ltr">Mum buys a rice every week.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٤</td>
+          <td class="sentence" dir="ltr">I want some milk.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some milk</span><span class="opt opt-wrong" dir="ltr">a milk</span></td>
+          <td><span class="yn yn-no" dir="ltr">I want a milk.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٥</td>
+          <td class="sentence" dir="ltr">She eats some bread at breakfast.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some bread</span><span class="opt opt-wrong" dir="ltr">a bread</span></td>
+          <td><span class="yn yn-no" dir="ltr">She eats a bread at breakfast.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٦</td>
+          <td class="sentence" dir="ltr">He buys some meat on Fridays.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some meat</span><span class="opt opt-wrong" dir="ltr">a meat</span></td>
+          <td><span class="yn yn-no" dir="ltr">He buys a meat on Fridays.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٧</td>
+          <td class="sentence" dir="ltr">Dad puts some butter in the pan.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some butter</span><span class="opt opt-wrong" dir="ltr">a butter</span></td>
+          <td><span class="yn yn-no" dir="ltr">Dad puts a butter in the pan.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٨</td>
+          <td class="sentence" dir="ltr">Add some milk to the soup.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some milk</span><span class="opt opt-wrong" dir="ltr">a milk</span></td>
+          <td><span class="yn yn-no" dir="ltr">Add a milk to the soup.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">١٩</td>
+          <td class="sentence" dir="ltr">Milk is good for you.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">Milk are good for you.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٠</td>
+          <td class="sentence" dir="ltr">The water is cold.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">The water are cold.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢١</td>
+          <td class="sentence" dir="ltr">Rice is cheap here.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">Rice are cheap here.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٢</td>
+          <td class="sentence" dir="ltr">The meat is fresh today.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">The meat are fresh today.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٣</td>
+          <td class="sentence" dir="ltr">Butter is yellow.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">Butter are yellow.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٤</td>
+          <td class="sentence" dir="ltr">The bread is on the table.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">The bread are on the table.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٥</td>
+          <td class="sentence" dir="ltr">The cheese is in the fridge.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">is</span><span class="opt opt-wrong" dir="ltr">are</span></td>
+          <td><span class="yn yn-no" dir="ltr">The cheese are in the fridge.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٦</td>
+          <td class="sentence" dir="ltr">I put some butter on my bread.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some butter</span><span class="opt opt-wrong" dir="ltr">a butter</span></td>
+          <td><span class="yn yn-no" dir="ltr">I put a butter on my bread.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="topic-row"><th colspan="7"><span dir="ltr">a-an-some</span> · ١٤</th></tr>
+        <tr>
+          <td class="num">٢٧</td>
+          <td class="sentence" dir="ltr">She drinks some water.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">a</span></td>
+          <td><span class="yn yn-no" dir="ltr">She drinks a water.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٨</td>
+          <td class="sentence" dir="ltr">We need some rice.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">a</span></td>
+          <td><span class="yn yn-no" dir="ltr">We need a rice.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٢٩</td>
+          <td class="sentence" dir="ltr">I eat an apple every day.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">an</span><span class="opt opt-wrong" dir="ltr">a</span></td>
+          <td><span class="yn yn-no" dir="ltr">I eat a apple every day.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٠</td>
+          <td class="sentence" dir="ltr">She has a sandwich for lunch.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a</span><span class="opt opt-wrong" dir="ltr">an</span></td>
+          <td><span class="yn yn-no" dir="ltr">She has an sandwich for lunch.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣١</td>
+          <td class="sentence" dir="ltr">He eats an egg for breakfast.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">an</span><span class="opt opt-wrong" dir="ltr">a</span></td>
+          <td><span class="yn yn-no" dir="ltr">He eats a egg for breakfast.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٢</td>
+          <td class="sentence" dir="ltr">I want an orange.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">an</span><span class="opt opt-wrong" dir="ltr">a</span></td>
+          <td><span class="yn yn-no" dir="ltr">I want a orange.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٣</td>
+          <td class="sentence" dir="ltr">Dad buys a watermelon.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a</span><span class="opt opt-wrong" dir="ltr">an</span></td>
+          <td><span class="yn yn-no" dir="ltr">Dad buys an watermelon.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٤</td>
+          <td class="sentence" dir="ltr">I want some bread.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">a</span></td>
+          <td><span class="yn yn-no" dir="ltr">I want a bread.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٥</td>
+          <td class="sentence" dir="ltr">She buys some apples every week.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">an</span></td>
+          <td><span class="yn yn-no" dir="ltr">She buys an apples every week.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٦</td>
+          <td class="sentence" dir="ltr">We eat some dates after dinner.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">a</span></td>
+          <td><span class="yn yn-no" dir="ltr">We eat a dates after dinner.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٧</td>
+          <td class="sentence" dir="ltr">He drinks some milk at night.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">a</span></td>
+          <td><span class="yn yn-no" dir="ltr">He drinks a milk at night.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٨</td>
+          <td class="sentence" dir="ltr">My sister has a pear for lunch.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">a</span><span class="opt opt-wrong" dir="ltr">an</span></td>
+          <td><span class="yn yn-no" dir="ltr">My sister has an pear for lunch.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٣٩</td>
+          <td class="sentence" dir="ltr">Please give me some cheese.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">some</span><span class="opt opt-wrong" dir="ltr">an</span></td>
+          <td><span class="yn yn-no" dir="ltr">Please give me an cheese.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        <tr>
+          <td class="num">٤٠</td>
+          <td class="sentence" dir="ltr">She eats an onion with lunch.</td>
+          <td class="choose"><span class="opt opt-right" dir="ltr">an</span><span class="opt opt-wrong" dir="ltr">a</span></td>
+          <td><span class="yn yn-no" dir="ltr">She eats a onion with lunch.</span></td>
+          <td><span class="kind kind-form" dir="ltr">form</span></td>
+          <td class="tick"><span class="box" aria-hidden="true"></span></td>
+          <td class="note"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signoff">
+      <div class="verdict">
+        <span><span class="box" aria-hidden="true"></span> موافق كما هي</span>
+        <span><span class="box" aria-hidden="true"></span> موافق بعد التعديلات المكتوبة</span>
+        <span><span class="box" aria-hidden="true"></span> غير موافق</span>
+      </div>
+      <div class="lines">
+        <span>الاسم: <i></i></span>
+        <span>التاريخ: <i></i></span>
+        <span>التوقيع: <i></i></span>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

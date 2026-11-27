@@ -18,6 +18,8 @@ import { NOT_COVERED_G3 } from './englishGrammarG3.ts';
 import { G4_TABLES, NOT_COVERED_G4 } from './englishGrammarG4.ts';
 import { NOT_COVERED_G5 } from './englishGrammarG5.ts';
 import { G5_ITEM_LESSONS } from './englishGrammarG5Items.ts';
+import { NOT_COVERED_G8 } from './englishGrammarG8.ts';
+import { G8_ITEM_LESSONS } from './englishGrammarG8Items.ts';
 import { G9_TABLES, NOT_COVERED_G9 } from './englishGrammarG9.ts';
 import { G9_ITEM_LESSONS } from './englishGrammarG9Items.ts';
 import { NOT_COVERED_G10 } from './englishGrammarG10.ts';
@@ -43,7 +45,7 @@ const NOTES: Record<string, string> = {
 };
 
 /** Per grade: lesson id → why part of it is not covered (Grade 1 uses `NOTES` instead). */
-const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3, 4: NOT_COVERED_G4, 5: NOT_COVERED_G5, 9: NOT_COVERED_G9, 10: NOT_COVERED_G10 };
+const NOT_COVERED: Record<number, Record<string, string[]>> = { 2: NOT_COVERED_G2, 3: NOT_COVERED_G3, 4: NOT_COVERED_G4, 5: NOT_COVERED_G5, 8: NOT_COVERED_G8, 9: NOT_COVERED_G9, 10: NOT_COVERED_G10 };
 
 /**
  * Wraps each run of English in `dir="ltr"`, so a phrase with punctuation does not scramble inside an Arabic line.
@@ -198,7 +200,7 @@ const KIND_AR = 'النوع: <b dir="ltr">form</b> = المموِّه غير س�
 function renderAuthoredUnit(u: GrammarUnit, idx: number): string {
   const lesson = hubLesson(u.lessonId)!;
   const sentences = unitSentences(u);
-  const statement = [...G5_ITEM_LESSONS, ...G9_ITEM_LESSONS, ...G10_ITEM_LESSONS].find(l => l.lessonId === u.lessonId)!.statement;
+  const statement = [...G5_ITEM_LESSONS, ...G8_ITEM_LESSONS, ...G9_ITEM_LESSONS, ...G10_ITEM_LESSONS].find(l => l.lessonId === u.lessonId)!.statement;
   const topics = [...new Set(sentences.map(s => s.patternId))];
   let n = 0;
   const rows = topics.map(topic => {
@@ -417,6 +419,33 @@ const GRADE_COPY: Record<number, GradeCopy> = {
       'في «الكلمات خارج قوائم المفردات»: وافقوا على الكلمات المناسبة للصف الخامس واشطبوا الباقي.',
       'هل جمل المضارع التام واضحة دون مقارنة بالماضي البسيط؟',
       'هل طول الجمل مناسب لـ «رتّب الجملة»؟',
+    ],
+    // YESNO_CSS is what styles the false twin (`.yn`) and the not-covered list; without it the twin wraps one word per line.
+    extraCss: YESNO_CSS + `
+  .kind { font-family: var(--latin); font-size: .82rem; border-radius: 6px; padding: 1px 8px; border: 1px solid var(--rule); }
+  .kind-form { background: var(--wrong-bg); color: var(--wrong); }
+  .kind-meaning { background: var(--tint); color: var(--teal); }
+  .topic-row th { text-align: start; background: var(--tint); font-family: var(--latin); font-weight: 600; }
+  .lesson-id { font-family: var(--latin); font-size: .8rem; color: var(--muted); font-weight: 400; }` + PRINT_FIT_CSS,
+  },
+  8: {
+    title: 'مراجعة قواعد الصف الثامن',
+    eyebrow: 'إقرأ · ركن اللغة الإنجليزية · الصف الثامن',
+    lead: (total, units) => `هذه مراجعة قواعد الصف الثامن، الفصل الأول: ${AR_DIGITS(units)} ${units > 10 ? 'درسًا' : 'دروس'} كُتبت جملها واحدةً واحدة، لكل جملة إجابتها الصحيحة وخيار مموِّه. الكتاب يعطي هدفًا لكل درس دون جمل نموذجية، فكل جملة هنا كتبناها نحن، وتُراجَع هنا قبل أي ظهور لها. أغلب الجمل يختبر الشكل (جمع الفعل، did مع المصدر، much أو many)، وبعضها يختبر الاختيار بين صيغتين بكلمة في الجملة (المضارع البسيط والمستمر، الماضي البسيط، can أو can't)، فنوع المموِّه مطبوع لكل جملة: <b>form</b> غير سليم لغويًا، و <b>meaning</b> سليم لكن كلمة في الجملة نفسها تستبعده. لا صور في أي درس. <b>لن يرى الطلاب أي درس قبل أن توافقوا عليه</b>، ودرس الماضي البسيط (الأسئلة والنفي) لا مفردات له، فلا يظهر في الركن إلا بعد توقيعكم. هذه الورقة تعرض كل جملة يمكن أن تظهر للطالب، ${AR_DIGITS(total)} جملة.`,
+    acts: `
+      <div class="act"><b>اختر الكلمة</b>جملة فيها فراغ، وخياران: الإجابة الصحيحة أمام المموِّه، مثل <span dir="ltr">walks / walk</span> أو <span dir="ltr">many / much</span>.</div>
+      <div class="act"><b>رتّب الجملة</b>كلمات الجملة مبعثرة، ويرتّبها الطالب بالنقر. حتى ٩ كلمات.</div>
+      <div class="act"><b>صح أم خطأ</b>تُعرض الجملة نفسها، أو توأمها الخاطئ باستبدال الإجابة بالمموِّه. <b>هذا النشاط صامت:</b> لا يُسمَع فيه أي جملة، صحيحة أو خاطئة، حتى لا يسمع الطالب إنجليزية خاطئة ولا يدل الصمت على الجواب.</div>
+    `,
+    checks: [
+      'هل الجملة صحيحة لغويًا، وبالصيغة التي يدرّسها الكتاب؟',
+      'هل رقم الدرس يطابق صفحة الكتاب؟ (يقول الكتاب بالإنجليزية في أعلى كل صفحة.)',
+      'في الجمل من نوع meaning: هل الكلمة المحدِّدة في الجملة تستبعد المموِّه فعلًا؟ وهل يمكن أن يقبل طالب جيد المموِّه؟',
+      'هل أي مموِّه من نوع form مقبول أحيانًا في صفك؟',
+      'في درس المضارع المستمر والماضي البسيط وجمل can و can\'t: هل الجمل واضحة دون سياق أوسع؟',
+      'في «الكلمات خارج قوائم المفردات»: وافقوا على الكلمات المناسبة للصف الثامن واشطبوا الباقي.',
+      'هل طول الجمل مناسب لـ «رتّب الجملة»؟',
+      'هل مموِّهات التهجئة (runing و studyed) سؤال عادل لطلاب الصف الثامن، أم تُترك التهجئة؟',
     ],
     // YESNO_CSS is what styles the false twin (`.yn`) and the not-covered list; without it the twin wraps one word per line.
     extraCss: YESNO_CSS + `

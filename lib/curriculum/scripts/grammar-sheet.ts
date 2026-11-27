@@ -25,7 +25,7 @@ import { renderReadingReviewHtml } from '../src/englishReadingReview.ts';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DOCS = path.join(HERE, '..', '..', '..', 'docs');
 const files: (readonly [string, string])[] = [];
-for (const grade of [1, 2, 3, 4, 5, 9, 10]) {
+for (const grade of [1, 2, 3, 4, 5, 8, 9, 10]) {
   files.push([`english-grammar-g${grade}-sheet.md`, renderGrammarSheet(grade)]);
   files.push([`english-grammar-g${grade}-review.html`, renderGrammarReviewHtml(grade)]);
 }
