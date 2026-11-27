@@ -68,7 +68,7 @@ const derivP = (cs: readonly number[]) => cs.slice(0, -1).map((c, i) => c * (cs.
 /** «y = 2x − 3», «y = −x», «y = 4». */
 const lineStr = (m: number, c: number) => `y = ${poly([m, c])}`;
 const dg = (d: number) => `${d}°`;
-const vec = (x: string | number, y: string | number) => `⟨${typeof x === 'number' ? signed(x) : x} ، ${typeof y === 'number' ? signed(y) : y}⟩`;
+const vec = (x: string | number, y: string | number) => `⟨${typeof x === 'number' ? signed(x) : x}, ${typeof y === 'number' ? signed(y) : y}⟩`;
 /** «(−3, 4)» — the Latin comma: see latinCommaPoints.test.ts. */
 const pt = (x: number, y: number) => `(${signed(x)}, ${signed(y)})`;
 
@@ -643,7 +643,7 @@ const vectorOps = T('g10_vector_ops', /^جمع المتجهات وطرحها$/, 
   const va = nz(rng, 6), vb = nz(rng, 6), t = pick(rng, [2, 3, -2, -3, 4]), c2 = vb * t, ans = va * t;
   return {
     eq: `k ${va} ${vb} ${c2}`, answer: signed(ans), wrongs: sgn(ans, [vb * t, -ans, va + t, c2 - vb]),
-    ar: `ما قيمة k التي تجعل المتجه ⟨k ، ${signed(c2)}⟩ موازيًا للمتجه ${vec(va, vb)}؟`,
+    ar: `ما قيمة k التي تجعل المتجه ⟨k, ${signed(c2)}⟩ موازيًا للمتجه ${vec(va, vb)}؟`,
     en: `For which k is the vector ⟨k, ${signed(c2)}⟩ parallel to ${vec(va, vb)}?`,
   };
 });
@@ -675,7 +675,7 @@ const dot = T('g10_dot', /^الضرب القياسي$/, ({ rng, diff }) => {
     if (!Number.isInteger(ans)) return dot.make({ rng, diff, grade: 10 });
     return {
       eq: `⊥ ${ux} ${uy} ${c}`, answer: signed(ans), wrongs: sgn(ans, [-ans, uy * c, c, ux]),
-      ar: `ما قيمة k التي تجعل المتجهين ${vec(ux, uy)} و ⟨k ، ${signed(c)}⟩ متعامدين؟`,
+      ar: `ما قيمة k التي تجعل المتجهين ${vec(ux, uy)} و ⟨k, ${signed(c)}⟩ متعامدين؟`,
       en: `For which k are ${vec(ux, uy)} and ⟨k, ${signed(c)}⟩ perpendicular?`,
     };
   }

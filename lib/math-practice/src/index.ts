@@ -524,11 +524,11 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'd-h7', family: 'derivative', diff: 'hard', eq: 'f(x)=x² − 4x, decreasing', answer: 'متناقص عندما x < 2', wrongs: ['متناقص عندما x > 2', 'متزايد عندما x < 2', 'متناقص عندما x < 4'], promptAr: 'متى يكون الاقتران f(x) = x² − 4x متناقصًا؟', promptEn: 'When is f(x) = x² − 4x decreasing?' },
 
   // ── Vectors ──
-  { id: 'v-e1', family: 'vectors', diff: 'easy', eq: 'A(1,2), B(4,6)', answer: 'AB⃗ = ⟨3 ، 4⟩', wrongs: ['⟨5 ، 8⟩', '⟨−3 ، −4⟩', '⟨4 ، 3⟩'], promptAr: 'أوجد المتجه AB⃗ من A(1,2) إلى B(4,6).', promptEn: 'Find vector AB from A(1,2) to B(4,6).' },
-  { id: 'v-e2', family: 'vectors', diff: 'easy', eq: '⟨3,4⟩', answer: '|v| = 5', wrongs: ['7', '12', '1'], promptAr: 'أوجد مقدار المتجه ⟨3 ، 4⟩.', promptEn: 'Find the magnitude of ⟨3, 4⟩.' },
-  { id: 'v-m1', family: 'vectors', diff: 'medium', eq: 'u=⟨1,2⟩, v=⟨3,−1⟩', answer: 'u+v = ⟨4 ، 1⟩', wrongs: ['⟨2 ، 1⟩', '⟨4 ، 3⟩', '⟨3 ، 2⟩'], promptAr: 'إذا كان u = ⟨1 ، 2⟩ و v = ⟨3 ، −1⟩، أوجد u + v.', promptEn: 'If u = ⟨1, 2⟩ and v = ⟨3, −1⟩, find u + v.' },
-  { id: 'v-m2', family: 'vectors', diff: 'medium', eq: 'u=⟨2,3⟩, v=⟨4,−1⟩', answer: 'u·v = 5', wrongs: ['8', '−3', '7'], promptAr: 'أوجد الضرب القياسي ⟨2 ، 3⟩ · ⟨4 ، −1⟩.', promptEn: 'Find the dot product ⟨2, 3⟩ · ⟨4, −1⟩.' },
-  { id: 'v-h1', family: 'vectors', diff: 'hard', eq: 'u=⟨1,0⟩, v=⟨0,1⟩', answer: 'متعامدان (الضرب القياسي = 0)', wrongs: ['متوازيان', 'نفس الاتجاه', 'غير معرّف'], promptAr: 'هل ⟨1 ، 0⟩ و ⟨0 ، 1⟩ متعامدان؟ برّر بالضرب القياسي.', promptEn: 'Are ⟨1, 0⟩ and ⟨0, 1⟩ perpendicular? Justify with the dot product.' },
+  { id: 'v-e1', family: 'vectors', diff: 'easy', eq: 'A(1,2), B(4,6)', answer: 'AB⃗ = ⟨3, 4⟩', wrongs: ['⟨5, 8⟩', '⟨−3, −4⟩', '⟨4, 3⟩'], promptAr: 'أوجد المتجه AB⃗ من A(1,2) إلى B(4,6).', promptEn: 'Find vector AB from A(1,2) to B(4,6).' },
+  { id: 'v-e2', family: 'vectors', diff: 'easy', eq: '⟨3,4⟩', answer: '|v| = 5', wrongs: ['7', '12', '1'], promptAr: 'أوجد مقدار المتجه ⟨3, 4⟩.', promptEn: 'Find the magnitude of ⟨3, 4⟩.' },
+  { id: 'v-m1', family: 'vectors', diff: 'medium', eq: 'u=⟨1,2⟩, v=⟨3,−1⟩', answer: 'u+v = ⟨4, 1⟩', wrongs: ['⟨2, 1⟩', '⟨4, 3⟩', '⟨3, 2⟩'], promptAr: 'إذا كان u = ⟨1, 2⟩ و v = ⟨3, −1⟩، أوجد u + v.', promptEn: 'If u = ⟨1, 2⟩ and v = ⟨3, −1⟩, find u + v.' },
+  { id: 'v-m2', family: 'vectors', diff: 'medium', eq: 'u=⟨2,3⟩, v=⟨4,−1⟩', answer: 'u·v = 5', wrongs: ['8', '−3', '7'], promptAr: 'أوجد الضرب القياسي ⟨2, 3⟩ · ⟨4, −1⟩.', promptEn: 'Find the dot product ⟨2, 3⟩ · ⟨4, −1⟩.' },
+  { id: 'v-h1', family: 'vectors', diff: 'hard', eq: 'u=⟨1,0⟩, v=⟨0,1⟩', answer: 'متعامدان (الضرب القياسي = 0)', wrongs: ['متوازيان', 'نفس الاتجاه', 'غير معرّف'], promptAr: 'هل ⟨1, 0⟩ و ⟨0, 1⟩ متعامدان؟ برّر بالضرب القياسي.', promptEn: 'Are ⟨1, 0⟩ and ⟨0, 1⟩ perpendicular? Justify with the dot product.' },
 
   // ── Stats / probability ──
   { id: 's-e1', family: 'stats', diff: 'easy', eq: '2,4,6,8', answer: 'المتوسط = 5', wrongs: ['4', '6', '8'], promptAr: 'أوجد المتوسط الحسابي للبيانات: 2، 4، 6، 8.', promptEn: 'Find the mean of 2, 4, 6, 8.' },

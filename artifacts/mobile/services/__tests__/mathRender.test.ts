@@ -564,6 +564,135 @@ describe('isolateForeignRuns — intervals read left to right', () => {
   });
 });
 
+// A vector «⟨3, 4⟩» was never isolated: «⟨» and «⟩» are not in the run class,
+// and its comma cut it in two anyway. The combining arrow of «AB⃗» was not in it
+// either, so «AB⃗ = ⟨3, 4⟩» split after «AB», and a dot product «⟨a, b⟩ · ⟨c, d⟩»
+// fell into five pieces. Angle brackets are never prose, so a vector may use
+// either comma (saved papers carry «⟨3 ، 4⟩»), and its components may be
+// expressions: the worked solutions write «⟨4 − 1, 6 − 2⟩» (found 2026-11-27).
+describe('isolateForeignRuns — vectors read left to right', () => {
+  it('isolates a vector, either comma', () => {
+    assert.equal(isolateForeignRuns('⟨3, 4⟩'), '⁦⟨3, 4⟩⁩');
+    assert.equal(isolateForeignRuns('المتجه ⟨3 ، 4⟩ موازٍ للمحور'), 'المتجه ⁦⟨3 ، 4⟩⁩ موازٍ للمحور');
+    assert.equal(isolateForeignRuns('المتجه ⟨k, −2⟩'), 'المتجه ⁦⟨k, −2⟩⁩');
+    assert.equal(isolateForeignRuns('⟨2√3, −1⟩'), '⁦⟨2√3, −1⟩⁩');
+  });
+
+  it('keeps a vector with expression components whole', () => {
+    assert.equal(isolateForeignRuns('AB⃗ = ⟨4 − 1, 6 − 2⟩'), '⁦AB⃗ = ⟨4 − 1, 6 − 2⟩⁩');
+    assert.equal(isolateForeignRuns('نجمع: u + v = ⟨1 + 3, 2 + (−1)⟩'), 'نجمع: ⁦u + v = ⟨1 + 3, 2 + (−1)⟩⁩');
+  });
+
+  it('reads the books\' «〈 〉» brackets as a vector too', () => {
+    assert.equal(isolateForeignRuns('إذا كان u = 〈-1, 5〉'), 'إذا كان ⁦u = 〈-1, 5〉⁩');
+    assert.equal(isolateForeignRuns('a + b = 〈x1 +x2 , y1 +y2〉'), '⁦a + b = 〈x1 +x2 , y1 +y2〉⁩');
+  });
+
+  it('keeps the arrow of «AB⃗» with its letters', () => {
+    assert.equal(isolateForeignRuns('إذن AB⃗ = ⟨3, 4⟩'), 'إذن ⁦AB⃗ = ⟨3, 4⟩⁩');
+  });
+
+  it('keeps a dot product in ONE isolate', () => {
+    assert.equal(
+      isolateForeignRuns('الضرب القياسي: ⟨a, b⟩ · ⟨c, d⟩ = ac + bd'),
+      'الضرب القياسي: ⁦⟨a, b⟩ · ⟨c, d⟩ = ac + bd⁩',
+    );
+  });
+
+  it('leaves a middle dot between Arabic words alone', () => {
+    const line = 'كتاب الطالب · الفصل الأول · صفحة 18';
+    assert.equal(isolateForeignRuns(line), line);
+  });
+
+  // «·» separating words in a list is not a product: joining the Latin words
+  // would show an Arabic reader «PowerPoint · Word · PDF».
+  it('does not join Latin words a « · » separates in a list', () => {
+    assert.equal(
+      isolateForeignRuns('اسحب الملفات هنا (PDF · Word · PowerPoint · صور · نص)'),
+      'اسحب الملفات هنا (⁦PDF⁩ · ⁦Word⁩ · ⁦PowerPoint⁩ · صور · نص)',
+    );
+  });
+
+  it('keeps a multiplication dot inside its equation', () => {
+    assert.equal(isolateForeignRuns('بالعلاقة q = m·c·ΔT'), 'بالعلاقة ⁦q = m·c·ΔT⁩');
+    assert.equal(isolateForeignRuns('المعادلة: 4 · 2^x = 2^x + 12'), 'المعادلة: ⁦4 · 2^x = 2^x + 12⁩');
+    assert.equal(isolateForeignRuns('c = 4.18 J/g·°C'), '⁦c = 4.18 J/g·°C⁩');
+  });
+
+  it('leaves the sentence\'s full stop outside the vector', () => {
+    assert.equal(isolateForeignRuns('إذن المتجه هو ⟨3, 4⟩.'), 'إذن المتجه هو ⁦⟨3, 4⟩⁩.');
+  });
+
+  it('never drops or reorders characters', () => {
+    const original = 'إذن AB⃗ = ⟨3 ، 4⟩، والضرب القياسي ⟨a, b⟩ · ⟨c, d⟩ = ac + bd.';
+    assert.equal(isolateForeignRuns(original).replace(/[⁦⁩]/g, ''), original);
+  });
+});
+
+// «|» was not in the run class, so a magnitude «|v| = 5» or an absolute value
+// «|x − 3| ≤ 5» split at every bar. But «|» is also a separator — a chat's
+// markdown table «| x | 5 |», «الصف العاشر | الرياضيات», set-builder «{x | x ≤ 3}» —
+// so only a PAIR of bars around maths joins a run (found 2026-11-27).
+describe('isolateForeignRuns — magnitude and absolute-value bars', () => {
+  it('keeps a magnitude in its equation', () => {
+    assert.equal(isolateForeignRuns('مقدار المتجه |v| = 5'), 'مقدار المتجه ⁦|v| = 5⁩');
+    assert.equal(isolateForeignRuns('| v | = √(x2 − x1)² + (y2 − y1)²'), '⁦| v | = √(x2 − x1)² + (y2 − y1)²⁩');
+    assert.equal(isolateForeignRuns('أوجد |AB⃗|'), 'أوجد ⁦|AB⃗|⁩');
+    assert.equal(isolateForeignRuns('إذن |⟨3, 4⟩| = 5'), 'إذن ⁦|⟨3, 4⟩| = 5⁩');
+  });
+
+  it('keeps absolute values whole', () => {
+    assert.equal(isolateForeignRuns('أوجد |−4| + |3|'), 'أوجد ⁦|−4| + |3|⁩');
+    assert.equal(isolateForeignRuns('حل المتباينة |x − 3| ≤ 5'), 'حل المتباينة ⁦|x − 3| ≤ 5⁩');
+  });
+
+  it('keeps two magnitudes side by side in ONE isolate', () => {
+    assert.equal(
+      isolateForeignRuns('العلاقة بالزاوية: cos θ = (a·b)/(|a||b|)'),
+      'العلاقة بالزاوية: ⁦cos θ = (a·b)/(|a||b|)⁩',
+    );
+  });
+
+  it('keeps a line that is only bars and a product whole', () => {
+    assert.equal(isolateForeignRuns('|a| · |b|'), '⁦|a| · |b|⁩');
+  });
+
+  it('does not pair a bar across a bracket it does not close', () => {
+    // «P(B|A)» has one bar; pairing it with the first bar of «|x|» would wrap «A) + ».
+    const out = isolateForeignRuns('P(B|A) + |x|');
+    assert.ok(out.includes('|x|⁩'), out);
+  });
+
+  it('leaves a bar that separates words alone', () => {
+    const line = 'الصف العاشر | الرياضيات';
+    assert.equal(isolateForeignRuns(line), line);
+  });
+
+  it('leaves a markdown table row alone', () => {
+    assert.equal(isolateForeignRuns('| x | 5 |'), '| ⁦x⁩ | 5 |');
+    const header = '| :-: | :-: |';
+    assert.equal(isolateForeignRuns(header), header);
+  });
+
+  it('does not pair bars around English words', () => {
+    // An English book's text layer reads the pronoun «I» as «|».
+    assert.equal(
+      isolateForeignRuns('Well... | had it when | went to our PE lesson.'),
+      '⁦Well⁩... | ⁦had it when⁩ | ⁦went to our PE lesson⁩.',
+    );
+  });
+
+  it('does not treat bars around Arabic as maths', () => {
+    const line = 'الكلمات |اختبار| و |امتحان|';
+    assert.equal(isolateForeignRuns(line), line);
+  });
+
+  it('never drops or reorders characters', () => {
+    const original = 'مقدار |v| = 5، و |x − 3| ≤ 5، و P(B|A) + |x|.';
+    assert.equal(isolateForeignRuns(original).replace(/[⁦⁩]/g, ''), original);
+  });
+});
+
 // The bank stores maths canonically (`5^{10}`, `3^6 = 729`) and its promptAr
 // carries the display form (`5⁷ ÷ 5³`). A printed worksheet mixed the two:
 // stems in real superscripts, options and the whole answer key in raw caret

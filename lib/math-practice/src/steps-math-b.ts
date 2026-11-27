@@ -367,8 +367,8 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
   'v-e1': {
     ar: [
       'المتجه من A إلى B: AB⃗ = B − A (نهاية − بداية)',
-      'AB⃗ = ⟨4 − 1 ، 6 − 2⟩',
-      'إذن AB⃗ = ⟨3 ، 4⟩',
+      'AB⃗ = ⟨4 − 1, 6 − 2⟩',
+      'إذن AB⃗ = ⟨3, 4⟩',
     ],
     en: [
       'The vector from A to B: AB⃗ = B − A (end minus start)',
@@ -378,7 +378,7 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
   },
   'v-e2': {
     ar: [
-      'مقدار المتجه ⟨a ، b⟩ هو |v| = √(a² + b²)',
+      'مقدار المتجه ⟨a, b⟩ هو |v| = √(a² + b²)',
       'نعوّض: |v| = √(3² + 4²) = √(9 + 16)',
       '|v| = √25',
       'إذن |v| = 5',
@@ -392,8 +392,8 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
   },
   'v-m1': {
     ar: [
-      'نجمع المركبات المتناظرة: u + v = ⟨1 + 3 ، 2 + (−1)⟩',
-      'إذن u+v = ⟨4 ، 1⟩',
+      'نجمع المركبات المتناظرة: u + v = ⟨1 + 3, 2 + (−1)⟩',
+      'إذن u+v = ⟨4, 1⟩',
     ],
     en: [
       'Add corresponding components: u + v = ⟨1 + 3, 2 + (−1)⟩',
@@ -402,7 +402,7 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
   },
   'v-m2': {
     ar: [
-      'الضرب القياسي: ⟨a ، b⟩ · ⟨c ، d⟩ = ac + bd',
+      'الضرب القياسي: ⟨a, b⟩ · ⟨c, d⟩ = ac + bd',
       'نعوّض: 2 × 4 + 3 × (−1)',
       '= 8 − 3',
       'إذن u·v = 5',
@@ -417,7 +417,7 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
   'v-h1': {
     ar: [
       'متجهان غير صفريين متعامدان إذا كان ضربهما القياسي يساوي صفراً',
-      'نحسب: ⟨1 ، 0⟩ · ⟨0 ، 1⟩ = 1 × 0 + 0 × 1',
+      'نحسب: ⟨1, 0⟩ · ⟨0, 1⟩ = 1 × 0 + 0 × 1',
       'الناتج = 0 + 0 = 0',
       'إذن متعامدان (الضرب القياسي = 0)',
     ],

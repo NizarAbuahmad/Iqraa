@@ -249,6 +249,82 @@ figure and table-only exercises (above), the lessons' own word problems (p.68–
 see none of this in production yet: book items reach a paper only on the mock path or with
 `BOOK_ITEMS_LIVE=true`, which is off.
 
+## Magnitude and absolute-value bars read left to right in Arabic — 2026-11-27
+
+The follow-up the vectors entry below named. `|` was not in `isolateForeignRuns`'s run class, so a magnitude or
+absolute value split at every bar, and inside an Arabic sentence the pieces came out reversed. In Chromium, «إذا كان
+مقدار المتجه |v| = 5» showed `= 5` before `|v|`, and the same held for `|x − 3| ≤ 5`, `|−4| + |3|` and
+`(a·b)/(|a||b|)`.
+
+**Fix** (`services/mathRender.ts`, renderer only). `|` is also a separator: a chat's markdown table `| x | 5 |`,
+«الصف العاشر | الرياضيات», set-builder `{x | x ≤ 3}`, and `P(A | B)`. So it is not added to the run class. Instead
+`protectBars` pairs each bar with the next and keeps the pair, as stand-ins, only when the content between is maths:
+- no Arabic letter, and nothing outside the run class;
+- not empty, with at most one space against each bar (the books' text layer writes `| v | = √…`);
+- balanced brackets, so `P(B|A) + |x|` does not pair `B|A`'s bar with `|x|`'s;
+- fewer than two Latin words of two letters or more. An English book's text layer reads the pronoun «I» as `|`
+  («Well... | had it when | went…»).
+
+A failed pair moves on to the next bar. A markdown table row (one starting `| `, `|:` or `|-` and ending `|`) is left
+alone. A first version skipped every line that started and ended with `|`, which missed `|a| · |b|`; a test pins it.
+
+**Verified:**
+- 10 new cases in `mathRender.test.ts`. The mobile suite (9,683, 0 failures) and root typecheck pass.
+- Old against new over 5,047 lines of the repo's text that hold a bar. Of the 449 that change, every one read was
+  maths (`|w| |v| cosθ`, `W = | F | | d | cosθ`, `|A × B| = A B sin θ`, `3|2x-5|+2 = 11`). The exceptions are six
+  English OCR lines with a one-word «I»-bar pair, which become one English isolate, better than the scrambled
+  pieces they were.
+- **Chromium, Arabic sentences:** «… |v| = 5 …», «… |x − 3| ≤ 5 …», «… |−4| + |3| …» and «… (a·b)/(|a||b|) …». The
+  maths reads left to right with the fix; all four were reversed with the old text.
+- **Take screen at 390px:** a teacher-written question with those four as options, and `|v|` in the stem, shows them
+  left to right. Options with no Arabic in them already displayed left to right (`dir="auto"`), so there only
+  `|−4| + |3| = 7` had been reversed.
+
+**Not covered:** set-builder `{x | x ≤ 3}` and conditional probability `P(A | B)`, whose single `|` is not a pair;
+native Android and iOS.
+
+## Vectors, the vector arrow and the multiplication dot read left to right in Arabic — 2026-11-27
+
+The follow-up the Latin-comma entry below named. A vector `⟨3, 4⟩` was never isolated: `⟨` and `⟩` are not in
+`isolateForeignRuns`'s run class, and its comma cut it in two anyway. Two neighbours had the same problem. The
+combining arrow of `AB⃗` (U+20D7) was outside the run too, so `AB⃗ = ⟨3, 4⟩` split after `AB`. And the
+multiplication dot was outside it, so `⟨a, b⟩ · ⟨c, d⟩ = ac + bd` fell into five pieces, as did `q = m·c·ΔT`,
+`J/g·°C` and `2^x · 2^2`.
+
+**Renderer** (`services/mathRender.ts`):
+- **Vectors.** `VECTOR_RE` finds `⟨…⟩`, and the books' `〈…〉` (U+3008/3009, used in `math_formulas.json` and the
+  text layers). Components may be expressions: `⟨4 − 1, 6 − 2⟩`, `⟨1 + 3, 2 + (−1)⟩`. Brackets and commas become
+  stand-ins, as for an interval. Angle brackets are never prose, so either comma counts, which covers papers saved
+  with `⟨3 ، 4⟩`.
+- **The arrow** U+20D7 joins the run class.
+- **The dot** `·` / `⋅` joins a run only when it is maths. It joins when unspaced between run characters (`m·c`,
+  `2bc·cos A`), or spaced with a number, superscript, bracket or vector on one side (`4 · 2^x`, `⟩ · ⟨`). A first
+  version joined any interior dot, and the corpus check caught it reordering UI lists: «(PDF · Word · PowerPoint ·
+  صور · نص)» would have read «PowerPoint · Word · PDF» to an Arabic reader. Two words either side of « · » are
+  left alone, and a test pins that line.
+
+**Bank** (`lib/math-practice`): the `vec` helper and the inline `⟨k, …⟩` templates in `grade10b.ts`, 15 items in
+`MATH_BANK` and 9 worked-solution lines in `steps-math-b.ts` now write `⟨3, 4⟩`. `latinCommaPoints.test.ts` now
+also fails on a vector holding «،», and `grade10LessonsB.test.ts`'s vector parsers read the Latin form.
+
+**Verified:**
+- 10 new cases in `mathRender.test.ts`. The mobile suite (9,673, 0 failures), `@workspace/math-practice` (1,491)
+  and its typecheck, the api-server build and tests (3,089), and the root typecheck all pass.
+- Old against new over every Arabic string in the repo (95,856 lines). Every changed line was read: 42 vector, 47
+  dot and 4 arrow lines, all maths, and no word list after the fix above.
+- Through the real renderer, 13,773 vectors from the bank's items, worked solutions and generated questions all sit
+  inside an isolate.
+- **Browser, Chromium at 390px, Arabic.** A scratch copy of the e2e journey (not committed) added a teacher-written
+  question with options `⟨3, 4⟩`, `⟨3 ، 4⟩`, `AB⃗ = ⟨4 − 1, 6 − 2⟩` and `⟨1, 2⟩ · ⟨3, 4⟩ = 11`. On `/take/CODE`
+  each option's first digit is left of its last. With the old text three of the four were reversed; the `AB⃗` line
+  starts with Latin and already passed that crude check. The screenshot shows all four left to right, with the
+  arrow over `AB`.
+
+**Not covered:**
+- `|v|` and `|a||b|` magnitude bars: `|` is not in the run class, as with set-builder braces.
+- Native Android and iOS.
+- Saved papers keep whatever comma they were written with; both now display left to right.
+
 ## The question bank writes points with the Latin comma — 2026-11-27
 
 The follow-up the intervals entry below named. The bank (`lib/math-practice`) wrote every point as `(2 ، −1)`. The
