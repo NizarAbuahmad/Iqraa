@@ -108,7 +108,8 @@ test('grade 8 offers both semesters, units 1–10', () => {
   }
   const expected = [...distinct].filter(([, s]) => s.size >= MIN_HUB_WORDS).map(([id]) => id).sort();
   assert.ok(expected.length >= 25, `only ${expected.length} lessons reach ${MIN_HUB_WORDS} words`);
-  assert.deepEqual(lessons.map(l => l.id).sort(), expected);
+  const grammarOnly = GRAMMAR_ONLY_LESSONS.filter(id => id.startsWith('kbl-g8-eng-'));
+  assert.deepEqual(lessons.map(l => l.id).sort(), [...expected, ...grammarOnly].sort());
   assert.deepEqual([...new Set(lessons.map(l => l.semester))].sort(), [1, 2]);
   assert.deepEqual([...new Set(lessons.map(l => l.unitNumber))].sort((a, b) => a - b), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   for (const l of lessons) {
@@ -266,11 +267,12 @@ const GRAMMAR_ONLY = [
   'kbl-eng-s1-nccd-u1_l5', 'kbl-eng-s1-nccd-u2_l4', 'kbl-eng-s1-nccd-u3_l4', 'kbl-eng-s1-nccd-u4_l4', 'kbl-eng-s1-nccd-u5_l3',
   'kbl-eng-s2-nccd-u6_l1', 'kbl-eng-s2-nccd-u6_l4', 'kbl-eng-s2-nccd-u7_l1', 'kbl-eng-s2-nccd-u7_l5', 'kbl-eng-s2-nccd-u8_l1',
   'kbl-eng-s2-nccd-u8_l6', 'kbl-eng-s2-nccd-u9_l1', 'kbl-eng-s2-nccd-u9_l4', 'kbl-eng-s2-nccd-u10_l1', 'kbl-eng-s2-nccd-u10_l3',
+  'kbl-g8-eng-s1-nccd-u5_l4',
 ];
 
 // Grade 9 S2 u10_l4 joined on 2026-11-15: it had passed the word floor only on irregular-verbs rows read from the page
 // after the Word List (extract-english-vocabulary.ts now stops at the Word List's end).
-test('twenty-two lessons are grammar-only (seven in Grade 9; in Grade 10 Articles, the four Semester 1 grammar lessons with no Word List of their own, and the ten Semester 2 lessons): listed, under the word floor, and no other lesson is', () => {
+test('twenty-three lessons are grammar-only (one in Grade 8, seven in Grade 9; in Grade 10 Articles, the four Semester 1 grammar lessons with no Word List of their own, and the ten Semester 2 lessons): listed, under the word floor, and no other lesson is', () => {
   assert.deepEqual([...GRAMMAR_ONLY_LESSONS], GRAMMAR_ONLY);
   const flagged = ENGLISH_HUB_LESSONS.filter(l => l.grammarOnly).map(l => l.id).sort();
   assert.deepEqual(flagged, [...GRAMMAR_ONLY].sort());

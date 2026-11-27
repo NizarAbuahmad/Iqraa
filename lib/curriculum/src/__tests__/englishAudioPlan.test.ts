@@ -51,12 +51,12 @@ describe('audioPlan', () => {
     for (const [slug, text] of firstWord) assert.equal(bySlug.get(slug)!.text, text);
   });
 
-  it('voices every grammar string only Grade 5, 9 or 10 uses in the teen register', () => {
+  it('voices every grammar string only Grade 5, 8, 9 or 10 uses in the teen register', () => {
     let n = 0;
     for (const u of GRAMMAR_UNITS) {
       const g = unitGrade(u.lessonId);
       if (g <= 4) continue;
-      assert.ok([5, 9, 10].includes(g), `unexpected grammar grade ${g}`);
+      assert.ok([5, 8, 9, 10].includes(g), `unexpected grammar grade ${g}`);
       for (const t of unitSpoken(u)) {
         const slug = audioSlug(t);
         if (youngGrammar.has(slug) || youngWords.has(slug)) continue;
@@ -65,7 +65,7 @@ describe('audioPlan', () => {
       }
     }
     // The bug this guards: every one of these used to be read as if to a six-year-old.
-    assert.ok(n > 1500, `only ${n} Grade 5/9/10 grammar strings checked`);
+    assert.ok(n > 1500, `only ${n} Grade 5/8/9/10 grammar strings checked`);
   });
 
   it('voices every Grade 1–4 grammar string and hub word in the young register', () => {

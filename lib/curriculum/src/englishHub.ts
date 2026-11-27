@@ -65,7 +65,7 @@ export const MIN_HUB_WORDS = 4;
 /**
  * Grammar-only lessons: Grade 9 lessons whose book statement is a grammar topic but with fewer than `MIN_HUB_WORDS`
  * words (used to; the two present perfects; the first conditional; reported speech), and Grade 10's Articles and its
- * Semester 2 grammar lessons (no vocabulary rows are extracted for Semester 2). They are in the hub for their grammar only: the lesson screen hides the word activities, and
+ * Semester 2 grammar lessons (no vocabulary rows are extracted for Semester 2), and Grade 8's Past Simple questions lesson. They are in the hub for their grammar only: the lesson screen hides the word activities, and
  * `hubLessonVisible` keeps one out of sight until a teacher signs its unit. A test pins that each id has fewer than
  * four words and a grammar unit, so this list cannot go stale. It lives here because englishGrammar.ts imports this file.
  */
@@ -97,6 +97,8 @@ export const GRAMMAR_ONLY_LESSONS: readonly string[] = [
   'kbl-eng-s2-nccd-u9_l4',
   'kbl-eng-s2-nccd-u10_l1',
   'kbl-eng-s2-nccd-u10_l3',
+  // Grade 8 semester 1's Past Simple questions lesson: it prints no Word List of its own.
+  'kbl-g8-eng-s1-nccd-u5_l4',
 ];
 
 const BOOKS: [number, 1 | 2, NccdCurriculumFile, (id: string) => string][] = [
