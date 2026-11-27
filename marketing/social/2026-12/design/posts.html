@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<title>Iqrra — December 2026 posts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+/* Digits are Latin (1, 2, 3) on every image — the convention of docs/tutorial-videos-ar.md.
+   Brand: «إقرأ» / Iqrra. Every image is one .page element, screenshotted by render.cjs. */
+:root{
+  --navy:#081B3A; --navy2:#0E2A55; --teal:#00A99D; --teal2:#0E8F86; --aqua:#34D6C6;
+  --paper:#F5F7FA; --ink:#1D2939; --muted:#5B6B7F; --line:#DDE6E8; --mint:#E6F7F6;
+  --gold:#F2B544; --red:#E5484D; --green:#10B981;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#333;font-family:"Almarai",sans-serif;direction:rtl;display:flex;flex-wrap:wrap;gap:40px;padding:40px}
+.page{position:relative;width:1080px;height:1350px;overflow:hidden;flex:none}
+.page.story{height:1920px}
+
+/* backgrounds */
+.dark{background:
+  radial-gradient(900px 700px at 70% 10%, rgba(52,214,198,.20), transparent 62%),
+  radial-gradient(700px 600px at 10% 95%, rgba(0,169,157,.16), transparent 65%),
+  var(--navy);color:#fff}
+.light{background:var(--paper);color:var(--ink)}
+.teal{background:linear-gradient(160deg,#00B3A6 0%,#00897F 100%);color:#fff}
+
+/* chrome shared by every page */
+.brand{position:absolute;top:64px;right:72px;display:flex;align-items:center;gap:18px}
+.brand img{width:64px;height:64px;border-radius:16px}
+.teal .brand img{box-shadow:0 0 0 3px rgba(255,255,255,.9)}
+.brand b{font-family:"Cairo";font-weight:900;font-size:40px;line-height:1}
+.brand i{font-style:normal;font-family:"Cairo";font-weight:600;font-size:22px;opacity:.7;letter-spacing:.06em;margin-top:4px;display:block;direction:ltr;text-align:right}
+.dark .brand b,.teal .brand b{color:#fff} .light .brand b{color:var(--navy)}
+.count{position:absolute;top:78px;left:72px;font-family:"Cairo";font-weight:700;font-size:26px;opacity:.6;direction:ltr}
+.foot{position:absolute;bottom:60px;right:72px;left:72px;display:flex;justify-content:space-between;align-items:center;font-family:"Cairo";font-weight:700;font-size:28px}
+.foot .url{direction:ltr}
+.dark .foot,.teal .foot{color:rgba(255,255,255,.75)} .light .foot{color:var(--muted)}
+.swipe{display:flex;align-items:center;gap:12px}
+.swipe svg{width:34px;height:34px}
+
+/* type */
+.kicker{display:inline-block;font-family:"Cairo";font-weight:800;font-size:30px;padding:12px 28px;border-radius:999px;background:rgba(52,214,198,.16);color:var(--aqua)}
+.light .kicker{background:var(--mint);color:#00786F}
+.teal .kicker{background:rgba(255,255,255,.18);color:#fff}
+h1{font-family:"Cairo";font-weight:900;font-size:120px;line-height:1.18;margin-top:34px}
+h1 .hl{color:var(--aqua)} .light h1 .hl{color:var(--teal)} .teal h1 .hl{color:var(--navy)}
+.sub{font-size:44px;line-height:1.55;margin-top:30px;opacity:.82}
+h2{font-family:"Cairo";font-weight:900;font-size:78px;line-height:1.25}
+.body{font-size:42px;line-height:1.7;margin-top:30px;color:var(--ink)}
+.dark .body,.teal .body{color:rgba(255,255,255,.88)}
+.center{position:absolute;inset:0;padding:0 84px;display:flex;flex-direction:column;justify-content:center}
+
+/* numbered tip */
+.num{font-family:"Cairo";font-weight:900;font-size:150px;line-height:1;color:var(--teal);opacity:.95;direction:ltr;text-align:right}
+.when{font-family:"Cairo";font-weight:800;font-size:34px;color:var(--teal2);margin:18px 0 10px}
+.tag{margin-top:46px;display:flex;gap:20px;align-items:flex-start;background:#fff;border:2px solid var(--line);border-radius:28px;padding:28px 32px;font-size:34px;line-height:1.6;color:var(--ink)}
+.tag img{width:56px;height:56px;border-radius:14px;flex:none;margin-top:4px}
+.tag b{font-family:"Cairo";font-weight:800;color:var(--teal2)}
+
+/* spelling card */
+.pair{display:flex;gap:28px;margin-top:44px}
+.pair>div{flex:1;border-radius:32px;padding:34px 30px 40px;text-align:center}
+.wrong{background:#FDECEC;border:3px solid #F6C7C9}
+.right{background:#E7F8F1;border:3px solid #B8EBD5}
+.pair .lab{display:flex;justify-content:center;align-items:center;gap:12px;font-family:"Cairo";font-weight:800;font-size:32px}
+.wrong .lab{color:var(--red)} .right .lab{color:#0B8F62}
+.pair .lab svg{width:40px;height:40px}
+.pair .w{font-family:"Cairo";font-weight:900;font-size:96px;line-height:1.35;margin-top:14px;color:var(--ink)}
+.wrong .w{text-decoration:line-through;text-decoration-color:rgba(229,72,77,.6);text-decoration-thickness:6px}
+.rule{margin-top:44px;font-size:40px;line-height:1.7}
+.rule b{font-family:"Cairo";font-weight:800;color:var(--teal2)}
+
+/* checklist */
+.list{margin-top:46px;display:flex;flex-direction:column;gap:22px}
+.list .it{display:flex;gap:24px;align-items:center;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.12);border-radius:26px;padding:26px 30px;font-size:40px;line-height:1.45}
+.light .list .it{background:#fff;border-color:var(--line)}
+.box{width:50px;height:50px;border-radius:14px;border:4px solid var(--aqua);flex:none}
+.light .box{border-color:var(--teal)}
+.opt{width:72px;height:72px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;font-family:"Cairo";font-weight:900;font-size:40px;background:var(--aqua);color:var(--navy)}
+
+/* recap */
+.big{font-family:"Cairo";font-weight:900;font-size:220px;line-height:1;color:var(--aqua);direction:ltr;text-align:right}
+.quote{font-family:"Cairo";font-weight:800;font-size:76px;line-height:1.45}
+.qmark{font-family:"Cairo";font-weight:900;font-size:260px;line-height:.6;color:var(--aqua);opacity:.5;height:120px}
+.sig{margin-top:50px;font-size:36px;opacity:.7}
+.cta{display:inline-flex;align-items:center;gap:18px;margin-top:56px;background:var(--aqua);color:var(--navy);font-family:"Cairo";font-weight:900;font-size:46px;padding:24px 46px;border-radius:999px;direction:ltr}
+.teal .cta{background:#fff;color:var(--navy)}
+.light .cta{background:var(--teal);color:#fff}
+.deco{position:absolute;opacity:.18}
+.compact h2{font-size:68px}
+.compact .list{gap:16px;margin-top:36px}
+.compact .list .it{padding:20px 28px;font-size:36px}
+.compact .sub{margin-top:24px}
+.quote.sm{font-size:64px}
+.games{display:flex;flex-wrap:wrap;gap:18px;margin-top:40px}
+.games span{font-family:"Cairo";font-weight:800;font-size:38px;padding:16px 30px;border-radius:999px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.25)}
+</style>
+<body>
+<div id="root" style="display:contents"></div>
+<script>
+const ICON = 'icon.png';
+const X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="10" stroke-width="2.2"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg>';
+const V = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke-width="2.2"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>';
+const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>';
+const STAR = (x,y,s)=>`<svg class="deco" style="left:${x}px;top:${y}px;width:${s}px;height:${s}px" viewBox="0 0 24 24" fill="#fff"><path d="M12 1l2.6 7.4L22 11l-7.4 2.6L12 21l-2.6-7.4L2 11l7.4-2.6z"/></svg>`;
+
+const brand = `<div class="brand"><img src="${ICON}"><div><b>إقرأ</b><i>Iqrra</i></div></div>`;
+const foot = (swipe) => `<div class="foot"><span class="url">app.iqrra.com</span>${swipe ? `<span class="swipe">اسحب ${ARROW}</span>` : '<span style="direction:ltr;unicode-bidi:isolate">@iqrra.me</span>'}</div>`;
+const count = (i,n) => n ? `<div class="count">${i} / ${n}</div>` : '';
+const inIqrra = (t) => t ? `<div class="tag"><img src="${ICON}"><div><b>في إقرأ:</b> ${t}</div></div>` : '';
+
+const T = {
+  cover: (p) => `<div class="page ${p.bg||'dark'}${p.story?' story':''}" id="${p.id}">${brand}${count(p.i,p.n)}
+    <div class="center"><div><span class="kicker">${p.kicker}</span></div><h1>${p.title}</h1>${p.sub?`<div class="sub">${p.sub}</div>`:''}</div>${foot(p.n)}</div>`,
+  tip: (p) => `<div class="page light" id="${p.id}">${brand}${count(p.i,p.n)}
+    <div class="center"><div class="num">${p.num}</div>${p.when?`<div class="when">${p.when}</div>`:''}<h2>${p.title}</h2><div class="body">${p.body}</div>${inIqrra(p.iq)}</div>${foot(p.i<p.n)}</div>`,
+  spell: (p) => `<div class="page light" id="${p.id}">${brand}${count(p.i,p.n)}
+    <div class="center"><div class="when">${p.num} · ${p.topic}</div>
+    <div class="pair"><div class="wrong"><div class="lab">${X} خطأ</div><div class="w">${p.wrong}</div></div>
+    <div class="right"><div class="lab">${V} صواب</div><div class="w">${p.right}</div></div></div>
+    <div class="rule">${p.rule}</div></div>${foot(p.i<p.n)}</div>`,
+  iqrra: (p) => `<div class="page ${p.bg||'teal'}${p.story?' story':''}" id="${p.id}">${brand}${count(p.i,p.n)}
+    <div class="center">${p.kicker?`<div><span class="kicker">${p.kicker}</span></div>`:''}<h2 style="margin-top:30px">${p.title}</h2>
+    ${p.items?`<div class="list">${p.items.map(t=>`<div class="it"><span style="width:52px;height:52px;flex:none;color:#fff">${V}</span><span>${t}</span></div>`).join('')}</div>`:''}
+    ${p.body?`<div class="body">${p.body}</div>`:''}
+    ${p.games?`<div class="games">${p.games.map(g=>`<span>${g}</span>`).join('')}</div>`:''}
+    <div><span class="cta">${p.cta||'app.iqrra.com'}</span></div></div>${foot(false)}</div>`,
+  check: (p) => `<div class="page ${p.bg||'dark'}${p.story?' story':''}${p.compact?' compact':''}" id="${p.id}">${brand}
+    <div class="center"><div><span class="kicker">${p.kicker}</span></div><h2 style="margin-top:30px">${p.title}</h2>
+    <div class="list">${p.items.map((t,k)=>`<div class="it">${p.letters?`<span class="opt">${p.letters[k]}</span>`:'<span class="box"></span>'}<span>${t}</span></div>`).join('')}</div>
+    ${p.after?`<div class="sub" style="font-size:38px">${p.after}</div>`:''}</div>${foot(false)}</div>`,
+  quote: (p) => `<div class="page ${p.bg||'dark'}" id="${p.id}">${brand}${p.deco||''}
+    <div class="center"><div class="qmark">”</div><div class="quote${p.sm?' sm':''}">${p.text}</div><div class="sig">${p.sig}</div></div>${foot(false)}</div>`,
+  stat: (p) => `<div class="page dark" id="${p.id}">${brand}${count(p.i,p.n)}
+    <div class="center"><div class="when" style="color:var(--aqua)">${p.when}</div><h2>${p.title}</h2><div class="body">${p.body}</div></div>${foot(p.i<p.n)}</div>`,
+};
+
+/* ---------- C1 خطة مراجعة في أسبوعين ---------- */
+const C1 = [
+ {t:'cover', kicker:'امتحانات نهاية الفصل الأول', title:'خطة مراجعة<br>في <span class="hl">أسبوعين</span>', sub:'بلا سهر، ولكل خطوة أداة جاهزة'},
+ {t:'tip', num:'01', when:'اليومان 1 و2', title:'ارسم خريطة الوحدة', body:'اكتب نتاجات كل وحدة في صفحة واحدة، وعلّم الدروس التي تعثّر فيها الصف في الاختبارات القصيرة. هذه دروس المراجعة أولًا.'},
+ {t:'tip', num:'02', when:'الأيام 3 إلى 6', title:'ورقة قصيرة لكل درس صعب', body:'عشرة أسئلة متدرّجة تكفي، من السهل إلى الأصعب، ومعها مفتاح الإجابات. الورقة الطويلة لا تُحَلّ.', iq:'أوراق عمل جاهزة في الرياضيات للصفوف من 1 إلى 9، مع مفتاح الإجابات، في «المكتبة».'},
+ {t:'tip', num:'03', when:'الأيام 7 إلى 9', title:'اختبار تجريبي يصحّح نفسه', body:'انشر اختبارًا قصيرًا برابط، فيعرف كل طالب علامته، وأيّ الأسئلة أخطأ فيها، فور التسليم.', iq:'افتح أي تقييم واضغط «فعّل التغذية الراجعة الفورية».'},
+ {t:'tip', num:'04', when:'الأيام 10 إلى 12', title:'أعِد شرح ما تعثّروا فيه', body:'من نتائج الاختبار التجريبي اعرف أين أخطأ الطلبة، وأعِد شرح تلك الأسئلة بالذات، لا الوحدة كلها.', iq:'«لوحة النتائج» لكل تقييم، و«السبورة» تشاركها مع طلبتك برابط.'},
+ {t:'tip', num:'05', when:'اليومان 13 و14', title:'خفّف الحِمل', body:'راجِعوا بلعبة أسئلة سريعة بدل ورقة إضافية. الطالب المرتاح ليلة الامتحان يتذكّر أكثر.', iq:'«ألعاب إقرأ» مجانية، تُفتح بلا حساب.'},
+ {t:'iqrra', title:'كل خطوة في الخطة<br>لها أداة في «إقرأ»', body:'احفظ المنشور، وأرسله لزميلك الذي يراجع هذا الأسبوع.', cta:'app.iqrra.com'},
+];
+
+/* ---------- C2 5 أخطاء في أسئلة الامتحان ---------- */
+const C2 = [
+ {t:'cover', kicker:'قبل ما تطبع الورقة', title:'5 أخطاء<br>في أسئلة <span class="hl">الامتحان</span>', sub:'وكيف تتجنّبها في دقيقة'},
+ {t:'tip', num:'01', title:'كل الأسئلة حفظ', body:'نوّع بين التذكّر والفهم والتطبيق والتحليل. اجعل جزءًا واضحًا من الورقة يطلب من الطالب أن يفكّر، لا أن يسترجع فقط.'},
+ {t:'tip', num:'02', title:'صياغة تُربك', body:'تجنّب النفي المزدوج مثل «أيّ مما يلي ليس غير صحيح؟». سؤال واحد، فكرة واحدة، وفعل واضح: احسب، علّل، قارن.'},
+ {t:'tip', num:'03', title:'بدائل تفضح الإجابة', body:'إذا كان الخيار الصحيح دائمًا هو الأطول، أو «جميع ما ذُكر»، فالطالب يجيب من شكل الخيارات لا من فهمه.'},
+ {t:'tip', num:'04', title:'سؤال من خارج الدرس', body:'اربط كل سؤال بنتاج من نتاجات الدرس في الكتاب. ما لم يُدرَّس لا يُقاس، ولا يُفاجأ به الطالب يوم الامتحان.'},
+ {t:'tip', num:'05', title:'ورقة بلا ترتيب', body:'اجمع الأسئلة في مجموعات حسب نوعها، ولكل مجموعة عنوان وتعليمات واضحة وعلامة مكتوبة.'},
+ {t:'iqrra', kicker:'في «إقرأ»', title:'التقييمات تُبنى<br>على كتابك', items:['الأسئلة من نتاجات الدرس الذي تختاره','الورقة مرتّبة في مجموعات حسب النوع','مفاتيح الرياضيات تمرّ على محرّك تحقّق رمزي، وما لم يُتحقَّق منه يُقال بوضوح']},
+];
+
+/* ---------- C3 اليوم العالمي للغة العربية ---------- */
+const C3 = [
+ {t:'cover', kicker:'18 كانون الأول · اليوم العالمي للغة العربية', title:'7 أخطاء إملائية<br>يقع فيها <span class="hl">طلابنا</span>', sub:'احفظها، وشاركها مع صفّك'},
+ {t:'spell', num:'01', topic:'التاء المربوطة والهاء', wrong:'مدرسه', right:'مدرسة', rule:'إذا وقفتَ عليها <b>هاءً</b> ووصلتَها <b>تاءً</b> فهي تاء مربوطة: «مدرسةٌ جميلة».'},
+ {t:'spell', num:'02', topic:'هذا وهذه', wrong:'هاذا', right:'هذا', rule:'تُنطق الألف ولا تُكتب في: <b>هذا، هذه، ذلك، لكن، هؤلاء</b>.'},
+ {t:'spell', num:'03', topic:'اللام الشمسية', wrong:'اشّمس', right:'الشمس', rule:'تُكتب <b>اللام</b> وإن لم تُنطق، ويُشدَّد الحرف الذي بعدها: الشّمس، النّجم، الدّرس.'},
+ {t:'spell', num:'04', topic:'همزة الوصل والقطع', wrong:'إستخدام', right:'استخدام', rule:'مصدر الفعل <b>الخماسي والسداسي</b> همزته وصل: انطلاق، استخدام. ومصدر <b>الرباعي</b> همزته قطع: إكرام.'},
+ {t:'spell', num:'05', topic:'الألف الفارقة', wrong:'كتبو', right:'كتبوا', rule:'تُكتب ألف بعد <b>واو الجماعة</b> في الأفعال، ولا تُكتب بعد واو جمع المذكر: «معلّمو المدرسة».'},
+ {t:'spell', num:'06', topic:'تنوين الفتح', wrong:'كتابً', right:'كتابًا', rule:'يُكتب بعده <b>ألف</b>: كتابًا، إلا بعد التاء المربوطة: «مدرسةً»، وبعد همزة قبلها ألف: «سماءً».'},
+ {t:'spell', num:'07', topic:'إن شاء الله', wrong:'انشاء الله', right:'إن شاء الله', rule:'<b>ثلاث كلمات</b> منفصلة. أمّا «إنشاء» فمعناها البناء والتأسيس.'},
+ {t:'iqrra', kicker:'العب وتعلّم', title:'تدرّبوا عليها بلعبة<br>«كيف تُكتب؟»', body:'لعبة إملاء للصفوف من الثاني إلى السابع، وبعد كل إجابة يذكّرك التطبيق بالقاعدة. مجانية وبلا حساب.', cta:'app.iqrra.com/play'},
+];
+
+/* ---------- C4 التصحيح ---------- */
+const C4 = [
+ {t:'cover', kicker:'موسم التصحيح', title:'120 ورقة<br><span class="hl">للتصحيح؟</span>', sub:'5 طرق توفّر عليك المساء'},
+ {t:'tip', num:'01', title:'صحّح سؤالًا سؤالًا', body:'صحّح السؤال الأول في كل الأوراق، ثم الثاني… تثبت عينك على معيار واحد، فتصبح أسرع وأعدل.'},
+ {t:'tip', num:'02', title:'مفتاح بعلامات جزئية', body:'اكتب قبل أن تبدأ: كم علامة للخطوة، وكم للإجابة النهائية. لا تقرّر ذلك عند الورقة العاشرة.'},
+ {t:'tip', num:'03', title:'دع الموضوعي يُصحَّح وحده', body:'في التقييم الإلكتروني تُصحَّح أسئلة الاختيار من متعدد وصح وخطأ والتوصيل وملء الفراغ تلقائيًا، وتبقى لك الأسئلة المفتوحة.', iq:'«التقييمات»، ثم «لوحة النتائج» لكل الصف.'},
+ {t:'tip', num:'04', title:'امتحان ورقي؟ صوّره', body:'في الامتحان الورقي اضغط «امسح أوراق الصف»، وصوّر الأوراق بالكاميرا بدل إدخال العلامات ورقةً ورقة.', iq:'متاح للامتحانات الورقية المنشورة.'},
+ {t:'tip', num:'05', title:'انظر إلى الصف لا إلى الورقة', body:'بعد التصحيح اسأل: أيّ سؤال أخطأ فيه أغلب الطلبة؟ هذا أول ما تبدأ به الفصل الثاني.'},
+ {t:'iqrra', title:'صحّح أقل…<br>وافهم صفّك أكثر', body:'احفظ المنشور لموسم التصحيح القادم، وشاركه مع زملائك.', cta:'app.iqrra.com'},
+];
+
+/* ---------- C5 إقرأ في 2026 ---------- */
+const C5 = [
+ {t:'cover', kicker:'نهاية السنة', title:'«إقرأ»<br>في <span class="hl">2026</span>', sub:'سنة بنيناها لمعلّمي الأردن، درسًا درسًا'},
+ {t:'stat', when:'المنهاج', title:'من الصف الأول<br>حتى العاشر', body:'اختر الصف والمادة والدرس كما في كتابك، فيعمل «إقرأ» من دروس الكتاب نفسه، لا من محتوى عام.'},
+ {t:'stat', when:'التحضير', title:'حصة كاملة،<br>مش نص', body:'خطة درس، وشرائح عرض، ونشاط صفّي، وورقة عمل، واختبار قصير — بأسلوب التدريس الذي تختاره.'},
+ {t:'stat', when:'الرياضيات', title:'مفاتيح يتحقّق<br>منها محرّك رمزي', body:'ويُوسَم كل مفتاح بمصدر التحقّق. وصارت أسئلة الاختبار تحمل رسمًا: منحنى اقتران أو متجهات.'},
+ {t:'stat', when:'أثناء الحصة', title:'السبورة', body:'اكتب بالقلم، وأضف صفحات ونصوصًا بألوان، ثم احفظها أو صدّرها PDF، أو شاركها مع طلبتك برابط.'},
+ {t:'stat', when:'بعد الحصة', title:'تغذية راجعة<br>فورية', body:'يرى الطالب علامته وأيّ الأسئلة أصاب فيها وأيّها أخطأ فور التسليم. والإجابات الصحيحة حين تعرضها أنت.'},
+ {t:'stat', when:'للجميع', title:'ألعاب إقرأ', body:'ألعاب تعليمية مجانية بلا حساب: «كيف تُكتب؟»، «قارن الكسور»، «محافظات الأردن»، «صلب، سائل أم غاز؟» وغيرها.'},
+ {t:'iqrra', title:'شكرًا لكل معلّم<br>جرّب وسأل واقترح', body:'2027 نكمّلها معك. الفصل الثاني يبدأ 24 كانون الثاني، وتحضيره يبدأ من هنا.', cta:'app.iqrra.com'},
+];
+
+/* ---------- statics ---------- */
+const S = [
+ {t:'check', id:'s1', kicker:'سؤال للمعلمين', title:'شو أكثر إشي بوخذ<br>وقتك بالمراجعة؟', letters:['أ','ب','ج','د'], items:['كتابة الأسئلة','مفتاح الإجابات','التصحيح','تنسيق الورقة وطباعتها'], after:'جاوبنا بالحرف في التعليقات.'},
+ {t:'check', id:'s1-story', story:true, kicker:'سؤال للمعلمين', title:'شو أكثر إشي بوخذ<br>وقتك بالمراجعة؟', letters:['أ','ب','ج','د'], items:['كتابة الأسئلة','مفتاح الإجابات','التصحيح','تنسيق الورقة وطباعتها'], after:'صوّت بالأسفل'},
+ {t:'check', id:'s2', bg:'dark', compact:true, kicker:'الثلاثاء 15 كانون الأول', title:'قبل الامتحانات:<br>قائمة المعلم', items:['ورقة الامتحان مراجَعة، ومفتاحها جاهز','توزيع العلامات مكتوب على الورقة','نسخة احتياطية لكل شعبة','خطة واضحة لمن يغيب','قلم أحمر… وكوب قهوة'], after:'امتحانات نهاية الفصل الأول للصفوف من 4 إلى 12 · بالتوفيق لكم ولطلبتكم'},
+ {t:'quote', id:'s3', sm:true, text:'إلى المعلّم ليلة الامتحان:<br>علّمتَ هذا الدرس فصلًا كاملًا،<br>والورقة تقيس يومًا واحدًا.<br><span style="color:var(--aqua)">نَم جيدًا.</span>', sig:'— فريق «إقرأ»'},
+ {t:'quote', id:'s4', bg:'teal', deco: STAR(120,240,90)+STAR(860,330,60)+STAR(780,1010,110)+STAR(160,980,50)+STAR(520,180,40), text:'ميلاد مجيد<br><span style="font-size:52px;font-weight:700;line-height:1.6">كل عام ومعلّمونا وطلبتنا<br>وعائلاتهم بخير وسلام</span>', sig:'— فريق «إقرأ»'},
+ {t:'iqrra', id:'s5', bg:'dark', kicker:'أهلًا 2027', title:'الفصل الثاني يبدأ<br><span style="color:var(--aqua)">24 كانون الثاني</span>', body:'استمتع بالعطلة. وحين تعود، حصّتك الأولى جاهزة في دقائق: خطة، وشرائح، وورقة عمل على الدرس نفسه.', cta:'app.iqrra.com'},
+ {t:'iqrra', id:'s6', bg:'dark', kicker:'عطلة بسبب الطقس؟', title:'خلّي الأولاد<br>يلعبوا ويتعلّموا', games:['كيف تُكتب؟','قارن الكسور','محافظات الأردن','صلب، سائل أم غاز؟','ضد الكلمة'], body:'مجانًا وبلا حساب، على الهاتف أو الحاسوب.', cta:'app.iqrra.com/play'},
+ {t:'iqrra', id:'s6-story', story:true, bg:'dark', kicker:'عطلة بسبب الطقس؟', title:'خلّي الأولاد<br>يلعبوا ويتعلّموا', games:['كيف تُكتب؟','قارن الكسور','محافظات الأردن','صلب، سائل أم غاز؟','ضد الكلمة'], body:'مجانًا وبلا حساب، على الهاتف أو الحاسوب.', cta:'app.iqrra.com/play'},
+];
+
+const sets = {c1:C1,c2:C2,c3:C3,c4:C4,c5:C5};
+let html = '';
+for (const [k,arr] of Object.entries(sets)) arr.forEach((p,j)=>{ html += T[p.t]({...p, id:`${k}-${j+1}`, i:j+1, n:arr.length}); });
+S.forEach(p => html += T[p.t](p));
+document.getElementById('root').innerHTML = html;
+</script>
+</body>
+</html>
