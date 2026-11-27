@@ -34,6 +34,12 @@ the lesson). Asked for as «a lesson exit ticket tool», it was reachable only f
   ticket's «جديد». `toolIdsForPath` takes the search params and matches a tool that has
   `routeParams` only when they are all present; `useClearNewToolOnVisit` passes
   `useGlobalSearchParams()`.
+- **It is a preset, kept on purpose.** `toolCatalog.test.ts` forbids a second card on a route
+  another card owns («تبسيط الشرح» shipped for three weeks as a mode flag dressed as a tool).
+  This card passed that check only because `/ai-tools/classroom/builder` is a different string
+  from `/ai-tools/classroom`. The owner chose to keep it as an exception, so a new test now
+  catches any card whose route sits under another tool's, against an `ALLOWED_PRESETS` list
+  that names `exit-ticket` with its reason; a second preset needs its own decision there.
 
 **Verified:** `whatsNew.test.ts` (two new tests: the params rule, on a fixture and on the real
 catalog — builder + `exit-ticket` clears it, builder + `bingo` does not — and the card's route,

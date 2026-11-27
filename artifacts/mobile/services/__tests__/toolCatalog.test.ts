@@ -39,7 +39,7 @@ import {
 
 const OFFERED_TOOLS = [
   'slides', 'lesson-plan',                                                // before
-  'worksheet', 'whiteboard', 'classroom', 'game', 'activity', 'games',     // during
+  'worksheet', 'whiteboard', 'classroom', 'game', 'activity', 'games', 'exit-ticket', // during
   'quiz', 'evaluations', 'parent-msg',                                    // after
 ];
 
@@ -98,6 +98,25 @@ describe('toolCatalog — the offered surface', () => {
       assert.equal(owner, undefined, `${tool.id} shares ${tool.route} with ${owner}`);
       byRoute.set(tool.route, tool.id);
     }
+  });
+
+  it('never offers a card for a screen inside another tool, unless the owner decided to', () => {
+    // The same preset by a longer address: a card on `/ai-tools/classroom/builder`
+    // is the classroom tool opened on one of its activities. Each one is an owner's
+    // decision, written here with its reason; anything else fails.
+    const ALLOWED_PRESETS: Record<string, string> = {
+      // 2026-11-27, asked for as «a lesson exit ticket tool»: the exit ticket is
+      // one of five activities behind the classroom card, and the end of the
+      // lesson is when a teacher reaches for it.
+      'exit-ticket': 'classroom',
+    };
+    const presets: Record<string, string> = {};
+    for (const tool of ALL_TOOLS) {
+      if (!tool.route) continue;
+      const owner = ALL_TOOLS.find(o => o !== tool && o.route && tool.route!.startsWith(`${o.route}/`));
+      if (owner) presets[tool.id] = owner.id;
+    }
+    assert.deepEqual(presets, ALLOWED_PRESETS);
   });
 });
 
