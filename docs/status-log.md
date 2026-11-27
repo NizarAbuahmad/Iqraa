@@ -10,6 +10,33 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Spelling rule «الألف اللينة في الكلمات فوق الثلاثية» corrected — 2026-11-27
+
+Found recording a reel of the free spelling game (`/play/spelling`): after a question on «متى» it printed
+«الكتابة الصحيحة: «متى» — الألف اللينة في الكلمات فوق الثلاثية». «متى» has three letters and is a مبني noun, and
+«إلّا», in the same list, is a particle; neither is an example of the rule. And the rule's `ruleAr` gave the
+three-letter test (ا if the origin is واو, ى if ياء) instead of the rule for longer words.
+
+**What changed** (`lib/arabic-spelling/src/rules.ts`, rule `alif-layyina-fawq-thulathiya`). `ruleAr` now follows the
+Grade 5 student book, semester 1, p.79 («أَسْتَنْتِجُ»): a final alif in a word over three letters, noun or verb, is
+written ى, except after a ياء or in a foreign noun, where it is ا; plus the book's p.80 note that the name «يحيى» is
+written with ى to tell it from the verb «يحيا». «متى» and «إلّا» are removed — no rule in the bank teaches الأسماء
+المبنية or الحروف, so they had nowhere to move. Three words from the lesson's own text (p.78) replace them, one per
+branch: «يَتَبَاهَى» (ى), «زَوَايَا» (ا after ي), «كَامِيرَا» (foreign noun). The rule has 9 words (it had 8; the
+suite requires 8).
+
+**Verified.** A new test in `rules.test.ts` fails any word with three letters or fewer (harakat and the article
+stripped) in a rule named «فوق الثلاثية»; it was watched failing on «إِلَّا» before the fix. The package suite (252),
+the mobile spelling-game test, the API's `spellingItems.test.ts` and the root typecheck pass. The choice-safety test
+still counts 3 dictation-only words for the rule: the three new misspellings (يتباها، زوايى، كاميرى) and the derived
+«يتباهي» are not words.
+
+**Not verified.** The book was read from its extracted text layer, which scrambles the page; the fill-in blanks of
+p.79 were completed from the p.78 sorting table (اسم أعجمي، اسم/فعل ألفه مسبوقة بياء). The teacher's guide for the
+lesson is not in the repo. Not read by an Arabic teacher. Left as it was: «يُصَلِّي» in the same rule ends in ي, not
+an alif, and its misspelling «يصلى» is also a real word (passive «يُصَلَّى»), so it is not marked dictation-only
+when it arguably should be. No «ما الجديد» entry: a correction to existing content, not a feature.
+
 ## Exam generation warnings in Arabic — 2026-11-27
 
 The review screen printed a generated exam's warnings exactly as the API sent them, and the API wrote every one in
