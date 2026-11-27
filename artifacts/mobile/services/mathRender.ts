@@ -583,7 +583,11 @@ function protectBars(s: string): string {
       // Two Latin words is prose, not a magnitude: an English book's text layer
       // reads the pronoun «I» as «|» — «Well... | had it when | went to…».
       const words = inner.match(/[A-Za-z]{2,}/g)?.length ?? 0;
-      if (j > i && BAR_CONTENT.test(inner) && balanced(inner) && words < 2) {
+      // A magnitude never spans a brace: in «{x | x > 2} {y | y < 1}» the two bars
+      // are two sets' separators. Bars are paired before the set-builder pass (so
+      // «{x | |x| < 3}» is seen whole), which is why this check is needed.
+      const spansBrace = inner.includes('{') || inner.includes('}');
+      if (j > i && BAR_CONTENT.test(inner) && balanced(inner) && words < 2 && !spansBrace) {
         out += BAR_STAND_IN + inner + BAR_STAND_IN;
         i = j + 1;
         continue;
@@ -713,17 +717,20 @@ function worthIsolating(run: string): boolean {
 }
 
 export function isolateForeignRuns(line: string): string {
+  // Bars are paired before the set-builder and conditional-probability passes, so a
+  // magnitude inside a set «{x | |x| < 3}» is already a stand-in when they look for
+  // the one separator bar.
   const out = protectBars(
     (line ?? '')
       .replace(BLANK_RE, BLANK)
       .replace(VECTOR_RE, protectVector)
       .replace(INTERVAL_RE, protectInterval)
-      .replace(PAIR_RE, protectPair)
-      .replace(SET_BUILDER_RE, protectSet)
-      .replace(ROSTER_RE, protectRoster)
-      .replace(POINT_SET_RE, protectRoster)
-      .replace(COND_PROB_RE, protectCondProb),
+      .replace(PAIR_RE, protectPair),
   )
+    .replace(SET_BUILDER_RE, protectSet)
+    .replace(ROSTER_RE, protectRoster)
+    .replace(POINT_SET_RE, protectRoster)
+    .replace(COND_PROB_RE, protectCondProb)
     .replace(DOT_RE, protectDot)
     .replace(FOREIGN_RUN_RE, m => {
     // A run with the bank's blank in it is overridden left-to-right, not just

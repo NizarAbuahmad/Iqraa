@@ -716,6 +716,19 @@ describe('isolateForeignRuns — set-builder notation and conditional probabilit
     assert.equal(isolateForeignRuns('احسب P(A′|B)'), 'احسب ⁦P(A′|B)⁩');
   });
 
+  // The set-builder pass could not see past a magnitude inside the set: «{x | |x| < 3}»
+  // was cut at its separator. The bars are paired first now (found 2026-11-27).
+  it('keeps a set-builder holding a magnitude whole', () => {
+    assert.equal(isolateForeignRuns('مجموعة الحل {x | |x| < 3}'), 'مجموعة الحل ⁦{x | |x| < 3}⁩');
+    assert.equal(isolateForeignRuns('{x | |x − 1| ≥ 2}'), '⁦{x | |x − 1| ≥ 2}⁩');
+  });
+
+  it('does not pair bars across two sets side by side', () => {
+    // A magnitude never spans a brace: the bars here are two sets' separators.
+    assert.equal(isolateForeignRuns('{x | x > 2} {y | y < 1}'), '⁦{x | x > 2} {y | y < 1}⁩');
+    assert.equal(isolateForeignRuns('المجموعتان {x | x > 2} و {y | y < 1}'), 'المجموعتان ⁦{x | x > 2}⁩ و ⁦{y | y < 1}⁩');
+  });
+
   it('keeps a conditional probability beside a magnitude whole', () => {
     assert.equal(isolateForeignRuns('P(B|A) + |x|'), '⁦P(B|A) + |x|⁩');
   });
