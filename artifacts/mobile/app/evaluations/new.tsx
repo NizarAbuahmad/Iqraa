@@ -56,6 +56,7 @@ import { scanErrorKey } from '@/services/scanErrors';
 import { groupObjectivesByLesson, isEverythingSelected, toggleEverything } from '@/services/objectiveLessons';
 import { selectionForGrade, typesOffered } from '@/services/evaluationTypes';
 import { totalChoicesFor, totalToSend } from '@/services/examTotal';
+import { generationWarnings } from '@/services/generationWarnings';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -414,7 +415,7 @@ export default function NewEvaluationScreen() {
               })),
         );
       } else {
-        warnings = (await generateEvaluation(evaluation.id)).warnings ?? [];
+        warnings = generationWarnings(await generateEvaluation(evaluation.id), lang);
       }
       // The detail screen re-derives everything else from the questions; the
       // generator's warnings are the one thing it cannot, so they ride along.

@@ -34,6 +34,7 @@ import {
 } from "@workspace/math-verify";
 import { MARKS_BY_COMPETENCY, competencyForBlooms, type CompetencyKey } from "./competency.ts";
 import { scaleRubric } from "./marksTotal.ts";
+import { arDigits } from "./arabicNotes.ts";
 import type { BookSupplied } from "./bookQuestions.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { variationBlock } from "../../lib/variation.ts";
@@ -673,6 +674,8 @@ function rubricOnMarks(rubric: Record<string, unknown> | null, marks: number): R
 export interface LlmGenerationResult extends ParseResult {
   model: string;
   notes: string[];
+  /** The same notes in Arabic, one for one. */
+  notesAr: string[];
 }
 
 /**
@@ -691,6 +694,7 @@ export async function generateWithModel(
   const result = parseGeneratedQuestions(parsed, req, { model });
 
   const notes: string[] = [];
+  const notesAr: string[] = [];
   if (result.discarded.length > 0) {
     // Said out loud rather than swallowed: a teacher who asked for 15 and got
     // 11 is owed the reason, and silently short papers are how a generator's
@@ -699,6 +703,10 @@ export async function generateWithModel(
       `Discarded ${result.discarded.length} malformed question(s) from the model: ` +
         result.discarded.map(d => `#${d.index + 1} ${d.reason}`).join("; "),
     );
+    // The reasons are a developer's (type ids, field names); the count is the teacher's.
+    notesAr.push(
+      `استُبعدت أسئلة كتبها النموذج عددها ${arDigits(result.discarded.length)}، لأنها لم تأتِ بالصيغة المطلوبة.`,
+    );
   }
-  return { ...result, model, notes };
+  return { ...result, model, notes, notesAr };
 }

@@ -143,6 +143,8 @@ export interface GenerateResult {
   unavailableTypes: QuestionType[];
   rejected: { reason: string }[];
   warnings: string[];
+  /** The same warnings in Arabic, one for one (API since 2026-11-27); show them with `generationWarnings`. */
+  warningsAr?: string[];
 }
 
 export class EvaluationError extends Error {

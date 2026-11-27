@@ -16,7 +16,8 @@ import { stemFrame } from "@workspace/math-practice";
 import { hasSentence, sameAsk } from "@workspace/exam-paper";
 import { QUESTION_TYPES } from "./questionTypes.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
-import { COMPETENCY_KEYS } from "./competency.ts";
+import { COMPETENCY_KEYS, COMPETENCY_LABELS_AR, type CompetencyKey } from "./competency.ts";
+import { arDigits, optionLetterAr } from "./arabicNotes.ts";
 
 /** Two per competency: the length from which `allocateQuestions` seeds all four. */
 const SEED_EVERY_COMPETENCY_FROM = 2 * COMPETENCY_KEYS.length;
@@ -30,6 +31,8 @@ export interface ValidationResult {
   accepted: GeneratedQuestion[];
   rejected: ValidationIssue[];
   warnings: string[];
+  /** The same warnings in Arabic, one for one and in the same order. */
+  warningsAr: string[];
 }
 
 /**
@@ -88,6 +91,12 @@ export function validateGenerated(
   const accepted: GeneratedQuestion[] = [];
   const rejected: ValidationIssue[] = [];
   const warnings: string[] = [];
+  const warningsAr: string[] = [];
+  /** Each warning is said in both languages, so the two lists stay one for one. */
+  const warn = (en: string, ar: string) => {
+    warnings.push(en);
+    warningsAr.push(ar);
+  };
 
   const allowedObjectives = new Set(options.allowedObjectiveIds);
   const allowedTypes = new Set(options.allowedTypes);
@@ -157,8 +166,9 @@ export function validateGenerated(
   const covered = new Set(accepted.map(q => q.objectiveId));
   const uncovered = options.allowedObjectiveIds.filter(id => !covered.has(id));
   if (uncovered.length > 0) {
-    warnings.push(
+    warn(
       `${uncovered.length} selected objective(s) have no questions: ${uncovered.join(", ")}`,
+      `من النتاجات التي اخترتها نتاجات لا يقيسها أي سؤال، وعددها ${arDigits(uncovered.length)}.`,
     );
   }
 
@@ -170,8 +180,9 @@ export function validateGenerated(
   }
   for (const [competency, n] of byCompetency) {
     if (n < 2) {
-      warnings.push(
+      warn(
         `Competency "${competency}" has only ${n} question — too few to report a score from`,
+        `في كفاية «${COMPETENCY_LABELS_AR[competency as CompetencyKey] ?? competency}» سؤال واحد فقط، وهو لا يكفي لحساب علامة لها.`,
       );
     }
   }
@@ -183,8 +194,9 @@ export function validateGenerated(
   if (accepted.length >= SEED_EVERY_COMPETENCY_FROM) {
     for (const competency of COMPETENCY_KEYS) {
       if (!byCompetency.has(competency)) {
-        warnings.push(
+        warn(
           `Competency "${competency}" has no questions — the paper cannot report a score for it`,
+          `لا سؤال في كفاية «${COMPETENCY_LABELS_AR[competency]}»، فلن يُحسب لها مستوى من هذا الاختبار.`,
         );
       }
     }
@@ -200,8 +212,10 @@ export function validateGenerated(
     const falses = tfValues.length - trues;
     if (Math.min(trues, falses) * 4 < tfValues.length) {
       const [count, word] = trues >= falses ? [trues, "true"] : [falses, "false"];
-      warnings.push(
-        `${count} of ${tfValues.length} true/false statements are ${word} — a student who always answers «${word === "true" ? "صح" : "خطأ"}» passes them`,
+      const answer = word === "true" ? "صح" : "خطأ";
+      warn(
+        `${count} of ${tfValues.length} true/false statements are ${word} — a student who always answers «${answer}» passes them`,
+        `إجابة ${arDigits(count)} من أصل ${arDigits(tfValues.length)} من عبارات الصواب والخطأ «${answer}»، فمن يجيب «${answer}» دائمًا يحصل على علاماتها.`,
       );
     }
   }
@@ -225,8 +239,9 @@ export function validateGenerated(
     for (const p of positions) tally.set(p, (tally.get(p) ?? 0) + 1);
     const [top, count] = [...tally.entries()].reduce((a, b) => (b[1] > a[1] ? b : a));
     if (count * 2 > positions.length) {
-      warnings.push(
+      warn(
         `${count} of ${positions.length} multiple-choice answers are option ${top + 1} — a student could guess the position`,
+        `الإجابة الصحيحة في ${arDigits(count)} من أصل ${arDigits(positions.length)} من أسئلة الاختيار من متعدد هي الخيار «${optionLetterAr(top)}»، فقد يخمّن الطالب موضعها.`,
       );
     }
   }
@@ -238,13 +253,14 @@ export function validateGenerated(
   // what reads like a long exam and measures one skill.
   const dominant = dominantKind(accepted.map(promptOf));
   if (dominant) {
-    warnings.push(
+    warn(
       `${dominant.count} of ${accepted.length} questions ask the same thing, with different numbers or ` +
         `in other words: «${dominant.example}»`,
+      `يسأل ${arDigits(dominant.count)} من أصل ${arDigits(accepted.length)} من الأسئلة الشيءَ نفسه بأرقام أخرى أو بصياغة أخرى: «${dominant.example}»`,
     );
   }
 
-  return { accepted, rejected, warnings };
+  return { accepted, rejected, warnings, warningsAr };
 }
 
 /**

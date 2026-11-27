@@ -7,6 +7,8 @@
  * harder question is never worth less than an easier one.
  */
 
+import { arDigits } from "./arabicNotes.ts";
+
 /** `null` when it cannot be done: no questions, a total that is not a whole number, or fewer marks than questions. */
 export function scaleMarks(weights: readonly number[], total: number): number[] | null {
   const n = weights.length;
@@ -103,7 +105,7 @@ export function fitToTotal(
   target: number | null | undefined,
   /** The question count asked for: a shorter paper still shares the whole total, and is told so. */
   requested?: number,
-): { marks: number[]; note?: string } {
+): { marks: number[]; note?: string; noteAr?: string } {
   if (target === null || target === undefined || marks.length === 0) return { marks: [...marks] };
   const scaled = scaleMarks(marks, target - kept);
   if (scaled) {
@@ -113,6 +115,9 @@ export function fitToTotal(
         note:
           `Only ${marks.length} of the ${requested} questions asked for were written, and they share the `
           + `${target - kept} marks between them; a question you add by hand takes the paper past ${target}.`,
+        noteAr:
+          `كُتب من الأسئلة ${arDigits(marks.length)} فقط من أصل ${arDigits(requested)} طلبتها، فتقاسمت العلامات كلها (${arDigits(target - kept)})؛ `
+          + `وأي سؤال تضيفه بيدك يرفع العلامة الكلية فوق ${arDigits(target)}.`,
       }
       : { marks: scaled };
   }
@@ -123,5 +128,10 @@ export function fitToTotal(
       + `${marks.length} generated question${marks.length === 1 ? "" : "s"} need at least one mark each`
       + (kept > 0 ? `, and your own questions already carry ${kept}` : "")
       + ". The generator's own marks were kept.",
+    noteAr:
+      `تعذّر جعل العلامة الكلية ${arDigits(target)} كما طلبت: `
+      + `يحتاج كل سؤال من الأسئلة المولَّدة (${arDigits(marks.length)}) إلى علامة واحدة على الأقل`
+      + (kept > 0 ? `، وعلامات أسئلتك أنت مجموعها ${arDigits(kept)}` : "")
+      + ". أُبقيت علامات المولِّد كما هي.",
   };
 }

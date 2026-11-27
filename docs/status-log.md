@@ -10,6 +10,36 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Exam generation warnings in Arabic — 2026-11-27
+
+The review screen printed a generated exam's warnings exactly as the API sent them, and the API wrote every one in
+English, so an Arabic teacher read «3 of 12 questions ask the same thing…» under an Arabic paper (noted under «Found,
+not fixed» in the entry below).
+
+**What changed.** Each warning is now written in Arabic beside the English, where it is made, and every producer
+returns an Arabic list one for one with its English list: `validateGenerated` (`warningsAr`), `verifyAnswerKeys`
+(`warningsAr`) and `contradictionWarningAr`, `generateMockEvaluation` (`notesAr`, including the library pointer),
+`generateWithModel` (`notesAr`), `fitToTotal` (`noteAr`). The route's own notes moved out of `routes/evaluations.ts`
+into `modules/assessment/generationNotes.ts` (`{ en, ar }` pairs; the English is the route's, word for word). `POST
+/evaluations/:id/generate` returns `warningsAr` beside `warnings`; `warnings` is unchanged, so an installed app that
+does not know `warningsAr` keeps showing English. The app shows `warningsAr` when its language is Arabic and the two
+lists are the same length (`services/generationWarnings.ts`), on the new-exam path and on regenerate.
+
+How the Arabic is written: Arabic-Indic digits; question types by the picker's own names; an option by its abjad
+letter (أ ب ج د, as the exports letter them); competencies by `COMPETENCY_LABELS_AR`. Counts are phrased so the
+number stands on its own («أسئلة عددها ٢», «٣ من أصل ١٠ من الأسئلة») — the first draft read «٢ سؤالًا» and «٣ من ١٠
+سؤالًا», which no Arabic counting rule allows. What only a developer reads is left out of the Arabic: the
+verifier's English reasons (the questions are named by number), the model's discard reasons (the count is given),
+objective ids (the count is given).
+
+**Verified.** `warningsArabic.test.ts` (api-server) drives each producer into its warnings and asserts the Arabic
+list has the same length, Arabic letters and no English word; `generationWarnings.test.ts` (mobile) covers the
+choice and its fallbacks. Both were watched failing first. Every Arabic warning was printed and read by eye.
+
+**Not verified.** Not seen on a screen (RTL, long stems quoted inside a warning). The Arabic was written here, not
+read by a native-speaking teacher. A new warning added later in English only is caught by the test only if the test
+drives it.
+
 ## Exams: the live prompt states the competency mix and marks, a teacher picks the total, options are shuffled — 2026-11-27
 
 From a review of the evaluation generator (2026-11-13): a live paper with no textbook share — every
