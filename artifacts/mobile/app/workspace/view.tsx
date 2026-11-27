@@ -60,6 +60,8 @@ import { RADIUS, SPACE } from '@/constants/theme';
 import { allPremade } from '@workspace/curriculum/premade';
 import { GRADES, SUBJECTS } from '@workspace/curriculum';
 import { BackButton } from '@/components/ui/BackButton';
+import { BoardViewer } from '@/components/classroom/BoardViewer';
+import { buildBoardHTML } from '@/services/boardExportHtml';
 
 export default function WorkspaceViewScreen() {
   const colors = useColors();
@@ -259,6 +261,7 @@ export default function WorkspaceViewScreen() {
   const getHTML = () => {
     if (!content) return '<p></p>';
     const meta = { subject: item.subject, grade: item.grade };
+    if (kind === 'board') return buildBoardHTML(content, item.title, isAr) ?? '<p></p>';
     const figures = getExportFigures();
     if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr, figures);
     if (kind === 'activity') return buildActivityHTML(content as ActivityOutput, item.title, meta, isAr, figures);
@@ -298,7 +301,9 @@ export default function WorkspaceViewScreen() {
     try {
       const newId = await saveSharedMaterial(code);
       showToast(t('sharedSaved'));
-      router.replace({ pathname: '/workspace/view', params: { id: newId } } as any);
+      // A whiteboard has no reading view of its own for its owner: it opens in the board.
+      if (item.type === 'board') router.replace({ pathname: '/ai-tools/whiteboard' as any, params: { savedId: newId } });
+      else router.replace({ pathname: '/workspace/view', params: { id: newId } } as any);
     } catch {
       showToast(t('error'));
     } finally {
@@ -501,6 +506,8 @@ export default function WorkspaceViewScreen() {
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', textAlign: isRTL ? 'right' : 'left' }}>
             {t('noContentAvailable')}
           </Text>
+        ) : kind === 'board' ? (
+          <BoardViewer content={content} />
         ) : kind === 'lesson' ? (
           <LessonView plan={content as LessonPlanOutput} colors={colors} isRTL={docRTL} t={docT} accent={accent} />
         ) : kind === 'activity' ? (

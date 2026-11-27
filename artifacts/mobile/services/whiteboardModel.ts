@@ -450,14 +450,50 @@ export function addText(state: BoardState, item: TextItem): BoardState {
   return commitTexts(state, [...state.texts, item]);
 }
 
-/** Change the words of one text (its place, colour and size stay; its direction follows the words). Same words give the same state back. */
-export function editText(state: BoardState, index: number, rawText: string): BoardState {
+/** What can change about a text that is already placed. Anything left out stays. */
+export type TextPatch = { text?: string; color?: string; size?: number };
+
+const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
+
+/**
+ * Change a placed text — its words, colour and size, any of them, as ONE undo step. Its place
+ * stays (`moveText` moves it). The direction follows the words, and is kept when only the colour
+ * or size changes. Emptied words remove the text. A colour that is not plain hex is ignored (the
+ * palette only offers valid ones, and a bad one would make the board unsavable); a size is
+ * clamped into the range the file accepts, and a size that is not a number is ignored. Nothing
+ * that actually changes gives the same state back.
+ */
+export function updateText(state: BoardState, index: number, patch: TextPatch): BoardState {
   const old = state.texts[index];
   if (!old) return state;
-  const text = cleanText(rawText);
+  const text = patch.text === undefined ? old.text : cleanText(patch.text);
   if (text === '') return removeText(state, index);
-  if (text === old.text) return state;
-  return commitTexts(state, state.texts.map((t, i) => (i === index ? { ...t, text, rtl: textIsRtl(text) } : t)));
+  const color = patch.color !== undefined && HEX_COLOR.test(patch.color) ? patch.color : old.color;
+  const size =
+    patch.size !== undefined && Number.isFinite(patch.size)
+      ? Math.min(MAX_TEXT_SIZE, Math.max(MIN_TEXT_SIZE, patch.size))
+      : old.size;
+  if (text === old.text && color === old.color && size === old.size) return state;
+  const next: TextItem = { ...old, text, color, size, rtl: text === old.text ? old.rtl : textIsRtl(text) };
+  return commitTexts(state, state.texts.map((t, i) => (i === index ? next : t)));
+}
+
+/** Change the words of one text. Same words give the same state back. */
+export const editText = (state: BoardState, index: number, rawText: string): BoardState =>
+  updateText(state, index, { text: rawText });
+
+/**
+ * Move a text to a new spot: clamped onto the page and rounded like a new one. For an Arabic text
+ * the spot is its right edge, as when it was placed. A move of under a tenth of a unit, or to a
+ * number that is not finite, is no move and gives the same state back.
+ */
+export function moveText(state: BoardState, index: number, x: number, y: number): BoardState {
+  const old = state.texts[index];
+  if (!old || !Number.isFinite(x) || !Number.isFinite(y)) return state;
+  const nx = round1(Math.min(CANVAS_W, Math.max(0, x)));
+  const ny = round1(Math.min(CANVAS_H, Math.max(0, y)));
+  if (nx === old.x && ny === old.y) return state;
+  return commitTexts(state, state.texts.map((t, i) => (i === index ? { ...t, x: nx, y: ny } : t)));
 }
 
 /** Remove one text. A bad index gives the same state back. */
