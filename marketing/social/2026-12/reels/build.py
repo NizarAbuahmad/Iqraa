@@ -4,8 +4,8 @@
     python reels/build.py reels/<id>.json [--music <file>]
 
 Two kinds of spec:
-  * "clip": a raw screen recording, cut by "segments" ([start, end] in source
-    seconds, joined in order), scaled into the phone window, with caption strips
+  * "clip": a raw screen recording, cut by "segments" ([start, end, speed?] in
+    source seconds, joined in order), scaled into the phone window, with caption strips
     shown at output times ("captions": [{"t0","t1","text"}]), then the end card.
   * "cards": a text-only reel, each card held "dur" seconds, cross-faded.
 Writes reels/out/<id>.mp4 (music bed, if given) and reels/out/<id>-silent.mp4.
@@ -37,9 +37,11 @@ def main():
         segs = spec.get('segments') or [[0, None]]
         speed = spec.get('speed', 1.0)
         parts, labels = [], []
-        for k, (s, e) in enumerate(segs):
+        for k, seg in enumerate(segs):
+            s, e = seg[0], seg[1]
+            sp = seg[2] if len(seg) > 2 else speed  # optional per-segment speed
             trim = f"trim=start={s}" + (f":end={e}" if e is not None else '')
-            parts.append(f"[0:v]{trim},setpts=(PTS-STARTPTS)/{speed},fps={FPS},"
+            parts.append(f"[0:v]{trim},setpts=(PTS-STARTPTS)/{sp},fps={FPS},"
                          f"scale={WIN['w']}:{WIN['h']}:force_original_aspect_ratio=decrease,"
                          f"pad={WIN['w']}:{WIN['h']}:(ow-iw)/2:(oh-ih)/2:color=0xF5F7FA,setsar=1[s{k}]")
             labels.append(f"[s{k}]")
