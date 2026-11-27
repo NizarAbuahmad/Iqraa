@@ -594,6 +594,23 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 't-e3', family: 'trig', diff: 'easy', eq: 'tan 45°', answer: '1', wrongs: ['0', '√3', 'غير معرّف'], promptAr: 'أوجد قيمة tan 45°.', promptEn: 'Find tan 45°.' },
   { id: 't-m1', family: 'trig', diff: 'medium', eq: 'sin θ = 1/2', answer: 'θ = 30° أو 150° (خلال دورة)', wrongs: ['θ = 60° فقط', 'θ = 90°', 'θ = 0°'], promptAr: 'حل: sin θ = 1/2 حيث 0° ≤ θ < 360°.', promptEn: 'Solve sin θ = 1/2 for 0° ≤ θ < 360°.' },
   { id: 't-m2', family: 'trig', diff: 'medium', eq: 'cos²θ + sin²θ', answer: '1', wrongs: ['0', '2', 'cos 2θ'], promptAr: 'بسّط: cos²θ + sin²θ', promptEn: 'Simplify: cos²θ + sin²θ' },
+  // «حل المعادلات المثلثية» on its own: cos θ = 0 (the axes), tan θ = 1, a
+  // linear sin equation with √3, tan negative, sin negative, a quadratic in
+  // cos that factors, sin² θ = 1/4 (four solutions), and a Ferris wheel. Every
+  // stem names 0° ≤ θ < 360°; `lessonFocus.test.ts` solves each equation again
+  // over every whole degree, so a key with a missing or an extra solution fails.
+  { id: 'te-e1', family: 'trig', diff: 'easy', eq: 'cos θ = 0', answer: 'θ = 90° أو 270°', wrongs: ['θ = 0° أو 180°', 'θ = 90° فقط', 'θ = 180°'], promptAr: 'حل: cos θ = 0 حيث 0° ≤ θ < 360°.', promptEn: 'Solve cos θ = 0 for 0° ≤ θ < 360°.' },
+  { id: 'te-e2', family: 'trig', diff: 'easy', eq: 'tan θ = 1', answer: 'θ = 45° أو 225°', wrongs: ['θ = 45° أو 135°', 'θ = 45° فقط', 'θ = 45° أو 315°'], promptAr: 'حل: tan θ = 1 حيث 0° ≤ θ < 360°.', promptEn: 'Solve tan θ = 1 for 0° ≤ θ < 360°.' },
+  { id: 'te-m1', family: 'trig', diff: 'medium', eq: '2 sin θ − √3 = 0', answer: 'θ = 60° أو 120°', wrongs: ['θ = 30° أو 150°', 'θ = 60° أو 300°', 'θ = 60° فقط'], promptAr: 'حل: 2 sin θ − √3 = 0 حيث 0° ≤ θ < 360°.', promptEn: 'Solve 2 sin θ − √3 = 0 for 0° ≤ θ < 360°.' },
+  { id: 'te-m2', family: 'trig', diff: 'medium', eq: 'tan θ = −1', answer: 'θ = 135° أو 315°', wrongs: ['θ = 45° أو 225°', 'θ = −45°', 'θ = 135° أو 225°'], promptAr: 'حل: tan θ = −1 حيث 0° ≤ θ < 360°.', promptEn: 'Solve tan θ = −1 for 0° ≤ θ < 360°.' },
+  { id: 'te-m3', family: 'trig', diff: 'medium', eq: 'sin θ = −1/2', answer: 'θ = 210° أو 330°', wrongs: ['θ = 30° أو 150°', 'θ = −30°', 'θ = 150° أو 210°'], promptAr: 'حل: sin θ = −1/2 حيث 0° ≤ θ < 360°.', promptEn: 'Solve sin θ = −1/2 for 0° ≤ θ < 360°.' },
+  { id: 'te-h1', family: 'trig', diff: 'hard', eq: '2cos²θ − cos θ − 1 = 0', answer: 'θ = 0° أو 120° أو 240°', wrongs: ['θ = 120° أو 240°', 'θ = 0° أو 60° أو 300°', 'θ = 0°'], promptAr: 'حل: 2cos² θ − cos θ − 1 = 0 حيث 0° ≤ θ < 360°.', promptEn: 'Solve 2cos² θ − cos θ − 1 = 0 for 0° ≤ θ < 360°.' },
+  { id: 'te-h2', family: 'trig', diff: 'hard', eq: 'sin²θ = 1/4', answer: 'θ = 30° أو 150° أو 210° أو 330°', wrongs: ['θ = 30° أو 150°', 'θ = 30° أو 330°', 'θ = 15° أو 165°'], promptAr: 'حل: sin² θ = 1/4 حيث 0° ≤ θ < 360°.', promptEn: 'Solve sin² θ = 1/4 for 0° ≤ θ < 360°.' },
+  {
+    id: 'te-w1', family: 'trig', diff: 'hard', eq: 'wheel h = 10 − 8 cos θ, h = 14', answer: 'θ = 120° أو 240°', wrongs: ['θ = 60° أو 300°', 'θ = 120° فقط', 'θ = 30° أو 150°'], kind: 'word', story: true,
+    wordAr: 'ارتفاع مقعد في دولاب هواء عن الأرض بالأمتار h = 10 − 8 cos θ، حيث θ الزاوية التي دارها الدولاب. خلال الدورة الأولى (0° ≤ θ < 360°)، عند أيّ زاوية يكون ارتفاع المقعد 14 مترًا؟',
+    wordEn: 'A Ferris wheel seat is h = 10 − 8 cos θ metres above the ground, where θ is the angle the wheel has turned. During the first turn (0° ≤ θ < 360°), at which angles is the seat 14 m high?',
+  },
   { id: 't-h1', family: 'trig', diff: 'hard', eq: '2 cos θ = 1', answer: 'θ = 60° أو 300°', wrongs: ['θ = 30° فقط', 'θ = 90°', 'θ = 45°'], promptAr: 'حل: 2 cos θ = 1 حيث 0° ≤ θ < 360°.', promptEn: 'Solve 2 cos θ = 1 for 0° ≤ θ < 360°.' },
 
   // ── Trig applications ──

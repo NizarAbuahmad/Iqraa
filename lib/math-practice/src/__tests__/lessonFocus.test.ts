@@ -101,11 +101,11 @@ describe('the worked example is the lesson\'s own', () => {
   });
 
   it('runs out rather than leave the lesson', () => {
-    // «حل المعادلات المثلثية» has two solved items of its own: two worked examples, then none.
+    // Mean and median (a typed topic) have two solved items of their own: two worked examples, then none.
     const session = new Set<string>();
-    assert.ok(takeSolvedMath('حل المعادلات المثلثية', null, 'medium', 'ar', session));
-    assert.ok(takeSolvedMath('حل المعادلات المثلثية', null, 'medium', 'ar', session));
-    assert.equal(takeSolvedMath('حل المعادلات المثلثية', null, 'medium', 'ar', session), null);
+    assert.ok(takeSolvedMath('الوسط الحسابي والوسيط', null, 'medium', 'ar', session));
+    assert.ok(takeSolvedMath('الوسط الحسابي والوسيط', null, 'medium', 'ar', session));
+    assert.equal(takeSolvedMath('الوسط الحسابي والوسيط', null, 'medium', 'ar', session), null);
   });
 
   it('practice takes the lesson\'s own items first, within the tier asked', () => {
@@ -123,14 +123,13 @@ describe('the worked example is the lesson\'s own', () => {
   });
 
   it('a lesson with items of its own takes one from another tier before the next lesson\'s', () => {
-    // Trigonometric equations have no easy item; an easy slot still takes the
-    // lesson's own (t-m1, t-h1) before the family's easy ones, which belong to
-    // «النسب المثلثية». A typed topic: the book's own title has a generator.
+    // Mean and median have no hard item; a hard slot still takes the lesson's own
+    // (s-e1, s-m1) before the family's hard one, which is probability (s-h1).
     // (Only a lesson with a single bank item keeps it to its own tier —
     // `takeFromBank` — and since every split lesson got items of its own, none has.)
     for (let k = 0; k < 20; k++) {
-      const q = takeConcreteMath('short_answer', 'المعادلات المثلثية البسيطة', null, 'easy', 'ar', 4, new Set(), false)!;
-      assert.match(q.text, /θ/, q.text);
+      const q = takeConcreteMath('short_answer', 'الوسط الحسابي والوسيط', null, 'hard', 'ar', 4, new Set(), false)!;
+      assert.match(q.text, /المتوسط|وسيط/, q.text);
     }
   });
 });
@@ -396,6 +395,61 @@ describe('«المتجهات في المستوى» has a lesson\'s worth of item
         const s = takeSolvedMath('المتجهات في المستوى', null, tier, 'ar', new Set());
         assert.ok(s);
         assert.equal(item(s.id).focus, 'vector_plane', `got ${s.id}: ${s.problem}`);
+      }
+    }
+  });
+});
+
+describe('«حل المعادلات المثلثية» has a lesson\'s worth of items, every key solved again', () => {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const sin = (d: number) => Math.sin(rad(d));
+  const cos = (d: number) => Math.cos(rad(d));
+  const tan = (d: number) => Math.tan(rad(d));
+  // Each item's equation, as an expression that is zero at its solutions.
+  const EQ: Record<string, (d: number) => number> = {
+    't-m1': d => sin(d) - 1 / 2,
+    't-h1': d => 2 * cos(d) - 1,
+    'te-e1': d => cos(d),
+    'te-e2': d => tan(d) - 1,
+    'te-m1': d => 2 * sin(d) - Math.sqrt(3),
+    'te-m2': d => tan(d) + 1,
+    'te-m3': d => sin(d) + 1 / 2,
+    'te-h1': d => 2 * cos(d) ** 2 - cos(d) - 1,
+    'te-h2': d => sin(d) ** 2 - 1 / 4,
+    'te-w1': d => 10 - 8 * cos(d) - 14,
+  };
+  const own = () => MATH_BANK.filter(i => i.focus === 'trig_equations');
+  /** Every whole degree in 0° ≤ θ < 360° where the expression is zero. */
+  const solve = (f: (d: number) => number) => Array.from({ length: 360 }, (_, d) => d).filter(d => Math.abs(f(d)) < 1e-9);
+
+  it('lists every item of the lesson', () => {
+    assert.deepEqual(own().map(i => i.id).sort(), Object.keys(EQ).sort());
+  });
+
+  it('every key lists exactly the solutions in one turn — none missing, none extra', () => {
+    for (const [id, f] of Object.entries(EQ)) {
+      const listed = [...item(id).answer.matchAll(/(\d+)°/g)].map(m => Number(m[1])).sort((a, b) => a - b);
+      assert.deepEqual(listed, solve(f), `${id}: key «${item(id).answer}»`);
+    }
+  });
+
+  it('enough for a worksheet, in every tier, with a story, every one with working', () => {
+    assert.ok(own().length >= 8, `${own().length} items`);
+    for (const tier of ['easy', 'medium', 'hard'] as const) assert.ok(own().some(i => i.diff === tier), `no ${tier} item`);
+    assert.ok(own().some(i => i.story), 'no real-life story');
+    for (const i of own()) assert.ok(stepsFor(i.id), `${i.id} has no working`);
+  });
+
+  it('every stem names the interval, so the key\'s list is the whole answer', () => {
+    for (const i of own()) assert.match(i.wordAr ?? i.promptAr!, /0° ≤ θ < 360°|الدورة الأولى/, i.id);
+  });
+
+  it('studies only its own lesson', () => {
+    for (const tier of ['easy', 'medium', 'hard'] as const) {
+      for (let k = 0; k < 20; k++) {
+        const s = takeSolvedMath('حل المعادلات المثلثية', null, tier, 'ar', new Set());
+        assert.ok(s);
+        assert.equal(item(s.id).focus, 'trig_equations', `got ${s.id}: ${s.problem}`);
       }
     }
   });

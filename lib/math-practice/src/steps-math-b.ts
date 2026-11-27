@@ -130,6 +130,116 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'So cos²θ + sin²θ = 1',
     ],
   },
+  'te-e1': {
+    ar: [
+      'cos θ = 0 حيث تكون النقطة على دائرة الوحدة على المحور الرأسي',
+      'وذلك عند θ = 90° (أعلى) و θ = 270° (أسفل)',
+      'إذن θ = 90° أو 270°',
+    ],
+    en: [
+      'cos θ = 0 where the point on the unit circle is on the vertical axis',
+      'That is at θ = 90° (top) and θ = 270° (bottom)',
+      'So θ = 90° or 270°',
+    ],
+  },
+  'te-e2': {
+    ar: [
+      'tan 45° = 1، فالزاوية المرجعية 45°',
+      'tan θ موجبة في الربعين الأول والثالث',
+      'الربع الأول: θ = 45°، والربع الثالث: θ = 180° + 45° = 225°',
+      'إذن θ = 45° أو 225°',
+    ],
+    en: [
+      'tan 45° = 1, so the reference angle is 45°',
+      'tan θ is positive in the first and third quadrants',
+      'First quadrant: θ = 45°; third quadrant: θ = 180° + 45° = 225°',
+      'So θ = 45° or 225°',
+    ],
+  },
+  'te-m1': {
+    ar: [
+      'نعزل sin θ: 2 sin θ = √3، فيكون sin θ = √3/2',
+      'sin 60° = √3/2، فالزاوية المرجعية 60°',
+      'sin θ موجبة في الربعين الأول والثاني: θ = 60°، و θ = 180° − 60° = 120°',
+      'إذن θ = 60° أو 120°',
+    ],
+    en: [
+      'Isolate sin θ: 2 sin θ = √3, so sin θ = √3/2',
+      'sin 60° = √3/2, so the reference angle is 60°',
+      'sin θ is positive in the first and second quadrants: θ = 60°, and θ = 180° − 60° = 120°',
+      'So θ = 60° or 120°',
+    ],
+  },
+  'te-m2': {
+    ar: [
+      'tan 45° = 1، فالزاوية المرجعية 45°',
+      'tan θ سالبة في الربعين الثاني والرابع',
+      'الربع الثاني: θ = 180° − 45° = 135°، والربع الرابع: θ = 360° − 45° = 315°',
+      'إذن θ = 135° أو 315°',
+    ],
+    en: [
+      'tan 45° = 1, so the reference angle is 45°',
+      'tan θ is negative in the second and fourth quadrants',
+      'Second quadrant: θ = 180° − 45° = 135°; fourth quadrant: θ = 360° − 45° = 315°',
+      'So θ = 135° or 315°',
+    ],
+  },
+  'te-m3': {
+    ar: [
+      'sin 30° = 1/2، فالزاوية المرجعية 30°',
+      'sin θ سالبة في الربعين الثالث والرابع',
+      'الربع الثالث: θ = 180° + 30° = 210°، والربع الرابع: θ = 360° − 30° = 330°',
+      'إذن θ = 210° أو 330°',
+    ],
+    en: [
+      'sin 30° = 1/2, so the reference angle is 30°',
+      'sin θ is negative in the third and fourth quadrants',
+      'Third quadrant: θ = 180° + 30° = 210°; fourth quadrant: θ = 360° − 30° = 330°',
+      'So θ = 210° or 330°',
+    ],
+  },
+  'te-h1': {
+    ar: [
+      'معادلة تربيعية في cos θ: نحلّل (2 cos θ + 1)(cos θ − 1) = 0',
+      'إما cos θ = 1، فيكون θ = 0°',
+      'أو cos θ = −1/2: الزاوية المرجعية 60°، و cos سالبة في الربعين الثاني والثالث، فـ θ = 120° أو 240°',
+      'إذن θ = 0° أو 120° أو 240°',
+    ],
+    en: [
+      'A quadratic in cos θ: factor (2 cos θ + 1)(cos θ − 1) = 0',
+      'Either cos θ = 1, so θ = 0°',
+      'Or cos θ = −1/2: reference angle 60°, and cos is negative in the second and third quadrants, so θ = 120° or 240°',
+      'So θ = 0°, 120° or 240°',
+    ],
+  },
+  'te-h2': {
+    ar: [
+      'نأخذ الجذر للطرفين: sin θ = 1/2 أو sin θ = −1/2 (الإشارتان)',
+      'sin θ = 1/2: θ = 30° أو 150°',
+      'sin θ = −1/2: θ = 210° أو 330°',
+      'إذن θ = 30° أو 150° أو 210° أو 330°',
+    ],
+    en: [
+      'Take the square root of both sides: sin θ = 1/2 or sin θ = −1/2 (both signs)',
+      'sin θ = 1/2: θ = 30° or 150°',
+      'sin θ = −1/2: θ = 210° or 330°',
+      'So θ = 30°, 150°, 210° or 330°',
+    ],
+  },
+  'te-w1': {
+    ar: [
+      'نعوّض h = 14: 10 − 8 cos θ = 14',
+      '−8 cos θ = 4، فيكون cos θ = −1/2',
+      'الزاوية المرجعية 60°، و cos سالبة في الربعين الثاني والثالث: θ = 180° − 60° و θ = 180° + 60°',
+      'إذن θ = 120° أو 240°',
+    ],
+    en: [
+      'Set h = 14: 10 − 8 cos θ = 14',
+      '−8 cos θ = 4, so cos θ = −1/2',
+      'Reference angle 60°, and cos is negative in the second and third quadrants: θ = 180° − 60° and θ = 180° + 60°',
+      'So θ = 120° or 240°',
+    ],
+  },
   't-h1': {
     ar: [
       'نقسم الطرفين على 2: cos θ = 1/2',

@@ -168,6 +168,21 @@ The distractors are: QP⃗ for PQ⃗, the components added for the magnitude, th
 `lessonFocus.test.ts` recomputes every key (direction angles by atan2, the unit vector by dividing). The run-out
 test now uses «حل المعادلات المثلثية», which still has two solved bank items.
 
+**Trigonometric equations: eight new bank items** (`te-e1` … `te-w1`, focus `trig_equations`, 2026-11-27), each with
+checked working in the existing items' method (the reference angle, then the quadrants where the ratio has the sign
+asked):
+- easy: cos θ = 0 (`90°, 270°`) and tan θ = 1 (`45°, 225°`);
+- medium: 2 sin θ − √3 = 0 (`60°, 120°`), tan θ = −1 (`135°, 315°`), sin θ = −1/2 (`210°, 330°`);
+- hard: 2cos² θ − cos θ − 1 = 0, factored (`0°, 120°, 240°`), and sin² θ = 1/4 with both signs (`30°, 150°, 210°,
+  330°`);
+- a story: a Ferris wheel seat at h = 10 − 8 cos θ, 14 m high at `120°` and `240°`.
+
+The distractors are: the wrong pair of quadrants, the first solution only, a negative angle outside the interval,
+sin's angles for cos's, the cosine's sign slipped, one sign of the square root, the cos θ = 1 root dropped, and the
+angle halved. Every stem names 0° ≤ θ < 360°. `lessonFocus.test.ts` solves each equation again over every whole
+degree, so a key with a missing or an extra solution fails; that covers the lesson's two older items too. The run-out
+and other-tier tests now use the typed mean-and-median topic, which still has two solved items and no hard one.
+
 **Fixed after an independent review of the first commit:**
 - **Instructions.** They promised «أكمل الحل في السؤال الأول» whenever there was a worked example. A lesson with one
   solved item of its own («قانون جيب التمام», «الاقتران العكسي») gets no half-solved question, so the line now
