@@ -208,6 +208,40 @@ TABLE: list[Entry] = [
           page=77, answers=112, unit_test=True,
           params={'stem': 'f(x) = kx - x^3', 'ask': 'param_critical', 'at': '-1', 'param': 'k',
                   'on_page': ['f(x) = kx - x^3', 'x = -1']}),
+    # Lesson 6.1 (estimating slope), p.61-62. The book asks for estimates and the guide accepts
+    # any close answer (p.94, p.95, appendix p.116); the key is the exact value, which is the
+    # number the guide prints where it prints one. `first`/`last` span the lesson's 27 exercises
+    # (the tier). Not 1-3 (read off a drawn curve the text never gives), 4, 5, 8, 9, 17, 18, 22
+    # (drawing), 6-7 (a function known only from a table), 19, 20, 23 (a curve known only from a
+    # table; the guide's 10.5 for 23 is an estimate, the fitted curve gives 10), 27 (open).
+    *[Entry(SB2, 's2', 6, 1, 1, 27, 'applied', 'أقدّر ميل منحنى الاقتران الآتي عند النقطة المعطاة',
+            page=61, answers=94, numbers=(n,),
+            params={'stem': f'{curve}\n{point}', 'ask': 'slope_at_point',
+                    'on_page': [f'{point} {curve.replace("^", "")}' if n != 10 else curve.replace('^', ''), point]})
+      for n, curve, point in (
+          (10, 'f(x) = 0.1x^3', '(2, 0.8)'),
+          (11, 'y = 4x^2 + 1', '(1, 5)'), (12, 'y = 3 + 2x^2', '(-1, 5)'), (13, 'y = 1 - x^2', '(-1, 0)'),
+          (14, 'y = 5x^3 + 1', '(0, 1)'), (15, 'y = 9 - x^2', '(2, 5)'), (16, 'y = 8 - 2x', '(1, 6)'))],
+    Entry(SB2, 's2', 6, 1, 1, 27, 'applied',
+          'يبيّن الجدول الآتي موقع درّاجة نارية s بالأمتار بعد t ثانية من بدء حركتها. أحسب السرعة المتوسطة للدرّاجة في الفترة الزمنية المعطاة',
+          page=62, answers=95, numbers=(21,),
+          params={'stem': 't: 0, 1, 2, 3, 4, 5\ns(t): 0, 2, 8, 18, 32, 50\n[1, 3]', 'ask': 'average_velocity',
+                  'on_page': ['5 4 3 2 1 0 t', '50 32 18 8 2 0 s(t)', '[1, 3]']}),
+    Entry(SB2, 's2', 6, 1, 1, 27, 'applied',
+          'يمثل الاقتران الآتي موقع سيارة تتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية، و a و b عددان ثابتان. أستعمل الجدول الآتي لإيجاد قيمة كل من a و b',
+          page=62, answers=116, numbers=(24,),
+          params={'stem': 's(t) = at + bt^2\nt: 0, 1, 2, 3, 4\ns(t): 0, 5, 12, 21, 32', 'ask': 'fit_table',
+                  'unknowns': ['a', 'b'], 'prose': True,
+                  'on_page': ['s(t) = at + bt 2', '4 3 2 1 0', '32 21 12 5 0']}),
+    Entry(SB2, 's2', 6, 1, 1, 27, 'applied',
+          'يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. أقدّر سرعة الجسم عند الزمن المعطى',
+          page=62, answers=116, numbers=(25,),
+          params={'stem': 's(t) = 3t - t^2\nt = 2', 'ask': 'velocity_at', 'at': '2',
+                  'on_page': ['s(t) = 3t - t2', 't = 2']}),
+    Entry(SB2, 's2', 6, 1, 1, 27, 'applied',
+          'أقدّر ميل منحنى الاقتران الآتي عند نقطتي تقاطعه مع المحور x، وعند نقطة تقاطعه مع المحور y',
+          page=62, answers=116, numbers=(26,),
+          params={'stem': 'f(x) = x^2 - 6x - 16', 'ask': 'intercept_slopes', 'on_page': ['f(x) = x2 - 6x - 16']}),
     # The unit-6 test's multiple choice, read from SB2_READINGS. The guide circles its key, which
     # the text layer does not carry, so these are `computed`. `choices` is the page's whole run.
     Entry(SB2, 's2', 6, 1, 1, 1, 'reading', 'ما ميل منحنى الاقتران الآتي عند قيمة x المعطاة؟', page=76,
@@ -985,12 +1019,18 @@ def solve_figure(curve: str, visual: dict, params: dict) -> str:
 # Each is restated in our own Arabic (the row's instruction) with its maths in the stem,
 # and every number the restatement carries is checked on the page (`require_on_page`).
 # One small solver per question shape; each refuses what it cannot decide.
+Y_CURVE = re.compile(r'y\s*=(.*)')   # lesson 6.1 names its curves `y = …`, in x
+
+
 def _curve(stem: str):
-    """(name, variable symbol, expression) of a stem `f(x) = …` / `s(t) = …` / `V(x) = …`."""
-    m = CURVE.fullmatch(stem.strip())
-    if not m:
+    """(name, variable symbol, expression) of a stem `f(x) = …` / `s(t) = …` / `V(x) = …` / `y = …`.
+
+    Only the stem's first line is the curve; later lines carry the point or the table."""
+    first = stem.strip().split('\n')[0].strip()
+    m, y = CURVE.fullmatch(first), Y_CURVE.fullmatch(first)
+    if not m and not y:
         raise Reject('not_a_function_definition')
-    name, var, right = m.groups()
+    name, var, right = m.groups() if m else ('y', 'x', y.group(1))
     expr = parse(right)
     v = next((s for s in expr.free_symbols if s.name == var), Symbol(var))
     return name, v, expr
@@ -1002,12 +1042,64 @@ def _one(values: list, reason: str):
     return values[0]
 
 
+TABLE_ROW = re.compile(r'([a-z](?:\([a-z]\))?):\s*(.+)')
+
+
+def _table(stem: str) -> dict[str, list]:
+    """The stem's value table, one `t: 0, 1, 2` line per variable, as exact numbers."""
+    rows = {}
+    for line in stem.strip().split('\n'):
+        m = TABLE_ROW.fullmatch(line.strip())
+        if m:
+            rows[m.group(1)] = [Rational(c.strip()) for c in m.group(2).split(',')]
+    if len(rows) != 2 or len({len(r) for r in rows.values()}) != 1:
+        raise Reject('not_a_value_table')
+    return rows
+
+
+def _point(stem: str) -> tuple:
+    """The stem's last line, `(a, b)`, as exact numbers."""
+    m = re.fullmatch(r'\(\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)', stem.strip().split('\n')[-1].strip())
+    if not m:
+        raise Reject('no_point')
+    return Rational(m.group(1)), Rational(m.group(2))
+
+
 def solve_applied(stem: str, params: dict) -> str:
     from sympy import real_roots, Poly
+    ask = params['ask']
+    if ask == 'average_velocity':           # (s(b) - s(a)) / (b - a), read from the stem's table
+        (_tn, ts), (_sn, ss) = _table(stem).items()
+        m = re.fullmatch(r'\[\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\]', stem.strip().split('\n')[-1].strip())
+        if not m:
+            raise Reject('no_interval')
+        a, b = Rational(m.group(1)), Rational(m.group(2))
+        if a not in ts or b not in ts or a == b:
+            raise Reject('interval_not_in_table')
+        return f'{fmt((ss[ts.index(b)] - ss[ts.index(a)]) / (b - a), True)} m/s'
     name, v, f = _curve(stem)
     d1 = diff(f, v)
-    ask = params['ask']
     at = Rational(params['at']) if 'at' in params else None
+    if ask == 'slope_at_point':             # the point is on the curve, or the question is not
+        px, py = _point(stem)
+        if simplify(f.subs(v, px) - py) != 0:
+            raise Reject('point_not_on_curve')
+        return fmt(simplify(d1.subs(v, px)), '.' in stem)
+    if ask == 'fit_table':                  # the constants that make the curve pass every table row
+        (_tn, ts), (_sn, ss) = _table(stem).items()
+        unknowns = [s for s in f.free_symbols if s.name in params['unknowns']]
+        if len(unknowns) != len(params['unknowns']):
+            raise Reject('unknowns_not_in_curve')
+        found = solve([Eq(f.subs(v, t), s) for t, s in zip(ts, ss)], unknowns, dict=True)
+        sol = _one(found, 'table_not_fitted_once')
+        if set(sol) != set(unknowns):
+            raise Reject('table_not_fitted_once')
+        return ', '.join(f'{u} = {fmt(sol[next(s for s in unknowns if s.name == u)])}' for u in params['unknowns'])
+    if ask == 'intercept_slopes':           # slopes where the curve meets the x axis, then the y axis
+        roots = sorted({r for r in real_roots(Poly(f, v))}, key=float)
+        if not roots or any(not r.is_Rational for r in roots) or 0 in roots:
+            raise Reject('x_intercepts_not_rational')
+        return ', '.join(f"{name}'({fmt(x)}) = {fmt(simplify(d1.subs(v, x)))}" for x in [*roots, Integer(0)])
     if ask == 'derivative_identity':        # find h'(x), then show the stated identity holds
         left, right = params['identity'].split('=')
         # placeholders the safe parser accepts (one letter), filled with f′ and f after parsing
@@ -1072,27 +1164,56 @@ def part_matches(key: tuple | None, printed: tuple | None) -> bool:
     return simplify(kv - pv) == 0 and ku == pu and (pn is None or pn == kn)
 
 
-def pair_applied(records: list[dict], lines: list[str]) -> None:
-    """Verify each record whose every key part equals its own printed entry on the page.
+# Lesson 6.1's answers are estimates, printed with the guide's own words around one number:
+# «8 أي إجابة قريبة من» (any answer close to 8) or «تقريبًا. 1.2» (1.2, roughly). The number
+# with those words is an entry; the same number alone on a line is still an axis label.
+ESTIMATE_ENTRY = (re.compile(r'(?P<ans>-?[\d.]+(?: m/s)?) أي إجابة قريبة من'),
+                  re.compile(r'تقريب ?ا\. (?P<ans>-?[\d.]+(?: m/s)?)'))
+# A `name = value` the guide's working states as a result, inside a prose line: `.a = 4`, `( b = 1`.
+# Not one that is the right-hand end of an equation (`a + b = 5`, `2a + 4b = 12`).
+PROSE_RESULT = re.compile(r'(?:^|(?<![-+*/=⟹] )(?<=[\s.(]))([a-z]) = (-?\d+(?:\.\d+)?)(?![\d.]*[A-Za-z(])')
 
-    An entry another record's part also matches is unusable for both: nothing is paired by
-    position, and an entry that could belong to two items verifies neither."""
+
+def applied_entries(lines: list[str], prose: bool = False) -> list[tuple[str, tuple]]:
+    """The answer entries a guide page prints: (the printed text, its parsed part)."""
     chunks = []
     for line in lines:
+        text = re.sub(r'\s+', ' ', DIACRITICS.sub('', nfkc(line))).strip()
+        for pattern in ESTIMATE_ENTRY:
+            if (m := pattern.fullmatch(text)) and (p := answer_part(m.group('ans'))):
+                chunks.append((m.group('ans'), p))
         for raw in nfkc(line).split('\t'):
             p = answer_part(raw)
             if p and (p[0] or p[2]):              # a bare number is an axis label, not an answer
                 chunks.append((raw.strip(), p))
+        if prose:
+            latin = re.sub(r'\s+', ' ', ARABIC.sub(' ', DIACRITICS.sub('', nfkc(line))))
+            chunks += [(f'{n} = {val}', (n, Rational(val), None)) for n, val in PROSE_RESULT.findall(latin)]
+    return chunks
+
+
+def pair_applied(records: list[dict], lines: list[str], prose: bool = False) -> None:
+    """Verify each record whose every key part equals its own printed entry on the page.
+
+    Nothing is paired by position. An entry that several records' parts could match is used
+    only where the page prints that answer at least as often as those records need it (the
+    guide prints «-4» twice for lesson 6.1's two items whose slope is -4); otherwise it
+    verifies none of them."""
+    chunks = applied_entries(lines, prose)
     keys = {id(r): [answer_part(s) for s in r['computedAnswer'].split(', ')] for r in records}
+    taken: set[int] = set()
     for r in records:
         parts, used = keys[id(r)], []
         for part in parts:
-            hits = [i for i, (_raw, p) in enumerate(chunks) if i not in used and part_matches(part, p)
-                    and not any(part_matches(q, p) for o in records if o is not r for q in keys[id(o)])]
-            if not hits:
+            fits = [i for i, (_raw, p) in enumerate(chunks) if part_matches(part, p)]
+            rivals = [o for o in records if o is not r
+                      and any(part_matches(q, chunks[i][1]) for q in keys[id(o)] for i in fits)]
+            free = [i for i in fits if i not in taken and i not in used]
+            if len(fits) < 1 + len(rivals) or not free:
                 break
-            used.append(hits[0])
+            used.append(free[0])
         if parts and len(used) == len(parts):
+            taken.update(used)
             r['status'], r['verificationSource'] = assign_state(r['computedAnswer'], r['computedAnswer'], False)
             r['printedAnswer'] = ' | '.join(chunks[i][0] for i in used)
 
@@ -1301,7 +1422,8 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
     open_items: dict[tuple[str, int], list[dict]] = {}     # unit_open records waiting for their printed answers
     derivative_items: dict[int, list[dict]] = {}           # s2 guide page -> derivative records it answers
     extrema_items: dict[int, list[dict]] = {}              # s2 guide page -> max/min records it answers
-    applied_items: dict[int, list[dict]] = {}              # s2 guide page -> word-problem records it answers
+    # (s2 guide page, read its prose) -> word-problem records it answers
+    applied_items: dict[tuple[int, bool], list[dict]] = {}
     for e in TABLE:
         lesson_id = curriculum_lesson_id(e.semester, e.unit, e.lesson)
         if lesson_id is None:
@@ -1362,7 +1484,8 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                     require_on_page(page_text(e.source, page), e.params['on_page'])
                     stem = e.params['stem']
                     computed = solve_applied(stem, e.params)
-                    kind, tier, tier_source = 'unit-test', 'medium', 'default'
+                    kind, tier, tier_source = (('unit-test', 'medium', 'default') if e.unit_test
+                                               else ('exercise', tier_for(n, e.first, e.last), 'position'))
                     extra = {}
                 else:
                     lead = lead_math(blocks[n])
@@ -1385,8 +1508,10 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                 by_source.setdefault(e.source, []).append(record)
                 if e.family == 'unit_open':
                     open_items.setdefault((e.source, e.page), []).append(record)
-                if e.answers is not None:
-                    {'derivative': derivative_items, 'applied': applied_items}.get(
+                if e.answers is not None and e.family == 'applied':
+                    applied_items.setdefault((e.answers, bool(e.params.get('prose'))), []).append(record)
+                elif e.answers is not None:
+                    {'derivative': derivative_items}.get(
                         e.family, extrema_items).setdefault(e.answers, []).append(record)
             except Reject as r:
                 rejects.append({**base, 'family': e.family, 'reason': str(r)})
@@ -1394,8 +1519,8 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                 rejects.append({**base, 'family': e.family, 'reason': f'{type(ex).__name__}: {ex}'[:120]})
     unmatched: list[str] = []
     notes: dict[str, str] = {}
-    for page, records in applied_items.items():
-        pair_applied(records, page_text(G2, page).split('\n'))
+    for (page, prose), records in applied_items.items():
+        pair_applied(records, page_text(G2, page).split('\n'), prose)
         for rec in records:
             if rec['status'] == 'computed':
                 notes[rec['id']] = f'no printed entries on guide p.{page} hold every part of the computed answer'

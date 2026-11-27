@@ -1,7 +1,7 @@
 {
   "counts": {
-    "computed": 52,
-    "verified": 26,
+    "computed": 56,
+    "verified": 33,
     "quarantined": 18
   },
   "unmatchedPrinted": [
@@ -9,6 +9,10 @@
   ],
   "notes": {
     "bi-math-s1-teacher-guide-u1l3-8": "the guide prints answers on this page and none equals the computed answer; see unmatchedPrinted",
+    "bi-math-s2-student-book-u6l1-14": "no printed entries on guide p.94 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l1-16": "no printed entries on guide p.94 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l1-25": "no printed entries on guide p.116 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l1-26": "no printed entries on guide p.116 hold every part of the computed answer",
     "bi-math-s2-student-book-u6l2-t5": "no printed entries on guide p.111 hold every part of the computed answer",
     "bi-math-s2-student-book-u6l2-t6": "no printed entries on guide p.111 hold every part of the computed answer",
     "bi-math-s2-student-book-u6l2-t7": "no printed entries on guide p.111 hold every part of the computed answer",

@@ -328,9 +328,12 @@ describe('book items — the committed data', () => {
     assert.deepEqual([eight.status, eight.printedAnswer, eight.computedAnswer], ['computed', null, '(0, 5), (2, 1)']);
     assert.deepEqual(report.unmatchedPrinted, ['(0, 5), (2. 1)']);
     // and the s2 unit test's item 23, whose maximum the guide prints only rounded (1.296 for 35/27)
-    // and the word problems no printed entry answers whole (5, 7: «see margin»; 6: half a sentence; 10: rounded)
+    // and the word problems no printed entry answers whole (5, 7: «see margin»; 6: half a sentence; 10: rounded);
+    // lesson 6.1's whose answer the guide prints bare (14, 16) or inside a sentence (25, 26)
     assert.deepEqual(Object.keys(report.notes), [
       eight.id,
+      'bi-math-s2-student-book-u6l1-14', 'bi-math-s2-student-book-u6l1-16',
+      'bi-math-s2-student-book-u6l1-25', 'bi-math-s2-student-book-u6l1-26',
       'bi-math-s2-student-book-u6l2-t5', 'bi-math-s2-student-book-u6l2-t6', 'bi-math-s2-student-book-u6l2-t7',
       'bi-math-s2-student-book-u6l3-t10', 'bi-math-s2-student-book-u6l3-t23',
     ]);
@@ -486,6 +489,69 @@ describe('book items — the reader', () => {
     assert.deepEqual(edit('u6l2-t11', '4 m/s'), [t('u6l2-t11').id]);
     assert.deepEqual(edit('u6l3-t25', 'c = 3'), [t('u6l3-t25').id]);
     assert.deepEqual(['u6l3-t9', 'u6l2-t11', 'u6l2-t12'].flatMap(id => verifiedDisagreements([t(id)])), []);
+  });
+
+  it('re-derives every lesson 6.1 key from its own stem, and verifies only what the guide prints', () => {
+    // A polynomial in one letter with decimal coefficients, as power → coefficient: written
+    // apart from the extractor on purpose, so a SymPy slip and a reading slip are not the same slip.
+    const poly = (s: string): Map<number, number> => {
+      const body = s.replace(/\s+/g, '');
+      const pieces = body.match(/[+-]?[^+-]+/g) ?? [];
+      assert.equal(pieces.join(''), body, s);
+      const c = new Map<number, number>();
+      for (const term of pieces) {
+        const t = /^([+-]?)(\d*(?:\.\d+)?)(?:[a-z](?:\^(\d+))?)?$/.exec(term);
+        assert.ok(t && (t[2] !== '' || term.replace(/^[+-]/, '') !== ''), `${s}: «${term}»`);
+        const power = /[a-z]/.test(term) ? Number(t![3] ?? 1) : 0;
+        c.set(power, (c.get(power) ?? 0) + (t![1] === '-' ? -1 : 1) * (t![2] === '' ? 1 : Number(t![2])));
+      }
+      return c;
+    };
+    const value = (c: Map<number, number>, x: number) => [...c].reduce((s, [p, k]) => s + k * x ** p, 0);
+    const slope = (c: Map<number, number>, x: number) => [...c].reduce((s, [p, k]) => s + (p ? p * k * x ** (p - 1) : 0), 0);
+    const near = (a: number, b: number, what: string) => assert.ok(Math.abs(a - b) < 1e-9, `${what}: ${a} ≠ ${b}`);
+    const row = (line: string) => line.split(':')[1]!.split(',').map(Number);
+    const lesson = bookItemsForLesson('kbl-math-s2-nccd-u6_l1').filter(
+      i => i.source.sourceId === 'math-s2-student-book' && i.kind === 'exercise',
+    );
+    assert.deepEqual(lesson.map(i => i.source.number).sort((a, b) => a - b), [10, 11, 12, 13, 14, 15, 16, 21, 24, 25, 26]);
+    for (const i of lesson) {
+      const [curve, ...rest] = i.stem.split('\n') as [string, ...string[]];
+      const n = i.source.number;
+      if (n <= 16) {
+        const c = poly(curve.split('=')[1]!);
+        const [px, py] = /^\((.+), (.+)\)$/.exec(rest[0]!)!.slice(1).map(Number) as [number, number];
+        near(value(c, px), py, `${i.id}: the point is on the curve`);
+        near(slope(c, px), Number(i.computedAnswer), i.id);
+      } else if (n === 21) {
+        const [t, s] = [row(curve), row(rest[0]!)];
+        const [a, b] = rest[1]!.slice(1, -1).split(',').map(Number) as [number, number];
+        assert.equal(i.computedAnswer, `${(s[t.indexOf(b)]! - s[t.indexOf(a)]!) / (b - a)} m/s`);
+      } else if (n === 24) {
+        const [t, s] = [row(rest[0]!), row(rest[1]!)];
+        assert.equal(i.computedAnswer, 'a = 4, b = 1');
+        t.forEach((tt, k) => near(4 * tt + tt ** 2, s[k]!, `${i.id}: t = ${tt}`));
+      } else if (n === 25) {
+        assert.equal(i.computedAnswer, `v(2) = ${slope(poly(curve.split('=')[1]!), 2)} m/s`);
+      } else {
+        const c = poly(curve.split('=')[1]!);
+        for (const part of i.computedAnswer.split(', ')) {
+          const [, x, k] = /^f'\((-?\d+)\) = (-?\d+)$/.exec(part)!;
+          near(slope(c, Number(x)), Number(k), `${i.id}: ${part}`);
+          if (x !== '0') near(value(c, Number(x)), 0, `${i.id}: ${x} is where it meets the x axis`);
+        }
+      }
+    }
+    const verified = lesson.filter(i => i.status === 'verified').map(i => i.source.number);
+    assert.deepEqual(verified.sort((a, b) => a - b), [10, 11, 12, 13, 15, 21, 24]);
+    const t = (n: number) => lesson.find(i => i.source.number === n)!;
+    const edit = (n: number, printedAnswer: string) => verifiedDisagreements([{ ...t(n), printedAnswer }]);
+    assert.deepEqual(edit(12, '4'), [t(12).id]);                // a dropped sign
+    assert.deepEqual(edit(10, '1.3'), [t(10).id]);
+    assert.deepEqual(edit(21, '8 s'), [t(21).id]);              // another unit
+    assert.deepEqual(edit(24, 'a = 4 | b = 2'), [t(24).id]);
+    assert.deepEqual(verifiedDisagreements(lesson), []);
+    assert.equal(bookCitation(t(11), 'ar'), 'كتاب الطالب ص ٦١، س ١١');
   });
 
   it('draws only the graph questions whose curve the question fixes, and never verifies them', () => {

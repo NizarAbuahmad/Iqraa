@@ -10,18 +10,21 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Book items: the semester-2 student book's unit 6 (derivatives, max/min, the test's multiple choice, graphs, word problems) — 2026-11-21
+## Book items: the semester-2 student book's unit 6 (derivatives, max/min, the test's multiple choice, graphs, word problems, lesson 6.1's slopes) — 2026-11-21
 
 `scripts/extract_book_items.py` now reads the NCCD Grade 10 maths **student book**, semester 2
-(`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **21 `verified`
-(13 derivatives, 3 of the unit test's 4 open max/min questions, 5 of its 9 word problems); 24 `computed`
-(lesson 6.3's 9 max/min exercises, the test's other max/min question, its 6 multiple choice, 4 graph
-questions that carry a drawing, and its other 4 word problems)**, written to
+(`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **28 `verified`
+(13 derivatives, 3 of the unit test's 4 open max/min questions, 5 of its 9 word problems, 7 of lesson 6.1's
+11 slope exercises); 28 `computed` (lesson 6.3's 9 max/min exercises, the test's other max/min question, its 6
+multiple choice, 4 graph questions that carry a drawing, its other 4 word problems, and lesson 6.1's other 4)**,
+written to
 `lib/curriculum/src/data/book-items/math-s2-student-book.json` and served to lessons 6.1–6.3
 (`kbl-math-s2-nccd-u6_l1` … `u6_l3`).
 
 | Page | Items | Kind | Result |
 | --- | --- | --- | --- |
+| 61 | 10–16 slope at a point (6.1) | `exercise` | 5 verified (10–13, 15); 2 computed (14, 16: the guide prints them bare) |
+| 62 | 21, 24–26 (6.1) | `exercise` | 2 verified (21, 24); 2 computed (25, 26) |
 | 68 | 1–6 «أجد مشتقة» | `exercise` | 6 verified |
 | 68 | 7–9 f′(−2) | — | quarantined: split fractions (7 `not_a_function_definition`, 9) and `x99` (8, `exponent_out_of_range`) |
 | 69 | 24–26 products | `exercise` | 3 verified |
@@ -153,6 +156,49 @@ exact surds only) and is fed four corruptions — another surd, another unit, a 
 near-duplicate of 12, 0.89). The shared curve pattern now takes an upper-case name (`V(x)`), which changes no
 earlier output. In the 2021 printing these items are numbered one higher and write `d(t)` for `s(t)`.
 
+**Lesson 6.1's exercises (estimating slope, p.61–62) are keyed with the exact value.** The book asks
+«أقدّر» (estimate), by drawing a tangent, and the guide accepts «أي إجابة قريبة» (any close answer). The served
+question keeps the book's «أقدّر» (a lesson 6.1 student has no derivatives yet), and the key is the exact
+slope, which is the number the guide prints wherever it prints one; the teacher marking a short answer is
+the one who accepts a close estimate, as the guide does. Eleven items, all `exercise`, tiered by position in the
+lesson's 27:
+
+| Item | Stem | Key | Guide prints | State |
+| --- | --- | --- | --- | --- |
+| 10 | `f(x) = 0.1x^3`, (2, 0.8) | 1.2 | «تقريبًا. 1.2» (p.94) | verified |
+| 11–13, 15 | `y = 4x^2 + 1` (1, 5), `y = 3 + 2x^2` (−1, 5), `y = 1 - x^2` (−1, 0), `y = 9 - x^2` (2, 5) | 8, −4, 2, −4 | «8 أي إجابة قريبة من», … (p.94) | verified |
+| 14, 16 | `y = 5x^3 + 1` (0, 1), `y = 8 - 2x` (1, 6) | 0, −2 | a bare `0`, `-2` (p.94) | computed |
+| 21 | the bike's table, [1, 3] | 8 m/s (average velocity) | `8 m/s` (p.95) | verified |
+| 24 | `s(t) = at + bt^2` and the car's table | a = 4, b = 1 | the working's `a = 4`, `b = 1` (p.116) | verified |
+| 25 | `s(t) = 3t - t^2`, t = 2 | v(2) = −1 m/s | «قريبة من -1» in a sentence (p.116) | computed |
+| 26 | `f(x) = x^2 - 6x - 16` | f′(−2) = −10, f′(8) = 10, f′(0) = −6 | inside prose (p.116) | computed |
+
+New pieces, all in the word-problem machinery (`solve_applied`, `pair_applied`):
+- Four asks: `slope_at_point` (the stem's point must lie on its curve, else `point_not_on_curve`),
+  `average_velocity` (read off the stem's table), `fit_table` (the constants that pass every table row, once,
+  else `table_not_fitted_once`) and `intercept_slopes` (rational x-intercepts only). A curve may be named
+  `y = …`, and a stem's later lines carry its point, table or interval (`(1, 5)`, `t: 0, 1, 2`, `[1, 3]`), so no
+  Latin sits inside the Arabic instruction. `require_on_page` checks each point together with its curve.
+- **An estimate is an entry only with the guide's own words around it** («8 أي إجابة قريبة من», «تقريبًا. 1.2»,
+  `ESTIMATE_ENTRY`). The same number alone on a line is still treated as an axis label, so 14 and 16 stay
+  `computed` (the design expected them verified; the bare-number rule won).
+- **A value printed twice can verify two items.** 12 and 15 both have −4, and the guide prints −4 twice. An
+  entry several items' parts could match is now used where the page prints it at least as often as those items
+  need it (before: never). Printed once for two items, it still verifies neither. No earlier item changed.
+- **Item 24's answer is in the working**, so its row opts in (`prose`) to `PROSE_RESULT`: a `name = value` the
+  working states, never the right-hand end of an equation (`a + b = 5`, `2a + 4b = 12` give nothing).
+
+The TS suite re-derives every lesson 6.1 key from its own stem, written apart from SymPy (a small polynomial
+reader: the point is on the curve, the slope is the key, the table fits `4t + t²`), and is fed four
+corruptions (a dropped sign, 1.3 for 1.2, another unit, another b). A probe of the lesson's whole pool finds no
+pair above 0.65. Left out: 1–3 (read off a drawn curve the text never gives), 4, 5, 8, 9, 17, 18, 22 (drawing),
+6–7 (a function known only from a table; the guide's 1.9 and (1, 1.5) are readings of a sketch), 19, 20 and 23
+(a curve known only from a table; for 23 the guide's 10.5 is an estimate and the fitted curve gives 10) and 27
+(open). **Printing:** p.61 of the 2021 copy matches the app's text item for item; its **p.62 is a different page**
+(a car problem `x = at² + bt⁴` with other numbers, no average-velocity item, items numbered one lower). Items
+21–26 follow the app's newer text, which the guide's copy (p.95, appendix p.116) reproduces and which fits
+exactly (`a = 4`, `b = 1`); no image of the newer p.62 was seen.
+
 **How they are verified.** The s2 teacher guide reproduces each student page with its answers printed on
 it (guide p.102 for student p.68, p.103 for p.69, p.112 for p.77). `printed_derivatives` reads every
 `name '(x) = value` there (with its `)15` item number when printed), and `pair_derivatives` verifies an item
@@ -177,13 +223,13 @@ and a printed number that is another item's.
   practice numbers, which run to 30.
 - An `Entry` takes `page` for a source with no exercise index, `answers` (the guide page) and `unit_test`.
 
-**Verified.** The Python tests failed first, then passed (144). Every stem was compared by eye with the
+**Verified.** The Python tests failed first, then passed (144; 150 with lesson 6.1). Every stem was compared by eye with the
 printed pages of a copy of the book: pp.68, 69, 74 and 76 match. **That copy is an older printing (2021): its
 p.77 numbers the derivatives 15–20 (with `2π³` where the app's text, reprinted 2021–2025, has `2π/3` at 14)
 and the multiple choice 31–32, and its p.76 item 4 says `d(t)` where the app's text says `s(t)`.** The
 guide's labels `)14`…`)19` agree with the app's newer numbering, which is what is cited. Every answer key was
-also re-derived by hand. Curriculum `test` (947) and `verify`, monorepo typecheck, api-server build + test
-(3092 after the latest merge of main; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
+also re-derived by hand. Curriculum `test` (948 with lesson 6.1) and `verify`, monorepo typecheck, api-server build + test
+(3092 after the latest merge of main, unchanged by lesson 6.1; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
 mobile suite (9540 after the latest merge of main, 0 failing; the app does not import book items) pass. A
 `password hasher` failure (its event-loop timing assertion) appeared once while the mobile suite ran in
 parallel; the API suite re-run alone passed 3021/3021, and this branch does not touch that code. **Not checked:** how a multi-line
@@ -199,7 +245,7 @@ answer review render `body.visual`; nothing else was looked at, and a printed or
 question without its drawing).
 
 **Not done.** The unit test's graph questions 26–28 (no formula, above) and word problem 8, lesson 6.1's
-exercises (figures), the lessons' own word problems (p.68–69 items 10–23, p.74 items 11–13), and units 5, 7, 8. Users
+figure and table-only exercises (above), the lessons' own word problems (p.68–69 items 10–23, p.74 items 11–13), and units 5, 7, 8. Users
 see none of this in production yet: book items reach a paper only on the mock path or with
 `BOOK_ITEMS_LIVE=true`, which is off.
 

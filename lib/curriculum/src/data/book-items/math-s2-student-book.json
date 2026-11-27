@@ -29,6 +29,237 @@
       "verificationSource": "sympy"
     },
     {
+      "id": "bi-math-s2-student-book-u6l1-10",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 61,
+        "bookPage": 61,
+        "unit": 6,
+        "number": 10
+      },
+      "kind": "exercise",
+      "instruction": "أقدّر ميل منحنى الاقتران الآتي عند النقطة المعطاة",
+      "stem": "f(x) = 0.1x^3\n(2, 0.8)",
+      "printedAnswer": "1.2",
+      "computedAnswer": "1.2",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l1-11",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 61,
+        "bookPage": 61,
+        "unit": 6,
+        "number": 11
+      },
+      "kind": "exercise",
+      "instruction": "أقدّر ميل منحنى الاقتران الآتي عند النقطة المعطاة",
+      "stem": "y = 4x^2 + 1\n(1, 5)",
+      "printedAnswer": "8",
+      "computedAnswer": "8",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l1-12",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 61,
+        "bookPage": 61,
+        "unit": 6,
+        "number": 12
+      },
+      "kind": "exercise",
+      "instruction": "أقدّر ميل منحنى الاقتران الآتي عند النقطة المعطاة",
+      "stem": "y = 3 + 2x^2\n(-1, 5)",
+      "printedAnswer": "-4",
+      "computedAnswer": "-4",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l1-13",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 61,
+        "bookPage": 61,
+        "unit": 6,
+        "number": 13
+      },
+      "kind": "exercise",
+      "instruction": "أقدّر ميل منحنى الاقتران الآتي عند النقطة المعطاة",
+      "stem": "y = 1 - x^2\n(-1, 0)",
+      "printedAnswer": "2",
+      "computedAnswer": "2",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l1-14",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 61,
+        "bookPage": 61,
+        "unit": 6,
+        "number": 14
+      },
+      "kind": "exercise",
+      "instruction": "أقدّر ميل منحنى الاقتران الآتي عند النقطة المعطاة",
+      "stem": "y = 5x^3 + 1\n(0, 1)",
+      "printedAnswer": null,
+      "computedAnswer": "0",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l1-15",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 61,
+        "bookPage": 61,
+        "unit": 6,
+        "number": 15
+      },
+      "kind": "exercise",
+      "instruction": "أقدّر ميل منحنى الاقتران الآتي عند النقطة المعطاة",
+      "stem": "y = 9 - x^2\n(2, 5)",
+      "printedAnswer": "-4",
+      "computedAnswer": "-4",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l1-16",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 61,
+        "bookPage": 61,
+        "unit": 6,
+        "number": 16
+      },
+      "kind": "exercise",
+      "instruction": "أقدّر ميل منحنى الاقتران الآتي عند النقطة المعطاة",
+      "stem": "y = 8 - 2x\n(1, 6)",
+      "printedAnswer": null,
+      "computedAnswer": "-2",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l1-21",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 62,
+        "bookPage": 62,
+        "unit": 6,
+        "number": 21
+      },
+      "kind": "exercise",
+      "instruction": "يبيّن الجدول الآتي موقع درّاجة نارية s بالأمتار بعد t ثانية من بدء حركتها. أحسب السرعة المتوسطة للدرّاجة في الفترة الزمنية المعطاة",
+      "stem": "t: 0, 1, 2, 3, 4, 5\ns(t): 0, 2, 8, 18, 32, 50\n[1, 3]",
+      "printedAnswer": "8 m/s",
+      "computedAnswer": "8 m/s",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l1-24",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 62,
+        "bookPage": 62,
+        "unit": 6,
+        "number": 24
+      },
+      "kind": "exercise",
+      "instruction": "يمثل الاقتران الآتي موقع سيارة تتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية، و a و b عددان ثابتان. أستعمل الجدول الآتي لإيجاد قيمة كل من a و b",
+      "stem": "s(t) = at + bt^2\nt: 0, 1, 2, 3, 4\ns(t): 0, 5, 12, 21, 32",
+      "printedAnswer": "a = 4 | b = 1",
+      "computedAnswer": "a = 4, b = 1",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l1-25",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 62,
+        "bookPage": 62,
+        "unit": 6,
+        "number": 25
+      },
+      "kind": "exercise",
+      "instruction": "يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. أقدّر سرعة الجسم عند الزمن المعطى",
+      "stem": "s(t) = 3t - t^2\nt = 2",
+      "printedAnswer": null,
+      "computedAnswer": "v(2) = -1 m/s",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l1-26",
+      "lessonId": "kbl-math-s2-nccd-u6_l1",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 62,
+        "bookPage": 62,
+        "unit": 6,
+        "number": 26
+      },
+      "kind": "exercise",
+      "instruction": "أقدّر ميل منحنى الاقتران الآتي عند نقطتي تقاطعه مع المحور x، وعند نقطة تقاطعه مع المحور y",
+      "stem": "f(x) = x^2 - 6x - 16",
+      "printedAnswer": null,
+      "computedAnswer": "f'(-2) = -10, f'(8) = 10, f'(0) = -6",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
       "id": "bi-math-s2-student-book-u6l1-t29",
       "lessonId": "kbl-math-s2-nccd-u6_l1",
       "source": {

@@ -366,7 +366,10 @@ sweep in your staged files.
   The unit test's word problems (p.76-77, `solve_applied`) are restated in our Arabic with
   every number checked on the page, and `pair_applied` verifies one only when EVERY part
   of its key equals a printed entry (exact value, same unit, same name if printed); a
-  bare number is never an entry (axis labels), and an entry two items fit verifies neither.
+  bare number is never an entry (axis labels), and an entry two items fit verifies neither
+  unless the page prints it as often as they need it. Lesson 6.1's slopes (p.61-62) use the
+  same machinery: the stem keeps the book's «أقدّر» and the key is the exact value; a guide
+  estimate is an entry only with its own words around it («8 أي إجابة قريبة من», «تقريبًا. 1.2»).
   A new book item must not be a near-duplicate (`stemSimilarity` > 0.85) of another
   in its lesson, or the book plan promises a question the draw cannot deliver —
   `bookQuestions.test.ts` catches it, but only for draw orders it happens to try. `SERVED_STATUSES` is the one place

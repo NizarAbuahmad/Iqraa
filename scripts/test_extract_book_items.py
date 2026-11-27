@@ -415,9 +415,12 @@ class UnitOpenPage(unittest.TestCase):
     def test_item_8_s_printed_entry_is_reported_not_forgiven(self):
         self.assertEqual(self.extras['unmatchedPrinted'], ['(0, 5), (2. 1)'])
         # the s1 guide's only note; the s2 unit test's own: 23 (its max is printed rounded) and the word
-        # problems no printed entry answers whole (5 and 7: «see margin»; 6: half a sentence; 10: rounded)
+        # problems no printed entry answers whole (5 and 7: «see margin»; 6: half a sentence; 10: rounded);
+        # lesson 6.1's whose answer the guide prints bare (14, 16) or inside a sentence (25, 26)
         self.assertEqual(list(self.extras['notes']), [
             'bi-math-s1-teacher-guide-u1l3-8',
+            'bi-math-s2-student-book-u6l1-14', 'bi-math-s2-student-book-u6l1-16',
+            'bi-math-s2-student-book-u6l1-25', 'bi-math-s2-student-book-u6l1-26',
             'bi-math-s2-student-book-u6l2-t5', 'bi-math-s2-student-book-u6l2-t6', 'bi-math-s2-student-book-u6l2-t7',
             'bi-math-s2-student-book-u6l3-t10', 'bi-math-s2-student-book-u6l3-t23'])
 
@@ -704,8 +707,9 @@ class Readings(unittest.TestCase):
         # verified: 5 from guide p.47, 13 s2 derivatives, 3 s2 unit-test max/min (20-22);
         # computed: 28 before, + the s2 unit-6 test's 6 multiple choice, + p.74's 9 max/min, + test item 23,
         # + its 4 drawn graph questions (29, 32-34), + 4 of its word problems (5, 6, 7, 10);
-        # verified + the other 5 word problems (9, 11, 12, 24, 25)
-        self.assertEqual((counts['verified'], counts['computed']), (26, 52))
+        # verified + the other 5 word problems (9, 11, 12, 24, 25);
+        # lesson 6.1: verified 10-13, 15, 21, 24; computed 14, 16, 25, 26
+        self.assertEqual((counts['verified'], counts['computed']), (33, 56))
 
 
 class RivalReadings(unittest.TestCase):
@@ -1314,6 +1318,92 @@ class StudentBookWordProblems(unittest.TestCase):
         with self.assertRaises(x.Reject) as e:       # two positive times give the velocity
             x.solve_applied('s(t) = t^3 - 6t^2', {'ask': 'time_for_velocity', 'velocity': '-9'})
         self.assertEqual(str(e.exception), 'time_not_unique')
+
+
+class StudentBookSlopes(unittest.TestCase):
+    """Lesson 6.1 (estimating slope), student p.61-62: items 10-16, 21, 24-26.
+
+    The book asks for estimates and the guide accepts any close answer; the key is the exact
+    value. An item is `verified` where the guide prints that number with its own words around
+    it («8 أي إجابة قريبة من», «تقريبًا. 1.2»), with a unit, or as a result in its working
+    (`a = 4`, for 24); a bare «0» or «-2» on a line is still an axis label."""
+
+    KEYS = {  # number: (stem, key, status)
+        10: ('f(x) = 0.1x^3\n(2, 0.8)', '1.2', 'verified'),
+        11: ('y = 4x^2 + 1\n(1, 5)', '8', 'verified'),
+        12: ('y = 3 + 2x^2\n(-1, 5)', '-4', 'verified'),
+        13: ('y = 1 - x^2\n(-1, 0)', '2', 'verified'),
+        14: ('y = 5x^3 + 1\n(0, 1)', '0', 'computed'),
+        15: ('y = 9 - x^2\n(2, 5)', '-4', 'verified'),
+        16: ('y = 8 - 2x\n(1, 6)', '-2', 'computed'),
+        21: ('t: 0, 1, 2, 3, 4, 5\ns(t): 0, 2, 8, 18, 32, 50\n[1, 3]', '8 m/s', 'verified'),
+        24: ('s(t) = at + bt^2\nt: 0, 1, 2, 3, 4\ns(t): 0, 5, 12, 21, 32', 'a = 4, b = 1', 'verified'),
+        25: ('s(t) = 3t - t^2\nt = 2', 'v(2) = -1 m/s', 'computed'),
+        26: ('f(x) = x^2 - 6x - 16', "f'(-2) = -10, f'(8) = 10, f'(0) = -6", 'computed'),
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        cls.by_source, cls.rejects = x.build()
+        ids = {f'bi-math-s2-student-book-u6l1-{n}': n for n in cls.KEYS}
+        cls.items = {ids[r['id']]: r for r in cls.by_source.get('math-s2-student-book', []) if r['id'] in ids}
+
+    def test_every_item_key_and_state(self):
+        self.assertEqual(sorted(self.items), sorted(self.KEYS))
+        for n, (stem, key, status) in self.KEYS.items():
+            with self.subTest(item=n):
+                r = self.items[n]
+                self.assertEqual((r['lessonId'], r['stem'], r['computedAnswer'], r['status']),
+                                 ('kbl-math-s2-nccd-u6_l1', stem, key, status))
+                self.assertEqual((r['kind'], r['check'], r['source']['page']),
+                                 ('exercise', None, 61 if n <= 16 else 62))
+                self.assertTrue(r['instruction'].startswith(('أقدّر', 'يبيّن', 'يمثل')))
+                if status == 'verified':
+                    self.assertEqual(r['verificationSource'], 'sympy+book')
+                else:
+                    self.assertIsNone(r['printedAnswer'])
+
+    def test_nothing_else_of_the_lesson_is_quarantined(self):
+        self.assertEqual([q['id'] for q in self.rejects if '-u6l1-' in q['id']], [])
+
+    def test_the_guide_pages_entries(self):
+        read = lambda page, prose=False: [c[0] for c in x.applied_entries(x.page_text(x.G2, page).split('\n'), prose)]
+        self.assertEqual(read(94), ['1.2', '8', '2', '-4', '-4', '1.9'])
+        self.assertEqual(read(95), ['8 m/s', '8 m/s'])
+        # the working of 24 states its results; `a + b = 5` and `2a + 4b = 12` are not results
+        self.assertEqual(read(116, True), ['t = 3', 'b = 1', 'a = 4', 'b = 1'])
+
+    def test_an_estimate_is_read_only_with_the_guides_words(self):
+        e = lambda line: [c[0] for c in x.applied_entries([line])]
+        self.assertEqual(e('8 أيُّ إجابةٍ قريبةٍ من'), ['8'])
+        self.assertEqual(e('ﺗﻘﺮﻳﺒﹰﺎ. 1.2'), ['1.2'])
+        self.assertEqual(e('8'), [])                                   # bare: an axis label
+        self.assertEqual(e('تقريبًا. 10.5 m/s هي t = 3 السرعة عندما'), [])   # half a sentence
+
+    def test_a_value_printed_twice_verifies_two_items_and_once_verifies_neither(self):
+        recs = lambda: [{'source': {'number': n}, 'computedAnswer': '-4', 'status': 'computed'} for n in (1, 2)]
+        twice, once = recs(), recs()
+        x.pair_applied(twice, ['-4 أي إجابة قريبة من', '-4 أي إجابة قريبة من'])
+        x.pair_applied(once, ['-4 أي إجابة قريبة من'])
+        self.assertEqual([r['status'] for r in twice], ['verified', 'verified'])
+        self.assertEqual([r['status'] for r in once], ['computed', 'computed'])
+
+    def test_the_solvers_refuse_what_they_cannot_decide(self):
+        cases = [
+            ('y = 4x^2 + 1\n(1, 6)', {'ask': 'slope_at_point'}, 'point_not_on_curve'),
+            ('y = 4x^2 + 1', {'ask': 'slope_at_point'}, 'no_point'),
+            ('t: 0, 1, 2\ns(t): 0, 2, 8\n[1, 3]', {'ask': 'average_velocity'}, 'interval_not_in_table'),
+            ('t: 0, 1, 2\ns(t): 0, 2\n[0, 1]', {'ask': 'average_velocity'}, 'not_a_value_table'),
+            # a table no `at + bt^2` passes through exactly
+            ('s(t) = at + bt^2\nt: 0, 1, 2, 3\ns(t): 0, 5, 12, 22', {'ask': 'fit_table', 'unknowns': ['a', 'b']},
+             'table_not_fitted_once'),
+            ('f(x) = x^2 + 1', {'ask': 'intercept_slopes'}, 'x_intercepts_not_rational'),
+            ('f(x) = x^2 - 2', {'ask': 'intercept_slopes'}, 'x_intercepts_not_rational'),
+        ]
+        for stem, params, reason in cases:
+            with self.subTest(stem=stem), self.assertRaises(x.Reject) as e:
+                x.solve_applied(stem, params)
+            self.assertEqual(str(e.exception), reason)
 
 
 if __name__ == '__main__':
