@@ -64,7 +64,7 @@ import {
   type FamilyPeriod,
 } from '@/services/familySchedule';
 import { getChildExams, getMyExams } from '@/services/studentExam';
-import { examDayParts, myExamTitle, subjectLabel, type MyExam } from '@/services/myExams';
+import { examDayParts, myExamTitle, resultsHref, subjectLabel, type MyExam } from '@/services/myExams';
 import { readableOn } from '@/services/readableColor';
 import { ExamStatusChip } from '@/components/ExamStatusChip';
 import {
@@ -255,6 +255,8 @@ export default function SchoolScreen() {
   const activeKey = selected ?? child?.key ?? hwChild?.key ?? null;
   const examChild = exams ? (exams.find(g => g.key === activeKey) ?? exams[0] ?? null) : null;
   const upcoming = upcomingExams(examChild?.exams ?? [], hwToday);
+  // «نتائج أبنائي» opens on the child picked here; a student's results have no child.
+  const resultsLink = resultsHref(isParent ? (examChild?.key ?? activeKey) : null);
   // A parent's «نظرة سريعة» for the same child. A list that has not loaded, or failed, is null: its lines are left
   // out, never shown as zero.
   const glance = isParent
@@ -329,7 +331,8 @@ export default function SchoolScreen() {
                     { backgroundColor: on ? ACCENT : colors.card, borderColor: on ? ACCENT : colors.border },
                   ]}
                 >
-                  <Text style={{ color: on ? '#fff' : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
+                  {/* The fill is the palette's primary (light teal in dark mode), so the label is its own foreground, never white. */}
+                  <Text style={{ color: on ? palette.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                     {c.displayName}
                   </Text>
                 </Pressable>
@@ -339,7 +342,7 @@ export default function SchoolScreen() {
         ) : null}
 
         {glance && glanceHasContent(glance) ? (
-          <GlanceCard glance={glance} name={glanceName} colors={colors} isRTL={isRTL} lang={lang} t={t} />
+          <GlanceCard glance={glance} name={glanceName} resultsLink={resultsLink} colors={colors} isRTL={isRTL} lang={lang} t={t} />
         ) : null}
 
         <View style={{ gap: SPACE.md }}>
@@ -452,7 +455,7 @@ export default function SchoolScreen() {
           ) : null}
 
           {upcoming.map(exam => (
-            <UpcomingExamRow key={exam.evaluationId} exam={exam} today={hwToday} parent={isParent} colors={colors} isRTL={isRTL} lang={lang} t={t} />
+            <UpcomingExamRow key={exam.evaluationId} exam={exam} today={hwToday} parent={isParent} resultsLink={resultsLink} colors={colors} isRTL={isRTL} lang={lang} t={t} />
           ))}
         </View>
 
@@ -525,7 +528,7 @@ export default function SchoolScreen() {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push('/my-exams' as never)}
+          onPress={() => router.push(resultsLink as never)}
           style={({ pressed }) => [
             styles.examsRow,
             { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: rowDir, opacity: pressed ? 0.85 : 1 },
@@ -549,10 +552,12 @@ export default function SchoolScreen() {
  * right below. No amber: amber means «now» in this app, and the rows below already carry it.
  */
 function GlanceCard({
-  glance, name, colors, isRTL, lang, t,
+  glance, name, resultsLink, colors, isRTL, lang, t,
 }: {
   glance: ChildGlance;
   name: string;
+  /** «نتائج أبنائي» for this child. */
+  resultsLink: string;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   lang: 'ar' | 'en';
@@ -595,7 +600,7 @@ function GlanceCard({
       {last?.result ? (
         <Pressable
           accessibilityRole="link"
-          onPress={() => router.push('/my-exams' as never)}
+          onPress={() => router.push(resultsLink as never)}
           style={({ pressed }) => [styles.glanceLine, { flexDirection: rowDir, minHeight: TOUCH, opacity: pressed ? 0.85 : 1 }]}
         >
           <Ionicons name="document-text-outline" size={ICON.lg} color={ACCENT} />
@@ -640,12 +645,14 @@ function PeriodRow({
 }
 
 function UpcomingExamRow({
-  exam, today, parent, colors, isRTL, lang, t,
+  exam, today, parent, resultsLink, colors, isRTL, lang, t,
 }: {
   exam: MyExam;
   today: string;
   /** A parent reads «سُلِّم — بانتظار تصحيح المعلّم»; a student, the short label. */
   parent: boolean;
+  /** «نتائج أبنائي» for the child whose exam this is. */
+  resultsLink: string;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   lang: 'ar' | 'en';
@@ -672,7 +679,7 @@ function UpcomingExamRow({
   return (
     <Pressable
       accessibilityRole="link"
-      onPress={() => router.push('/my-exams' as never)}
+      onPress={() => router.push(resultsLink as never)}
       style={({ pressed }) => [
         styles.examRow,
         { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: rowDir, opacity: pressed ? 0.85 : 1 },
@@ -858,7 +865,7 @@ function HomeworkRow({
           <Pressable
             accessibilityRole="link"
             hitSlop={8}
-            onPress={() => router.push('/my-exams' as never)}
+            onPress={() => router.push(resultsHref(isParent ? childKey : null) as never)}
             style={{ paddingVertical: SPACE.xs }}
           >
             <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>

@@ -60,6 +60,26 @@ export function examReviewPath(evaluationId: string, childKey?: string | null): 
     : `/student/exams/${id}/review`;
 }
 
+/**
+ * «نتائج أبنائي» opened from «المدرسة» for the child picked there (since 2026-11-27).
+ * A student's list has no child, so the plain path; a parent's carries the child key
+ * («المدرسة» and the results screen group by the same keys).
+ */
+export function resultsHref(childKey?: string | null): string {
+  return childKey ? `/my-exams?child=${encodeURIComponent(childKey)}` : '/my-exams';
+}
+
+/**
+ * Which children's blocks the results screen shows: only the one it was opened for, when
+ * that key is one of them, and every child otherwise — a stale or unknown key (a child
+ * unlinked since) never empties the screen. `focused` says whether «كل الأبناء» is worth
+ * offering.
+ */
+export function focusChild<T extends { key: string }>(groups: readonly T[], childKey: string | null): { shown: T[]; focused: boolean } {
+  const match = childKey ? groups.filter(g => g.key === childKey) : [];
+  return match.length > 0 && groups.length > 1 ? { shown: match, focused: true } : { shown: [...groups], focused: false };
+}
+
 export const MY_EXAM_STATE_KEY = {
   available: 'myExamsStateAvailable',
   in_progress: 'myExamsStateInProgress',

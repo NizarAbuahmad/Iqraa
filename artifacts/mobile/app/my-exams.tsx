@@ -27,7 +27,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -40,6 +40,7 @@ import { useMasteryProgress } from '@/hooks/useMasteryProgress';
 import {
   canRetakeExam,
   childSummaryLine,
+  focusChild,
   formatExamDay,
   myExamAction,
   myExamTitle,
@@ -50,6 +51,7 @@ import {
   type ProgressSummary,
 } from '@/services/myExams';
 import { formatListDate } from '@/services/evaluationRow';
+import { firstParam } from '@/services/teacherSubmissions';
 import { isValidYmd } from '@/services/homework';
 import { formatExamTime, groupChildExams } from '@/services/upcomingExams';
 import { readableOn } from '@/services/readableColor';
@@ -82,6 +84,9 @@ export default function MyExamsScreen() {
   const { user } = useAuth();
   const isParent = user?.role === 'parent';
   const [groups, setGroups] = useState<ExamGroup[] | null>(null);
+  // Opened from «المدرسة» for the child picked there (`?child=`): that child alone, until «كل الأبناء».
+  const params = useLocalSearchParams<{ child?: string }>();
+  const [focusKey, setFocusKey] = useState<string | null>(() => firstParam(params.child) || null);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [openResult, setOpenResult] = useState<string | null>(null);
@@ -157,6 +162,10 @@ export default function MyExamsScreen() {
     }
   };
 
+  const focus = groups && isParent ? focusChild(groups, focusKey) : null;
+  const shown = focus ? focus.shown : groups;
+  const focused = focus?.focused === true;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
@@ -198,7 +207,20 @@ export default function MyExamsScreen() {
           <ActivityIndicator color={ACCENT} style={{ marginTop: 40 }} />
         ) : null}
 
-        {groups !== null && groups.every(g => g.exams.length === 0) ? (
+        {focused ? (
+          <Pressable
+            onPress={() => setFocusKey(null)}
+            accessibilityRole="button"
+            hitSlop={8}
+            style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', minHeight: 44, justifyContent: 'center' }}
+          >
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14, textDecorationLine: 'underline' }}>
+              {t('childResultsShowAll')}
+            </Text>
+          </Pressable>
+        ) : null}
+
+        {shown !== null && shown.every(g => g.exams.length === 0) ? (
           <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: ACCENT + '1F' }]}>
               <Ionicons name="document-text-outline" size={32} color={ACCENT} />
@@ -220,8 +242,8 @@ export default function MyExamsScreen() {
           </View>
         ) : null}
 
-        {groups !== null && groups.some(g => g.exams.length > 0)
-          ? groups.map((group, groupIndex) => (
+        {shown !== null && shown.some(g => g.exams.length > 0)
+          ? shown.map((group, groupIndex) => (
               <View
                 key={group.key}
                 style={[

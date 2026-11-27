@@ -10,11 +10,20 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Parents: «المدرسة» first, a quick look at each child, a read-only view of a handed-in project, every parent code of a class in one place, a parent's tick for a child with no account, and the child's answer review — 2026-11-20
+## Parents: «المدرسة» first, a quick look at each child, a read-only view of a handed-in project, every parent code of a class in one place, a parent's tick for a child with no account, the child's answer review, and two small fixes — 2026-11-20
 
-Six changes from a review of the parent side (the first four written 2026-11-13, the fifth 2026-11-20, the sixth 2026-11-25).
+Seven changes from a review of the parent side (the first four written 2026-11-13, the fifth 2026-11-20, the sixth 2026-11-25, the seventh 2026-11-27).
 
 **What changed.**
+- **Two small fixes on «المدرسة»** (2026-11-27). The selected child chip drew `'#fff'` on `palette.primary`, which in
+  dark mode is the light teal `#2DD4BF`: about 1.9:1. Its label is now `palette.primaryForeground`, from the same
+  palette as the fill. And the child picked on «المدرسة» now carries over to «نتائج أبنائي»: the four links there
+  (the results button, the glance card's last result, an exam row, a homework's exam) go through `resultsHref`
+  (`services/myExams.ts`), which adds `?child=<key>` for a parent, and the results screen shows that child alone
+  (`focusChild`) with «اعرض كل الأبناء» to widen back. A key that matches no child shows everyone rather than an empty
+  screen, and a parent of one child sees no widen link. No «ما الجديد»: nothing new to learn. Pinned by
+  `parentResultsChild.test.ts`, which also reads both palettes from `constants/colors.ts` and checks the label clears
+  4.5:1 on the fill in each.
 - **A parent opens the child's answer review** (2026-11-25). A parent saw a released result as a level, a mark and
   the four competencies, and could not see which questions went wrong. The review was turned off for parents
   (`guardianExamRow` set `review: false`) only because it was read through `/student/…`. New `GET

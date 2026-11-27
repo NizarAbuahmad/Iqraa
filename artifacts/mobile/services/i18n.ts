@@ -2992,6 +2992,7 @@ const translations = {
     // A teacher may publish without a title; the row used to be blank.
     myExamsUntitled: (subject: string) => (subject ? `اختبار ${subject}` : 'اختبار'),
     childResultsTitle: 'نتائج أبنائي',
+    childResultsShowAll: 'اعرض كل الأبناء',
     childResultsDesc: 'اختبارات أبنائك، ونتائجهم حين يُعلنها المعلّم.',
     childResultsTileDesc: 'اختباراتهم ونتائجهم',
     childResultsEmptyDesc: 'حين يرسل المعلّم اختبارًا إلى شعبة ابنك أو ابنتك سيظهر هنا.',
@@ -6744,6 +6745,7 @@ const translations = {
     myExamsLoadFailed: 'Could not load your exams.',
     myExamsUntitled: (subject: string) => (subject ? `${subject} exam` : 'Exam'),
     childResultsTitle: "My children's results",
+    childResultsShowAll: 'Show all children',
     childResultsDesc: "Your children's exams, and their results once the teacher releases them.",
     childResultsTileDesc: 'Their exams and results',
     childResultsEmptyDesc: "When a teacher sends an exam to your child's class, it appears here.",
