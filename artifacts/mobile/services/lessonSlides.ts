@@ -21,12 +21,14 @@ import type {
   ClassroomActivity,
   LessonPlanOutput,
   LessonTeachingOutput,
+  TeacherCompanion,
 } from './ai/AIService.ts';
 import type { KBLesson } from './knowledgeBase.ts';
 import { CONCEPTS_CAP, type RevisionUnit } from './revisionScope.ts';
 import { buildChartSlide, buildGraphSlide, referencesShownVisual, scanGraphCommands } from './classMedia.ts';
 import { chartForLesson, usableChartVisual, visualForSlide } from './deckVisuals.ts';
 import { type BookFigure, bookPagesForLesson, figuresForLesson } from './bookFigures.ts';
+import { figureNote as defaultFigureNote, type FigureNote, type FigureNoteReader } from './bookFigureNotes.ts';
 import { exerciseReference, exercisesForLesson } from './bookExercises.ts';
 import { inlineSteps, MAX_STAT_VALUE_CHARS, resolveSlideLayout, usableConceptShape } from './slideLayout.ts';
 import { iconForTopic, isSectionIconName } from './deckIcons.ts';
@@ -140,6 +142,13 @@ export interface LessonDeckOptions {
    * Omitted → no figure slides, exactly as before figures existed.
    */
   figureUri?: (figure: BookFigure) => string | null;
+  /**
+   * Reads a figure's approved note (`bookFigureNotes.ts`). Injected so tests
+   * can approve notes without editing the shipped files; the app passes
+   * nothing and gets the real reader. A figure with no approved note is shown
+   * exactly as before notes existed.
+   */
+  figureNote?: FigureNoteReader;
   /**
    * Show the lesson's own book pages (its first few, as slides) when the lesson
    * has no figure to show. Opt-in for the same reason `figureUri` is: a deck
@@ -428,6 +437,27 @@ export function bookFigureCaption(figure: BookFigure, isAr: boolean): string {
 }
 
 /**
+ * A figure's caption line: the approved note, then the book citation. With no
+ * note, the citation alone — what every figure carried before notes existed.
+ * The citation always stays: it is how a teacher checks the projected figure
+ * against the printed page.
+ */
+function figureCaptionWithNote(figure: BookFigure, isAr: boolean, note: FigureNote | null): string {
+  const citation = bookFigureCaption(figure, isAr);
+  return note ? `${note.caption}\n${citation}` : citation;
+}
+
+/**
+ * The note's speaker text after any tips the slide already has. No note →
+ * the teacher block untouched (undefined stays undefined).
+ */
+function teacherWithNote(teacher: TeacherCompanion | undefined, note: FigureNote | null): TeacherCompanion | undefined {
+  if (!note) return teacher;
+  const teachingTips = [teacher?.teachingTips, note.teacher].filter(Boolean).join('\n\n');
+  return { ...(teacher ?? { expectedAnswer: '' }), teachingTips };
+}
+
+/**
  * A lesson's book figures as media slides, ready to splice into any deck.
  *
  * The slide-side twin of `bookFigureRefsForLesson()` (`bookFigureUri.ts`),
@@ -448,19 +478,25 @@ export function bookFigureCaption(figure: BookFigure, isAr: boolean): string {
  * own counter and `assembleDeckSlides` renumbers the whole deck at the end.
  *
  * Omitting `figureUri` yields nothing, exactly as before figures existed.
+ * `note` reads the figure's approved note (`bookFigureNotes.ts`); with none,
+ * the slide is exactly as before.
  */
 export function bookFigureSlides(
   kbLessonId: string | null | undefined,
   isAr: boolean,
   figureUri?: (figure: BookFigure) => string | null,
   max: number = BOOK_FIGURE_MAX,
+  note: FigureNoteReader = defaultFigureNote,
 ): Omit<ActivitySlide, 'slideNumber'>[] {
   if (!figureUri) return [];
   const out: Omit<ActivitySlide, 'slideNumber'>[] = [];
   for (const figure of figuresForLesson(kbLessonId).slice(0, max)) {
     const uri = figureUri(figure);
     if (!uri) continue;
-    const caption = bookFigureCaption(figure, isAr);
+    const n = note(figure, isAr);
+    // Both fields, because the renderers split on them: the presenter draws
+    // `content` above the image, the PDF and PowerPoint draw `mediaCaption`.
+    const caption = figureCaptionWithNote(figure, isAr, n);
     out.push({
       type: 'media',
       title: isAr ? 'من كتاب الطالب' : 'From the Student Book',
@@ -469,6 +505,7 @@ export function bookFigureSlides(
       mediaUrl: uri,
       mediaCaption: caption,
       durationSeconds: 0,
+      ...(n ? { teacher: teacherWithNote(undefined, n) } : {}),
     });
   }
   return out;
@@ -828,7 +865,7 @@ export function buildLessonDeck(
   // Only the first figure, and only onto this slide: the rule is the one
   // piece of prose in the deck a diagram is *about*. The rest stay standalone
   // (§6a) because they illustrate the lesson generally, not one sentence.
-  const figures = bookFigureSlides(lesson?.id, isAr, opts.figureUri);
+  const figures = bookFigureSlides(lesson?.id, isAr, opts.figureUri, BOOK_FIGURE_MAX, opts.figureNote);
   const rules = bullets(pickLang(lesson?.rulesAr, lesson?.rulesEn, isAr), 5);
   const ruleFigure = rules.length > 0 ? figures.shift() : undefined;
   if (rules.length > 0) {
@@ -843,10 +880,13 @@ export function buildLessonDeck(
       content: (procedure ?? rules).map(r => `• ${r}`).join('\n'),
       ...(procedure ? { layout: 'steps' as const } : {}),
       durationSeconds: 0,
+      // `mediaCaption` already carries the note above the citation when the
+      // figure has one; so does its teacher block.
       ...(ruleFigure?.mediaUrl
         ? {
             sideImageUrl: ruleFigure.mediaUrl,
             sideImageCaption: ruleFigure.mediaCaption,
+            ...(ruleFigure.teacher ? { teacher: ruleFigure.teacher } : {}),
           }
         : {}),
     });
@@ -1326,6 +1366,8 @@ export interface RevisionDeckOptions {
    * it a revision deck carries no pictures from the book, exactly as before.
    */
   figureUri?: (figure: BookFigure) => string | null;
+  /** As `LessonDeckOptions.figureNote`. */
+  figureNote?: FigureNoteReader;
   /**
    * A unit with no figure of its own shows the first page of its first lesson
    * that has book pages (opt-in, as `LessonDeckOptions.bookPages`). Omitted →
@@ -1519,6 +1561,9 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
     // side picture); the cards layout fills the slide and has no column for one.
     const figures = opts.figureUri ? unitFigures(unit, opts.figureUri) : [];
     const [first, second] = figures;
+    const readNote = opts.figureNote ?? defaultFigureNote;
+    const firstNote = first ? readNote(first.figure, isAr) : null;
+    const secondNote = second ? readNote(second.figure, isAr) : null;
     // A unit whose list says exactly what an earlier unit's said — Grade 1
     // Arabic units are all «أستمع… أتحدث… أقرأ… أكتب» — adds nothing but a
     // copy; its divider and its own book page still mark the round.
@@ -1566,8 +1611,8 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
       icon: unitIcon ?? 'bulb',
       content: shown.map(s => `• ${s}`).join('\n'),
       durationSeconds: 0,
-      ...(first ? { sideImageUrl: first.uri, sideImageCaption: bookFigureCaption(first.figure, isAr) } : {}),
-      teacher: {
+      ...(first ? { sideImageUrl: first.uri, sideImageCaption: figureCaptionWithNote(first.figure, isAr, firstNote) } : {}),
+      teacher: teacherWithNote({
         expectedAnswer: lessonTitles.length > 0
           ? L(`دروس الوحدة في هذه المراجعة: ${lessonTitles.join('، ')}`,
             `This unit's lessons in the revision: ${lessonTitles.join(', ')}`)
@@ -1575,7 +1620,7 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
         ...(terms.length > 0
           ? { teachingTips: L(`مصطلحات تستحق السؤال عنها: ${terms.join('، ')}`, `Terms worth asking about: ${terms.join(', ')}`) }
           : {}),
-      },
+      }, firstNote),
     }, first || outcomes.length > 0 ? {} : { layout: 'concepts', concepts: shown }));
     if (termsOwnSlide && !repeat && !oneSlide) {
       // The unit's second figure sits beside its terms, as the first does beside
@@ -1587,7 +1632,8 @@ export function buildRevisionDeck(isAr: boolean, opts: RevisionDeckOptions): Cla
         icon: unitIcon ?? 'bulb',
         content: concepts.map(c => `• ${c}`).join('\n'),
         durationSeconds: 0,
-        ...(second ? { sideImageUrl: second.uri, sideImageCaption: bookFigureCaption(second.figure, isAr) } : {}),
+        ...(second ? { sideImageUrl: second.uri, sideImageCaption: figureCaptionWithNote(second.figure, isAr, secondNote) } : {}),
+        ...(secondNote ? { teacher: teacherWithNote(undefined, secondNote) } : {}),
       }, second ? {} : { layout: 'concepts', concepts }));
     }
     // A unit whose book prints no figure shows the opening page of its first

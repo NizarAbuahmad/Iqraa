@@ -20,7 +20,8 @@ import type {
 } from './ai/AIService.ts';
 import type { KBLesson } from './knowledgeBase.ts';
 import type { BookFigure } from './bookFigures.ts';
-import { bookFigureSlides, numberedBookTitles } from './lessonSlides.ts';
+import { BOOK_FIGURE_MAX, bookFigureSlides, numberedBookTitles } from './lessonSlides.ts';
+import type { FigureNoteReader } from './bookFigureNotes.ts';
 import { toArabicDigits } from './labFormat.ts';
 import { optionLetter } from './optionLabels.ts';
 import { samplePlot } from './deckVisuals.ts';
@@ -166,8 +167,9 @@ function pushFigures(
   kbLessonId: string | null | undefined,
   isAr: boolean,
   figureUri?: (figure: BookFigure) => string | null,
+  figureNote?: FigureNoteReader,
 ): void {
-  for (const slide of numberedBookTitles(bookFigureSlides(kbLessonId, isAr, figureUri), isAr)) {
+  for (const slide of numberedBookTitles(bookFigureSlides(kbLessonId, isAr, figureUri, BOOK_FIGURE_MAX, figureNote), isAr)) {
     slides.push({ ...slide, slideNumber: slides.length + 1 } as ActivitySlide);
   }
 }
@@ -200,6 +202,8 @@ export function buildDeckFromQuiz(
      * figure slides, exactly as before.
      */
     figureUri?: (figure: BookFigure) => string | null;
+    /** Reads a figure's approved note; see `LessonDeckOptions.figureNote`. Omitted → the real notes. */
+    figureNote?: FigureNoteReader;
     /** Localised grade and subject for the deck header. Omitted leaves them
      *  blank — it used to stamp «الصف العاشر» on every deck, grade 1 included. */
     grade?: string;
@@ -209,7 +213,7 @@ export function buildDeckFromQuiz(
   const slides: ActivitySlide[] = [introSlide(quiz.title, lessonTitle, isAr)];
   const objSlide = objectivesSlide(opts?.lesson ?? null, lessonTitle, isAr, slides.length + 1);
   if (objSlide) slides.push(objSlide);
-  pushFigures(slides, opts?.lesson?.id, isAr, opts?.figureUri);
+  pushFigures(slides, opts?.lesson?.id, isAr, opts?.figureUri, opts?.figureNote);
 
   quiz.questions.forEach((q, i) => {
     const hasOptions = Array.isArray(q.options) && q.options.length >= 2;
@@ -335,6 +339,8 @@ export function buildDeckFromWorksheet(
     )[];
     /** See `buildDeckFromQuiz`. */
     figureUri?: (figure: BookFigure) => string | null;
+    /** Reads a figure's approved note; see `LessonDeckOptions.figureNote`. Omitted → the real notes. */
+    figureNote?: FigureNoteReader;
     /** Localised grade and subject for the deck header. Omitted leaves them
      *  blank — it used to stamp «الصف العاشر» on every deck, grade 1 included. */
     grade?: string;
@@ -344,7 +350,7 @@ export function buildDeckFromWorksheet(
   const slides: ActivitySlide[] = [introSlide(ws.title, lessonTitle, isAr)];
   const objSlide = objectivesSlide(opts?.lesson ?? null, lessonTitle, isAr, slides.length + 1);
   if (objSlide) slides.push(objSlide);
-  pushFigures(slides, opts?.lesson?.id, isAr, opts?.figureUri);
+  pushFigures(slides, opts?.lesson?.id, isAr, opts?.figureUri, opts?.figureNote);
 
   // A worksheet question carries no answer of its own — the generator only
   // ever fills in the top-level answerKey, keyed by 1-based position across
@@ -704,6 +710,8 @@ export function buildGameDeckFromQuiz(
     verified?: boolean;
     /** See `buildDeckFromQuiz`. */
     figureUri?: (figure: BookFigure) => string | null;
+    /** Reads a figure's approved note; see `LessonDeckOptions.figureNote`. Omitted → the real notes. */
+    figureNote?: FigureNoteReader;
     /** Localised grade and subject for the deck header. Omitted leaves them
      *  blank — it used to stamp «الصف العاشر» on every deck, grade 1 included. */
     grade?: string;
@@ -722,7 +730,7 @@ export function buildGameDeckFromQuiz(
 
   const objSlide = objectivesSlide(opts.lesson ?? null, lessonTitle, isAr, slides.length + 1);
   if (objSlide) slides.push(objSlide);
-  pushFigures(slides, opts.lesson?.id, isAr, opts.figureUri);
+  pushFigures(slides, opts.lesson?.id, isAr, opts.figureUri, opts.figureNote);
 
   pushGameRounds(slides, scoreable.map(({ q, correct }) => ({
     content: q.text,

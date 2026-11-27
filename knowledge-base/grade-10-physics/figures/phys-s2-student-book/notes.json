@@ -1,0 +1,713 @@
+{
+  "sourceId": "phys-s2-student-book",
+  "notes": {
+    "p009b.png": {
+      "status": "skip",
+      "skipReason": "لا يقابله درس في المنهاج، فلا يُعرض على أي شريحة"
+    },
+    "p011b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "ميزان نابضي مدرّج بتدريجين: الكتلة بوحدة g والوزن بوحدة N، فيقيس الكتلة والوزن معًا.",
+        "teacher": "أشِر إلى التدريجين على جانبي الميزان، وإلى أن التدريج 100 g يقابل 1 N، وذكّر بالعلاقة Fg = mg. ثم اسأل: «ما الفرق بين الكتلة والوزن؟»"
+      },
+      "en": {
+        "caption": "A spring balance with two scales, mass in g and weight in N, so it measures mass and weight together.",
+        "teacher": "Point to the two scales on either side of the balance, show that 100 g sits opposite 1 N, and recall Fg = mg. Then ask: “What is the difference between mass and weight?”"
+      }
+    },
+    "p012.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "الأرض تجذب القمر الصناعي بالقوة FES، والقمر الصناعي يجذب الأرض بالقوة FSE المساوية لها مقدارًا والمعاكسة اتجاهًا.",
+        "teacher": "أشِر إلى السهمين FES وFSE: كل منهما يتجه نحو مركز الجسم الآخر. ثم اسأل: «هل تجذب الأرض القمر الصناعي بقوة أكبر من قوة جذبه لها؟»"
+      },
+      "en": {
+        "caption": "Earth pulls the satellite with force FES, and the satellite pulls Earth with force FSE, equal in size and opposite in direction.",
+        "teacher": "Point to the arrows FES and FSE: each points toward the centre of the other body. Then ask: “Does Earth pull the satellite with a bigger force than the satellite pulls Earth?”"
+      }
+    },
+    "p015.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "أسهم من كل الجهات حول الأرض تتجه نحو مركزها: قوة جذب الأرض للأجسام في مجال جاذبيتها تتجه دائمًا نحو مركزها.",
+        "teacher": "أشِر إلى أن الأسهم على الدوائر كلها تتجه نحو مركز الأرض، سواء أكان الجسم قريبًا من سطحها أم بعيدًا عنه. ثم اسأل: «ما اتجاه وزن جسم موجود في أي نقطة حول الأرض؟»"
+      },
+      "en": {
+        "caption": "Arrows on every side of Earth point to its centre: in Earth's gravitational field, Earth's pull on objects always points to its centre.",
+        "teacher": "Point out that the arrows on every circle point toward Earth's centre, whether the object is near the surface or far from it. Then ask: “What is the direction of the weight of an object at any point around Earth?”"
+      }
+    },
+    "p018-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "يد تمسك حبلًا معلقًا به ثقل كتلته m: قوة الشد FT تؤثر في الثقل إلى أعلى، ووزنه Fg إلى أسفل.",
+        "teacher": "أشِر إلى السهمين FT: أحدهما على الثقل إلى أعلى، والآخر على اليد إلى أسفل، فالحبل يشدّ كلا طرفيه. ثم اسأل: «إذا كان الثقل ساكنًا، فما العلاقة بين FT وFg؟»"
+      },
+      "en": {
+        "caption": "A hand holds a rope with a mass m hanging from it: the tension FT acts upward on the mass, and its weight Fg acts downward.",
+        "teacher": "Point to the two FT arrows: one acts upward on the mass, the other downward on the hand, so the rope pulls on both its ends. Then ask: “If the mass is at rest, how are FT and Fg related?”"
+      }
+    },
+    "p020-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "يد تمسك حزمة حطب بخيط والحزمة متزنة (∑Fy = 0)، فتكون قوة الشد في الخيط مساوية لوزن الحزمة.",
+        "teacher": "أشِر إلى ∑Fy = 0 بجانب الخيط، ووضّح أن ذلك يصح والحزمة ساكنة أو متحركة بسرعة متجهة ثابتة. ثم اسأل: «ماذا يحدث لقوة الشد إذا رُفعت الحزمة بتسارع كبير؟»"
+      },
+      "en": {
+        "caption": "A hand holds a bundle of firewood on a string and the bundle is balanced (∑Fy = 0), so the tension in the string equals its weight.",
+        "teacher": "Point to ∑Fy = 0 beside the string, and explain that it holds when the bundle is at rest or moving at constant velocity. Then ask: “What happens to the tension if the bundle is lifted with a large acceleration?”"
+      }
+    },
+    "p020c-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "رفع حزمة الحطب فجأة بتسارع إلى أعلى (∑Fy > 0) يزيد قوة الشد على أكبر قوة يتحملها الخيط، فينقطع.",
+        "teacher": "أشِر إلى السهم إلى أعلى وإلى ∑Fy > 0 وموضع انقطاع الخيط، وقارن بالشكل (أ) حيث ∑Fy = 0. ثم اسأل: «كيف يمكن رفع حزمة الحطب من دون أن ينقطع الخيط؟»"
+      },
+      "en": {
+        "caption": "Jerking the bundle upward with an acceleration (∑Fy > 0) raises the tension above the most the string can bear, so it breaks.",
+        "teacher": "Point to the upward arrow, to ∑Fy > 0 and to where the string snaps, and compare with panel (a), where ∑Fy = 0. Then ask: “How can the bundle be lifted without the string breaking?”"
+      }
+    },
+    "p022-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "يد تضغط بقوة F على كتاب فوق طاولة: القوة العمودية FN2 إلى أعلى تتزن مع F والوزن Fg معًا.",
+        "teacher": "أشِر إلى مخطط الجسم الحر أسفل الطاولة: FN2 إلى أعلى، وF وFg إلى أسفل. ثم اسأل: «هل القوة العمودية FN2 أكبر من وزن الكتاب أم أصغر منه؟»"
+      },
+      "en": {
+        "caption": "A hand presses on a book on a table with force F: the upward normal force FN2 balances F and the weight Fg together.",
+        "teacher": "Point to the free-body diagram below the table: FN2 upward, F and Fg downward. Then ask: “Is the normal force FN2 bigger or smaller than the book's weight?”"
+      }
+    },
+    "p022b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "يد تشد كتابًا ساكنًا على طاولة بخيط إلى أعلى: FT وFN3 إلى أعلى يتزنان مع الوزن Fg، فتصبح FN3 أصغر من الوزن.",
+        "teacher": "أشِر إلى مخطط الجسم الحر أسفل الطاولة: FT وFN3 إلى أعلى، وFg إلى أسفل، وطبّق ∑Fy = 0. ثم اسأل: «ماذا يحدث للقوة العمودية FN3 كلما زادت قوة الشد FT؟»"
+      },
+      "en": {
+        "caption": "A hand pulls up on a resting book with a string: FT and FN3 point up and balance the weight Fg, so FN3 is less than the weight.",
+        "teacher": "Point to the free-body diagram below the table: FT and FN3 upward, Fg downward, and apply ∑Fy = 0. Then ask: “What happens to the normal force FN3 as the tension FT increases?”"
+      }
+    },
+    "p023-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "رافعة تسحب سيارة على طريق أفقي بحبل يميل على الأفقي بزاوية 37°، فلقوة الشد مركبة أفقية وأخرى عمودية.",
+        "teacher": "أشِر إلى الزاوية 37° بين الحبل والأفقي، ووضّح أن قوة الشد تُحلَّل إلى المركبتين FTx وFTy. ثم اسأل: «كيف تؤثر المركبة العمودية لقوة الشد في القوة العمودية المؤثرة في السيارة؟»"
+      },
+      "en": {
+        "caption": "A tow truck pulls a car on a horizontal road with a rope at 37° to the horizontal, so the tension has horizontal and vertical components.",
+        "teacher": "Point to the 37° angle between the rope and the horizontal, and explain that the tension resolves into the components FTx and FTy. Then ask: “How does the vertical component of the tension affect the normal force on the car?”"
+      }
+    },
+    "p027.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "قوة مؤثرة F في صندوق تقابلها قوة احتكاك بعكس اتجاهها؛ والتكبير (ب) يُظهر أن السطحين المتلامسين خشنان.",
+        "teacher": "أشِر إلى سهم القوة المؤثرة F وسهم قوة الاحتكاك المعاكس له، ثم إلى نتوءات السطحين في الدائرة المكبّرة. ثم اسأل: «لماذا تنشأ قوة احتكاك بين سطحين يبدوان أملسين عند لمسهما؟»"
+      },
+      "en": {
+        "caption": "An applied force F acts on a crate and a friction force opposes it; the close-up (b) shows that the surfaces in contact are rough.",
+        "teacher": "Point to the applied force F and the opposing friction arrow, then to the bumps on both surfaces in the magnified circle. Then ask: “Why is there friction between two surfaces that feel smooth to the touch?”"
+      }
+    },
+    "p027b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "صندوق يُشد بخيط: على وشك الحركة تعاكس الشدَّ FT2 قوةُ الاحتكاك السكوني العظمى ƒs,max، وعند الحركة تعاكس FT3 قوةُ الاحتكاك الحركي ƒk.",
+        "teacher": "أشِر إلى ƒs,max في المخطط العلوي وƒk في المخطط السفلي، وإلى FN وFg المتعاكسين في الاتجاه العمودي. ثم اسأل: «أيهما أكبر: قوة الاحتكاك السكوني العظمى أم قوة الاحتكاك الحركي؟»"
+      },
+      "en": {
+        "caption": "A box pulled by a string: on the verge of moving, ƒs,max opposes the tension FT2; once it moves, kinetic friction ƒk opposes FT3.",
+        "teacher": "Point to ƒs,max in the upper diagram and ƒk in the lower one, and to FN and Fg opposing each other vertically. Then ask: “Which is bigger: maximum static friction or kinetic friction?”"
+      }
+    },
+    "p028-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "قوة الاحتكاك ƒ مقابل القوة المؤثرة F: يزداد ƒs = F حتى ƒs,max = μsFN، ثم يصبح الاحتكاك حركيًا ƒk = μkFN وهو أقل.",
+        "teacher": "أشِر إلى الخط المستقيم في منطقة الاحتكاك السكوني، ثم إلى القمة ƒs,max، ثم إلى الخط الأفقي ƒk في منطقة الاحتكاك الحركي. ثم اسأل: «لماذا يسهل الاستمرار في تحريك صندوق بعد أن يبدأ الحركة؟»"
+      },
+      "en": {
+        "caption": "Friction ƒ against applied force F: ƒs = F rises to ƒs,max = μsFN, then friction becomes kinetic, ƒk = μkFN, which is lower.",
+        "teacher": "Point to the straight line in the static friction region, then to the peak ƒs,max, then to the flat line ƒk in the kinetic friction region. Then ask: “Why is it easier to keep a box moving once it has started?”"
+      }
+    },
+    "p029-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "قطعة خشبية على طاولة تُسحب أفقيًا بخيط موصول بميزان نابضي، لقياس قوة الاحتكاك بينها وبين سطح الطاولة.",
+        "teacher": "أشِر إلى الخيط الأفقي بين القطعة الخشبية والميزان النابضي، ووضّح أن قراءة الميزان هي قوة الشد. ثم اسأل: «لماذا نعدّ قراءة الميزان النابضي مساوية لقوة الاحتكاك السكوني؟»"
+      },
+      "en": {
+        "caption": "A wooden block on a table is pulled horizontally by a string tied to a spring balance, to measure the friction between it and the table.",
+        "teacher": "Point to the horizontal string between the block and the spring balance, and explain that the balance reads the tension. Then ask: “Why do we take the spring balance reading as equal to the static friction force?”"
+      }
+    },
+    "p030-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "ƒs,max مقابل FN بوحدة N خط مستقيم من نقطة الأصل: قوة الاحتكاك السكوني العظمى تتناسب طرديًا مع القوة العمودية.",
+        "teacher": "أشِر إلى أن الخط يمر بنقطة الأصل، ووضّح أن ميله هو معامل الاحتكاك السكوني μs في العلاقة ƒs,max = μsFN. ثم اسأل: «لماذا ليس لمعامل الاحتكاك السكوني وحدة قياس؟»"
+      },
+      "en": {
+        "caption": "ƒs,max against FN, both in N, is a straight line through the origin: maximum static friction is directly proportional to the normal force.",
+        "teacher": "Point out that the line passes through the origin, and explain that its slope is the coefficient of static friction μs in ƒs,max = μsFN. Then ask: “Why does the coefficient of static friction have no unit?”"
+      }
+    },
+    "p031-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "ƒk مقابل FN بوحدة N خط مستقيم من نقطة الأصل: قوة الاحتكاك الحركي تتناسب طرديًا مع القوة العمودية.",
+        "teacher": "أشِر إلى ميل الخط، ووضّح أنه معامل الاحتكاك الحركي μk في العلاقة ƒk = μkFN. ثم اسأل: «على ماذا يعتمد معامل الاحتكاك الحركي بين سطحين؟»"
+      },
+      "en": {
+        "caption": "ƒk against FN, both in N, is a straight line through the origin: kinetic friction is directly proportional to the normal force.",
+        "teacher": "Point to the slope of the line, and explain that it is the coefficient of kinetic friction μk in ƒk = μkFN. Then ask: “What does the coefficient of kinetic friction between two surfaces depend on?”"
+      }
+    },
+    "p034-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "رجل يسحب صندوقًا على أرضية أفقية خشنة بحبل يصنع زاوية 37° مع الأفقي، وقوة الاحتكاك الحركي ƒk تعاكس اتجاه الحركة.",
+        "teacher": "أشِر إلى قوة الشد FT بزاوية 37° وإلى ƒk في عكس اتجاه حركة الصندوق. ثم اسأل: «لماذا لا تساوي القوة العمودية المؤثرة في الصندوق وزنه هنا؟»"
+      },
+      "en": {
+        "caption": "A man pulls a box across a rough horizontal floor with a rope at 37° to the horizontal; kinetic friction ƒk opposes the motion.",
+        "teacher": "Point to the tension FT at 37° and to ƒk opposing the box's motion. Then ask: “Why is the normal force on the box not equal to its weight here?”"
+      }
+    },
+    "p034b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "مخطط الجسم الحر للصندوق: FN وFg عموديان، وƒk في عكس +x، وFT بزاوية 37° مُحلَّلة إلى المركبتين FTx وFTy.",
+        "teacher": "أشِر إلى المركبتين FTx وFTy بالخطوط المتقطعة، وإلى الاتجاه +x. ثم اسأل: «أيّ القوى تدخل في تطبيق القانون الثاني لنيوتن على المحور x؟»"
+      },
+      "en": {
+        "caption": "Free-body diagram of the box: FN and Fg vertical, ƒk against +x, and FT at 37° resolved into the components FTx and FTy.",
+        "teacher": "Point to the dashed components FTx and FTy, and to the +x direction. Then ask: “Which forces go into Newton's second law along the x-axis?”"
+      }
+    },
+    "p037.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "يد تسحب صندوقًا بقوة شد FT على سطح خشن، فتؤثر فيه قوة الاحتكاك الحركي ƒk بعكس اتجاه حركته.",
+        "teacher": "أشِر إلى السهمين FT وƒk المتعاكسين. ثم اسأل: «ماذا يحدث لحركة الصندوق إذا كانت FT أكبر من ƒk؟»"
+      },
+      "en": {
+        "caption": "A hand pulls a box over a rough surface with tension FT, and kinetic friction ƒk acts on it against its motion.",
+        "teacher": "Point to the opposing arrows FT and ƒk. Then ask: “What happens to the box's motion if FT is bigger than ƒk?”"
+      }
+    },
+    "p039-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "يد تكتب بقلم رصاص على الورق: قوة الاحتكاك بين رأس القلم والورق ضرورية للكتابة.",
+        "teacher": "أشِر إلى رأس القلم الملامس للورق، ووضّح أن الكتابة من إيجابيات قوى الاحتكاك. ثم اسأل: «ماذا يحدث لو حاولنا الكتابة على سطح أملس جدًا؟»"
+      },
+      "en": {
+        "caption": "A hand writes with a pencil on paper: friction between the pencil tip and the paper is needed for writing.",
+        "teacher": "Point to the pencil tip touching the paper, and explain that writing is one of the advantages of friction. Then ask: “What would happen if we tried to write on a very smooth surface?”"
+      }
+    },
+    "p039b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "رجل يمشي، وقوة الاحتكاك السكوني ƒs بين قدمه والأرض تتجه إلى الأمام، فالاحتكاك ضروري للمشي.",
+        "teacher": "أشِر إلى السهم ƒs عند القدم، ووضّح أنه يتجه في اتجاه المشي. ثم اسأل: «لماذا لا يمكن المشي على أرضية زلقة؟»"
+      },
+      "en": {
+        "caption": "A man walking: static friction ƒs between his foot and the ground points forward, so friction is needed for walking.",
+        "teacher": "Point to the arrow ƒs at the foot, and explain that it points in the direction of walking. Then ask: “Why can't we walk on a slippery floor?”"
+      }
+    },
+    "p039c-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "صندوق يُدفع ويُسحب على الأرض مباشرة (أ)، ثم وسائل تقلل الاحتكاك: العجلات (ب)، وكرات البيليا (جـ)، والزيت في المحرك (د).",
+        "teacher": "قارن بين الصندوق الذي يُدفع ويُسحب على الأرض والصندوق الموضوع على عجلات، ثم أشِر إلى كرات البيليا والزيت. ثم اسأل: «كيف يقلل الزيت قوة الاحتكاك بين أجزاء المحرك؟»"
+      },
+      "en": {
+        "caption": "A box pushed and pulled straight on the ground (a), then ways to reduce friction: wheels (b), ball bearings (c) and oil in an engine (d).",
+        "teacher": "Compare the box pushed and pulled on the ground with the box on wheels, then point to the ball bearings and the oil. Then ask: “How does oil reduce friction between the parts of an engine?”"
+      }
+    },
+    "p043-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "كرة مربوطة بخيط تدور في مسار دائري (أ) بفعل القوة المركزية FC نحو المركز؛ وعند انقطاع الخيط (ب) تتحرك في خط مستقيم مماسي.",
+        "teacher": "أشِر إلى أسهم FC المتجهة نحو المركز، وإلى السرعة v المماسية للمسار، ثم إلى موضع انقطاع الخيط في (ب). ثم اسأل: «لماذا تتحرك الكرة في خط مستقيم بعد انقطاع الخيط؟»"
+      },
+      "en": {
+        "caption": "A ball on a string moves in a circle (a) as centripetal force FC points to the centre; when the string breaks (b) it moves along a tangent.",
+        "teacher": "Point to the FC arrows pointing to the centre, to the velocity v tangent to the path, then to where the string breaks in (b). Then ask: “Why does the ball move in a straight line after the string breaks?”"
+      }
+    },
+    "p047-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "منظر علوي لسيارة تتحرك في مسار دائري نصف قطره r بسرعة v مماسية للمسار، فتلزمها قوة مركزية نحو مركزه.",
+        "teacher": "أشِر إلى نصف القطر r من مركز المسار إلى السيارة، وإلى السرعة v العمودية عليه. ثم اسأل: «ما القوة التي توفّر القوة المركزية للسيارة على طريق أفقي؟»"
+      },
+      "en": {
+        "caption": "Top view of a car moving on a circular path of radius r with velocity v tangent to it, so it needs a centripetal force toward the centre.",
+        "teacher": "Point to the radius r from the centre of the path to the car, and to the velocity v at right angles to it. Then ask: “Which force provides the centripetal force for a car on a horizontal road?”"
+      }
+    },
+    "p059-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "مكعب وهمي مغمور في سائل، مساحة وجهه A، والنقطة b على عمق h تحت السطح؛ يؤثر المائع في b بضغط P من جميع الاتجاهات.",
+        "teacher": "أشِر إلى العمق h من سطح السائل إلى النقطة b، ثم إلى الأسهم حول b في الدائرة المكبّرة، وذكّر بالعلاقة P = ρf gh. «ماذا يحدث لضغط السائل عند النقطة b إذا زاد عمقها h؟»"
+      },
+      "en": {
+        "caption": "An imaginary cube in a liquid, face area A, with point b at depth h; the fluid presses on b with pressure P from every direction.",
+        "teacher": "Point to the depth h from the liquid surface down to b, then to the arrows around b in the enlarged circle, and recall P = ρf gh. “What happens to the liquid pressure at point b if its depth h increases?”"
+      }
+    },
+    "p060-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "مكعب مغمور في سائل: F1 على وجهه العلوي عند العمق h1، وF2 على وجهه السفلي عند العمق h2؛ فرق الضغط بينهما ينشئ قوة الطفو.",
+        "teacher": "أشِر إلى السهمين F1 وF2، ثم إلى الفرق Δh بين العمقين h1 وh2، وبيّن أن الوجه السفلي أعمق فالضغط عليه أكبر. «أيّ القوتين أكبر، F1 أم F2، ولماذا؟»"
+      },
+      "en": {
+        "caption": "A cube in a liquid: F1 on its top face at depth h1, F2 on its bottom face at depth h2; their pressure difference creates the buoyant force.",
+        "teacher": "Point to the arrows F1 and F2, then to the difference Δh between the depths h1 and h2, and show that the bottom face is deeper, so the pressure on it is greater. “Which force is greater, F1 or F2, and why?”"
+      }
+    },
+    "p061b.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "برج المياه: خزان يُبنى على ارتفاع عالٍ ويغذّي بأنبوب طوابق مبنى أخفض منه؛ فرق الارتفاع Δh يولّد فرق الضغط ΔP = ρgΔh.",
+        "teacher": "أشِر إلى الخزان المرتفع، ثم إلى الأنبوب النازل منه إلى طوابق المبنى، وقارن ارتفاع سطح الماء في الخزان بارتفاع كل طابق. «لماذا يُبنى برج المياه أعلى من الطوابق التي يغذّيها؟»"
+      },
+      "en": {
+        "caption": "A water tower: a tank built high up pipes water to a lower building's floors; a height difference Δh gives a pressure difference ΔP = ρgΔh.",
+        "teacher": "Point to the raised tank, then to the pipe running down from it to the building's floors, and compare the height of the water surface in the tank with each floor. “Why is a water tower built higher than the floors it supplies?”"
+      }
+    },
+    "p062-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "ميزان نابضي يحمل جسمًا مغمورًا في دورق إزاحة، والماء المزاح ينسكب في مخبار مدرج؛ لمقارنة قوة الطفو بوزن الماء المزاح.",
+        "teacher": "أشِر إلى قراءة الميزان النابضي والجسم مغمور، ثم إلى الماء المزاح المتجمع في المخبار المدرج، ثم إلى الميزان الإلكتروني. «كيف نحسب قوة الطفو من قراءتي الميزان النابضي قبل غمر الجسم وبعده؟»"
+      },
+      "en": {
+        "caption": "A spring balance holds an object in a displacement can; the displaced water runs into a graduated cylinder, to compare its weight with FB.",
+        "teacher": "Point to the spring balance reading with the object immersed, then to the displaced water collected in the graduated cylinder, then to the electronic balance. “How do we find the buoyant force from the spring balance readings before and after the object is immersed?”"
+      }
+    },
+    "p063-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "ثقل 500g معلّق بميزان نابضي فوق وعاء مملوء بالماء حتى فوهته، والقوتان FT وFg متزنتان: FT - Fg = 0.",
+        "teacher": "أشِر إلى قراءة الميزان والثقل في الهواء قبل غمره، ثم إلى الكأس الفارغة تحت فوهة الوعاء. «ماذا تتوقعون أن يحدث لقراءة الميزان عند غمر الثقل في الماء؟»"
+      },
+      "en": {
+        "caption": "A 500g mass hangs from a spring balance above a can filled with water to its spout; FT and Fg balance: FT - Fg = 0.",
+        "teacher": "Point to the balance reading with the mass in air before it is immersed, then to the empty beaker under the can's spout. “What do you expect to happen to the balance reading when the mass is immersed in the water?”"
+      }
+    },
+    "p063b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "بعد غمر الثقل تصبح قراءة الميزان F´T = 3 N وينسكب 200g من الماء؛ قوة الطفو FB = 2 N تساوي وزن الماء المزاح (قاعدة أرخميدس).",
+        "teacher": "أشِر إلى قراءة الميزان الجديدة، ثم إلى الماء المزاح في الكأس الصغيرة، ثم إلى محصلة القوى F´g + FB - Fg = 0. «لماذا تساوي قوة الطفو هنا وزن الماء المنسكب في الكأس؟»"
+      },
+      "en": {
+        "caption": "Immersed, the balance reads F´T = 3 N and 200g of water spills; FB = 2 N equals the displaced water's weight (Archimedes' principle).",
+        "teacher": "Point to the new balance reading, then to the displaced water in the small beaker, then to the net force F´g + FB - Fg = 0. “Why does the buoyant force here equal the weight of the water that spilled into the beaker?”"
+      }
+    },
+    "p065-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "تجربة قاعدة أرخميدس: قراءة الميزان FT = 9 N والجسم في الهواء، وبعد غمره تقل إلى F´T وينسكب 0.3 kg من الماء المزاح.",
+        "teacher": "أشِر إلى السهمين FT وmg في الحالة الأولى، ثم إلى السهم FB والماء المنسكب في الكأس في الحالة الثانية. «كيف نجد قوة الطفو FB من كتلة الماء المزاح 0.3 kg؟»"
+      },
+      "en": {
+        "caption": "Archimedes' principle: the balance reads FT = 9 N with the object in air; immersed, it drops to F´T and 0.3 kg of water is displaced.",
+        "teacher": "Point to the arrows FT and mg in the first case, then to the arrow FB and the water spilled into the beaker in the second. “How do we find the buoyant force FB from the 0.3 kg mass of displaced water?”"
+      }
+    },
+    "p067-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "جسم مغمور في سائل قوة الطفو FB فيه أقل من وزنه Fg، فالمحصلة إلى أسفل والجسم يهبط نحو القاع.",
+        "teacher": "أشِر إلى السهمين FB وFg وقارن طوليهما. «في أيّ اتجاه سيتحرك الجسم إذا تُرك حرًّا داخل السائل؟»"
+      },
+      "en": {
+        "caption": "An object immersed in a liquid where the buoyant force FB is less than its weight Fg, so the net force is downward and it sinks.",
+        "teacher": "Point to the arrows FB and Fg and compare their lengths. “Which way will the object move if it is left free in the liquid?”"
+      }
+    },
+    "p067b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "جسمان متماثلان في سائلين مختلفين: في (أ) FB > Fg فيرتفع الجسم، وفي (ب) FB = Fg فيبقى معلّقًا داخل السائل.",
+        "teacher": "أشِر إلى السهمين في كل كأس، وذكّر بأن الجسمين متماثلان فحجماهما المغموران متساويان، وتختلف قوة الطفو باختلاف كثافة السائل. «أيّ السائلين أكبر كثافة: سائل الكأس (أ) أم سائل الكأس (ب)؟»"
+      },
+      "en": {
+        "caption": "Two identical objects in two different liquids: in (a) FB > Fg, so it rises; in (b) FB = Fg, so it stays suspended in the liquid.",
+        "teacher": "Point to the two arrows in each cup, and recall that the objects are identical, so their immersed volumes are equal and the buoyant force changes with the liquid's density. “Which liquid is denser: the one in cup (a) or the one in cup (b)?”"
+      }
+    },
+    "p067c-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "الكأس (أ): جسم مغمور كليًّا في سائل قوة الطفو FB فيه أكبر من وزنه Fg، فالمحصلة إلى أعلى ويرتفع الجسم نحو السطح.",
+        "teacher": "أشِر إلى السهم FB الموجّه إلى أعلى والسهم Fg الموجّه إلى أسفل، وذكّر بالعلاقة FB = ρf Vg. «ماذا يحدث لقوة الطفو عندما يصل الجسم إلى السطح ويخرج جزء منه فوق السائل؟»"
+      },
+      "en": {
+        "caption": "Cup (a): an object fully immersed in a liquid, with buoyant force FB greater than its weight Fg, so the net force is up and it rises.",
+        "teacher": "Point to the arrow FB pointing up and the arrow Fg pointing down, and recall FB = ρf Vg. “What happens to the buoyant force when the object reaches the surface and part of it rises above the liquid?”"
+      }
+    },
+    "p069-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "سفينة تطفو على سطح الماء: وزنها Fg إلى أسفل وقوة الطفو FB إلى أعلى، وحجم الجزء المغمور منها يساوي حجم الماء المزاح.",
+        "teacher": "أشِر إلى السهمين Fg وFB، ثم إلى الجزء المغمور من السفينة تحت سطح الماء، وذكّر بأن قوة الطفو تساوي وزن السفينة عندما تطفو. «لماذا تطفو السفينة المصنوعة من الحديد بينما يغرق مسمار الحديد؟»"
+      },
+      "en": {
+        "caption": "A floating ship: its weight Fg acts down, the buoyant force FB up, and its submerged volume equals the volume of water displaced.",
+        "teacher": "Point to the arrows Fg and FB, then to the submerged part of the ship below the waterline, and recall that a floating ship's buoyant force equals its weight. “Why does a ship made of iron float while an iron nail sinks?”"
+      }
+    },
+    "p073-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "(أ) نهر فيه مناطق جريان منتظم وأخرى جريان غير منتظم، (ب) خطوط الجريان منتظمة قبل الجسم الدائري وغير منتظمة خلفه.",
+        "teacher": "أشِر في (ب) إلى خطوط الجريان المتوازية في منطقة الجريان المنتظم، ثم إلى الخطوط الملتفة خلف الجسم الدائري. «ما الذي يميز خطوط الجريان المنتظم عن خطوط الجريان غير المنتظم؟»"
+      },
+      "en": {
+        "caption": "(a) A river with zones of steady flow and of unsteady flow; (b) flow lines are regular before the round object and irregular behind it.",
+        "teacher": "In (b), point to the parallel flow lines in the steady-flow zone, then to the swirling lines behind the round object. “What distinguishes the flow lines of steady flow from those of unsteady flow?”"
+      }
+    },
+    "p073b.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "أنبوب جريان فيه خطوط جريان تمثل مسارات جزيئات المائع، مع المقطعين A1 وA2 والسرعتين v1 وv2 والضغطين p1 وp2.",
+        "teacher": "أشِر إلى خطوط الجريان على طول الأنبوب، ثم إلى المقطع الأوسع A1 والمقطع الأضيق A2 والسهمين v1 وv2. «عند أيّ المقطعين تبدو خطوط الجريان أكثر تقاربًا؟»"
+      },
+      "en": {
+        "caption": "A flow tube whose flow lines show the paths of fluid particles, with sections A1 and A2, speeds v1 and v2, and pressures p1 and p2.",
+        "teacher": "Point to the flow lines along the tube, then to the wider section A1, the narrower section A2 and the arrows v1 and v2. “At which section do the flow lines look closer together?”"
+      }
+    },
+    "p076.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "قمعان متماثلان بصنبورين على حاملين، في أحدهما ماء وفي الآخر جليسرين، يتدفقان إلى وعاءين؛ لمقارنة جريان السائلين.",
+        "teacher": "[تحقّق] الشكل لا يسمّي السائلين، فتأكد أيّ القمعين فيه الماء وأيّهما فيه الجليسرين قبل أن تسمّيهما للطلبة. أشِر إلى القمعين والصنبورين، ثم إلى شكل تدفق السائل من كل قمع. «أيّ السائلين تتوقعون أن يفرغ قمعه أسرع، ولماذا؟»"
+      },
+      "en": {
+        "caption": "Two identical funnels with taps, one holding water and one glycerine, drain into two containers, to compare how the liquids flow.",
+        "teacher": "[Check] The figure does not name the two liquids, so confirm which funnel holds the water and which the glycerine before naming them to the class. Point to the two funnels and taps, then to how the liquid leaves each funnel. “Which liquid do you expect to empty its funnel faster, and why?”"
+      }
+    },
+    "p077.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "مائع يجري من مقطع واسع A1 إلى مقطع ضيق A2، فتكون سرعته v2 أكبر من v1؛ وهذا ما تصفه معادلة الاستمرارية.",
+        "teacher": "أشِر إلى المسافتين Δx1 وΔx2 اللتين يقطعهما المائع في الزمن نفسه، وبيّن أن حجم المائع المار عبر المقطعين متساوٍ. «لماذا تكون Δx2 أطول من Δx1؟»"
+      },
+      "en": {
+        "caption": "A fluid flows from a wide section A1 into a narrow section A2, so its speed v2 is greater than v1, as the continuity equation describes.",
+        "teacher": "Point to the distances Δx1 and Δx2 that the fluid covers in the same time, and show that equal volumes of fluid pass through the two sections. “Why is Δx2 longer than Δx1?”"
+      }
+    },
+    "p080.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "مجرى ماء شلالات نياجارا: عرضه l = 670 m وعمقه h = 2 m، ومساحة مقطعه العرضي A = l × h؛ لحساب سرعة الماء من معدل التدفق الحجمي.",
+        "teacher": "أشِر إلى العرض l ثم إلى العمق h، وذكّر بأن معدل التدفق الحجمي يساوي مساحة المقطع مضروبة في سرعة الماء. «إذا عرفنا معدل التدفق الحجمي ومساحة المقطع، فكيف نجد سرعة الماء؟»"
+      },
+      "en": {
+        "caption": "The Niagara Falls channel: width l = 670 m, depth h = 2 m, section A = l × h, used to find the water's speed from the volume flow rate.",
+        "teacher": "Point to the width l, then to the depth h, and recall that the volume flow rate equals the cross-sectional area times the water's speed. “If we know the volume flow rate and the cross-sectional area, how do we find the water's speed?”"
+      }
+    },
+    "p081-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "أنبوب يتغير مقطعه وارتفاعه، وعند كل موقع ضغط P وسرعة v وارتفاع h؛ تربط معادلة برنولي بين هذه الكميات.",
+        "teacher": "أشِر إلى مقياسي الضغط P1 وP2، ثم إلى الارتفاعين h1 وh2 عن المستوى المرجعي، ثم إلى سهمي السرعة v1 وv2 والمقطعين A1 وA2. «ما الكميات الثلاث التي تربط بينها معادلة برنولي عند كل موقع؟»"
+      },
+      "en": {
+        "caption": "A pipe whose section and height change, with pressure P, speed v and height h at each position; Bernoulli's equation links them.",
+        "teacher": "Point to the pressure gauges P1 and P2, then to the heights h1 and h2 above the reference level, then to the speed arrows v1 and v2 and the sections A1 and A2. “Which three quantities does Bernoulli's equation link at each position?”"
+      }
+    },
+    "p082.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "أنبوب أفقي يضيق من A1 إلى A2، وعمود السائل فوق الموقع 1 أعلى منه فوق الموقع 2: حيث تزداد سرعة المائع يقل ضغطه.",
+        "teacher": "أشِر إلى ارتفاع السائل في الأنبوبين الرأسيين عند P1 وP2، ثم إلى السهمين v1 وv2. «في أيّ الموقعين يكون ضغط المائع أقل، ولماذا؟»"
+      },
+      "en": {
+        "caption": "A horizontal pipe narrows from A1 to A2, and the liquid column at 1 stands higher than at 2: where fluid speeds up, its pressure drops.",
+        "teacher": "Point to the liquid heights in the two vertical tubes at P1 and P2, then to the arrows v1 and v2. “At which position is the fluid pressure lower, and why?”"
+      }
+    },
+    "p084-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "ضخ المياه إلى الطابق الثاني: أنبوب يرتفع 6 m من الطابق الأرضي، مع P1 وv1 عند المدخل وP2 وv2 عند المخرج.",
+        "teacher": "أشِر إلى مدخل الأنبوب في الطابق الأرضي، ثم إلى مخرجه في الطابق الثاني، ثم إلى الارتفاع 6 m بينهما. «كيف يؤثر الارتفاع 6 m في ضغط الماء عند الطابق الثاني؟»"
+      },
+      "en": {
+        "caption": "Pumping water to the second floor: a pipe rises 6 m from the ground floor, with P1 and v1 at the inlet and P2 and v2 at the outlet.",
+        "teacher": "Point to the pipe's inlet on the ground floor, then to its outlet on the second floor, then to the 6 m height between them. “How does the 6 m height affect the water pressure at the second floor?”"
+      }
+    },
+    "p085-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "مقطع عرضي لجناح طائرة وخطوط الجريان حوله: ضغط منخفض فوق سطحه العلوي المحدّب وضغط مرتفع تحته، فتنشأ قوة الرفع.",
+        "teacher": "أشِر إلى خطوط الجريان فوق الجناح وتحته، ثم إلى أسهم الضغط المنخفض فوقه والضغط المرتفع تحته، ثم إلى سهم قوة الرفع. «لماذا يكون ضغط الهواء فوق الجناح أقل منه تحته؟»"
+      },
+      "en": {
+        "caption": "A wing cross-section with flow lines: low pressure above its curved top and high pressure below it create the lift force.",
+        "teacher": "Point to the flow lines above and below the wing, then to the low-pressure arrows above it and the high-pressure arrows below, then to the lift force arrow. “Why is the air pressure above the wing lower than below it?”"
+      }
+    },
+    "p085b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "المرذاذ: يندفع الهواء بسرعة فوق فوهة الأنبوب الرأسي فيقل الضغط عندها، فيرتفع السائل في الأنبوب ويخرج رذاذًا.",
+        "teacher": "أشِر إلى المكبس والهواء المندفع فوق فوهة الأنبوب، ثم إلى الأسهم داخل الوعاء، ثم إلى السائل الصاعد في الأنبوب. «ما الذي يدفع السائل إلى أعلى داخل الأنبوب؟»"
+      },
+      "en": {
+        "caption": "The sprayer: fast air over the top of the vertical tube lowers the pressure there, so liquid rises up the tube and leaves as a spray.",
+        "teacher": "Point to the piston and the air rushing over the tube's opening, then to the arrows inside the container, then to the liquid rising in the tube. “What pushes the liquid up inside the tube?”"
+      }
+    },
+    "p086.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "مقياس فنتوري: أنبوب يضيق في وسطه، وأنبوب على شكل U يبين الفرق في الضغط بين الجزء الواسع والاختناق.",
+        "teacher": "أشِر إلى تقارب خطوط الجريان عند الاختناق، ثم إلى فرق ارتفاع السائل بين ذراعي الأنبوب U. «لماذا يرتفع السائل في الذراع المتصلة بالاختناق؟»"
+      },
+      "en": {
+        "caption": "A Venturi meter: a pipe narrowed in the middle, with a U-tube showing the pressure difference between the wide part and the constriction.",
+        "teacher": "Point to the flow lines crowding together at the constriction, then to the difference in liquid height between the two arms of the U-tube. “Why does the liquid stand higher in the arm connected to the constriction?”"
+      }
+    },
+    "p086b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "أنبوب يضيق في وسطه تعلوه ثلاثة مقاييس ضغط بوحدة kPa؛ قراءة المقياس عند الاختناق أقل من قراءتي الجزأين الواسعين.",
+        "teacher": "أشِر إلى مؤشر كل مقياس، وقارن قراءة المقياس الأوسط بقراءتي المقياسين على الطرفين. «ماذا تستنتجون عن سرعة المائع عند الاختناق؟»"
+      },
+      "en": {
+        "caption": "A pipe narrowed in the middle with three kPa pressure gauges; the gauge at the constriction reads less than those at the wide parts.",
+        "teacher": "Point to each gauge's needle, and compare the middle reading with the readings at the two ends. “What do you conclude about the fluid's speed at the constriction?”"
+      }
+    },
+    "p087-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "ماء يتدفق من ارتفاع 6 m في أنبوب متغير مساحة المقطع، مع A1 وP1 وv1 عند طرفه العلوي وA2 وP2 وv2 عند طرفه السفلي.",
+        "teacher": "أشِر إلى الطرف العلوي والطرف السفلي للأنبوب وإلى اختلاف سمكه بينهما، وذكّر بمعادلتي الاستمرارية وبرنولي. «عند أيّ الطرفين تكون سرعة الماء أكبر؟»"
+      },
+      "en": {
+        "caption": "Water flows from a height of 6 m through a pipe of changing section, with A1, P1, v1 at the top end and A2, P2, v2 at the bottom.",
+        "teacher": "Point to the top and bottom ends of the pipe and how its thickness differs between them, and recall the continuity and Bernoulli equations. “At which end is the water's speed greater?”"
+      }
+    },
+    "p097-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "منحنى الإزاحة مع المسافة لموجة: الطول الموجي λ هو المسافة بين قمتين متتاليتين، والسعة أكبر إزاحة عن مستوى الاتزان.",
+        "teacher": "أشِر إلى القمتين والسهم λ بينهما، ثم إلى سهم السعة من المحور الأفقي إلى القمة. «بين أيّ نقطتين أخريين على الموجة يمكن أن نقيس الطول الموجي؟»"
+      },
+      "en": {
+        "caption": "Displacement against distance: the wavelength λ is the distance between two successive crests; the amplitude is the largest displacement.",
+        "teacher": "Point to the two crests and the λ arrow between them, then to the amplitude arrow from the horizontal axis up to a crest. “Between which other two points on the wave could we measure the wavelength?”"
+      }
+    },
+    "p101-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "الطول الموجي يقاس بين قمتين متتاليتين أو قاعين متتاليين أو أي نقطتين متناظرتين متتاليتين، والسعة تظهر عند القمة وعند القاع.",
+        "teacher": "أشِر إلى الأسهم المتقطعة التي تمثل قياسات بديلة للطول الموجي، ثم إلى السعة فوق المحور الأفقي وتحته. «هل تتغير قيمة الطول الموجي إذا قسناه بين قاعين بدلًا من قمتين؟»"
+      },
+      "en": {
+        "caption": "Wavelength: between successive crests, successive troughs or any two matching successive points; amplitude shows at a crest and at a trough.",
+        "teacher": "Point to the dashed arrows marking alternative measurements of the wavelength, then to the amplitude above and below the horizontal axis. “Does the wavelength change if we measure it between two troughs instead of two crests?”"
+      }
+    },
+    "p101b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "منحنى الإزاحة - الزمن: الزمن الدوري هو الزمن بين قمتين متتاليتين أو قاعين متتاليين، والسعة أكبر إزاحة.",
+        "teacher": "أشِر إلى سهم الزمن الدوري بين قمتين ثم بين قاعين، وقارن هذا المنحنى بمنحنى الإزاحة مع المسافة. «ماذا يمثل البعد بين قمتين هنا، وماذا كان يمثل في منحنى الإزاحة مع المسافة؟»"
+      },
+      "en": {
+        "caption": "A displacement-time graph: the period is the time between two successive crests or troughs; the amplitude is the largest displacement.",
+        "teacher": "Point to the period arrow between two crests, then between two troughs, and compare this graph with the displacement-distance graph. “What does the gap between two crests stand for here, and what did it stand for on the displacement-distance graph?”"
+      }
+    },
+    "p102-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "منحنى إزاحة أجزاء حبل مع البعد عن المصدر عند لحظة محددة؛ نقرأ منه السعة والطول الموجي بوحدة m.",
+        "teacher": "أشِر إلى ارتفاع القمة كما يُقرأ على المحور الرأسي، ثم إلى موقعي قمتين متتاليتين على محور المسافة. «ما سعة الموجة وما طولها الموجي من الرسم؟»"
+      },
+      "en": {
+        "caption": "The displacement of parts of a rope against distance from the source at one instant; from it we read the amplitude and the wavelength in m.",
+        "teacher": "Point to the crest's height as read on the vertical axis, then to where two successive crests sit on the distance axis. “What are the wave's amplitude and wavelength from the graph?”"
+      }
+    },
+    "p103-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "العلاقة بين إزاحة قطعة الفلين والزمن: نقرأ منها الزمن الدوري T والسعة A، ومن T نجد التردد ƒ = 1/T.",
+        "teacher": "أشِر إلى قمتين متتاليتين على محور الزمن، ثم إلى أكبر إزاحة على المحور الرأسي، وذكّر بأن التردد مقلوب الزمن الدوري. «كم الزمن الدوري لقطعة الفلين من الرسم؟»"
+      },
+      "en": {
+        "caption": "The cork's displacement against time: from it we read the period T and the amplitude A, and from T we find the frequency ƒ = 1/T.",
+        "teacher": "Point to two successive crests on the time axis, then to the largest displacement on the vertical axis, and recall that frequency is the reciprocal of the period. “What is the cork's period from the graph?”"
+      }
+    },
+    "p110-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "منحنى إزاحة - زمن لموجة، الإزاحة بوحدة m والزمن بوحدة s؛ نجد منه السعة والزمن الدوري والتردد.",
+        "teacher": "أشِر إلى القيمة 0.30 على المحور الرأسي، ثم إلى زمني قمتين متتاليتين على المحور الأفقي. «ما الزمن الدوري لهذه الموجة؟»"
+      },
+      "en": {
+        "caption": "A displacement-time graph for a wave, displacement in m and time in s; from it we find the amplitude, the period and the frequency.",
+        "teacher": "Point to the value 0.30 on the vertical axis, then to the times of two successive crests on the horizontal axis. “What is the period of this wave?”"
+      }
+    },
+    "p112-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "حوض الموجات: كرة مهتزة يشغّلها مصدر قدرة تولّد موجات في حوض ماء يضيئه مصدر ضوء؛ لاستقصاء انعكاس الموجات وانكسارها.",
+        "teacher": "أشِر إلى الكرة المهتزة الملامسة لسطح الماء، ثم إلى مصدر القدرة، ثم إلى مصدر الضوء فوق الحوض. «ما فائدة مصدر الضوء فوق حوض الموجات؟»"
+      },
+      "en": {
+        "caption": "A ripple tank: a vibrating ball driven by a power supply makes waves in a lit water tank, to investigate reflection and refraction.",
+        "teacher": "Point to the vibrating ball touching the water surface, then to the power supply, then to the light source above the tank. “What is the light source above the ripple tank for?”"
+      }
+    },
+    "p116-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "حوض الموجات مع مسطرة مهتزة يشغّلها مصدر قدرة، وحواجز موضوعة في الماء؛ لاستقصاء تداخل الموجات وحيودها.",
+        "teacher": "أشِر إلى المسطرة المهتزة على سطح الماء، ثم إلى الحواجز والفتحات بينها. «ماذا تتوقعون أن يحدث للموجات بعد عبورها الفتحة بين حاجزين؟»"
+      },
+      "en": {
+        "caption": "A ripple tank with a vibrating bar driven by a power supply and barriers in the water, to investigate interference and diffraction.",
+        "teacher": "Point to the vibrating bar on the water surface, then to the barriers and the gaps between them. “What do you expect to happen to the waves after they pass through the gap between two barriers?”"
+      }
+    },
+    "p117.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "نبضتان تتحركان في اتجاهين متعاكسين: عند الالتقاء تجتمع إزاحتاهما في نبضة أكبر، وبعده تكمل كل منهما مسارها كما كانت.",
+        "teacher": "أشِر إلى النبضتين قبل الالتقاء، ثم إلى النبضة عند الالتقاء، ثم إلى النبضتين بعده، واربط ذلك بمبدأ تراكب الموجات. «كيف نجد الإزاحة الكلية عند نقطة الالتقاء؟»"
+      },
+      "en": {
+        "caption": "Two pulses moving in opposite directions: where they meet their displacements add into a bigger pulse; afterwards each goes on unchanged.",
+        "teacher": "Point to the two pulses before they meet, then to the pulse at the meeting, then to the two pulses after, and link this to the principle of superposition of waves. “How do we find the total displacement at the meeting point?”"
+      }
+    },
+    "p117b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "(جـ) نبضة قمة ونبضة قاع تلتقيان فتلغي إحداهما الأخرى لحظة الالتقاء، ثم تكمل كل منهما مسارها؛ وهذا من تراكب الموجات.",
+        "teacher": "أشِر إلى القمة والقاع قبل الالتقاء، ثم إلى الخط المستقيم عند الالتقاء، ثم إلى النبضتين بعده. «لماذا تصبح الإزاحة الكلية صفرًا لحظة الالتقاء؟»"
+      },
+      "en": {
+        "caption": "(c) A crest pulse and a trough pulse meet and cancel each other at that moment, then each goes on its way: superposition of waves.",
+        "teacher": "Point to the crest and the trough before they meet, then to the flat line at the meeting, then to the two pulses after. “Why is the total displacement zero at the moment they meet?”"
+      }
+    },
+    "p119-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "موجات صوت متماثلة من سماعتين: الخطوط المتصلة تضاغطات والمتقطعة تخلخلات، وتقاطعها يحدد نقاط التداخل البنّاء والهدّام.",
+        "teacher": "أشِر إلى نقطة يلتقي عندها تضاغط مع تضاغط، ثم إلى نقطة يلتقي عندها تضاغط مع تخلخل، وبيّن ما يحدث للصوت عند كل منهما. «عند أيّ النقطتين يُسمع الصوت أقوى؟»"
+      },
+      "en": {
+        "caption": "Identical sound waves from two speakers: solid lines are compressions, dashed ones rarefactions; their crossings mark interference points.",
+        "teacher": "Point to a spot where a compression meets a compression, then to one where a compression meets a rarefaction, and show what happens to the sound at each. “At which of the two spots is the sound heard louder?”"
+      }
+    },
+    "p120.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "اتجاهات الاهتزاز في الموجة: (أ) موجات غير مستقطبة تهتز في كل الاتجاهات، (ب) استقطاب رأسي، (جـ) استقطاب أفقي.",
+        "teacher": "أشِر إلى الأسهم الكثيرة في (أ)، ثم إلى السهم الوحيد في (ب) و(جـ)، وذكّر بأن الاستقطاب يرتبط بالموجات المستعرضة فقط. «لماذا لا يمكن استقطاب موجات الصوت؟»"
+      },
+      "en": {
+        "caption": "Directions of vibration in a wave: (a) unpolarised waves vibrate in all directions, (b) vertical polarisation, (c) horizontal polarisation.",
+        "teacher": "Point to the many arrows in (a), then to the single arrow in (b) and (c), and recall that polarisation belongs to transverse waves only. “Why can sound waves not be polarised?”"
+      }
+    },
+    "p121-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "موجات صوت منبه سيارة متوقفة: تنتشر بمسافات متساوية أمام السيارة وخلفها، فيسمع السامع تردد المنبه نفسه.",
+        "teacher": "أشِر إلى تساوي المسافات بين الموجات أمام السيارة وخلفها، ثم إلى السامع الواقف. «ماذا يحدث للمسافات بين الموجات أمام السيارة إذا تحركت نحو السامع؟»"
+      },
+      "en": {
+        "caption": "Sound waves from a parked car's horn are equally spaced in front of and behind it, so the listener hears the horn's own frequency.",
+        "teacher": "Point to the equal spacing between the waves in front of and behind the car, then to the standing listener. “What happens to the spacing of the waves in front of the car if it moves towards the listener?”"
+      }
+    },
+    "p122-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "(ب) سيارة تبتعد بسرعة عن السامع: تتباعد موجات الصوت خلفها، فيقل التردد الذي يسمعه؛ وهذا تأثير دوبلر.",
+        "teacher": "أشِر إلى سهم حركة السيارة، ثم إلى تباعد الموجات بين السيارة والسامع مقارنة بتقاربها أمام السيارة. «هل يسمع السامع ترددًا أكبر أم أقل من تردد المنبه؟»"
+      },
+      "en": {
+        "caption": "(b) A car moving fast away from the listener: the waves spread out behind it, so he hears a lower frequency; this is the Doppler effect.",
+        "teacher": "Point to the arrow showing the car's motion, then to how the waves spread out between the car and the listener compared with how they bunch up in front of the car. “Does the listener hear a higher or a lower frequency than the horn's?”"
+      }
+    },
+    "p122b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "(أ) سيارة تتحرك بسرعة نحو السامع: تتقارب موجات الصوت أمامها، فيزداد التردد الذي يسمعه؛ وهذا تأثير دوبلر.",
+        "teacher": "أشِر إلى تقارب الموجات بين السيارة والسامع، ثم إلى تباعدها خلف السيارة، وذكّر بأن منبه السيارة يصدر التردد نفسه. «لماذا يسمع السامع ترددًا أكبر مع أن تردد المنبه لم يتغير؟»"
+      },
+      "en": {
+        "caption": "(a) A car moving fast towards the listener: the waves bunch up in front of it, so he hears a higher frequency; this is the Doppler effect.",
+        "teacher": "Point to how the waves bunch up between the car and the listener, then to how they spread out behind the car, and recall that the horn still gives out the same frequency. “Why does the listener hear a higher frequency although the horn's frequency has not changed?”"
+      }
+    },
+    "p124-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "صوت القِربة A حادّ طوله الموجي قصير فيبقى في الشارع، وصوت الطبل B طوله الموجي كبير فيحيد حول الزاوية حتى الموقع C.",
+        "teacher": "أشِر إلى الموجات الزرقاء المتقاربة الصادرة عن القِربة A، ثم إلى الموجات الحمراء المتباعدة الصادرة عن الطبل B وهي تنتشر حول الزاوية حتى C. «أيّ الصوتين يُسمع عند الموقع C، ولماذا؟»"
+      },
+      "en": {
+        "caption": "The bagpipe A gives short-wavelength sound that stays in the street; the drum B gives long waves that diffract round the corner to C.",
+        "teacher": "Point to the closely spaced blue waves from the bagpipe A, then to the widely spaced red waves from the drum B as they spread round the corner to C. “Which sound is heard at position C, and why?”"
+      }
+    },
+    "p124b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "الموجتان (1) و(2) في حالتين (أ) و(ب)، وتحتهما خطوط فارغة لرسم الموجة الناتجة عن تراكبهما وفق مبدأ تراكب الموجات.",
+        "teacher": "أشِر إلى مواقع قمم الموجة (2) بالنسبة إلى قمم الموجة (1) في كل حالة، واطلب رسم الموجة الناتجة نقطة بنقطة. «في أيّ الحالتين يكون التداخل بنّاءً؟»"
+      },
+      "en": {
+        "caption": "Waves (1) and (2) in two cases, (a) and (b), with blank lines below for drawing the wave that results from their superposition.",
+        "teacher": "Point to where the crests of wave (2) sit relative to the crests of wave (1) in each case, and ask the class to draw the resulting wave point by point. “In which case is the interference constructive?”"
+      }
+    }
+  }
+}

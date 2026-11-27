@@ -10,6 +10,58 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Physics book figures can carry a teacher-approved explanation (PR 1: code and drafts) — 2026-11-27
+
+A Grade 10 physics book figure on a slide is a picture with a caption. This change lets a figure carry an
+explanation (what to look at, and a question to ask) that a teacher has read and approved. PR 1 ships the code and the
+drafts; **nothing a user sees changes**, because every note is `draft` or `skip`, so there is no «ما الجديد» entry.
+Design: `docs/superpowers/specs/2026-11-27-physics-figure-notes-design.md`; plan:
+`docs/superpowers/plans/2026-11-27-physics-figure-notes-1.md`.
+
+**What was built**
+- Two notes files, `knowledge-base/grade-10-physics/figures/phys-s1-student-book/notes.json` and
+  `…/phys-s2-student-book/notes.json`, one entry per figure image, each with a status.
+- The reader and validator, `services/bookFigureNotes.ts` (`figureNoteReader`, `figureNote`, `noteFileProblems`).
+- The slide wiring: `lessonSlides.ts` (standalone figure slides, the rule slide, the physics revision deck) and
+  `classDeck.ts` (the quiz, worksheet and game decks) take the reader.
+- The review script's logic, `services/figureNoteReviews.ts` (`applyFigureReviews`, `serializeNotesFile`, pure) and its
+  command line `scripts/applyFigureReviews.ts`. It is all-or-nothing: one bad verdict writes nothing.
+- **Only `approved` reaches a slide.** `draft`, `needs-fix` and `skip` are read and ignored, so a figure renders exactly as before.
+- Drafts: S1 has 32 drafted; S2 has 64 drafted and 1 `skip` (`p009b.png`, no lesson maps to it). **None is approved.**
+- Three drafts carry a «[تحقّق]» marker for the reviewer: S1 `p022.png` (panel 8/أ with v4's own direction is outside the
+  crop), S1 `p072-v2.png` (the vertical axis title is cropped), S2 `p076.png` (the page does not show which funnel holds
+  water and which glycerine).
+
+**What was verified**
+- New tests: `bookFigureNotes` (16), `figureNoteSlides`, `figureNoteDecks` (the decks are unchanged over all 12 Grade 10
+  physics lessons that have figures, for each non-approved status) and `figureNoteReviews` (10).
+- **Before/after hash of 5,730 decks**: every lesson with book figures, all subjects, both languages, lesson, quiz,
+  worksheet and game decks, plus the physics revision deck. 0 differ.
+- **Second pass**: three independent checkers, none of whom drafted any of it, raised 30 flags. 26 were accepted and
+  fixed (commit `a8ced146`); 2 were rejected; 2 needed no edit. The rejections: S1 `p022`'s proposed question assumed the
+  arrow is −v4, but the page puts the subtraction in panel 8/جـ, so 8/ب is the plain sum; S2 `p067c-v2`'s proposed `skip`
+  would not remove the duplicate image, so its caption now names «الكأس (أ)».
+- Root typecheck passes. Mobile suite: 9,727 tests, 9,717 pass, 0 fail, 10 skipped. Curriculum `test`: 937 pass, 0 fail;
+  `verify`: 200 files, 3,369 lessons, 0 errors. The api-server and math-verifier are untouched, so their suites were not run.
+
+**What was not verified**
+- **No physics teacher has read a draft.** Every note is a model's reading of an image.
+- No note has been seen on a slide in the presenter, the PDF or PowerPoint, because no note is approved; that waits for PR 2.
+- The review page, where a teacher approves or rejects, does not exist yet.
+- **Known item for PR 2, found in the final review and not fixed here (no renderer change in this PR):** the PDF/HTML
+  export collapses the `\n` between a note and its citation, because `.deck-media-caption` and `.split-fig figcaption` in
+  `deckSlidesHtml.ts` lack `white-space: pre-line`; and the PowerPoint caption boxes in `exportPptx.ts` are one line high
+  (h 0.4 / 0.35), so a two-line caption overflows. Fix: `pre-line` on those two classes and taller PPTX caption boxes,
+  then look at an approved figure in both exports by eye.
+
+**Limits**
+- The drafts were written by a model looking at the images, then checked by other model passes.
+- Physics only, and slides only: the worksheet and quiz **figure appendix** does not carry notes.
+- A note belongs to an image file, so a **re-crop loses its note**. Crop defects the drafters and checkers noticed, not fixed
+  here: S1 `p022` has a stray (أ) label; S2 `p022-v2` and `p022b-v2` carry tails of neighbouring panels; `p027b-v2`'s
+  panel letters are off by one; `p039c-v2`'s caption and left panel are cropped; `p060-v2` shows another figure's caption;
+  `p067b` and `p067c-v2` duplicate cup (أ); the axis titles of `p072-v2` and `p101b` are cropped.
+
 ## Exam generation warnings in Arabic — 2026-11-27
 
 The review screen printed a generated exam's warnings exactly as the API sent them, and the API wrote every one in
