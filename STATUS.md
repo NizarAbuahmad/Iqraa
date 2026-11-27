@@ -96,6 +96,7 @@ Checked 2026-10-22:
 
 ## Open
 
+- 2026-11-27 — Grade 10 physics book figures have drafted explanations (S1 32, S2 64, one skipped) that show on no slide until a teacher approves them; next are the review page, the teacher's review, `applyFigureReviews.ts`, then PR 2 with the approved notes and «ما الجديد» («Physics book figures can carry a teacher-approved explanation…» in the log)
 - 2026-11-13 — Grade 3: Arabic S2, maths S2 and science S2 book pages corrected (re-pointed on `main` at the images already in the bucket); no Grade 3 book text is extracted, so live generation has no book passages for Grade 3; Grade 5 social S1/S2 and Grade 8 Arabic S2 lessons whose right pages sit inside another lesson's images were withdrawn and could be re-pointed the same way («Grade 3 review…» in the log)
 - 2026-11-13 — Grade 10 checked against its books and corrected; history, civics and art text now grounds live prompts (it never did); vocational S1 added; what is left needs the PDFs or a book (PE S2, financial literacy S2, vocational S2, the «حل معادلات خاصة» figures to map and upload) and the same English word-list fix for Grade 9 («Grade 10 checked against its books, and corrected» in the log)
 - 2026-11-13 — Grade 9 checked against its books and corrected; what is left needs the PDFs (nccd.gov.jo does not answer from cloud sessions): figures for 16 books, book pages for art / vocational / history S2, two missing download links, and a page check of the 11 books with no extracted text («Grade 9 checked against its books, and corrected» in the log)
