@@ -461,7 +461,19 @@ const tanwinAlFath: SpellingRule = {
   ],
 };
 
-/** الألف اللينة في الكلمات فوق الثلاثية */
+/**
+ * الألف اللينة في الكلمات فوق الثلاثية.
+ *
+ * `ruleAr` follows the Grade 5 student book, semester 1, p.79 («أَسْتَنْتِجُ»):
+ * the final alif of a word over three letters, noun or verb, is ى, except after
+ * a ياء or in a foreign noun, where it is ا. The أصل (واو or ياء) test belongs to
+ * three-letter words — `alif-nihayat-afal-thulathiya` — and this rule once
+ * carried it by mistake. The يحيى / يحيا note is the book's «أَسْتَزيدُ» (p.80).
+ *
+ * Only words of four letters or more belong here, the article not counted; a
+ * test enforces it. «متى» and «إلّا» used to sit here — a three-letter مبني noun
+ * and a particle — and were removed: no rule in the bank teaches them.
+ */
 const alifLayyinaFawqThulathiya: SpellingRule = {
   id: "alif-layyina-fawq-thulathiya",
   nameAr: "الألف اللينة في الكلمات فوق الثلاثية",
@@ -469,9 +481,12 @@ const alifLayyinaFawqThulathiya: SpellingRule = {
   lessonIds: ["g5s1:u3_l4"],
   variantClass: "final-alif-layyina",
   ruleAr:
-    "في الكلماتِ الزائدةِ على ثلاثةِ أحرفٍ تُكتبُ الألفُ اللينةُ ألفًا ممدودةً (ا) إنْ كانَ أصلُها واوًا، "
-    + "وتُكتبُ ألفًا مقصورةً (ى) إنْ كانَ أصلُها ياءً. "
-    + "لا تُوجدُ قاعدةٌ تنطقيَّةٌ للتمييزِ — تُحفظُ بالقراءةِ.",
+    "تُرسمُ الألفُ في نهايةِ الكلماتِ التي تزيدُ على ثلاثةِ أحرفٍ، أسماءً كانتْ أو أفعالًا، "
+    + "ألفًا مقصورةً (ى): أَعْطى، اشْتَرى، مُسْتَشْفى. "
+    + "إلّا في حالتينِ تُرسمُ فيهما ألفًا قائمةً (ا): "
+    + "١. إذا سبقتْها ياءٌ: الدُّنْيا، زَوايا. "
+    + "٢. إذا كانتِ الكلمةُ اسمًا أعجميًّا: كاميرا. "
+    + "ويُكتبُ العَلَمُ (يَحْيى) بالألفِ المقصورةِ تمييزًا لهُ منَ الفعلِ (يَحْيا).",
   words: [
     { grade: 5, correct: "أَعْطَى", wrong: ["أعطا"], dictationOnly: "«أعطي» is a word (passive, and the imperative of the feminine)" },
     { grade: 5, correct: "اشْتَرَى", wrong: ["اشترا"], dictationOnly: "«اشتري» (buy, feminine) is a word" },
@@ -480,9 +495,11 @@ const alifLayyinaFawqThulathiya: SpellingRule = {
     { grade: 5, correct: "الدُّنْيَا", wrong: ["الدنيى"] },
     // "مستشفى" bare = same as correct bare; replace with "مستشفا" (ى→ا error).
     { grade: 5, correct: "مُسْتَشْفَى", wrong: ["مستشفا", "مستشفي"] },
-    // Not «إلى»: that is a different real word, so out of context it is a second right answer.
-    { grade: 5, correct: "إِلَّا", wrong: ["الا"] },
-    { grade: 5, correct: "مَتَى", wrong: ["متا"] },
+    // From the lesson's own text (student book p.78): ى after a verb, ا after
+    // a ياء, ا in a foreign noun — one word for each branch of the rule.
+    { grade: 5, correct: "يَتَبَاهَى", wrong: ["يتباها"] },
+    { grade: 5, correct: "زَوَايَا", wrong: ["زوايى"] },
+    { grade: 5, correct: "كَامِيرَا", wrong: ["كاميرى"] },
   ],
 };
 

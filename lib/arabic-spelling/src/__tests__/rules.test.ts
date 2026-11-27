@@ -160,6 +160,31 @@ describe("every rule is well formed", () => {
   }
 });
 
+describe("a rule about words over three letters holds only such words", () => {
+  // Found 2026-11-27 recording the /play/spelling game: «متى» (three letters, a
+  // مبني noun) and «إلّا» (a particle) sat in الألف اللينة في الكلمات فوق
+  // الثلاثية, and the game told the child «متى» was an example of that rule.
+  // The article does not count — «الهدى» is a three-letter word.
+  const overThree = SPELLING_RULES.filter(r => r.nameAr.includes("فوق الثلاثية"));
+
+  it("finds the rule to check", () => {
+    // Guards the test: a renamed rule would make the check below vacuous.
+    assert.ok(overThree.length > 0, "no rule is named «فوق الثلاثية»");
+  });
+
+  for (const rule of overThree) {
+    it(rule.id, () => {
+      for (const w of rule.words) {
+        const letters = strict(w.correct).replace(/^ال/, "");
+        assert.ok(
+          [...letters].length > 3,
+          `«${w.correct}» has ${[...letters].length} letters, so it is not «فوق الثلاثية»`,
+        );
+      }
+    });
+  }
+});
+
 describe("the bank is anchored to curriculum that exists", () => {
   /** Lesson ids present in one Arabic book, by `g<n>s<n>` key. */
   const lessonsByBook = new Map<string, Set<string>>();
