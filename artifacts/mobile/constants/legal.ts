@@ -13,7 +13,12 @@
  * beside the key in every build, see `posthogProject.test.ts`, plus
  * Android session replay), `services/contentsquare.ts` (Contentsquare, web only),
  * `services/pushTokens.ts` (Expo), `routes/auth.ts` (Google Sign-In), `lib/email.ts`
- * (Resend) and the OpenAI client in `lib/aiBudget.ts`. The data inventory is `lib/db/src/schema`.
+ * (Resend), the OpenAI client in `lib/aiBudget.ts`, the Anthropic client in `lib/claude.ts`
+ * (`AI_MODEL_DOCUMENTS`, and the other provider's backup — `lib/providerFallback.ts`) and
+ * Firebase Crashlytics (`services/crashReporting.native.ts`, Android; what it sends is in
+ * `crashReportingCore.ts`). The photo scans (`routes/attempts.ts` scan-marks,
+ * `routes/evaluations.ts` scan-paper) send a paper's photo to the model and keep nothing.
+ * The data inventory is `lib/db/src/schema`.
  * If one of those changes, this file is part of the same change — a policy
  * that describes a system that no longer exists is worse than none, because
  * it is a published false statement rather than a missing one.
@@ -72,7 +77,7 @@
 export const LEGAL_CONTACT_EMAIL = 'info@iqrra.com';
 
 /** Shown on both documents. Bump when the text below changes materially. */
-export const LEGAL_LAST_UPDATED = { ar: '19 تشرين الثاني 2026', en: '19 November 2026' };
+export const LEGAL_LAST_UPDATED = { ar: '27 تشرين الثاني 2026', en: '27 November 2026' };
 
 /**
  * The same date, as the version a new account records it accepted
@@ -86,7 +91,7 @@ export const LEGAL_LAST_UPDATED = { ar: '19 تشرين الثاني 2026', en: '
  * new version: there is no re-acceptance flow, so a bump changes what the
  * next sign-ups record and nothing else.
  */
-export const LEGAL_VERSION = '2026-11-19';
+export const LEGAL_VERSION = '2026-11-27';
 
 export type LegalSection = { heading: string; body: string[] };
 export type LegalDoc = { title: string; intro: string; sections: LegalSection[] };
@@ -127,7 +132,8 @@ const PRIVACY_AR: LegalDoc = {
     {
       heading: '3) الذكاء الاصطناعي',
       body: [
-        'حين تطلب توليد خطة درس أو ورقة عمل أو اختبار، يُرسَل نصّ طلبك — ومعه ما اخترته من الدرس والمنهاج، وأيّ مادة ألصقتها بنفسك في حقل السياق — إلى مزوّد نماذج لغوية خارجي (OpenAI) لمعالجته وإعادة النتيجة.',
+        'حين تطلب توليد خطة درس أو ورقة عمل أو اختبار أو عرض شرائح، يُرسَل نصّ طلبك — ومعه ما اخترته من الدرس والمنهاج، وأيّ مادة ألصقتها بنفسك في حقل السياق — إلى مزوّد نماذج لغوية خارجي لمعالجته وإعادة النتيجة. نستخدم مزوّدَين: OpenAI وAnthropic (نماذج Claude)، وقد يُرسَل الطلب إلى أحدهما أو إلى الآخر إن تعذّر الأوّل.',
+        'حين يصوّر المعلّم ورقة اختبار صحّحها ليقرأ التطبيق علاماتها، أو ورقة اختبار مطبوعة ليحوّلها إلى أسئلة، تُرسَل الصورة إلى المزوّد نفسه لقراءتها ولا نحفظها. قد تُظهر ورقة الطالب اسمه وإجاباته وعلاماته.',
         'لا تُرسَل أسماء الطلبة ولا علاماتهم ولا ملاحظات المعلّم عنهم إلى هذا المزوّد ضمن طلبات التوليد.',
         'وتُرسَل إليه تسجيلات القراءة الجهرية لتحويلها إلى نصّ فقط، كما في البند الأوّل.',
         'المحتوى المولَّد قد يكون خاطئًا. المعلّم هو من يراجعه قبل استخدامه مع الطلبة، ومفاتيح إجابات الرياضيات وحدها تمرّ على مُتحقِّق رمزيّ مستقلّ يُظهر التطبيق نتيجته صراحةً.',
@@ -136,7 +142,7 @@ const PRIVACY_AR: LegalDoc = {
     {
       heading: '4) مع من تُشارَك',
       body: [
-        'مزوّدو خدمة يعالجون البيانات نيابةً عنّا، لا أكثر: Neon لقاعدة البيانات (تُستضاف في فرانكفورت داخل الاتحاد الأوروبي)، وCloudflare R2 لتخزين الملفات والصور، وGoogle Cloud Run لتشغيل الخادم (أوروبا الغربية)، وCloudflare Pages لاستضافة نسخة الويب، وContentsquare لتسجيل الشاشة على نسخة الويب، وOpenAI لتوليد المحتوى وتحويل التسجيلات الصوتية إلى نصّ، وExpo لإيصال الإشعارات، وResend لإرسال البريد الإلكتروني، وPostHog لقياس الاستخدام وتسجيل الشاشة على أندرويد (خوادمها في الاتحاد الأوروبي)، وGoogle لخدمة الدخول بحساب Google.',
+        'مزوّدو خدمة يعالجون البيانات نيابةً عنّا، لا أكثر: Neon لقاعدة البيانات (تُستضاف في فرانكفورت داخل الاتحاد الأوروبي)، وCloudflare R2 لتخزين الملفات والصور، وGoogle Cloud Run لتشغيل الخادم (أوروبا الغربية)، وCloudflare Pages لاستضافة نسخة الويب، وContentsquare لتسجيل الشاشة على نسخة الويب، وOpenAI لتوليد المحتوى وتحويل التسجيلات الصوتية إلى نصّ، وAnthropic لتوليد المحتوى، وFirebase Crashlytics من Google لتقارير أعطال تطبيق أندرويد (نوع الجهاز ونظامه ونسخة التطبيق وتفاصيل العطل، دون اسم أو بريد إلكتروني)، وExpo لإيصال الإشعارات، وResend لإرسال البريد الإلكتروني، وPostHog لقياس الاستخدام وتسجيل الشاشة على أندرويد (خوادمها في الاتحاد الأوروبي)، وGoogle لخدمة الدخول بحساب Google.',
         'ويعني ذلك أنّ بعض بياناتك تُعالَج خارج الأردن وخارج الاتحاد الأوروبي.',
         'قد نُفصح عن بيانات إذا ألزمنا القانون بذلك، أو لحماية سلامة شخص ما.',
       ],
@@ -228,7 +234,8 @@ const PRIVACY_EN: LegalDoc = {
     {
       heading: '3) Artificial intelligence',
       body: [
-        'When you ask for a lesson plan, worksheet or test, the text of your request — along with the lesson and curriculum you selected, and any material you pasted into the context field yourself — is sent to an external language model provider (OpenAI) to be processed and returned.',
+        'When you ask for a lesson plan, worksheet, test or slide deck, the text of your request — along with the lesson and curriculum you selected, and any material you pasted into the context field yourself — is sent to an external language model provider to be processed and returned. We use two providers, OpenAI and Anthropic (Claude models), and a request may go to either one, or to the other if the first cannot answer.',
+        'When a teacher photographs a paper they have marked so the app can read its marks, or a printed exam so the app can turn it into questions, the photo is sent to the same provider to be read and is not kept. A student\'s paper may show their name, answers and marks.',
         'Student names, marks and teacher notes about students are not sent to that provider as part of generation requests.',
         'Read-aloud recordings are sent to it only to be turned into text, as described in section 1.',
         'Generated content can be wrong. The teacher reviews it before using it with students. Mathematics answer keys alone are additionally checked by an independent symbolic verifier, whose result the app shows explicitly.',
@@ -237,7 +244,7 @@ const PRIVACY_EN: LegalDoc = {
     {
       heading: '4) Who it is shared with',
       body: [
-        'Service providers that process data on our behalf, and nothing more: Neon for the database (hosted in Frankfurt, in the EU), Cloudflare R2 for file and image storage, Google Cloud Run to run the server (western Europe), Cloudflare Pages to host the web version, Contentsquare for screen recording on the web version, OpenAI for content generation and speech-to-text, Expo to deliver notifications, Resend to send email, PostHog for usage measurement and screen recording on Android (its servers are in the European Union), and Google for Google Sign-In.',
+        'Service providers that process data on our behalf, and nothing more: Neon for the database (hosted in Frankfurt, in the EU), Cloudflare R2 for file and image storage, Google Cloud Run to run the server (western Europe), Cloudflare Pages to host the web version, Contentsquare for screen recording on the web version, OpenAI for content generation and speech-to-text, Anthropic for content generation, Google\'s Firebase Crashlytics for crash reports from the Android app (device model, operating system, app version and the details of the crash, with no name or email), Expo to deliver notifications, Resend to send email, PostHog for usage measurement and screen recording on Android (its servers are in the European Union), and Google for Google Sign-In.',
         'This means some of your data is processed outside Jordan and outside the EU.',
         'We may disclose data where the law requires it, or to protect someone\'s safety.',
       ],
