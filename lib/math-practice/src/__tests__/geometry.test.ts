@@ -39,7 +39,7 @@ const pt = (s: string) => [...s.matchAll(/(−?\d+)/g)].map(m => Number(m[1]!.re
 /** A signed number as printed («−4»). */
 const sn = (s: string) => Number(s.replace('−', '-'));
 /** Every «(x ، y)» point printed in a stem, in order. */
-const pts = (s: string) => [...s.matchAll(/\((−?\d+) ، (−?\d+)\)/g)].map(m => [sn(m[1]!), sn(m[2]!)] as [number, number]);
+const pts = (s: string) => [...s.matchAll(/\((−?\d+), (−?\d+)\)/g)].map(m => [sn(m[1]!), sn(m[2]!)] as [number, number]);
 /** «1/2» or «3». */
 const val = (s: string) => (s.includes('/') ? Number(s.split('/')[0]) / Number(s.split('/')[1]) : sn(s));
 /** The two linear expressions «px + c» printed in a stem, evaluated at x. */
@@ -649,7 +649,7 @@ describe('geometry generators: answers recomputed from the stem', () => {
     const OPPOSITE: Record<string, string> = { يمين: 'يسار', يسار: 'يمين', فوق: 'أسفل', أسفل: 'فوق' };
     for (const item of draws('reflect_line')) {
       const p = item.promptAr!, n = nums(p);
-      assert.ok(!/[xy] =|\(\d+ ،/.test(p + item.answer), `coordinates or an equation in a Grade 4 stem: ${p}`);
+      assert.ok(!/[xy] =|\(\d+,/.test(p + item.answer), `coordinates or an equation in a Grade 4 stem: ${p}`);
       if (has(p, 'أين تقع صورة')) {
         saw('reflect_line', 'side');
         const [, side] = p.match(/مربعًا|مربعات/) ? p.match(/(?:مربعات|مربعًا) (يمين|يسار|فوق|أسفل) محور/)! : [];
@@ -829,8 +829,9 @@ describe('geometry generators: answers recomputed from the stem', () => {
         continue;
       }
       saw('distance_point_line', 'point');
-      const [x0, y0] = pt(item.eq.split(', ')[0]!.concat(')').replace('))', ')'));
-      const line = item.eq.split('), ')[1] ?? item.eq.split(', ').slice(2).join(', ');
+      // «(8, −1), y = 3»: the point, then the line. The point's own comma is Latin too, so split after «), ».
+      const [x0, y0] = pts(item.eq)[0]!;
+      const line = item.eq.slice(item.eq.indexOf('), ') + 3);
       let want: number;
       const horiz = line.match(/^y = (−?\d+)$/), vert = line.match(/^x = (−?\d+)$/);
       if (horiz) want = Math.abs(y0! - Number(horiz[1]!.replace('−', '-')));

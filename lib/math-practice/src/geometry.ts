@@ -28,7 +28,8 @@ const deg = (ans: number, cands: number[]) =>
 const PI = (k: number) => (k === 1 ? 'π' : `${k}π`);
 const piOpts = (ans: number, cands: number[]) =>
   wrongsFrom(PI(ans), cands.filter(c => Number.isInteger(c) && c > 0).map(PI), k => PI(ans + Math.abs(k)));
-const pt = (x: number, y: number) => `(${signed(x)} ، ${signed(y)})`;
+/** «(−3, 4)» — the Latin comma: see latinCommaPoints.test.ts. */
+const pt = (x: number, y: number) => `(${signed(x)}, ${signed(y)})`;
 const ptOpts = (ans: [number, number], cands: Array<[number, number]>) =>
   wrongsFrom(pt(...ans), cands.map(c => pt(...c)), k => pt(ans[0] + Math.abs(k), ans[1]));
 /** A name answer with three other names from the same list. */
@@ -1146,8 +1147,8 @@ const coordPlane5 = T('coord_plane_g5', /^المستوي الاحداثي$/, [5,
   const x = int(rng, 1, 9), y = int(rng, 1, 9);
   // 0–1 read a coordinate, 2 a distance along a grid line; 3 plot a point from moves, 4 a rectangle's fourth vertex.
   const k = pick(rng, [0, 1, 2, 3, 4]);
-  if (k === 0) return { eq: pt(x, y), answer: String(x), wrongs: pos(x, [y, x + 1, x * y, x + y]), ar: `ما الإحداثي السيني للنقطة (${x} ، ${y})؟`, en: `What is the x-coordinate of the point (${x}, ${y})?` };
-  if (k === 1) return { eq: pt(x, y), answer: String(y), wrongs: pos(y, [x, y + 1, x * y, x + y]), ar: `ما الإحداثي الصادي للنقطة (${x} ، ${y})؟`, en: `What is the y-coordinate of the point (${x}, ${y})?` };
+  if (k === 0) return { eq: pt(x, y), answer: String(x), wrongs: pos(x, [y, x + 1, x * y, x + y]), ar: `ما الإحداثي السيني للنقطة (${x}, ${y})؟`, en: `What is the x-coordinate of the point (${x}, ${y})?` };
+  if (k === 1) return { eq: pt(x, y), answer: String(y), wrongs: pos(y, [x, y + 1, x * y, x + y]), ar: `ما الإحداثي الصادي للنقطة (${x}, ${y})؟`, en: `What is the y-coordinate of the point (${x}, ${y})?` };
   if (k === 3) {
     const dx = int(rng, 1, 9), dy = int(rng, 1, 9), ans: [number, number] = [dx, dy];
     return { eq: `walk ${pt(dx, dy)}`, answer: pt(...ans), wrongs: ptOpts(ans, [[dy, dx], [dx, 0], [0, dy], [dx + dy, dy], [dx, dx + dy]]), ar: `انطلق سامر من نقطة الأصل، فتحرّك ${unitAr(dx)} إلى اليمين ثم ${unitAr(dy)} إلى الأعلى. ما إحداثيات النقطة التي وصل إليها؟`, en: `Samer starts at the origin and moves ${unitEn(dx)} right, then ${unitEn(dy)} up. What are the coordinates of the point he reaches?` };
@@ -1160,7 +1161,7 @@ const coordPlane5 = T('coord_plane_g5', /^المستوي الاحداثي$/, [5,
     return { eq: `rect ${given.map(c => pt(...c)).join(', ')}`, answer: pt(...ans), wrongs: ptOpts(ans, [[ans[1], ans[0]], [xo, yo], [ans[0] + (x2 - x1), ans[1] + (y2 - y1)], [ans[0], yo + (y2 - y1)]].filter(c => c[0] > 0 && c[1] > 0) as Array<[number, number]>), ar: `النقاط ${given.map(c => pt(...c)).join(' و ')} ثلاثة رؤوس لمستطيل. ما إحداثيات الرأس الرابع؟`, en: `The points ${given.map(c => pt(...c)).join(', ')} are three vertices of a rectangle. What are the coordinates of the fourth vertex?` };
   }
   const y2 = y + int(rng, 1, span(diff, 5, 7, 9));
-  return { eq: `${pt(x, y)}, ${pt(x, y2)}`, answer: String(y2 - y), wrongs: pos(y2 - y, [y2 + y, y2, y + 1, y2 - y + 1]), ar: `ما المسافة بين النقطتين (${x} ، ${y}) و (${x} ، ${y2}) بالوحدات؟`, en: `What is the distance, in units, between the points (${x}, ${y}) and (${x}, ${y2})?` };
+  return { eq: `${pt(x, y)}, ${pt(x, y2)}`, answer: String(y2 - y), wrongs: pos(y2 - y, [y2 + y, y2, y + 1, y2 - y + 1]), ar: `ما المسافة بين النقطتين (${x}, ${y}) و (${x}, ${y2}) بالوحدات؟`, en: `What is the distance, in units, between the points (${x}, ${y}) and (${x}, ${y2})?` };
 });
 
 const rotate = T('rotate', /^الدوران$/, [7, 7], ({ rng }) => {

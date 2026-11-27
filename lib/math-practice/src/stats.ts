@@ -888,7 +888,7 @@ const scatter = T('scatter', /^اشكال الانتشار$/, [10, 10], ({ rng }
     const m = pick(rng, [1, 2, 3, 4, -1, -2, -3]), d = int(rng, 2, 6);
     const x1 = int(rng, 1, 6), y1 = m > 0 ? int(rng, 2, 15) : int(rng, 25, 40);
     const x2 = x1 + d, y2 = y1 + m * d;
-    return { eq: `${x1}, ${y1}, ${x2}, ${y2}`, answer: signed(m), wrongs: numWrongs(m, [-m, d, y2 - y1, m + 1], signed), ar: `يمرّ المستقيم الأفضل مطابقة لشكل انتشار بالنقطتين (${x1} ، ${y1}) و (${x2} ، ${y2}). ما ميله؟`, en: `The line of best fit for a scatter plot passes through (${x1}, ${y1}) and (${x2}, ${y2}). What is its slope?` };
+    return { eq: `${x1}, ${y1}, ${x2}, ${y2}`, answer: signed(m), wrongs: numWrongs(m, [-m, d, y2 - y1, m + 1], signed), ar: `يمرّ المستقيم الأفضل مطابقة لشكل انتشار بالنقطتين (${x1}, ${y1}) و (${x2}, ${y2}). ما ميله؟`, en: `The line of best fit for a scatter plot passes through (${x1}, ${y1}) and (${x2}, ${y2}). What is its slope?` };
   }
   for (;;) {
     const kind = int(rng, 0, 2), n = 7;
@@ -899,8 +899,8 @@ const scatter = T('scatter', /^اشكال الانتشار$/, [10, 10], ({ rng }
     const r = correlation(pts);
     const real = r > 0.85 ? 0 : r < -0.85 ? 1 : Math.abs(r) < 0.3 ? 2 : -1;
     if (real < 0) continue;
-    const text = pts.map(p => `(${p[0]} ، ${p[1]})`).join(' ');
-    return { eq: text, answer: CORR[real]!, wrongs: CORR.filter((_, i) => i !== real), ar: `يبين الجدول مجموعة من النقاط (x ، y): ${text}. ما نوع الارتباط بين x و y في شكل الانتشار؟`, en: `Points (x, y): ${text}. What kind of correlation does their scatter plot show?` };
+    const text = pts.map(p => `(${p[0]}, ${p[1]})`).join(' ');
+    return { eq: text, answer: CORR[real]!, wrongs: CORR.filter((_, i) => i !== real), ar: `يبين الجدول مجموعة من النقاط (x, y): ${text}. ما نوع الارتباط بين x و y في شكل الانتشار؟`, en: `Points (x, y): ${text}. What kind of correlation does their scatter plot show?` };
   }
 });
 
