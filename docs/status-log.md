@@ -10,6 +10,106 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 8 grammar (Semester 1) in the English corner — built, shown to nobody yet, 2026-11-27
+
+Ten Grade 8 Semester 1 lessons whose book statement is a grammar topic now have grammar activities: Choose the word, Build
+the sentence and True or false. Nine were already in the English hub (from the Word List pass); **`u5_l4` (Past Simple
+questions) has no vocabulary rows and is a grammar-only hub lesson** (`GRAMMAR_ONLY_LESSONS` goes from 22 ids to 23, **the
+Grade 8 hub from 57 to 58 lessons**). **All ten units are `reviewedBy: null` (`englishGrammarG8.ts`), so no teacher or
+student sees a card, `u5_l4` is absent from the Grade 8 index and its URL says «lesson not found», until a teacher signs
+the printed form.** For that reason there is **no «ما الجديد» entry** in this change (nothing is visible); it comes with
+the change that sets the first `reviewedBy`. Spec: `docs/superpowers/specs/2026-11-04-english-corner-grammar-g8-s1-design.md`;
+plan: `docs/superpowers/plans/2026-11-27-english-corner-grammar-g8-s1.md`; draft PR #1416. Same engine and rules as Grades 5, 9
+and 10; **no app screen, server, schema or migration change** (the app's own test file only grew).
+
+- **400 hand-written items, 40 a lesson, 30 sub-topics** (`englishGrammarG8Items.ts`, `G8_ITEM_LESSONS`, each `statement`
+  equal to `objectives[0]` of its lesson, read back from the Grade 8 Semester 1 JSON by a test). **52 are `meaning` and 348
+  are `form`**: `can-vs-cant` 14, `habit-markers` 12, `now-markers` 12 and `past-time-markers` 14 are `meaning`, every other
+  sub-topic is `form`. **No sub-topic changed kind during the build**; the sizes and kinds the spec pinned are the ones
+  shipped. Lessons (sub-topic and size):
+  - `u1_l1` Present Simple routines: `third-person-s` 14, `spelling-es` 12, `negatives` 14.
+  - `u1_l3` questions and adverbs of frequency: `do-does-questions` 14, `question-words` 12, `adverb-position` 14.
+  - `u2_l1` there is/are, some and any: `there-is-are` 14, `some-any` 14, `questions-negatives` 12.
+  - `u2_l3` can and can't: `can-form` 14, `can-questions` 12, `can-vs-cant` 14 (meaning, decided by a «so» or «but» clause).
+  - `u3_l1` countable and uncountable: `plural-nouns` 12, `uncountable` 14, `a-an-some` 14.
+  - `u3_l4` quantifiers: `much-many` 14, `a-few-a-little` 14, `how-much-how-many` 12.
+  - `u4_l1` Present Continuous: `be-v-ing` 14, `spelling-ing` 12, `questions-negatives` 14.
+  - `u4_l3` Simple against Continuous: `habit-markers` 12 and `now-markers` 12 (meaning), `stative-verbs` 8, `questions` 8.
+  - `u5_l1` Past Simple: `regular-ed` 12, `irregular` 14, `past-time-markers` 14 (meaning, decided by `yesterday`, `last week`, `ago`).
+  - `u5_l4` Past Simple questions and negatives: `did-questions` 14, `didnt-negatives` 14, `wh-did` 12.
+  - Sentences are nine words or fewer (Build takes them whole), no real person's name, nothing religious, political or
+    sensitive. A distractor is `form` (ungrammatical in standard English) or `meaning` (grammatical, excluded by a word in the
+    sentence itself); each sub-topic's comment in the data file says what decides the answer and what was left out.
+- **Rulings made during the build** (the spec and the plan's contract table were corrected to match):
+  - **The spec's principle «never a distractor real English accepts» outranks the contract's own example.** The spec and plan
+    gave `is always` / `always is` for `adverb-position`; «She always is late» is marked, not wrong, English. The 14 rows now
+    put a frequency adverb before a main verb, and the twin moves it between the verb and its object (`always eats` /
+    `eats always`, `usually walks` / `walks usually`). **No row puts an adverb with `be`.** Spec rule 5 and the `u1_l3`
+    `NOT_COVERED_G8` note say the same (the note once taught «she is always late», it now shows the main-verb pair).
+  - **`a` / `an` as a distractor in `a-an-some` only with rice, meat, butter and bread.** «a milk», «a water», «a juice» read
+    as a serving and are ordinary English, so no drink or cheese noun takes `a` or `an` as the twin (they stay in the
+    `uncountable` sub-topic as `is` / `are` rows). A test pins it.
+  - **Habit-markers: the Continuous twin is grammatical on a temporary reading.** «She is usually waking up at six» is
+    grammatical if she is doing it this month. The `u4_l3` note says so and calls the choice a teacher's judgment; the rows
+    were chosen where a temporary reading is least natural (a clock striking, the sun rising, washing hands before a meal,
+    a routine with `every`), and `often`, `usually` and `rarely` have one row each. These are the weakest `meaning` rows.
+  - **`englishAudioPlan.test.ts` assumed grammar grades 5, 9 and 10** and failed for any new grammar grade; it now allows 8
+    (a one-line change, outside the original brief).
+  - **`u3_l4` note wording:** the brief's «much and many are used in negatives and questions only» is wrong for `many`; the
+    note says the rows (not the language) use `much` and `many` in negatives and questions only, so «I have much money» is not covered.
+- **Hub and teacher's form.** `GRAMMAR_ONLY_LESSONS` gains `kbl-g8-eng-s1-nccd-u5_l4` (`englishHub.ts`; `hubLessonVisible`
+  hides it until its unit is signed). `GRADE_COPY[8]` in `englishGrammarReview.ts` (lead, activities, eight checks, naming the
+  Past Simple lesson that appears only after a signature) and `8` in `scripts/grammar-sheet.ts`. `docs/english-grammar-g8-review.html`
+  is ten units, 400 sentences, each with its form or meaning chip, and `docs/english-grammar-g8-sheet.md` was generated; the other
+  grades' forms are untouched (tests pin them).
+- **True or false is silent** and **Yes or No is not offered**, as in Grades 9 and 10; Choose and Build play the correct sentence
+  after the answer. Nothing is pictured.
+- **Tests:** `englishGrammarG8Items.test.ts` (10 lessons, 400 items, every sub-topic's size and kind, statements against the JSON,
+  nine-word cap, uniqueness, a twin that is never another true sentence, `meaning` only in the four sub-topics and each marker in
+  its sentence, no capitalised name outside a whitelist, committed form and sheet equal the generator, plus guards for the two rulings
+  above), `englishGrammarG8.test.ts` (ten units in hub order, all unsigned, a note each), `englishHub.test.ts` (twenty-three grammar-only
+  ids; the Grade 8 test adds the grammar-only lesson) and, in the app, `englishGrammarG8ItemGames.test.ts` (Choose, Build and True or
+  false on all ten, Yes or No on none, no twin voiced).
+- **Verified (2026-11-27, on `ccr-d9db5f6c-mgwkuo` at `b68d815`):** root `pnpm run typecheck` **exit 0** (api-server, mobile,
+  scripts); `@workspace/curriculum` `test` **965 tests, 965 passing** with `env -u R2_ACCESS_KEY_ID -u R2_BUCKET -u R2_ENDPOINT -u
+  R2_SECRET_ACCESS_KEY`, its `verify` **200 files, 3369 lessons, 0 errors** (the 2400 «gaps» are the existing content-gap
+  report); the **full mobile suite 9688 tests, 9678 passing, 10 skipped, 0 failing** (425 s). The api-server suites were not run: nothing there changed (CI covers them). The CI on the PR
+  was green on `c1f614a`, `5247e33`, `e270d83`, `c5fc9b5` and `c16434b` (reported by the session's controller; the later commits
+  `0a9a77f` and `b68d815` were not seen). **In a browser** (Task 3), on the production web export at 390 px in English and in
+  Arabic, with two units signed temporarily (`u1_l1` and `u5_l4`, a localStorage-gated `LOCAL CHECK` signature in
+  `englishGrammarG8.ts`, restored with `git checkout`; no `LOCAL CHECK` left in `lib/curriculum/src` or `artifacts/mobile`):
+  unsigned, the Grade 8 index has no «grammar activities» row and `u5_l4` says «lesson not found» (Arabic: «لم نجد هذا الدرس»);
+  signed, `u5_l4` appears in the index and opens with only Choose, Build and True or false; `u1_l1` shows its six word
+  activities plus a Grammar section of exactly those three; unsigned `u1_l3` has no grammar section; no horizontal scroll on
+  any of 16 page loads, no page errors.
+- **Not verified:** the 400 sentences by a teacher (**no teacher has read the form**; a script cannot tell wrong English from
+  right); the match of each lesson id to the printed book page; **no game round was played** in a browser (the game test covers
+  the logic, not a tap-through); **not on a real phone**; audio, which does not exist for these sentences (`english-audio` needs
+  the OpenAI and R2 keys); and the `e2e/` smoke test was not run (nothing it drives changed).
+- **Finding, not part of this change: `pnpm run dev:mobile:web` is broken at this base.** Metro starts, but every page throws
+  «Cannot access 'gcd' before initialization» from a circular import at `lib/math-practice/src/elementary.ts:165` (reached
+  through `topicKit.ts` and `earlyDifficulty.ts`) in the dev bundle only; the production web export renders fine, which is how
+  the browser check above was done. Nothing in Grade 8 grammar touches `math-practice`. Someone who owns it should look.
+- **Where a teacher will push back:**
+  1. **The four `meaning` sub-topics are judgment calls.** `past-time-markers` (the twin is the Present Simple with a past time
+     word, «She visits her aunt yesterday», which many teachers call a form error); `now-markers` (the Simple after `Look!` or
+     `now`, strained rather than strictly wrong); `habit-markers` (above); `can-vs-cant` (decided by the clause, which a
+     teacher may find soft). Relabelling is a one-word change per sub-topic.
+  2. **Informal-English twins:** «I am liking pizza» (`stative-verbs`), a missing `be` («She reading a book», four rows,
+     dialect or headline style), a missing auxiliary in `wh-did` («Where your father worked?», an echo question), «There
+     isn't many shops» (`there-is-are`, colloquial but non-standard), `some` after «aren't» (contrastive only).
+  3. **Overlap with Grade 10** (the Present Simple and Continuous): accepted by the spec; the Grade 8 sentences are simpler and
+     written separately.
+- **Known limits:** the 400 sentences are ours and a teacher checks them on the printed form; **25 other Semester 1 lessons**
+  (vocabulary, reading, speaking, listening, writing) get no grammar activity; Semester 2, Grade 6 and Grade 7 have none; no
+  audio is recorded; True or false is silent by design; a wrong True or false answer shows the answer, not the corrected
+  sentence; **a grammar-only lesson that appears only after a signature is tested but not seen on a device.** Switching a lesson on:
+  a Grade 8 English teacher signs that lesson's page of the printed form and checks the book-page line, audio is recorded for
+  the correct sentences, then the unit's `reviewedBy` is set (with a «ما الجديد» entry).
+- **How it was built:** subagent-driven, one reviewer per task (opus). Task 1 and Task 2 each took two fix rounds (Task 1:
+  adverb-before-be and `a milk` twins; Task 2: adverb outside the answer, Continuous twins on a temporary reading); Task 3 was
+  approved with no findings.
+
 ## Magnitude and absolute-value bars read left to right in Arabic — 2026-11-27
 
 The follow-up the vectors entry below named. `|` was not in `isolateForeignRuns`'s run class, so a magnitude or

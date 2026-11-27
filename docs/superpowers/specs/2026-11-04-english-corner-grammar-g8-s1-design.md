@@ -1,6 +1,6 @@
 # English corner: Grade 8 Semester 1 grammar — design
 
-**Status:** proposed (this PR; nothing is built yet). **Scope:** grammar activities (Choose, Build, True or false) for the ten
+**Status:** implemented (PR #1416). **Scope:** grammar activities (Choose, Build, True or false) for the ten
 Grade 8 Semester 1 lessons whose book statement is a grammar topic: nine already in the English hub, and one (`u5_l4`) that
 becomes a **grammar-only hub lesson**. Builds on the authored-items engine (`lib/curriculum/src/englishGrammar.ts`), the
 grammar-only hub mechanism (`GRAMMAR_ONLY_LESSONS`, `hubLessonVisible`) and the generalised teacher form
@@ -49,7 +49,7 @@ Lesson ids are `kbl-g8-eng-s1-nccd-<id>` (a `g8` in the id, as Grade 9).
 | Lesson | Book statement (`objectives[0]`) | Sub-topics (count: kind) | Example: correct / distractor |
 | --- | --- | --- | --- |
 | `u1_l1` | use the Present Simple to talk about daily routines | `third-person-s` 14 form · `spelling-es` 12 form · `negatives` 14 form | «She walks to school.» walks / walk |
-| `u1_l3` | ask and answer questions about everyday life and use adverbs of frequency | `do-does-questions` 14 form · `question-words` 12 form · `adverb-position` 14 form | «Does he walk to school?» Does he walk / Do he walk |
+| `u1_l3` | ask and answer questions about everyday life and use adverbs of frequency | `do-does-questions` 14 form · `question-words` 12 form · `adverb-position` 14 form | «Does he walk to school?» Does he walk / Do he walk; «She always eats breakfast at home.» always eats / eats always |
 | `u2_l1` | use there is/there are and some and any to talk about my home | `there-is-are` 14 form · `some-any` 14 form · `questions-negatives` 12 form | «There are two beds in my room.» are / is |
 | `u2_l3` | use can and can't to talk about household chores | `can-form` 14 form · `can-questions` 12 form · `can-vs-cant` 14 meaning | «She can cook dinner.» can cook / can cooks |
 | `u3_l1` | use countable and uncountable nouns to talk about diets | `plural-nouns` 12 form · `uncountable` 14 form · `a-an-some` 14 form | «We need some rice.» some / a |
@@ -76,9 +76,9 @@ Rules for every item:
    Past Simple against a present form; `every day`, `usually`, `on Fridays` and `now`, `Look!`, `Listen!`, `at the moment` for
    Simple against Continuous (never `this week` or `always`, where both fit); and a «so» or «but» clause that states the clue for
    can / can't («He is three, so he can't wash dishes.»). A clause both modals could follow is not enough.
-5. An adverb sits inside the answer so the false twin keeps standard word order (`is always` / `always is`).
+5. An adverb sits inside the answer so the false twin keeps standard word order, and the `adverb-position` twin moves the adverb between a main verb and its object (`always eats` / `eats always`). There is no be + adverb row: this spec first gave `is always` / `always is` as the example, but «She always is late» is marked, not wrong, English, and the principle that a distractor is never a form real English accepts outranks that example (ruling during the build, 2026-11-27).
 6. An uncountable-noun item uses only nouns whose plural is not standard at this level (`milk`, `rice`, `bread`, `meat`, `butter`,
-   `cheese`, `water`), never `sugar` or `fruit`, which have a real plural.
+   `cheese`, `water`), never `sugar` or `fruit`, which have a real plural. A `some` / `a` twin in `a-an-some` is written only with `rice`, `meat`, `butter` or `bread`: «a milk» or «a water» reads as a serving, so no drink or cheese noun takes `a` / `an` as a distractor (ruling during the build).
 7. A question item whose distractor is a grammatical question in another word order (`Is there a sofa?` against `Is a sofa there?`)
    is not written; the twin must be ungrammatical.
 
