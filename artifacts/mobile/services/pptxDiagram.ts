@@ -14,6 +14,7 @@
  * documents `'line1\n line2'`), so the string goes through as it is.
  */
 import type { DiagramGeometry, Paint } from './diagramGeometry.ts';
+import { hasArabicLetter } from './mathRender.ts';
 
 export interface PptxSlideLike {
   addShape(type: string, o: Record<string, unknown>): unknown;
@@ -60,7 +61,10 @@ export function drawPptxDiagram(
       // margin 0: the geometry already sizes each box with its own insets, and
       // PowerPoint's default (0.1 in a side, 0.05 top and bottom) would come on top.
       margin: 0,
-      fontSize: PT[t.size], bold: t.bold, color: c.text, fontFace: opts.font, rtlMode: opts.rtl, fit: 'shrink',
+      // A label with no Arabic letter («(2, 0)», «-3») is laid out
+      // left-to-right, or the bidi algorithm reverses it (see `pptxText.ts`).
+      fontSize: PT[t.size], bold: t.bold, color: c.text, fontFace: opts.font,
+      rtlMode: opts.rtl && hasArabicLetter(t.text), fit: 'shrink',
     });
   }
 }
