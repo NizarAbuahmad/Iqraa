@@ -52,7 +52,13 @@ import { examVisibleTo } from "../modules/assessment/audience.ts";
 import { assignedStudentsByEvaluation } from "../lib/evaluationAudience.ts";
 import { guardianLinkedStudents, selfLinkedStudentIds } from "../lib/familyAccess.ts";
 import { paperExamIdsFromFlags } from "../modules/assessment/paperExam.ts";
-import { reviewItems, studentReviewReady, type ReviewQuestion } from "../modules/assessment/answerReview.ts";
+import {
+  feedbackItems,
+  feedbackReady,
+  reviewItems,
+  studentReviewReady,
+  type ReviewQuestion,
+} from "../modules/assessment/answerReview.ts";
 import { groupChildren } from "../modules/family/children.ts";
 import {
   guardianExamRow,
@@ -98,6 +104,7 @@ async function loadRetakeCandidates(studentIds: string[], now: Date): Promise<Re
       objectiveIds: evaluations.objectiveIds,
       status: evaluations.status,
       released: evaluations.releaseResultsToStudent,
+      instantFeedback: evaluations.instantFeedback,
       shareCode: evaluations.shareCode,
       shareCodeExpiresAt: evaluations.shareCodeExpiresAt,
     })
@@ -134,6 +141,7 @@ async function loadRetakeCandidates(studentIds: string[], now: Date): Promise<Re
       retakesUsed: usedBy.get(`${s.evaluationId}:${s.studentId}`) ?? 0,
       singleLesson: lessonIdsForObjectiveIds(s.objectiveIds).length === 1,
       open: s.status === "published" && (!s.shareCodeExpiresAt || s.shareCodeExpiresAt.getTime() > now.getTime()),
+      instantFeedback: s.instantFeedback,
     }),
   }));
 }
@@ -213,6 +221,7 @@ async function examRowsFor(studentIds: string[]): Promise<StudentExamRow[]> {
       totalMarks: evaluations.totalMarks,
       releaseResultsToStudent: evaluations.releaseResultsToStudent,
       showSolutionsToStudent: evaluations.showSolutionsToStudent,
+      instantFeedback: evaluations.instantFeedback,
       publishedAt: evaluations.publishedAt,
       closedAt: evaluations.closedAt,
       examDate: evaluations.examDate,
@@ -533,15 +542,27 @@ router.get("/student/exams/:evaluationId/review", async (req: AuthenticatedReque
         ),
       )
       .limit(1);
-    if (
-      !row ||
-      !studentReviewReady({
-        status: row.evaluation.status,
+    if (!row) {
+      notReady();
+      return;
+    }
+    // The full review (with the answers) wins; short of it, an exam with
+    // «تغذية راجعة فورية» on shows right and wrong only — `feedbackItems`
+    // carries no answer key, so nothing here depends on the exam being closed.
+    const full = studentReviewReady({
+      status: row.evaluation.status,
+      released: row.evaluation.releaseResultsToStudent,
+      solutionsShown: row.evaluation.showSolutionsToStudent,
+      result: row.result ?? undefined,
+    });
+    const feedback =
+      !full &&
+      feedbackReady({
+        instantFeedback: row.evaluation.instantFeedback,
         released: row.evaluation.releaseResultsToStudent,
-        solutionsShown: row.evaluation.showSolutionsToStudent,
-        result: row.result ?? undefined,
-      })
-    ) {
+        submitted: true,
+      });
+    if (!full && !feedback) {
       notReady();
       return;
     }
@@ -563,13 +584,18 @@ router.get("/student/exams/:evaluationId/review", async (req: AuthenticatedReque
       title: row.evaluation.title,
       titleAr: row.evaluation.titleAr,
       subjectId: row.evaluation.subjectId,
-      items: reviewItems({
-        snapshot,
-        answers,
-        grades,
-        stepsById: new Map(live.map(q => [q.id, q.workedSteps])),
-        isAr: row.evaluation.language !== "en",
-      }),
+      // "feedback": right and wrong only, the answers come once the exam closes.
+      mode: full ? "full" : "feedback",
+      items: (() => {
+        const input = {
+          snapshot,
+          answers,
+          grades,
+          stepsById: new Map(live.map(q => [q.id, q.workedSteps])),
+          isAr: row.evaluation.language !== "en",
+        };
+        return full ? reviewItems(input) : feedbackItems({ ...input, attemptId: row.attempt.id });
+      })(),
     });
   } catch (err) {
     logger.error({ err }, "student answer review failed");

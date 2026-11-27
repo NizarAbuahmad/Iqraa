@@ -16,7 +16,7 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'نقارن (x−2)² مع (x−h)²: h = 2',
       'نكتب (y+1)² على الصورة (y−(−1))²: k = −1',
       'r² = 9 فيكون r = √9 = 3',
-      'إذن المركز (2 ، −1) ، r = 3',
+      'إذن المركز (2, −1) ، r = 3',
     ],
     en: [
       'Standard form of a circle: (x−h)² + (y−k)² = r²',
@@ -47,7 +47,7 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'نضيف 9 و 4 إلى الطرفين: (x² − 6x + 9) + (y² + 4y + 4) = 3 + 9 + 4',
       'الصورة القياسية: (x−3)² + (y+2)² = 16',
       'نقارن مع (x−h)² + (y−k)² = r²: h = 3 و k = −2 و r = √16 = 4',
-      'إذن المركز (3 ، −2) ، r = 4',
+      'إذن المركز (3, −2) ، r = 4',
     ],
     en: [
       'Group the x terms and the y terms and move the constant: (x² − 6x) + (y² + 4y) = 3',
@@ -355,7 +355,7 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
     en: ["Differentiate: f'(x) = 3x² − 6x", 'Set the derivative to zero and factor: 3x(x − 2) = 0', 'So x = 0 or x = 2', 'So critical points at x = 0 and x = 2'],
   },
   'd-h6': {
-    ar: ["نشتق: f'(x) = 3x² − 3، فالقيم الحرجة x = ±1", 'x = −1 خارج الفترة [0 ، 2]، فنبقي x = 1 فقط', 'نحسب الاقتران عند طرفي الفترة والقيمة الحرجة: f(0) = 0 و f(1) = −2 و f(2) = 2', 'أكبر قيمة بينها هي 2', 'إذن القيمة العظمى المطلقة = 2'],
+    ar: ["نشتق: f'(x) = 3x² − 3، فالقيم الحرجة x = ±1", 'x = −1 خارج الفترة [0, 2]، فنبقي x = 1 فقط', 'نحسب الاقتران عند طرفي الفترة والقيمة الحرجة: f(0) = 0 و f(1) = −2 و f(2) = 2', 'أكبر قيمة بينها هي 2', 'إذن القيمة العظمى المطلقة = 2'],
     en: ["Differentiate: f'(x) = 3x² − 3, so the critical points are x = ±1", 'x = −1 lies outside [0, 2], so keep x = 1 only', 'Evaluate at the endpoints and the critical point: f(0) = 0, f(1) = −2, f(2) = 2', 'The largest of these is 2', 'So the absolute maximum = 2'],
   },
   'd-h7': {
@@ -367,8 +367,8 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
   'v-e1': {
     ar: [
       'المتجه من A إلى B: AB⃗ = B − A (نهاية − بداية)',
-      'AB⃗ = ⟨4 − 1 ، 6 − 2⟩',
-      'إذن AB⃗ = ⟨3 ، 4⟩',
+      'AB⃗ = ⟨4 − 1, 6 − 2⟩',
+      'إذن AB⃗ = ⟨3, 4⟩',
     ],
     en: [
       'The vector from A to B: AB⃗ = B − A (end minus start)',
@@ -378,7 +378,7 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
   },
   'v-e2': {
     ar: [
-      'مقدار المتجه ⟨a ، b⟩ هو |v| = √(a² + b²)',
+      'مقدار المتجه ⟨a, b⟩ هو |v| = √(a² + b²)',
       'نعوّض: |v| = √(3² + 4²) = √(9 + 16)',
       '|v| = √25',
       'إذن |v| = 5',
@@ -392,8 +392,8 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
   },
   'v-m1': {
     ar: [
-      'نجمع المركبات المتناظرة: u + v = ⟨1 + 3 ، 2 + (−1)⟩',
-      'إذن u+v = ⟨4 ، 1⟩',
+      'نجمع المركبات المتناظرة: u + v = ⟨1 + 3, 2 + (−1)⟩',
+      'إذن u+v = ⟨4, 1⟩',
     ],
     en: [
       'Add corresponding components: u + v = ⟨1 + 3, 2 + (−1)⟩',
@@ -402,7 +402,7 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
   },
   'v-m2': {
     ar: [
-      'الضرب القياسي: ⟨a ، b⟩ · ⟨c ، d⟩ = ac + bd',
+      'الضرب القياسي: ⟨a, b⟩ · ⟨c, d⟩ = ac + bd',
       'نعوّض: 2 × 4 + 3 × (−1)',
       '= 8 − 3',
       'إذن u·v = 5',
@@ -417,7 +417,7 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
   'v-h1': {
     ar: [
       'متجهان غير صفريين متعامدان إذا كان ضربهما القياسي يساوي صفراً',
-      'نحسب: ⟨1 ، 0⟩ · ⟨0 ، 1⟩ = 1 × 0 + 0 × 1',
+      'نحسب: ⟨1, 0⟩ · ⟨0, 1⟩ = 1 × 0 + 0 × 1',
       'الناتج = 0 + 0 = 0',
       'إذن متعامدان (الضرب القياسي = 0)',
     ],

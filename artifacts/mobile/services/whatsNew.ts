@@ -41,11 +41,27 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
     id: 'lab-grades-and-media',
-    date: '2026-11-25',
+    date: '2026-11-27',
     roles: ['teacher', 'student'],
     titleKey: 'whatsNewLabGradesTitle',
     bodyKey: 'whatsNewLabGradesBody',
     route: '/curriculum/lab',
+  },
+  {
+    id: 'instant-feedback-teacher',
+    date: '2026-11-26',
+    roles: ['teacher'],
+    titleKey: 'whatsNewInstantFeedbackTeacherTitle',
+    bodyKey: 'whatsNewInstantFeedbackTeacherBody',
+    route: '/evaluations',
+  },
+  {
+    id: 'instant-feedback-student',
+    date: '2026-11-26',
+    roles: ['student'],
+    titleKey: 'whatsNewInstantFeedbackStudentTitle',
+    bodyKey: 'whatsNewInstantFeedbackStudentBody',
+    route: '/my-exams',
   },
   {
     id: 'whiteboard-text',

@@ -1,0 +1,1 @@
+ALTER TABLE "evaluations" ADD COLUMN "instant_feedback" boolean DEFAULT false NOT NULL;
