@@ -51,6 +51,7 @@ import type { AnswerKeyCheck } from "@workspace/math-verify";
 import { takeConcreteChem, takeConcreteMath, takeElementaryMath, takeG10LessonMath, type DiffTier } from "@workspace/math-practice";
 import { mockableTypes, QUESTION_TYPES } from "./questionTypes.ts";
 import { shuffleChoices } from "./choiceOrder.ts";
+import type { GenerationWarning } from "@workspace/exam-paper";
 import { arDigits } from "./arabicNotes.ts";
 import { typeListAr } from "./generationNotes.ts";
 // A runtime import, not a cycle: validator.ts takes `GeneratedQuestion` from
@@ -118,6 +119,8 @@ export interface GenerationResult {
   notes: string[];
   /** The same notes in Arabic, one for one and in the same order. */
   notesAr: string[];
+  /** The same notes as codes the app words itself, one for one and in the same order. */
+  noteCodes: GenerationWarning[];
   /**
    * What the knowledge bank holds for these objectives' units.
    *
@@ -233,6 +236,21 @@ function bankNote(ctx: BankContext): string | null {
     : "";
   return `The library holds ${counts} for these units — real items to draw on, `
     + `but nothing has been extracted from them yet.${caveat}`;
+}
+
+/** `bankNote` as a code, from the same context, so the app can word it. */
+function bankNoteCode(ctx: BankContext): GenerationWarning | null {
+  if (!ctx.suggested.length) return null;
+  return {
+    code: "library_holds",
+    params: {
+      questionBanks: ctx.byKind["question-bank"] ?? 0,
+      pastPapers: ctx.byKind.exam ?? 0,
+      answerKeys: ctx.byKind["answer-key"] ?? 0,
+      referenceOnly: ctx.referenceOnly,
+      documents: ctx.total,
+    },
+  };
 }
 
 /** `bankNote` in Arabic, from the same context so the two always say the same thing. */
@@ -644,6 +662,7 @@ function pickType(
 export function generateMockEvaluation(req: GenerationRequest): GenerationResult {
   const notes: string[] = [];
   const notesAr: string[] = [];
+  const noteCodes: GenerationWarning[] = [];
   const seed = req.seed ?? Math.floor(Math.random() * 0xffffffff);
   const rng = mulberry32(seed);
   /*
@@ -678,6 +697,7 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
       shortfall: req.count,
       notes: ["No learning objectives were provided, so nothing could be generated."],
       notesAr: ["لم تُختر أي نتاجات تعلّم، فلم يُكتب أي سؤال."],
+      noteCodes: [{ code: "no_objectives", params: {} }],
       // No objectives means no units, so nothing to scope the bank by. An
       // empty context, not the whole bank.
       bankContext: bankContextFor([]),
@@ -689,6 +709,7 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
   if (available.length === 0) {
     const pointer = bankNote(bankContext);
     const pointerAr = bankNoteAr(bankContext);
+    const pointerCode = bankNoteCode(bankContext);
     return {
       questions: [],
       seed,
@@ -705,11 +726,13 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
           + "أضف نوعًا من الأسئلة ذات الإجابة المفتوحة، أو اكتب هذه الأسئلة بيدك، أو شغّل التوليد بالذكاء الاصطناعي.",
         ...(pointerAr ? [pointerAr] : []),
       ],
+      noteCodes: [{ code: "no_type_producible", params: {} }, ...(pointerCode ? [pointerCode] : [])],
       bankContext,
     };
   }
 
   if (unavailableTypes.length > 0) {
+    noteCodes.push({ code: "types_skipped", params: { types: [...unavailableTypes] } });
     notes.push(
       `Skipped ${unavailableTypes.join(", ")}: these need distractors or factual ` +
         `statements that cannot be derived from the curriculum text alone.`,
@@ -722,6 +745,8 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
     if (pointer) notes.push(pointer);
     const pointerAr = bankNoteAr(bankContext);
     if (pointerAr) notesAr.push(pointerAr);
+    const pointerCode = bankNoteCode(bankContext);
+    if (pointerCode) noteCodes.push(pointerCode);
   }
 
   const allocation = allocateQuestions(req.count, req.difficulty);
@@ -899,10 +924,12 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
 
   const shortfall = req.count - questions.length;
   if (shortfall > 0) {
+    noteCodes.push({ code: "shortfall", params: { made: questions.length, requested: req.count } });
     notes.push(`Produced ${questions.length} of ${req.count} requested questions.`);
     notesAr.push(`كُتب من الأسئلة ${arDigits(questions.length)} من أصل ${arDigits(req.count)} طلبتها.`);
   }
   if (restatementsSkipped > 0) {
+    noteCodes.push({ code: "restatements_skipped", params: { count: restatementsSkipped } });
     notes.push(
       `${restatementsSkipped} question${restatementsSkipped === 1 ? " was" : "s were"} left out rather than ` +
         `asking about the same objective at the same level a second time in other words. ` +
@@ -917,5 +944,5 @@ export function generateMockEvaluation(req: GenerationRequest): GenerationResult
   // Shuffled here, on the paper's own seed, so replaying the seed replays the
   // option order and the keyed ids too (the route shuffles only live output).
   const shuffled = shuffleChoices(questions, mulberry32((seed ^ 0x9e3779b9) >>> 0));
-  return { questions: shuffled, seed, unavailableTypes, shortfall: Math.max(0, shortfall), notes, notesAr, bankContext };
+  return { questions: shuffled, seed, unavailableTypes, shortfall: Math.max(0, shortfall), notes, notesAr, noteCodes, bankContext };
 }

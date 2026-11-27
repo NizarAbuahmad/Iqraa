@@ -13,7 +13,7 @@
 import type { QuestionType } from "@workspace/db";
 import { normalizeArabic } from "@workspace/curriculum";
 import { stemFrame } from "@workspace/math-practice";
-import { hasSentence, sameAsk } from "@workspace/exam-paper";
+import { hasSentence, sameAsk, type GenerationWarning } from "@workspace/exam-paper";
 import { QUESTION_TYPES } from "./questionTypes.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { COMPETENCY_KEYS, COMPETENCY_LABELS_AR, type CompetencyKey } from "./competency.ts";
@@ -33,6 +33,8 @@ export interface ValidationResult {
   warnings: string[];
   /** The same warnings in Arabic, one for one and in the same order. */
   warningsAr: string[];
+  /** The same warnings as codes the app words itself, one for one and in the same order. */
+  warningCodes: GenerationWarning[];
 }
 
 /**
@@ -92,8 +94,10 @@ export function validateGenerated(
   const rejected: ValidationIssue[] = [];
   const warnings: string[] = [];
   const warningsAr: string[] = [];
-  /** Each warning is said in both languages, so the two lists stay one for one. */
-  const warn = (en: string, ar: string) => {
+  const warningCodes: GenerationWarning[] = [];
+  /** Each warning is a code and said in both languages, so the three lists stay one for one. */
+  const warn = (code: GenerationWarning, en: string, ar: string) => {
+    warningCodes.push(code);
     warnings.push(en);
     warningsAr.push(ar);
   };
@@ -167,6 +171,7 @@ export function validateGenerated(
   const uncovered = options.allowedObjectiveIds.filter(id => !covered.has(id));
   if (uncovered.length > 0) {
     warn(
+      { code: "objectives_uncovered", params: { count: uncovered.length, ids: uncovered } },
       `${uncovered.length} selected objective(s) have no questions: ${uncovered.join(", ")}`,
       `من النتاجات التي اخترتها نتاجات لا يقيسها أي سؤال، وعددها ${arDigits(uncovered.length)}.`,
     );
@@ -181,6 +186,7 @@ export function validateGenerated(
   for (const [competency, n] of byCompetency) {
     if (n < 2) {
       warn(
+        { code: "competency_single", params: { competency } },
         `Competency "${competency}" has only ${n} question — too few to report a score from`,
         `في كفاية «${COMPETENCY_LABELS_AR[competency as CompetencyKey] ?? competency}» سؤال واحد فقط، وهو لا يكفي لحساب علامة لها.`,
       );
@@ -195,6 +201,7 @@ export function validateGenerated(
     for (const competency of COMPETENCY_KEYS) {
       if (!byCompetency.has(competency)) {
         warn(
+          { code: "competency_missing", params: { competency } },
           `Competency "${competency}" has no questions — the paper cannot report a score for it`,
           `لا سؤال في كفاية «${COMPETENCY_LABELS_AR[competency]}»، فلن يُحسب لها مستوى من هذا الاختبار.`,
         );
@@ -214,6 +221,7 @@ export function validateGenerated(
       const [count, word] = trues >= falses ? [trues, "true"] : [falses, "false"];
       const answer = word === "true" ? "صح" : "خطأ";
       warn(
+        { code: "true_false_one_sided", params: { count, total: tfValues.length, value: word === "true" } },
         `${count} of ${tfValues.length} true/false statements are ${word} — a student who always answers «${answer}» passes them`,
         `إجابة ${arDigits(count)} من أصل ${arDigits(tfValues.length)} من عبارات الصواب والخطأ «${answer}»، فمن يجيب «${answer}» دائمًا يحصل على علاماتها.`,
       );
@@ -240,6 +248,7 @@ export function validateGenerated(
     const [top, count] = [...tally.entries()].reduce((a, b) => (b[1] > a[1] ? b : a));
     if (count * 2 > positions.length) {
       warn(
+        { code: "choice_position_bunched", params: { count, total: positions.length, position: top } },
         `${count} of ${positions.length} multiple-choice answers are option ${top + 1} — a student could guess the position`,
         `الإجابة الصحيحة في ${arDigits(count)} من أصل ${arDigits(positions.length)} من أسئلة الاختيار من متعدد هي الخيار «${optionLetterAr(top)}»، فقد يخمّن الطالب موضعها.`,
       );
@@ -254,13 +263,14 @@ export function validateGenerated(
   const dominant = dominantKind(accepted.map(promptOf));
   if (dominant) {
     warn(
+      { code: "same_ask", params: { count: dominant.count, total: accepted.length, example: dominant.example } },
       `${dominant.count} of ${accepted.length} questions ask the same thing, with different numbers or ` +
         `in other words: «${dominant.example}»`,
       `يسأل ${arDigits(dominant.count)} من أصل ${arDigits(accepted.length)} من الأسئلة الشيءَ نفسه بأرقام أخرى أو بصياغة أخرى: «${dominant.example}»`,
     );
   }
 
-  return { accepted, rejected, warnings, warningsAr };
+  return { accepted, rejected, warnings, warningsAr, warningCodes };
 }
 
 /**

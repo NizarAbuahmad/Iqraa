@@ -56,7 +56,7 @@ import { scanErrorKey } from '@/services/scanErrors';
 import { groupObjectivesByLesson, isEverythingSelected, toggleEverything } from '@/services/objectiveLessons';
 import { selectionForGrade, typesOffered } from '@/services/evaluationTypes';
 import { totalChoicesFor, totalToSend } from '@/services/examTotal';
-import { generationWarnings } from '@/services/generationWarnings';
+import { encodeNotices, generationNotices, type GenNotice } from '@/services/generationWarnings';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -401,7 +401,7 @@ export default function NewEvaluationScreen() {
       });
       // Best effort: if it fails, the exam page still offers «أرفقه بشعبة الآن».
       if (classId) await setEvaluationClass(evaluation.id, classId).catch(() => {});
-      let warnings: string[] = [];
+      let notices: GenNotice[] = [];
       if (mode === 'paper') {
         await setPaperQuestions(
           evaluation.id,
@@ -415,13 +415,15 @@ export default function NewEvaluationScreen() {
               })),
         );
       } else {
-        warnings = generationWarnings(await generateEvaluation(evaluation.id), lang);
+        notices = generationNotices(await generateEvaluation(evaluation.id));
       }
       // The detail screen re-derives everything else from the questions; the
-      // generator's warnings are the one thing it cannot, so they ride along.
+      // generator's warnings are the one thing it cannot, so they ride along —
+      // as codes and parameters, worded on that screen in the language it shows.
+      const encoded = encodeNotices(notices);
       router.replace({
         pathname: '/evaluations/[id]',
-        params: { id: evaluation.id, ...(warnings.length ? { warnings: warnings.join('\n') } : {}) },
+        params: { id: evaluation.id, ...(encoded ? { notices: encoded } : {}) },
       });
     } catch (err) {
       if (err instanceof EvaluationError && err.code === 'no_level_scale') {

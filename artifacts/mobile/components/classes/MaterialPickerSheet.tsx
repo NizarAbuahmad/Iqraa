@@ -15,6 +15,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { MATERIAL_ICON, MATERIAL_LABEL_KEY } from '@/constants/materialKind';
 import { getItems, type SavedMaterial } from '@/services/workspace';
 import { isAttachableMaterial } from '@/services/homework';
+import { materialGradeName, materialSubjectName } from '@/services/materialMeta';
 
 export function MaterialPickerSheet({
   visible,
@@ -29,7 +30,7 @@ export function MaterialPickerSheet({
   onClose: () => void;
 }) {
   const colors = useColors();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
   const [items, setItems] = useState<SavedMaterial[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,7 +86,7 @@ export function MaterialPickerSheet({
                       {item.title}
                     </Text>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
-                      {[MATERIAL_LABEL_KEY[item.type] ? t(MATERIAL_LABEL_KEY[item.type]) : '', item.subject, item.grade].filter(Boolean).join(' · ')}
+                      {[MATERIAL_LABEL_KEY[item.type] ? t(MATERIAL_LABEL_KEY[item.type]) : '', materialSubjectName(item.subject, lang), materialGradeName(item.grade, lang)].filter(Boolean).join(' · ')}
                     </Text>
                   </View>
                   {isAdded ? (

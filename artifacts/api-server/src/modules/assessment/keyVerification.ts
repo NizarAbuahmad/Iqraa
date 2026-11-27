@@ -35,6 +35,7 @@
  * test. A question with no `check` is simply never verified, which is the
  * common case and costs it nothing.
  */
+import type { GenerationWarning } from "@workspace/exam-paper";
 import { arDigits, arList } from "./arabicNotes.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { linkCheck } from "./keyLinking.ts";
@@ -96,6 +97,8 @@ export interface KeyVerificationResult {
   warnings: string[];
   /** The same warnings in Arabic, one for one and in the same order. */
   warningsAr: string[];
+  /** The same warnings as codes the app words itself, one for one and in the same order. */
+  warningCodes: GenerationWarning[];
   /** How many keys the verifier actually judged — the honest coverage number. */
   checked: number;
   verified: number;
@@ -112,6 +115,7 @@ export async function verifyAnswerKeys(
   const kept: KeyVerificationResult["kept"] = [];
   const warnings: string[] = [];
   const warningsAr: string[] = [];
+  const warningCodes: GenerationWarning[] = [];
   const checkedAt = new Date().toISOString();
   let checked = 0;
   let verified = 0;
@@ -241,6 +245,7 @@ export async function verifyAnswerKeys(
   }
 
   if (unlinked > 0) {
+    warningCodes.push({ code: "keys_unlinked", params: { count: unlinked } });
     warnings.push(
       `${unlinked} question(s) carry a checked answer that is not their own answer key, ` +
         "so they are not marked verified.",
@@ -251,6 +256,7 @@ export async function verifyAnswerKeys(
   }
 
   if (verifierDown) {
+    warningCodes.push({ code: "verifier_unreachable", params: {} });
     warnings.push(
       "The maths verifier could not be reached, so no answer key was checked. "
         + "Nothing was removed from this paper.",
@@ -258,7 +264,7 @@ export async function verifyAnswerKeys(
     warningsAr.push("تعذّر الوصول إلى المدقّق الرياضي، فلم يُدقَّق أي مفتاح إجابة. لم يُحذف شيء من هذا الاختبار.");
   }
 
-  return { kept, warnings, warningsAr, checked, verified, contradicted };
+  return { kept, warnings, warningsAr, warningCodes, checked, verified, contradicted };
 }
 
 /**
@@ -296,6 +302,23 @@ export function contradictionWarningAr(
     `يخالف المدقّق الرياضي مفتاح الإجابة في ${numbers.length === 1 ? "السؤال" : "الأسئلة"} ${arList(numbers)}، `
     + "فلم تُعلَّم بأنها «تم التحقق». راجعها قبل استعمال الاختبار؛ فقد يكون الخطأ في المفتاح أو في التدقيق."
   );
+}
+
+/**
+ * `contradictionWarning` as a code: the questions by their 1-based positions,
+ * with the verifier's answer and the key's for each.
+ */
+export function contradictionWarningCode(
+  kept: readonly { question: GeneratedQuestion; verification: KeyVerification }[],
+): GenerationWarning | null {
+  const details = kept.flatMap((k, i) =>
+    k.verification.code === "contradicted"
+      ? [{ question: i + 1, derived: k.verification.computedAnswer ?? "?", key: k.question.check?.answer ?? "?" }]
+      : [],
+  );
+  return details.length === 0
+    ? null
+    : { code: "keys_contradicted", params: { questions: details.map(d => d.question), details } };
 }
 
 /**

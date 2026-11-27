@@ -34,6 +34,7 @@ import {
 } from "@workspace/math-verify";
 import { MARKS_BY_COMPETENCY, competencyForBlooms, type CompetencyKey } from "./competency.ts";
 import { scaleRubric } from "./marksTotal.ts";
+import type { GenerationWarning } from "@workspace/exam-paper";
 import { arDigits } from "./arabicNotes.ts";
 import type { BookSupplied } from "./bookQuestions.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
@@ -676,6 +677,8 @@ export interface LlmGenerationResult extends ParseResult {
   notes: string[];
   /** The same notes in Arabic, one for one. */
   notesAr: string[];
+  /** The same notes as codes the app words itself, one for one. */
+  noteCodes: GenerationWarning[];
 }
 
 /**
@@ -695,7 +698,9 @@ export async function generateWithModel(
 
   const notes: string[] = [];
   const notesAr: string[] = [];
+  const noteCodes: GenerationWarning[] = [];
   if (result.discarded.length > 0) {
+    noteCodes.push({ code: "model_discarded", params: { count: result.discarded.length } });
     // Said out loud rather than swallowed: a teacher who asked for 15 and got
     // 11 is owed the reason, and silently short papers are how a generator's
     // decline goes unnoticed.
@@ -708,5 +713,5 @@ export async function generateWithModel(
       `استُبعدت أسئلة كتبها النموذج عددها ${arDigits(result.discarded.length)}، لأنها لم تأتِ بالصيغة المطلوبة.`,
     );
   }
-  return { ...result, model, notes, notesAr };
+  return { ...result, model, notes, notesAr, noteCodes };
 }

@@ -30,6 +30,7 @@ import { MATERIAL_COLOR, MATERIAL_EDIT_ROUTE, MATERIAL_FILL } from '@/constants/
 import { FLOW_STEP, flowStepColor } from '@/constants/lessonFlowSteps';
 import { readableOn } from '@/services/readableColor';
 import { materialSubjectId } from '@/services/contentLanguage';
+import { materialGradeName, materialSubjectName } from '@/services/materialMeta';
 import { redoesInEnglish } from '@/hooks/useEnglishRefresh';
 import { usePrintStyle } from '@/hooks/usePrintStyle';
 import { getT } from '@/services/i18n';
@@ -205,6 +206,9 @@ export default function WorkspaceViewScreen() {
   const docLang = materialSubjectId(item) === 'english' ? item.language : lang;
   const docRTL = docLang === 'ar';
   const docT = getT(docLang);
+  // Saved materials store a grade / subject NAME, often the English one; the
+  // export prints it in the document's language (services/materialMeta.ts).
+  const docMeta = { subject: materialSubjectName(item.subject, docLang), grade: materialGradeName(item.grade, docLang) };
 
   // A unit / semester / book paper is not one lesson. `lessonId` is not stamped
   // on it any more (workspace.ts), but a copy saved before that fix may carry
@@ -231,7 +235,7 @@ export default function WorkspaceViewScreen() {
   const isAr = docRTL;
   const getPlainText = () => {
     if (!content) return item.title;
-    const meta = { subject: item.subject, grade: item.grade };
+    const meta = docMeta;
     if (kind === 'lesson') return formatLessonPlanText(content as LessonPlanOutput, item.title, meta, isAr);
     if (kind === 'activity') return formatActivityText(content as ActivityOutput, item.title, meta, isAr);
     if (kind === 'worksheet') return worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy).text;
@@ -260,7 +264,7 @@ export default function WorkspaceViewScreen() {
 
   const getHTML = () => {
     if (!content) return '<p></p>';
-    const meta = { subject: item.subject, grade: item.grade };
+    const meta = docMeta;
     if (kind === 'board') return buildBoardHTML(content, item.title, isAr) ?? '<p></p>';
     const figures = getExportFigures();
     if (kind === 'lesson') return buildLessonPlanHTML(content as LessonPlanOutput, item.title, meta, isAr, figures);
@@ -320,7 +324,7 @@ export default function WorkspaceViewScreen() {
     setLoadingWord(true);
     try {
       if ((kind === 'quiz' || kind === 'worksheet') && content) {
-        const meta = { subject: item.subject, grade: item.grade };
+        const meta = docMeta;
         const built = kind === 'worksheet'
           ? worksheetExports(content as WorksheetOutput, item.title, meta, isAr, docCopy)
           : quizExports(content as QuizOutput, item.title, meta, isAr, docCopy);
@@ -357,10 +361,10 @@ export default function WorkspaceViewScreen() {
         </Text>
         <View style={[styles.metaRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Text style={[styles.metaPill, { color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular' }]}>
-            {item.subject}
+            {materialSubjectName(item.subject, lang)}
           </Text>
           <Text style={[styles.metaPill, { color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular' }]}>
-            {item.grade}
+            {materialGradeName(item.grade, lang)}
           </Text>
         </View>
       </View>

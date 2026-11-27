@@ -8,6 +8,7 @@ import { arCountPhrase, arMarksPhrase, arQuestionsPhrase, enMarksPhrase } from '
 import { formatMarks } from './studentAnswers.ts';
 import { NOTE_MAX, PHOTOS_MAX } from './homeworkSubmission.ts';
 import { arJoinRequestsLine, enJoinRequestsLine } from './linkRequests.ts';
+import type { GroundingSourceRef, LibraryCounts } from '@workspace/exam-paper';
 
 export type Lang = 'ar' | 'en';
 
@@ -96,6 +97,30 @@ export function countSeconds(n: number, lang: Lang): string {
 
 /** Arabic-Indic digits for the live game's counted phrases (display only). */
 const liveAr = (n: number | string) => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]!);
+
+/*
+ * A generated exam's warnings (`genWarn…` keys), worded here from the code and
+ * parameters the API sends (`GenerationWarning` in @workspace/exam-paper;
+ * `services/generationWarnings.ts` picks the key). Arabic counts are in
+ * Arabic-Indic digits and phrased so the number stands on its own («أسئلة
+ * عددها ٢», «٣ من أصل ١٠»), as the API's own Arabic sentences were.
+ */
+/** «أ»، «ب» و«ج» */
+const arQuotedList = (items: readonly string[]) => {
+  const q = items.map(s => `«${s}»`);
+  return q.length <= 1 ? q.join('') : `${q.slice(0, -1).join('، ')} و${q[q.length - 1]}`;
+};
+/** «١، ٢ و٣» */
+const arNumberList = (ns: readonly number[]) => {
+  const q = ns.map(liveAr);
+  return q.length <= 1 ? q.join('') : `${q.slice(0, -1).join('، ')} و${q[q.length - 1]}`;
+};
+/** "a, b and c" */
+const enList = (items: readonly (string | number)[]) => {
+  const q = items.map(String);
+  return q.length <= 1 ? q.join('') : `${q.slice(0, -1).join(', ')} and ${q[q.length - 1]}`;
+};
+const enPlural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 const translations = {
   ar: {
@@ -2638,6 +2663,77 @@ const translations = {
     questionSaveBtn: 'احفظ',
     questionSaveFailed: 'تعذّر حفظ السؤال.',
     regenerateKeepsOwnNote: 'ستُستبدل الأسئلة المولَّدة، ومنها ما عدّلتَه. تبقى الأسئلة التي كتبتَها بنفسك.',
+    // A generated exam's warnings — see `arQuotedList` above and services/generationWarnings.ts.
+    genWarnObjectivesUncovered: (count: number) =>
+      `من النتاجات التي اخترتها نتاجات لا يقيسها أي سؤال، وعددها ${liveAr(count)}.`,
+    genWarnCompetencySingle: (competency: string) =>
+      `في كفاية «${competency}» سؤال واحد فقط، وهو لا يكفي لحساب علامة لها.`,
+    genWarnCompetencyMissing: (competency: string) =>
+      `لا سؤال في كفاية «${competency}»، فلن يُحسب لها مستوى من هذا الاختبار.`,
+    genWarnTrueFalseOneSided: (count: number, total: number, value: boolean) => {
+      const answer = value ? 'صح' : 'خطأ';
+      return `إجابة ${liveAr(count)} من أصل ${liveAr(total)} من عبارات الصواب والخطأ «${answer}»، فمن يجيب «${answer}» دائمًا يحصل على علاماتها.`;
+    },
+    genWarnChoicePositionBunched: (count: number, total: number, letter: string) =>
+      `الإجابة الصحيحة في ${liveAr(count)} من أصل ${liveAr(total)} من أسئلة الاختيار من متعدد هي الخيار «${letter}»، فقد يخمّن الطالب موضعها.`,
+    genWarnSameAsk: (count: number, total: number, example: string) =>
+      `يسأل ${liveAr(count)} من أصل ${liveAr(total)} من الأسئلة الشيءَ نفسه بأرقام أخرى أو بصياغة أخرى: «${example}»`,
+    genWarnKeysUnlinked: (count: number) =>
+      `أسئلة عددها ${liveAr(count)} فيها إجابة دُقِّقت لكنها ليست مفتاح إجابتها، فلم تُعلَّم بأنها «تم التحقق».`,
+    genWarnVerifierUnreachable: 'تعذّر الوصول إلى المدقّق الرياضي، فلم يُدقَّق أي مفتاح إجابة. لم يُحذف شيء من هذا الاختبار.',
+    // The verifier's own answers are Latin maths, left to the English wording.
+    genWarnKeysContradicted: (questions: readonly number[], _details: readonly { question: number; derived: string; key: string }[]) =>
+      questions.length === 1
+        ? `يخالف المدقّق الرياضي مفتاح الإجابة في السؤال ${arNumberList(questions)}، `
+          + 'فلم يُعلَّم بأنه «تم التحقق». راجعه قبل استعمال الاختبار؛ فقد يكون الخطأ في المفتاح أو في التدقيق.'
+        : `يخالف المدقّق الرياضي مفتاح الإجابة في الأسئلة ${arNumberList(questions)}، `
+          + 'فلم تُعلَّم بأنها «تم التحقق». راجعها قبل استعمال الاختبار؛ فقد يكون الخطأ في المفتاح أو في التدقيق.',
+    genWarnNoObjectives: 'لم تُختر أي نتاجات تعلّم، فلم يُكتب أي سؤال.',
+    genWarnNoTypeProducible: 'لا يمكن كتابة أيٍّ من أنواع الأسئلة المطلوبة دون اختلاق محتوى علمي. '
+      + 'أضف نوعًا من الأسئلة ذات الإجابة المفتوحة، أو اكتب هذه الأسئلة بيدك، أو شغّل التوليد بالذكاء الاصطناعي.',
+    genWarnTypesSkipped: (types: readonly string[]) =>
+      `لم تُكتب أسئلة ${arQuotedList(types)}: فهي تحتاج إلى بدائل خاطئة مقنعة أو عبارات علمية لا يمكن استخراجها من نص المنهاج وحده.`,
+    genWarnLibraryHolds: (c: LibraryCounts) => {
+      const kinds = ([[c.questionBanks, 'بنك أسئلة'], [c.pastPapers, 'امتحان سابق'], [c.answerKeys, 'مفتاح إجابة']] as const)
+        .filter(([n]) => n > 0)
+        .map(([n, word]) => `${word} (${liveAr(n)})`)
+        .join('، ');
+      const caveat = c.referenceOnly > 0
+        ? ` ومن وثائق هذه الوحدات (${liveAr(c.documents)}) ما عدده ${liveAr(c.referenceOnly)} من عمل معلم بعينه، فلا يجوز نسخه حرفيًا.`
+        : '';
+      return `في المكتبة لهذه الوحدات: ${kinds}؛ ففيها أسئلة حقيقية يمكن الرجوع إليها، لكن لم يُستخرج منها شيء بعد.${caveat}`;
+    },
+    genWarnShortfall: (made: number, requested: number) =>
+      `كُتب من الأسئلة ${liveAr(made)} من أصل ${liveAr(requested)} طلبتها.`,
+    genWarnRestatementsSkipped: (count: number) =>
+      `تُركت أسئلة عددها ${liveAr(count)} بدل أن يُسأل عن النتاج نفسه في المستوى نفسه مرة ثانية بكلمات أخرى. `
+      + 'اختر نتاجات أكثر، أو شغّل التوليد بالذكاء الاصطناعي، لاختبار أطول.',
+    genWarnModelDiscarded: (count: number) =>
+      `استُبعدت أسئلة كتبها النموذج عددها ${liveAr(count)}، لأنها لم تأتِ بالصيغة المطلوبة.`,
+    genWarnFirstGradeTypesDropped: (used: readonly string[], dropped: readonly string[]) =>
+      `الصف الأول: كُتب الاختبار بأسئلة ${arQuotedList(used)}؛ أما ${arQuotedList(dropped)} فتطلب إجابة مكتوبة لا يقدر عليها طفل في الصف الأول.`,
+    genWarnGroundedOn: (sources: readonly GroundingSourceRef[]) =>
+      `بُنيت الأسئلة على ${sources.map(s => `${s.title} ص${liveAr(s.page)}`).join('، ')}.`,
+    genWarnNotGrounded: 'لا نصوص مستخرجة من الكتاب المدرسي لوحدات هذه النتاجات، فكُتبت الأسئلة من النتاجات وحدها. '
+      + 'راجعها مع الكتاب قبل النشر.',
+    genWarnModelSurplusTrimmed: (trimmed: number, asked: number) =>
+      `أعاد المولِّد أسئلة أكثر مما طُلب منه (${liveAr(asked)})، فحُذفت الزيادة، وعددها ${liveAr(trimmed)}.`,
+    genWarnBookItemsDrawn: (count: number) =>
+      `من الأسئلة ما هو مأخوذ من كتب المركز الوطني لتطوير المناهج، وعدده ${liveAr(count)}، وعلى كل منها بيان بكيفية تحديد إجابته.`,
+    genWarnBookItemsShort: (drawn: number, planned: number) =>
+      `أُضيف من أسئلة الكتاب ${liveAr(drawn)} فقط من أصل ${liveAr(planned)} كان مخططًا لها؛ فبقية أسئلته تكرر أسئلة موجودة في الاختبار.`,
+    genWarnSurplusTrimmed: (surplus: number, requested: number) =>
+      `أعاد المولِّد أسئلة أكثر مما طلبت (${liveAr(requested)})، فحُذفت الزيادة، وعددها ${liveAr(surplus)}.`,
+    genWarnNoKeyChecked: 'لم يُدقَّق أي مفتاح إجابة في اختبار الرياضيات هذا، لأن المولِّد لم يكتب أيًّا منها بصيغة يقرؤها المدقّق، '
+      + 'فكل أسئلته غير مدقَّقة.',
+    genWarnMarksSharedShort: (written: number, requested: number, marks: number, target: number) =>
+      `كُتب من الأسئلة ${liveAr(written)} فقط من أصل ${liveAr(requested)} طلبتها، فتقاسمت العلامات كلها (${liveAr(marks)})؛ `
+      + `وأي سؤال تضيفه بيدك يرفع العلامة الكلية فوق ${liveAr(target)}.`,
+    genWarnMarksTotalUnreachable: (target: number, questions: number, kept: number) =>
+      `تعذّر جعل العلامة الكلية ${liveAr(target)} كما طلبت: `
+      + `يحتاج كل سؤال من الأسئلة المولَّدة (${liveAr(questions)}) إلى علامة واحدة على الأقل`
+      + (kept > 0 ? `، وعلامات أسئلتك أنت مجموعها ${liveAr(kept)}` : '')
+      + '. أُبقيت علامات المولِّد كما هي.',
     dictationPlay: 'استمعْ',
     dictationPlaying: 'يُشغَّل…',
     dictationPlaysLeft: (n: string) => `بقيَ لكَ ${n} استماعات`,
@@ -6360,6 +6456,78 @@ const translations = {
     questionSaveBtn: 'Save',
     questionSaveFailed: 'Could not save the question.',
     regenerateKeepsOwnNote: 'Generated questions are replaced, including ones you edited. Questions you wrote yourself are kept.',
+    // A generated exam's warnings — see services/generationWarnings.ts.
+    genWarnObjectivesUncovered: (count: number) =>
+      `${count} of the objectives you chose ${enPlural(count, 'has no question measuring it', 'have no question measuring them')}.`,
+    genWarnCompetencySingle: (competency: string) =>
+      `The "${competency}" competency has only one question — too few to report a score from.`,
+    genWarnCompetencyMissing: (competency: string) =>
+      `The "${competency}" competency has no questions — the paper cannot report a score for it.`,
+    genWarnTrueFalseOneSided: (count: number, total: number, value: boolean) =>
+      `${count} of ${total} true/false statements are ${value ? 'true' : 'false'} — `
+      + `a student who always answers "${value ? 'True' : 'False'}" gets them right.`,
+    genWarnChoicePositionBunched: (count: number, total: number, letter: string) =>
+      `${count} of ${total} multiple-choice answers are option ${letter} — a student could guess the position.`,
+    genWarnSameAsk: (count: number, total: number, example: string) =>
+      `${count} of ${total} questions ask the same thing, with different numbers or in other words: “${example}”`,
+    genWarnKeysUnlinked: (count: number) =>
+      `${count} ${enPlural(count, 'question carries a checked answer that is not its', 'questions carry a checked answer that is not their')} `
+      + `own answer key, so ${enPlural(count, 'it is', 'they are')} not marked verified.`,
+    genWarnVerifierUnreachable: 'The maths verifier could not be reached, so no answer key was checked. Nothing was removed from this paper.',
+    genWarnKeysContradicted: (questions: readonly number[], details: readonly { question: number; derived: string; key: string }[]) =>
+      `The maths verifier disagrees with the answer key of ${enPlural(questions.length, 'question', 'questions')} ${enList(questions)}, `
+      + `so ${enPlural(questions.length, 'it is', 'they are')} not marked verified. Check before using the paper — `
+      + 'either the key or the check may be wrong.'
+      + details.map(d => ` Question ${d.question}: the verifier derived "${d.derived}" where the key says "${d.key}".`).join(''),
+    genWarnNoObjectives: 'No learning objectives were chosen, so nothing could be generated.',
+    genWarnNoTypeProducible: 'None of the requested question types can be written without inventing subject content. '
+      + 'Add an open-response type, write these questions by hand, or turn on AI generation.',
+    genWarnTypesSkipped: (types: readonly string[]) =>
+      `Skipped ${enList(types)}: these need distractors or factual statements that cannot be derived from the curriculum text alone.`,
+    genWarnLibraryHolds: (c: LibraryCounts) => {
+      const kinds = ([[c.questionBanks, 'question bank', 'question banks'], [c.pastPapers, 'past paper', 'past papers'], [c.answerKeys, 'answer key', 'answer keys']] as const)
+        .filter(([n]) => n > 0)
+        .map(([n, one, many]) => `${n} ${enPlural(n, one, many)}`);
+      const caveat = c.referenceOnly > 0
+        ? ` ${c.referenceOnly} of the ${c.documents} documents for these units ${enPlural(c.referenceOnly, 'is', 'are')} a named teacher's own work and must not be reproduced verbatim.`
+        : '';
+      return `The library holds ${enList(kinds)} for these units — real items to draw on, but nothing has been extracted from them yet.${caveat}`;
+    },
+    genWarnShortfall: (made: number, requested: number) => `Produced ${made} of ${requested} requested questions.`,
+    genWarnRestatementsSkipped: (count: number) =>
+      `${count} ${enPlural(count, 'question was', 'questions were')} left out rather than asking about the same objective `
+      + 'at the same level a second time in other words. Choose more objectives, or turn on AI generation, for a longer paper.',
+    genWarnModelDiscarded: (count: number) =>
+      `${count} ${enPlural(count, 'question the model wrote was', 'questions the model wrote were')} left out because `
+      + `${enPlural(count, 'it', 'they')} did not come in the required form.`,
+    genWarnFirstGradeTypesDropped: (used: readonly string[], dropped: readonly string[]) =>
+      `Grade 1: generated with ${enList(used)}; ${enList(dropped)} ${enPlural(dropped.length, 'asks', 'ask')} for written answers a Grade 1 child cannot give.`,
+    genWarnGroundedOn: (sources: readonly GroundingSourceRef[]) =>
+      `Written from ${sources.map(s => `${s.title}, p. ${s.page}`).join('; ')}.`,
+    genWarnNotGrounded: "No official-book passages are extracted for these objectives' units — the questions were written "
+      + 'from the objectives alone. Review them against the book before publishing.',
+    genWarnModelSurplusTrimmed: (trimmed: number, asked: number) =>
+      `The generator returned ${trimmed} more ${enPlural(trimmed, 'question', 'questions')} than the ${asked} asked of it; `
+      + `the extra ${enPlural(trimmed, 'one was', 'ones were')} left out.`,
+    genWarnBookItemsDrawn: (count: number) =>
+      `${count} ${enPlural(count, 'question is a real item', 'questions are real items')} from the NCCD books; `
+      + 'each is labelled with how its answer was established.',
+    genWarnBookItemsShort: (drawn: number, planned: number) =>
+      `Only ${drawn} of ${planned} planned book ${enPlural(planned, 'question', 'questions')} could be added `
+      + "(the rest of the book's questions repeat ones already on the paper).",
+    genWarnSurplusTrimmed: (surplus: number, requested: number) =>
+      `The generator returned ${surplus} more ${enPlural(surplus, 'question', 'questions')} than the ${requested} requested; `
+      + `the extra ${enPlural(surplus, 'one was', 'ones were')} left out.`,
+    genWarnNoKeyChecked: 'No answer key on this maths paper could be checked — the generator supplied none in a form '
+      + 'the verifier reads, so every question here is unverified.',
+    genWarnMarksSharedShort: (written: number, requested: number, marks: number, target: number) =>
+      `Only ${written} of the ${requested} questions asked for were written, and they share the ${marks} marks between them; `
+      + `a question you add by hand takes the paper past ${target}.`,
+    genWarnMarksTotalUnreachable: (target: number, questions: number, kept: number) =>
+      `The paper could not be brought to the ${target} marks asked for: `
+      + `${questions} generated ${enPlural(questions, 'question needs', 'questions need')} at least one mark each`
+      + (kept > 0 ? `, and your own questions already carry ${kept}` : '')
+      + ". The generator's own marks were kept.",
     dictationPlay: 'Listen',
     dictationPlaying: 'Playing…',
     dictationPlaysLeft: (n: string) => `${n} plays left`,

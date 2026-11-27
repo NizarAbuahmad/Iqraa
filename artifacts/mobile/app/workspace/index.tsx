@@ -10,6 +10,7 @@ import * as Haptics from 'expo-haptics';
 import { confirm } from '@/services/confirm';
 import { listClasses, type ClassGroup } from '@/services/roster';
 import { classNameFor } from '@/services/materialClass';
+import { materialGradeName } from '@/services/materialMeta';
 import { arCountPhrase } from '@/services/arCount';
 import { isEditableMaterial } from '@/services/materialShape';
 import { useColors } from '@/hooks/useColors';
@@ -283,7 +284,7 @@ export default function WorkspaceScreen() {
               </Text>
             </View>
             <Text style={[styles.metaText, { color: colors.mutedForeground, fontFamily: 'Almarai_400Regular' }]}>
-              {item.grade}
+              {materialGradeName(item.grade, lang)}
             </Text>
             {/* Which class it is filed under. Absent rather than "no class":
                 an unfiled material is the normal case and does not need a
