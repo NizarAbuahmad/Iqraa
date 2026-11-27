@@ -16,7 +16,7 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'نقارن (x−2)² مع (x−h)²: h = 2',
       'نكتب (y+1)² على الصورة (y−(−1))²: k = −1',
       'r² = 9 فيكون r = √9 = 3',
-      'إذن المركز (2 ، −1) ، r = 3',
+      'إذن المركز (2, −1) ، r = 3',
     ],
     en: [
       'Standard form of a circle: (x−h)² + (y−k)² = r²',
@@ -47,7 +47,7 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'نضيف 9 و 4 إلى الطرفين: (x² − 6x + 9) + (y² + 4y + 4) = 3 + 9 + 4',
       'الصورة القياسية: (x−3)² + (y+2)² = 16',
       'نقارن مع (x−h)² + (y−k)² = r²: h = 3 و k = −2 و r = √16 = 4',
-      'إذن المركز (3 ، −2) ، r = 4',
+      'إذن المركز (3, −2) ، r = 4',
     ],
     en: [
       'Group the x terms and the y terms and move the constant: (x² − 6x) + (y² + 4y) = 3',
@@ -355,7 +355,7 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
     en: ["Differentiate: f'(x) = 3x² − 6x", 'Set the derivative to zero and factor: 3x(x − 2) = 0', 'So x = 0 or x = 2', 'So critical points at x = 0 and x = 2'],
   },
   'd-h6': {
-    ar: ["نشتق: f'(x) = 3x² − 3، فالقيم الحرجة x = ±1", 'x = −1 خارج الفترة [0 ، 2]، فنبقي x = 1 فقط', 'نحسب الاقتران عند طرفي الفترة والقيمة الحرجة: f(0) = 0 و f(1) = −2 و f(2) = 2', 'أكبر قيمة بينها هي 2', 'إذن القيمة العظمى المطلقة = 2'],
+    ar: ["نشتق: f'(x) = 3x² − 3، فالقيم الحرجة x = ±1", 'x = −1 خارج الفترة [0, 2]، فنبقي x = 1 فقط', 'نحسب الاقتران عند طرفي الفترة والقيمة الحرجة: f(0) = 0 و f(1) = −2 و f(2) = 2', 'أكبر قيمة بينها هي 2', 'إذن القيمة العظمى المطلقة = 2'],
     en: ["Differentiate: f'(x) = 3x² − 3, so the critical points are x = ±1", 'x = −1 lies outside [0, 2], so keep x = 1 only', 'Evaluate at the endpoints and the critical point: f(0) = 0, f(1) = −2, f(2) = 2', 'The largest of these is 2', 'So the absolute maximum = 2'],
   },
   'd-h7': {

@@ -69,7 +69,8 @@ const derivP = (cs: readonly number[]) => cs.slice(0, -1).map((c, i) => c * (cs.
 const lineStr = (m: number, c: number) => `y = ${poly([m, c])}`;
 const dg = (d: number) => `${d}°`;
 const vec = (x: string | number, y: string | number) => `⟨${typeof x === 'number' ? signed(x) : x} ، ${typeof y === 'number' ? signed(y) : y}⟩`;
-const pt = (x: number, y: number) => `(${signed(x)} ، ${signed(y)})`;
+/** «(−3, 4)» — the Latin comma: see latinCommaPoints.test.ts. */
+const pt = (x: number, y: number) => `(${signed(x)}, ${signed(y)})`;
 
 // ─── «الأقواس والقطاعات الدائرية» (S1 pp.41–46) ──────────────────────────────
 
@@ -377,7 +378,7 @@ const slope = T('g10_slope', /^تقدير ميل المنحني$|^معمل بر�
     return {
       eq: `${pc}t²+${qc}t [${t1},${t2}]`, answer: String(ans),
       wrongs: pos(ans, [s(t2) - s(t1), s(t2) / t2, 2 * pc * t2 + qc, ans + pc]),
-      ar: `يمثّل الاقتران s(t) = ${poly([pc, qc, 0], 't')} موقع جسم يتحرك في مسار مستقيم، حيث s بالأمتار و t بالثواني. ما سرعته المتوسطة في الفترة [${t1} ، ${t2}] بالمتر لكل ثانية؟`,
+      ar: `يمثّل الاقتران s(t) = ${poly([pc, qc, 0], 't')} موقع جسم يتحرك في مسار مستقيم، حيث s بالأمتار و t بالثواني. ما سرعته المتوسطة في الفترة [${t1}, ${t2}] بالمتر لكل ثانية؟`,
       en: `s(t) = ${poly([pc, qc, 0], 't')} gives the position, in metres after t seconds, of a body moving in a straight line. What is its average velocity over [${t1}, ${t2}], in m/s?`,
     };
   }
@@ -388,7 +389,7 @@ const slope = T('g10_slope', /^تقدير ميل المنحني$|^معمل بر�
     return {
       eq: `${table} [${t1},${t2}]`, answer: String(ans),
       wrongs: pos(ans, [ss[t2]! - ss[t1]!, ss[t2]! / t2, ans + pc, 2 * pc * t2]),
-      ar: `يبين الجدول (t ، s) موقع دراجة s بالأمتار بعد t ثانية من بدء حركتها: ${table}. ما سرعتها المتوسطة في الفترة [${t1} ، ${t2}] بالمتر لكل ثانية؟`,
+      ar: `يبين الجدول (t, s) موقع دراجة s بالأمتار بعد t ثانية من بدء حركتها: ${table}. ما سرعتها المتوسطة في الفترة [${t1}, ${t2}] بالمتر لكل ثانية؟`,
       en: `The table (t, s) gives a motorbike's position s in metres t seconds after it starts: ${table}. What is its average velocity over [${t1}, ${t2}], in m/s?`,
     };
   }
