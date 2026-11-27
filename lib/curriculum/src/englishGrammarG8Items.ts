@@ -441,16 +441,16 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
       ...items('habit-markers', 'meaning', [
         ['We play chess every day.', 'play', 'are playing'],
         ['She walks to school every morning.', 'walks', 'is walking'],
-        ['My uncle visits us on Fridays.', 'visits', 'is visiting'],
+        ['The sun rises in the east every morning.', 'rises', 'is rising'],
         ['I brush my teeth every night.', 'brush', 'am brushing'],
-        ['He rarely eats fish.', 'eats', 'is eating'],
+        ['He rarely eats fish.', 'rarely eats', 'is rarely eating'],
         ['Dad reads the news every evening.', 'reads', 'is reading'],
-        ['The shop opens at nine every day.', 'opens', 'is opening'],
-        ['We often eat lunch at school.', 'eat', 'are eating'],
+        ['The school bus leaves at seven every day.', 'leaves', 'is leaving'],
+        ['We often eat lunch at school.', 'often eat', 'are often eating'],
         ['Mum cooks rice every week.', 'cooks', 'is cooking'],
-        ['My sister usually wakes up at six.', 'wakes', 'is waking'],
-        ['I swim in the pool every Friday.', 'swim', 'am swimming'],
-        ['The students have maths every Sunday.', 'have', 'are having'],
+        ['My sister usually wakes up at six.', 'usually wakes', 'is usually waking'],
+        ['I wash my hands before every meal.', 'wash', 'am washing'],
+        ['The moon goes round the Earth every month.', 'goes', 'is going'],
       ]),
       // MEANING: a now word (now, right now, Look!, Listen!, at the moment) is what rules the Simple out. Where the text has
       // two sentences the answer sits in the second one.
@@ -464,17 +464,17 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ['Listen! Someone is knocking at the door.', 'is knocking', 'knocks'],
         ['My sister is sleeping at the moment.', 'is sleeping', 'sleeps'],
         ['Look! The bus is coming.', 'is coming', 'comes'],
-        ['The students are writing a test now.', 'are writing', 'write'],
+        ['The students are writing a test right now.', 'are writing', 'write'],
         ['Mum is washing the car at the moment.', 'is washing', 'washes'],
         ['He is playing football in the garden right now.', 'is playing', 'plays'],
       ]),
-      // A stative verb (like, know, need, understand, own, belong, prefer) has no Continuous: the distractor is the
+      // A stative verb (like, know, need, believe, own, belong, prefer) has no Continuous: the distractor is the
       // Continuous of the verb. Never love, hate or have: «I am loving it» and «I am having lunch» are ordinary English.
       ...items('stative-verbs', 'form', [
         ['I like pizza.', 'like', 'am liking'],
         ['She knows the answer.', 'knows', 'is knowing'],
         ['We need a new table.', 'need', 'are needing'],
-        ['The students understand the lesson.', 'understand', 'are understanding'],
+        ['We believe the teacher.', 'believe', 'are believing'],
         ['Dad owns a small shop.', 'owns', 'is owning'],
         ['This book belongs to my sister.', 'belongs', 'is belonging'],
         ['I know your brother.', 'know', 'am knowing'],

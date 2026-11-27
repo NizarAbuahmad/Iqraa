@@ -346,16 +346,16 @@ Not reviewed yet — shown to nobody.
 |---|---|---|
 | We play chess every day. | **play** / are playing | _We are playing chess every day._ |
 | She walks to school every morning. | **walks** / is walking | _She is walking to school every morning._ |
-| My uncle visits us on Fridays. | **visits** / is visiting | _My uncle is visiting us on Fridays._ |
+| The sun rises in the east every morning. | **rises** / is rising | _The sun is rising in the east every morning._ |
 | I brush my teeth every night. | **brush** / am brushing | _I am brushing my teeth every night._ |
-| He rarely eats fish. | **eats** / is eating | _He rarely is eating fish._ |
+| He rarely eats fish. | **rarely eats** / is rarely eating | _He is rarely eating fish._ |
 | Dad reads the news every evening. | **reads** / is reading | _Dad is reading the news every evening._ |
-| The shop opens at nine every day. | **opens** / is opening | _The shop is opening at nine every day._ |
-| We often eat lunch at school. | **eat** / are eating | _We often are eating lunch at school._ |
+| The school bus leaves at seven every day. | **leaves** / is leaving | _The school bus is leaving at seven every day._ |
+| We often eat lunch at school. | **often eat** / are often eating | _We are often eating lunch at school._ |
 | Mum cooks rice every week. | **cooks** / is cooking | _Mum is cooking rice every week._ |
-| My sister usually wakes up at six. | **wakes** / is waking | _My sister usually is waking up at six._ |
-| I swim in the pool every Friday. | **swim** / am swimming | _I am swimming in the pool every Friday._ |
-| The students have maths every Sunday. | **have** / are having | _The students are having maths every Sunday._ |
+| My sister usually wakes up at six. | **usually wakes** / is usually waking | _My sister is usually waking up at six._ |
+| I wash my hands before every meal. | **wash** / am washing | _I am washing my hands before every meal._ |
+| The moon goes round the Earth every month. | **goes** / is going | _The moon is going round the Earth every month._ |
 | Look! It is raining. | **is raining** / rains | _Look! It rains._ |
 | Listen! The baby is crying. | **is crying** / cries | _Listen! The baby cries._ |
 | Dad is cooking dinner right now. | **is cooking** / cooks | _Dad cooks dinner right now._ |
@@ -365,13 +365,13 @@ Not reviewed yet — shown to nobody.
 | Listen! Someone is knocking at the door. | **is knocking** / knocks | _Listen! Someone knocks at the door._ |
 | My sister is sleeping at the moment. | **is sleeping** / sleeps | _My sister sleeps at the moment._ |
 | Look! The bus is coming. | **is coming** / comes | _Look! The bus comes._ |
-| The students are writing a test now. | **are writing** / write | _The students write a test now._ |
+| The students are writing a test right now. | **are writing** / write | _The students write a test right now._ |
 | Mum is washing the car at the moment. | **is washing** / washes | _Mum washes the car at the moment._ |
 | He is playing football in the garden right now. | **is playing** / plays | _He plays football in the garden right now._ |
 | I like pizza. | **like** / am liking | _I am liking pizza._ |
 | She knows the answer. | **knows** / is knowing | _She is knowing the answer._ |
 | We need a new table. | **need** / are needing | _We are needing a new table._ |
-| The students understand the lesson. | **understand** / are understanding | _The students are understanding the lesson._ |
+| We believe the teacher. | **believe** / are believing | _We are believing the teacher._ |
 | Dad owns a small shop. | **owns** / is owning | _Dad is owning a small shop._ |
 | This book belongs to my sister. | **belongs** / is belonging | _This book is belonging to my sister._ |
 | I know your brother. | **know** / am knowing | _I am knowing your brother._ |
