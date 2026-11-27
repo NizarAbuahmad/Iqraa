@@ -23,7 +23,7 @@ import {
   recommendations,
 } from "@workspace/db";
 import type { Attempt, EvaluationQuestion } from "@workspace/db";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, exists, isNull, ne, sql } from "drizzle-orm";
 import { resolveObjectiveIds } from "@workspace/curriculum";
 import {
   gradeAttempt,
@@ -241,4 +241,82 @@ export async function gradeSubmission(attempt: Attempt) {
 
   const recomputed = await recomputeResult(attempt);
   return { ok: true as const, machineGrades, recomputed };
+}
+
+/**
+ * Hand in, and mark, the student sittings still open on an exam the teacher is
+ * closing — exactly as if each student had pressed «تسليم».
+ *
+ * A student who answered, then closed the tab, stayed `in_progress` for ever:
+ * the close only flipped the exam's status, so what they had written was never
+ * marked and never reached the teacher or their family. Who is collected:
+ * a `student_link` sitting, not yet handed in, with at least one saved answer.
+ * Left alone: a sitting with nothing saved (the student did not sit), a
+ * `teacher_entry` paper (the teacher's own work in progress — they hand it in
+ * themselves), and anything already in.
+ *
+ * Each paper is taken under its own row lock — the one `writeAnswerIfOpen` and
+ * `POST /take/attempt/submit` take — so a student handing in at the same moment
+ * is graded once, by whichever got the lock first, and an autosave in flight
+ * either lands before this (and is marked) or sees the paper is in and refuses.
+ * Marking runs after the lock is released, through `gradeSubmission`, as on the
+ * student's own submit; a paper that handed in but could not be marked is
+ * logged and still counted, because the teacher's «تصحيح» re-runs it.
+ *
+ * Call it after the exam is closed: from then on `writeGate` refuses new answers,
+ * so the set of papers cannot grow behind the loop. No flag marks a collected
+ * paper as forced — it is a hand-in like any other.
+ */
+export async function collectOpenAttempts(
+  evaluationId: string,
+  onGradeError: (err: unknown, attemptId: string) => void = () => {},
+): Promise<{ collected: number }> {
+  const candidates = await db
+    .select()
+    .from(attempts)
+    .where(
+      and(
+        eq(attempts.evaluationId, evaluationId),
+        eq(attempts.source, "student_link"),
+        eq(attempts.status, "in_progress"),
+        isNull(attempts.submittedAt),
+        exists(db.select({ one: sql`1` }).from(attemptAnswers).where(eq(attemptAnswers.attemptId, attempts.id))),
+      ),
+    );
+
+  let collected = 0;
+  for (const candidate of candidates) {
+    const now = new Date();
+    const handedIn = await db.transaction(async tx => {
+      const [open] = await tx
+        .select({ submittedAt: attempts.submittedAt, status: attempts.status })
+        .from(attempts)
+        .where(eq(attempts.id, candidate.id))
+        .for("update");
+      if (!open || open.submittedAt || open.status !== "in_progress") return false;
+      const saved = await tx
+        .select({ one: sql`1` })
+        .from(attemptAnswers)
+        .where(eq(attemptAnswers.attemptId, candidate.id))
+        .limit(1);
+      if (saved.length === 0) return false;
+      await tx
+        .update(attemptAnswers)
+        .set({ isFinal: true, updatedAt: now })
+        .where(eq(attemptAnswers.attemptId, candidate.id));
+      await tx
+        .update(attempts)
+        .set({ status: "submitted", submittedAt: now, updatedAt: now })
+        .where(eq(attempts.id, candidate.id));
+      return true;
+    });
+    if (!handedIn) continue;
+    collected += 1;
+    try {
+      await gradeSubmission({ ...candidate, submittedAt: now });
+    } catch (err) {
+      onGradeError(err, candidate.id);
+    }
+  }
+  return { collected };
 }
