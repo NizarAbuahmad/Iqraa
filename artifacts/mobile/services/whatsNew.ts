@@ -86,6 +86,8 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
     titleKey: 'whatsNewBoardTextEditTitle',
     bodyKey: 'whatsNewBoardTextEditBody',
     route: '/ai-tools/whiteboard',
+  },
+  {
     id: 'parent-answer-review',
     date: '2026-11-25',
     roles: ['parent'],
