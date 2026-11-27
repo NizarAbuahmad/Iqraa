@@ -4,10 +4,19 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 // Ionicons has no eraser glyph (its nearest, `backspace`, reads as "delete a character"), so this one icon stays MaterialCommunityIcons.
 import { DECK_ACCENT, DECK_BORDER, DECK_CARD_BG, DECK_MUTED } from '@/services/deckTheme';
 import { BOARD_PEN_COLORS } from '@/services/penColors';
+import { SHAPE_KINDS, type ShapeKind } from '@/services/boardShapes';
 import { BOARD_BACKGROUNDS, STROKE_WIDTHS, type BoardBackground } from '@/services/whiteboardModel';
 
+/** One Ionicons glyph per shape kind. */
+const SHAPE_ICON: Record<ShapeKind, keyof typeof Ionicons.glyphMap> = {
+  line: 'remove',
+  arrow: 'arrow-forward',
+  rect: 'square-outline',
+  ellipse: 'ellipse-outline',
+};
+
 /** What a touch on the page does: draw, erase (ink and texts), or place and edit typed text. */
-export type BoardTool = 'pen' | 'erase' | 'text';
+export type BoardTool = 'pen' | 'erase' | 'text' | 'shape';
 
 export type BoardToolbarLabels = {
   close: string;
@@ -15,6 +24,9 @@ export type BoardToolbarLabels = {
   eraser: string;
   /** The text tool's button. */
   text: string;
+  /** The shapes tool's button, and one name per `SHAPE_KINDS` entry. */
+  shapes: string;
+  shapeKinds: Record<ShapeKind, string>;
   undo: string;
   redo: string;
   clear: string;
@@ -32,6 +44,7 @@ export type BoardToolbarLabels = {
   save: string;
   exportPdf: string;
   shareLink: string;
+  shareImage: string;
   solve: string;
   solveNext: string;
   solveHideAll: string;
@@ -47,13 +60,13 @@ export type BoardToolbarLabels = {
  */
 export function BoardToolbar({
   isRTL, topInset, bottomInset,
-  color, onColor, width, onWidth, tool, onTool,
+  color, onColor, width, onWidth, tool, onTool, shapeKind, onShapeKind,
   canUndo, onUndo, canRedo, onRedo, hasInk, onClear,
   background, onBackground, onClose, labels,
   pageLabel, canPrevPage, canNextPage, canAddPage, canDeletePage,
   onPrevPage, onNextPage, onAddPage, onDeletePage,
   onSave, canSave, saveDirty, saveBusy,
-  onExport, canExport, exportBusy, onShare,
+  onExport, canExport, exportBusy, onShare, onShareImage,
   onSolve, canSolve, solution,
 }: {
   isRTL: boolean;
@@ -65,6 +78,9 @@ export function BoardToolbar({
   onWidth: (w: number) => void;
   tool: BoardTool;
   onTool: (tool: BoardTool) => void;
+  /** Which shape the shapes tool draws. */
+  shapeKind: ShapeKind;
+  onShapeKind: (k: ShapeKind) => void;
   canUndo: boolean;
   onUndo: () => void;
   canRedo: boolean;
@@ -93,6 +109,8 @@ export function BoardToolbar({
   saveBusy: boolean;
   onExport: () => void;
   onShare: () => void;
+  /** Sends the current page as a picture. Given on the web only, where an image can be made without a native module. */
+  onShareImage?: () => void;
   /** Enabled only when some page has ink. */
   canExport: boolean;
   exportBusy: boolean;
@@ -169,7 +187,26 @@ export function BoardToolbar({
           <Pressable onPress={() => onTool('text')} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.text} aria-selected={tool === 'text'}>
             <Ionicons name={tool === 'text' ? 'text' : 'text-outline'} size={20} color={tool === 'text' ? DECK_ACCENT : DECK_MUTED} />
           </Pressable>
+          <Pressable onPress={() => onTool('shape')} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.shapes} aria-selected={tool === 'shape'}>
+            <Ionicons name={tool === 'shape' ? 'shapes' : 'shapes-outline'} size={20} color={tool === 'shape' ? DECK_ACCENT : DECK_MUTED} />
+          </Pressable>
         </View>
+        {tool === 'shape' ? (
+          <View style={styles.group}>
+            {SHAPE_KINDS.map(k => (
+              <Pressable
+                key={k}
+                onPress={() => onShapeKind(k)}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel={labels.shapeKinds[k]}
+                aria-selected={k === shapeKind}
+              >
+                <Ionicons name={SHAPE_ICON[k]} size={20} color={k === shapeKind ? DECK_ACCENT : DECK_MUTED} />
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
         <View style={styles.group}>
           <Pressable onPress={onUndo} disabled={!canUndo} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.undo} style={{ opacity: canUndo ? 1 : 0.35 }}>
             <Ionicons name="arrow-undo-outline" size={20} color={DECK_MUTED} />
@@ -260,6 +297,11 @@ export function BoardToolbar({
           <Pressable onPress={onShare} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.shareLink}>
             <Ionicons name="link-outline" size={20} color={DECK_MUTED} />
           </Pressable>
+          {onShareImage ? (
+            <Pressable onPress={onShareImage} disabled={!canExport} hitSlop={6} accessibilityRole="button" accessibilityLabel={labels.shareImage} style={{ opacity: canExport ? 1 : 0.35 }}>
+              <Ionicons name="image-outline" size={20} color={DECK_MUTED} />
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </>

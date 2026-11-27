@@ -17,7 +17,7 @@
  * Free of react-native so `node --test` can load it.
  */
 import type { BoardSolution } from '@workspace/math-verify';
-import { parseBoard, type BoardFileText } from './boardFile.ts';
+import { parseBoard, type BoardFilePage, type BoardFileText } from './boardFile.ts';
 import { DECK_ACCENT, DECK_BORDER, DECK_MUTED, DECK_TEXT } from './deckTheme.ts';
 import { isolateForeignRuns, mathLineToUnicode } from './mathRender.ts';
 import { scaleInkPoints } from './penInk.ts';
@@ -138,6 +138,38 @@ function solutionSVG(s: BoardSolution, labels: SolutionLabels, isAr: boolean): s
 const hasHonestyLabels = (l: SolutionLabels | undefined): l is SolutionLabels =>
   !!l && [l.ai, l.verified, l.unchecked].every(v => typeof v === 'string' && v.trim() !== '');
 
+/**
+ * What is drawn on one page, in drawing order: paper, the solution panel (all steps), ink, typed text.
+ * Null when the solution does not fit the page (the caller refuses rather than lose a label).
+ */
+function pageInnerSVG(page: BoardFilePage, lang: string, isAr: boolean, solutionLabels: SolutionLabels | undefined): string | null {
+  const strokes = page.strokes
+    .map(
+      s =>
+        `<polyline points="${scaleInkPoints(s.points, CANVAS_W)}" fill="none" stroke="${s.color}" stroke-width="${num(s.width)}" stroke-linecap="round" stroke-linejoin="round"/>`,
+    )
+    .join('');
+  const panel = page.solution && solutionLabels ? solutionSVG(page.solution, solutionLabels, isAr) : '';
+  if (panel === null) return null;
+  return `${paperSVG(page.background, lang)}${panel}${strokes}${textsSVG(page.texts ?? [])}`;
+}
+
+/**
+ * One page as a standalone SVG picture on white, for turning into an image to send (a photo of the
+ * board in a class chat). Null for an invalid board, a page that does not exist, or a solution that
+ * would lose its labels, exactly as `buildBoardHTML` refuses them.
+ */
+export function buildBoardPageSVG(content: unknown, pageIndex: number, isAr: boolean, solutionLabels?: SolutionLabels): string | null {
+  const parsed = parseBoard(content);
+  if (!parsed.ok) return null;
+  const page = parsed.file.pages[pageIndex];
+  if (!page) return null;
+  if (page.solution && !hasHonestyLabels(solutionLabels)) return null;
+  const inner = pageInnerSVG(page, isAr ? 'ar' : 'en', isAr, solutionLabels);
+  if (inner === null) return null;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS_W}" height="${CANVAS_H}" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}" direction="ltr" style="direction:ltr" font-family="Almarai, 'Noto Naskh Arabic', 'Helvetica Neue', Arial, sans-serif"><rect width="${CANVAS_W}" height="${CANVAS_H}" fill="#FFFFFF"/>${inner}</svg>`;
+}
+
 /** The whole document, or null when `content` is not a valid board. */
 export function buildBoardHTML(content: unknown, title: string, isAr: boolean, solutionLabels?: SolutionLabels): string | null {
   const parsed = parseBoard(content);
@@ -153,18 +185,12 @@ export function buildBoardHTML(content: unknown, title: string, isAr: boolean, s
   let refused = false;
   const slides = parsed.file.pages
     .map((page, i) => {
-      const strokes = page.strokes
-        .map(
-          s =>
-            `<polyline points="${scaleInkPoints(s.points, CANVAS_W)}" fill="none" stroke="${s.color}" stroke-width="${num(s.width)}" stroke-linecap="round" stroke-linejoin="round"/>`,
-        )
-        .join('');
-      const panel = page.solution && solutionLabels ? solutionSVG(page.solution, solutionLabels, isAr) : '';
-      if (panel === null) refused = true;
+      const inner = pageInnerSVG(page, lang, isAr, solutionLabels);
+      if (inner === null) refused = true;
       const label = `${localizeDigits(String(i + 1), lang)} / ${localizeDigits(String(total), lang)}`;
       return `<div class="slide">
   <div class="bar"><span class="title">${safeTitle}</span><span class="num">${label}</span></div>
-  <div class="page"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}" direction="ltr" style="direction:ltr">${paperSVG(page.background, lang)}${panel ?? ''}${strokes}${textsSVG(page.texts ?? [])}</svg></div>
+  <div class="page"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}" direction="ltr" style="direction:ltr">${inner ?? ''}</svg></div>
 </div>`;
     })
     .join('\n');

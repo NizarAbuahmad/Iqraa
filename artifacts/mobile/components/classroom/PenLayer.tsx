@@ -3,6 +3,7 @@ import { PanResponder, Platform, Pressable, StyleSheet, View } from 'react-nativ
 import Svg, { Polyline } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { appendInkPoint, scaleInkPoints } from '@/services/penInk';
+import { isShapeBigEnough, shapePoints, type InkPoint, type ShapeKind } from '@/services/boardShapes';
 import { DECK_BORDER, DECK_CARD_BG, DECK_MUTED } from '@/services/deckTheme';
 import { PEN_COLORS } from '@/services/penColors';
 import { DEFAULT_STROKE_WIDTH, ERASER_RADIUS, eraseAlong, eraseAt, type Stroke } from '@/services/whiteboardModel';
@@ -55,7 +56,7 @@ const StrokeLines = memo(function StrokeLines({ strokes, canvasW, strokeScale }:
  * component while the finger is down and is handed to `onChange` once, on
  * release — so a long board does not rebuild every polyline on every touch event.
  */
-export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_STROKE_WIDTH, erase = false, strokeScale = 1 }: {
+export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_STROKE_WIDTH, erase = false, shape = null, strokeScale = 1 }: {
   strokes: Stroke[];
   color: string;
   active: boolean;
@@ -64,6 +65,8 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
   width?: number;
   /** Touches remove strokes instead of drawing. */
   erase?: boolean;
+  /** Drag out this shape instead of drawing freehand (a stroke like any other once released). */
+  shape?: ShapeKind | null;
   /**
    * Pixels per width unit. The board passes its stage's scale so a stroke keeps
    * its thickness relative to the PAGE on every screen; slides leave it at 1.
@@ -74,8 +77,8 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
   // stage. Strokes are stored relative to it and drawn at whatever it is now.
   const [canvasW, setCanvasW] = useState(0);
   // PanResponder is built once; read the latest props through a ref.
-  const latest = useRef({ strokes, color, width, erase, onChange, canvasW, strokeScale });
-  latest.current = { strokes, color, width, erase, onChange, canvasW, strokeScale };
+  const latest = useRef({ strokes, color, width, erase, shape, onChange, canvasW, strokeScale });
+  latest.current = { strokes, color, width, erase, shape, onChange, canvasW, strokeScale };
 
   const [draft, setDraft] = useState<Stroke | null>(null);
   const [erased, setErased] = useState<Stroke[] | null>(null);
@@ -85,11 +88,15 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
   const base = useRef<Stroke[]>([]);
   /** Where the eraser was last applied (in stored units), so a fast drag is swept rather than sampled. */
   const lastErase = useRef<{ x: number; y: number } | null>(null);
+  /** While a shape is being dragged out: where it started and where the finger is now (stored units). */
+  const shapeDrag = useRef<{ kind: ShapeKind; from: InkPoint; to: InkPoint } | null>(null);
 
   const responder = useMemo(() => {
     const finish = () => {
       const d = draftRef.current;
       const e = erasedRef.current;
+      const sh = shapeDrag.current;
+      shapeDrag.current = null;
       draftRef.current = null;
       erasedRef.current = null;
       lastErase.current = null;
@@ -98,6 +105,8 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
       // Commit against the LATEST strokes, not the pen-down snapshot: an undo or
       // a clear during the gesture must not be overwritten by the old list.
       const { onChange: set, strokes: now } = latest.current;
+      // A shape the finger barely moved for was a tap: nothing is drawn.
+      if (d && sh && !isShapeBigEnough(sh.from, sh.to)) return;
       if (d) set([...now, d]);
       else if (e && e !== base.current && now === base.current) set(e); // only if the list did not change under the gesture
     };
@@ -126,6 +135,13 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
           lastErase.current = { x: fx, y: fy };
           erasedRef.current = next;
           setErased(next);
+        } else if (cur.shape) {
+          if (!(cur.canvasW > 0)) return;
+          const at = { x: x / cur.canvasW, y: y / cur.canvasW };
+          shapeDrag.current = { kind: cur.shape, from: at, to: at };
+          const s: Stroke = { color: cur.color, width: cur.width, points: shapePoints(cur.shape, at, at) };
+          draftRef.current = s;
+          setDraft(s);
         } else {
           // A single point would draw nothing; start with a zero-length
           // segment so a tap leaves a dot.
@@ -152,6 +168,13 @@ export function PenCanvas({ strokes, color, active, onChange, width = DEFAULT_ST
             erasedRef.current = next;
             setErased(next);
           }
+        } else if (draftRef.current && shapeDrag.current) {
+          if (!(cw > 0)) return;
+          const drag = shapeDrag.current;
+          drag.to = { x: x / cw, y: y / cw };
+          const s: Stroke = { ...draftRef.current, points: shapePoints(drag.kind, drag.from, drag.to) };
+          draftRef.current = s;
+          setDraft(s);
         } else if (draftRef.current) {
           const s: Stroke = { ...draftRef.current, points: appendInkPoint(draftRef.current.points, x, y, cw) };
           draftRef.current = s;

@@ -14,8 +14,10 @@ import { boardScope } from '@/services/boardScope';
 import { BoardBackground } from '@/components/classroom/BoardBackground';
 import { exportAsPDF } from '@/services/share';
 import { shareMaterialLink } from '@/services/materialShareAction';
+import { shareSvgAsImage } from '@/services/boardImage';
+import type { ShapeKind } from '@/services/boardShapes';
 import { exportFilename } from '@/services/exportFilename';
-import { buildBoardHTML } from '@/services/boardExportHtml';
+import { buildBoardHTML, buildBoardPageSVG } from '@/services/boardExportHtml';
 import { BoardToolbar, type BoardTool } from '@/components/classroom/BoardToolbar';
 import { TextLayer } from '@/components/classroom/TextLayer';
 import { TextDialog, type TextDialogResult } from '@/components/classroom/TextDialog';
@@ -115,6 +117,7 @@ export default function WhiteboardScreen() {
   const [color, setColor] = useState(BOARD_PEN_COLORS[0]!);
   const [width, setWidth] = useState(BOARD_DEFAULT_WIDTH);
   const [tool, setTool] = useState<BoardTool>('pen');
+  const [shapeKind, setShapeKind] = useState<ShapeKind>('line');
   // The text being typed or edited: a new one at a spot of the page (`index` null), or an existing one.
   const [textDraft, setTextDraft] = useState<null | { seq: number; index: number | null; x: number; y: number; initial: string; color: string; size: number }>(null);
   // Each draft gets the next number, which is the dialog's `key`: it starts fresh for every text.
@@ -471,6 +474,30 @@ export default function WhiteboardScreen() {
     if (key) showToast(t(key));
   }, [lang, loading, showToast, t]);
 
+  // The page on screen as a PNG, from the in-memory document like the PDF, so it needs no save first.
+  const onShareImage = useCallback(async () => {
+    if (exporting.current || loading) return;
+    const svg = buildBoardPageSVG(boardFileOf(docRef.current), docRef.current.current, lang === 'ar', {
+      ai: t('solveAiLabel'),
+      verified: t('solveVerifiedLabel'),
+      unchecked: t('solveUncheckedLabel'),
+      understoodAs: t('solveUnderstoodAs'),
+    });
+    if (!svg) {
+      showToast(t('boardExportFailed'));
+      return;
+    }
+    exporting.current = true;
+    try {
+      const how = await shareSvgAsImage(svg, exportFilename(savedRef.current?.title ?? defaultTitle(), '', 'whiteboard'));
+      if (how === 'saved') showToast(t('boardImageSaved'));
+    } catch {
+      showToast(t('boardExportFailed'));
+    } finally {
+      exporting.current = false;
+    }
+  }, [defaultTitle, lang, loading, showToast, t]);
+
   // From the in-memory document, so a board can be exported before it is saved.
   // `buildBoardHTML` validates what it is given, so a bug in `boardFileOf`
   // cannot put anything unchecked into the markup.
@@ -572,6 +599,7 @@ export default function WhiteboardScreen() {
           width={width}
           strokeScale={stage.scale > 0 ? stage.scale : 1}
           erase={tool === 'erase'}
+          shape={tool === 'shape' ? shapeKind : null}
           active={!loading && tool !== 'text'}
           onChange={next => {
             if (firstInk(drawnReported.current, next.length > 0)) {
@@ -607,6 +635,8 @@ export default function WhiteboardScreen() {
         onWidth={setWidth}
         tool={tool}
         onTool={setTool}
+        shapeKind={shapeKind}
+        onShapeKind={setShapeKind}
         canUndo={canUndo(page.board)}
         onUndo={() => setDoc(d => updateCurrent(d, p => ({ ...p, board: undoBoard(p.board) })))}
         canRedo={canRedo(page.board)}
@@ -631,6 +661,7 @@ export default function WhiteboardScreen() {
         saveBusy={saveBusy}
         onExport={onExport}
         onShare={onShare}
+        onShareImage={Platform.OS === 'web' ? onShareImage : undefined}
         canExport={!loading && (docHasInk(doc) || docHasSolution(doc))}
         exportBusy={exportBusy}
         onSolve={() => void onOpenSolve()}
@@ -648,6 +679,8 @@ export default function WhiteboardScreen() {
           pen: t('penTool'),
           eraser: t('boardEraser'),
           text: t('boardTextTool'),
+          shapes: t('boardShapesTool'),
+          shapeKinds: { line: t('boardShapeLine'), arrow: t('boardShapeArrow'), rect: t('boardShapeRect'), ellipse: t('boardShapeEllipse') },
           undo: t('penUndo'),
           redo: t('penRedo'),
           clear: t('penClear'),
@@ -662,6 +695,7 @@ export default function WhiteboardScreen() {
           save: t('boardSave'),
           exportPdf: t('boardExportPdf'),
           shareLink: t('boardShareLink'),
+          shareImage: t('boardShareImage'),
           solve: t('boardSolve'),
           solveNext: t('solveNextStep'),
           solveHideAll: t('solveHideAll'),
