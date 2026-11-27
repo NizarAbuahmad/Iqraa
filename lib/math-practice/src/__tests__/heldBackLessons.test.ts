@@ -137,6 +137,7 @@ describe('«ضرب الأعداد العشرية وقسمتها» (grade 5): by 
         continue;
       }
       const x = ns.find(n => !POW.has(n) || !Number.isInteger(n))!, k = ns.find(n => POW.has(n) && n !== x)!;
+      if (/ثمن القلم/.test(p)) assert.ok(x > 0 && x < 1, `a pen costs under a dinar: ${p}`);
       const want = /اقسم|قسمة|يُقسم/.test(p) ? x / k : x * k;
       assert.ok(Math.abs(Number(item.answer) - want) < 1e-9, `«${p}» → ${item.answer}, want ${want}`);
       assert.ok(!/\.\d*0$/.test(item.answer), `a trailing zero: ${item.answer}`);

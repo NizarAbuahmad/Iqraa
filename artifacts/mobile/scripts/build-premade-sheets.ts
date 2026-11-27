@@ -319,10 +319,18 @@ function readManifest(): Manifest {
  * Also drops any sheet whose lesson is now held back. Without that, adding an
  * entry to `HELD_BACK` would leave the bad sheet sitting in the manifest from
  * an earlier run — held back in the code and still shipped in the data.
+ *
+ * A rebuilt sheet that came out the same as the stored one keeps the stored
+ * one, `generatedAt` included: a re-run of a whole grade otherwise rewrites
+ * every timestamp and buries the sheets that did change in the diff.
  */
 function writeManifest(manifest: Manifest, produced: PremadeWorksheet[]): void {
   const byId = new Map(manifest.sheets.map(sheet => [sheet.id, sheet]));
-  for (const sheet of produced) byId.set(sheet.id, sheet);
+  const sansTime = ({ generatedAt: _at, ...rest }: PremadeWorksheet) => JSON.stringify(rest);
+  for (const sheet of produced) {
+    const stored = byId.get(sheet.id);
+    if (!stored || sansTime(stored) !== sansTime(sheet)) byId.set(sheet.id, sheet);
+  }
   const sheets = [...byId.values()]
     .filter(sheet => !HELD_BACK[sheet.lessonId])
     .sort((a, b) => a.id.localeCompare(b.id));

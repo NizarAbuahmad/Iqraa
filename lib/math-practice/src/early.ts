@@ -1174,12 +1174,13 @@ const ANGLE_COMPARE: Array<[string, number, string]> = [
   ['زاوية أكبر من الزاوية القائمة، وأصغر من نصف دورة', 2, 'an angle bigger than a right angle but less than half a turn'],
 ];
 const ANGLE_THINGS: Array<[string, number, string]> = [
-  ['ركن صفحة الكتاب', 1, 'the corner of a book page'],
-  ['الزاوية بين أرض الغرفة وجدارها', 1, 'the angle between the floor and a wall'],
-  ['ركن السبورة', 1, 'the corner of the board'],
-  ['رأس قطعة بيتزا مثلثة صغيرة', 0, 'the tip of a thin slice of pizza'],
-  ['فتحة مقص مفتوح قليلًا', 0, 'a pair of scissors opened a little'],
-  ['مسند كرسي يميل إلى الخلف مع مقعده', 2, 'the back of a reclining chair and its seat'],
+  // each carries its own preposition: «ما نوع الزاوية عند… / بين…؟»
+  ['عند ركن صفحة الكتاب', 1, 'the corner of a book page'],
+  ['بين أرض الغرفة وجدارها', 1, 'the angle between the floor and a wall'],
+  ['عند ركن السبورة', 1, 'the corner of the board'],
+  ['عند رأس قطعة بيتزا مثلثة صغيرة', 0, 'the tip of a thin slice of pizza'],
+  ['بين شفرتي مقص مفتوح قليلًا', 0, 'a pair of scissors opened a little'],
+  ['بين مسند كرسي يميل إلى الخلف ومقعده', 2, 'the back of a reclining chair and its seat'],
 ];
 const SHAPE_ANGLES: Array<[string, number, string]> = [
   ['كم زاوية في المثلث؟', 3, 'How many angles does a triangle have?'],
@@ -1195,7 +1196,7 @@ const angleG3 = T('angle_kind_g3', /^الزوايا$/, [3, 3], ({ rng }) => {
   }
   if (ask === 0 || ask === 1) {
     const [desc, t, en] = pick(rng, ask === 0 ? ANGLE_COMPARE : ANGLE_THINGS);
-    return { eq: desc, answer: ANGLE_NAMES[t]!, wrongs: [...ANGLE_NAMES.filter((_, i) => i !== t), 'مستقيمة'], ar: ask === 0 ? `${desc}. ما نوعها؟` : `ما نوع الزاوية في ${desc}؟`, en: `${en}: what kind of angle is it? (Arabic)` };
+    return { eq: desc, answer: ANGLE_NAMES[t]!, wrongs: [...ANGLE_NAMES.filter((_, i) => i !== t), 'مستقيمة'], ar: ask === 0 ? `${desc}. ما نوعها؟` : `ما نوع الزاوية ${desc}؟`, en: `${en}: what kind of angle is it? (Arabic)` };
   }
   // the hands of a clock on the hour, by how far apart they are — no degrees are printed:
   // an hour is a twelfth of a turn, so 3 hours apart is a right angle (never 6:00, a straight one)

@@ -124,7 +124,12 @@ const decPow10G5 = T('dec_pow10_g5', /^ضرب الاعداد العشريه وق
   if (k === 0 || k === 2 || k === 3) {
     const ans = shift(z), wrongs = wrongsFrom(ans, [shift(z - 1), shift(z + 1), shift(-z), x]);
     if (k === 2) return { eq: `${x} × ? = ${ans}`, answer: String(P), wrongs: wrongsFrom(String(P), POW.filter(([q]) => q !== P).map(([q]) => String(q)).concat(['10000'])), ar: `أوجد العدد المجهول: ${x} × ؟ = ${ans}`, en: `Find the missing number: ${x} × ? = ${ans}` };
-    if (k === 3) return { eq: `price ${x} × ${P}`, answer: ans, wrongs, ar: `ثمن القلم ${x} دينار. كم دينارًا ثمن ${pensW(P)}؟`, en: `A pen costs ${x} dinars. How much do ${P} pens cost?` };
+    if (k === 3) {
+      // a pen's own price, under a dinar (0.15–0.95), not the drawn number: «ثمن القلم 73.82 دينار» is absurd
+      const fils = 5 * int(rng, 3, 19), price = fmtDec(fils, 2), cost = fmtDec(fils * P, 2);
+      const near = [fmtDec(fils * P, 3), fmtDec(fils * P, 1), price];
+      return { eq: `price ${price} × ${P}`, answer: cost, wrongs: wrongsFrom(cost, near), ar: `ثمن القلم ${price} دينار. كم دينارًا ثمن ${pensW(P)}؟`, en: `A pen costs ${price} dinars. How much do ${P} pens cost?` };
+    }
     return { eq: `${x} × ${P}`, answer: ans, wrongs, ar: `اضرب العدد ${x} في ${P}.`, en: `Multiply ${x} by ${P}.` };
   }
   const ans = shift(-z), wrongs = wrongsFrom(ans, [shift(-z + 1), shift(-z - 1), shift(z), x]);
@@ -163,8 +168,20 @@ const ratToDecG7 = T('rat_to_dec_g7', /^كتابه العدد النسبي با�
   }
   const d = pick(rng, k === 2 ? REPEATING : TERMINATING), n = coprime(rng, d), neg = rng() < 0.35, sign = neg ? MINUS : '';
   const ans = `${sign}${decimalOf(n, d)}`;
-  const wrongs = wrongsFrom(ans, [`${sign}0.${n}`, `${sign}0.${n}${d}`, `${sign}${decimalOf(d % n || 1, n + d)}`, neg ? decimalOf(n, d) : `${MINUS}${decimalOf(n, d)}`, `${sign}0.${d}`]);
-  return { eq: `${sign}${n}/${d}`, answer: ans, wrongs, ar: `اكتب العدد النسبي ${sign}${n}/${d} بالصورة العشرية.`, en: `Write ${sign}${n}/${d} as a decimal.` };
+  // the slips a pupil makes: the digits copied (0.8 for 8/11), the fraction turned over (11/8 = 1.375),
+  // a repeating decimal cut short (0.72), and the sign lost or added
+  const inverted = d % n === 0 ? String(d / n) : `${Math.floor(d / n)}${decimalOf(d % n, n).slice(1)}`;
+  const cut = decimalOf(n, d).replace(/…$/, '').slice(0, 4);
+  const flip = neg ? decimalOf(n, d) : `${MINUS}${decimalOf(n, d)}`;
+  const wrongs = wrongsFrom(ans, neg
+    ? [flip, `${sign}0.${n}`, `${sign}${inverted}`, `${sign}${cut}`, `${sign}0.${d}`]
+    : [`0.${n}`, inverted, cut, `0.${n}${d}`, flip, `0.${d}`]);
+  // a repeating one is asked as the book does it, by long division: its own wording, so a sheet's
+  // repeat cap (three of one ask) does not push the writing out in favour of the classifying
+  const ar = k === 2
+    ? `استعمل القسمة الطويلة لكتابة العدد النسبي ${sign}${n}/${d} بالصورة العشرية.`
+    : `اكتب العدد النسبي ${sign}${n}/${d} بالصورة العشرية.`;
+  return { eq: `${sign}${n}/${d}`, answer: ans, wrongs, ar, en: `Write ${sign}${n}/${d} as a decimal.` };
 });
 
 // ─── G9 «المدرجات التكرارية»: reading a histogram, and frequency density ───────────────────
