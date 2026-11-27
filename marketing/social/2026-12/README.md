@@ -143,6 +143,6 @@ WhatsApp weekly drop (Saturdays): W1–W4 — drafts in `captions.md`.
 | `design/posts.html`, `design/render.cjs` | Source of every static and carousel (Chrome-rendered) |
 | `out/*.png` | Finished images, 1080×1350 (feed) and 1080×1920 (story) |
 | `reels/` | Reel scripts, caption cards and finished `.mp4`s |
-| `raw/` | Raw screen recordings from a local build of the app |
+| `raw/` | Raw screen recordings from a local build of the app (not committed: inputs to `reels/`) |
 
 To re-render images: `node design/render.cjs` (needs the pre-installed Playwright).
