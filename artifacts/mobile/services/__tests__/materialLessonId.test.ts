@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { withLessonId } from '../materialLessonId.ts';
+import { withLessonId, formStateKbScope } from '../materialLessonId.ts';
+import { getPickerGrades, getPickerSubjects } from '../curriculumData.ts';
 import { generatorLessonId } from '../kbContext.ts';
 import { getLessonsForUnit, getUnitsForSubjectGrade } from '../knowledgeBase.ts';
 import { scopeFormState } from '../wideScopeRequest.ts';
@@ -68,5 +69,57 @@ describe('withLessonId — a single lesson is unchanged', () => {
 
   it('a malformed saved scope is not a wide scope', () => {
     assert.equal(withLessonId({ scope: '{not json' }, title, 'ar')?.lessonId, expected);
+  });
+});
+
+// A title repeats across grade books (107 Arabic titles). The fallback used to
+// ground it with no grade or subject, so a save with no lessonId could land on
+// another grade's lesson. gradeIdx / subjectIdx in the saved formState are
+// positions in the picker lists and now narrow the lookup.
+describe('withLessonId — the saved grade and subject scope a repeated title', () => {
+  const grades = getPickerGrades();
+  const subjects = getPickerSubjects();
+  const drifting: { gradeIdx: number; subjectIdx: number; lesson: { id: string; titleAr: string }; unscoped: string | undefined }[] = [];
+  grades.forEach((g, gradeIdx) => subjects.forEach((s, subjectIdx) => {
+    for (const u of getUnitsForSubjectGrade(s.id, g.id)) {
+      for (const lesson of getLessonsForUnit(u.id)) {
+        const unscoped = generatorLessonId(lesson.titleAr, 'ar');
+        if (unscoped && unscoped !== lesson.id) drifting.push({ gradeIdx, subjectIdx, lesson, unscoped });
+      }
+    }
+  }));
+
+  it('precondition: some picker lesson re-grounds to another lesson by title alone', () => {
+    assert.ok(drifting.length > 0);
+  });
+
+  it('with gradeIdx/subjectIdx a title that is unique in its book resolves to its own lesson', () => {
+    // A title that repeats WITHIN one grade+subject (Grade 10 English units all have
+    // «المفردات والقواعد») cannot be told apart by scope: only a stored lessonId can.
+    let checked = 0;
+    for (const d of drifting) {
+      const g = getPickerGrades()[d.gradeIdx]!.id;
+      const s = getPickerSubjects()[d.subjectIdx]!.id;
+      const same = getUnitsForSubjectGrade(s, g).flatMap(u => getLessonsForUnit(u.id)).filter(l => l.titleAr === d.lesson.titleAr);
+      if (same.length !== 1) continue;
+      checked++;
+      const out = withLessonId({ gradeIdx: d.gradeIdx, subjectIdx: d.subjectIdx }, d.lesson.titleAr, 'ar');
+      assert.equal(out?.lessonId, d.lesson.id, `${g}/${s} «${d.lesson.titleAr}»`);
+    }
+    assert.ok(checked > 50, `only ${checked} drifting lessons had a title unique in their book`);
+  });
+
+  it('string positions (route params) work the same; out-of-range ones add no limit', () => {
+    const d = drifting[0]!;
+    const a = withLessonId({ gradeIdx: d.gradeIdx, subjectIdx: d.subjectIdx }, d.lesson.titleAr, 'ar');
+    const b = withLessonId({ gradeIdx: String(d.gradeIdx), subjectIdx: String(d.subjectIdx) }, d.lesson.titleAr, 'ar');
+    assert.equal(a?.lessonId, b?.lessonId);
+    assert.equal(formStateKbScope({ gradeIdx: 999, subjectIdx: 'x' }), undefined);
+    assert.equal(formStateKbScope({}), undefined);
+  });
+
+  it('a lessonId the screen stored still wins over any scope', () => {
+    const d = drifting[0]!;
+    assert.equal(withLessonId({ gradeIdx: d.gradeIdx, subjectIdx: d.subjectIdx, lessonId: 'mine' }, d.lesson.titleAr, 'ar')?.lessonId, 'mine');
   });
 });

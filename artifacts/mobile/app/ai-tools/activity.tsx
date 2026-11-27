@@ -387,6 +387,10 @@ export default function ActivityScreen() {
     const formState = {
       gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic,
       ...(builtWith ?? { activityTypeIdx, durationIdx, objective }),
+      // The lesson it was grounded on, so the save is filed under it and not under
+      // whatever its title grounds to (`withLessonId` keeps an id it is given).
+      // A wide activity has no single lesson and gets none.
+      ...(!wideFrozen && scope.lesson ? { lessonId: scope.lesson.id } : {}),
       // From the frozen scope, not the live picker (a teacher can move it after
       // generating). A lesson activity adds nothing — its form is unchanged —
       // and `withLessonId` declines to stamp a lesson id on a wide one.

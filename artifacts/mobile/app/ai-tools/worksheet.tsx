@@ -621,6 +621,10 @@ export default function WorksheetScreen() {
     const formState = {
       gradeIdx: scope.gradeIdx, subjectIdx: scope.subjectIdx, topic: scope.topic,
       diffIdx, numQIdx: effNumQIdx, selectedTypes: JSON.stringify(Array.from(selectedTypes)),
+      // The lesson it was grounded on, so the save is filed under it and not under
+      // whatever its title grounds to (`withLessonId` keeps an id it is given).
+      // A wide paper has no single lesson and gets none.
+      ...(!wideFrozen && scope.lesson ? { lessonId: scope.lesson.id } : {}),
       // From the frozen scope, not the live pickers (a teacher can move them after generating).
       ...scopeFormState(wideFrozen?.sel ?? null, wideFrozen?.distribution ?? 'balanced'),
       materialKind: isHomework ? 'homework' : 'worksheet',
