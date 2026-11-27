@@ -67,6 +67,7 @@ import { FIRST_GRADE_DEFAULT_TYPES, evaluationTypesForGrade } from "@workspace/e
 import {
   contradictionWarning,
   contradictionWarningAr,
+  contradictionWarningCode,
   verificationAfterEdit,
   verifyAnswerKeys,
 } from "../modules/assessment/keyVerification.ts";
@@ -1120,6 +1121,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
           llm.questions.push(...more.questions);
           llm.notes.push(...more.notes);
           llm.notesAr.push(...more.notesAr);
+          llm.noteCodes.push(...more.noteCodes);
         } catch (err) {
           logger.warn({ err, evaluationId: evaluation.id }, "evaluation top-up failed - serving the short paper");
         }
@@ -1132,7 +1134,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       generationParams["groundingSources"] = grounding
         ? grounding.sources.map(s => ({ sourceId: s.sourceId, page: s.page }))
         : [];
-      generationNotes.push(...llm.notes.map((en, i) => ({ en, ar: llm.notesAr[i] ?? en })));
+      generationNotes.push(...notes.zipNotes(llm.notes, llm.notesAr, llm.noteCodes));
 
       // The model's surplus is cut to its share first, then the book's questions
       // are drawn and appended (see assembleLivePaper). With a book share the paper
@@ -1185,6 +1187,7 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         shortfall: Math.max(0, evaluation.targetQuestionCount - assembled.questions.length),
         notes: [],
         notesAr: [],
+        noteCodes: [],
         // Still worth carrying: the bank pointer answers "where else could I
         // look", which is useful whether or not the generator declined
         // anything. It just is not a consolation prize here.
@@ -1240,7 +1243,12 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
     // not on the paper and its positions are the ones the review screen shows.
     const contradiction = contradictionWarning(keyCheck.kept);
     if (contradiction) {
-      generationNotes.push({ en: contradiction, ar: contradictionWarningAr(keyCheck.kept) ?? contradiction });
+      const code = contradictionWarningCode(keyCheck.kept);
+      generationNotes.push({
+        en: contradiction,
+        ar: contradictionWarningAr(keyCheck.kept) ?? contradiction,
+        ...(code ? { code } : {}),
+      });
     }
     generationParams["keysChecked"] = keyCheck.checked;
     generationParams["keysVerified"] = keyCheck.verified;
@@ -1314,7 +1322,13 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
         evaluation.targetTotalMarks,
         evaluation.targetQuestionCount,
       );
-      if (fitted.note) generationNotes.push({ en: fitted.note, ar: fitted.noteAr ?? fitted.note });
+      if (fitted.note) {
+        generationNotes.push({
+          en: fitted.note,
+          ar: fitted.noteAr ?? fitted.note,
+          ...(fitted.noteCode ? { code: fitted.noteCode } : {}),
+        });
+      }
       if (evaluation.targetTotalMarks !== null) generationParams["targetTotalMarks"] = evaluation.targetTotalMarks;
 
       if (keyCheck.kept.length > 0) {
@@ -1386,19 +1400,16 @@ router.post("/evaluations/:id/generate", aiLimiter, async (req: AuthenticatedReq
       // the types we declined, and where real items for them would come from.
       bankContext: result.bankContext,
       rejected: validation.rejected,
-      warnings: [
-        ...result.notes,
-        ...generationNotes.map(n => n.en),
-        ...validation.warnings,
-        ...keyCheck.warnings,
-      ],
-      // The same warnings in Arabic, one for one and in the same order.
-      warningsAr: [
-        ...result.notesAr,
-        ...generationNotes.map(n => n.ar),
-        ...validation.warningsAr,
-        ...keyCheck.warningsAr,
-      ],
+      // `warnings` (English), `warningsAr` and `warningCodes`, one for one and in
+      // the same order. The app words each code itself (`services/i18n.ts`); the
+      // sentences are for an app that predates the codes, or a code it does not
+      // know, and `warningCodes` holds null where a note has no code.
+      ...notes.warningLists([
+        ...notes.zipNotes(result.notes, result.notesAr, result.noteCodes),
+        ...generationNotes,
+        ...notes.zipNotes(validation.warnings, validation.warningsAr, validation.warningCodes),
+        ...notes.zipNotes(keyCheck.warnings, keyCheck.warningsAr, keyCheck.warningCodes),
+      ]),
     });
   } catch (err) {
     // Four different things a teacher can do something about, and they are not

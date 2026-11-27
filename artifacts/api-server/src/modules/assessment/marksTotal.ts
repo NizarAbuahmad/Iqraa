@@ -7,6 +7,7 @@
  * harder question is never worth less than an easier one.
  */
 
+import type { GenerationWarning } from "@workspace/exam-paper";
 import { arDigits } from "./arabicNotes.ts";
 
 /** `null` when it cannot be done: no questions, a total that is not a whole number, or fewer marks than questions. */
@@ -105,7 +106,7 @@ export function fitToTotal(
   target: number | null | undefined,
   /** The question count asked for: a shorter paper still shares the whole total, and is told so. */
   requested?: number,
-): { marks: number[]; note?: string; noteAr?: string } {
+): { marks: number[]; note?: string; noteAr?: string; noteCode?: GenerationWarning } {
   if (target === null || target === undefined || marks.length === 0) return { marks: [...marks] };
   const scaled = scaleMarks(marks, target - kept);
   if (scaled) {
@@ -118,6 +119,10 @@ export function fitToTotal(
         noteAr:
           `كُتب من الأسئلة ${arDigits(marks.length)} فقط من أصل ${arDigits(requested)} طلبتها، فتقاسمت العلامات كلها (${arDigits(target - kept)})؛ `
           + `وأي سؤال تضيفه بيدك يرفع العلامة الكلية فوق ${arDigits(target)}.`,
+        noteCode: {
+          code: "marks_shared_short",
+          params: { written: marks.length, requested, marks: target - kept, target },
+        },
       }
       : { marks: scaled };
   }
@@ -133,5 +138,6 @@ export function fitToTotal(
       + `يحتاج كل سؤال من الأسئلة المولَّدة (${arDigits(marks.length)}) إلى علامة واحدة على الأقل`
       + (kept > 0 ? `، وعلامات أسئلتك أنت مجموعها ${arDigits(kept)}` : "")
       + ". أُبقيت علامات المولِّد كما هي.",
+    noteCode: { code: "marks_total_unreachable", params: { target, questions: marks.length, kept } },
   };
 }

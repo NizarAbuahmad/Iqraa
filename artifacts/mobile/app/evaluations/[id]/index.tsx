@@ -5,7 +5,7 @@
  * add their own (`EditQuestionModal`). Once published it is read-only — the
  * server refuses question writes then, since students may be sitting it.
  */
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { arMarksPhrase, enMarksPhrase } from '@/services/arCount';
 import { examBlockMarks, examBlocks } from '@/services/examBlocks';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
-import { generationWarnings } from '@/services/generationWarnings';
+import { decodeNotices, generationNotices, wordNotices, type GenNotice } from '@/services/generationWarnings';
 import { confirm } from '@/services/confirm';
 import {
   EvaluationError,
@@ -101,9 +101,10 @@ export default function EvaluationDetailScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
-  // `warnings` rides in from new.tsx, which generates and then replaces the
-  // route — the only way the create-time notes survive the redirect.
-  const { id, warnings: warningsParam } = useLocalSearchParams<{ id: string; warnings?: string }>();
+  // `notices` rides in from new.tsx, which generates and then replaces the
+  // route — the only way the create-time notes survive the redirect. Codes and
+  // parameters (services/generationWarnings.ts), worded below in `lang`.
+  const { id, notices: noticesParam } = useLocalSearchParams<{ id: string; notices?: string }>();
 
   const [pickingClass, setPickingClass] = useState(false);
   const [addingReadAloud, setAddingReadAloud] = useState(false);
@@ -117,9 +118,8 @@ export default function EvaluationDetailScreen() {
   // What the generator said while producing this paper ("2 questions removed:
   // the verifier contradicted their key"). The questions cannot show a
   // question that was dropped, so this is the only place the teacher hears it.
-  const [genWarnings, setGenWarnings] = useState<string[]>(
-    () => (warningsParam ?? '').split('\n').filter(Boolean),
-  );
+  const [genNotices, setGenNotices] = useState<GenNotice[]>(() => decodeNotices(noticesParam));
+  const genWarnings = useMemo(() => wordNotices(genNotices, lang), [genNotices, lang]);
 
   const queryClient = useQueryClient();
   const {
@@ -223,9 +223,9 @@ export default function EvaluationDetailScreen() {
     setBusy('generate');
     setError('');
     try {
-      setGenWarnings([]);
+      setGenNotices([]);
       const gen = await generateEvaluation(id);
-      setGenWarnings(generationWarnings(gen, lang));
+      setGenNotices(generationNotices(gen));
       await refetch();
     } catch (err) {
       const failure = generateFailure(err);

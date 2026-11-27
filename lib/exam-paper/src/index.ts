@@ -100,3 +100,5 @@ export function evaluationTypesForGrade<T extends string>(gradeId: string | null
   const allowed: readonly string[] = FIRST_GRADE_EVALUATION_TYPES;
   return types.filter(t => allowed.includes(t));
 }
+
+export * from './generationWarnings.ts';

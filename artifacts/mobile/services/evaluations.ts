@@ -6,6 +6,7 @@
  * (status + machine-readable `code`) that screens can branch on rather than
  * pattern-matching English strings.
  */
+import type { GenerationWarning } from '@workspace/exam-paper';
 import { apiFetch } from './apiClient.ts';
 import { PAPER_TOTALS_CHUNK, type PaperTotalResult } from './paperMarks.ts';
 
@@ -143,8 +144,13 @@ export interface GenerateResult {
   unavailableTypes: QuestionType[];
   rejected: { reason: string }[];
   warnings: string[];
-  /** The same warnings in Arabic, one for one (API since 2026-11-27); show them with `generationWarnings`. */
+  /** The same warnings in Arabic, one for one (API since 2026-11-27). */
   warningsAr?: string[];
+  /**
+   * The same warnings as codes and parameters, one for one, null where a note
+   * has none (API since 2026-11-27). Worded by `services/generationWarnings.ts`.
+   */
+  warningCodes?: (GenerationWarning | null)[];
 }
 
 export class EvaluationError extends Error {
