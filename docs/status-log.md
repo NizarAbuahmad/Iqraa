@@ -10,6 +10,14 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The Play submit workflow's open questions, answered by its runs — 2026-11-27
+
+`docs/deploying.md` («Submitting to Google Play») still listed, from before its first run, two things nobody had
+checked. Its four runs (read with the Actions API on 2026-11-27) settle one and narrow the other: the GitHub secret
+alone authenticates (`Key Source: local`, no key stored on Expo), run 1 reached Play and failed only on a version
+code already uploaded by hand, and runs 2–4 succeeded, run 4 with `send_for_review=true` (versionCode 15). Still
+unchecked: a `send_for_review=true` commit while the Console holds a listing draft. Docs only; nothing else changed.
+
 ## Magnitude and absolute-value bars read left to right in Arabic — 2026-11-27
 
 The follow-up the vectors entry below named. `|` was not in `isolateForeignRuns`'s run class, so a magnitude or
