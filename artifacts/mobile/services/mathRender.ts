@@ -496,6 +496,28 @@ const INTERVAL_STAND_IN: Record<string, string> = {
   ')': String.fromCodePoint(0xe005),
 };
 const INTERVAL_CHARS = Object.values(INTERVAL_STAND_IN).join('');
+// A vector «⟨3, 4⟩» (found 2026-11-27): «⟨» and «⟩» are not in the run class
+// and its comma cut it in two, so it was never isolated. Angle brackets are
+// never prose, so either comma is safe (saved papers carry «⟨3 ، 4⟩»), and a
+// component may be an expression — the worked solutions write «⟨4 − 1, 6 − 2⟩»
+// and «⟨1 + 3, 2 + (−1)⟩». Brackets and commas become stand-ins, as for an interval.
+// The books' text layer and math_formulas.json write the same brackets as «〈 〉»
+// (U+3008/3009): «a + b = 〈x1 +x2 , y1 +y2〉».
+const VECTOR_STAND_IN: Record<string, string> = {
+  '⟨': String.fromCodePoint(0xe007),
+  '⟩': String.fromCodePoint(0xe008),
+  '〈': String.fromCodePoint(0xe00b),
+  '〉': String.fromCodePoint(0xe00c),
+};
+const VECTOR_CHARS = Object.values(VECTOR_STAND_IN).join('');
+const VEC_COMPONENT = `[A-Za-z0-9.^√/′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉°∞${FOREIGN_GREEK}+−×÷() -]+`;
+const VECTOR_RE = new RegExp(`[⟨〈] *${VEC_COMPONENT}(?:${COMMA} *${VEC_COMPONENT})+[⟩〉]`, 'g');
+function protectVector(m: string): string {
+  return [...m].map(c => COMMA_STAND_IN[c] ?? VECTOR_STAND_IN[c] ?? c).join('');
+}
+// The arrow over a vector's name, «AB⃗» — a combining mark, so it must ride in the
+// run with its letters or «AB» is isolated and the arrow is left behind.
+const COMBINING_ARROW = String.fromCodePoint(0x20d7);
 const COMMA_STAND_IN: Record<string, string> = { ',': PAIR_COMMA, '،': PAIR_COMMA_AR };
 function protectPair(m: string): string {
   return [...m].map(c => COMMA_STAND_IN[c] ?? c).join('');
@@ -511,12 +533,12 @@ function hasPairComma(run: string): boolean {
 }
 function restoreStandIns(s: string): string {
   let out = s.replaceAll(BLANK, '؟');
-  for (const map of [COMMA_STAND_IN, INTERVAL_STAND_IN]) {
+  for (const map of [COMMA_STAND_IN, INTERVAL_STAND_IN, VECTOR_STAND_IN, DOT_STAND_IN]) {
     for (const [real, standIn] of Object.entries(map)) out = out.replaceAll(standIn, real);
   }
   return out;
 }
-const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}${PAIR_COMMA}${PAIR_COMMA_AR}${INTERVAL_CHARS}`;
+const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}${PAIR_COMMA}${PAIR_COMMA_AR}${INTERVAL_CHARS}${VECTOR_CHARS}${COMBINING_ARROW}`;
 const FOREIGN_END = FOREIGN_CHAR.replace('.', '');
 
 // Reaction and implication arrows. They may sit INSIDE a run but never at its
@@ -533,8 +555,31 @@ const FOREIGN_ARROW = '→←↔⇒⇐⇔⇌⇄⟶⟵⟷';
 // out right to left. Never at the edge, so «الرمز ∪ يعني الاتحاد» is untouched.
 const FOREIGN_SET_OP = '∪∩∈∉';
 
+// A multiplication dot «·» / «⋅» (2026-11-27): «⟨a, b⟩ · ⟨c, d⟩», «q = m·c·ΔT» and
+// «2^x · 2^2» split at it, and bidi reordered the halves. But «·» also separates
+// words in a list — «(PDF · Word · PowerPoint · صور · نص)», «Mathematics teacher ·
+// About» — and joining those reorders the list for an Arabic reader. So a dot joins
+// a run only when it is maths: unspaced between two run characters («m·c»,
+// «2bc·cos A»), or spaced with a number, superscript, bracket or vector on one side
+// («4 · 2^x», «⟩ · ⟨»). Two words either side of « · » are left alone.
+const DOT_STAND_IN: Record<string, string> = {
+  '·': String.fromCodePoint(0xe009),
+  '⋅': String.fromCodePoint(0xe00a),
+};
+const DOT_CHARS = Object.values(DOT_STAND_IN).join('');
+const MATH_NEIGHBOUR = `0-9¹²³⁰⁴-⁹⁺⁻₀-₉°∞()^′'${INTERVAL_CHARS}${VECTOR_CHARS}`;
+const DOT_RE = new RegExp(
+  `(?<=[${FOREIGN_CHAR}])[·⋅](?=[${FOREIGN_CHAR}])` +
+    `|(?<=[${MATH_NEIGHBOUR}]) [·⋅] (?=[${FOREIGN_CHAR}])` +
+    `|(?<=[${FOREIGN_CHAR}]) [·⋅] (?=[${MATH_NEIGHBOUR}])`,
+  'g',
+);
+function protectDot(m: string): string {
+  return [...m].map(c => DOT_STAND_IN[c] ?? c).join('');
+}
+
 const FOREIGN_RUN_RE = new RegExp(
-  `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW}${FOREIGN_SET_OP} ]*[${FOREIGN_END}])?`,
+  `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW}${FOREIGN_SET_OP}${DOT_CHARS} ]*[${FOREIGN_END}])?`,
   'g',
 );
 
@@ -567,8 +612,10 @@ function worthIsolating(run: string): boolean {
 export function isolateForeignRuns(line: string): string {
   const out = (line ?? '')
     .replace(BLANK_RE, BLANK)
+    .replace(VECTOR_RE, protectVector)
     .replace(INTERVAL_RE, protectInterval)
     .replace(PAIR_RE, protectPair)
+    .replace(DOT_RE, protectDot)
     .replace(FOREIGN_RUN_RE, m => {
     // A run with the bank's blank in it is overridden left-to-right, not just
     // isolated: «؟» is an Arabic letter to the bidi algorithm, and inside a bare
