@@ -17,6 +17,7 @@ import {
   generateMaterialShareCode,
   normalizeMaterialShareCode,
   redactOwnerNotes,
+  sharedPublicContent,
 } from "../materialShare.ts";
 
 describe("material share codes", () => {
@@ -85,5 +86,16 @@ describe("copyableFormState", () => {
 
   it("is empty for anything that is not an object", () => {
     for (const v of [null, undefined, "x", 3, ["a"]]) assert.deepEqual(copyableFormState(v), {});
+  });
+});
+
+describe("sharedPublicContent", () => {
+  const blank = () => ({ blanked: true });
+  it("blanks a paper's answers for a visitor", () => {
+    assert.deepEqual(sharedPublicContent("quiz", { a: 1 }, blank), { blanked: true });
+  });
+  it("serves a whiteboard as it is: its solved problem is what was shown in class", () => {
+    const board = { version: 3, pages: [{ solution: { answer: "x = 4" } }] };
+    assert.equal(sharedPublicContent("board", board, blank), board);
   });
 });
