@@ -10,6 +10,26 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Set-builders holding a magnitude read left to right in Arabic — 2026-11-27
+
+The gap the roster entry below left open. In `{x | |x| < 3}` the set-builder pass looked for exactly one separator
+bar and found three, so it gave up, and the bars pass then paired the separator with the magnitude's first bar. In
+Chromium, «مجموعة الحل {x | |x| < 3} للمتباينة» and «اكتب {x | |x − 1| ≥ 2} بصورة فترة» were reversed.
+
+**Fix** (`artifacts/mobile/services/mathRender.ts`):
+- Bars are now paired (`protectBars`) **before** the set-builder and conditional-probability passes. A magnitude
+  inside a set is a stand-in by the time they look for the one separator bar.
+- A magnitude never spans a brace. In «{x | x > 2} {y | y < 1}» the two bars are the two sets' separators, and moving
+  the bars pass earlier would otherwise have paired them.
+
+**Verified:**
+- 2 new cases in `mathRender.test.ts`: a set holding a magnitude, and two sets side by side.
+- Mobile suite: 9,722 tests, 0 failures (10 skipped). Root typecheck clean.
+- Old against new over 8,824 lines of the repo's Arabic text: 0 change.
+- In Chromium, both probes above now read left to right.
+
+**Not covered:** native Android and iOS.
+
 ## Exam generation warnings in Arabic — 2026-11-27
 
 The review screen printed a generated exam's warnings exactly as the API sent them, and the API wrote every one in
