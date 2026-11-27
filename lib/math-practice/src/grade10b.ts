@@ -248,7 +248,8 @@ const inverse = T('g10_inverse', /^الاقتران العكسي$/, ({ rng, diff
     const usedY = new Set<number>();
     for (let i = 0; i < 3; i++) { let v: number; do { v = int(rng, 1, 15); } while (usedY.has(v)); usedY.add(v); ys[i] = v; }
     const pairs = xs.slice(0, 3).map((x, i) => [x, ys[i]!] as const);
-    const set = (ps: ReadonlyArray<readonly [number, number]>) => `{${ps.map(([x, y]) => pt(x, y)).join(' ، ')}}`;
+    // «{(1, 2), (5, 7)}» — one left-to-right set, so the points are joined by the Latin comma too.
+    const set = (ps: ReadonlyArray<readonly [number, number]>) => `{${ps.map(([x, y]) => pt(x, y)).join(', ')}}`;
     const ans = set(pairs.map(([x, y]) => [y, x]));
     return {
       eq: set(pairs), answer: ans,

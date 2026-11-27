@@ -234,6 +234,41 @@ and other-tier tests now use the typed mean-and-median topic, which still has tw
 - Only the offline generator changed. The live path (`worksheetPromptAr/En`) is the model's, and production runs live
   AI, so a teacher sees this paper only when live generation is off or fails.
 
+## Sets in roster form read left to right in Arabic — 2026-11-27
+
+The follow-up the set-builder entry below named. A roster set `{1, 2, 3}` split at every comma, because the Latin comma
+is not in the run class, and an Arabic line reordered its elements. The bank's `setStr` writes `{−2 ، 0 ، 3}` with the
+Arabic comma, and `…` (as in `{11,13,15,…}`) was outside the class too. In Chromium, «المجموعة {1, 2, 3} …», «… {−2 ،
+0 ، 3} …» and «… {…, -2, -1, 0, 1, 2, …} …» were reversed.
+
+**Fix:**
+- **Renderer** (`services/mathRender.ts`). Braces are never prose, so:
+  - `ROSTER_RE`: a `{…}` of comma-separated maths atoms, with either comma, has its commas and ellipses turned into
+    stand-ins. An element may not hold a bracket, so a code template `{pt(x, y)}` never matches.
+  - `POINT_SET_RE`: a set of points with the Arabic comma between them, `{(1, 2) ، (5, 7)}`, is treated the same way.
+    Saved papers carry it.
+  - A set of Latin-comma points was already joined by `PAIR_RE`.
+- **Bank** (`lib/math-practice/src/grade10b.ts`): the relation helper `set` in the inverse-function family joined its
+  points with « ، », in the English prompt too. It now writes `{(1, 2), (5, 7)}`, as the points entry below decided.
+  The answer-option lists inside Arabic sentences, «… (1, 2)، (3, 4) …» in `algebra.ts`, are prose lists and keep «،».
+
+**Verified:**
+- 7 new cases in `mathRender.test.ts`.
+- All suites pass:
+  - mobile suite: 9,711 tests, 0 failures;
+  - `@workspace/math-practice`: 1,491 tests, plus its typecheck;
+  - api-server build and tests: 3,091;
+  - root typecheck.
+- Old against new over 4,246 lines of the repo's text with braces: 317 change. They are sets, plus `{0,2}`-style
+  quantifiers inside regex *source* in `appHelp.ts`, which are matching patterns and never displayed.
+- Every bank topic generated through the renderer (grades 6–10, every difficulty). All 1,622 sets in Arabic text sit
+  inside an isolate; 315 did not before this change, all in the inverse-function family.
+- **Chromium, Arabic sentences:** all four probes read left to right with the fix, and three were reversed before. The
+  fourth, a set of points, passed the crude first-versus-last check before too, but as three isolates its middle
+  point order was reversed.
+
+**Not covered:** a set-builder that holds bars, `{x | |x| < 3}`; native Android and iOS.
+
 ## The Play submit workflow's open questions, answered by its runs — 2026-11-27
 
 `docs/deploying.md` («Submitting to Google Play») still listed, from before its first run, two things nobody had
