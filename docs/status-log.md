@@ -26,7 +26,7 @@ Design: `docs/superpowers/specs/2026-11-27-physics-figure-notes-design.md`; plan
   `classDeck.ts` (the quiz, worksheet and game decks) take the reader.
 - The review script's logic, `services/figureNoteReviews.ts` (`applyFigureReviews`, `serializeNotesFile`, pure) and its
   command line `scripts/applyFigureReviews.ts`. It is all-or-nothing: one bad verdict writes nothing.
-- **Only `approved` reaches a slide.** `draft` and `skip` are read and ignored, so a figure renders exactly as before.
+- **Only `approved` reaches a slide.** `draft`, `needs-fix` and `skip` are read and ignored, so a figure renders exactly as before.
 - Drafts: S1 has 32 drafted; S2 has 64 drafted and 1 `skip` (`p009b.png`, no lesson maps to it). **None is approved.**
 - Three drafts carry a «[تحقّق]» marker for the reviewer: S1 `p022.png` (panel 8/أ with v4's own direction is outside the
   crop), S1 `p072-v2.png` (the vertical axis title is cropped), S2 `p076.png` (the page does not show which funnel holds
@@ -48,6 +48,11 @@ Design: `docs/superpowers/specs/2026-11-27-physics-figure-notes-design.md`; plan
 - **No physics teacher has read a draft.** Every note is a model's reading of an image.
 - No note has been seen on a slide in the presenter, the PDF or PowerPoint, because no note is approved; that waits for PR 2.
 - The review page, where a teacher approves or rejects, does not exist yet.
+- **Known item for PR 2, found in the final review and not fixed here (no renderer change in this PR):** the PDF/HTML
+  export collapses the `\n` between a note and its citation, because `.deck-media-caption` and `.split-fig figcaption` in
+  `deckSlidesHtml.ts` lack `white-space: pre-line`; and the PowerPoint caption boxes in `exportPptx.ts` are one line high
+  (h 0.4 / 0.35), so a two-line caption overflows. Fix: `pre-line` on those two classes and taller PPTX caption boxes,
+  then look at an approved figure in both exports by eye.
 
 **Limits**
 - The drafts were written by a model looking at the images, then checked by other model passes.

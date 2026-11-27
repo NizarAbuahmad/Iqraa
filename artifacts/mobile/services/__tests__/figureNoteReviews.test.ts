@@ -86,6 +86,25 @@ describe('applyFigureReviews', () => {
     }
   });
 
+  it('refuses an approval whose text still starts with the drafters\' [تحقّق] marker', () => {
+    const out = applyFigureReviews(FILES, FIGS, [review({ ar: { caption: 'شرح', teacher: '[تحقّق] ملاحظة' } })]);
+    assert.ok(out.refused.some(x => /reviewer marker/.test(x)), JSON.stringify(out.refused));
+    assert.equal(out.changed, 0);
+  });
+
+  it('a needs-fix with empty text keeps the draft\'s text and records the comment', () => {
+    const empty = { caption: '', teacher: '' };
+    const { files, refused } = applyFigureReviews(FILES, FIGS, [
+      review({ verdict: 'needs-fix', ar: empty, en: { caption: 'Edited', teacher: '' }, comment: 'أعد الصياغة' }),
+    ]);
+    assert.deepEqual(refused, []);
+    const e = files[0]!.notes['p011.png']!;
+    assert.equal(e.status, 'needs-fix');
+    assert.deepEqual(e.ar, { caption: 'مسودة b', teacher: 'ملاحظة b' });
+    assert.deepEqual(e.en, { caption: 'Edited', teacher: 'Note b' });
+    assert.equal(e.comment, 'أعد الصياغة');
+  });
+
   it('writes nothing at all when any review is refused', () => {
     const out = applyFigureReviews(FILES, FIGS, [review({}), review({ file: 'p999.png' })]);
     assert.ok(out.refused.length > 0);

@@ -27,11 +27,19 @@ export type ApplyResult = { files: NotesFile[]; changed: number; refused: string
 const text = (t: NoteText | undefined): NoteText => ({ caption: (t?.caption ?? '').trim(), teacher: (t?.teacher ?? '').trim() });
 
 /** The entry a review leaves behind, keys in a fixed order so the output is stable. */
-function entryFrom(r: FigureReview): NoteEntry {
+function entryFrom(r: FigureReview, prev: NoteEntry | undefined): NoteEntry {
   const base = { ar: text(r.ar), en: text(r.en), reviewedBy: r.reviewer.trim(), reviewedAt: r.reviewedAt };
   if (r.verdict === 'approve') return { status: 'approved', ...base };
+  // A note sent back may arrive with a field left empty; keep what the entry had.
+  const keep = (now: NoteText, was: NoteText | undefined): NoteText => ({
+    caption: now.caption || (was?.caption ?? ''),
+    teacher: now.teacher || (was?.teacher ?? ''),
+  });
   const comment = (r.comment ?? '').trim();
-  return { status: 'needs-fix', ...base, ...(comment ? { comment } : {}) };
+  return {
+    status: 'needs-fix', ...base, ar: keep(base.ar, prev?.ar), en: keep(base.en, prev?.en),
+    ...(comment ? { comment } : {}),
+  };
 }
 
 export function applyFigureReviews(
@@ -52,7 +60,7 @@ export function applyFigureReviews(
     if (seen.has(at)) { refused.push(`${at}: reviewed twice in one export`); continue; }
     seen.add(at);
     if (r.verdict !== 'approve' && r.verdict !== 'needs-fix') { refused.push(`${at}: unknown verdict`); continue; }
-    notes[r.file] = entryFrom(r);
+    notes[r.file] = entryFrom(r, notes[r.file]);
   }
 
   // Order every file as its book's figure list does, then check the result

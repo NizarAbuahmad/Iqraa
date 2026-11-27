@@ -80,6 +80,8 @@ export function figureNoteReader(files: readonly NotesFile[]): FigureNoteReader 
 export const figureNote: FigureNoteReader = figureNoteReader(NOTES_FILES);
 
 const BANNED_IN_CAPTION: RegExp[] = [/في الصورة/, /in the picture/i];
+/** The drafters' flag for a claim the reviewer must settle: «[تحقّق]» (shadda optional) or "[Check]". */
+const REVIEWER_MARKER = /\[\s*تحقّ?ق\s*\]|\[\s*check\s*\]/i;
 
 function isRealDay(s: unknown): boolean {
   if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
@@ -130,6 +132,14 @@ export function noteFileProblems(file: NotesFile, figureFiles: readonly string[]
     if (entry.status === 'approved') {
       if (!filled(entry.reviewedBy)) out.push(`${at}: approved without reviewedBy`);
       if (!isRealDay(entry.reviewedAt)) out.push(`${at}: approved without a real reviewedAt day`);
+      // An approval that still carries the marker means nobody settled the claim.
+      for (const lang of ['ar', 'en'] as const) {
+        for (const field of ['caption', 'teacher'] as const) {
+          if (REVIEWER_MARKER.test(entry[lang]?.[field] ?? '')) {
+            out.push(`${at}: approved ${lang}.${field} still carries the reviewer marker`);
+          }
+        }
+      }
     }
   }
   return out;

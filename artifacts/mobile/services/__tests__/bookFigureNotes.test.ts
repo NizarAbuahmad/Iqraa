@@ -114,6 +114,28 @@ describe('noteFileProblems', () => {
     }
   });
 
+  it('flags an approved note that still carries the drafters\' [تحقّق] / [Check] marker', () => {
+    const cases: NoteEntry[] = [
+      { ...approved('a'), ar: { caption: 'شرح', teacher: '[تحقق] ملاحظة' } },
+      { ...approved('a'), ar: { caption: 'شرح', teacher: '[تحقّق] ملاحظة' } },
+      { ...approved('a'), ar: { caption: '[تحقّق] شرح', teacher: 't' } },
+      { ...approved('a'), en: { caption: 'Caption', teacher: '[Check] note' } },
+      { ...approved('a'), en: { caption: '[ check ] Caption', teacher: 't' } },
+    ];
+    for (const entry of cases) {
+      const p = noteFileProblems({ ...FILE, notes: { 'p011.png': entry } }, files);
+      assert.ok(p.some(x => /reviewer marker/.test(x)), JSON.stringify(entry));
+    }
+  });
+
+  it('lets a draft and a needs-fix note keep the marker', () => {
+    const marked = { ar: { caption: 'شرح', teacher: '[تحقّق] ملاحظة' }, en: { caption: 'C', teacher: '[Check] n' } };
+    const draft: NoteEntry = { ...approved('a'), ...marked, status: 'draft' };
+    const fix: NoteEntry = { ...approved('a'), ...marked, status: 'needs-fix' };
+    assert.deepEqual(noteFileProblems({ ...FILE, notes: { 'p011.png': draft } }, files), []);
+    assert.deepEqual(noteFileProblems({ ...FILE, notes: { 'p011.png': fix } }, files), []);
+  });
+
   it('flags a draft with an empty field — drafts go to review complete', () => {
     const draft: NoteEntry = { ...approved('a'), status: 'draft', en: { caption: 'x', teacher: '' } };
     assert.ok(noteFileProblems({ ...FILE, notes: { 'p011.png': draft } }, files).length > 0);

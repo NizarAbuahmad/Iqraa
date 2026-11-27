@@ -46,7 +46,7 @@ function forced(status: NoteEntry['status']): FigureNoteReader {
 const approveAll: FigureNoteReader = (figure, isAr) =>
   figure.sourceId.startsWith('phys-') ? { caption: isAr ? `شرح ${figure.file}` : `Caption ${figure.file}`, teacher: 'T' } : null;
 
-type Build = (lesson: KBLesson, isAr: boolean, figureNote: FigureNoteReader) => { slides: ActivitySlide[] };
+type Build = (lesson: KBLesson, isAr: boolean, figureNote: FigureNoteReader | undefined) => { slides: ActivitySlide[] };
 const DECKS: Record<string, Build> = {
   lesson: (lesson, isAr, figureNote) => buildLessonDeck(lesson.titleAr, isAr, { lesson, figureUri: uri, figureNote }),
   quiz: (lesson, isAr, figureNote) => buildDeckFromQuiz(QUIZ, lesson.titleAr, isAr, { lesson, figureUri: uri, figureNote }),
@@ -96,6 +96,42 @@ describe('a note that is not approved changes nothing', () => {
       const build = (figureNote: FigureNoteReader) =>
         buildRevisionDeck(lang === 'ar', { units, phrase: 'x', plan: null, figureUri: uri, figureNote });
       assert.deepEqual(build(forced('draft')), build(none), lang);
+    }
+  });
+
+  it('the shipped default reader (figureNote omitted) never lets a non-approved note\'s text onto a deck', () => {
+    assert.ok(NOTES_FILES.some(f => Object.keys(f.notes).length > 0), 'probe: the shipped notes files hold drafts');
+    const needles: string[] = [];
+    for (const f of NOTES_FILES) {
+      for (const e of Object.values(f.notes)) {
+        if (e.status === 'approved') continue;
+        for (const lang of [e.ar, e.en]) {
+          for (const s of [lang?.caption, lang?.teacher]) {
+            const t = (s ?? '').trim();
+            // JSON.stringify escapes quotes and newlines, so match the escaped form.
+            if (t) needles.push(JSON.stringify(t).slice(1, -1));
+          }
+        }
+      }
+    }
+    assert.ok(needles.length > 0, 'probe: there are non-approved texts to look for');
+
+    const dumps: string[] = [];
+    for (const lesson of PHYSICS) {
+      for (const isAr of [true, false]) {
+        for (const build of Object.values(DECKS)) dumps.push(JSON.stringify(build(lesson, isAr, undefined)));
+      }
+    }
+    const ids = KB_LESSONS.filter(l => l.id.startsWith('kbl-phys-s')).map(l => l.id);
+    for (const lang of ['ar', 'en'] as const) {
+      const units = revisionUnitsFromLessons(ids, lang);
+      dumps.push(JSON.stringify(buildRevisionDeck(lang === 'ar', { units, phrase: 'x', plan: null, figureUri: uri })));
+    }
+    assert.equal(dumps.length, PHYSICS.length * 2 * Object.keys(DECKS).length + 2, 'probe: every deck was built');
+    assert.ok(dumps.every(d => d.includes('fig://')), 'probe: every deck carries book figures');
+
+    for (const needle of needles) {
+      for (const d of dumps) assert.equal(d.includes(needle), false, `non-approved note text reached a deck: ${needle.slice(0, 40)}`);
     }
   });
 
