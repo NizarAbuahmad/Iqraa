@@ -2864,6 +2864,22 @@ the `::error::` line and exits 1; and every call has the exact arguments it had 
 two-503 and four-503 cases failed (one call, exit 1) and the healthy case passed. The workflow still parses and the
 step order is unchanged.
 
+**In production (checked 2026-11-27).** PR #1463 merged 2026-11-21 at 18:11 UTC. Its deploy run, #1021 (merge commit
+`6fd862c`), finished green with all six jobs run (the change touches `deploy.yml`, so «what changed» ships every surface):
+the verifier and the API reached Cloud Run and passed their post-deploy checks, migrations and the schema check passed, and
+`iqraa-web` built, published and passed «Verify the deployed bundle». The «Publish to Cloudflare Pages» step took 13 s
+(18:20:24 to 18:20:37); a retry would have added at least a 30 s wait, so it succeeded on the first attempt (inferred from
+the step timing, the log itself was not read). So the loop does not break the healthy path under the real `wrangler`. The
+deploy runs after it, #1022 to #1027, also finished green (their jobs were not opened). The merge's own OTA run, #1204,
+published to the `preview` channel only, with no new assets. A production OTA was then dispatched by hand: run #1226
+(2026-11-25, 19:20 to 19:24 UTC, commit `957a748`) published to `production`, runtime 1.6.0, android, update group
+`5f352047-1f91-4a7d-9603-dcdeffae6950`. It carries the 71 commits that had merged since the previous production OTA (run
+1213 per STATUS.md, from `fab8870`), not only this change; `app.json`'s `version` and the native surface were unchanged across
+them. My own dispatch, #1225, was cancelled before it started: the workflow's concurrency group keeps one waiting run, and
+#1226, which I did not send, took its place. **Not checked:** that a phone received that update (it needs an installed
+1.6.0 production binary opened twice), and anything merged to `main` after `957a748` is not in it. STATUS.md names a
+later production OTA, run 1230 (2026-11-26, from `3f2a969`), as the current one.
+
 **Not verified / limits.** It has not run against a real Cloudflare failure; the first outage is the first real test.
 **It covers a short outage, not a long one.** If Cloudflare was down continuously from 15:39 to 16:06 UTC (27 minutes), 7.5
 minutes of retries would not have saved #949 or #950; it helps only if the failures were intermittent, which the logs do
