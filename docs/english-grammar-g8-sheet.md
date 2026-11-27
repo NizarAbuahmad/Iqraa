@@ -350,7 +350,7 @@ Not reviewed yet — shown to nobody.
 | I brush my teeth every night. | **brush** / am brushing | _I am brushing my teeth every night._ |
 | He rarely eats fish. | **rarely eats** / is rarely eating | _He is rarely eating fish._ |
 | Dad reads the news every evening. | **reads** / is reading | _Dad is reading the news every evening._ |
-| The school bus leaves at seven every day. | **leaves** / is leaving | _The school bus is leaving at seven every day._ |
+| The old clock strikes every hour. | **strikes** / is striking | _The old clock is striking every hour._ |
 | We often eat lunch at school. | **often eat** / are often eating | _We are often eating lunch at school._ |
 | Mum cooks rice every week. | **cooks** / is cooking | _Mum is cooking rice every week._ |
 | My sister usually wakes up at six. | **usually wakes** / is usually waking | _My sister is usually waking up at six._ |

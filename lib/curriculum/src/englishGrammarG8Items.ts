@@ -445,7 +445,7 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ['I brush my teeth every night.', 'brush', 'am brushing'],
         ['He rarely eats fish.', 'rarely eats', 'is rarely eating'],
         ['Dad reads the news every evening.', 'reads', 'is reading'],
-        ['The school bus leaves at seven every day.', 'leaves', 'is leaving'],
+        ['The old clock strikes every hour.', 'strikes', 'is striking'],
         ['We often eat lunch at school.', 'often eat', 'are often eating'],
         ['Mum cooks rice every week.', 'cooks', 'is cooking'],
         ['My sister usually wakes up at six.', 'usually wakes', 'is usually waking'],
