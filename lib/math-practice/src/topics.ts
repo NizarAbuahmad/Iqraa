@@ -21,6 +21,7 @@ import { PROPORTION_TOPICS } from './proportion.ts';
 import { EARLY_TOPICS } from './early.ts';
 import { G10_LESSON_TOPICS } from './grade10.ts';
 import { G4_LESSON_TOPICS } from './grade4b.ts';
+import { LESSON_FIT_TOPICS } from './lessonFits.ts';
 import { G10_TOPICS } from './g10.ts';
 import { G8_TOPICS } from './g8.ts';
 import { G7_TOPICS } from './g7.ts';
@@ -123,15 +124,16 @@ const roundDec: Topic = {
   make({ rng, diff, grade }) {
     const k = pick(rng, [0, 1, 2]);
     if (k === 1) {
-      // a measurement read off a scale, rounded to the nearest whole unit
-      const raw = int(rng, 101, diff === 'easy' ? 999 : 9999); // hundredths
+      // a measurement read off a scale, rounded to the nearest whole unit — a table under 4 m
+      // and a bag under 30 kg (the range once allowed «طول طاولة 67.19 م», held back 2026-11-20)
+      const table = rng() < 0.5;
+      const raw = int(rng, 101, table ? 399 : diff === 'easy' ? 999 : 2999); // hundredths
       if (raw % 100 === 0) return roundDec.make({ rng, diff, grade });
       const shown = fmtDec(raw, 2);
       const a = Math.round(raw / 100);
-      const [ar, en] = pick(rng, [
-        [`كتلة حقيبة ${shown} كغ. قرّب كتلتها إلى أقرب كيلوغرام.`, `A bag has a mass of ${shown} kg. Round its mass to the nearest kilogram.`],
-        [`طول طاولة ${shown} م. قرّب طولها إلى أقرب متر.`, `A table is ${shown} m long. Round its length to the nearest metre.`],
-      ] as const);
+      const [ar, en] = table
+        ? [`طول طاولة ${shown} م. قرّب طولها إلى أقرب متر.`, `A table is ${shown} m long. Round its length to the nearest metre.`]
+        : [`كتلة حقيبة ${shown} كغ. قرّب كتلتها إلى أقرب كيلوغرام.`, `A bag has a mass of ${shown} kg. Round its mass to the nearest kilogram.`];
       return { eq: shown, answer: String(a), wrongs: numWrongs(a, [Math.floor(raw / 100), Math.ceil(raw / 100), Math.round(raw / 10) / 10, a + 1].filter(v => v !== a)), ar, en };
     }
     if (k === 2) {
@@ -149,19 +151,22 @@ const roundDec: Topic = {
       };
     }
     const places = diff === 'easy' ? 0 : grade <= 4 ? pick(rng, [0, 1]) : pick(rng, [0, 1, 2]);
-    const raw = int(rng, 1001, 99999); // thousandths
-    const scale = 10 ** (3 - places);
+    // Grade 4's decimals stop at hundredths («أجزاء المئة»); thousandths are Grade 5's
+    // «أجزاء الألف» (four of ten questions rounded them, held back 2026-11-20).
+    const dp = grade <= 4 ? 2 : 3;
+    const raw = int(rng, 10 ** dp + 1, 10 ** (dp + 2) - 1);
+    const scale = 10 ** (dp - places);
     if (raw % scale === 0) return roundDec.make({ rng, diff, grade });
     const r = Math.round(raw / scale);
     const a = fixedDec(r, places);
-    const shown = fmtDec(raw, 3);
+    const shown = fmtDec(raw, dp);
     const lower = fixedDec(Math.floor(raw / scale), places), upper = fixedDec(Math.ceil(raw / scale), places);
     const otherPlaces = places === 0 ? 1 : 0;
-    const other = fixedDec(Math.round(raw / 10 ** (3 - otherPlaces)), otherPlaces);
+    const other = fixedDec(Math.round(raw / 10 ** (dp - otherPlaces)), otherPlaces);
     const where = places === 0 ? ['أقرب عدد كلي', 'the nearest whole number'] : places === 1 ? ['أقرب جزء من عشرة', 'the nearest tenth'] : ['أقرب جزء من مئة', 'the nearest hundredth'];
     return {
       eq: shown, answer: a,
-      wrongs: wrongsFrom(a, [lower, upper, other, fixedDec(Math.round(raw / 10), 2), fmtDec(raw, 3)], j => fixedDec(r + j, places)),
+      wrongs: wrongsFrom(a, [lower, upper, other, fixedDec(Math.round(raw / 10), dp - 1), fmtDec(raw, dp)], j => fixedDec(r + j, places)),
       ar: `قرّب العدد ${shown} إلى ${where[0]}.`,
       en: `Round ${shown} to ${where[1]}.`,
     };
@@ -2665,6 +2670,8 @@ const chooseOpG2: Topic = {
 
 /** Specific titles first; the more general patterns after. */
 export const TOPICS: readonly Topic[] = [
+  // first: each matches one held-back lesson's exact title and grade (see lessonFits.ts)
+  ...LESSON_FIT_TOPICS,
   ...G4_LESSON_TOPICS,
   roundDec, roundWhole, estSumDec,
   estSum('est_sum', /تقدير.*(?:مجموع|فرق)/, 'both'), estSum('est_add', /تقدير.*جمع/, 'add'), estSum('est_sub', /تقدير.*طرح/, 'sub'),
