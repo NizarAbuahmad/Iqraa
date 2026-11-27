@@ -18,6 +18,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { resultTopicLines } from '@/services/resultTopics';
 import { isolateForeignRuns } from '@/services/mathRender';
 import { ICON } from '@/constants/icons';
+import { SPACE } from '@/constants/theme';
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import type { useColors } from '@/hooks/useColors';
@@ -57,11 +58,11 @@ export function StudentResultCard({
   const topics = resultTopicLines(result.topics, lang);
   const align = isRTL ? 'right' : 'left';
   const topicList = (title: TranslationKey, items: string[], icon: keyof typeof Ionicons.glyphMap, color: string) => (
-    <View style={{ gap: 4 }}>
+    <View style={{ gap: SPACE.xs }}>
       <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>{t(title)}</Text>
       {items.map((line, n) => (
-        <View key={n} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 6 }}>
-          <Ionicons name={icon} size={ICON.md} color={color} style={{ marginTop: 3 }} />
+        <View key={n} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: SPACE.sm }}>
+          <Ionicons name={icon} size={ICON.md} color={color} style={{ marginTop: SPACE.xxs }} />
           <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align, writingDirection: isRTL ? 'rtl' : 'ltr' }}>
             {isolateForeignRuns(line)}
           </Text>
@@ -101,7 +102,7 @@ export function StudentResultCard({
         })}
       </View>
       {topics.strong.length > 0 || topics.weak.length > 0 ? (
-        <View style={{ width: '100%', borderTopWidth: 1, borderColor: colors.border, paddingTop: 10, gap: 10 }}>
+        <View style={{ width: '100%', borderTopWidth: 1, borderColor: colors.border, paddingTop: SPACE.md, gap: SPACE.md }}>
           {topics.strong.length > 0 ? topicList('resultTopicsStrong', topics.strong, 'checkmark-circle', palette.success) : null}
           {topics.weak.length > 0 ? topicList('resultTopicsWeak', topics.weak, 'refresh-circle', colors.mutedForeground) : null}
         </View>
