@@ -73,7 +73,8 @@ All under `artifacts/api-server`.
 - A WhatsApp preview card (the web app has no per-route preview tags; the link shows as a plain URL).
 - Opening the link inside the Android app (it opens in the browser).
 - Showing who shared it.
-- Sharing evaluations (they already have `/take/CODE`) and whiteboards.
+- Sharing evaluations (they already have `/take/CODE`).
+- ~~Whiteboards~~ — **shared since 2026-11-25** (see the status log, «Whiteboard: share a board by link»). A board is served whole, never through `studentCopy`: its `solution.answer` and steps are what the teacher showed the class, and the blanking rule would hand a student an empty board.
 
 ## Testing
 
