@@ -73,7 +73,7 @@ function chain(clause: string, x: number): boolean {
   return ops.every((o, i) => cmp(vals[i]!, o, vals[i + 1]!));
 }
 const inInterval = (s: string, x: number) => {
-  const m = s.match(/^([([])(.+?) ، (.+?)([)\]])$/)!;
+  const m = s.match(/^([([])(.+?), (.+?)([)\]])$/)!;
   const lo = m[2] === '−∞' ? -Infinity : num(m[2]!), hi = m[3] === '∞' ? Infinity : num(m[3]!);
   return (m[1] === '(' ? x > lo : x >= lo) && (m[4] === ')' ? x < hi : x <= hi);
 };
@@ -177,6 +177,16 @@ describe('algebra generators: answers', () => {
       assert.match(item.eq, /^x² [+−] \d*x [+−] \d+$/, item.eq);
       assert.ok(!item.wrongs.some(w => /[+−] 0\)/.test(w)), item.wrongs.join(' | '));
     }
+    // A special product is factored completely: no bracket keeps a common
+    // factor. At the hard tier `m` and `a` were drawn apart, so m = a = 3 keyed
+    // «9x² + 18x + 9» as «(3x + 3)²», not 9(x + 1)² (hand review, 2026-11-20).
+    for (const item of draws('factor_special', 600).filter(i => /^حلّل/.test(stem(i)))) {
+      for (const [, k, c] of item.answer.matchAll(/\((\d*)x [+−] (\d+)\)/g)) {
+        const kk = Number(k || 1), cc = Number(c);
+        const g = [kk, cc].reduce((x, y) => { while (y) [x, y] = [y, x % y]; return x; });
+        assert.equal(g, 1, `${item.eq} → ${item.answer}: a bracket still has a common factor`);
+      }
+    }
     // the GCF really is the greatest
     for (const item of draws('factor_gcf').filter(factoring)) {
       const g = Number(item.answer.match(/^(\d+)/)![1]);
@@ -227,7 +237,7 @@ describe('algebra generators: answers', () => {
         const eqs = item.eq.split(' ، ');
         assert.equal(eqs.length, 2);
         const sat = (p: string) => {
-          const [px, py] = p.slice(1, -1).split(' ، ').map(num);
+          const [px, py] = p.slice(1, -1).split(', ').map(num);
           return eqs.every(e => { const [l, r] = e.split(' = '); return same(fn(l!)(px!, py!), fn(r!)(px!, py!)); });
         };
         assert.ok(sat(item.answer), `${id}: ${item.eq} → ${item.answer}`);
@@ -238,20 +248,20 @@ describe('algebra generators: answers', () => {
 
   it('lines', () => {
     for (const item of draws('line_slope', 300).filter(i => has(stem(i), 'أوجد ميل'))) {
-      const [[x1, y1], [x2, y2]] = [...item.eq.matchAll(/\((−?\d+) ، (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)]) as [number, number][];
+      const [[x1, y1], [x2, y2]] = [...item.eq.matchAll(/\((−?\d+), (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)]) as [number, number][];
       const v = (s: string) => (s.includes('/') ? num(s.split('/')[0]!) / num(s.split('/')[1]!) : num(s));
       assert.ok(same(v(item.answer), (y2! - y1!) / (x2! - x1!)), item.eq);
       for (const w of item.wrongs) assert.ok(!same(v(w), (y2! - y1!) / (x2! - x1!)), `${w} is also the slope`);
     }
     const onLine = (eq: string, x: number, y: number) => { const [l, r] = eq.split(' = '); return same(fn(l!)(x, y), fn(r!)(x, y)); };
     for (const item of draws('line_slope_int', 300)) {
-      const pts = [...item.promptAr!.matchAll(/\((−?\d+) ، (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)]) as [number, number][];
+      const pts = [...item.promptAr!.matchAll(/\((−?\d+), (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)]) as [number, number][];
       if (pts.length === 2) assert.ok(pts.every(([x, y]) => onLine(item.answer, x, y!)), `${item.answer} misses ${pts}`);
       else if (has(stem(item), 'ميله')) { const [, m, b] = item.promptAr!.match(/ميله (−?\d+) .* عند (−?\d+)/)!; assert.ok(onLine(item.answer, 0, num(b!)) && onLine(item.answer, 1, num(b!) + num(m!)), item.promptAr); }
     }
     for (const item of draws('line_point_slope', 300).filter(i => has(stem(i), 'ميله'))) {
       const m = num(item.promptAr!.match(/ميله (−?\d+)/)![1]!);
-      const [x1, y1] = item.promptAr!.match(/\((−?\d+) ، (−?\d+)\)/)!.slice(1).map(num) as [number, number];
+      const [x1, y1] = item.promptAr!.match(/\((−?\d+), (−?\d+)\)/)!.slice(1).map(num) as [number, number];
       assert.ok(onLine(item.answer, x1, y1) && onLine(item.answer, x1 + 1, y1 + m) && !onLine(item.answer, x1 + 1, y1), item.answer);
       for (const w of item.wrongs) assert.ok(!(onLine(w, x1, y1) && onLine(w, x1 + 1, y1 + m)), `${w} is also the line`);
     }
@@ -262,7 +272,7 @@ describe('algebra generators: answers', () => {
         assert.ok(same(v * m, -1), `${item.eq}: ${item.answer}`);
       } else if (item.promptAr!.includes('ما ميل')) assert.equal(num(item.answer), m);
       else {
-        const [x1, y1] = item.promptAr!.match(/\((−?\d+) ، (−?\d+)\)/)!.slice(1).map(num) as [number, number];
+        const [x1, y1] = item.promptAr!.match(/\((−?\d+), (−?\d+)\)/)!.slice(1).map(num) as [number, number];
         assert.ok(onLine(item.answer, x1, y1) && onLine(item.answer, x1 + 1, y1 + m), item.answer);
       }
     }
@@ -330,7 +340,7 @@ describe('algebra generators: answers', () => {
     }
     for (const item of draws('quad_vertex', 300).filter(i => has(stem(i), 'ما رأس'))) {
       const f = fn(item.eq.slice(4));
-      const [h, k] = item.answer.slice(1, -1).split(' ، ').map(num) as [number, number];
+      const [h, k] = item.answer.slice(1, -1).split(', ').map(num) as [number, number];
       assert.ok(same(f(h), k), `${item.eq} → ${item.answer}`);
       // a vertex is an extremum: the value one step either way is on the same side
       assert.ok((f(h + 1) - k) * (f(h - 1) - k) > 0 && same(f(h + 1), f(h - 1)), item.eq);
@@ -393,8 +403,8 @@ const sgn = (v: number) => (v < 0 ? `−${-v}` : String(v));
 const setOf = (xs: number[]) => `{${[...new Set(xs)].sort((a, b) => a - b).map(sgn).join(' ، ')}}`;
 const gcdN = (a: number, b: number): number => (b ? gcdN(b, a % b) : Math.abs(a));
 const rootVal = (s: string) => (s.includes('/') ? num(s.split('/')[0]!) / num(s.split('/')[1]!) : num(s));
-const pairsIn = (s: string) => [...s.matchAll(/\((−?\d+) ، (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)] as [number, number]);
-const pairStrs = (s: string) => [...s.matchAll(/\(−?\d+ ، −?\d+\)/g)].map(m => m[0]);
+const pairsIn = (s: string) => [...s.matchAll(/\((−?\d+), (−?\d+)\)/g)].map(m => [num(m[1]!), num(m[2]!)] as [number, number]);
+const pairStrs = (s: string) => [...s.matchAll(/\(−?\d+, −?\d+\)/g)].map(m => m[0]);
 const unitsOf = (s: string) => (s === 'وحدة واحدة' ? 1 : s === 'وحدتين' ? 2 : Number(s.split(' ')[0]));
 const vertexOf = (f: string): [number, number] => { const [, b, a] = quad(f); const h = -b / (2 * a); return [h, fn(f)(h)]; };
 const satisfies = (eq: string, x: number, y = 0) => { const [l, r] = eq.split(' = '); return same(fn(l!)(x, y), fn(r!)(x, y)); };
@@ -732,7 +742,7 @@ describe('algebra generators: kinds added 2026-10-16', () => {
       if (k === 'rate') { const [h1, t1, h2, t2] = nums(p); assert.equal(num(item.answer), (h2! - h1!) / (t2! - t1!), p); }
       else if (k === 'missing') {
         const [[x1, y1]] = pairsIn(p) as [[number, number]];
-        const x2 = num(p.match(/\((−?\d+) ، k\)/)![1]!), m = num(p.match(/يساوي (−?\d+)/)![1]!);
+        const x2 = num(p.match(/\((−?\d+), k\)/)![1]!), m = num(p.match(/يساوي (−?\d+)/)![1]!);
         assert.equal(num(item.answer), y1 + m * (x2 - x1), p);
       }
     }

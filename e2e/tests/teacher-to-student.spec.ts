@@ -7,8 +7,9 @@ import { pinLocale, signUpAndVerify } from "../helpers/journey";
  * a real Postgres:
  *
  *   sign up → verify email → pick subjects → create a class → add students →
- *   generate an exam → publish it → a student (no account) opens the link and
- *   hands it in → the teacher sees the attempt.
+ *   generate an exam → turn on instant feedback → publish it → a student (no
+ *   account) opens the link, hands it in and sees right and wrong per question
+ *   → the teacher sees the attempt.
  *
  * It exists because every unit test can pass while this is broken — a route
  * that 503s, a screen that never renders, a gate that bounces a new user.
@@ -90,6 +91,13 @@ test("teacher publishes an exam and a student hands it in", async ({ browser }) 
     await expect(teacher.getByText("Publish evaluation").first()).toBeVisible();
   });
 
+  await test.step("turn on instant feedback", async () => {
+    // On a draft it is kept for publishing, which then releases the results.
+    await teacher.getByText("Turn on instant feedback", { exact: true }).click();
+    await teacher.getByRole("alert").getByText("Turn on instant feedback").last().click();
+    await expect(teacher.getByText("Turn off instant feedback", { exact: true })).toBeVisible({ timeout: 30_000 });
+  });
+
   await test.step("publish", async () => {
     await teacher.getByText("Publish evaluation", { exact: true }).first().click();
     // The in-app confirm dialog reuses the title as its confirm button's text.
@@ -141,6 +149,13 @@ test("teacher publishes an exam and a student hands it in", async ({ browser }) 
   await test.step("student hands it in", async () => {
     await student.getByText("Hand in", { exact: true }).click();
     await expect(student.getByText("Handed in", { exact: true })).toBeVisible({ timeout: 60_000 });
+  });
+
+  await test.step("student sees what they got right and wrong", async () => {
+    // Instant feedback: one card per question with a verdict, and no correct answer yet.
+    await expect(student.getByText("What you got right and wrong", { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(student.getByText(/^(Correct|Wrong|Partly correct)$/).first()).toBeVisible();
+    await expect(student.getByText("Correct answer", { exact: true })).toHaveCount(0);
   });
 
   await test.step("teacher sees the attempt", async () => {

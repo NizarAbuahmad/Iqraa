@@ -64,7 +64,8 @@ const fac = (m: number, p: number) => `(${m === 1 ? '' : m}x ${p < 0 ? '−' : '
 const lin = (m: number, p: number, v = 'x') => polyStr([p, m], v);
 /** «ax + by = c» with the signs written out. */
 const lineEq = (a: number, b: number, c: number) => `${polyStr([0, a], 'x')}${b < 0 ? ' − ' : ' + '}${Math.abs(b) === 1 ? '' : Math.abs(b)}y = ${signed(c)}`;
-const pair = (x: number, y: number) => `(${signed(x)} ، ${signed(y)})`;
+/** «(−3, 4)» — the Latin comma: see latinCommaPoints.test.ts. */
+const pair = (x: number, y: number) => `(${signed(x)}, ${signed(y)})`;
 /** «k√m», «√m», «−√m». */
 const rad = (k: number, m: number) => (k === 0 ? '0' : `${k === 1 ? '' : k === -1 ? '−' : signed(k)}√${m}`);
 
@@ -719,7 +720,11 @@ const factorGeneral = topic('factor_general', /ثلاثيات الحدود ax.\+
  * difference of squares used to work out A² − B².
  */
 const factorSpecial = topic('factor_special', /^حالات خاصه من التحليل$/, [8, 8], ({ rng, diff }) => {
-  const a = int(rng, 1, 9), m = tier(diff) === 2 ? int(rng, 1, 4) : 1;
+  // `a` coprime to `m`, so the factors are complete: m = a = 3 keyed «9x² + 18x + 9»
+  // as «(3x + 3)²» rather than 9(x + 1)² (hand review of the ready-made sheets, 2026-11-20).
+  const m = tier(diff) === 2 ? int(rng, 1, 4) : 1;
+  const coprime = Array.from({ length: 9 }, (_, i) => i + 1).filter(n => gcd(n, m) === 1);
+  const a = pick(rng, coprime);
   const form = pick(rng, [0, 1, 2, 3]);
   if (form === 1) {
     const s = rng() < 0.5 ? 1 : -1;
@@ -901,7 +906,7 @@ const compound = topic('ineq_compound', /^حل المتباينات المركب
   if (form === 3) {
     const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
     const eq = `${signed(a * lo + b)} ${s1} ${polyStr([b, a])} ${s2} ${signed(a * hi + b)}`;
-    const iv = (p: string, q: string, u = lo, v = hi) => `${brk(p, 'l')}${signed(u)} ، ${signed(v)}${brk(q, 'r')}`;
+    const iv = (p: string, q: string, u = lo, v = hi) => `${brk(p, 'l')}${signed(u)}, ${signed(v)}${brk(q, 'r')}`;
     return { eq, answer: iv(s1, s2), wrongs: [iv(swapStrict(s1), s2), iv(s1, swapStrict(s2)), iv(s1, s2, a * lo + b, a * hi + b)], ar: `اكتب مجموعة حلّ المتباينة المركبة ${eq} باستعمال الفترات.`, en: `Write the solution set of ${eq} in interval notation.` };
   }
   if (form === 0) {
@@ -953,14 +958,14 @@ const intervals = topic('intervals', /^المجموعات والفترات$/, [9
   if (form === 1) {
     if (rng() < 0.4) {
       const s = pick(rng, SYM);
-      const iv = s === '>' ? `(${signed(a)} ، ∞)` : s === '≥' ? `[${signed(a)} ، ∞)` : s === '<' ? `(−∞ ، ${signed(a)})` : `(−∞ ، ${signed(a)}]`;
+      const iv = s === '>' ? `(${signed(a)}, ∞)` : s === '≥' ? `[${signed(a)}, ∞)` : s === '<' ? `(−∞, ${signed(a)})` : `(−∞, ${signed(a)}]`;
       const ans = `x ${s} ${signed(a)}`;
       return { eq: ans, answer: ans, wrongs: ineqWrongs(s, signed(a)), ar: `اكتب الفترة ${iv} على صورة متباينة.`, en: `Write the interval ${iv} as an inequality.` };
     }
     const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
     const chain = (p: string, q: string) => `${signed(a)} ${p} x ${q} ${signed(b)}`;
     const ans = chain(s1, s2);
-    return { eq: ans, answer: ans, wrongs: [chain(swapStrict(s1), s2), chain(s1, swapStrict(s2)), chain(swapStrict(s1), swapStrict(s2))], ar: `اكتب الفترة ${brk(s1, 'l')}${signed(a)} ، ${signed(b)}${brk(s2, 'r')} على صورة متباينة.`, en: `Write the interval ${brk(s1, 'l')}${signed(a)} ، ${signed(b)}${brk(s2, 'r')} as an inequality.` };
+    return { eq: ans, answer: ans, wrongs: [chain(swapStrict(s1), s2), chain(s1, swapStrict(s2)), chain(swapStrict(s1), swapStrict(s2))], ar: `اكتب الفترة ${brk(s1, 'l')}${signed(a)}, ${signed(b)}${brk(s2, 'r')} على صورة متباينة.`, en: `Write the interval ${brk(s1, 'l')}${signed(a)}, ${signed(b)}${brk(s2, 'r')} as an inequality.` };
   }
   if (form === 2) {
     const hi = a + int(rng, 2, 6);
@@ -974,13 +979,13 @@ const intervals = topic('intervals', /^المجموعات والفترات$/, [9
     return { eq: cond, answer: roster(s1, s2), wrongs: [roster(swapStrict(s1), s2), roster(s1, swapStrict(s2)), roster(swapStrict(s1), swapStrict(s2))], ar: `اكتب بطريقة سرد العناصر مجموعة الأعداد الصحيحة x التي تحقّق ${cond}.`, en: `List the elements of the set of integers x with ${cond}.` };
   }
   const k = pick(rng, [0, 1, 2, 3]);
-  if (k === 0) { const s = pick(rng, ['>', '≥']); const ans = `${s === '>' ? '(' : '['}${signed(a)} ، ∞)`; return { eq: `x ${s} ${signed(a)}`, answer: ans, wrongs: [`${s === '>' ? '[' : '('}${signed(a)} ، ∞)`, `(−∞ ، ${signed(a)}${s === '>' ? ')' : ']'}`, `(−∞ ، ${signed(a)}${s === '>' ? ']' : ')'}`], ar: `اكتب المتباينة x ${s} ${signed(a)} على صورة فترة.`, en: `Write x ${s} ${signed(a)} in interval notation.` }; }
-  if (k === 1) { const s = pick(rng, ['<', '≤']); const ans = `(−∞ ، ${signed(a)}${s === '<' ? ')' : ']'}`; return { eq: `x ${s} ${signed(a)}`, answer: ans, wrongs: [`(−∞ ، ${signed(a)}${s === '<' ? ']' : ')'}`, `${s === '<' ? '(' : '['}${signed(a)} ، ∞)`, `${s === '<' ? '[' : '('}${signed(a)} ، ∞)`], ar: `اكتب المتباينة x ${s} ${signed(a)} على صورة فترة.`, en: `Write x ${s} ${signed(a)} in interval notation.` }; }
+  if (k === 0) { const s = pick(rng, ['>', '≥']); const ans = `${s === '>' ? '(' : '['}${signed(a)}, ∞)`; return { eq: `x ${s} ${signed(a)}`, answer: ans, wrongs: [`${s === '>' ? '[' : '('}${signed(a)}, ∞)`, `(−∞, ${signed(a)}${s === '>' ? ')' : ']'}`, `(−∞, ${signed(a)}${s === '>' ? ']' : ')'}`], ar: `اكتب المتباينة x ${s} ${signed(a)} على صورة فترة.`, en: `Write x ${s} ${signed(a)} in interval notation.` }; }
+  if (k === 1) { const s = pick(rng, ['<', '≤']); const ans = `(−∞, ${signed(a)}${s === '<' ? ')' : ']'}`; return { eq: `x ${s} ${signed(a)}`, answer: ans, wrongs: [`(−∞, ${signed(a)}${s === '<' ? ']' : ')'}`, `${s === '<' ? '(' : '['}${signed(a)}, ∞)`, `${s === '<' ? '[' : '('}${signed(a)}, ∞)`], ar: `اكتب المتباينة x ${s} ${signed(a)} على صورة فترة.`, en: `Write x ${s} ${signed(a)} in interval notation.` }; }
   const [s1, s2] = pick(rng, [['<', '<'], ['<', '≤'], ['≤', '<'], ['≤', '≤']] as const);
   const br = (s: string, side: 'l' | 'r') => (side === 'l' ? (s === '<' ? '(' : '[') : (s === '<' ? ')' : ']'));
-  const ans = `${br(s1, 'l')}${signed(a)} ، ${signed(b)}${br(s2, 'r')}`;
+  const ans = `${br(s1, 'l')}${signed(a)}, ${signed(b)}${br(s2, 'r')}`;
   const alt = (s: string, side: 'l' | 'r') => br(s === '<' ? '≤' : '<', side);
-  const wrongs = [`${alt(s1, 'l')}${signed(a)} ، ${signed(b)}${br(s2, 'r')}`, `${br(s1, 'l')}${signed(a)} ، ${signed(b)}${alt(s2, 'r')}`, `${alt(s1, 'l')}${signed(a)} ، ${signed(b)}${alt(s2, 'r')}`];
+  const wrongs = [`${alt(s1, 'l')}${signed(a)}, ${signed(b)}${br(s2, 'r')}`, `${br(s1, 'l')}${signed(a)}, ${signed(b)}${alt(s2, 'r')}`, `${alt(s1, 'l')}${signed(a)}, ${signed(b)}${alt(s2, 'r')}`];
   return { eq: `${signed(a)} ${s1} x ${s2} ${signed(b)}`, answer: ans, wrongs, ar: `اكتب المتباينة ${signed(a)} ${s1} x ${s2} ${signed(b)} على صورة فترة.`, en: `Write ${signed(a)} ${s1} x ${s2} ${signed(b)} in interval notation.` };
 });
 
@@ -1092,7 +1097,7 @@ const slope = topic('line_slope', /^ميل المستقيم$/, [8, 8], ({ rng, d
     const r = int(rng, 2, 12), dt = int(rng, 1, 4), t1 = int(rng, 6, 11 - dt), h1 = r * dt + int(rng, 5, 60), up = rng() < 0.5;
     const h2 = up ? h1 + r * dt : h1 - r * dt, ans = up ? r : -r;
     return {
-      eq: `(${t1} ، ${h1}) ، (${t1 + dt} ، ${h2})`, answer: signed(ans), wrongs: num(ans, [-ans, h2 - h1, Math.round(h2 / (t1 + dt)), ans + 1]),
+      eq: `(${t1}, ${h1}), (${t1 + dt}, ${h2})`, answer: signed(ans), wrongs: num(ans, [-ans, h2 - h1, Math.round(h2 / (t1 + dt)), ans + 1]),
       ar: `كان ارتفاع الماء في خزان ${h1} سم عند الساعة ${t1} صباحًا، وأصبح ${h2} سم عند الساعة ${t1 + dt} صباحًا. ما معدّل التغيّر في ارتفاع الماء بالسنتيمتر لكل ساعة؟`,
       en: `The water in a tank was ${h1} cm deep at ${t1} a.m. and ${h2} cm deep at ${t1 + dt} a.m. What is the rate of change of the depth, in cm per hour?`,
     };
@@ -1100,9 +1105,9 @@ const slope = topic('line_slope', /^ميل المستقيم$/, [8, 8], ({ rng, d
   if (form === 2) {
     const x1 = int(rng, -5, 5), y1 = int(rng, -5, 5), dx = nz(rng, 4), m = nz(rng, 4), x2 = x1 + dx, k = y1 + m * dx;
     return {
-      eq: `${pair(x1, y1)} ، (${signed(x2)} ، k)`, answer: signed(k), wrongs: num(k, [m * dx, y1 - m * dx, y1 + m, -k]),
-      ar: `ما قيمة k التي تجعل ميل المستقيم المار بالنقطتين ${pair(x1, y1)} و (${signed(x2)} ، k) يساوي ${signed(m)}؟`,
-      en: `What value of k makes the slope of the line through ${pair(x1, y1)} and (${signed(x2)} ، k) equal to ${signed(m)}?`,
+      eq: `${pair(x1, y1)}, (${signed(x2)}, k)`, answer: signed(k), wrongs: num(k, [m * dx, y1 - m * dx, y1 + m, -k]),
+      ar: `ما قيمة k التي تجعل ميل المستقيم المار بالنقطتين ${pair(x1, y1)} و (${signed(x2)}, k) يساوي ${signed(m)}؟`,
+      en: `What value of k makes the slope of the line through ${pair(x1, y1)} and (${signed(x2)}, k) equal to ${signed(m)}?`,
     };
   }
   for (;;) {
@@ -1362,8 +1367,8 @@ const quadVertex = topic('quad_vertex', /التحويلات الهندسيه.*ا
   return { eq: f, answer: ans, wrongs: wrongsFrom(ans, [pair(-h, k), pair(k, h), pair(-h, -k)], j => pair(h, k + Math.abs(j))), ar: `ما رأس القطع المكافئ ${f}؟`, en: `What is the vertex of the parabola ${f}?` };
 });
 
-/** «{(1 ، 2)، (3 ، −4)}» */
-const relStr = (ps: Array<[number, number]>) => `{${ps.map(([x, y]) => pair(x, y)).join('، ')}}`;
+/** «{(1, 2), (3, −4)}» — one left-to-right set, so the pairs are joined by the Latin comma too. */
+const relStr = (ps: Array<[number, number]>) => `{${ps.map(([x, y]) => pair(x, y)).join(', ')}}`;
 
 /**
  * Grade 9 functions: evaluate f — and since 2026-10-16 the lesson's own
@@ -1808,7 +1813,7 @@ const interpretGraphs: Topic = topic('interpret_graphs', /^تفسير التمث
   if (kind === 0 || kind === 1) {
     // a conversion curve: a straight line through the origin and one point read off it
     const c = pick(rng, CONVERSIONS), p = pick(rng, [3, 4, 5]), r = int(rng, 6, 12);
-    const head = `منحنى التحويل من ال${c.a[0]} (المحور الأفقي) إلى ال${c.b[0]} (المحور الرأسي) خطٌّ مستقيم يبدأ من نقطة الأصل ويمرّ بالنقطة (${p} ، ${c.f * p}).`;
+    const head = `منحنى التحويل من ال${c.a[0]} (المحور الأفقي) إلى ال${c.b[0]} (المحور الرأسي) خطٌّ مستقيم يبدأ من نقطة الأصل ويمرّ بالنقطة (${p}, ${c.f * p}).`;
     const headEn = `The conversion graph from ${c.aEn} (horizontal axis) to ${c.bEn} (vertical axis) is a straight line from the origin through (${p}, ${c.f * p}).`;
     if (kind === 0) {
       const ans = c.f * r;
@@ -1822,7 +1827,7 @@ const interpretGraphs: Topic = topic('interpret_graphs', /^تفسير التمث
     // position–time, constant speed: two points give the speed, or the position at a later time
     const v = int(rng, 2, 12), s0 = int(rng, 1, 15), t1 = int(rng, 0, 4), dt = int(rng, 2, 6), t2 = t1 + dt;
     const s1 = s0 + v * t1, s2 = s0 + v * t2;
-    const head = `يمثّل منحنى الموقع – الزمن حركة جسم بسرعة ثابتة على خط مستقيم، ويمرّ بالنقطتين (${t1} ، ${s1}) و(${t2} ، ${s2}) حيث الإحداثي الأول الزمن بالثانية والثاني الموقع بالمتر.`;
+    const head = `يمثّل منحنى الموقع – الزمن حركة جسم بسرعة ثابتة على خط مستقيم، ويمرّ بالنقطتين (${t1}, ${s1}) و(${t2}, ${s2}) حيث الإحداثي الأول الزمن بالثانية والثاني الموقع بالمتر.`;
     const headEn = `A position–time graph shows an object moving at constant speed along a line. It passes through (${t1}, ${s1}) and (${t2}, ${s2}), where the first coordinate is the time in seconds and the second the position in metres.`;
     if (kind === 2) {
       return { eq: `${t1}, ${s1}, ${t2}, ${s2}`, answer: String(v), wrongs: num(v, whole([s2 - s1, dt, s2 / t2, v + 1, v - 1]), String), ar: `${head} ما سرعة الجسم بالمتر لكل ثانية؟`, en: `${headEn} What is the object's speed in metres per second?` };

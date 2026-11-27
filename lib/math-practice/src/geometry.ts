@@ -28,7 +28,8 @@ const deg = (ans: number, cands: number[]) =>
 const PI = (k: number) => (k === 1 ? 'π' : `${k}π`);
 const piOpts = (ans: number, cands: number[]) =>
   wrongsFrom(PI(ans), cands.filter(c => Number.isInteger(c) && c > 0).map(PI), k => PI(ans + Math.abs(k)));
-const pt = (x: number, y: number) => `(${signed(x)} ، ${signed(y)})`;
+/** «(−3, 4)» — the Latin comma: see latinCommaPoints.test.ts. */
+const pt = (x: number, y: number) => `(${signed(x)}, ${signed(y)})`;
 const ptOpts = (ans: [number, number], cands: Array<[number, number]>) =>
   wrongsFrom(pt(...ans), cands.map(c => pt(...c)), k => pt(ans[0] + Math.abs(k), ans[1]));
 /** A name answer with three other names from the same list. */
@@ -50,7 +51,29 @@ const isIntPt = (c: [number, number]) => Number.isInteger(c[0]) && Number.isInte
 
 const perimeter = T('perimeter', /^المحيط$/, [3, 4], ({ rng, diff, grade }) => {
   const m = grade === 3 ? span(diff, 8, 12, 15) : span(diff, 15, 25, 40);
-  const k = pick(rng, grade >= 4 && diff !== 'easy' ? [0, 1, 2, 3] : [0, 1, 2]);
+  // Grade 4's objective is the perimeter of a «مربع أو مستطيل» and an estimate on a square grid (u9_l5):
+  // a third of its items were triangles, which are Grade 3's. It now asks a square or rectangle, the
+  // missing side, an L-shape cut from a rectangle, and a rectangle on a grid (2026-11-21).
+  if (grade >= 4) {
+    const g = pick(rng, diff === 'easy' ? [0, 1, 4, 5] : [0, 1, 2, 3, 4, 5]);
+    if (g === 2) {
+      const l = int(rng, 4, m), w = int(rng, 2, l - 1), P = 2 * (l + w);
+      return { eq: `${P}, ${l}`, answer: String(w), wrongs: pos(w, [P - l, P / 2 + l, P - 2 * l, w + l]), ar: `محيط مستطيل ${P} سم وطوله ${l} سم. ما عرضه؟`, en: `A rectangle has perimeter ${P} cm and length ${l} cm. What is its width?` };
+    }
+    if (g === 3) {
+      const s = int(rng, 2, m);
+      return { eq: `P ${4 * s}`, answer: String(s), wrongs: pos(s, [2 * s, 4 * s, s + 4, s * s, s + 1]), ar: `محيط مربع ${4 * s} سم. ما طول ضلعه؟`, en: `A square has perimeter ${4 * s} cm. What is its side?` };
+    }
+    if (g === 4) {
+      const l = int(rng, 5, m), w = int(rng, 4, l);
+      return { eq: `L ${l}, ${w}`, answer: String(2 * (l + w)), wrongs: pos(2 * (l + w), [l + w, l * w, 2 * l + w, 2 * (l + w) + 4, 2 * (l + w) - 4]), ar: `شكل على صورة حرف L، يمكن رسمه داخل مستطيل طوله ${l} سم وعرضه ${w} سم بعد قصّ مربع من إحدى زواياه. ما محيطه بالسنتيمتر؟`, en: `An L-shape fits inside a rectangle ${l} cm by ${w} cm after a square is cut from one corner. What is its perimeter, in cm?` };
+    }
+    if (g === 5) {
+      const l = int(rng, 3, 10), w = int(rng, 3, 10);
+      return { eq: `grid ${l}, ${w}`, answer: String(2 * (l + w)), wrongs: pos(2 * (l + w), [l + w, l * w, 2 * l + w, 2 * (l + w) + 2]), ar: `مستطيل مرسوم على شبكة مربعات، طوله ${l} مربعات وعرضه ${w} مربعات، وطول ضلع كل مربع 1 سم. ما محيطه بالسنتيمتر؟`, en: `A rectangle on a square grid is ${l} squares long and ${w} squares wide, each square 1 cm. What is its perimeter, in cm?` };
+    }
+  }
+  const k = pick(rng, grade >= 4 ? [0, 1] : [0, 1, 2]);
   if (k === 0) {
     const l = int(rng, 3, m), w = int(rng, 2, m - 1);
     const a = 2 * (l + w);
@@ -72,7 +95,12 @@ const perimeter = T('perimeter', /^المحيط$/, [3, 4], ({ rng, diff, grade }
 const area = T('area_rect', /^(?:المساحه|مساحه المستطيل)$/, [3, 4], ({ rng, diff, grade }) => {
   const m = grade === 3 ? span(diff, 6, 9, 12) : span(diff, 9, 15, 25);
   // 3: count unit squares, 4: a room's floor, 5 (Grade 4): compare a rectangle with a square.
-  const k = pick(rng, grade >= 4 ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4]);
+  const k = pick(rng, grade >= 4 ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4]);
+  if (k === 6) {
+    // «أستعمل شبكة المربعات لتقدير مساحة شكل» (u9_l6): full squares plus half the partial ones
+    const f = int(rng, 11, 40), p = pick(rng, [4, 6, 8, 10]), ans = f + p / 2;
+    return { eq: `est ${f}, ${p}`, answer: String(ans), wrongs: pos(ans, [f + p, f, ans + 1, ans - 1, f + 2 * p]), ar: `غُطّي شكل غير منتظم على شبكة مربعات بـ ${f} مربعًا كاملًا و ${p} مربعات غير كاملة. قدّر مساحته بالمربعات الوحدة، علمًا أن كل مربعين غير كاملين يُعدّان مربعًا واحدًا.`, en: `An irregular shape on a square grid covers ${f} whole squares and ${p} part squares. Estimate its area in unit squares, counting every two part squares as one.` };
+  }
   if (k === 0) {
     const l = int(rng, 2, m), w = int(rng, 2, m);
     return { eq: `${l}, ${w}`, answer: String(l * w), wrongs: pos(l * w, [2 * (l + w), l + w, l * w + l, l * w - w]), ar: `ما مساحة مستطيل طوله ${l} سم وعرضه ${w} سم (بالسنتيمتر المربع)؟`, en: `What is the area, in cm², of a rectangle ${l} cm long and ${w} cm wide?` };
@@ -392,11 +420,14 @@ const prismCylinderSurface = T('surface_prism_cyl', /^مساحه سطح المن
   return { eq: `${r}, ${h}`, answer: PI(N), wrongs: piOpts(N, [2 * r * h, 2 * r * r, r * r * h, r * (r + h), N + 2 * r]), ar: `ما مساحة السطح الكلية لأسطوانة نصف قطر قاعدتها ${r} سم وارتفاعها ${h} سم؟ (اترك الإجابة بدلالة π)`, en: `What is the total surface area of a cylinder with base radius ${r} cm and height ${h} cm? (Leave your answer in terms of π)` };
 });
 
+// A regular pyramid's slant height is more than half its base side, or the faces never
+// meet at the apex: «ضلعها 11 سم، وارتفاعه المائل 3 سم» was keyed 66 for a pyramid that
+// cannot exist (hand review of the ready-made sheets, 2026-11-20).
 const pyramidConeSurface = T('surface_pyr_cone', /^مساحه سطح الهرم والمخروط$/, [7, 7], ({ rng, diff }) => {
   // 0 pyramid total, 1 cone total; 2 pyramid lateral, 3 cone lateral, 4 a paper hat (cone lateral, real life).
   const k = pick(rng, [0, 1, 2, 3, 4]);
   if (k === 2) {
-    const b = int(rng, 3, span(diff, 8, 12, 16)), l = int(rng, 3, span(diff, 10, 14, 18));
+    const b = int(rng, 3, span(diff, 8, 12, 16)), l = int(rng, Math.max(3, Math.floor(b / 2) + 1), span(diff, 10, 14, 18));
     return { eq: `lat ${b}, ${l}`, answer: String(2 * b * l), wrongs: pos(2 * b * l, [b * b + 2 * b * l, 4 * b * l, b * l, b * b + b * l]), ar: `ما المساحة الجانبية لهرم منتظم قاعدته مربعة طول ضلعها ${b} سم، وارتفاعه المائل ${l} سم؟`, en: `What is the lateral surface area of a regular pyramid with a square base of side ${b} cm and slant height ${l} cm?` };
   }
   if (k === 3 || k === 4) {
@@ -406,7 +437,7 @@ const pyramidConeSurface = T('surface_pyr_cone', /^مساحه سطح الهرم 
     return { eq: `hat ${r}, ${l}`, answer: PI(r * l), wrongs: wr, ar: `قبعة على شكل مخروط بلا قاعدة، نصف قطر فتحتها ${r} سم وارتفاعها المائل ${l} سم. ما مساحة الورق اللازم لصنعها؟ (اترك الإجابة بدلالة π)`, en: `A party hat is a cone with no base, opening radius ${r} cm and slant height ${l} cm. How much paper does it take? (Leave your answer in terms of π)` };
   }
   if (k === 0) {
-    const b = int(rng, 3, span(diff, 8, 12, 16)), l = int(rng, 3, span(diff, 10, 14, 18));
+    const b = int(rng, 3, span(diff, 8, 12, 16)), l = int(rng, Math.max(3, Math.floor(b / 2) + 1), span(diff, 10, 14, 18));
     const s = b * b + 2 * b * l;
     return { eq: `${b}, ${l}`, answer: String(s), wrongs: pos(s, [4 * b * l, b * b + 4 * b * l, b * b + b * l, s + b]), ar: `ما مساحة السطح الكلية لهرم قاعدته مربعة طول ضلعها ${b} سم وارتفاع كل وجه جانبي (الارتفاع المائل) ${l} سم؟`, en: `What is the total surface area of a pyramid with a square base of side ${b} cm and slant height ${l} cm?` };
   }
@@ -1116,8 +1147,8 @@ const coordPlane5 = T('coord_plane_g5', /^المستوي الاحداثي$/, [5,
   const x = int(rng, 1, 9), y = int(rng, 1, 9);
   // 0–1 read a coordinate, 2 a distance along a grid line; 3 plot a point from moves, 4 a rectangle's fourth vertex.
   const k = pick(rng, [0, 1, 2, 3, 4]);
-  if (k === 0) return { eq: pt(x, y), answer: String(x), wrongs: pos(x, [y, x + 1, x * y, x + y]), ar: `ما الإحداثي السيني للنقطة (${x} ، ${y})؟`, en: `What is the x-coordinate of the point (${x}, ${y})?` };
-  if (k === 1) return { eq: pt(x, y), answer: String(y), wrongs: pos(y, [x, y + 1, x * y, x + y]), ar: `ما الإحداثي الصادي للنقطة (${x} ، ${y})؟`, en: `What is the y-coordinate of the point (${x}, ${y})?` };
+  if (k === 0) return { eq: pt(x, y), answer: String(x), wrongs: pos(x, [y, x + 1, x * y, x + y]), ar: `ما الإحداثي السيني للنقطة (${x}, ${y})؟`, en: `What is the x-coordinate of the point (${x}, ${y})?` };
+  if (k === 1) return { eq: pt(x, y), answer: String(y), wrongs: pos(y, [x, y + 1, x * y, x + y]), ar: `ما الإحداثي الصادي للنقطة (${x}, ${y})؟`, en: `What is the y-coordinate of the point (${x}, ${y})?` };
   if (k === 3) {
     const dx = int(rng, 1, 9), dy = int(rng, 1, 9), ans: [number, number] = [dx, dy];
     return { eq: `walk ${pt(dx, dy)}`, answer: pt(...ans), wrongs: ptOpts(ans, [[dy, dx], [dx, 0], [0, dy], [dx + dy, dy], [dx, dx + dy]]), ar: `انطلق سامر من نقطة الأصل، فتحرّك ${unitAr(dx)} إلى اليمين ثم ${unitAr(dy)} إلى الأعلى. ما إحداثيات النقطة التي وصل إليها؟`, en: `Samer starts at the origin and moves ${unitEn(dx)} right, then ${unitEn(dy)} up. What are the coordinates of the point he reaches?` };
@@ -1130,7 +1161,7 @@ const coordPlane5 = T('coord_plane_g5', /^المستوي الاحداثي$/, [5,
     return { eq: `rect ${given.map(c => pt(...c)).join(', ')}`, answer: pt(...ans), wrongs: ptOpts(ans, [[ans[1], ans[0]], [xo, yo], [ans[0] + (x2 - x1), ans[1] + (y2 - y1)], [ans[0], yo + (y2 - y1)]].filter(c => c[0] > 0 && c[1] > 0) as Array<[number, number]>), ar: `النقاط ${given.map(c => pt(...c)).join(' و ')} ثلاثة رؤوس لمستطيل. ما إحداثيات الرأس الرابع؟`, en: `The points ${given.map(c => pt(...c)).join(', ')} are three vertices of a rectangle. What are the coordinates of the fourth vertex?` };
   }
   const y2 = y + int(rng, 1, span(diff, 5, 7, 9));
-  return { eq: `${pt(x, y)}, ${pt(x, y2)}`, answer: String(y2 - y), wrongs: pos(y2 - y, [y2 + y, y2, y + 1, y2 - y + 1]), ar: `ما المسافة بين النقطتين (${x} ، ${y}) و (${x} ، ${y2}) بالوحدات؟`, en: `What is the distance, in units, between the points (${x}, ${y}) and (${x}, ${y2})?` };
+  return { eq: `${pt(x, y)}, ${pt(x, y2)}`, answer: String(y2 - y), wrongs: pos(y2 - y, [y2 + y, y2, y + 1, y2 - y + 1]), ar: `ما المسافة بين النقطتين (${x}, ${y}) و (${x}, ${y2}) بالوحدات؟`, en: `What is the distance, in units, between the points (${x}, ${y}) and (${x}, ${y2})?` };
 });
 
 const rotate = T('rotate', /^الدوران$/, [7, 7], ({ rng }) => {
@@ -1275,7 +1306,12 @@ const proportionalParts = T('proportional_parts', /^الاجزاء المتنا�
 });
 
 const bisector = T('angle_bisector_thm', /^منصفات في المثلث$/, [9, 9], ({ rng, diff }) => {
-  const a = int(rng, 2, 7), k = int(rng, 2, 4), bd = int(rng, 2, span(diff, 6, 9, 12));
+  // AB = a, AC = ak, BC = bd(1 + k): a triangle only when bd < a and bd(k + 1) > a(k − 1).
+  // Drawn apart, AB = 6, AC = 24, BD = 12 keyed DC = 48 for sides 6, 24, 60 — no such
+  // triangle (hand review of the ready-made sheets, 2026-11-20).
+  const a = int(rng, 3, span(diff, 7, 9, 12)), k = int(rng, 2, 4);
+  const fits = Array.from({ length: a - 2 }, (_, i) => i + 2).filter(n => n * (k + 1) > a * (k - 1));
+  const bd = pick(rng, fits.length ? fits : [a - 1]);
   const b = a * k, dc = bd * k;
   // 0 the angle bisector theorem; 1 a point on a perpendicular bisector, 2 a point on an angle bisector (both equidistant); 3 the incentre's distance from a side.
   const kind = pick(rng, [0, 1, 2, 3]);

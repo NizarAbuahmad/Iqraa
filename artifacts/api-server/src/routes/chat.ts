@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
+import { completeAi, openChatStream } from "../lib/aiComplete.ts";
+import { claudeMaxTokens } from "../lib/claude.ts";
 import {
   AiBudgetExceededError,
   AiLiveModeOffError,
@@ -10,6 +11,7 @@ import {
   assertLiveModeEnabled,
   assertUserQuotaAvailable,
   getChatModel,
+  isClaudeModel,
   recordUsage,
   withUserAiSlot,
 } from "../lib/aiBudget.ts";
@@ -110,7 +112,10 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     await assertUserQuotaAvailable(req.user?.id, req.user?.role);
     assertBudgetAvailable();
 
-    const model = getChatModel();
+    // `let`: an expired key or an empty balance on this provider answers with the
+    // other one (lib/aiComplete.ts), and spend must be recorded against the model
+    // that actually wrote the reply.
+    let model = getChatModel();
     const detail = {
       kind: isTeacher ? ("chat-teacher" as const) : ("chat-student" as const),
       promptVersion: PROMPT_VERSION,
@@ -120,12 +125,9 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
 
     if (!streaming) {
       const completion = await withUserAiSlot(req.user?.id, () =>
-        openai.chat.completions.create({
-          model,
-          max_completion_tokens: CHAT_MAX_TOKENS,
-          messages: chatMessages,
-        }),
+        completeAi({ model, messages: chatMessages, maxTokens: CHAT_MAX_TOKENS }),
       );
+      model = completion.model;
       // No cache keys on purpose. A chat turn never repeats, so any key computed
       // here would be the same for every turn and would show up in the repeat-rate
       // analysis as a workload with a perfect hit rate — the opposite of the truth.
@@ -133,7 +135,7 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
       // from generation's, which is what decides whether AI_MODEL_CHAT is worth
       // pointing at something cheaper (STATUS.md, 2026-08-22, still open).
       recordUsage(completion.usage, model, { ...detail, durationMs: Date.now() - startedAt });
-      res.json({ content: completion.choices[0]?.message?.content ?? "" });
+      res.json({ content: completion.text ?? "" });
       return;
     }
 
@@ -151,7 +153,13 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     recordEstimate = (reason, streamedChars) => {
       recordEstimate = null;
       recordUsage(
-        { prompt_tokens: estimateTokens(promptChars), completion_tokens: CHAT_MAX_TOKENS },
+        {
+          prompt_tokens: estimateTokens(promptChars),
+          // The ceiling the provider was really sent: Claude is never sent less
+          // than its thinking floor, whatever chat asks for, so charging
+          // CHAT_MAX_TOKENS for an abandoned fallback turn would under-record it.
+          completion_tokens: isClaudeModel(model) ? claudeMaxTokens(CHAT_MAX_TOKENS) : CHAT_MAX_TOKENS,
+        },
         model,
         { ...detail, durationMs: Date.now() - startedAt },
       );
@@ -164,16 +172,16 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
     // before `create` runs, so it reaches the catch below with no header sent
     // and goes out as the same 429 JSON the non-streaming branch sends.
     const result = await withUserAiSlot(req.user?.id, async () => {
-      const stream = await openai.chat.completions.create(
-        {
-          model,
-          max_completion_tokens: CHAT_MAX_TOKENS,
-          messages: chatMessages,
-          stream: true,
-          stream_options: { include_usage: true },
-        },
-        { signal: upstream.signal },
-      );
+      // Settles once the provider has accepted the request: that is when a dead
+      // key or an empty balance shows up, before a byte has gone to the client,
+      // so the other provider can still be tried.
+      const opened = await openChatStream({
+        model,
+        messages: chatMessages,
+        maxTokens: CHAT_MAX_TOKENS,
+        signal: upstream.signal,
+      });
+      model = opened.model;
 
       res.status(200);
       res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
@@ -184,7 +192,7 @@ chatRouter.post("/chat", async (req: AuthenticatedRequest, res) => {
       res.flushHeaders();
       headersSent = true;
 
-      return pumpChatStream(stream, res, upstream.signal);
+      return pumpChatStream(opened.stream, res, upstream.signal);
     });
     const durationMs = Date.now() - startedAt;
 

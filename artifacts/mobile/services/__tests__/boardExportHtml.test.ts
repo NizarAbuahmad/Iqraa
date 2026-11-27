@@ -20,7 +20,7 @@ import {
 const stroke = (points: string, extra: Partial<Stroke> = {}): Stroke => ({ color: '#DC2626', points, width: 6, ...extra });
 const docOf = (...pages: Array<[BoardBackground, Stroke[]]>): BoardDoc => ({
   current: 0,
-  pages: pages.map(([background, strokes]) => ({ background, board: { strokes, past: [], future: [] } })),
+  pages: pages.map(([background, strokes]) => ({ background, board: { strokes, texts: [], past: [], future: [] } })),
 });
 const count = (haystack: string, needle: RegExp): number => (haystack.match(needle) ?? []).length;
 
@@ -111,7 +111,7 @@ describe('buildBoardHTML — a page with a solution', () => {
   });
   const docWith = (s: BoardSolution): BoardDoc => ({
     current: 0,
-    pages: [withSolution({ background: 'grid', board: { strokes: [stroke('0.5,0.5 0.5,0.5')], past: [], future: [] } }, s), blankPage()],
+    pages: [withSolution({ background: 'grid', board: { strokes: [stroke('0.5,0.5 0.5,0.5')], texts: [], past: [], future: [] } }, s), blankPage()],
   });
   const html = (s: BoardSolution, isAr = true, l: SolutionLabels | undefined = labels) =>
     buildBoardHTML(boardFileOf(docWith(s)), 't', isAr, l);

@@ -782,8 +782,11 @@ const grouped = (id: string, match: RegExp, grades: [number, number]) => T(id, m
     const tops = [...cls.entries()].sort((a, b) => b[1] - a[1]);
     if (tops.length < 3 || tops[0]![1] === tops[1]![1]) continue;
     const label = (a: number) => `${a}–${a + w - 1}`;
-    const head = `سُجّلت ${n} علامة: ${list(xs)}. نظّمها في فئات طول كل منها ${w}.`;
-    const headEn = `${n} marks were recorded: ${listEn(xs)}. They are grouped in classes of width ${w}.`;
+    // The first class is named: started at the smallest mark instead of at 0, the
+    // classes — and the modal class — come out differently (hand review of the
+    // ready-made sheets, 2026-11-20).
+    const head = `سُجّلت ${n} علامة: ${list(xs)}. نظّمها في فئات طول كل منها ${w}، أولاها ${label(lo)}.`;
+    const headEn = `${n} marks were recorded: ${listEn(xs)}. They are grouped in classes of width ${w}, the first being ${label(lo)}.`;
     const pickClass = [...cls.keys()][int(rng, 0, cls.size - 1)]!;
     if (rng() < 0.5) { const f = cls.get(pickClass)!; return { eq: list(xs), answer: String(f), wrongs: countOpts(f, [f + 1, f - 1, n - f, cls.size]), ar: `${head} ما تكرار الفئة ${label(pickClass)}؟`, en: `${headEn} What is the frequency of the class ${label(pickClass)}?` }; }
     const modal = tops[0]![0];
@@ -885,7 +888,7 @@ const scatter = T('scatter', /^اشكال الانتشار$/, [10, 10], ({ rng }
     const m = pick(rng, [1, 2, 3, 4, -1, -2, -3]), d = int(rng, 2, 6);
     const x1 = int(rng, 1, 6), y1 = m > 0 ? int(rng, 2, 15) : int(rng, 25, 40);
     const x2 = x1 + d, y2 = y1 + m * d;
-    return { eq: `${x1}, ${y1}, ${x2}, ${y2}`, answer: signed(m), wrongs: numWrongs(m, [-m, d, y2 - y1, m + 1], signed), ar: `يمرّ المستقيم الأفضل مطابقة لشكل انتشار بالنقطتين (${x1} ، ${y1}) و (${x2} ، ${y2}). ما ميله؟`, en: `The line of best fit for a scatter plot passes through (${x1}, ${y1}) and (${x2}, ${y2}). What is its slope?` };
+    return { eq: `${x1}, ${y1}, ${x2}, ${y2}`, answer: signed(m), wrongs: numWrongs(m, [-m, d, y2 - y1, m + 1], signed), ar: `يمرّ المستقيم الأفضل مطابقة لشكل انتشار بالنقطتين (${x1}, ${y1}) و (${x2}, ${y2}). ما ميله؟`, en: `The line of best fit for a scatter plot passes through (${x1}, ${y1}) and (${x2}, ${y2}). What is its slope?` };
   }
   for (;;) {
     const kind = int(rng, 0, 2), n = 7;
@@ -896,8 +899,8 @@ const scatter = T('scatter', /^اشكال الانتشار$/, [10, 10], ({ rng }
     const r = correlation(pts);
     const real = r > 0.85 ? 0 : r < -0.85 ? 1 : Math.abs(r) < 0.3 ? 2 : -1;
     if (real < 0) continue;
-    const text = pts.map(p => `(${p[0]} ، ${p[1]})`).join(' ');
-    return { eq: text, answer: CORR[real]!, wrongs: CORR.filter((_, i) => i !== real), ar: `يبين الجدول مجموعة من النقاط (x ، y): ${text}. ما نوع الارتباط بين x و y في شكل الانتشار؟`, en: `Points (x, y): ${text}. What kind of correlation does their scatter plot show?` };
+    const text = pts.map(p => `(${p[0]}, ${p[1]})`).join(' ');
+    return { eq: text, answer: CORR[real]!, wrongs: CORR.filter((_, i) => i !== real), ar: `يبين الجدول مجموعة من النقاط (x, y): ${text}. ما نوع الارتباط بين x و y في شكل الانتشار؟`, en: `Points (x, y): ${text}. What kind of correlation does their scatter plot show?` };
   }
 });
 

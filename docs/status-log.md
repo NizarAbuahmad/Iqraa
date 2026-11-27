@@ -173,6 +173,931 @@ question without its drawing).
 see none of this in production yet: book items reach a paper only on the mock path or with
 `BOOK_ITEMS_LIVE=true`, which is off.
 
+## The question bank writes points with the Latin comma — 2026-11-27
+
+The follow-up the intervals entry below named. The bank (`lib/math-practice`) wrote every point as `(2 ، −1)`. The
+renderer can't lay that out left to right: «،» between numbers is also Arabic prose (a verse citation `(79 ،78)`,
+«المواد المرقمة (3،2،1)»), so `isolateForeignRuns` leaves it alone. The bank's points displayed right to left,
+`(1− ، 2)`, beside left-to-right equations and options. The English prompts (`promptEn`) carried the Arabic comma
+too. A scan of every topic found 43,756 such tuples across 36 topics. Points now print `(2, −1)`.
+
+**What changed** (data only; no renderer change):
+- **The four point helpers:** `pt` in `geometry.ts`, `grade10.ts` and `grade10b.ts`, and `pair` in `algebra.ts`.
+- **The inline templates** in `algebra.ts`, `geometry.ts`, `grade10b.ts`, `proportion.ts` and `stats.ts`: the
+  slope-with-`k` stems, scatter plots, proportional relations, graph interpretation, average speed on `[t1, t2]`,
+  and the `(x, y)` table headers. Each was changed by line, reading every match.
+- **The bank's intervals too:** `(−∞, 5]`, `[−3, ∞)`, `(1, 5]`. An open interval with finite ends, `(1 ، 5)`,
+  looks exactly like a point, so the renderer had left it right to left (the gap the intervals entry left).
+- **`relStr`** joins a relation's pairs with «, », so `{(1, 2), (3, −4)}` is one left-to-right set.
+- **Hand-written items:** 99 tuples in `MATH_BANK` (`index.ts`; among them the systems and `linear_quad` items) and
+  38 in the worked solutions (`steps-math-a.ts`, `steps-math-b.ts`). Only the comma inside a bracketed two-atom
+  tuple changed: the replacement used `latinCommaPoints.test.ts`'s own pattern.
+- **Test parsers** that re-derive answers from stems (`\((−?\d+) ، (−?\d+)\)` and similar, in seven test files)
+  now read the Latin form. One geometry test split `eq` on «, » and now uses the file's point parser. None was
+  loosened: each still recomputes the answer.
+
+**Left on «،», on purpose:**
+- Lists in Arabic sentences, such as the Grade 1 `(10، 20، 30، 40، 50)` and «−3 ، 4» (two roots, or two consecutive
+  integers, with no brackets).
+- Two equations in a system's `eq`.
+- **Vectors `⟨5 ، 2⟩`.** The renderer doesn't recognise `⟨⟩` yet, so a Latin comma alone would not change how they
+  display. That is a renderer change of its own.
+
+**Verified:**
+- `latinCommaPoints.test.ts` (new) fails on any two-atom tuple with «،» in a generated item (every topic, grades
+  1–10, every difficulty), in `MATH_BANK` or in the worked solutions. It failed before the change and passes after.
+- `@workspace/math-practice` tests (1,491) pass, and so do its typecheck, the mobile suite, the api-server build and
+  tests, and the root typecheck.
+- Every topic generated 40 times per grade (9, 10) and difficulty (556,403 texts), through `isolateForeignRuns`:
+  all 21,714 points and 616 intervals come out as one isolate (54 points before; the rest were «،»), and no
+  Arabic-comma point is left.
+- The display path for a Latin-comma point was checked in a browser in «Coordinate pairs read left to right in
+  Arabic» below.
+
+**Not verified / not covered:**
+- No new browser run for this change; it changes the strings, not how they are drawn.
+- **Saved papers and pooled artifacts** made before this keep `(2 ، −1)` and display as before. Only new generation
+  uses the new form.
+- Answer checking already treats the two commas alike (`keyLinking.ts` folds «،» to «,», and `formatsBank.ts`
+  reads `[،,]`), so a key stored either way still matches. That was read in the code, not re-run against old papers.
+
+## Intervals and set symbols read left to right in Arabic — 2026-11-26
+
+The follow-up the pairs entry below named. An interval printed backwards in the Arabic UI: `[1, 3]` as `[3 ,1]`,
+and the bank's `(−∞ ، 5]` as `[5 ، ∞−)` when read left to right. **Cause:** `[` and `]` are not in
+`isolateForeignRuns`'s run class at all (a chat's markdown link `[نص](…)` passes through it). A half-open `[5, ∞)`
+also has a `)` with no partner, which `isolateRun` would cut out of the interval.
+
+**Fix** (`services/mathRender.ts`).
+- `INTERVAL_RE` finds an interval: two maths atoms between `[(]` and `[)][`. It counts only with a square bracket
+  or `∞`. Inside it, every bracket character and the comma become private-use stand-ins (`protectInterval`). The run
+  class accepts them, the bracket pairing doesn't see them, and `restoreStandIns` swaps them back.
+- An atom may be `∞`, so `(-∞, ∞)` and `(-∞, -1)` are found too.
+- An interval may use **either** comma. Product decision: the banks' `(−∞ ، 5]`, `[−3 ، ∞)` (Grade 9 intervals in
+  `lib/math-practice/src/algebra.ts`) read left to right like the books. Before, they read as right-to-left notation
+  beside left-to-right equations and options. `،` has its own stand-in and comes back as `،`.
+- `∪ ∩ ∈ ∉` may sit inside a run, never at its edge, as arrows already do. So `(-∞, 0) ∪ [5, ∞)` and `x ∈ [1, 3]`
+  stay whole. A side effect fixes the probability lessons: `P(A ∪ B)` was three isolates, `P⁩(⁦A⁩ ∪ ⁦B⁩)`, which an
+  RTL line lays out as `(B ∪ A)P`. It is now one.
+
+**An Arabic-comma *pair* is still left alone, on purpose.** In prose, `،` between numbers is read right to left:
+a Quran citation `(79 ،78)`, an outcome code `(2 ،3)`, «المواد المرقمة (3،2،1)». Forcing those left to right
+reversed them; a first version did, and the corpus check below caught it. Tests pin all three.
+
+**Verified:**
+- 13 new cases in `mathRender.test.ts`; the mobile suite (9,663 tests, 0 failures) and root typecheck pass.
+- Old against new over every Arabic string in `lib/`, the mobile services and app, and the API source (487,287
+  distinct lines). Every changed display line was read. Intervals, `∞` pairs and `x ∈ W` / `P(A ∪ B)` got better;
+  no prose bracket changed after the fix above. The markdown-link cases are byte-identical.
+- Every bank topic generated 40 times per grade (9, 10) and difficulty: 556,442 texts. All 589 intervals and all 54
+  Latin-comma pairs come out as one isolate.
+- **Browser, Chromium at 390px, Arabic.** A scratch copy of the e2e journey (not committed) added a teacher-written
+  multiple-choice question to a published exam, with options `(−∞ ، 5]`, `[5, ∞)`, `(−∞ ، 5)` and `[−3 ، ∞)`. On
+  `/take/CODE` each option's first endpoint is left of its second. In a clone of the element with the old text, each
+  is right of it. The screenshot shows all four left to right.
+
+**Not verified / not covered:**
+- Native Android and iOS; they rely on LRI/PDI like every other isolate here.
+- The API's offline exam generator produced no questions for the Grade 9 «المجموعات والفترات» lesson ("6 selected
+  objective(s) have no questions"), which is why the browser check used a teacher-written question.
+- **Bank points with the Arabic comma**, `(${signed(x)} ، ${signed(y)})` in coordinate, translation, systems and
+  slope topics: thousands per run, still right to left. Telling them from prose needs the bank to emit `,`, or a
+  decision. Set-builder braces `{x | x ≤ 3}` are still split at `|` and `,`, as before.
+- Text that is already isolated gets a second, nested isolate; it draws the same. The old code did this to every run.
+
+## Instant feedback: students see their mark and mistakes as soon as they hand in — 2026-11-26
+
+Asked for by the owner: homework and tests the AI designs, answered in the app, with the mark and the mistakes shown
+when the student finishes. Generating, sharing, sitting and auto-marking already existed (evaluations, `/take/CODE`,
+`homework.evaluationId`); what did not was seeing mistakes before the exam **closed** — the answer review
+(`studentReviewReady`) waits for a closed exam and the teacher's «اعرض الإجابات», because an open exam is still being
+sat. The owner chose (option «ب»): right and wrong per question at once, the correct answers only after close.
+
+- **Switch.** `evaluations.instant_feedback` (migration `0032`, additive), «فعّل التغذية الراجعة الفورية» on the
+  exam screen in any status, never for a paper exam. `POST /evaluations/:id/instant-feedback {enabled}`. A mark per
+  question is a mark, so the feedback needs released results (`feedbackReady` = switch ∧ released ∧ handed in):
+  turning it on for a published/closed exam also releases them (same conditional update and announcement as
+  `/results-release`, awaited with `pushWithin`); the **first** publish of a draft with it on releases them; a
+  re-publish leaves the release as the teacher left it; hiding the results pauses the feedback (the screen says so,
+  `instantFeedbackPausedNote`); turning it off leaves the release alone. Worksheets sent to a class
+  (`/evaluations/from-worksheet`) are created with it on.
+- **What the student gets.** `/take/attempt/result` adds `feedback`, and `/student/exams/:id/review` falls back to
+  `mode: "feedback"` short of the full review; the «اختباراتي» row has `reviewMode`. Items come from
+  `feedbackItems`: verdict, the student's own answer and marks, **no** `correctAnswer` or steps, and the body
+  **as the student was shown it** (`sanitizeQuestionForStudent` with the attempt's seed) — the stored body can carry
+  the key (an option's `isCorrect`, a fill-blank's `blanks`, a matching column in key order); the review found the
+  first version sending the stored body. A question waiting for the teacher has no verdict («بانتظار تصحيح المعلم»).
+  The hand-in screen asks for the result once by itself (quietly — no «not marked yet» unasked) and lists the cards
+  (`components/AnswerReviewCard.tsx`, shared with `/exam-review`).
+- **No retakes with it on** (owner's choice, 2026-11-26): `retakeDecision` refuses `instant_feedback` after
+  `already_passed`. Right/wrong plus three retakes of the same paper settles true/false and most multiple choice by
+  elimination, and a pass opens the next lesson behind the mastery gate.
+- **What it does give away, said in the teacher's confirm:** «صحيحة» beside a student's own answer is that item's
+  key, and any verdict on a true/false item is. It is for homework and practice, not an exam classmates are still
+  sitting. A student can also claim an absent classmate's name on the share link and read verdicts off that sitting.
+- «ما الجديد»: `instant-feedback-teacher`, `instant-feedback-student`.
+
+Verified: `answerReview.test.ts` (gate, no key or steps, the sanitised body for `isCorrect` / `blanks` / matching
+order), `studentExams.test.ts` (row `review` / `reviewMode`), `retake.test.ts`; `instantFeedback.db.test.ts` over HTTP
+against Postgres (off by default; teacher-only switch; turning on releases; review and hand-in route send no key;
+another student / a parent get nothing; hiding results hides it; full review takes over once closed and shown;
+re-publish keeps a hide; off stops it; a failed lesson quiz is retakeable only with it off); api-server `pnpm test`
+with the database (3689 pass); mobile `pnpm test`; `pnpm run typecheck`; all three `e2e/` specs, the journey now
+turning the switch on before publishing and asserting the student sees verdicts and no «Correct answer». Screens
+read in Chromium: the teacher switch (English, desktop), the hand-in screen in English desktop and Arabic at 390 px.
+
+Not verified: a real phone or Android; dark mode of the cards (the colours came unchanged from `/exam-review`);
+`RLS_ENFORCE` on; a live-AI paper. The coordinate-pair bidi bug found here («(1, 3)» printing «(3 ,1)» in Arabic, on these cards and
+in the options) was fixed separately, «Coordinate pairs read left to right in Arabic» (#1559). Open nits from the review: the switch route reads the status
+before its update (a publish racing it can leave feedback on with results unreleased); the route does not refuse a
+paper exam (the app hides the switch for one).
+
+## Coordinate pairs read left to right in Arabic — 2026-11-26
+
+A maths option `(1, 3)` printed as `(3 ,1)` in the Arabic UI: on the take screen's options
+(`app/take/[code].tsx`) and in «إجابتك» on the review card (`ReviewCard` in `app/exam-review/[id].tsx`;
+there is no `AnswerReviewCard.tsx`), for «حل نظام مكوَّن من معادلة خطية ومعادلة تربيعية», whose options are
+all ordered pairs. **Cause:** `isolateForeignRuns` (`services/mathRender.ts`) leaves the latin comma out of its
+run class on purpose (prose uses it), so the pair was cut into `(1` and `3)`, and neither half passed
+`worthIsolating` (a digit but no operator). Both stayed in the RTL flow, which laid the numbers out right to left.
+
+**Fix.** A latin comma inside a bracketed tuple of plain maths atoms (`(1, 3)`, `(−2, 0)`, `(x, y)`,
+`(1, 2, 3)`), or between such tuples (`(1, 3), (2, 5)`), is swapped for a private-use stand-in (`PAIR_COMMA`)
+before runs are found, and swapped back after. This is the trick the `؟` blank already uses. The stand-in is in
+the run class and makes a run worth isolating, and it counts as an operator for the closing-full-stop rule
+(«الحل هو (1, 3).» keeps the stop outside). These are unchanged: a prose comma with no brackets («الأعداد 1, 2,
+3»), an Arabic-comma pair «(1، 3)», the bracket-pairing split (`isolateRun`) and the `؟` override. Every caller
+of `isolateForeignRuns` gets this, not only the two screens.
+
+**Verified:** ten new cases in `mathRender.test.ts` (seven failed before the fix); the mobile suite and root
+typecheck pass. In Chromium at 390px, Arabic UI, a scratch copy of the e2e journey published an exam on this
+lesson and measured each option's text on `/take/CODE`. Fixed, the first coordinate's x is left of the second
+(`(1, 3)`: 283 < 294). In a clone of the same element holding the old un-isolated text it is right of it
+(165 > 152). Same result for `(0, 2)`, `(2, 0)` and `(−2, −2)`, and the screenshot shows them left to right.
+**Not verified:** the «إجابتك» card itself (it needs a signed-in student account with results released; it
+renders the same helper in the same kind of `<Text>`), and native Android/iOS, which rely on LRI/PDI as every
+other isolate here does. **Not covered:** intervals `[1, 3]` / `]1, 3[` — square brackets are not in the run
+class, so an interval still reads reversed.
+
+
+## Admin users filters: confirmed on Android — 2026-11-24
+
+Docs only. «Admin users list: filter by channel (web / app) and by new or returning» (#1409) said its
+«هذا الشهر» chip fix had not been seen on an Android phone, where the clipping was reported. It has now:
+after the `production` OTA of 2026-11-05 (Mobile OTA update run 41992984527, commit 705b18e), the admin
+reported on their own Android phone that «هذا الشهر» shows in full and the «انضم عبر» and «المستخدمون» filter
+rows work. That entry is updated to say so. **Verified:** by that report only; no device was driven from here.
+
+## The whiteboard takes typed text — 2026-11-25
+
+The follow-up the previous entry named («no text tool»). A teacher can now put words on the page.
+
+- **Tool.** A «نص» button beside the pen and eraser (`BoardTool` in `BoardToolbar.tsx`: `'pen' | 'erase' | 'text'`,
+  replacing the erase flag). With it on, tapping empty page opens a dialog (`TextDialog.tsx`); tapping a text edits it
+  (change the words, or delete it there). The colour is the pen's; the three line-width dots become three text sizes
+  (`TEXT_SIZES` 40 / 56 / 84 canvas units, `textSizeFor`). With the eraser on, a tap on a text removes it. With the pen
+  on the layer lets every touch through to the ink.
+- **The dialog is a `<Modal>`, not typing in place** (a change from the design as first described): a phone keyboard
+  would cover the spot and the page would have to resize under the teacher's finger, and the repo's rule for an input
+  in a Modal (`KeyboardSafeView` inside it) already covers this. The text appears on the page when it is added.
+- **Model** (`services/whiteboardModel.ts`). `TextItem = { x, y, size, color, rtl, text }` in canvas units of the
+  1280×720 page; `y` is the top of the first line and `x` the START edge of every line (left for English, right for
+  Arabic, `rtl` read from the first letter), so a line needs no measuring on the screen or in the PDF. `BoardState`
+  gains `texts`, and `past` / `future` hold `{ strokes, texts }` snapshots, so ONE undo history covers ink and text
+  (a stroke after an undo still drops redo). `hasInk` counts texts, so clear, the leave prompt and export see a board
+  of only text. Limits: 100 texts a page, 400 characters, 8 lines (`cleanText` enforces them and drops control and
+  bidi-override characters). Nothing wraps: a line breaks where it was typed and is clipped at the page edge.
+- **File format v3** (`services/boardFile.ts`). `pages[].texts`, written only for a board that has text; a board
+  with a solution and no text stays version 2 and one with neither stays 1, as before, so an app that predates this
+  still opens them. The file is untrusted, so each text is rebuilt field by field and refused whole for a number off
+  the page or outside the size range, a colour that is not plain hex, text that is empty, too long, too many lines or
+  carries a control / bidi-override character, `texts` in a file below version 3, or a total past the 2 MB cap (texts
+  count). **An app or tab that has not updated refuses a version-3 board** (it knows only 1 and 2). `whiteboard.tsx`
+  used to record `formState.boardVersion` from `BOARD_FILE_VERSION`; it now uses `boardFileVersionOf(doc)`, or a
+  solution-only board would have been recorded as 3.
+- **PDF** (`boardExportHtml.ts` `textsSVG`). One SVG `<text>` per line, over the ink, each hung from its item's start
+  edge. `text-anchor` is always `start`: for a right-to-left line the start is the right edge, and `end` (what the first
+  version used, and its unit test pinned) hung the Arabic line's LEFT edge from `x` and ran it off the page. Rendering
+  the export in Chromium found it; a string test could not. Arabic lines isolate foreign runs like the solution does.
+- **Usage.** `whiteboard_text_added {size, rtl}` (never the words) and `withText` on `whiteboard_saved`.
+  «ما الجديد» entry `whiteboard-text`; `howWhiteboard` mentions it.
+
+Verified: `boardText.test.ts` (direction, cleaning, add / edit / remove each one undo step, one history for ink and
+text, clear, the 100-text limit, version 3 written only with text, round trip, every refusal listed above, unknown keys
+dropped, the printed page's coordinates and escaping, screen wiring read from source, copy in both languages),
+`boardFile` / `boardExportHtml` / `whiteboardModel` / `classUsage` / `designScale` tests; `pnpm run typecheck`; mobile
+`pnpm test`. In Chromium against a local API and Postgres, with a new teacher account, on desktop: placing three texts
+(red 56, blue 84 Arabic with a Latin equation, green 40 over two lines); tap-to-edit with the words prefilled; a tap beside
+a text placing a new one; the pen drawing over a text; undo taking the stroke first and then texts, redo bringing them
+back; the eraser removing a text; Delete in the dialog; saving (stored as version 3, `boardVersion: 3`) and reopening
+with every text back; the 8-line hint. At 390 px in Arabic: the toolbar, the dialog (right-aligned, buttons in RTL
+order) and a text hung from the tapped spot. The printed page was rendered in Chromium from `buildBoardHTML` and
+compared with the screen: positions, the Arabic anchor, two lines and the clip at the page edge agree.
+
+Not verified: touch input and the on-screen keyboard on a real phone or Android; the app's own PDF share
+(`exportAsPDF`) end to end (the HTML it prints was rendered, not the share sheet); Arabic-Indic digits next to
+operators beyond one sample («س + ٥», which read correctly), a known trap on web (see CLAUDE.md); how an old app words
+the refusal of a version-3 board. Known limits: a text cannot be moved, resized or recoloured after it is placed (delete
+and retype); one font; a text near the right or bottom edge is clipped, not moved; the text is not searchable in the
+saved material list.
+
+## Library: ready-made maths sheets for Grades 1–9, and a «which one» item never loses its choices — 2026-11-24
+
+Below Grade 10 the Library held nothing built in: grade 9 had 2 book codes, grades 1–8 had none (measured
+2026-11-20, staff uploads aside). This fills the maths shelves.
+
+**What changed.**
+- **432 ready-made sheets**, one per maths lesson in grades 1–9 less the 15 held back below
+  (`lib/curriculum/src/data/premade_worksheets.json`, 460 with Grade 10's 28). `scripts/build-premade-sheets.ts` now takes `--grade grade-1`…`grade-10`: Grades
+  1–9 read their lessons from the knowledge base, grade names come from the catalog, `_lab` lessons and lessons the
+  bank does not cover (`mathBankCovers`; none today) are skipped. Same generator as Grade 10 (`MockAIService`,
+  medium, 10 questions), keys recorded `'bank'`. The 3 Grade 9 GeoGebra labs get none.
+- **The build is reproducible.** It claimed to be deterministic and was not: the generator draws with `Math.random`, so
+  a rebuild changed every number on every sheet, and a sheet read by hand was not the sheet that shipped. Each draw is
+  now seeded by sheet id and draw number (`seedFor`); a lesson built alone or among 30 others comes out identical.
+- **A «which one» item kept its choices only in a multiple-choice slot.** A worksheet files bank items as short
+  answer at random, and `formatItem` dropped the options there, so «أيّ وحدة أنسب لقياس طول الكتاب؟» printed
+  keyed «مشبك الورق» with nothing to pick from. Nine templates across grades 1, 5, 6, 8 and 9 did it. `formatItem`
+  now keeps a pick's options in every slot (`lib/math-practice/src/picks.ts`: «أيّ» in front of what it points at,
+  or «أنسب», and the key not in the text). This also changes teachers' own offline worksheets. **Not fixed:** the
+  offline quiz's short-answer and fill-in makers (`makeQuizSA_*`, `makeQuizFB_*` in `generators.ts`) still drop
+  options, as they did before.
+- **A build gate** (`services/premadeSheetGate.ts`, the same rule) re-draws a sheet with an unanswerable pick, up to
+  8 times, then refuses the lesson. On the final build it refused nothing. A first, broader rule ("mentions «الآتي»
+  or «هذه»") refused good sheets such as «ما العدد التالي للعدد 49؟»; the tests pin those as passing.
+- «ما الجديد» entry `library-maths-sheets-g1-9` for teachers.
+
+**Verified.** `picksShowChoices.test.ts` sweeps every template in `TOPICS` at every tier into every typed slot, Arabic
+and English; `premadeSheetGate.test.ts`; `premadeSheets.test.ts` now asserts every grade 1–9 has ≥ 25 maths sheets,
+each filed under a KB lesson with that lesson's title, and that every one of the 475 sheets passes the gate with a
+key per question. `pnpm run typecheck`; math-practice 1,433 pass; api-server 2,999 pass; curriculum 930 of 931 —
+`r2.test.ts` fails identically on untouched `main` in this environment (it asserts R2 is *not* configured).
+
+**Hand review.** Three independent reviewers worked every one of the 4,464 questions (grades 1–3, 4–6, 7–9). No key
+was arithmetically wrong. What it found, and what was done:
+- **One incomplete key:** Grade 8 «حلّل: 9x² + 18x + 9» keyed «(3x + 3)²». At the hard tier `factor_special` drew
+  `m` and `a` apart, so m = a = 3 left a common factor (also «9x² − 36 → (3x − 6)(3x + 6)»). `a` is now coprime to
+  `m`; `algebra.test.ts` asserts no bracket keeps a common factor.
+- **Unanswerable picks the first rule missed:** «أيّ البيانات العددية الآتية…» (two words before «الآتية») and
+  «في أيّ مجموعة / صندوق نضع…» (groups never shown). `picks.ts` now covers both, so they keep their options.
+- **15 sheets held back** (`HELD_BACK` in the build script, with the evidence per lesson): the lesson's skill is
+  missing or 3+ of 10 questions are another lesson's or grade's — e.g. «الضرب في 6 و9» with no ×9, «القسمة مع وجود
+  أصفار في الناتج» with no zero in any quotient, thousandths in Grade 4, «تمييز متوازي الأضلاع» asking what one
+  condition makes a parallelogram. Each is a bank generator to fix, then a re-run with `--only`.
+- **Kept, keys correct, to fix in the bank later:** «أجب بعدد كسري» where the answer is not a mixed number (g6
+  u2_l2–l4); least common denominator of unsimplified fractions (g6 u2_l1); «قدّر ناتج 18 ÷ 2» where the fact is
+  exact (g3 u8_l2); «أقل عدد من الكرات يجب إخراجه» read as drawing blind (g3 u12_l5, g4 u10_l4); a missing leading
+  digit that cannot change divisibility by 4 (g5 u3_l1); «مستطيل» for squares; «قطعة بيتزا» for a whole pizza;
+  combinations in Grade 8 «عدّ النواتج» (check the book); open questions with one keyed form («الحادية عشرة إلا
+  ثلثًا», «في الظهر»).
+- **Not checked:** coordinates written «(8 ، 4)» with Latin digits in an RTL line may render reversed (g5 u5_l2,
+  u8_l6, g6 u4_l1–l3) — look at one printed sheet.
+
+**Second pass, on the sheets that ship.** The first pass read a draw that the next build replaced (the build was not
+yet seeded), so the 432 seeded sheets were read again in full: 4,314 keys, no arithmetic error. Six generators made
+questions right by formula and wrong as questions; each is fixed at the source and pinned in
+`lib/math-practice/src/__tests__/sheetReviewFindings.test.ts` (or `picksShowChoices.test.ts`):
+- «ما القيمة المنزلية للرقم 6 في العدد 64.36؟» — the digit occurs twice (`dec_place` now asks only about a digit that
+  occurs once, as the whole-number version already did);
+- a square pyramid with slant height 3 cm on an 11 cm base — slant height is now over half the side;
+- the angle-bisector item keyed DC = 48 for sides 6, 24, 60 — `bd` is now drawn so the triangle exists;
+- «نظّمها في فئات طول كل منها 5» never named the first class — it now says «أولاها 0–4»;
+- «ما العمل الذي يأتي بعد … مباشرة؟» had no list — it lists four, like its sibling;
+- «أيّ تمثيل يُظهر العدد 35…؟» printed no models — `picks.ts` covers «أيّ تمثيل / نموذج».
+The rebuild after those fixes (and after merging `main`, whose Grade 1–3 bank changes also moved some sheets) changed
+41 sheets; every other sheet is byte-identical to what was read. The 41 were read again in full: 410 keys, none
+wrong, nothing unanswerable, and each of the six fixes seen in the output.
+
+**Not done.**
+- **Other subjects, grades 1–8.** The only built-in source is the QR codes printed in the books
+  (`scripts/scan_book_qr.py --fetch`), and `nccd.gov.jo` resets connections from this cloud environment (checked
+  2026-11-20). It needs a machine in Jordan. The offline generator has templates, not questions, for non-maths
+  subjects, so it cannot fill them honestly.
+- Bundle size: the manifest is now ~2.5× its Grade 10 size and is imported statically. The web entry bundle was
+  ~21 MB before this; splitting the manifest per grade is a follow-up.
+
+
+## Grade 10: every page of every served range read — nothing foreign inside, two known cut-offs confirmed — 2026-11-21
+
+«Grade 10 audit…» (2026-11-13) looked at the first and last page of each range. This pass opened **all 2,006 images of
+the 346 served Grade 10 ranges** (six readers, one per group of subjects) for what that could not see: another lesson's
+pages, a unit opener, review, project, enrichment or glossary in the middle of a range. Printed page = PDF page in every
+book except English (PDF = printed + 2).
+
+**Result: no foreign page inside any range, in any subject.** Ranges start on the lesson's own opener and end on its own
+last page («مراجعة الدرس», «أقيّم تعلّمي», «أختبر معلوماتي», the closing exercises) in 336 of the 346; labs match their
+own pages; the re-pointed civic S1 ranges all show their own lesson. Honorifics on the Islamic pages (300 images) follow
+the right people everywhere. Nothing was changed. Since 2026-11-13 no Grade 10 page range or figure has changed
+(checked against the #1458 merge), and 25 lessons were added to the catalogs by «Grade 10 checked against its books, and
+corrected» — ten opening labs, maths u1_l5 and nine vocational S1 lessons — none with page images yet. All 37 maths
+lessons give offline questions; 111 sampled keys were read by hand, all right.
+
+**What it found, all already known:**
+- Cut by the 20-page cap, mid-lesson: digital S1 u1_l2, u1_l3, u1_l4 and S2 u4_l3; physics S1 u2_l1 (p56 unserved) and S2
+  u4_l2 (p38–41 unserved); civic S1 u2_l5 (75–79 of 75–82). The missing pages are in no image folder, so these need
+  re-rendering from the PDFs.
+- Start a page late: Arabic S1 u2_l2 (p38; its opener p37 is only in u2_l1's folder) and civic S2 u7_l1 (87–92; opener p86).
+- **Left on purpose:** chemistry S1 u2_l2 ends on p47, the full-page periodic table, after its own «مراجعة الدرس» (p46).
+  Review question 3 says «مستعينًا بالجدول الدوري», so the plate is the lesson's own reference, not another lesson's page.
+- Printed titles differ from the catalog only by a clause (Arabic S2 u9_l2 prints «أعبّرُ وأحاورُ»; Islamic S2 u1_l7 adds
+  «/الجيش العربي») — same lessons, not changed.
+
+**Not verified:** the pages beyond each range (not in the bucket); anything needing the PDFs; the pages on a phone.
+
+No «ما الجديد» entry: a record, not a change.
+## Grade 3 review, the Grade 2 way: plans, activities, quick checks and live prompts for eight-year-olds — 2026-11-20
+
+The Grade 2 review (below, «Grade 2 review, the Grade 1 way… — 2026-11-15») repeated for Grade 3: 8 subjects, 254
+lessons. The Grade 3 books in the repo carry titles only (no lesson text), so the level below is set from the
+lesson titles, the maths banks (`lib/math-practice`, numbers within 9999) and the curriculum's usual Grade 3
+expectations, not read off the pages.
+
+**Swept.** The offline plan (three styles) and the six activity formats, for all 254 lessons. Every lesson got the
+all-grades templates:
+- «اكتب من ذاكرتك — الدفاتر مغلقة», a claim to defend, a debate, teams betting points, a written summary, «برّر» and an
+  individual worksheet with a "worked example": all 254;
+- a 3-2-1 exit card in about half the plans; a concept map in 143; «فقرة قصيرة (٤–٥ جمل)» in Arabic and a
+  five-sentence paragraph for homework;
+- a controlled experiment in all 13 science lessons.
+
+**Offline (`artifacts/mobile`).**
+- **Grade 3 now uses the early-grade plans, activities, quick check and review** (`EarlyGrade` is 1, 2 or 3), at its
+  own level. Grade 1's content (counting cubes, colouring, answering with a word or a finger) is too young for
+  multiplication, division, fractions and angles, so:
+  - **Maths, science, social studies and English have Grade 3 content** (`thirdGradeContent`). Maths models an
+    example with materials or a drawing (an array, a number line, a shape), writes the same steps in numbers, and each
+    child solves three examples on a small board. Science predicts, observes, tries it with simple tools and records
+    in a two-column table, then writes two sentences, one starting «لأنّ…»; no controlled experiment, no variables.
+    Social studies reads the book's short sentences with a picture or a map and answers two questions in sentences.
+    English reads and writes the lesson words and a short sentence.
+  - **Arabic follows the book's strands with two or three sentences of the child's own** (`thirdGradeArabic`): a
+    reading lesson reads its text by name and answers two questions in sentences; a spelling lesson writes four words
+    by its rule and two sentences. **A punctuation lesson works in sentences** («أكتب (علامتا الترقيم (:) و(؛))»,
+    `isPunctuation`), in the plan, the game and the quick check: the marks are not "in words".
+  - **Islamic education**: a surah is recited and one verse's meaning written in a sentence; any other lesson answers
+    two questions in sentences and names one thing the child will do (`thirdGradeRecitation`). Grade 1 colours a picture.
+  - **A child answers in a sentence** (`ANSWER`), not "a word or by pointing", in the plan and the individual activity.
+  - Every assessment and the activities' writing tip end with the Grade 3 limit: «ولا تزيد الكتابة على جملتين أو ثلاث جمل
+    قصيرة يكتبها الطفل بنفسه.» (`WRITING_LIMIT`).
+  - A Grade 3 unit or semester review is the early-grade review, and each child solves an example or writes two
+    sentences from each unit.
+  - Movement and the arts keep the shared early-grade content (done, not written).
+- **`titleDetail` reads to the last closing bracket.** «أكتب (علامتا الترقيم (:) و(؛))» had been read as «علامتا الترقيم
+  (:» and printed into «كلمات فيها «علامتا الترقيم (:»».
+- **The review's principle line follows the grade.** It said «لا يكتب فيها إلا حرفًا أو كلمة أو عددًا» for every early
+  grade, contradicting the Grade 2 review's own sentence-writing step two lines above. Grade 1 keeps it; Grades 2 and
+  3 say what they write (`REVIEW_PRINCIPLE_AR`).
+- Measured again over all 254 lessons: every phrase above → 0; no template leak.
+
+**Live (`artifacts/api-server`).**
+- **A Grade 3 clause** (`firstGrade.ts`, `isThirdGrade`; «الصف الثالث الثانوي» is not Grade 3) for every use the Grade 1
+  and 2 clauses cover. It says:
+  - reading is a short book text answered in sentences, and writing is two or three sentences of the child's own;
+  - "why?" is answered in one sentence starting «لأنّ…», and a simple prediction checked by observing is fine;
+  - no long paragraphs, summaries, debates, defending a claim, written exit tickets or controlled experiments with
+    variables, and a problem is two steps at most;
+  - by subject, Arabic's strands (a spelling rule or a punctuation mark), and maths within 9999 with the facts to 10.
+
+  `firstGradeClause*` picks the clause by grade (`clauseGradeOf`), so it reaches the plan, worksheet, homework, quiz,
+  activity, lesson explanation, Prompt Slides, classroom, infographic and evaluation prompts. The evaluation's Grade 1
+  type notes stay Grade 1's.
+- **The pool key gains `thirdGrade: "2026-11-20"`** for a Grade 3 request of those kinds, so nothing pooled under the
+  grade-blind prompt is served to one. Grade 2 and Grade 4 keys are unchanged, pinned by literal keys computed from
+  the code before the change. Two earlier tests pinned a Grade 3 lesson-plan key as "unchanged"
+  (`secondGradePrompts.test.ts`, `earlyGradeDifficulty.test.ts`); they now pin Grade 4's.
+
+**Verified.**
+- `thirdGradePlans.test.ts` (mobile, 11 tests) runs every Grade 3 lesson through the plan in three styles, the six
+  formats and the quick check. It checks for none of the phrases above, no Grade 1 counting in maths, science, social
+  studies or English, the teacher's first-person voice and the Grade 3 limit. It also pins maths, science, Islamic
+  education, the Arabic strands, the punctuation lesson and the review. On the old generators all 11 fail.
+- `thirdGradePrompts.test.ts` (API) checks the clause in each builder for Grade 3 only, and the keys.
+- `pnpm run typecheck`; api-server `build` + `test` (3,004 pass); the mobile suite (9,451 pass, 10 skipped).
+- Tests that pinned Grade 3 as all-grades now pin Grade 4 (`secondGradePlans.test.ts`, `activityFirstGrade.test.ts`).
+  `lessonPlanKinds.test.ts` and `lessonPlanVariants.test.ts` sampled the first lesson of each subject, which for
+  science, social studies and PE was a Grade 3 lesson; they now sample from Grade 4 up, since they test the
+  all-grades plan kinds.
+- One full mobile run failed `earlyMathDifficulty.test.ts` (Grade 3 «خواص الضرب» not between easy and hard). It
+  passed on the next three runs, with and without this change: the maths banks draw at random, and this change does
+  not touch them.
+
+**Not verified:** a live model's Grade 3 output; the Arabic wording by a native reader; the level against the Grade 3
+book pages, which the repo does not hold as text.
+
+**Still open.**
+- Grade 3 evaluations keep every question type.
+- Grade 4 keeps the all-grades templates; it was not swept.
+
+No «ما الجديد» entry: these correct what existing generators write for Grade 3.
+
+
+## Grade 3 review, third pass: two science crops trimmed to their picture, numbered pictures in the book's order — 2026-11-21
+
+A re-run of the Grade 3 review on today's `main`, after the two earlier reviews, the Grade 3 second pass
+(NizarAbuahmad/Iqraa#1505) and the compare/order fix (NizarAbuahmad/Iqraa#1499). It covered the catalogs, the three
+figure books (science S1 and S2, social studies S2), the page links and the maths.
+
+**Fixed (figures only; no code):**
+- `g3-science-s1 p026c-v2` (the water food web, «الْكائِناتُ الْحَيَّةُ في بيئاتِها») carried the book's «أتحقق» question and
+  the printed page number «26». It is trimmed to the diagram and is now `p026c-v3.png`; its `rect` is updated to match.
+- `g3-science-s2 p033` (the island photo, «الْأَرْضُ») was the page top: the green banner, a paragraph that stopped
+  mid-sentence, and the photo. It is cropped to the photo and is now `p033-v2.png`. Both new names follow the repo's
+  `-vN` convention, so a plain `upload-figures-r2` sends them and nothing is served stale from the bucket.
+- Order inside a page: figures on one page keep their index order (`bookFigures.ts` sorts by `pdfPage` only). Two
+  sets the book **numbers** came out as 2, 1, 4, 3, 6, 5 (science S2, the six hazard photos on p68) and 2, 1, 7
+  (social S2, p22). Their index entries are reordered to the book's numbering. Only numbered sets were touched:
+  right-to-left geometry is the wrong rule in general (the log → crane → carpenter pictures on social p31 are already in
+  story order and RTL would break them), and a code change would reorder the LTR English books too.
+
+**Checked and unchanged:**
+- All 15 Grade 3 catalogs load into the app with their file counts: 254 lessons (maths 32 + 38, science 7 + 6, Islamic
+  12 + 12, Arabic 25 + 25, social 10 + 9, English 10 + 10, Creative Arts 30, PE 14 + 14).
+- Figures: 77 served, equal to the asset list; no orphan PNGs, no index entry without a PNG, no figure mapped to a
+  lesson of another subject or semester. The book's own numbering restarts in the S2 books (book unit 1 is catalog
+  unit 4) and the map handles it. The 6 figures with no lesson are the three front-matter pictures on page 3 of each
+  science book. I looked at all 77 on contact sheets.
+- Maths: an invariant sweep of the offline generators over the 70 lessons at three difficulties (8,400 items) found no
+  empty stem, no empty key, no duplicate option and no key missing from its options.
+
+**Not done, and why:**
+- **No book text is extracted for Grade 3** (`lib/curriculum/src/data/extracted/` has none, against 40 files for
+  Grade 4), so the live model grounds a Grade 3 lesson on its catalog entry alone. For Arabic that is the title
+  (no objectives, main idea or vocabulary: «title-only» by the catalog's own declaration); for Islamic studies the title
+  and a main idea. The student books are in the owner's Drive; extraction needs a machine that can download them
+  (`docs/adding-a-book.md`, tracks A and B).
+- **«صفحة الكتاب» has no pages for 94 of 254 lessons**: maths S1 (all 32) and 20 of S2, science S1 (all 7) and 5 of 6
+  in S2, 2 of 10 social S1 and 7 of 9 social S2, all 20 English, and one Creative Arts. The page links were verified on
+  2026-10-01; filling them means rendering the pages from the PDFs and uploading them to R2.
+- The offline question banks cover maths only; every other Grade 3 subject answers «No offline question bank» with live
+  AI off, by design (`questionBankPolicy`).
+- Not fixable from the crops: slivers of a neighbouring picture at the edge of a few social S2 figures, the book's own
+  pink trial-edition watermark, and the page-number badge printed on the two paired photos on science S2 p56.
+- **Step for whoever has R2 access:** `pnpm --filter @workspace/curriculum run upload-figures-r2` (no `--force`) to
+  put `p026c-v3.png` and `p033-v2.png` in the bucket. Until then those two figures show nothing in a deck.
+
+Verified: `bookFigures`, `bookPage` and `lessonShelf` tests, the curriculum suite (931) and `verify` (0 errors),
+`gen_book_figure_assets.mjs` (the only diff is the two renamed keys). No «ما الجديد» entry: nothing a teacher operates
+changed.
+
+## Grade 4 second pass: division with a remainder and with zeros, tenths and hundredths apart, mixed numbers compared, six digits, a protractor — 2026-11-21
+
+A second read of Grade 4 maths, on top of «Grade 4 review: reflection on the book's square grid…», «Grade 4, second pass:
+generator output, page ends…» and «Grade 4 maths: offline questions for the two «خطة حل المسألة» lessons». The generators
+ran over all 313 lessons: each grounds by its own id, and all 50 maths lessons fill a ten-question quiz. Every question of
+every maths quiz was read against its lesson's NCCD objective. Every key was right. (The audit script's ten «wrong key» flags
+are its own: it reads «أكبر عدد يمكن تكوينه من الأرقام» as a sum, «أقرب عشرة آلاف» as «عشرة», fractions as decimals and
+«2 كم و 860 م» as zero.) Where a lesson did not ask its own skill, it was measured with the real lesson through
+`takeElementaryMath` (300 draws each), then fixed. Nine things, across twelve lessons:
+
+- **«قسمة الأعداد» (u3_l3) and «القسمة مع وجود أصفار في الناتج» (u3_l4) drew one bank.** u3_l3's objectives are «من دون باقٍ»
+  and «مع باقٍ», yet 0 of 300 items had a remainder. u3_l4 asked «174 ÷ 6 = 29», which has no zero. Two new generators in
+  `lib/math-practice/src/grade4b.ts`:
+  - `div_g4`: three digits by one, 40% or more with a remainder. It asks the quotient, the remainder, a shelves story, the
+    number from «الخارج والباقي», and the missing number.
+  - `div_zeros_g4`: every quotient holds a zero, and half have it in the middle (103, 207). It asks the quotient, how many
+    zeros, the digit in a place, the answer a pupil wrote with the zero left out («حلّ سامر 720 ÷ 4 فكتب 18»), a story and
+    the missing number.
+- **«أجزاء العشرة», «أجزاء المئة» and «التحويل بين الكسور والأعداد العشرية» (u7_l1, l2, l4) shared `frac_dec`.** The tenths
+  lesson asked «0.25» and «1/25»; the conversion lesson asked place values. Now `tenths_g4` (one place, denominator 10: the
+  fraction and the decimal, standard form, the tenths digit, how it is read, a number line), `hundredths_g4` (two places: the
+  same, plus expanded form) and `dec_convert_g4` (conversions only, both ways, mixed numbers too). Grades 5–6
+  («أجزاء الألف») keep `frac_dec`.
+- **«مقارنة الكسور والأعداد الكسرية وترتيبها» (u6_l4) never drew a mixed number** (0 of 300). `frac_compare_g4` draws them in
+  about 60% of its items: a sign (including «2 1/2 ___ 5/2», which is «=»), the greatest or least, and an order; two in five
+  mixed sets share their whole part, so the fraction decides.
+- **«مقارنة الأعداد وترتيبها» (u1_l2) says «ضمن مئات الألوف» and never drew six digits.** It drew from 0 to 99999 and showed 91
+  and 3206. Grade 4 now draws 10000–99999 at easy and 10000–999999 above (`compareRange`), and the digits item builds
+  five- and six-digit numbers.
+- **«تقدير المجموع والفرق» (u1_l4)** drew 2–4 digits and rounded to tens and hundreds only, though u1_l3 rounds to 10000 and
+  u1_l5 adds within six places. Grade 4 now draws 4, 5 and 6 digits by tier, rounds to 100, 1000 or 10000, and keeps a
+  sum and its estimate under a million. This size comes from the objectives, not a printed example.
+- **«الزمن» (u9_l4) asked start and end times**, which are Grade 3's «الفترات الزمنية». `time_units_g4` converts: hours to
+  minutes, minutes to seconds, days to hours, weeks to days, years to months, both ways, mixed measures and a story. Grade 5's
+  «الزمن» keeps `time_g45`.
+- **«المحيط» (u9_l5) is «المربع أو المستطيل»; a third of its items were triangles.** Grade 4 now asks a rectangle, a square, a
+  missing side (of a rectangle or a square), an L-shape cut from a rectangle, and a rectangle on a square grid. Grade 3 keeps its triangle.
+- **«المساحة» (u9_l6) says «أستعمل شبكة المربعات لتقدير مساحة شكل»** and never estimated. A new kind gives whole and part squares
+  and states the rule («كل مربعين غير كاملين يُعدّان مربعًا واحدًا»), so it does not rely on a convention the pupil may not know.
+- **«قياس الزوايا ورسمها» (u5_l2) says «أستعمل المنقلة»** and only added and subtracted angles. Four kinds now read and draw
+  with a protractor: a reading from 0, from another mark, the two scales of one acute angle, and where to mark an angle.
+
+**A catch by an existing test.** `tamyiz.test.ts` failed «720 قطعة» in the new zeros story: from 100 up, only exact hundreds and
+the last digits 1–2 take the genitive; 720 takes «720 قطعةً». The story now says «720 قطعةً من الحلوى». Reading samples by hand also
+caught odd distractors («0.810», «5.0») in the conversion lesson, now filtered to values a pupil would write.
+
+**Verified.**
+- `grade4SecondPass.test.ts` (14 tests) was written first, and 13 of them failed. Every key is recomputed from the printed stem by
+  code that shares nothing with the generators. It also pins what each lesson must not ask: no decimal past one place in the
+  tenths lesson, no place value in the conversion lesson, no clock time in «الزمن», no triangle in Grade 4's «المحيط».
+- Four existing tests pinned the old Grade 4 behaviour and now read the new: the angle checker (`early.test.ts`) skips the
+  protractor items, which the new file checks; `geometry.test.ts` for the perimeter stems, the area estimate and the count of area
+  kinds (6 to 7); and the routing «الزمن» (Grade 4: `time_units_g4`, Grade 5: `time_g45`).
+- `lib/math-practice` passes 1,478 tests, the full mobile suite (9,530) and `pnpm run typecheck`. The Grade 4 audit was rerun
+  over all 313 lessons.
+- About a hundred sampled questions were read by hand and their keys checked.
+
+**Not done.**
+- The objectives were the reference, so the wording of the new kinds follows them, not a printed page.
+- «تقريب الأعداد» still draws about half its items at tens. «الأعداد العشرية» (u7_l3) and «الأعداد العشرية والنقود» (u7_l5) were not changed.
+- Everything the earlier Grade 4 entries left for the PDFs.
+
+No «ما الجديد» entry: these change which offline practice questions are generated, not a feature.
+
+## A dead key now switches provider for chat, exams and grading too — 2026-11-21
+
+Second half of «Production runs Claude for documents …». That change covered the pooled generators only
+(`generateContent`); every other route still called `openai.chat.completions.create` itself, so an empty OpenAI
+balance would have failed chat, exam generation and the photo-marking scans with nothing behind them. Chosen with the
+owner after the Haiku 5.5 comparison (`provider-eval` run 9: Haiku 16/16 complete and Arabic 4/4, 2.2× cheaper on
+documents and 4× on chat, but 3–5× slower — documents 26 s against 8 s, chat 12.5 s against 5 s): for an emergency
+path price barely matters, so the backup is the model most trusted, Claude Sonnet 5.5, not the cheapest.
+
+**Changed.**
+
+- `lib/aiComplete.ts` (new): `completeAi` (a finished reply) and `openChatStream` (a streamed one) are now the only
+  doors to a model. The model id names the provider; an account error (`providerFallback.ts`) re-sends the request
+  once to the other provider's configured model; the result carries the model that ANSWERED, and every caller records
+  spend and names the response against it. OpenAI's full `usage` is kept, so cached-token pricing still works.
+- `lib/claudeMessages.ts` (new): OpenAI-shaped messages → a Claude request. System messages move to `system`;
+  empty text blocks are dropped (Claude rejects them); a `data:image/{jpeg,png,gif,webp};base64,…` photo becomes a
+  base64 image block, an `https` URL a url block, anything else (a HEIC photo, an SVG) an `UnsupportedImageError`.
+- `lib/claude.ts`: `completeWithClaude` takes a message list as well as one prompt; `streamWithClaude` (new) adapts
+  Claude's event stream to the chunk shape `pumpChatStream` already reads, forwards only text deltas, and fails the
+  stream on a refusal. It settles once the API has accepted the request, which is when a bad key shows, so the chat
+  route can still switch before it has sent its client a byte.
+- Moved onto the helper: `routes/chat.ts` (both shapes), `routes/evaluations.ts` (exam generation, worked steps,
+  scan-paper, scan-class-paper), `routes/attempts.ts` (scan-marks), `routes/generate.ts` (prompt-slides questions;
+  `/generate/solve` wraps its call in `withProviderFallback`), `lib/derivativeVerified.ts`.
+- **Left alone on purpose.** `completeOnce` in `routes/generate.ts` still calls OpenAI itself: `generateContent`
+  already wraps the whole pooled flow, so the pool is read and written under the model that answered. A fallback
+  inside the call would store one model's paper under the other's key. `routes/siteAsk.ts`, the public site
+  assistant, has no backup: a visitor watching a typing indicator cannot wait out a fallback.
+- `aiComplete.test.ts` ends with a guard that counts direct `openai.chat.completions.create(` calls per file and
+  fails on any not listed (generate.ts: 1, siteAsk.ts: 1). `scanRoutes.test.ts` finds «the model call» by the text
+  `completeAi(` now; its checks (guards before the call, no roster sent) are unchanged.
+
+**A review of the first version found five things, fixed in the same PR.**
+
+- *Spend under Claude.* Claude is never sent fewer than 16000 tokens (`CLAUDE_MIN_MAX_TOKENS`; thinking counts against
+  it), but chat's estimate for a turn with no usage figures (the client left, the stream failed) charged
+  `CHAT_MAX_TOKENS` (1200): up to 13× too little against `AI_STUDENT_BUDGET_USD` during a fallback. It now charges
+  `claudeMaxTokens(CHAT_MAX_TOKENS)` when the model is Claude. The same floor means chat's 1200-token reply cap does
+  not hold on the Claude path; the prompt's brevity is all that limits a fallback reply.
+- *Big exam papers.* `completeWithClaude` ran on a 120 s timeout with the SDK's two retries, so a 30-question paper
+  (24000-token ceiling) would time out three times and fail after about six minutes. A reply above the floor now gets
+  `claudeRequestOptions`: time in proportion to its ceiling (12 ms a token, capped at 280 s inside Cloud Run's 300 s
+  limit) and no retry. Ordinary calls keep the client's defaults.
+- *Photos.* Claude takes images up to 5 MB and rejects a `media_type` that disagrees with the bytes; the scan routes
+  accept about 6 MB and OpenAI never checked the label. `toImageBlock` now reads the type from the bytes (JPEG, PNG,
+  GIF, WebP; an unrecognised file keeps its label only if Claude reads that type) and refuses an image over 5 MB with a
+  message that names the size.
+- *Chat history starting with the assistant.* Claude answers 400 when the first message is not the user's, and
+  `messages.slice(-CHAT_HISTORY_TURNS)` can start with an assistant turn. `toClaudeRequest` drops leading assistant turns.
+- *Tests.* Nothing pinned «record against the model that answered» at any route, and the guard built its path with
+  `.pathname`, which breaks on Windows and on a path with a space. Source-level tests now require every
+  `recordUsage` in the moved routes to avoid `getGenerationModel` / `getChatModel`, and the chat and scan sites to take
+  the model from the completion (checked by breaking two sites on purpose: both were caught); the path uses
+  `fileURLToPath`; and a test asserts no options argument is sent to OpenAI when neither a timeout nor a retry count is set.
+
+**Verified.** `claudeMessages.test.ts` 14, `aiComplete.test.ts` 20, `claude.test.ts` 17 (the streaming adapter against
+the real SDK parsing server-sent events, including thinking left out, a refusal failing the stream, and a 401 thrown
+from the open call before any chunk). api-server 3066 / 3066 after `pnpm build`; typecheck clean.
+
+**Not verified.**
+
+- No request went to a real dead key, an empty balance or a live Claude stream; the error shapes are the SDKs'
+  documented `status` / `code`. No route-level test stands in for either provider (route tests run with live AI off),
+  so the six rewired call sites are covered by the helper's tests, the typechecker and the guard, not by an end-to-end
+  run.
+- Photo scans through Claude: the conversion is tested, Claude's reading of handwriting is not. A scan response is
+  `saved: false` (the teacher confirms), but nobody has compared the two providers on a real paper.
+- A 30-question exam paper written by Claude may still not finish inside Cloud Run's 300 s request limit; the
+  timeout is now sized to it, but no paper that large has been timed on Claude.
+- Latency: the app's chat gives up after 45 s of silence (`IDLE_TIMEOUT_MS`). Claude thinks before its first word and
+  the thinking is not forwarded, so a slow turn is silent for that long. Haiku finished whole chat replies in about
+  12 s; Sonnet 5.5 was not timed on chat.
+- The exam and chat answers a fallback writes are Sonnet-voiced, not the OpenAI model's; a teacher or student would
+  not be told.
+- Since 2026-11-22 the app hides the «اسأل إقرأ» chat screen («The AI chat «اسأل إقرأ» is hidden from the app»), so
+  chat's fallback protects the `/chat` route that older builds and direct callers still reach, not a screen a user
+  opens today. The exam, scan and prep paths are the ones a teacher meets.
+
+## Paper scan: a whole book's objectives always fit — 2026-11-20
+
+`POST /evaluations/scan-paper` reads the photos of an exam a teacher already handed out and fills the marks grid. It refused more than 100 objectives (`MAX_SETUP_OBJECTIVES`, `artifacts/api-server/src/modules/assessment/scanRequest.ts`). Three books have more: Grade 10 Islamic Education S2 (116), S1 (105) and Grade 7 S1 (102). A teacher who picked the whole book there, by hand or with the new «الكتاب كاملًا (كل الدروس)» row, got the generic `scanFailed` message, «تعذّرت قراءة الصورة. أدخل العلامات يدويًا.», which blames the photo. Nothing said why.
+
+**What changed:** the cap is now 200.
+- It was a sanity bound on the request body, not a model limit. The objectives reach the prompt only as an id-and-label list.
+- 200 ids are about 8 KB of body. At 116, the prompt grows by the labels, around 10–15k characters.
+- The output budget (`max_completion_tokens: 3000`) is unaffected: the model returns one row per question, not per objective.
+
+**Test:** `scanRequest.test.ts` now checks that every catalog book's whole objective list passes `parsePaperScanBody`. It also checks that the largest book is above 100, so the test cannot pass vacuously. It failed on `book-islamic-10-s1` (105) before the change. The existing over-the-cap case now sends 201.
+
+**Verified:**
+- api-server: `pnpm build` then `pnpm test`, 2,984 pass.
+- `pnpm run typecheck`.
+
+**Not verified:**
+- A live scan of a real 116-objective paper.
+- Whether the model maps questions to objectives as well from a list of 116 as from a short one. A teacher still checks every row before saving; the scan writes nothing.
+
+No «ما الجديد»: a scan that used to fail on three books now works, and there is nothing new to point at.
+
+## Exam builder: «الكتاب كاملًا (كل الدروس)» — a whole vocational English track in one tap — 2026-11-20
+
+Follow-up to «المسار كاملًا» below. That one changed `TopicSelector`, which the exam builder (`app/evaluations/new.tsx`) does not use: there a teacher picks a catalog book and ticks lessons. Each Grade 10 vocational English track is already its own catalog book there: `book-english-10-commerce`, `-agriculture`, `-hospitality` and `-industry`, with 30–31 objectives each. So an exam on the whole track was possible, but only by ticking every lesson one by one.
+
+**What changed:** a «الكتاب كاملًا (كل الدروس)» row heads the lesson list whenever a book has more than one lesson. It ticks every objective of the book; tapped again with everything ticked, it clears them. It works on every book, not only the tracks.
+- The logic is `toggleEverything` / `isEverythingSelected` in `services/objectiveLessons.ts`.
+- The server needed no change. `POST /evaluations` already takes any number of objectives, provided they all belong to the chosen book (`objectivesAreWithinBook`).
+- The track's «ما الجديد» entry (`g10-english-whole-track`, not shipped yet) now also tells teachers how to do it for an exam. Its date, and that of `g10-exams-humanities-pe`, moved to 2026-11-24, the day of the final merge from `main`.
+
+**Test:** `evaluationWholeBook.test.ts`, which failed before the helpers existed.
+- For each of the four track books, select-all ticks all of its objectives, and `objectivesAreWithinBook` accepts the ids.
+- The toggle clears a full selection and fills a partial one.
+- A book with nothing to pick is never "everything".
+
+**Verified:**
+- On the head merged with main (2026-11-20): mobile 9,368 pass, api-server 2,983 pass (after `pnpm build`), curriculum 937 pass plus `verify`.
+- `pnpm run typecheck`.
+
+**Not verified:**
+- The screen was not opened in a browser.
+- A live exam generated from a whole track (30 objectives).
+
+**Known limit, not new (fixed the same day, see «Paper scan: a whole book's objectives always fit» above):** the paper scan (`POST /evaluations/scan-paper`) refused more than 100 objectives (`MAX_SETUP_OBJECTIVES`). Three Islamic-education books have more: Grade 10 S2 (116), Grade 10 S1 (105) and Grade 7 S1 (102). On those, «الكتاب كاملًا» followed by a scan failed with the generic scan error, and so did ticking every lesson by hand.
+
+## Grade 10 vocational English: «المسار كاملًا» picks a whole track — 2026-11-17
+
+Follow-up to the track grouping in this PR. The four Grade 10 vocational English books (commerce, agriculture, hospitality, industrial) were kept out of «الكتاب كاملًا» and «الفصل الأول كاملًا» and listed under their own headings, but a teacher could only pick their units one at a time. Each track's heading now starts with «المسار كاملًا: القطاع التجاري» (and so on). It covers that track's units and nothing else.
+
+**How:** a 'book' scope may now name one track book, `ScopeSelection.bookId` (`services/scopeSelection.ts`). It is not a new scope kind.
+- `unitsInScope` returns that book's units. It returns none when the book is not a track of the picked grade and subject, so `parseScope` refuses that selection.
+- `scopeKey` is `book:<grade>:<subject>:<bookId>`. The plain book key is unchanged, so cached papers keep their keys.
+- `scopeFromKey` (`services/revisionScope.ts`) reads the four-part key.
+- `scopeLabel` / `revisionPhrase` say «المسار كاملًا: …» / «موضوعات مسار …».
+- `TopicSelector` adds the item under each track's heading, wherever the screen offers 'book'.
+
+The API needed no change. It treats `scope.scopeKey` as opaque (`scopeKeyOf`, `grounding.ts` caps it at 200 characters), and `scope.kind` is still `'book'`.
+
+**Where it shows:** the eight `/ai-tools` screens that offer the whole book: quiz, worksheet, lesson plan, activity, slides, lesson flow, classroom builder and game. The chat tab's lesson picker (`app/(tabs)/iqra.tsx`) also shows it, because it takes the default kinds and treats it as it treats «الكتاب كاملًا». The exam builder (`/evaluations/new`) has its own picker and does not get it. «ما الجديد»: `g10-english-whole-track`, which opens the quiz.
+
+**Test:** `englishTrackScope.test.ts`, two new cases.
+- A track scope covers exactly its 6 units. Its key differs from the book's, and its label, phrase, key round trip and `parseScope` round trip are pinned.
+- A track id on the English main book, or on maths, is refused, and so is an unknown book in a key.
+- Both cases failed before the change.
+
+**Verified:**
+- mobile: 9,324 pass.
+- `pnpm run typecheck`.
+
+**Not verified:** the picker was not opened in a browser. The new item is a `DropdownItem` like «الكتاب كاملًا», placed under the existing track heading.
+
+## Grade 10 maths «حل معادلات خاصة»: its worked example gives the book's one real root, not ±3i — 2026-11-17
+
+The last item from the Grade 10 review. Main's audit had already added the 2026 edition's first lesson, «حل معادلات خاصة», as `u1_l5`, with its five objectives, summary and exercises. One thing it carried over was wrong. The hand-written enrichment row `kbl-math-s2-1-1` (`services/knowledgeBase.ts`) gave the example «x³−2x²+9x−18=0: حلول x=2 و x=±3i». The book (math S1 p.9) factors it as (x−2)(x²+9) = 0 and says «لا يوجد حل حقيقي للمعادلة x²+9=0، فللمعادلة جذر واحد هو 2». Grade 10 works in real numbers only.
+
+**What changed:**
+- The example is rewritten, in Arabic and English, as the book works it: grouping, then factoring, then one real root.
+- Checked numerically: the real roots of x³−2x²+9x−18 are {2}, and of x⁶−3x³−40 are {2, ∛(−5)}. The second example was already right.
+- No other Grade 10 lesson text or offline bank item carries a complex root (searched).
+
+**Test:** `g10MathRealRoots.test.ts`. No Grade 10 maths KB lesson's summary, rules or examples may carry a complex root, and u1_l5's example must give the one real root. Both cases fail without the change.
+
+**Verified:**
+- mobile: 9,321 pass.
+- One run failed «Grade 1 maths difficulty, offline» in `earlyMathDifficulty.test.ts`. That file passes 5/5 alone and failed for Grade 4 once before; it is a flake in main's early-grade offline maths, outside this change.
+- `pnpm run typecheck`.
+
+**Still missing for u1_l5:**
+- **Figures:** `figure-lesson-map.json` still maps book lesson (1,1) to `null`. Mapping it would make crops reachable that were probably never uploaded to R2.
+- **Book pages:** `book-page-links.json` has none for the lesson.
+
+Both need the PDF and an R2 write token. Unchanged and still the owner's call: the two 2020-edition lessons, u1_l3 «تبسيط المقادير الأسية» and u1_l4 «حل المعادلة الأسية», whose ids are stored in Postgres.
+
+## Grade 10 English: the vocational tracks get their own picker headings and stay out of whole-semester scopes — 2026-11-15
+
+Grade 10's four vocational-English coursebooks (commerce, agriculture, hospitality, industry) are their own KB books, but they share `subjectId: 'english'`, grade 10 and semester 1 with the English book. Read from the code and confirmed by running it:
+- **Picker.** `getUnitsForSubjectGrade('english', 'grade-10')` returns 40 units. The topic picker grouped them by semester only, so «الفصل الأول» listed the book's 5 units followed by the tracks' 30, with nothing saying which track a unit came from.
+- **Wide scopes.** `unitsInScope` built «الفصل الأول كاملًا» and «الكتاب كاملًا» from the same list, so a full-semester English paper spanned all four tracks' content.
+- **Teaching plans.** «توزيع الدروس تلقائيًا» would append the tracks' 30 lessons to an English class's term.
+
+**What changed**
+- **`KBBook.track`** (`services/knowledgeBase.ts`) marks the four books, with an Arabic and English track name.
+- **New helpers:** `trackOfUnit`, `getMainUnitsForSubjectGrade` (units without track books) and `unitTitleWithTrack`.
+- **Wide scopes** (`services/scopeSelection.ts`): `unitsInScope` for `book` and `semester`, and `semestersAvailable`, use only the subject's own book. A track's unit or lesson can still be picked on its own.
+- **Topic picker:** the new `groupUnitsForPicker` keeps each semester of the subject's own book, then gives each track its own heading, «الفصل الأول · القطاع التجاري». `TopicSelector` uses it, and a selected track unit shows its track in the picker button. The topic string sent for grounding is unchanged.
+- **Teaching plans:** auto-scheduling uses only the main book. The plan's lesson list still shows track units for dating by hand, each led by its track name.
+
+**Test:** `englishTrackScope.test.ts`, 5 cases:
+- only these four books carry a track;
+- the picker groups and their order;
+- whole-semester and whole-book scopes hold 5 and 10 units;
+- a track unit is still pickable on its own;
+- mathematics is unchanged.
+
+Its scope case fails without the change.
+
+**Verified:** mobile 9,320 pass; `pnpm run typecheck`.
+
+**Not verified:** the picker in a browser or on a phone.
+
+**«ما الجديد»:** none. It corrects how existing content is listed and scoped, and adds no feature.
+
+**Not done:**
+- No «track as a whole» scope: a teacher of the commerce track picks its units one at a time.
+- The chat's knowledge search still ranks track lessons alongside the English book's.
+
+## English Word List: the parser stops at the list's end — no more Grammar Reference rows as vocabulary — 2026-11-15
+
+Main's Grade 10 audit (#1479) had already fixed the bigger half: the Grade 10 S1 lessons now come from the «LESSON nA» heading, not the `WL` count. What it left in place: `extract-english-vocabulary.ts` kept parsing after the Word List into the Grammar Reference and irregular-verbs pages. Those pages carry no `WL` marker, so their cells were filed under the last list's lesson as if they were words to drill: «She/It», «They must», «burned / or burnt», «understood».
+
+**Rows removed (43):**
+
+| Lesson | Rows |
+|---|---|
+| Grade 10 S1 u5_l6 | 15 |
+| Grade 9 S1 u5_l4 | 16 |
+| Grade 9 S2 u10_l4 | 10 |
+| Grade 8 S1 | 1 |
+| Grade 8 S2 | 1 |
+
+No row was added or moved.
+
+**What changed:** one rule. The section ends at the first page with no `WL` marker after it started.
+
+**Knock-ons, each pinned by a test:**
+- **Grade 9 S2 u10_l4 «القواعد» joins `GRAMMAR_ONLY_LESSONS`.** It has 3 real words and had passed the hub's word floor only on irregular-verb forms. Without it, its grammar unit pointed at no hub lesson and every grammar suite crashed.
+- **14 Arabic glosses** for the dropped rows are removed from `english_vocabulary_ar.json`.
+- **`REVIEWED_BY_EAR` drops `been` and `burned` (24 → 22).** They are recordings someone listened to on 2026-10-31, and no lesson plays them now.
+- **The G5 and G10 grammar review forms are regenerated.** «understood» is now listed as outside the vocabulary lists, for the teacher to approve.
+- **Drill corpus pin:** 1,838 words and 499 sentences become 1,795 and 493.
+- **New case in `englishVocabularyLessons.test.ts`:** it fails on main's data.
+
+**Not done:** main's extractor comment says Grade 9 S1 has the same marker mis-filing as Grade 10 had, and that it was deferred because it moves four Grade 9 grammar lessons. That is still open.
+
+**Verified:**
+- curriculum: 937 pass;
+- mobile: 9,315 pass;
+- `pnpm run typecheck`.
+
+## Grade 10 history, geography, civic and PE: teachers can make exams for them — 2026-11-13
+
+Found while checking whether the API's prompts use the new self-assessment field. They do, through the app's context: lesson explanations (`pregenerate.ts`) and every `/generate/*` route receive the grounding context as `additionalContext`.
+
+The exam (Evaluation) builder is different. It is scoped by **objectives**, and `getEvaluableBookIds()` lists only books that have at least one. These seven books have none, on purpose, because their books print no outcomes list: history S1/S2, geography S1/S2, civic S1/S2 and PE S1. They were therefore missing from the exam screen altogether; a teacher could not make an exam for them.
+
+**What changed (owner's choice: exam-only objectives)**
+- **New opt-in `examTargetsFromBook`** on `makeNccdCatalog` (`lib/curriculum/src/catalogs/nccdCatalog.ts`), set only on those seven builders, so grades 1–9 are untouched.
+  - For a lesson with no `objectives`, it emits exam-only outcomes into the browser lesson's `outcomes`.
+  - Their text is the lesson's own «أُقيِّمُ تعلُّمي» box where the book prints one (PE: 40 targets), or else its «الفكرة الرئيسة» (61 targets).
+  - The unit-level civic and history tables are not used here, because the book does not say which lesson a unit statement belongs to.
+- **Labelled and kept apart from real outcomes.**
+  - Each target carries `examTargetSource` (`'main-idea' | 'self-assessment'`, new optional field on `LearningOutcome`).
+  - Ids take a separate shape, `o-hist-s1-u1_l1-t-0`. If the book ever prints real outcomes, those would be minted as `…-u1_l1-0`, and an exam stored against a target can never resolve to new text.
+  - `objectives` stays empty, so the generator context still never calls these «النتاجات».
+- **Exam screen** (`app/evaluations/new.tsx`): when a book's objectives are targets, a line under the lesson picker says the book prints no outcomes, so the questions are built on «الفكرة الرئيسة» or «أُقيِّمُ تعلُّمي».
+- **«ما الجديد»:** a teacher entry, `g10-exams-humanities-pe`, linking to `/evaluations`.
+
+**Verified:**
+- all seven books now evaluable; 101 targets, no duplicate ids;
+- `examTargets.test.ts`: 5 cases; with targets switched off, 3 fail;
+- curriculum 929 pass, `verify` 0 errors;
+- mobile 9,230 pass;
+- api-server, build then test: 2,914 pass;
+- `pnpm run typecheck`.
+
+**Not verified:**
+- a live exam generated for one of these books. The model is given main-idea text as the «objective» it writes questions against, and nobody has read the result;
+- the screen itself in a browser.
+
+**Note:** Bloom's level is `'Understand'`, defaulted like every NCCD objective, so each target's competency is inferred from its wording.
+
+## Grade 10 civic, history S2 and PE: the books' self-assessment criteria reach the generator, labelled as such — 2026-11-13
+
+Third fix from the Grade 10 review. Grade 10 history, geography, civic and PE lessons have no `objectives`. Their catalogs say why, in `meta.known_gaps`: the books print no outcomes list, and PE's «أُقيِّمُ تعلُّمي» was deliberately not used «تجنُّبًا لتصنيفِ محتوًى تقييميٍّ على أنّهُ نتاجاتٌ منهجيّةٌ». The review proposed filling `objectives` from the self-assessment tables and the «الفكرة الرئيسة» box. Anything in `objectives` reaches the model as «النتاجات (من المنهاج الرسمي)», so that would have claimed outcomes the books do not print. The owner chose a separate field instead. The «الفكرة الرئيسة» box was already the lesson summary, so it stays as it was.
+
+**What changed**
+- **New optional field `self_assessment_ar`** (`lib/curriculum/src/catalogs/nccdCatalog.ts`).
+  - On a unit for a book that prints the table per unit: civic S1 (p43, p84), civic S2 (p25, 49, 69, 83, 99) and history S2 (p67, p93). The book does not say which statement belongs to which lesson, so none is assigned to a lesson.
+  - On a lesson for PE, whose box ends each lesson (40 statements).
+  - It reaches `KBLesson` as `selfAssessmentAr` / `unitSelfAssessmentAr`.
+- **`buildLessonBlock`** (`services/kbContext.ts`) prints the statements under «معايير التقويم الذاتي في كتاب الطالب … (ليست قائمة النتاجات الرسمية)», for this lesson or for the whole unit. `objectives` stays empty, so nothing new is labelled official.
+- **Each statement was checked against its page in the extracted text.**
+  - Civic: fuzzy line match, 0.83–1.0.
+  - History S2: read against the numbered tables, and kept in the book's order.
+  - PE: letter-composition match against each line, 0.93–1.0, because that text layer prints words in reverse order.
+  - Three civic S2 lines whose OCR cannot be read with confidence are left out and listed in that catalog's `known_gaps`: p25 item 7, p69 items 1 and 6.
+- **Test.** `selfAssessmentContext.test.ts`, 4 cases: civic unit-level, history S2, PE lesson-level, and biology as a control, which keeps its official outcomes and gets no criteria. It fails 3/4 without the `kbContext` change.
+
+**Verified:**
+- mobile suite: 9,221 pass, 0 fail, 10 skipped;
+- api-server, build then test: 2,913 pass;
+- curriculum: 915 pass, `verify` 0 errors;
+- `pnpm run typecheck`.
+
+**Not verified:**
+- a live-AI plan for these lessons;
+- the API's own prompts (`lessonTeachingPrompt`, the evaluation generator) do not read the new field; only the app's generator context does.
+
+**Not done:**
+- history S1 and geography print no self-assessment table, so they still have nothing beyond the main idea;
+- `verify --gaps` still lists these lessons as «no outcomes», which is true.
+
+## Grade 10 lesson content: wrong maths and chemistry text corrected from the books — 2026-11-13
+
+Second fix from the Grade 10 review, on the same branch as the figures fix below. Lessons get their summary, key concepts, terms and rules from hand-written rows in `artifacts/mobile/services/knowledgeBase.ts`, merged onto the NCCD lesson by title (`enrichLesson`). Several of those rows described a different lesson, or material the 2026 book does not teach. Each fix below was checked against the extracted book text (`lib/curriculum/src/data/extracted/`), with page numbers in code comments.
+
+**Chemistry**
+- **Bohr (S1 u1_l1).** The rules used E = −13.6/n² eV. The book never uses 13.6 or eV; it works Eₙ = −R_H/n² with R_H = 2.18 × 10⁻¹⁸ J, and |ΔE| = R_H(1/n₁² − 1/n₂²), on pp.16–18. Now in joules.
+- **Wave-mechanical model (u1_l2).** It carried Heisenberg and Pauli, which appear on no page of the book. It also carried Aufbau, Hund and the filling order, which are the next lesson (pp.30–31). It now has the book's content from pp.20–23: Schrödinger, the orbital, the four quantum numbers with the book's terms «الفرعي» and «المغزلي», n², 2n² and the sublevel capacities.
+- **Electronic configuration (u2_l1).** A new row, `kbl-chem-2-0`, gives this lesson Aufbau, Hund and the book's filling order. Its five terms carry definitions from the book's glossary (pp.75–76); before, they were empty.
+- **Chemical reactions (S2 u4_l1).** The filler concept «تطبيقات حياتية» is replaced by the lesson's own terms from p.10.
+- **Offline chemistry bank** (`lib/math-practice`). `ch-as-m1` and `ch-as-m3` and their worked steps are now in joules: −5.45 × 10⁻¹⁹ J and −2.42 × 10⁻¹⁹ J. Each distractor is a named slip (÷n, n ignored, the other level), computed, not typed. So is the `ch-as-m4` comparison. `chemistryBankDepth.test.ts` pins both keys.
+- **`catalog.ts` outcome `o-chem-2-1`.** It is merged onto the wave-model lesson but read «writes electron configurations for elements 1–36», which is the next lesson. Reworded to the quantum-number outcome the book states for this lesson; the id is kept. The superseded `lesson-chem-1` objective's formula was also corrected. That objective is not served, but it is the text a future copy would come from.
+
+**Maths**
+- **Composition and inverse (S2 u5_l3, u5_l4).** One merged row «تركيب الاقترانات والاقتران العكسي والاقتران الجذري», matched by prefix, gave the composition lesson the inverse content and left the inverse lesson with only its placeholder. It is split into two rows, following the book (p.25 and pp.32–41): one-to-one (not «تقابل»), the horizontal-line test, the identity function, and the radical function including odd roots.
+- **Unit circle (S1 u3_l1).** It described right-triangle ratios; the book lesson (p.66) is standard position and the unit circle.
+- **Graphs (u3_l3).** It taught amplitude, period changes and shifts, none of which is in the book. It now covers sin, cos and tan on [0°, 360°], as pp.82–87 do; tan is «غير معرّف» at 90° and 270°, the book's wording.
+- **Trig equations (u3_l4).** The general solution «+360°n» is gone; the book works within one rotation.
+- **Sectors (S1 u2_l2).** A sector was defined as bounded by two arcs; it is one arc and two radii (p.41). The radian content is gone, since the book uses degrees only.
+- **Law of sines (u4_l2).** The garbled «(ZZض)» and the ambiguous case, which the book does not treat, are replaced by its two cases (ASA/SAA and SSA, p.107).
+- **Tangent (S2 u6_l1).** «touches the curve at one point only» is false in general: the book's own figure shows a tangent crossing the cubic. Now defined by slope.
+- **Vectors (u7_l1).** The unit vector is not in the book, and equal vectors belong to the next lesson. Both are replaced by the p.80 terms.
+- **Grouped variance (u8_l3).** The lesson opened with the range. It now gives the book's grouped-table formulas (p.125).
+
+**Scope check.** A before/after snapshot of all 3,335 KB lessons differs in exactly these 14 Grade 10 lessons and nothing else, so no other grade shares a changed title.
+
+**Verified:**
+- mobile suite: 9,213 pass, 0 fail, 10 skipped;
+- api-server, build then test: 2,899 pass;
+- math-practice: 949 pass;
+- curriculum: 915 pass;
+- `pnpm run typecheck`.
+
+**Not verified:**
+- live-AI output for these lessons;
+- the screens themselves.
+
+**Left open:**
+- placeholder summaries remain for maths u4_l3, u4_l4, u5_l1, u5_l2, u8_l4, u8_l5 and the labs. The hand-written row for «قانون جيوب التمام» never matches the catalog's «قانون جيب التمام», and renaming a catalog title was left alone;
+- the 2020-edition maths lessons u1_l3 and u1_l4, and the missing «حل معادلات خاصة».
+
+## Grade 10 book figures: junk dropped, misplaced figures moved — 2026-11-13
+
+**Superseded on merge (2026-11-15).** A separate audit reached `main` first: «Grade 10 audit: right book pages and figures», PRs #1479/#1483. It checked every figure and page range as images against the printed books, which this entry could not do. When this branch merged `main`, the owner chose main's version for everything in `knowledge-base/`: figure indexes, PNGs, the figure-lesson map and book-page links. So `knowledge-base/` on this branch is identical to `main`, and the moves, detaches and `lesson: 0` lab entries below are no longer in effect. They are kept here only as the record of what was proposed.
+
+First fix from a Grade 10 review covering coverage, results and book images, across all 15 subjects. Six reviewers each took a subject group and opened all ≈700 Grade 10 figure crops. They checked every figure→lesson map entry and every book-page range against the extracted book text. This PR fixes only the figures that need no PDF.
+
+**What changed** (`knowledge-base/grade-10-*/figures/*/index.json`, `figure-lesson-map.json`, regenerated
+`bookFigureAssets.ts`):
+- **28 crops dropped** (PNG and index entry):
+  - unit badges «الوحدة 2/3», the NCCD logo, a cover crop, a unit-opener banner;
+  - text-only «أفكر / أتذكر / أتعلم / معلومة أساسية» callouts;
+  - single answer options of review MCQs (phys-s2 p052, p089c/d);
+  - review-page text columns (earth-s2 p023, p055, p085);
+  - blank numbered exercise maps (history-s1 p076, geo-s1 p051/p061b, geo-s2 p086/p088) and a half-map fragment (geo-s2 p077b).
+- **24 figures moved to the lesson they show:**
+  - Maths unit-test figures were all pinned to the unit's last lesson. Ten chord, sector and angle test items sat under «معادلة الدائرة»; they now go to chords (u2_l1), arcs and sectors (u2_l2) and inscribed angles (u2_l3). U4 and U6 test items moved likewise, and U8 test items now go to scatter (u8_l1), cumulative frequency (u8_l2) and Venn probability (u8_l4).
+  - bio-s2 stomata: «الفقاريات» → «النباتات الوعائية البذرية».
+  - earth-s1 star field → «ماهية النجوم»; binary stars → «الأنظمة النجمية».
+  - Chemistry S1 and physics S2 «تجربة استهلالية» figures (spectrum apparatus, sodium shells, slinky) go to their unit's lab lesson through three new `lesson: 0` map entries (`matchedBy: "manual"`). Before, two were served on the previous unit's last lesson.
+- **9 detached** (`lesson: null`; the crop stays, nothing serves it):
+  - maths project and test figures with no matching lesson (polar grid, clinometer, rotating disc, trucks);
+  - three English Culture Spot photos (tea, bagpipes) that were shown on the personal-statement and formal-letter writing lessons. S2 u10_l7 now has no figure, on purpose: no picture beats a wrong one.
+
+**Guards** (a scratch script, not committed). It refused to write unless `lesson_ranges()` (`scripts/verify_book_pages.py`) gave identical ranges for every book before and after, so book pages are untouched. It also refused if any lesson that had figures was left with none, except the one above. That check kept `history-s2/p091-v2`, a wrong-lesson blank timeline: it is the only page anchor for «زيغريد هونكه». Before writing, every dropped and moved crop was looked at on two contact sheets. Two proposed drops were kept as real images that need a recrop: `bio-s2/p011` and `geo-s2/p067b-v2`.
+
+**No R2 upload needed.** No key is added to `bookFigureAssets.ts`. Two figures that would have become reachable, `math-s1/p016` (GeoGebra lab) and `phys-s2/p009b` (spring balance), were left out, because they were never uploaded. Mapping them needs `upload-figures-r2` with a token that can write `iqraa-public`.
+
+**Verified:** mobile suite (9,213 pass, 0 fail, 10 skipped), curriculum tests (915 pass), `verify` 0 errors, `pnpm run typecheck`.
+**Not verified:** no crop was compared with the printed page, because the PDFs are not on disk and nccd.gov.jo and r2.dev are blocked from the session. Not seen in the running app.
+
+**Still open from the review** (separate PRs):
+- book-page ranges: Civic S1 shows every lesson the previous lesson's pages; `lesson_ranges()` lets a lesson swallow the next one when that lesson has no figure; History S2 and creative arts have no pages;
+- ≈140 crops to recrop and many missing figures, both needing the PDFs;
+- wrong hand-written KB content (maths summaries; chemistry Heisenberg/Pauli and eV vs J);
+- objectives for history, geography, civic and PE;
+- English S1 vocabulary filed on the wrong lessons;
+- the vocational-English tracks mixed into the English unit picker;
+- the 2026 maths lesson «حل معادلات خاصة» missing from the catalog;
+- the vocational books: Part 2 on file is the Grade 9 book.
+
+## The bell's push-driven refresh is live on phones — 2026-11-24
+
+#1540 («A join-request push refreshes the bell the moment it arrives», below) merged as `fab8870`.
+
+- **Phones:** `preview` got it from the merge's own Mobile OTA update run 1212. `production` was published by hand
+  in run 1213 (`branch=production`). Both ran from `fab8870` and succeeded. Like every OTA since 1.6.0, it
+  reaches only 1.6.0 binaries.
+- **Web:** deploy run 1027's `iqraa-web` job published the bundle to Cloudflare Pages and passed «Verify the
+  deployed bundle». The web gets no pushes, so its bell still polls every minute.
+- **API:** not deployed. Deploy run 1027 skipped `iqraa-api`, migrations, the schema check and `iqraa-verifier`,
+  since the merge touches none of them; the API stays on `681749c`.
+
+**Not verified:** a join-request push arriving on a teacher's phone with the app open.
+
 ## A join-request push refreshes the bell the moment it arrives — 2026-11-23
 
 Follow-up to «The teacher is told when a student's class-code pick waits for them» (#1538), whose «Not verified»
@@ -4103,10 +5028,11 @@ now made unable to wrap at all: `FilterChip` (`components/admin/widgets.tsx`) se
 printing «…»). `adminFilterChip.test.ts` pins both props; it fails on the old source. Separately, at
 360px on web the search box would not shrink below a web `<input>`'s default width and pushed
 «المحظورون فقط» off the left edge; it now has `minWidth: 0`. Both seen fixed in a web build at 360
-and 430px (the label's `scrollWidth` equals its `clientWidth`). **Not** seen on an Android phone,
-which is where the clipping was reported.
+and 430px (the label's `scrollWidth` equals its `clientWidth`). **On Android (added 2026-11-24):**
+confirmed on the admin's own phone after the 2026-11-05 `production` OTA (run 41992984527, commit
+705b18e): «هذا الشهر» shows in full and both filter rows work — see «Admin users filters: confirmed on Android».
 
-**Not verified / limits.** Not looked at on an Android device. `last_login` is stamped only at sign-in, not on token
+**Not verified / limits.** `last_login` is stamped only at sign-in, not on token
 refresh, so someone who stays signed in and only browses is not "returning" unless they generated or saved
 something — the same blind spot the daily-activity chart documents. No «ما الجديد» entry: the screen is admin-only and
 those entries reach only teacher/student/parent roles.

@@ -20,6 +20,7 @@ import { STATS_TOPICS } from './stats.ts';
 import { PROPORTION_TOPICS } from './proportion.ts';
 import { EARLY_TOPICS } from './early.ts';
 import { G10_LESSON_TOPICS } from './grade10.ts';
+import { G4_LESSON_TOPICS } from './grade4b.ts';
 import { G10_TOPICS } from './g10.ts';
 import { G8_TOPICS } from './g8.ts';
 import { G7_TOPICS } from './g7.ts';
@@ -182,12 +183,18 @@ const estSum = (id: string, match: RegExp, mode: 'add' | 'sub' | 'both'): Topic 
   };
   const draw = (c: Ctx): Draft => {
     const { rng, diff, grade } = c;
-    const digits = Math.min(grade <= 2 ? 3 : 4, diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4);
+    // Grade 4 estimates within hundreds of thousands (u1_l3 rounds to 10, 100, 1000 and 10000; u1_l5 adds
+    // within six places): it drew 2–4 digits and rounded to tens and hundreds only (2026-11-21).
+    const digits = grade === 4 ? (diff === 'easy' ? 4 : diff === 'medium' ? 5 : 6) : Math.min(grade <= 2 ? 3 : 4, diff === 'easy' ? 2 : diff === 'medium' ? 3 : 4);
+    const pickPlace = () => (grade === 4
+      ? pick(rng, [100, 1000, 10000].filter(p => p <= 10 ** (digits - 1) && p >= 10 ** (digits - 4)))
+      : digits === 2 ? 10 : pick(rng, [10, 100]));
     let a = 0, b = 0, add = true;
     do {
-      a = int(rng, 10 ** (digits - 1) + 1, 10 ** digits - 1);
-      b = int(rng, 10 ** (digits - 1) + 1, a);
       add = mode === 'both' ? rng() < 0.5 : mode === 'add';
+      // a sum stays within six places, and so does its estimate (449999 + 449999 → 450000 + 450000)
+      a = int(rng, 10 ** (digits - 1) + 1, grade === 4 && digits === 6 && add ? 449999 : 10 ** digits - 1);
+      b = int(rng, 10 ** (digits - 1) + 1, a);
     } while (!add && lead(a) === lead(b));
     const exact = add ? a + b : a - b;
     const op = add ? '+' : '−';
@@ -195,7 +202,7 @@ const estSum = (id: string, match: RegExp, mode: 'add' | 'sub' | 'both'): Topic 
     const k = pick(rng, [0, 1, 2, 3, 4]);
     if (k === 3) {
       // judging an answer's size: which round number is nearest the real result
-      const place = digits === 2 ? 10 : pick(rng, [10, 100]);
+      const place = pickPlace();
       const ans = roundTo(exact, place);
       if (exact % place === place / 2 || ans <= 0) return make(c);
       const near = shuffle(rng, [ans - place, ans + place]).filter(x => x > 0);
@@ -210,7 +217,7 @@ const estSum = (id: string, match: RegExp, mode: 'add' | 'sub' | 'both'): Topic 
     }
     if (k === 4) {
       // working back from an estimate: the other number, rounded
-      const place = digits === 2 ? 10 : pick(rng, [10, 100]);
+      const place = pickPlace();
       const ra = roundTo(a, place), rb = roundTo(b, place);
       const est = add ? ra + rb : ra - rb;
       if (est <= 0 || rb <= 0) return make(c);
@@ -237,7 +244,7 @@ const estSum = (id: string, match: RegExp, mode: 'add' | 'sub' | 'both'): Topic 
         en: `Estimate ${a} ${op} ${b} by rounding each number to its greatest place.`,
       };
     }
-    const place = digits === 2 ? 10 : pick(rng, [10, 100]);
+    const place = pickPlace();
     const est = add ? roundTo(a, place) + roundTo(b, place) : roundTo(a, place) - roundTo(b, place);
     if (est <= 0) return make(c);
     const P = PLACE_AR[place]!, PE = PLACE_EN[place]!;
@@ -1553,10 +1560,17 @@ const decPlace: Topic = {
     }
     const raw = int(rng, 10 ** places + 1, 10 ** (places + 1) - 1) + int(rng, 1, 9) * 10 ** (places + 1);
     const s = fixedDec(raw, places);
-    const pos = int(rng, 1, places);
-    const idx = s.indexOf('.') + pos;
-    const digit = Number(s[idx]);
-    if (digit === 0) return decPlace.make({ rng, diff, grade: 4 });
+    // A decimal place whose digit is not 0 and occurs nowhere else in the number:
+    // «الرقم 6 في العدد 64.36» has two place values and no single answer
+    // (hand review of the ready-made sheets, 2026-11-20).
+    const digits = s.replace('.', '');
+    const usable = Array.from({ length: places }, (_, i) => i + 1).filter(p => {
+      const c = s[s.indexOf('.') + p]!;
+      return c !== '0' && digits.indexOf(c) === digits.lastIndexOf(c);
+    });
+    if (usable.length === 0) return decPlace.make({ rng, diff, grade: 4 });
+    const pos = pick(rng, usable);
+    const digit = Number(s[s.indexOf('.') + pos]);
     const ans = fmtDec(digit * 10 ** (places - pos), places);
     return {
       eq: s, answer: ans,
@@ -2651,6 +2665,7 @@ const chooseOpG2: Topic = {
 
 /** Specific titles first; the more general patterns after. */
 export const TOPICS: readonly Topic[] = [
+  ...G4_LESSON_TOPICS,
   roundDec, roundWhole, estSumDec,
   estSum('est_sum', /تقدير.*(?:مجموع|فرق)/, 'both'), estSum('est_add', /تقدير.*جمع/, 'add'), estSum('est_sub', /تقدير.*طرح/, 'sub'),
   estProd, estQuot, tensMul, tensDiv,
