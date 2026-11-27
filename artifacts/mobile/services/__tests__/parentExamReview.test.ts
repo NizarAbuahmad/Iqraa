@@ -26,6 +26,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const read = (rel: string) => readFileSync(path.resolve(here, '../..', rel), 'utf8');
 const results = read('app/my-exams.tsx');
 const review = read('app/exam-review/[id].tsx');
+const card = read('components/AnswerReviewCard.tsx');
 
 describe('examReviewPath', () => {
   it("reads a student's own paper on the student route", () => {
@@ -54,7 +55,8 @@ describe('«نتائج أبنائي» opens the child it shows', () => {
   });
 
   it("words the button for a parent", () => {
-    assert.match(results, /t\(parentView \? 'reviewOpenBtnChild' : 'reviewOpenBtn'\)/);
+    // A parent only ever gets the full review, so their label never names the feedback mode.
+    assert.match(results, /t\(parentView \? 'reviewOpenBtnChild' : exam\.reviewMode === 'feedback' \? 'feedbackOpenBtn' : 'reviewOpenBtn'\)/);
   });
 });
 
@@ -65,8 +67,10 @@ describe('the review screen, read by a parent', () => {
   });
 
   it('names the child, and calls the answer the one given, not «yours»', () => {
-    assert.match(review, /child \? t\('reviewTitleChild', childName\) : t\('reviewTitle'\)/);
-    assert.match(review, /parent \? 'reviewGivenAnswer' : 'reviewYourAnswer'/);
+    assert.match(review, /child \? t\('reviewTitleChild', childName\) : t\(review\?\.mode === 'feedback' \? 'feedbackTitle' : 'reviewTitle'\)/);
+    // The cards are the shared AnswerReviewCard (also the hand-in screen's); the screen tells it who is reading.
+    assert.match(review, /<AnswerReviewCard key=\{item\.questionId\} item=\{item\} parent=\{Boolean\(child\)\} \/>/);
+    assert.match(card, /parent \? 'reviewGivenAnswer' : 'reviewYourAnswer'/);
   });
 
   it('puts the name after its label, isolated, in both languages', () => {
