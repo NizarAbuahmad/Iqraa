@@ -1,4 +1,357 @@
 {
   "sourceId": "phys-s1-student-book",
-  "notes": {}
+  "notes": {
+    "p010-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "المتجه A يصنع زاوية 30° مع محور x الموجب، والمتجه B زاوية 45° مع محور x السالب: طول السهم يمثل المقدار، وزاويته تحدد الاتجاه.",
+        "teacher": "أشِر إلى ذيل كل سهم عند نقطة الأصل، ثم إلى الزاوية التي يصنعها مع المحور المرجعي. «في أي ربع من المستوى x-y يقع المتجه B؟»"
+      },
+      "en": {
+        "caption": "Vector A makes 30° with the positive x-axis and B makes 45° with the negative x-axis: arrow length is magnitude, its angle is direction.",
+        "teacher": "Point to each tail at the origin, then to the angle each arrow makes with its reference axis. “In which quadrant of the x-y plane does vector B lie?”"
+      }
+    },
+    "p011.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "متجه القوة F مرسوم على ورق بياني بزاوية 45° شمال الغرب: نبدأ من اتجاه الغرب وندور نحو الشمال.",
+        "teacher": "أشِر إلى محوري الشمال والشرق، ثم إلى الزاوية 45° بين F واتجاه الغرب، وبيّن أن طول السهم يُحدَّد بمقياس رسم مناسب. «لو كانت الزاوية 45° غرب الشمال، فمن أي اتجاه نبدأ القياس؟»"
+      },
+      "en": {
+        "caption": "Force vector F drawn on graph paper at 45° north of west: start from west and turn towards north.",
+        "teacher": "Point to the north and east axes, then to the 45° angle between F and west, and note that the arrow's length is set by a suitable drawing scale. “If the angle were 45° west of north, which direction would we start measuring from?”"
+      }
+    },
+    "p012.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "المتجهان A وB لهما الطول نفسه والاتجاه نفسه، فهما متساويان: تساوي متجهين يعني تساوي المقدار والاتجاه.",
+        "teacher": "أشِر إلى تساوي طولي السهمين وتوازيهما، وذكّر بأن المتجه يمكن نقله من مكان إلى آخر إذا حافظنا على مقداره واتجاهه. «إذا نقلنا A إلى مكان آخر دون تغيير طوله واتجاهه، هل يبقى مساويًا لـ B؟»"
+      },
+      "en": {
+        "caption": "Vectors A and B have the same length and the same direction, so they are equal: equal vectors share magnitude and direction.",
+        "teacher": "Point out that the two arrows are equally long and parallel, and recall that a vector can be moved as long as its magnitude and direction are kept. “If we move A elsewhere without changing its length or direction, is it still equal to B?”"
+      }
+    },
+    "p012b.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "المتجه A وسالبه (-A): لهما المقدار نفسه، واتجاهاهما متعاكسان.",
+        "teacher": "أشِر إلى تساوي طولي السهمين، ثم إلى أن رأس كل منهما في جهة معاكسة للآخر. «ما ناتج جمع A و(-A)؟»"
+      },
+      "en": {
+        "caption": "Vector A and its negative (-A): the same magnitude, opposite directions.",
+        "teacher": "Point out that the arrows are equally long, then that their heads point opposite ways. “What do we get when we add A and (-A)?”"
+      }
+    },
+    "p013-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "الأسهم v و2v و-0.5v و-v: ضرب المتجه في عدد يغيّر طوله، والعدد السالب يعكس اتجاهه.",
+        "teacher": "قارن طول سهم 2v بطول سهم v، ثم أشِر إلى أن سهمي -0.5v و-v يتجهان عكس v. «ماذا يحدث لمقدار المتجه واتجاهه عند ضربه في -0.5؟»"
+      },
+      "en": {
+        "caption": "Arrows v, 2v, -0.5v and -v: multiplying a vector by a number changes its length; a negative number reverses its direction.",
+        "teacher": "Compare the length of the 2v arrow with v, then point out that -0.5v and -v point opposite to v. “What happens to a vector's magnitude and direction when we multiply it by -0.5?”"
+      }
+    },
+    "p014-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "المتجهان A وB بينهما زاوية θ: الضرب القياسي A . B = AB cos θ، وناتجه كمية قياسية.",
+        "teacher": "أشِر إلى الزاوية θ بين المتجهين، واطرح المقارنة التي يطلبها الكتاب بجانب الشكل. «هل ناتج A . B يساوي ناتج B . A؟»"
+      },
+      "en": {
+        "caption": "Vectors A and B with angle θ between them: the scalar (dot) product A . B = AB cos θ, and its result is a scalar.",
+        "teacher": "Point to the angle θ between the two vectors, and pose the comparison the book prints beside the figure. “Is A . B equal to B . A?”"
+      }
+    },
+    "p014b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "المتجهان A وB في مستوى واحد بينهما زاوية θ، والمتجه A×B عمودي على مستواهما: ناتج الضرب المتجهي كمية متجهة.",
+        "teacher": "أشِر إلى المستوى المظلل الذي يحوي A وB، ثم إلى علامة الزاوية القائمة بين A×B وB. «ما الزاوية بين A×B وكل من A وB؟»"
+      },
+      "en": {
+        "caption": "A and B lie in one plane with angle θ between them, and A×B is perpendicular to that plane: the vector product is a vector.",
+        "teacher": "Point to the shaded plane containing A and B, then to the right-angle mark between A×B and B. “What is the angle between A×B and each of A and B?”"
+      }
+    },
+    "p015.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "القوة F تصنع زاوية 53° مع إزاحة الجسم d: الشغل W = F . d ضرب قياسي لمتجهين، وناتجه كمية قياسية.",
+        "teacher": "أشِر إلى موقعي الجسم في بداية الإزاحة d ونهايتها، ثم إلى الزاوية 53° بين F وd. «هل الشغل W كمية متجهة أم قياسية؟ ولماذا؟»"
+      },
+      "en": {
+        "caption": "Force F makes 53° with the body's displacement d: work W = F . d is a scalar product of two vectors, so it is a scalar.",
+        "teacher": "Point to the body's positions at the start and end of displacement d, then to the 53° angle between F and d. “Is work W a vector or a scalar quantity, and why?”"
+      }
+    },
+    "p017-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "عربة يسحبها شخصان بقوتين مقدار كل منهما 200 N وبينهما زاوية 53°: المحصلة تعتمد على اتجاهات القوى لا على مقاديرها فقط.",
+        "teacher": "أشِر إلى الحبلين واتجاه كل قوة، ثم إلى الزاوية 53° بينهما. «هل مقدار محصلة القوتين يساوي مجموع مقداريهما؟ ولماذا؟»"
+      },
+      "en": {
+        "caption": "Two people pull a cart with forces of 200 N each, 53° apart: the resultant depends on the forces' directions, not only their sizes.",
+        "teacher": "Point to the two ropes and the direction of each force, then to the 53° angle between them. “Is the size of the resultant equal to the sum of the two forces' sizes, and why?”"
+      }
+    },
+    "p020-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "القوى F1 وF2 وF3 مرسومة بأسهم، ثم موصولة رأسًا بذيل: متجه المحصلة R يمتد من ذيل F1 إلى رأس F3.",
+        "teacher": "قارن الجزء (أ) بالجزء (ب)، وأشِر إلى أن كل قوة نُقلت دون تغيير مقدارها واتجاهها، ثم إلى الزاوية θ التي تحدد اتجاه R. «هل تتغير المحصلة R إذا رسمنا القوى بترتيب آخر؟»"
+      },
+      "en": {
+        "caption": "Forces F1, F2 and F3 drawn as arrows, then joined head to tail: the resultant R runs from the tail of F1 to the head of F3.",
+        "teacher": "Compare part (a) with part (b), pointing out that each force was moved without changing its size or direction, then point to the angle θ that gives R's direction. “Does the resultant R change if we draw the forces in a different order?”"
+      }
+    },
+    "p022.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "المتجهات v1 وv2 وv3 وv4 مرسومة رأسًا بذيل، والمحصلة R من ذيل v1 إلى رأس v4: طريقة المضلّع لجمع المتجهات.",
+        "teacher": "[تحقّق] فوق الشكل حرف (أ) من شكل مجاور، والمثال يطلب v1 + v2 + v3 - v4؛ تأكد من اتجاه السهم v4 قبل العرض. أشِر إلى أن R تمتد من ذيل أول سهم إلى رأس آخر سهم. «كيف نرسم السهم إذا طُلب طرح v4 لا جمعه؟»"
+      },
+      "en": {
+        "caption": "Vectors v1, v2, v3 and v4 drawn head to tail, with the resultant R from the tail of v1 to the head of v4: the polygon method.",
+        "teacher": "[Check] A stray (a) label from a neighbouring figure sits above this one, and the example asks for v1 + v2 + v3 - v4; confirm the direction of the v4 arrow before showing it. Point out that R runs from the tail of the first arrow to the head of the last. “How do we draw the arrow if we must subtract v4 instead of adding it?”"
+      }
+    },
+    "p023-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "المتجه A محلَّل إلى مركبتين متعامدتين: Ax = A cos θ على محور x، وAy = A sin θ على محور y.",
+        "teacher": "أشِر إلى الخطين المتقطعين اللذين يُسقطان رأس A على المحورين، وبيّن أن المركبتين معًا تُحدثان التأثير نفسه للمتجه A. «ماذا يحدث لكل من Ax وAy كلما زادت الزاوية θ؟»"
+      },
+      "en": {
+        "caption": "Vector A resolved into two perpendicular components: Ax = A cos θ along x, and Ay = A sin θ along y.",
+        "teacher": "Point to the dashed lines that project the head of A onto the two axes, and explain that the two components together have the same effect as A. “What happens to Ax and Ay as the angle θ increases?”"
+      }
+    },
+    "p026-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "ثلاثة متجهات A وB وC: يصنع B زاوية 37° وC زاوية 60° مع محور x السالب، وتُوجد محصلتها بتحليل كل متجه إلى مركبتيه.",
+        "teacher": "أشِر إلى أن A على محور x الموجب، ثم إلى الزاويتين 37° و60° المقيستين من محور x السالب. «ما إشارة المركبة الأفقية لكل من B وC؟»"
+      },
+      "en": {
+        "caption": "Three vectors A, B and C: B makes 37° and C makes 60° with the negative x-axis; resolve each into components to find the resultant.",
+        "teacher": "Point out that A lies on the positive x-axis, then to the 37° and 60° angles measured from the negative x-axis. “What is the sign of the horizontal component of B and of C?”"
+      }
+    },
+    "p027-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "المحصلة R ومركبتاها: Rx على محور x السالب وRy على محور y الموجب، والزاوية α تحدد اتجاهها: α = tan⁻¹|Ry/Rx|.",
+        "teacher": "أشِر إلى المستطيل المتقطع الذي تجتمع فيه المركبتان في R، ثم إلى الزاوية α بين R ومحور x السالب. «في أي ربع تقع المحصلة R؟»"
+      },
+      "en": {
+        "caption": "Resultant R with Rx along the negative x-axis and Ry along the positive y-axis; angle α gives its direction: α = tan⁻¹|Ry/Rx|.",
+        "teacher": "Point to the dashed rectangle in which the two components combine into R, then to the angle α between R and the negative x-axis. “In which quadrant does the resultant R lie?”"
+      }
+    },
+    "p045-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "منحنى الموقع-الزمن خط مستقيم يبدأ من 10 m: ميله Δx/Δt ثابت، فالسرعة المتجهة ثابتة والحركة منتظمة.",
+        "teacher": "أشِر إلى موقع الجسم عند اللحظة 0 بالنسبة إلى نقطة الإسناد، ثم إلى Δx وΔt المرسومين على المنحنى. «ما مقدار السرعة المتجهة للجسم من ميل الخط؟»"
+      },
+      "en": {
+        "caption": "The position-time graph is a straight line starting at 10 m: its slope Δx/Δt is constant, so velocity is constant and motion is uniform.",
+        "teacher": "Point to the body's position at time 0 relative to the reference point, then to the Δx and Δt marked on the graph. “What is the body's velocity, from the slope of the line?”"
+      }
+    },
+    "p047.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "منحنى السرعة-الزمن خط مستقيم ميله موجب: الميل Δv/Δt هو التسارع، وهو ثابت هنا، فالجسم يتسارع في الاتجاه الموجب.",
+        "teacher": "أشِر إلى Δv وΔt المرسومين بين اللحظتين 5 s و20 s، وبيّن أن إشارتي السرعة والتسارع متشابهتان. «ما مقدار تسارع الجسم من Δv وΔt المرسومين؟»"
+      },
+      "en": {
+        "caption": "The velocity-time graph is a straight line with positive slope: Δv/Δt is the acceleration, constant here, so the body speeds up.",
+        "teacher": "Point to the Δv and Δt marked between 5 s and 20 s, and note that velocity and acceleration have the same sign. “What is the body's acceleration, from the Δv and Δt marked?”"
+      }
+    },
+    "p048-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "منحنى السرعة-الزمن لعربة: تزداد سرعتها من 1.0 m/s إلى 3.0 m/s خلال 20 s ثم تثبت؛ ميل الجزء المائل هو التسارع المتوسط.",
+        "teacher": "أشِر إلى Δv وΔt على الجزء المائل، ثم إلى الجزء الأفقي بعد اللحظة 20 s. «ما تسارع العربة بعد اللحظة 20 s؟»"
+      },
+      "en": {
+        "caption": "Velocity-time graph of a cart: speed rises from 1.0 m/s to 3.0 m/s over 20 s, then holds; the sloped part's slope is average acceleration.",
+        "teacher": "Point to Δv and Δt on the sloped part, then to the flat part after 20 s. “What is the cart's acceleration after 20 s?”"
+      }
+    },
+    "p056.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "منحنى الموقع-الزمن لجسم من جزأين مستقيمين a وb يلتقيان عند 20 s: ميل كل جزء يمثل سرعة الجسم فيه.",
+        "teacher": "هذا الشكل من مراجعة الدرس؛ أشِر إلى نقطة التقاء الجزأين، ثم قارن ميليهما دون حساب. «في أي الجزأين a أم b كانت سرعة الجسم أكبر، وكيف عرفتم؟»"
+      },
+      "en": {
+        "caption": "Position-time graph of a body in two straight parts, a and b, meeting at 20 s: the slope of each part is the body's velocity in it.",
+        "teacher": "This figure is from the lesson review; point to where the two parts meet, then compare their slopes without calculating. “In which part, a or b, was the body faster, and how can you tell?”"
+      }
+    },
+    "p057-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "لاعب يرمي كرة سلة فتسلك مسارًا منحنيًا نحو السلة: حركة في بعدين تتغير فيها إحداثيات الكرة الأفقية والرأسية معًا.",
+        "teacher": "تتبَّع مواقع الكرة المتتالية على المسار المتقطع من يد اللاعب إلى السلة، وبيّن أنها تتقدم أفقيًا وترتفع ثم تنخفض في الوقت نفسه. «لماذا يكون مسار الكرة منحنيًا لا مستقيمًا؟»"
+      },
+      "en": {
+        "caption": "A player shoots a basketball along a curved path: motion in two dimensions, with its horizontal and vertical positions changing together.",
+        "teacher": "Trace the ball's successive positions along the dashed path from the player's hand to the hoop, showing it moves forward while rising and then falling. “Why is the ball's path curved and not straight?”"
+      }
+    },
+    "p058-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "مقذوف بسرعة ابتدائية v0 بزاوية θ: مركبتاها v0x وv0y، وh أقصى ارتفاع، وR المدى الأفقي، وg نحو الأسفل.",
+        "teacher": "أشِر إلى تحليل v0 إلى v0x وv0y عند نقطة القذف، ثم إلى h عند قمة المسار وR على المحور x. «أي مركبتي السرعة تبقى ثابتة طوال التحليق بإهمال مقاومة الهواء؟»"
+      },
+      "en": {
+        "caption": "A projectile launched at v0 and angle θ: components v0x and v0y, maximum height h, range R, and g pointing down.",
+        "teacher": "Point to v0 resolved into v0x and v0y at the launch point, then to h at the top of the path and R along the x-axis. “Which velocity component stays constant throughout the flight, ignoring air resistance?”"
+      }
+    },
+    "p059.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "لاعب يركل كرة بسرعة ابتدائية v0 بزاوية θ مع الأفق، فتصل إلى أقصى ارتفاع h وتقطع مدى أفقيًا R.",
+        "teacher": "أشِر إلى مركبتي v0 الأفقية والرأسية عند قدم اللاعب، ثم إلى الكرة عند قمة المسار. «ما مقدار المركبة الرأسية لسرعة الكرة عند أقصى ارتفاع؟»"
+      },
+      "en": {
+        "caption": "A player kicks a ball at initial velocity v0 and angle θ above the horizontal; it reaches maximum height h and covers range R.",
+        "teacher": "Point to the horizontal and vertical components of v0 at the player's foot, then to the ball at the top of its path. “What is the vertical component of the ball's velocity at maximum height?”"
+      }
+    },
+    "p060-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "جسم يُقذف أفقيًا من ارتفاع h: v0x = v0 وv0y = 0، فيسقط في مسار منحنٍ ويقطع مدى أفقيًا R.",
+        "teacher": "أشِر إلى السهم الأفقي عند نقطة القذف، وبيّن أن المركبة الرأسية للسرعة تبدأ من صفر. «على أي مركبتي الحركة يعتمد زمن وصول الجسم إلى الأرض؟»"
+      },
+      "en": {
+        "caption": "A body launched horizontally from height h: v0x = v0 and v0y = 0, so it falls along a curve and covers range R.",
+        "teacher": "Point to the horizontal arrow at the launch point, and explain that the vertical velocity component starts at zero. “Which component of the motion decides how long the body takes to reach the ground?”"
+      }
+    },
+    "p062-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "كرة تُقذف أفقيًا عن سطح طاولة بسرعة v0 = 2 m/s من ارتفاع 1.5 m: زمن وصولها إلى الأرض تحدده الحركة الرأسية.",
+        "teacher": "أشِر إلى السرعة الأفقية المكتوبة بجانب السهم، ثم إلى الارتفاع 1.5 m بين سطح الطاولة والأرض. «إذا زادت v0، هل يتغير زمن وصول الكرة إلى الأرض؟»"
+      },
+      "en": {
+        "caption": "A ball leaves a table top horizontally at v0 = 2 m/s from a height of 1.5 m: the vertical motion sets its time to reach the floor.",
+        "teacher": "Point to the horizontal velocity written beside the arrow, then to the 1.5 m height between the table top and the floor. “If v0 increased, would the time to reach the floor change?”"
+      }
+    },
+    "p063.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "كرة مربوطة بخيط تدور في مسار دائري أفقي نصف قطره r: حركة دائرية منتظمة، سرعتها ثابتة مقدارًا ومتغيرة اتجاهًا.",
+        "teacher": "أشِر إلى الخيط بين اليد والكرة بوصفه نصف القطر r، ثم إلى الأسهم على المسار المتقطع التي تبين اتجاه الدوران. «إذا كان مقدار سرعة الكرة ثابتًا، فلماذا نقول إن لها تسارعًا؟»"
+      },
+      "en": {
+        "caption": "A ball on a string moves in a horizontal circle of radius r: uniform circular motion, constant in speed but changing in direction.",
+        "teacher": "Point to the string between hand and ball as the radius r, then to the arrows on the dashed path that show the direction of motion. “If the ball's speed is constant, why do we say it is accelerating?”"
+      }
+    },
+    "p064-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "منظر علوي للمسار الدائري: السرعة v مماسية عند كل نقطة، والتسارع المركزي ac يتجه نحو المركز عموديًا على v.",
+        "teacher": "تتبَّع مواقع الكرة الثلاثة، وأشِر في كل منها إلى v على امتداد المماس وإلى ac نحو المركز. «ما الزاوية بين v وac عند أي نقطة على المسار؟»"
+      },
+      "en": {
+        "caption": "Top view of the circular path: velocity v is tangent at every point; centripetal acceleration ac points to the centre, perpendicular to v.",
+        "teacher": "Go through the ball's three positions, pointing at each to v along the tangent and to ac towards the centre. “What is the angle between v and ac at any point on the path?”"
+      }
+    },
+    "p065.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "قمر صناعي يدور حول الأرض في مسار دائري نصف قطره r = 8420 km: سرعته v مماسية، وتسارعه المركزي ac نحو مركز الأرض.",
+        "teacher": "أشِر إلى أن r مرسوم من مركز الأرض إلى المسار، ثم إلى تعامد v وac عند القمر الصناعي. «لماذا يُقاس نصف القطر r من مركز الأرض لا من سطحها؟»"
+      },
+      "en": {
+        "caption": "A satellite circles Earth on a path of radius r = 8420 km: velocity v is tangent, and centripetal acceleration ac points to Earth's centre.",
+        "teacher": "Point out that r is drawn from Earth's centre to the path, then that v and ac are perpendicular at the satellite. “Why is the radius r measured from Earth's centre and not from its surface?”"
+      }
+    },
+    "p067b-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "كتاب ساكن على طاولة أفقية: قوة دفع الطاولة للكتاب إلى الأعلى، وقوة جذب الأرض له (الوزن) إلى الأسفل، ومحصلتهما صفر.",
+        "teacher": "أشِر إلى تساوي طولي السهمين وتعاكس اتجاهيهما، واربط ذلك بالقانون الأول لنيوتن. «ما الذي يلزم كي يبدأ الكتاب بالحركة؟»"
+      },
+      "en": {
+        "caption": "A book at rest on a level table: the table pushes it up, Earth pulls it down (its weight), and the net force is zero.",
+        "teacher": "Point out that the two arrows are equally long and opposite, and link this to Newton's first law. “What would it take for the book to start moving?”"
+      }
+    },
+    "p070-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "مدرج هوائي عليه عربة يسحبها خيط يمر على بكرة إلى حامل أثقال: تجربة لاستقصاء أثر القوة المحصلة والكتلة في التسارع.",
+        "teacher": "[تحقّق] الأجهزة غير مسمّاة على الشكل، فطابِق أسماءها مع قائمة المواد والأدوات في الكتاب. أشِر إلى حامل الأثقال المعلق في طرف الخيط، ثم إلى العربة على المدرج. «كيف نغيّر القوة المحصلة المؤثرة في العربة في هذه التجربة؟»"
+      },
+      "en": {
+        "caption": "An air track with a cart pulled by a string over a pulley to a weight hanger: an experiment on how net force and mass affect acceleration.",
+        "teacher": "[Check] The apparatus is not labelled on the figure; match the parts to the book's list of materials and tools. Point to the weight hanger at the end of the string, then to the cart on the track. “How do we change the net force on the cart in this experiment?”"
+      }
+    },
+    "p072-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "منحنى التسارع مقابل القوة المحصلة خط مستقيم يمر بنقطة الأصل: عند ثبات الكتلة يتناسب التسارع طرديًا مع القوة المحصلة.",
+        "teacher": "[تحقّق] عنوان المحور الرأسي مقصوص من الشكل، فتأكد أنه التسارع ووحدته m/s² قبل العرض. أشِر إلى مرور الخط بنقطة الأصل. «ماذا يحدث لتسارع الجسم إذا ضاعفنا القوة المحصلة مع ثبات كتلته؟»"
+      },
+      "en": {
+        "caption": "Acceleration against net force is a straight line through the origin: at constant mass, acceleration is directly proportional to net force.",
+        "teacher": "[Check] The vertical axis title is cut off the figure; confirm it is acceleration in m/s² before showing it. Point out that the line passes through the origin. “What happens to the body's acceleration if we double the net force while its mass stays the same?”"
+      }
+    },
+    "p075-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "يندفع الهواء من البالون إلى اليسار فيندفع البالون إلى اليمين: يدفع كل منهما الآخر بقوة مساوية مقدارًا ومعاكسة اتجاهًا.",
+        "teacher": "أشِر إلى سهم اتجاه اندفاع الهواء، ثم إلى سهم اتجاه اندفاع البالون، واربطهما بالقانون الثالث لنيوتن. «ما الجسمان المتفاعلان هنا، وفي أي جسم تؤثر كل قوة؟»"
+      },
+      "en": {
+        "caption": "Air rushes out of the balloon to the left and the balloon moves right: each pushes the other with an equal force in the opposite direction.",
+        "teacher": "Point to the arrow for the air's direction, then to the arrow for the balloon's, and link them to Newton's third law. “Which two bodies interact here, and on which body does each force act?”"
+      }
+    },
+    "p077-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "الأرض تجذب القمر الصناعي بقوة FES نحو مركزها، والقمر يجذب الأرض بقوة FSE مساوية لها مقدارًا ومعاكسة اتجاهًا.",
+        "teacher": "أشِر إلى أن سهم FES مرسوم على القمر الصناعي، وسهم FSE مرسوم على الأرض. «في أي جسم تؤثر القوة FSE؟»"
+      },
+      "en": {
+        "caption": "Earth pulls the satellite with force FES towards its centre; the satellite pulls Earth with force FSE, equal in size, opposite in direction.",
+        "teacher": "Point out that the FES arrow is drawn on the satellite and the FSE arrow on Earth. “On which body does the force FSE act?”"
+      }
+    },
+    "p079-v2.png": {
+      "status": "draft",
+      "ar": {
+        "caption": "أسهم تسارع السقوط الحر حول الأرض تتجه نحو مركزها، ويقل مقدارها بالابتعاد عنها، ويتساوى عند النقاط التي لها البعد نفسه.",
+        "teacher": "قارن أطوال الأسهم على الدوائر المتقطعة من الداخل إلى الخارج، ثم أشِر إلى تساويها على الدائرة الواحدة. «أين يكون تسارع السقوط الحر أكبر: قرب سطح الأرض أم بعيدًا عنها؟»"
+      },
+      "en": {
+        "caption": "Free-fall acceleration arrows around Earth point to its centre, shrink with distance, and are equal at points the same distance away.",
+        "teacher": "Compare the arrow lengths on the dashed circles from the inside out, then point out that they are equal on any one circle. “Where is free-fall acceleration greater: near Earth's surface or far from it?”"
+      }
+    }
+  }
 }
