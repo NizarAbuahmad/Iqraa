@@ -15,6 +15,7 @@ import {
   resolveUnitByTopic,
   searchForm,
   hasExtractedText,
+  isCompetencyTable,
   type Passage,
 } from '../passages.ts';
 import { getObjectivesForUnit } from '../objectives.ts';
@@ -285,5 +286,41 @@ describe('resolveUnitByTopic', () => {
     // would attach one lesson's pages to a whole unit's worth of intent.
     // Returning null is the honest answer; the caller falls back to objectives.
     assert.equal(resolveUnitByTopic('المشتقات'), null);
+  });
+});
+
+// A teacher reported a Grade 4 Arabic worksheet and lesson plan as not matching
+// their lesson. The pages sent with them were the unit's «كفايات الوحدة» tables
+// (pages 7, 33, 59, 85 of the student book) and its contents (4, 5): OCR'd rows of
+// skill codes, not text a lesson can be built from. A garble ratio cannot tell
+// them from ordinary OCR'd prose (0.26–0.51, inside the normal 0.16–0.6), so the
+// page is recognised by what it is.
+describe('competency tables are not lesson text', () => {
+  const G4_ARABIC_STUDENT = 'g4-arabic-s1-student-book';
+  const TABLE_PAGES = [7, 33, 59, 85];
+
+  it('recognises a competency table and nothing ordinary', () => {
+    assert.equal(isCompetencyTable('كفايات الوحدة الأولى مهارة الاستماع: (1,1) تمثل آداب الاستماع'), true);
+    assert.equal(isCompetencyTable('كفاياتٌ الوحدة الثّالثةٍ  106 مهارة'), true, 'OCR tashkeel and a stray digit');
+    assert.equal(isCompetencyTable('تتكون المواد من ذرات العناصر ولكل عنصر رمز خاص به'), false);
+    assert.equal(isCompetencyTable(''), false);
+  });
+
+  it('never serves one, for the two lessons that were reported', () => {
+    for (const [unitId, lessonId, terms] of [
+      ['kbu-g4-arabic-s1-nccd-u3', 'kbl-g4-arabic-s1-nccd-u3_l3', ['السلام الملكي', 'أقرأ بطلاقة وفهم']],
+      ['kbu-g4-arabic-s1-nccd-u1', 'kbl-g4-arabic-s1-nccd-u1_l5', ['أبني لغتي', 'محاكاة أنماط لغوية']],
+    ] as const) {
+      const got = passagesForUnit({ unitId, lessonId, terms: [...terms], limit: 6, quotableOnly: true });
+      const served = got.filter(p => p.sourceId === G4_ARABIC_STUDENT && TABLE_PAGES.includes(p.page));
+      assert.deepEqual(served.map(p => p.page), [], `${lessonId} was served competency-table pages`);
+    }
+  });
+
+  it('is rare: it must not eat the corpus', () => {
+    // 33 of 21,489 pages today. A loose rule would drop teaching text silently.
+    assert.ok(hasExtractedText(G4_ARABIC_STUDENT));
+    const got = passagesForUnit({ unitId: CIRCLE, limit: 4, quotableOnly: true });
+    assert.ok(got.length > 0, 'an ordinary maths unit still gets its pages');
   });
 });
