@@ -527,6 +527,8 @@ const BAR_STAND_IN = String.fromCodePoint(0xe00d);
 // A single «|» inside set-builder braces or a conditional probability (see
 // SET_BUILDER_RE / COND_PROB_RE).
 const SEP_STAND_IN = String.fromCodePoint(0xe00e);
+// «…» inside a roster set «{11, 13, 15, …}» (see ROSTER_RE).
+const ELLIPSIS_STAND_IN = String.fromCodePoint(0xe00f);
 const COMMA_STAND_IN: Record<string, string> = { ',': PAIR_COMMA, '،': PAIR_COMMA_AR };
 function protectPair(m: string): string {
   return [...m].map(c => COMMA_STAND_IN[c] ?? c).join('');
@@ -545,10 +547,10 @@ function restoreStandIns(s: string): string {
   for (const map of [COMMA_STAND_IN, INTERVAL_STAND_IN, VECTOR_STAND_IN, DOT_STAND_IN]) {
     for (const [real, standIn] of Object.entries(map)) out = out.replaceAll(standIn, real);
   }
-  out = out.replaceAll(BAR_STAND_IN, '|').replaceAll(SEP_STAND_IN, '|');
+  out = out.replaceAll(BAR_STAND_IN, '|').replaceAll(SEP_STAND_IN, '|').replaceAll(ELLIPSIS_STAND_IN, '…');
   return out;
 }
-const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}${PAIR_COMMA}${PAIR_COMMA_AR}${INTERVAL_CHARS}${VECTOR_CHARS}${COMBINING_ARROW}${BAR_STAND_IN}${SEP_STAND_IN}`;
+const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}${PAIR_COMMA}${PAIR_COMMA_AR}${INTERVAL_CHARS}${VECTOR_CHARS}${COMBINING_ARROW}${BAR_STAND_IN}${SEP_STAND_IN}${ELLIPSIS_STAND_IN}`;
 const FOREIGN_END = FOREIGN_CHAR.replace('.', '');
 
 /**
@@ -617,6 +619,22 @@ const SET_CONTENT = `[${FOREIGN_CHAR.replace('{}', '')}${FOREIGN_SET_OP} ,،]*`;
 const SET_BUILDER_RE = new RegExp(`[{]${SET_CONTENT}[|]${SET_CONTENT}[}]`, 'g');
 function protectSet(m: string): string {
   return [...m].map(c => (c === '|' ? SEP_STAND_IN : COMMA_STAND_IN[c] ?? c)).join('');
+}
+// A set in roster form «{1, 2, 3}», «{…, -2, -1, 0, 1, 2, …}», «{4, 8, … , 24}»
+// (found 2026-11-27) split at every comma. Braces are never prose, so a «{…}» of
+// comma-separated maths atoms, either comma (the bank's `setStr` writes «{−2 ، 0 ،
+// 3}»), has its commas and ellipses turned into stand-ins. An element may not hold
+// a bracket, so a code template «{pt(x, y)}» never matches; a set of points is
+// already joined by PAIR_RE.
+const ROSTER_ATOM = `[+−-]? *[A-Za-z0-9.^√/′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉°∞${FOREIGN_GREEK}…]+`;
+const ROSTER_RE = new RegExp(`[{] *${ROSTER_ATOM}(?: *[,،] *${ROSTER_ATOM})+ *[}]`, 'g');
+// A set of points with the Arabic comma between them, «{(1, 2) ، (5, 7)}» — how the
+// bank wrote a function as a relation before 2026-11-27, so saved papers carry it.
+// Runs after PAIR_RE, so each point's own comma is already a stand-in and a point
+// holds no bracket, space-free or not; no Arabic letter may appear.
+const POINT_SET_RE = /[{] *[(][^(){}؀-ۿ]*[)](?: *[,،] *[(][^(){}؀-ۿ]*[)])+ *[}]/g;
+function protectRoster(m: string): string {
+  return [...m].map(c => (c === '…' ? ELLIPSIS_STAND_IN : COMMA_STAND_IN[c] ?? c)).join('');
 }
 // Conditional probability «P(A|B)», «P(B | A)», «P(A′|B)»: a bracket holding two
 // event letters around one bar. Nothing else has that shape.
@@ -702,6 +720,8 @@ export function isolateForeignRuns(line: string): string {
       .replace(INTERVAL_RE, protectInterval)
       .replace(PAIR_RE, protectPair)
       .replace(SET_BUILDER_RE, protectSet)
+      .replace(ROSTER_RE, protectRoster)
+      .replace(POINT_SET_RE, protectRoster)
       .replace(COND_PROB_RE, protectCondProb),
   )
     .replace(DOT_RE, protectDot)
