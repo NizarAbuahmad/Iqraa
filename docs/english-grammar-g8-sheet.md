@@ -89,10 +89,10 @@ Not reviewed yet — shown to nobody.
 | How often does she visit Petra? | **does she visit** / do she visit | _How often do she visit Petra?_ |
 | Which bus do you take? | **do you take** / you take | _Which bus you take?_ |
 | She always eats breakfast at home. | **always eats** / eats always | _She eats always breakfast at home._ |
-| He usually walks to school. | **usually walks** / walks usually | _He walks usually to school._ |
+| He usually takes the bus. | **usually takes** / takes usually | _He takes usually the bus._ |
 | We often play football after school. | **often play** / play often | _We play often football after school._ |
 | They often visit their grandparents. | **often visit** / visit often | _They visit often their grandparents._ |
-| My father always drives to work. | **always drives** / drives always | _My father drives always to work._ |
+| My father always drives a small car. | **always drives** / drives always | _My father drives always a small car._ |
 | My brother usually plays tennis on Fridays. | **usually plays** / plays usually | _My brother plays usually tennis on Fridays._ |
 | I never eat breakfast at school. | **never eat** / eat never | _I eat never breakfast at school._ |
 | Dad never watches TV at night. | **never watches** / watches never | _Dad watches never TV at night._ |
@@ -370,7 +370,7 @@ Not reviewed yet — shown to nobody.
 | He is playing football in the garden right now. | **is playing** / plays | _He plays football in the garden right now._ |
 | I like pizza. | **like** / am liking | _I am liking pizza._ |
 | She knows the answer. | **knows** / is knowing | _She is knowing the answer._ |
-| We need a new table. | **need** / are needing | _We are needing a new table._ |
+| This bottle contains cold water. | **contains** / is containing | _This bottle is containing cold water._ |
 | We believe the teacher. | **believe** / are believing | _We are believing the teacher._ |
 | Dad owns a small shop. | **owns** / is owning | _Dad is owning a small shop._ |
 | This book belongs to my sister. | **belongs** / is belonging | _This book is belonging to my sister._ |
@@ -417,19 +417,19 @@ Not reviewed yet — shown to nobody.
 | They drank some water. | **drank** / drinked | _They drinked some water._ |
 | He made a cake for Mum. | **made** / make | _He make a cake for Mum._ |
 | I got a new bag. | **got** / getted | _I getted a new bag._ |
-| She visited her aunt yesterday. | **visited** / visits | _She visits her aunt yesterday._ |
-| We played football last week. | **played** / play | _We play football last week._ |
+| She called her cousin yesterday. | **called** / calls | _She calls her cousin yesterday._ |
+| We planted a tree last week. | **planted** / plant | _We plant a tree last week._ |
 | I watched a film two days ago. | **watched** / watch | _I watch a film two days ago._ |
-| Dad bought a new car last year. | **bought** / buys | _Dad buys a new car last year._ |
+| Our neighbour sold his house last year. | **sold** / sells | _Our neighbour sells his house last year._ |
 | My brother went to Aqaba last summer. | **went** / goes | _My brother goes to Aqaba last summer._ |
 | They cleaned the house yesterday morning. | **cleaned** / clean | _They clean the house yesterday morning._ |
 | He ate fish for dinner last night. | **ate** / eats | _He eats fish for dinner last night._ |
-| Mum cooked rice an hour ago. | **cooked** / cooks | _Mum cooks rice an hour ago._ |
+| The baker baked bread an hour ago. | **baked** / bakes | _The baker bakes bread an hour ago._ |
 | We saw a film last Friday. | **saw** / see | _We see a film last Friday._ |
 | The students had a test yesterday. | **had** / have | _The students have a test yesterday._ |
 | I finished my homework ten minutes ago. | **finished** / finish | _I finish my homework ten minutes ago._ |
 | Our teacher came late last Monday. | **came** / comes | _Our teacher comes late last Monday._ |
-| She wrote a letter three days ago. | **wrote** / writes | _She writes a letter three days ago._ |
+| She sent a message three days ago. | **sent** / sends | _She sends a message three days ago._ |
 | We stayed at home last night. | **stayed** / stay | _We stay at home last night._ |
 
 ## Semester 1 · Unit 5 — Appearances

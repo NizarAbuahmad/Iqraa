@@ -123,10 +123,10 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
       // sentence with «be»: «always is» and «usually is» are acceptable English, with stress or without.
       ...items('adverb-position', 'form', [
         ['She always eats breakfast at home.', 'always eats', 'eats always'],
-        ['He usually walks to school.', 'usually walks', 'walks usually'],
+        ['He usually takes the bus.', 'usually takes', 'takes usually'],
         ['We often play football after school.', 'often play', 'play often'],
         ['They often visit their grandparents.', 'often visit', 'visit often'],
-        ['My father always drives to work.', 'always drives', 'drives always'],
+        ['My father always drives a small car.', 'always drives', 'drives always'],
         ['My brother usually plays tennis on Fridays.', 'usually plays', 'plays usually'],
         ['I never eat breakfast at school.', 'never eat', 'eat never'],
         ['Dad never watches TV at night.', 'never watches', 'watches never'],
@@ -273,7 +273,7 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ['We have three meals a day.', 'meals', 'meal'],
         ['Two children are eating lunch.', 'children', 'child'],
       ]),
-      // Only nouns with no ordinary plural (milk, rice, bread, meat, butter, cheese, water): never sugar, fruit, paper,
+      // Only nouns with no ordinary plural (milk, rice, bread, meat, butter, water): never sugar, fruit, paper,
       // chicken, coffee, tea, cake, glass or juice, which a teacher could use in the plural or with «a». The distractor is
       // «a» before the noun, or the plural verb with it.
       ...items('uncountable', 'form', [
@@ -397,7 +397,7 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
       ]),
       // The spelling of the -ing form: double the last consonant (running, getting, stopping, shopping, cutting, swimming),
       // drop the silent e (making, writing, having, taking, coming), ie becomes y (dying). The distractor is the misspelt
-      // form. A distractor that is another English word (siting, planing, hoping) is never used.
+      // form. A distractor is never a word a pupil knows (siting, planing, hoping).
       ...items('spelling-ing', 'form', [
         ['He is running now.', 'running', 'runing'],
         ['She is making a cake.', 'making', 'makeing'],
@@ -436,7 +436,7 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
     lessonId: L('u4_l3'),
     statement: 'I can use the Present Simple and the Present Continuous to talk about regular actions and activities happening now/temporary situations.',
     items: [
-      // MEANING: both tenses are grammatical, and a habit word (every day, every morning, on Fridays, often, usually,
+      // MEANING: both tenses are grammatical, and a habit word (every day, every morning, every night, often, usually,
       // rarely) is what rules the Continuous out. Never «always» or «this week»: both fit either tense.
       ...items('habit-markers', 'meaning', [
         ['We play chess every day.', 'play', 'are playing'],
@@ -468,12 +468,12 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ['Mum is washing the car at the moment.', 'is washing', 'washes'],
         ['He is playing football in the garden right now.', 'is playing', 'plays'],
       ]),
-      // A stative verb (like, know, need, believe, own, belong, prefer) has no Continuous: the distractor is the
+      // A stative verb (like, know, contain, believe, own, belong, prefer) has no Continuous: the distractor is the
       // Continuous of the verb. Never love, hate or have: «I am loving it» and «I am having lunch» are ordinary English.
       ...items('stative-verbs', 'form', [
         ['I like pizza.', 'like', 'am liking'],
         ['She knows the answer.', 'knows', 'is knowing'],
-        ['We need a new table.', 'need', 'are needing'],
+        ['This bottle contains cold water.', 'contains', 'is containing'],
         ['We believe the teacher.', 'believe', 'are believing'],
         ['Dad owns a small shop.', 'owns', 'is owning'],
         ['This book belongs to my sister.', 'belongs', 'is belonging'],
@@ -536,19 +536,19 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
       // MEANING: a past time word (yesterday, last week, last night, two days ago) rules the present form out. The
       // distractor is the Present Simple of the same verb; the sentence has no other tense clue.
       ...items('past-time-markers', 'meaning', [
-        ['She visited her aunt yesterday.', 'visited', 'visits'],
-        ['We played football last week.', 'played', 'play'],
+        ['She called her cousin yesterday.', 'called', 'calls'],
+        ['We planted a tree last week.', 'planted', 'plant'],
         ['I watched a film two days ago.', 'watched', 'watch'],
-        ['Dad bought a new car last year.', 'bought', 'buys'],
+        ['Our neighbour sold his house last year.', 'sold', 'sells'],
         ['My brother went to Aqaba last summer.', 'went', 'goes'],
         ['They cleaned the house yesterday morning.', 'cleaned', 'clean'],
         ['He ate fish for dinner last night.', 'ate', 'eats'],
-        ['Mum cooked rice an hour ago.', 'cooked', 'cooks'],
+        ['The baker baked bread an hour ago.', 'baked', 'bakes'],
         ['We saw a film last Friday.', 'saw', 'see'],
         ['The students had a test yesterday.', 'had', 'have'],
         ['I finished my homework ten minutes ago.', 'finished', 'finish'],
         ['Our teacher came late last Monday.', 'came', 'comes'],
-        ['She wrote a letter three days ago.', 'wrote', 'writes'],
+        ['She sent a message three days ago.', 'sent', 'sends'],
         ['We stayed at home last night.', 'stayed', 'stay'],
       ]),
     ],

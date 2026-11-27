@@ -54,7 +54,7 @@ Lesson ids are `kbl-g8-eng-s1-nccd-<id>` (a `g8` in the id, as Grade 9).
 | `u2_l3` | use can and can't to talk about household chores | `can-form` 14 form · `can-questions` 12 form · `can-vs-cant` 14 meaning | «She can cook dinner.» can cook / can cooks |
 | `u3_l1` | use countable and uncountable nouns to talk about diets | `plural-nouns` 12 form · `uncountable` 14 form · `a-an-some` 14 form | «We need some rice.» some / a |
 | `u3_l4` | use quantifiers to talk about amounts | `much-many` 14 form · `a-few-a-little` 14 form · `how-much-how-many` 12 form | «There aren't many eggs.» many / much |
-| `u4_l1` | use the Present Continuous to talk about things happening now or temporary situations | `be-v-ing` 14 form · `spelling-ing` 12 form · `questions-negatives` 14 form | «She is reading a book.» is reading / is read |
+| `u4_l1` | use the Present Continuous to talk about things happening now or temporary situations | `be-v-ing` 14 form · `spelling-ing` 12 form · `questions-negatives` 14 form | «She is reading a book.» is reading / reading |
 | `u4_l3` | use the Present Simple and the Present Continuous to talk about regular actions and activities happening now | `habit-markers` 12 meaning · `now-markers` 12 meaning · `stative-verbs` 8 form · `questions` 8 form | «Look! It is raining.» is raining / rains |
 | `u5_l1` | use the Past Simple to talk about the past | `regular-ed` 12 form · `irregular` 14 form · `past-time-markers` 14 meaning | «She visited her aunt yesterday.» visited / visits |
 | `u5_l4` (grammar-only) | use the Past Simple to ask questions and give affirmative or negative answers | `did-questions` 14 form · `didnt-negatives` 14 form · `wh-did` 12 form | «He didn't go to school.» didn't go / didn't went |
@@ -78,7 +78,7 @@ Rules for every item:
    can / can't («He is three, so he can't wash dishes.»). A clause both modals could follow is not enough.
 5. An adverb sits inside the answer so the false twin keeps standard word order, and the `adverb-position` twin moves the adverb between a main verb and its object (`always eats` / `eats always`). There is no be + adverb row: this spec first gave `is always` / `always is` as the example, but «She always is late» is marked, not wrong, English, and the principle that a distractor is never a form real English accepts outranks that example (ruling during the build, 2026-11-27).
 6. An uncountable-noun item uses only nouns whose plural is not standard at this level (`milk`, `rice`, `bread`, `meat`, `butter`,
-   `cheese`, `water`), never `sugar` or `fruit`, which have a real plural. A `some` / `a` twin in `a-an-some` is written only with `rice`, `meat`, `butter` or `bread`: «a milk» or «a water» reads as a serving, so no drink or cheese noun takes `a` / `an` as a distractor (ruling during the build).
+   `cheese`, `water`), never `sugar` or `fruit`, which have a real plural. A `some` / `a` twin in `a-an-some` is written only with `rice`, `meat`, `butter`, `bread` or a plural noun: «a milk» or «a water» reads as a serving, so no drink or cheese noun takes `a` / `an` as a distractor (ruling during the build).
 7. A question item whose distractor is a grammatical question in another word order (`Is there a sofa?` against `Is a sofa there?`)
    is not written; the twin must be ungrammatical.
 

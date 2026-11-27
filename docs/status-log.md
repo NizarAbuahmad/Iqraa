@@ -20,7 +20,7 @@ student sees a card, `u5_l4` is absent from the Grade 8 index and its URL says �
 the printed form.** For that reason there is **no «ما الجديد» entry** in this change (nothing is visible); it comes with
 the change that sets the first `reviewedBy`. Spec: `docs/superpowers/specs/2026-11-04-english-corner-grammar-g8-s1-design.md`;
 plan: `docs/superpowers/plans/2026-11-27-english-corner-grammar-g8-s1.md`; draft PR #1416. Same engine and rules as Grades 5, 9
-and 10; **no app screen, server, schema or migration change**: no app screen or other non-test file changed.
+and 10; **no app screen, server, schema or migration change**: no app file other than a test changed.
 
 - **400 hand-written items, 40 a lesson, 30 sub-topics** (`englishGrammarG8Items.ts`, `G8_ITEM_LESSONS`, each `statement`
   equal to `objectives[0]` of its lesson, read back from the Grade 8 Semester 1 JSON by a test). **52 are `meaning` and 348
@@ -44,7 +44,7 @@ and 10; **no app screen, server, schema or migration change**: no app screen or 
   - **The spec's principle «never a distractor real English accepts» outranks the contract's own example.** The spec and plan
     gave `is always` / `always is` for `adverb-position`; «She always is late» is marked, not wrong, English. The 14 rows now
     put a frequency adverb before a main verb, and the twin moves it between the verb and its object (`always eats` /
-    `eats always`, `usually walks` / `walks usually`). **No row puts an adverb with `be`.** Spec rule 5 and the `u1_l3`
+    `eats always`, `usually takes` / `takes usually`). **No row puts an adverb with `be`.** Spec rule 5 and the `u1_l3`
     `NOT_COVERED_G8` note say the same (the note once taught «she is always late», it now shows the main-verb pair).
   - **`a` / `an` as a distractor in `a-an-some` only with rice, meat, butter and bread.** «a milk», «a water», «a juice» read
     as a serving and are ordinary English, so no drink or cheese noun takes `a` or `an` as the twin (they stay in the
@@ -74,8 +74,8 @@ and 10; **no app screen, server, schema or migration change**: no app screen or 
   scripts); `@workspace/curriculum` `test` **965 tests, 965 passing** with `env -u R2_ACCESS_KEY_ID -u R2_BUCKET -u R2_ENDPOINT -u
   R2_SECRET_ACCESS_KEY`, its `verify` **200 files, 3369 lessons, 0 errors** (the 2400 «gaps» are the existing content-gap
   report); the **full mobile suite 9688 tests, 9678 passing, 10 skipped, 0 failing** (425 s). The api-server suites were not run: nothing there changed (CI covers them). The CI on the PR
-  was green on `c1f614a`, `5247e33`, `e270d83`, `c5fc9b5` and `c16434b` (reported by the session's controller; the later commits
-  `0a9a77f` and `b68d815` were not seen). **In a browser** (Task 3), on the production web export at 390 px in English and in
+  showed no failure on `c1f614a`, `5247e33`, `e270d83`, `c5fc9b5`, `c16434b`, `0a9a77f` and `b68d815` (seven commits; the session's
+  controller saw those checks complete); the final head, after the last fix wave, will be checked before the PR leaves draft. **In a browser** (Task 3), on the production web export at 390 px in English and in
   Arabic, with two units signed temporarily (`u1_l1` and `u5_l4`, a localStorage-gated `LOCAL CHECK` signature in
   `englishGrammarG8.ts`, restored with `git checkout`; no `LOCAL CHECK` left in `lib/curriculum/src` or `artifacts/mobile`):
   unsigned, the Grade 8 index has no «grammar activities» row and `u5_l4` says «lesson not found» (Arabic: «لم نجد هذا الدرس»);
@@ -96,9 +96,13 @@ and 10; **no app screen, server, schema or migration change**: no app screen or 
      `now`, strained rather than strictly wrong); `habit-markers` (above); `can-vs-cant` (decided by the clause, which a
      teacher may find soft). Relabelling is a one-word change per sub-topic.
   2. **Informal-English twins:** «I am liking pizza» (`stative-verbs`), a missing `be` («She reading a book», four rows,
-     dialect or headline style), a missing auxiliary in `wh-did` («Where your father worked?», an echo question), «There
-     isn't many shops» (`there-is-are`, colloquial but non-standard), `some` after «aren't» (contrastive only).
-  3. **Overlap with Grade 10** (the Present Simple and Continuous): accepted by the spec; the Grade 8 sentences are simpler and
+     dialect or headline style), a missing auxiliary in `wh-did` («Where your father worked?», a wh-question with no auxiliary), «There
+     isn't many shops» (`questions-negatives` in `u2_l1`, colloquial but non-standard), `some` after «aren't» (contrastive only).
+     The `stative-verbs` twin «We are needing a new table.», which informal English accepts, was swapped for `contain` («This
+     bottle contains cold water.» / «is containing») in the final fix wave, so it is no longer a pushback item.
+  3. **`question-words` (`u1_l3`).** Its twins are mostly a wh-word without the auxiliary («Where you live?», «When your father
+     comes home?», «Who he plays with?»), and several read as correct embedded clauses («when your father comes home»).
+  4. **Overlap with Grade 10** (the Present Simple and Continuous): accepted by the spec; the Grade 8 sentences are simpler and
      written separately.
 - **Known limits:** the 400 sentences are ours and a teacher checks them on the printed form; **25 other Semester 1 lessons**
   (vocabulary, reading, speaking, listening, writing) get no grammar activity; Semester 2, Grade 6 and Grade 7 have none; no
@@ -109,6 +113,7 @@ and 10; **no app screen, server, schema or migration change**: no app screen or 
 - **How it was built:** subagent-driven, one reviewer per task. Task 1 and Task 2 each took two fix rounds (Task 1:
   adverb-before-be and `a milk` twins; Task 2: adverb outside the answer, Continuous twins on a temporary reading); Task 3 was
   approved with no findings.
+
 ## Slides PPTX and PDF exports: answer options in reading order, the app's fonts, Arabic language tag — 2026-11-27
 
 Found by exporting a 17-slide Arabic maths deck through the real `exportDeckAsPptx` and opening it in LibreOffice,
