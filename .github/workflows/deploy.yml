@@ -293,6 +293,18 @@ jobs:
       # and teachers found the answers weak. gpt-5.4-mini is what generation
       # runs; it costs ~3.7x nano per turn. Set here so a console edit can't
       # silently drift it again.
+      #
+      # `--memory 1Gi` (2026-11-27): Error Reporting (since 2026-10-24) showed
+      # "Memory limit of 512 MiB exceeded" killing the instance: 10 times in the
+      # 8 days to 2026-11-01, one to four a day across eight revisions, not tied
+      # to a deploy. The requests running around each kill were ordinary reads
+      # (the largest response was 0.2 MB), so it is not a request spike; the
+      # shape fits a slow climb on the one always-on instance. That is a
+      # guess, not a diagnosis: the Cloud Run memory graph over a few days
+      # would show it. 1Gi stops the kills; it does not find the cause. Cost:
+      # the verifier's comment prices an always-on 512Mi at ~$0.11 a day, so this
+      # adds about that (~$3 a month). Put it back to 512Mi if the graph stays
+      # well under it.
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy iqraa-api \
@@ -300,7 +312,7 @@ jobs:
             --region europe-west1 \
             --allow-unauthenticated \
             --port 8080 \
-            --memory 512Mi \
+            --memory 1Gi \
             --cpu 1 \
             --concurrency 80 \
             --timeout 300 \
