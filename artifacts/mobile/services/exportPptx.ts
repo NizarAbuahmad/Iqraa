@@ -26,6 +26,7 @@ import { asPhotoHero, resolveSlideLayout } from './slideLayout.ts';
 import { diagramGeometry, isDiagram } from './diagramGeometry.ts';
 import { drawPptxDiagram } from './pptxDiagram.ts';
 import { slideTeacherNotesText } from './deckNotes.ts';
+import { textDefaults, withTextDefaults } from './pptxText.ts';
 import { saveBlob } from './webSave.ts';
 import { creditSegments, type PhotoCredit } from './photoCredit.ts';
 import type { ActivitySlide, ClassroomActivity } from '@/services/ai/AIService';
@@ -251,10 +252,12 @@ export async function exportDeckAsPptx(
   // The app's real typefaces instead of Arial. PowerPoint cannot embed a font
   // from pptxgenjs — this NAMES them, so the deck renders correctly wherever
   // Readex Pro/Almarai are installed and falls back to a system Arabic face
-  // otherwise, which is no worse than the Arial it printed before. It also
-  // covers the Google Slides route: both are Google Fonts, so a .pptx
-  // uploaded there resolves them from Google's own catalogue.
-  // Set on the theme rather than per-run so no addText call can be missed.
+  // otherwise, which is no worse than the Arial it printed before. Uploaded to
+  // Google Slides (checked 2026-11-27), Readex Pro comes through but Almarai
+  // is substituted with Arial, although every run names it.
+  // The theme names them for Latin text only — it has no complex-script face,
+  // which is the one PowerPoint draws Arabic in — so every text box also gets
+  // its face per run, in the addText wrapper below (`withTextDefaults`).
   pptx.theme = { headFontFace: HEAD_FONT, bodyFontFace: BODY_FONT };
 
   const rtlAlign: 'right' | 'left' = isAr ? 'right' : 'left';
@@ -271,19 +274,16 @@ export async function exportDeckAsPptx(
     // here, before the per-type branches, because most of those `continue`.
     const notes = slideTeacherNotesText(slide, isAr);
     if (notes) s.addNotes(notes);
-    // pptxgenjs writes a paragraph's `rtl="1"` only from that text's own
-    // `rtlMode`; the presentation-level flag above reaches the root element and
-    // nothing else. Without it Arabic is right-aligned but laid out LTR —
-    // punctuation, digits, bullets and Latin terms land on the wrong side.
-    // Defaulted here, once, so no individual addText call can be missed. A run
-    // array needs it on each run — the outer options never reach the first one.
-    if (isAr) {
+    // Every text box's direction, typeface and language, defaulted here once so
+    // no individual addText call can be missed — see `withTextDefaults`. An
+    // Arabic line is laid out right-to-left (without it Arabic is
+    // right-aligned but laid out LTR, punctuation and bullets on the wrong
+    // side); a line with no Arabic letter left-to-right, or «(2, 0)» prints
+    // as «(0 ,2)».
+    {
       const addText = s.addText.bind(s) as (text: unknown, opts?: object) => unknown;
-      s.addText = ((text: unknown, opts?: object) =>
-        addText(
-          Array.isArray(text) ? text.map(r => ({ ...r, options: { rtlMode: true, ...r.options } })) : text,
-          { rtlMode: true, ...opts },
-        )) as typeof s.addText;
+      s.addText = ((text: unknown, opts?: Record<string, unknown>) =>
+        addText(...withTextDefaults(text, opts, isAr, BODY_FONT))) as typeof s.addText;
     }
 
     if (i === 0) {
@@ -490,15 +490,17 @@ export async function exportDeckAsPptx(
         const head = inReadingOrder(layout.headers).map(h => ({
           text: h,
           options: {
-            bold: true, color: 'FFFFFF', fill: { color: accent }, fontFace: HEAD_FONT, fontSize: 16,
-            align: rtlAlign, valign: 'middle' as const, rtlMode: isAr,
+            bold: true, color: 'FFFFFF', fill: { color: accent }, fontSize: 16,
+            align: rtlAlign, valign: 'middle' as const, ...textDefaults(h, isAr, HEAD_FONT),
           },
         }));
+        // A table does not go through the addText wrapper, so its cells take
+        // the same defaults here: a «-2» cell laid out right-to-left read «2-».
         const body = layout.rows.map((row, ri) => inReadingOrder(row).map(c => ({
           text: c,
           options: {
-            color: P.text, fill: { color: ri % 2 === 0 ? P.card : P.bg }, fontFace: BODY_FONT, fontSize: 14,
-            align: rtlAlign, valign: 'middle' as const, rtlMode: isAr,
+            color: P.text, fill: { color: ri % 2 === 0 ? P.card : P.bg }, fontSize: 14,
+            align: rtlAlign, valign: 'middle' as const, ...textDefaults(c, isAr, BODY_FONT),
           },
         })));
         s.addTable([head, ...body], {
@@ -866,9 +868,11 @@ export async function exportDeckAsPptx(
           line: { color: correct ? accent : P.border, width: correct ? 1.5 : 1 },
           rectRadius: 0.08,
         });
+        // White on the correct row's fill: in the accent colour it sat on a
+        // fill of nearly the same blue, and «أ» vanished.
         s.addText(`${letters[i] ?? String(i + 1)}`, {
           x: 2.15, y, w: 0.5, h: rowH, align: 'center', valign: 'middle',
-          fontSize: 12, color: accent, bold: true,
+          fontSize: 12, color: correct ? 'FFFFFF' : accent, bold: true,
         });
         s.addText(`${pptxLine(opt, true)}${correct ? '   ✓' : ''}`, {
           x: 2.65, y, w: 5.2, h: rowH, align: rtlAlign, valign: 'middle',

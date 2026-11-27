@@ -74,8 +74,10 @@ describe('dateLocale', () => {
 describe('no interface screen prints a date in Arabic-Indic digits', () => {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const SKIP = /[\\/](__tests__|node_modules|admin|dev)[\\/]/;
-  // The one file that defines the locale, and so names the plain one in its comments.
-  const DEFINITION = /services[\\/]dateLabels\.ts$/;
+  // The one file that defines the locale, and so names the plain one in its
+  // comments — and the PowerPoint export's language tag, which marks each
+  // Arabic run for PowerPoint's spell-checker and formats no date.
+  const DEFINITION = /services[\\/](dateLabels|pptxText)\.ts$/;
 
   const sources: string[] = [];
   const walk = (dir: string) => {
