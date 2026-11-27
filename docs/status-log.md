@@ -10,6 +10,24 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+
+## Whiteboard: shapes, and a page as an image (2026-11-27)
+
+- **Shapes.** A shapes tool in the whiteboard toolbar (line, arrow, rectangle, ellipse): drag to size it, the
+  toolbar's colour and width apply. A shape is not a new object. `services/boardShapes.ts` turns it into an
+  ordinary stroke (a polyline in the stored unit), so undo, the eraser, the saved file (no version bump), the
+  PDF and a shared board all handle it, and an older app opens such a board as plain ink. The price: a drawn
+  shape cannot be resized, only erased and redrawn; selecting ink is the feature that would change that. A tap
+  with no drag draws nothing (`isShapeBigEnough`).
+- **A page as an image.** `buildBoardPageSVG` (shared drawing with the PDF, `pageInnerSVG`) → `boardImage.ts`
+  → PNG, shared through the browser's share sheet when it can share files, otherwise downloaded. **Web only,
+  on purpose:** a native screenshot needs a native module (a new build, not an OTA). On Android the PDF
+  button already opens the share sheet with the PDF, which is how a board reaches WhatsApp there.
+- **Verified.** Unit tests for the geometry, the stroke format, the page SVG and the wiring; in Chromium: drew
+  one of each shape, a tap drew nothing, undo and the eraser removed a shape, the downloaded PNG showed all of
+  it plus mixed Arabic/Latin text. **Not verified:** the share-sheet path of the image (needs a phone browser),
+  anything on a real Android device.
+
 ## Exam generation warnings in Arabic — 2026-11-27
 
 The review screen printed a generated exam's warnings exactly as the API sent them, and the API wrote every one in
