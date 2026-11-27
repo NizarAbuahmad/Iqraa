@@ -10,6 +10,187 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Parents: «المدرسة» first, a quick look at each child, a read-only view of a handed-in project, every parent code of a class in one place, a parent's tick for a child with no account, the child's answer review, a topic summary under each result, and two small fixes — 2026-11-20
+
+Eight changes from a review of the parent side (the first four written 2026-11-13, the fifth 2026-11-20, the sixth 2026-11-25, the seventh and eighth 2026-11-27).
+
+**What changed.**
+- **«ما أُتقن وما يحتاج إلى مراجعة» under every released result** (the owner's call, 2026-11-27), for the student and the
+  parent alike, on the shared `StudentResultCard` (the hand-in screen, «اختباراتي», «نتائج أبنائي»). It reverses a
+  recorded choice: `sanitizeResultForStudent` and the card both said the per-objective detail was "a diagnostic for
+  the teacher". What families now get is a projection of it, not the detail: `topicSummary`
+  (`modules/assessment/topicSummary.ts`) runs the teacher's own split (`splitGapsAndStrengths`) over the stored
+  `objective_scores` and sends **names only** — the outcome's text from the curriculum — never a percentage, marks lost
+  or the scores themselves. A topic must be asked about in **two questions or more** either way (strengths already
+  needed two; a gap now does too, so one unlucky answer never tells a parent "needs work"); at most **three** each way,
+  the gaps ordered as the teacher's are (marks lost first); an objective the curriculum no longer knows is dropped. It
+  rides on the result, so the release rule is the one that already gates the mark: nothing shows before the teacher
+  releases results and the paper is fully marked. «ما الجديد» for students and parents (`result-topics-family`) and
+  for teachers (`result-topics-teacher`, which says families now see it and the percentages stay the teacher's).
+  Verified: `topicSummary.test.ts` (7 cases: two-question floor both ways, ordering, the cap of three, unknown ids,
+  no numbers, malformed rows); `studentView.test.ts` still pins that `objectiveScores` never leave;
+  `answerReview.db.test.ts` sets real catalog objectives on Sara's sitting and checks `/student/exams` and
+  `/parent/exams` carry the same summary, a one-question topic is not named, and neither body contains
+  `objectiveScores` or `marksLost`; `resultTopics.test.ts` on the app side.
+- **Two small fixes on «المدرسة»** (2026-11-27). The selected child chip drew `'#fff'` on `palette.primary`, which in
+  dark mode is the light teal `#2DD4BF`: about 1.9:1. Its label is now `palette.primaryForeground`, from the same
+  palette as the fill. And the child picked on «المدرسة» now carries over to «نتائج أبنائي»: the four links there
+  (the results button, the glance card's last result, an exam row, a homework's exam) go through `resultsHref`
+  (`services/myExams.ts`), which adds `?child=<key>` for a parent, and the results screen shows that child alone
+  (`focusChild`) with «اعرض كل الأبناء» to widen back. A key that matches no child shows everyone rather than an empty
+  screen, and a parent of one child sees no widen link. No «ما الجديد»: nothing new to learn. Pinned by
+  `parentResultsChild.test.ts`, which also reads both palettes from `constants/colors.ts` and checks the label clears
+  4.5:1 on the fill in each.
+- **A parent opens the child's answer review** (2026-11-25). A parent saw a released result as a level, a mark and
+  the four competencies, and could not see which questions went wrong. The review was turned off for parents
+  (`guardianExamRow` set `review: false`) only because it was read through `/student/…`. New `GET
+  /parent/exams/:id/review?child=<key>` reads the same paper through the same loader (`lib/answerReviewRead.ts`) under
+  the same rule (`studentReviewReady`: the exam is closed, results are released, and the teacher turned the review
+  on). So a parent sees it exactly when the child can, and never earlier. Only that child's roster rows are
+  searched, so a sibling in the same class stays apart. A key that is not this parent's child, a missing key and a
+  paper not ready are one 404. «نتائج أبنائي» shows «راجع الإجابات والحلول» under such a result. The review screen
+  names the child and calls the answer «الإجابة المُقدَّمة», not «إجابتك».
+  **Full review only, not «تغذية راجعة فورية».** Instant feedback (#1558, «Instant feedback: students see their mark and
+  mistakes on hand-in», merged 2026-11-26 while this PR was open) added a second review mode that shows
+  right and wrong before the exam closes. This PR folds that mode into the shared loader for the student, unchanged,
+  but a parent gets the full review only (`fullOnly`; `guardianExamRow` keeps `review` only when `reviewMode` is
+  `"full"`): the feedback mode runs while classmates may still be sitting the exam (its own confirm text warns that a
+  verdict gives a key away), and its switch speaks of students only. Widening it to parents is a separate decision.
+  **The teacher's switch now covers parents, and says so.** The switch, its confirm dialog and both notes under it
+  (`showSolutionsBtn`, `hideSolutionsBtn`, `showSolutionsConfirm`, `solutionsShownNote`, `solutionsHiddenNote`) said
+  students only. They now name parents too, and a teachers' «ما الجديد» entry (`teacher-answers-reach-parents`) says
+  it. **An exam whose review a teacher turned on before this merged becomes readable by that class's parents**, under
+  wording that named students only. Nothing could be keyed to "turned on after", because the switch keeps no date.
+  **Not done, on purpose: a per-topic summary for parents.** `attempt_results.objective_scores` holds a per-objective
+  breakdown, but `sanitizeResultForStudent` and `components/StudentResultCard.tsx` both record that it is "a
+  diagnostic for the teacher". Showing it to families reverses that, which is the owner's decision.
+  **A row-level-security hole found on the way, and fixed.** The worked steps sit on `evaluation_questions`, which
+  the policies keep teacher-only because that table holds the answer key. The student's review route read them on
+  the student's own connection. With `RLS_ENFORCE` on, every student's review lost its steps (`steps: null`) with
+  status 200 and no error logged; the RLS diff compared only statuses for these steps, so it could not have seen it.
+  The loader now reads the steps on `systemDb`, only after the review gate holds, only for the question ids in the
+  caller's own sitting, and only that column. It is pinned in `systemDbFiles.test.ts` with that reason.
+  `rlsDiff.test.ts` now reads both reviews and logs the steps each one got.
+  Verified: `answerReview.db.test.ts` (7 cases: the parent gets exactly the child's JSON; a sibling's key, another
+  family, a missing or unknown key and a hidden or re-published review are 404; a student or teacher is refused by
+  role) and the full API suite against a local Postgres (3,684 tests, 0 failures); the RLS suites, 76 of 76; the
+  mobile suite (9,706 tests, 0 failures, 10 skipped), including `parentExamReview.test.ts`; `pnpm run typecheck`.
+  Mutation checks: searching all of the parent's rows instead of the child's fails the sibling case; reading the
+  steps on the caller's connection fails the RLS diff (`[["step one","step two"]]` off, `[null]` on). Browser (web
+  build, API stubbed by Playwright): a parent on Arabic phone light and dark and English desktop sees the button
+  under the one exam whose review is on and not under the sibling's; it sends one request with that child's key; the
+  screen shows «إجابات سارة» / «Answers: سارة», «الإجابة المُقدَّمة» and never «إجابتك», and the steps.
+  Not verified: a phone or a native build; the real API and database behind the parent screens; the teacher's
+  changed switch wording seen on the evaluation screen (it is pinned by `parentExamReview.test.ts`, not looked at).
+  The review screen is recorded like the student's own (`/exam-review` was already a recorded student page).
+- **A parent ticks homework for a child with no student account** (the owner's call, 2026-11-20). Until now an item
+  whose class held no student account for the child could be ticked by nobody, so it showed only its date; a young
+  child is often in exactly that position, and the parent is the one checking. New `PUT/DELETE
+  /parent/homework/:id/done?child=<key>` (`setHomeworkDoneAsGuardian` in `lib/homeworkDone.ts`) writes the same
+  completion row the student would, for that child's rows in the homework's class only. Refused with 409
+  `student_tracks` when any of those rows has a student account (the child ticks their own, and a parent cannot
+  overwrite it), with 409 `submission_required` for a project, and with one 404 for another family's child, a child
+  outside the class, or a missing key. The child key is in the query because some clients drop a DELETE's body. On
+  «المدرسة» (`parentMayTick`, `hasDoneStatus` in `services/homework.ts`) the parent's row then has a checkbox; the item
+  still never reads «متأخّر» (a family that does not use the tick would see everything called late); the to-do and done
+  groups now apply to those items too; the note under «الواجبات» says to tick them; a parent's tick never celebrates
+  («أنجزت كل واجباتك» speaks to the student); the glance card stops counting an item the parent marked done as «مطلوب».
+  The teacher's done count includes a parent's tick (it counts completion rows), and nothing records who ticked: the
+  teacher sees only the count. The day-before reminder already skips an item with any completion, so a parent's tick
+  silences it with no change there.
+  **A row-level-security hole found on the way, and fixed.** Whether a child has a student account is the child's own
+  `self` link, and `roster_links_select` lets a guardian read only their own links. `studentIdsWithSelfAccount` read on
+  the parent's connection, so with `RLS_ENFORCE` on, every child read as having no account: the parent's list lost
+  every `canTrack`, and the new tick would have been let through for a child who ticks their own. It now reads on
+  `systemDb` (`lib/familyAccess.ts` was already pinned; its entry in `systemDbFiles.test.ts` says why). `rlsDiff.test.ts`
+  now reads `/parent/homework` and `/student/homework` and runs both parent ticks, and counts completions left behind.
+  Verified: `parentHomeworkDone.db.test.ts` (7 cases) and the full API suite against a local Postgres (3,589 tests;
+  the one failure on the first run was `systemDbFiles.test.ts` matching the word in a comment, reworded); the RLS
+  suites against a freshly migrated database, 76 of 76. Mutations: putting the account check back on the parent's
+  connection fails the RLS read diff (`canTrack` true off, false on) and the write diff (409 off, 200 on); the write
+  steps first passed vacuously because an earlier step had unlinked the parent and removed the child from the class,
+  which the block now restores; dropping the `student_tracks` check fails the DB test. `mountOrder.test.ts` covers both
+  methods without a token. Mobile tests for the rules and the screen wiring. Not checked: a phone, and a real parent.
+- **«رموز أولياء الأمور» for a whole class (teacher).** A parent cannot join from the class code
+  (`claimParentNeedsOwnCode`), so each family needs its child's own code, and a teacher with thirty students opened
+  `/messaging/claim/<student>` thirty times. The class page's join-status card now opens
+  `app/classes/[id]/parent-codes.tsx`: create the missing codes in one press, send one family its code (the same
+  `composeClaimCodeMessage` as the per-student screen) or copy it, and print one slip per child (`slipsHtml` in
+  `services/parentCodes.ts`, through `exportAsPDF`). It lists the children with no parent linked by default; «كل
+  الطلبة» shows the rest. Two new API routes in `routes/roster.ts`: `GET /classes/:id/claim-codes` (every live
+  student of the class, live codes only, by `isCodeLive`) and `POST /classes/:id/claim-codes`, which mints a code only
+  where none is live and **never replaces a live one** (unlike the per-student POST, which overwrites): a slip already
+  handed out keeps working, and a second press only fills in students added since. Its UPDATE re-checks ownership and
+  that no live code appeared meanwhile, and retries a unique-code collision once. **What it deliberately cannot do**: put
+  every code in one message. Redeeming a code links that child at once, with no approval, so a list posted in a class
+  group would let any parent claim any child; `parentCodes.test.ts` fails if the screen builds a message from anything
+  but one row. Re-minting one code and unlinking a wrong parent stay on the per-student screen, which each row's name
+  opens. A teachers-only «ما الجديد» entry, `teacher-class-parent-codes`.
+  Verified: `classClaimCodes.db.test.ts` against a local Postgres (lists live students only, a live code as it is and
+  an expired one as none; mints exactly the two missing; never replaces the live one; leaves archived students and
+  other classes alone; a repeat mints nothing; a minted code really signs a parent up for that child as `guardian`;
+  another teacher gets 404 on both with nothing written; with `STUDENT_ACCOUNTS` off both answer 403). Mutation:
+  dropping the archived filter fails two of its cases. `mountOrder.test.ts` now also checks both class routes answer
+  401 without a token. `parentCodes.test.ts` (13 cases: normalizing, rows, filter, escaping in the slips, the one-family
+  rule). In the stubbed browser build as a teacher (Arabic phone light and dark, English desktop): the button shows
+  the one missing code, one press creates it and the button goes, the filter hides and shows the child whose parent is
+  linked. The slips page was rendered as printed (A4): right to left, the code in its own left-to-right box, an English
+  name in place. The full mobile suite caught the screen offering codes without checking `studentAccounts`
+  (`claimCodeGating.test.ts`); it now shows the «accounts are off» card and loads nothing, seen in the browser with the
+  flag off. Not checked: the print dialog itself (web `iframe` print and native `expo-print`), the share sheet on a
+  phone, and a real class.
+- **«نظرة سريعة» at the top of a parent's «المدرسة».** One card for the child the picker shows: homework due in the
+  next seven days (Amman days, today included), how much is late, the next dated exam and its day, and the latest
+  released result (a link to «نتائج أبنائي»). Built from the three lists the screen already loads; no new API.
+  `services/childGlance.ts` decides what is true, under the same rules as the rows below it: «متأخّر» counts only
+  tracked, not-done, overdue items (an untracked item is never called late); «مطلوب» counts untracked items (a due day
+  is a calendar fact) but not a tracked item already done; a list that failed or has not loaded leaves its lines out
+  instead of showing zero; with neither list loaded the card is not drawn. The lines are labels («مطلوب خلال سبعة أيام:
+  واجبان»), not sentences, so no verb has to agree with the child's gender (`arHomeworkPhrase` in `arCount.ts`). No
+  amber: it means «now», and the rows below already carry it. Students do not get the card. Names and exam titles sit
+  in first-strong isolates and never first in a line: react-native-web's `dir="auto"` takes a line's direction from
+  its first strong letter, and the first draft's English title read «at a glance سارة» in the browser.
+  Verified: `childGlance.test.ts` (10 cases, including every line opening in the UI's own script; dropping
+  `canTrack` from the late count fails its case), mobile suite 9,294 tests 0 failures before the final copy
+  change, then the copy/guard tests (130) and the mobile typecheck after it. In the stubbed browser build: the card
+  shows due, late, next exam and latest result for the picked child in Arabic light and dark (phone) and English
+  (desktop), and the result line opens `/my-exams`. Not checked: a picker with two children switching the card, and
+  a phone.
+- **A parent sees their child's handed-in project.** The API route existed (`GET /parent/homework/:id/submissions`,
+  `readForParent`), and nothing in the app called it. A project row on «المدرسة» now shows «اعرض المشروع» to a
+  parent once the child has handed in (`showsChildProjectLink`: the student link's rule plus `submission !== 'none'`;
+  the parent's read never carries a draft, so before a hand-in the link would open onto nothing). It opens
+  `app/homework-project/child/[id].tsx`: the state and when it was handed in, the photos (tap to enlarge), the note.
+  Read-only, built from the teacher's detail screen without the delete. The client is `services/parentProjectApi.ts`
+  (+ `.default.ts`). The route sits under `/homework-project` on purpose: that prefix is already open to parents
+  (`routeGating.ts`) and already kept out of analytics (`screenTracking.ts`), since it shows a minor's photos. The
+  link carries the child's key, so siblings in one class open on the child «المدرسة» was showing
+  (`childrenToShow`; a key that matches nobody shows every child in the answer, never an empty screen).
+- **A parent lands on «المدرسة», not Messages.** Messages was chosen on 2026-09-13 («The student has a place to go»),
+  when «المدرسة» was only a timetable. It now holds homework and exams, and the homework and exam-date pushes already
+  open it. `app/(tabs)/index.tsx` now redirects a student or parent with `homeHrefFor` from `services/tour.ts`, the
+  href the tour's replay uses, so the two cannot drift; an unknown role still fails closed to Messages. The tour
+  (`homeRouteFor`) starts on `/school` for a parent, and the What's New dialog shows there. The bounce for a parent
+  who opens a teacher URL still goes to Messages (`app/_layout.tsx`); unchanged.
+- «ما الجديد» entry `parent-school-first-projects` (parents only, route `/school`).
+
+**Verified.** New tests: `parentProjectApi.test.ts` (the call, normalizing, a 404, a non-JSON 2xx never reading as
+«nobody handed in», which child is shown), `parentProjectScreen.test.ts` (the path is open to parents and not
+tracked, the screen only reads, the design rules, the School link uses the tested rule and href, the landing uses
+`homeHrefFor` and still fails closed), and two in `homework.test.ts` (the link rule; the href round-trips Arabic and
+`&` with no `+`). `tour.test.ts` moved to the new home. Mutation check: dropping `submission !== 'none'` from
+`showsChildProjectLink` fails its test. Mobile suite: 9,285 tests, 9,275 pass, 0 fail, 10 skipped. `pnpm run
+typecheck` (whole monorepo) clean. In a built web bundle with the API stubbed by Playwright, as a parent: lands on
+`/school` (Arabic phone light and dark, English desktop); «اعرض المشروع» shows on the handed-in project and not on the
+one not yet handed in; it opens the project with both photos loaded and the note; Back returns to `/school`; a new
+parent's tour starts on `/school`; an existing parent sees this What's New entry there. Screenshots read for layout,
+RTL and dark mode.
+
+**Not verified.** Nothing was seen on a phone or in a native build. The browser check stubbed the API: the real
+`/parent/homework/:id/submissions` was not called from the app against a real database, and photos were local SVGs,
+not signed R2 links (the route itself is covered by the API's own tests). Whether replay masking hides the photos is
+unverified, as for the student's and the teacher's project screens (STATUS.md, «Screen recording»).
+
 ## Set-builder notation and conditional probability read left to right in Arabic — 2026-11-27
 
 The follow-up the bars entry below named. A single `|` is a separator and never joins a run on its own. But in

@@ -25,6 +25,10 @@ import {
   normalizeTeacherGameResults,
   resultForGame,
   showsSubmissionLink,
+  showsChildProjectLink,
+  parentMayTick,
+  hasDoneStatus,
+  childProjectHref,
   homeworkSections,
   normalizeTeacherHomework,
   normalizeTeacherList,
@@ -699,6 +703,52 @@ test('showsSubmissionLink is true only when a submission is required and the ite
   assert.equal(showsSubmissionLink({ requiresSubmission: true, canTrack: false }), false);
   assert.equal(showsSubmissionLink({ requiresSubmission: false, canTrack: true }), false);
   assert.equal(showsSubmissionLink({ requiresSubmission: false, canTrack: false }), false);
+});
+
+test('a parent sees «اعرض المشروع» only for a tracked project the child has handed in', () => {
+  const on = { requiresSubmission: true, canTrack: true };
+  assert.equal(showsChildProjectLink({ ...on, submission: 'submitted' }), true);
+  assert.equal(showsChildProjectLink({ ...on, submission: 'late' }), true);
+  // Before a hand-in the parent's read has nothing (it never carries a draft): no door to an empty screen.
+  assert.equal(showsChildProjectLink({ ...on, submission: 'none' }), false);
+  assert.equal(showsChildProjectLink({ requiresSubmission: true, canTrack: false, submission: 'submitted' }), false);
+  assert.equal(showsChildProjectLink({ requiresSubmission: false, canTrack: true, submission: 'submitted' }), false);
+});
+
+test('the parent project link stays under /homework-project and round-trips its params', () => {
+  const href = childProjectHref('h 1', 'k/2', 'مشروع الخلية & الأنسجة');
+  assert.ok(href.startsWith('/homework-project/child/h%201?'), href);
+  // No `+` for a space: a route's params do not read it back as one.
+  assert.doesNotMatch(href, /\+/);
+  const q = new URL(href, 'https://x.test').searchParams;
+  assert.equal(q.get('child'), 'k/2');
+  assert.equal(q.get('title'), 'مشروع الخلية & الأنسجة');
+});
+
+test('a parent may tick only an untracked, non-project item; a student-tracked one is the student\'s', () => {
+  assert.equal(parentMayTick({ canTrack: false, requiresSubmission: false }), true);
+  assert.equal(parentMayTick({ canTrack: true, requiresSubmission: false }), false, 'the child ticks their own');
+  assert.equal(parentMayTick({ canTrack: false, requiresSubmission: true }), false, 'a project is handed in, never ticked');
+});
+
+test('a done status exists for a tracked item, or for a parent on an item they tick', () => {
+  assert.equal(hasDoneStatus({ canTrack: true, requiresSubmission: false }, false), true);
+  assert.equal(hasDoneStatus({ canTrack: false, requiresSubmission: false }, true), true);
+  assert.equal(hasDoneStatus({ canTrack: false, requiresSubmission: false }, false), false);
+  assert.equal(hasDoneStatus({ canTrack: false, requiresSubmission: true }, true), false, 'nobody can tick an untracked project');
+});
+
+test('for a parent, untracked items are grouped into to-do and done (they tick them), not one flat list', () => {
+  const items = [
+    hw({ id: 'a', canTrack: false, dueDate: '2026-11-25' }),
+    hw({ id: 'b', canTrack: false, done: true, state: 'done', dueDate: '2026-11-21' }),
+  ];
+  assert.deepEqual(homeworkSections(items, true).sections.map(s => s.key), ['todo', 'done']);
+  // Nobody else can tick them, so with no parent the list stays flat.
+  assert.deepEqual(homeworkSections(items, false).sections.map(s => s.key), ['all']);
+  // An untracked project is ticked by nobody, parent included.
+  const projects = [hw({ id: 'p', canTrack: false, requiresSubmission: true })];
+  assert.deepEqual(homeworkSections(projects, true).sections.map(s => s.key), ['all']);
 });
 
 test('an untracked submission item is never ranked as overdue', () => {

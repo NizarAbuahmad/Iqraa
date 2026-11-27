@@ -46,10 +46,18 @@ export async function guardianLinkedStudents(userId: string): Promise<GuardianLi
  * ANY user. Only a self-linked account can tick homework off, so a child none of
  * whose rows is in this set cannot be "late" — nobody is able to say they did it.
  * One query for any number of children.
+ *
+ * On `systemDb` (since 2026-11-20): the `self` link belongs to the child's
+ * account, and row-level security lets a guardian read only their own links, so
+ * on the parent's connection this came back empty under `RLS_ENFORCE` — every
+ * child read as having no account, and the parent's tick (`setHomeworkDoneAsGuardian`)
+ * would have been let through for a child who ticks their own. It answers only
+ * "which of these rows has a student account" for rows the caller already holds
+ * (their own guardian or self rows); no account or name leaves it.
  */
 export async function studentIdsWithSelfAccount(studentIds: string[]): Promise<Set<string>> {
   if (studentIds.length === 0) return new Set();
-  const linked = await db
+  const linked = await systemDb
     .select({ studentId: rosterLinks.studentId })
     .from(rosterLinks)
     .innerJoin(students, eq(students.id, rosterLinks.studentId))

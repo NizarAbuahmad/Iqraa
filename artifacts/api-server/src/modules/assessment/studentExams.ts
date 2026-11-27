@@ -70,6 +70,8 @@ export interface ResultForStudent {
   earnedMarks: unknown;
   totalMarks: unknown;
   competencyScores: unknown;
+  /** Read for the family's topic summary (`topicSummary`); the scores never leave. */
+  objectiveScores?: unknown;
   isProvisional: boolean;
 }
 
@@ -208,8 +210,14 @@ export function sortStudentExams(rows: readonly StudentExamRow[]): StudentExamRo
  * `studentExamRow`'s, unchanged. What a parent never gets is the link: the
  * exam is the child's to sit, and `/take/:code` would let whoever opens it
  * pick the child's name.
+ *
+ * The full answer review stays as the child's: since 2026-11-25 a parent opens
+ * the same paper through `GET /parent/exams/:id/review`, under the same rule and
+ * the teacher's same «اعرض الإجابات». The «تغذية راجعة فورية» mode does not: it
+ * runs while classmates may still be sitting the exam, and the teacher's switch
+ * for it speaks of students only.
  */
 export function guardianExamRow(row: StudentExamRow): StudentExamRow {
-  // The review is read through /student/…, which a parent cannot reach.
-  return { ...row, shareCode: null, review: false, reviewMode: null };
+  const full = row.reviewMode === "full";
+  return { ...row, shareCode: null, review: full, reviewMode: full ? "full" : null };
 }

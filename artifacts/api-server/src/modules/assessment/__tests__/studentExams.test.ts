@@ -110,6 +110,7 @@ describe("studentExamRow", () => {
       earnedMarks: 8,
       totalMarks: 10,
       competencyScores: {},
+      topics: { strong: [], weak: [] },
     });
   });
 
@@ -123,7 +124,13 @@ describe("studentExamRow", () => {
     assert.equal(rowOf(exam({ ...shown, paper: true }), sat, RESULT, NOW).review, false, "a paper exam has no questions");
     assert.equal(rowOf(exam(shown), sat, { ...RESULT, isProvisional: true }, NOW).review, false);
     assert.equal(rowOf(exam(shown), null, null, NOW).review, false, "never sat");
-    assert.equal(guardianExamRow(rowOf(exam(shown), sat, RESULT, NOW)).review, false, "the review route is the student's");
+    // Since 2026-11-25 a parent opens the same review (GET /parent/exams/:id/review), under the same rule.
+    assert.equal(guardianExamRow(rowOf(exam(shown), sat, RESULT, NOW)).review, true, "a parent sees the child's review");
+    assert.equal(
+      guardianExamRow(rowOf(exam({ ...shown, showSolutionsToStudent: false }), sat, RESULT, NOW)).review,
+      false,
+      "and never before the child can",
+    );
   });
 
   it("with instant feedback, offers the review on an exam still being sat, as soon as it is handed in", () => {
@@ -140,7 +147,11 @@ describe("studentExamRow", () => {
     assert.equal(rowOf(exam({ ...instant, instantFeedback: false }), sat, RESULT, NOW).review, false, "switch off");
     assert.equal(rowOf(exam(instant), { status: "in_progress", startedAt: NOW, submittedAt: null }, null, NOW).review, false, "not handed in");
     assert.equal(rowOf(exam({ ...instant, paper: true }), sat, RESULT, NOW).review, false, "a paper exam has no questions");
-    assert.equal(guardianExamRow(rowOf(exam(instant), sat, RESULT, NOW)).review, false, "the review route is the student's");
+    // A parent opens the child's FULL review only (GET /parent/exams/:id/review, since 2026-11-25): the feedback mode
+    // runs while classmates may still be sitting, and its switch speaks of students only.
+    assert.equal(guardianExamRow(rowOf(exam(instant), sat, RESULT, NOW)).review, false, "feedback stays the student's");
+    assert.equal(guardianExamRow(rowOf(exam(instant), sat, RESULT, NOW)).reviewMode, null);
+    assert.equal(guardianExamRow(rowOf(closed, sat, RESULT, NOW)).reviewMode, "full", "the full review reaches the parent");
   });
 
   it("never hands out the link of a closed exam", () => {

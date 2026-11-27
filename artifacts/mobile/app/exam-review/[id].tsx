@@ -8,6 +8,11 @@
  * an exam on «تغذية راجعة فورية», right and wrong only (`mode: 'feedback'`),
  * with the correct answers to come. The answers arrive as display text; this
  * screen only lays them out (`AnswerReviewCard`).
+ *
+ * A parent opens the same screen for a child (since 2026-11-25), from «نتائج أبنائي»,
+ * with `child` (the child key) and `name`: the paper is read through
+ * `/parent/exams/:id/review` (the full review only), the title names the child,
+ * and the cards say «الإجابة المُقدَّمة» — the parent did not sit it.
  */
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -16,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { getExamReview, type ExamReview } from '@/services/studentExam';
+import { firstParam } from '@/services/teacherSubmissions';
 import { apiErrorMessage } from '@/services/apiErrorKey';
 import { palette } from '@/constants/colors';
 import { CONTENT_MAX_WIDTH } from '@/constants/layout';
@@ -30,19 +36,23 @@ export default function ExamReviewScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL, lang } = useLanguage();
   const align = isRTL ? 'right' : 'left';
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; child?: string; name?: string }>();
+  const id = firstParam(params.id);
+  // Present only when a parent opened it for a child.
+  const child = firstParam(params.child) || null;
+  const childName = firstParam(params.name) || '';
   const [review, setReview] = useState<ExamReview | null>(null);
   const [error, setError] = useState('');
 
   const load = () => {
     if (!id) return;
     setError('');
-    getExamReview(id)
+    getExamReview(id, child)
       .then(setReview)
       .catch(e => setError(apiErrorMessage(e, 'reviewLoadFailed', t)));
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(load, [id]);
+  useEffect(load, [id, child]);
 
   const title = review ? (lang === 'ar' ? review.titleAr || review.title : review.title || review.titleAr) : '';
 
@@ -51,7 +61,7 @@ export default function ExamReviewScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <BackButton color={colors.foreground} style={[styles.backBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]} />
         <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.title, textAlign: align }}>
-          {t(review?.mode === 'feedback' ? 'feedbackTitle' : 'reviewTitle')}
+          {child ? t('reviewTitleChild', childName) : t(review?.mode === 'feedback' ? 'feedbackTitle' : 'reviewTitle')}
         </Text>
         {title ? (
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, marginTop: 4, textAlign: align }}>
@@ -76,7 +86,7 @@ export default function ExamReviewScreen() {
           <>
             {review.mode === 'feedback' ? <FeedbackAnswersLaterNote /> : null}
             {review.items.map(item => (
-              <AnswerReviewCard key={item.questionId} item={item} />
+              <AnswerReviewCard key={item.questionId} item={item} parent={Boolean(child)} />
             ))}
           </>
         )}

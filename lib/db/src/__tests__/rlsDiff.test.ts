@@ -184,9 +184,11 @@ describe("turning row-level security on changes nothing a user can see or cause"
     parentA: ["parent", [
       "/auth/me", "/parent/exams", "/student/exams", "/student/grades", "/student/progress", "/messaging/contacts",
       "/messaging/threads", `/messaging/threads/${i.threadDirect}`, `/messaging/threads/${i.threadDirect}/messages`,
+      // `canTrack` on each item reads the child's own `self` link, which a guardian cannot see under row-level security.
+      "/parent/homework",
     ]],
     parentB: ["parent", ["/parent/exams", "/messaging/contacts", "/messaging/threads", `/messaging/threads/${i.threadDirect}`]],
-    studentUser: ["student", ["/auth/me", "/student/exams", "/student/grades", "/student/progress", "/messaging/contacts", "/messaging/threads"]],
+    studentUser: ["student", ["/auth/me", "/student/exams", "/student/grades", "/student/progress", "/student/homework", "/messaging/contacts", "/messaging/threads"]],
     admin: ["system_admin", ["/moderation/reports", "/admin/users", "/admin/usage-summary", "/admin/metrics"]],
   });
 
@@ -265,6 +267,7 @@ describe("turning row-level security on changes nothing a user can see or cause"
       signups: await count(`SELECT count(*) n FROM site_signups WHERE email = 'rls-${i.teacherA}@rls.test'`),
       retakeSittings: await count(`SELECT count(*) n FROM attempts WHERE evaluation_id IN (SELECT id FROM evaluations WHERE teacher_id = ANY($1::uuid[]) AND id <> '${i.evalA}')`),
       retakes: await count(`SELECT count(*) n FROM attempt_retakes WHERE student_id IN (SELECT id FROM students WHERE teacher_id = ANY($1::uuid[]))`),
+      completions: await count(`SELECT count(*) n FROM homework_completions WHERE student_id IN (SELECT id FROM students WHERE teacher_id = ANY($1::uuid[]))`),
     };
   }
 
@@ -434,6 +437,49 @@ describe("turning row-level security on changes nothing a user can see or cause"
     await publicStep("link - answer", "PUT", `/take/attempt/answers/${i.questionA}`, { bearer: token, body: { response: { value: true } } });
     await publicStep("link - hand in", "POST", "/take/attempt/submit", { bearer: token, body: {} });
     await publicStep("link - result", "GET", "/take/attempt/result", { bearer: token });
+
+    // ── A parent ticks homework for their child (since 2026-11-20) ──
+    // Allowed only for a child with no student account in the class. Whether the child has one is the child's own
+    // `self` link, which a guardian cannot see under row-level security: read on the parent's connection it came back
+    // empty, and the parent could tick for studentA, who ticks their own. Both steps must answer the same either way.
+    const hwPlain = randomUUID();
+    await q("INSERT INTO homework (id, teacher_id, class_group_id, title, due_at, requires_submission) VALUES ($1, $2, $3, 'hw-plain', now() + interval '3 days', false)", [hwPlain, i.teacherA, i.classA]);
+    const noAccountKid = randomUUID();
+    await q("INSERT INTO students (id, teacher_id, display_name) VALUES ($1, $2, 'No Account Kid')", [noAccountKid, i.teacherA]);
+    await q("INSERT INTO class_memberships (class_group_id, student_id) VALUES ($1, $2)", [i.classA, noAccountKid]);
+    await q("INSERT INTO roster_links (student_id, user_id, relation) VALUES ($1, $2, 'guardian')", [noAccountKid, i.parentA]);
+    // "teacher removes a student from the class" and "teacher unlinks a parent" above took studentA out of classA and
+    // parentA off studentA; put both back, or the refusal below is a 404 in both modes and proves nothing. studentA
+    // still has its student account (studentUser).
+    await q(
+      "INSERT INTO class_memberships (class_group_id, student_id) SELECT $1, $2 WHERE NOT EXISTS (SELECT 1 FROM class_memberships WHERE class_group_id = $1 AND student_id = $2)",
+      [i.classA, i.studentA],
+    );
+    await q(
+      "INSERT INTO roster_links (student_id, user_id, relation) SELECT $1, $2, 'guardian' WHERE NOT EXISTS (SELECT 1 FROM roster_links WHERE student_id = $1 AND user_id = $2)",
+      [i.studentA, i.parentA],
+    );
+    await step("parent reads homework", "parent", "GET", "/parent/homework");
+    await step("parent ticks for a child who has a student account", "parent", "PUT", `/parent/homework/${hwPlain}/done?child=${i.studentA}`);
+    await step("parent ticks for a child with no student account", "parent", "PUT", `/parent/homework/${hwPlain}/done?child=${noAccountKid}`);
+
+    // ── The answer review, read by the student and by their parent (since 2026-11-25) ──
+    // The worked steps sit on evaluation_questions, which row-level security keeps teacher-only (it holds the key).
+    // Read on the caller's connection they came back empty with enforcement on, and nothing errored — the status
+    // stayed 200. So each line here carries the steps it got, not only the status. The child key is studentA's own
+    // id: its only roster row (the parent tick above uses the same).
+    await q("UPDATE evaluation_questions SET worked_steps = $2::jsonb WHERE id = $1", [i.questionA, JSON.stringify(["step one", "step two"])]);
+    await q("UPDATE evaluations SET status = 'closed', release_results_to_student = true, show_solutions_to_student = true WHERE id = $1", [i.evalA]);
+    await q("UPDATE attempts SET submitted_at = coalesce(submitted_at, now()) WHERE id = $1", [i.attemptA]);
+    await q("UPDATE attempt_results SET is_provisional = false WHERE attempt_id = $1", [i.attemptA]);
+    for (const [name, who, url] of [
+      ["student reads the answer review", "student", `/student/exams/${i.evalA}/review`],
+      ["parent reads the child's answer review", "parent", `/parent/exams/${i.evalA}/review?child=${i.studentA}`],
+    ] as const) {
+      const reply = await step(name, who, "GET", url);
+      const items = (reply.json["items"] as { steps: unknown }[] | undefined) ?? [];
+      steps.push(`${name} - steps: ${JSON.stringify(items.map(it => it.steps))}`);
+    }
 
     await new Promise(r => setTimeout(r, 800)); // fire-and-forget work (push, group line) finishes after the response
     return { steps, cleanup: f.cleanup, teacherPrefix: prefix, state: await fingerprint(i) };

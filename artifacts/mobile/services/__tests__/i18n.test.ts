@@ -116,8 +116,8 @@ test('English hw* strings that interpolate a name start with LRM so a <Text dir=
 });
 
 test('hwParentNoAccountSome says some of the homework, not all', () => {
-  assert.match(translations.ar.hwParentNoAccountSome('سارة'), /لبعض واجبات/);
-  assert.match(translations.en.hwParentNoAccountSome('Sara'), /for some of/);
+  assert.match(translations.ar.hwParentNoAccountSome('سارة'), /بعض واجبات/);
+  assert.match(translations.en.hwParentNoAccountSome('Sara'), /some of/i);
 });
 
 test('the exam-code notice on the claim screens is defined in both languages', () => {

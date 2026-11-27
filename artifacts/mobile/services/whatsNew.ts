@@ -40,6 +40,22 @@ const ALL_ROLES: readonly TourRole[] = ['teacher', 'student', 'parent'];
 /** Newest first. Append above the top entry; never edit an `id` that has shipped. */
 export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
+    id: 'result-topics-family',
+    date: '2026-11-27',
+    roles: ['student', 'parent'],
+    titleKey: 'whatsNewResultTopicsTitle',
+    bodyKey: 'whatsNewResultTopicsBody',
+    route: '/my-exams',
+  },
+  {
+    id: 'result-topics-teacher',
+    date: '2026-11-27',
+    roles: ['teacher'],
+    titleKey: 'whatsNewResultTopicsTeacherTitle',
+    bodyKey: 'whatsNewResultTopicsTeacherBody',
+    route: '/evaluations',
+  },
+  {
     id: 'instant-feedback-teacher',
     date: '2026-11-26',
     roles: ['teacher'],
@@ -70,6 +86,22 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
     titleKey: 'whatsNewBoardTextEditTitle',
     bodyKey: 'whatsNewBoardTextEditBody',
     route: '/ai-tools/whiteboard',
+  },
+  {
+    id: 'parent-answer-review',
+    date: '2026-11-25',
+    roles: ['parent'],
+    titleKey: 'whatsNewParentReviewTitle',
+    bodyKey: 'whatsNewParentReviewBody',
+    route: '/my-exams',
+  },
+  {
+    id: 'teacher-answers-reach-parents',
+    date: '2026-11-25',
+    roles: ['teacher'],
+    titleKey: 'whatsNewAnswersParentsTitle',
+    bodyKey: 'whatsNewAnswersParentsBody',
+    route: '/evaluations',
   },
   {
     id: 'whiteboard-text',
@@ -126,6 +158,22 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
     titleKey: 'whatsNewBoardRedoTitle',
     bodyKey: 'whatsNewBoardRedoBody',
     route: '/ai-tools/whiteboard',
+  },
+  {
+    id: 'teacher-class-parent-codes',
+    date: '2026-11-20',
+    roles: ['teacher'],
+    titleKey: 'whatsNewParentCodesTitle',
+    bodyKey: 'whatsNewParentCodesBody',
+    route: '/classes',
+  },
+  {
+    id: 'parent-school-first-projects',
+    date: '2026-11-20',
+    roles: ['parent'],
+    titleKey: 'whatsNewParentSchoolTitle',
+    bodyKey: 'whatsNewParentSchoolBody',
+    route: '/school',
   },
   {
     id: 'whiteboard-in-tools',

@@ -18,6 +18,8 @@
 import { apiFetch, apiJson, getApiBaseUrl } from './apiClient.ts';
 import { fetchWithTimeout } from './fetchWithTimeout.ts';
 import { NO_PROGRESS, type MasteryProgress } from './lessonLock.ts';
+import { examReviewPath } from './myExams.ts';
+import type { ResultTopics } from './resultTopics.ts';
 import type { StudentResponse } from './studentAnswers.ts';
 import type { CompetencyKey, CompetencyScore, LevelKey } from './evaluations.ts';
 
@@ -203,6 +205,8 @@ export interface StudentResult {
   earnedMarks: number;
   totalMarks: number;
   competencyScores: Record<CompetencyKey, CompetencyScore>;
+  /** «ما أُتقن / ما يحتاج إلى مراجعة», since 2026-11-27. Absent from an older server. */
+  topics?: ResultTopics;
 }
 
 /**
@@ -259,8 +263,8 @@ export interface ExamReview {
   items: ExamReviewItem[];
 }
 
-export async function getExamReview(evaluationId: string): Promise<ExamReview> {
-  return apiJson<ExamReview>(`/student/exams/${encodeURIComponent(evaluationId)}/review`);
+export async function getExamReview(evaluationId: string, childKey?: string | null): Promise<ExamReview> {
+  return apiJson<ExamReview>(examReviewPath(evaluationId, childKey));
 }
 
 /** A parent's «نتائج أبنائي»: each guardian-linked child's exams. */

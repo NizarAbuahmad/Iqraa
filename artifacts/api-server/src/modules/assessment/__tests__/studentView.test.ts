@@ -293,7 +293,7 @@ describe("studentResultReady", () => {
 });
 
 describe("sanitizeResultForStudent", () => {
-  it("keeps the level, marks and competency breakdown, and nothing else", () => {
+  it("keeps the level, marks, competency breakdown and a named topic summary, and nothing else", () => {
     const raw = {
       levelKey: "proficient",
       percent: "78.50",
@@ -310,8 +310,10 @@ describe("sanitizeResultForStudent", () => {
       earnedMarks: 15.7,
       totalMarks: 20,
       competencyScores: raw.competencyScores,
+      // "o1" is one question and not in the catalog: no topic to name.
+      topics: { strong: [], weak: [] },
     });
-    assert.equal("objectiveScores" in result, false);
+    assert.equal("objectiveScores" in result, false, "the scores themselves stay the teacher's");
     assert.equal("teacherComment" in result, false);
   });
 });

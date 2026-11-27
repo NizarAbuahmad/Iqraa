@@ -32,7 +32,7 @@ import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { getChildSchedules, getMySchedule } from '@/services/familyScheduleApi';
-import { getChildHomework, getMyHomework, setHomeworkDone } from '@/services/homeworkApi';
+import { getChildHomework, getMyHomework, setChildHomeworkDone, setHomeworkDone } from '@/services/homeworkApi';
 import { stateLabelKey } from '@/services/homeworkSubmission';
 import { submissionLook } from '@/services/homeworkProject';
 import { openResource } from '@/services/openResource';
@@ -46,7 +46,11 @@ import {
   gameScoreText,
   homeworkSections,
   resourceKey,
+  childProjectHref,
+  hasDoneStatus,
+  parentMayTick,
   resultForGame,
+  showsChildProjectLink,
   showsSubmissionLink,
   untrackedMode,
   type ChildHomework,
@@ -60,7 +64,7 @@ import {
   type FamilyPeriod,
 } from '@/services/familySchedule';
 import { getChildExams, getMyExams } from '@/services/studentExam';
-import { examDayParts, myExamTitle, subjectLabel, type MyExam } from '@/services/myExams';
+import { examDayParts, myExamTitle, resultsHref, subjectLabel, type MyExam } from '@/services/myExams';
 import { readableOn } from '@/services/readableColor';
 import { ExamStatusChip } from '@/components/ExamStatusChip';
 import {
@@ -79,6 +83,7 @@ import { NoClassPrompt } from '@/components/NoClassPrompt';
 import { Celebrate } from '@/components/ui/Celebrate';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { justCompleted } from '@/services/celebration';
+import { childGlance, glanceHasContent, type ChildGlance } from '@/services/childGlance';
 
 const ACCENT = palette.primary;
 /** Minimum touch target for the tick box. */
@@ -183,6 +188,9 @@ export default function SchoolScreen() {
       // A project homework is never ticked by hand: the server answers 409
       // `submission_required`, and ticks it itself when the project is handed in.
       if (item.requiresSubmission) return;
+      // A parent ticks only for a child with no student account in that class
+      // (`parentMayTick`); the server refuses the rest with 409 `student_tracks`.
+      if (isParent && !parentMayTick(item)) return;
       if (hwInFlight.current.has(item.id)) return;
       const next = !item.done;
       hwInFlight.current.add(item.id);
@@ -202,7 +210,10 @@ export default function SchoolScreen() {
         }));
       patch(items => applyDone(items, item.id, next));
       try {
-        await setHomeworkDone(item.id, next);
+        if (isParent) await setChildHomeworkDone(item.id, childKey, next);
+        else await setHomeworkDone(item.id, next);
+        // «أنجزت كل واجباتك» speaks to the student who did the work: a parent's tick never celebrates.
+        if (isParent) return;
         // Only a tick that the server accepted, and only once no other save is
         // still out (an optimistic tick may yet roll back). The last save to
         // finish judges the list as it stands now, so ticking the last two
@@ -223,7 +234,7 @@ export default function SchoolScreen() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t],
+    [t, isParent],
   );
 
   const child = children ? activeChild(children, selected) : null;
@@ -234,14 +245,28 @@ export default function SchoolScreen() {
   const pickerKids: readonly { key: string; displayName: string }[] = children ?? homework ?? exams ?? [];
   const hwChild = homework ? (homework.find(c => c.key === selected) ?? homework[0] ?? null) : null;
   // Whether an item can be ticked is the ITEM's flag (ticking is per class), not the child's.
-  const hw = homeworkSections(hwChild?.homework ?? []);
-  const untrackedKind = untrackedMode(hwChild?.homework ?? []);
+  const hw = homeworkSections(hwChild?.homework ?? [], isParent);
+  // The note tells a parent they tick these themselves, so it counts only items they can tick: an untracked project
+  // is handed in, never ticked, by anyone.
+  const untrackedKind = untrackedMode((hwChild?.homework ?? []).filter(h => !h.requiresSubmission));
   const hwEmpty = homework !== null && !hwError && hw.sections.length === 0;
   const hwToday = ammanToday();
   // Same child as the picker shows, whichever list decided it.
   const activeKey = selected ?? child?.key ?? hwChild?.key ?? null;
   const examChild = exams ? (exams.find(g => g.key === activeKey) ?? exams[0] ?? null) : null;
   const upcoming = upcomingExams(examChild?.exams ?? [], hwToday);
+  // «نتائج أبنائي» opens on the child picked here; a student's results have no child.
+  const resultsLink = resultsHref(isParent ? (examChild?.key ?? activeKey) : null);
+  // A parent's «نظرة سريعة» for the same child. A list that has not loaded, or failed, is null: its lines are left
+  // out, never shown as zero.
+  const glance = isParent
+    ? childGlance({
+        homework: homework !== null && !hwError ? (hwChild?.homework ?? []) : null,
+        exams: exams !== null && !examError ? (examChild?.exams ?? []) : null,
+        today: hwToday,
+      })
+    : null;
+  const glanceName = hwChild?.displayName || examChild?.displayName || child?.displayName || '';
   const loading =
     (children === null && !error) || (homework === null && !hwError) || (exams === null && !examError);
 
@@ -306,13 +331,18 @@ export default function SchoolScreen() {
                     { backgroundColor: on ? ACCENT : colors.card, borderColor: on ? ACCENT : colors.border },
                   ]}
                 >
-                  <Text style={{ color: on ? '#fff' : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
+                  {/* The fill is the palette's primary (light teal in dark mode), so the label is its own foreground, never white. */}
+                  <Text style={{ color: on ? palette.primaryForeground : colors.foreground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 14 }}>
                     {c.displayName}
                   </Text>
                 </Pressable>
               );
             })}
           </ScrollView>
+        ) : null}
+
+        {glance && glanceHasContent(glance) ? (
+          <GlanceCard glance={glance} name={glanceName} resultsLink={resultsLink} colors={colors} isRTL={isRTL} lang={lang} t={t} />
         ) : null}
 
         <View style={{ gap: SPACE.md }}>
@@ -375,6 +405,7 @@ export default function SchoolScreen() {
                 <HomeworkRow
                   key={item.id}
                   item={item}
+                  childKey={hwChild?.key ?? 'self'}
                   isParent={isParent}
                   today={hwToday}
                   saving={hwSaving.has(item.id)}
@@ -424,7 +455,7 @@ export default function SchoolScreen() {
           ) : null}
 
           {upcoming.map(exam => (
-            <UpcomingExamRow key={exam.evaluationId} exam={exam} today={hwToday} parent={isParent} colors={colors} isRTL={isRTL} lang={lang} t={t} />
+            <UpcomingExamRow key={exam.evaluationId} exam={exam} today={hwToday} parent={isParent} resultsLink={resultsLink} colors={colors} isRTL={isRTL} lang={lang} t={t} />
           ))}
         </View>
 
@@ -497,7 +528,7 @@ export default function SchoolScreen() {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push('/my-exams' as never)}
+          onPress={() => router.push(resultsLink as never)}
           style={({ pressed }) => [
             styles.examsRow,
             { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: rowDir, opacity: pressed ? 0.85 : 1 },
@@ -511,6 +542,72 @@ export default function SchoolScreen() {
         </Pressable>
       </ScrollView>
       <Celebrate visible={celebrateHw} size="small" message={t('celebrateHomeworkAll')} onDone={() => setCelebrateHw(false)} />
+    </View>
+  );
+}
+
+/**
+ * «نظرة سريعة»: one card, one line per fact, for the child the picker shows (services/childGlance.ts decides what is
+ * true). Only the result line is a link (to the results screen); the homework and exam lines restate the sections
+ * right below. No amber: amber means «now» in this app, and the rows below already carry it.
+ */
+function GlanceCard({
+  glance, name, resultsLink, colors, isRTL, lang, t,
+}: {
+  glance: ChildGlance;
+  name: string;
+  /** «نتائج أبنائي» for this child. */
+  resultsLink: string;
+  colors: ReturnType<typeof useColors>;
+  isRTL: boolean;
+  lang: 'ar' | 'en';
+  t: ReturnType<typeof useLanguage>['t'];
+}) {
+  const align = isRTL ? 'right' : 'left';
+  const rowDir = isRTL ? 'row-reverse' : 'row';
+  const text = { flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.body, lineHeight: 24, textAlign: align } as const;
+  const next = glance.exams?.next ?? null;
+  const last = glance.exams?.lastResult ?? null;
+  const when = (day: { kind: string; days: number }) =>
+    day.kind === 'today' ? t('examDayToday') : day.kind === 'tomorrow' ? t('examDayTomorrow') : t('examInDays', day.days);
+  const examName = (exam: MyExam) => myExamTitle(exam, lang) || t('myExamsUntitled', subjectLabel(exam.subjectId, lang) ?? '');
+  return (
+    <View
+      accessibilityRole="summary"
+      style={[styles.glance, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}
+    >
+      <Text style={{ color: colors.foreground, fontFamily: 'ReadexPro_700Bold', fontSize: TYPE.bodyLg, textAlign: align }}>
+        {t('glanceTitle', name)}
+      </Text>
+      {glance.homework ? (
+        <View style={[styles.glanceLine, { flexDirection: rowDir }]}>
+          <Ionicons name="book-outline" size={ICON.lg} color={colors.mutedForeground} />
+          <Text style={text}>{t('glanceDue', glance.homework.dueSoon)}</Text>
+        </View>
+      ) : null}
+      {glance.homework && glance.homework.late > 0 ? (
+        <View style={[styles.glanceLine, { flexDirection: rowDir }]}>
+          <Ionicons name="alert-circle" size={ICON.lg} color={colors.destructive} />
+          <Text style={[text, { color: colors.destructive, fontFamily: 'ReadexPro_600SemiBold' }]}>{t('glanceLate', glance.homework.late)}</Text>
+        </View>
+      ) : null}
+      {next ? (
+        <View style={[styles.glanceLine, { flexDirection: rowDir }]}>
+          <Ionicons name="calendar-outline" size={ICON.lg} color={colors.mutedForeground} />
+          <Text style={text}>{t('glanceNextExam', examName(next.exam), when(next.day))}</Text>
+        </View>
+      ) : null}
+      {last?.result ? (
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => router.push(resultsLink as never)}
+          style={({ pressed }) => [styles.glanceLine, { flexDirection: rowDir, minHeight: TOUCH, opacity: pressed ? 0.85 : 1 }]}
+        >
+          <Ionicons name="document-text-outline" size={ICON.lg} color={ACCENT} />
+          <Text style={text}>{t('glanceLastResult', last.result.percent, examName(last))}</Text>
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={ICON.md} color={colors.mutedForeground} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -548,12 +645,14 @@ function PeriodRow({
 }
 
 function UpcomingExamRow({
-  exam, today, parent, colors, isRTL, lang, t,
+  exam, today, parent, resultsLink, colors, isRTL, lang, t,
 }: {
   exam: MyExam;
   today: string;
   /** A parent reads «سُلِّم — بانتظار تصحيح المعلّم»; a student, the short label. */
   parent: boolean;
+  /** «نتائج أبنائي» for the child whose exam this is. */
+  resultsLink: string;
   colors: ReturnType<typeof useColors>;
   isRTL: boolean;
   lang: 'ar' | 'en';
@@ -580,7 +679,7 @@ function UpcomingExamRow({
   return (
     <Pressable
       accessibilityRole="link"
-      onPress={() => router.push('/my-exams' as never)}
+      onPress={() => router.push(resultsLink as never)}
       style={({ pressed }) => [
         styles.examRow,
         { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, flexDirection: rowDir, opacity: pressed ? 0.85 : 1 },
@@ -615,9 +714,11 @@ function UpcomingExamRow({
 }
 
 function HomeworkRow({
-  item, isParent, today, saving, onToggle, colors, isRTL, t,
+  item, childKey, isParent, today, saving, onToggle, colors, isRTL, t,
 }: {
   item: FamilyHomework;
+  /** The child this list is for: the parent's project link opens their project. */
+  childKey: string;
   isParent: boolean;
   today: string;
   saving: boolean;
@@ -648,7 +749,10 @@ function HomeworkRow({
         : badge.kind === 'tomorrow'
           ? t('hwDueTomorrow')
           : t('hwDueOn', formatDueDate(item.dueDate));
-  const done = item.done && !untracked;
+  // A parent ticks an untracked, non-project item themself (since 2026-11-20): its done mark is theirs to set and
+  // show. It still never reads «متأخّر»: a family that does not use the tick would see every item called late.
+  const parentTicks = isParent && parentMayTick(item);
+  const done = item.done && hasDoneStatus(item, isParent);
   const meta = [item.className, item.teacherName].filter(Boolean).join(' · ');
   const hasInstructions = item.instructions.trim() !== '';
   // A project homework has no tick: the hand-in screen ticks it. Its state is a
@@ -658,6 +762,8 @@ function HomeworkRow({
   const isSubmission = item.requiresSubmission;
   const showSubmission = isSubmission && !untracked;
   const showLink = !isParent && showsSubmissionLink(item);
+  // A parent reads the handed-in project (photos, note) on a screen of its own; before a hand-in there is nothing to see.
+  const showChildLink = isParent && showsChildProjectLink(item);
   const stateLabel = t(stateLabelKey(item.submission));
   // The same look as the project screen's status (submissionLook): late is destructive, never amber.
   const look = submissionLook(item.submission);
@@ -670,7 +776,7 @@ function HomeworkRow({
         { backgroundColor: colors.card, borderColor: item.state === 'overdue' && !untracked ? colors.destructive + '55' : colors.border, borderRadius: colors.radius, flexDirection: rowDir },
       ]}
     >
-      {untracked ? null : isParent || isSubmission ? (
+      {!hasDoneStatus(item, isParent) ? null : (isParent && !parentTicks) || isSubmission ? (
         <View
           accessible
           accessibilityRole="image"
@@ -759,7 +865,7 @@ function HomeworkRow({
           <Pressable
             accessibilityRole="link"
             hitSlop={8}
-            onPress={() => router.push('/my-exams' as never)}
+            onPress={() => router.push(resultsHref(isParent ? childKey : null) as never)}
             style={{ paddingVertical: SPACE.xs }}
           >
             <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
@@ -777,6 +883,19 @@ function HomeworkRow({
             <Ionicons name="images-outline" size={ICON.md} color={ACCENT} />
             <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
               {t('submissionOpen')}
+            </Text>
+          </PressableScale>
+        ) : null}
+        {showChildLink ? (
+          <PressableScale
+            accessibilityRole="link"
+            aria-label={t('childProjectOpenA11y', item.title)}
+            onPress={() => router.push(childProjectHref(item.id, childKey, item.title) as never)}
+            style={{ flexDirection: rowDir, alignItems: 'center', gap: SPACE.xs, minHeight: TOUCH }}
+          >
+            <Ionicons name="images-outline" size={ICON.md} color={ACCENT} />
+            <Text style={{ color: ACCENT, fontFamily: 'ReadexPro_600SemiBold', fontSize: TYPE.caption, textAlign: align }}>
+              {t('childProjectOpen')}
             </Text>
           </PressableScale>
         ) : null}
@@ -840,4 +959,6 @@ const styles = StyleSheet.create({
   resource: { alignItems: 'center', gap: SPACE.sm, borderWidth: 1, borderRadius: RADIUS.md, paddingVertical: SPACE.sm, paddingHorizontal: SPACE.md, minHeight: TOUCH },
   note: { alignItems: 'flex-start', gap: SPACE.sm, borderRadius: RADIUS.md, padding: SPACE.md },
   examsRow: { alignItems: 'center', gap: 12, borderWidth: 1, padding: SPACE.lg, marginTop: 4 },
+  glance: { borderWidth: 1, padding: SPACE.lg, gap: SPACE.sm },
+  glanceLine: { alignItems: 'center', gap: SPACE.sm },
 });

@@ -49,6 +49,13 @@ export function arQuestionsPhrase(n: number): string {
   return arCountPhrase(n, 'سؤال', 'سؤالان', 'أسئلة');
 }
 
+/** «واجب واحد» / «واجبان» / «7 واجبات» / «15 واجبًا». */
+export function arHomeworkPhrase(n: number): string {
+  if (n === 1) return 'واجب واحد';
+  if (n >= 11) return `${n} واجبًا`;
+  return arCountPhrase(n, 'واجب', 'واجبان', 'واجبات');
+}
+
 /** «درس واحد» / «درسان» / «7 دروس» / «15 درسًا». */
 export function arLessonsPhrase(n: number): string {
   if (n === 1) return 'درس واحد';

@@ -8,6 +8,10 @@
  * راجعة فورية». What a card may show is the server's decision
  * (`modules/assessment/answerReview.ts`): in feedback mode `correctAnswer` and
  * `steps` arrive null, so this lays out what it is given and nothing more.
+ *
+ * A parent reads the same cards for a child (since 2026-11-25, `parent`): the
+ * answer is «الإجابة المُقدَّمة», not «إجابتك» — the parent did not sit it. A
+ * parent only ever gets the full review, so the feedback note is the student's.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -37,7 +41,7 @@ const VERDICT: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: str
 /** No verdict yet: a question the teacher marks by hand, still unmarked. */
 const AWAITING = { icon: 'time-outline' as const, color: '#667085', label: 'reviewAwaitingTeacher' as TranslationKey };
 
-export function AnswerReviewCard({ item }: { item: ExamReviewItem }) {
+export function AnswerReviewCard({ item, parent = false }: { item: ExamReviewItem; parent?: boolean }) {
   const colors = useColors();
   const { t, isRTL, lang } = useLanguage();
   const isAr = lang === 'ar';
@@ -75,7 +79,7 @@ export function AnswerReviewCard({ item }: { item: ExamReviewItem }) {
         {text || '—'}
       </Text>
 
-      {item.type === 'read_aloud' ? null : row('reviewYourAnswer', item.yourAnswer, colors.foreground)}
+      {item.type === 'read_aloud' ? null : row(parent ? 'reviewGivenAnswer' : 'reviewYourAnswer', item.yourAnswer, colors.foreground)}
       {item.correctAnswer ? row('reviewCorrectAnswer', item.correctAnswer, palette.success) : null}
 
       {item.steps ? (
