@@ -23,7 +23,7 @@ import { deckIconSvg, iconForGlyph, isSectionIconName, type DeckIconName } from 
 import { slideTeacherNotes } from './deckNotes.ts';
 import type { ActivitySlide, ClassroomActivity } from './ai/AIService.ts';
 import { creditSegments, type PhotoCredit } from './photoCredit.ts';
-import { hasRenderableMath, isolateForeignRuns, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
+import { hasArabicLetter, hasRenderableMath, isolateForeignRuns, mathLineToHtml, MATH_HTML_STYLES, prettifySymPy } from './mathRender.ts';
 
 import { diagramTint, resolveDeckTheme, slideTypeAccent as deckSlideAccent } from './deckTheme.ts';
 import { diagramGeometry, DIAGRAM_H, DIAGRAM_W, isDiagram } from './diagramGeometry.ts';
@@ -211,6 +211,19 @@ function deckContentLine(line: string, isEquation: boolean): string {
   // the same isolation; the mathLineToHtml branch builds its own markup.
   const html = isEquation && hasRenderableMath(line) ? mathLineToHtml(line) : esc(line);
   return `<div class="${cls}">${html}</div>`;
+}
+
+/**
+ * An answer option's text. It went straight through `mathLineToHtml`, which
+ * isolates nothing, so in a right-to-left page «(2, 0)» printed «(0 ,2)» — a
+ * different point from the key — and «(-4, 0)» printed «(0 ,4-)». An option
+ * with no Arabic letter is a value: it is laid out left-to-right as a whole
+ * (an inline `dir`, so the row's alignment is untouched). One with Arabic in
+ * it is laid out as a stem line is.
+ */
+function deckOptionText(opt: string): string {
+  if (!hasArabicLetter(opt)) return `<span dir="ltr">${mathLineToHtml(opt)}</span>`;
+  return hasRenderableMath(opt) ? mathLineToHtml(opt) : esc(opt);
 }
 
 /**
@@ -432,7 +445,7 @@ export function buildDeckSlidesHTML(deck: ClassroomActivity, isAr: boolean): str
             const correct = i === slide.correctIndex;
             return `<div class="deck-option${correct ? ' deck-option-correct' : ''}"${correct ? ` style="border-color:${accent}"` : ''}>
               <span class="deck-option-letter" style="color:${accent}">${letters[i] ?? String(i + 1)}</span>
-              <span class="deck-option-text">${mathLineToHtml(opt)}</span>
+              <span class="deck-option-text">${deckOptionText(opt)}</span>
               ${correct ? `<span class="deck-option-tick" style="color:${accent}">${inlineIcon('tick', accent, 22)}</span>` : ''}
             </div>`;
           }).join('')}
