@@ -24,6 +24,7 @@
 import { logger } from "./logger.ts";
 import { getCacheFailure, type CacheOperation } from "./artifactCache.ts";
 import { ammanDay } from "./dailyActivity.ts";
+import { alertBudgetThreshold, budgetThresholdsReached } from "./aiAlerts.ts";
 import {
   currentPeriodStart,
   getPersistenceFailure,
@@ -182,6 +183,7 @@ function recordFixedCost(
     { spentUsd: Number(spentUsd.toFixed(4)), limitUsd: getBudgetLimitUsd(), model, kind, costUsd: cost },
     "ai fixed-cost spend updated",
   );
+  checkBudgetAlerts();
   // Not awaited, for the reason `recordUsage` gives. `recordGeneration`
   // never rejects.
   void recordGeneration({
@@ -396,6 +398,30 @@ function getBudgetLimitUsd(): number {
   return Number.isFinite(raw) && raw > 0 ? raw : 2;
 }
 
+/**
+ * Tell the admins when the month's spend reaches 80% of AI_BUDGET_USD, and again
+ * at 100%. Level-based, not "did THIS call cross it": a cold instance hydrates
+ * its total from the ledger in one jump, and another instance may have made the
+ * crossing. The `alerted` set keeps this to one attempt per threshold per period
+ * per process; `alertBudgetThreshold` then makes it one send per period across
+ * instances (rate_limit_buckets). Fire-and-forget on purpose — recordUsage is
+ * synchronous and its callers do not wait — and the alert never rejects.
+ * If Cloud Run stalls the instance after the response, the alert goes out when
+ * the instance next runs, not twice; the cost of that is a delayed mail, never a
+ * failed request. assertBudgetAvailable also calls this, so the check runs on a
+ * request's way in, with the CPU still allocated.
+ */
+const budgetAlerted = new Set<string>();
+function checkBudgetAlerts(): void {
+  const limitUsd = getBudgetLimitUsd();
+  for (const threshold of budgetThresholdsReached(spentUsd, limitUsd)) {
+    const key = `${periodStart.toISOString()}:${threshold}`;
+    if (budgetAlerted.has(key)) continue;
+    budgetAlerted.add(key);
+    void alertBudgetThreshold({ threshold, spentUsd, limitUsd, periodStart });
+  }
+}
+
 /** Throws AiLiveModeOffError unless AI_LIVE_MODE=true. Call before every OpenAI request. */
 export function assertLiveModeEnabled(): void {
   if (!isAiLiveModeOn()) throw new AiLiveModeOffError();
@@ -572,6 +598,7 @@ export function assertBudgetAvailable(): void {
   rollPeriodIfNeeded();
   refreshSpendFromStoreIfStale();
   const limit = getBudgetLimitUsd();
+  checkBudgetAlerts();
   if (spentUsd >= limit) throw new AiBudgetExceededError(spentUsd, limit);
 }
 
@@ -658,6 +685,7 @@ export function recordUsage(
     { spentUsd: Number(spentUsd.toFixed(4)), limitUsd: getBudgetLimitUsd(), model },
     "ai spend updated",
   );
+  checkBudgetAlerts();
 
   if (!detail) return;
   // Deliberately not awaited. The completion is already paid for and the

@@ -20,6 +20,8 @@
  */
 import { getGenerationModel, isClaudeModel } from "./aiBudget.ts";
 import { logger } from "./logger.ts";
+import { pushWithin } from "./pushWithin.ts";
+import type { ProviderName } from "./aiAlerts.ts";
 
 function fieldOf(value: unknown, key: string): unknown {
   return value !== null && typeof value === "object" ? (value as Record<string, unknown>)[key] : undefined;
@@ -69,30 +71,81 @@ export function fallbackModelFor(model: string): string | null {
   return claude;
 }
 
+/** How long a request waits for its own admin alert once the answer is ready. */
+const ALERT_WAIT_MS = 3_000;
+
+type AlertInput = { provider: ProviderName; switchedTo: ProviderName | null; status: number | undefined };
+
+export type FallbackDeps = {
+  /** Tests hand in a recorder; production tells the admins (aiAlerts.ts). */
+  alert?: (input: AlertInput) => Promise<void>;
+};
+
+const providerOf = (model: string): ProviderName => (isClaudeModel(model) ? "Claude" : "OpenAI");
+
 /**
  * Run `attempt` with `model`; if the provider refuses the account and the other
  * provider is configured, run it once more with the other provider's model.
  *
  * Anything else — including the backup's own failure — is thrown as it came, so
  * the caller's existing error handling (the 502 a teacher sees) is unchanged.
+ *
+ * An account error also alerts the admins (once per provider per 6 hours across
+ * instances — aiAlerts.ts), whether or not a backup exists. The alert runs
+ * WHILE the backup request is in flight and is awaited, capped, before this
+ * returns: it adds no latency to the answer, and it holds the CPU while the
+ * request is still open, which Cloud Run withdraws once a response is sent
+ * (CLAUDE.md, «Work after `res.json` may never run on Cloud Run»). It never
+ * throws and carries no error text.
  */
 export async function withProviderFallback<T>(
   model: string,
   attempt: (model: string) => Promise<T>,
   context: Record<string, unknown> = {},
+  deps: FallbackDeps = {},
 ): Promise<T> {
   try {
     return await attempt(model);
   } catch (err) {
-    const backup = isProviderAccountError(err) ? fallbackModelFor(model) : null;
-    if (!backup) throw err;
+    if (!isProviderAccountError(err)) throw err;
+    const backup = fallbackModelFor(model);
+    const status = fieldOf(err, "status") as number | undefined;
+    const alert = deps.alert ?? defaultAlert;
+    const alerting = pushWithin(
+      "ai account alert",
+      () => alert({ provider: providerOf(model), switchedTo: backup ? providerOf(backup) : null, status }),
+      ALERT_WAIT_MS,
+    );
+    if (!backup) {
+      await alerting;
+      throw err;
+    }
     // An error, not a warning: every request is now paying the slower or the
     // dearer provider until someone fixes the key or the balance, and nothing
     // else would say so.
     logger.error(
-      { ...context, err, from: model, to: backup, status: fieldOf(err, "status") },
+      { ...context, err, from: model, to: backup, status },
       "AI provider refused the account — answering with the other provider",
     );
-    return attempt(backup);
+    try {
+      return await attempt(backup);
+    } catch (backupErr) {
+      // Both providers are now failing and users get sample content or an error.
+      if (isProviderAccountError(backupErr)) {
+        await pushWithin(
+          "ai account alert (backup)",
+          () => alert({ provider: providerOf(backup), switchedTo: null, status: fieldOf(backupErr, "status") as number | undefined }),
+          ALERT_WAIT_MS,
+        );
+      }
+      throw backupErr;
+    } finally {
+      await alerting;
+    }
   }
+}
+
+async function defaultAlert(input: AlertInput): Promise<void> {
+  const { alertAccountError } = await import("./aiAlerts.ts");
+  await alertAccountError(input);
 }

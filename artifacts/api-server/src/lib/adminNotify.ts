@@ -3,7 +3,8 @@
 import { systemDb as db, users, devicePushTokens } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { sendExpoPush, deadTokensFrom, PUSH_CHANNEL } from "./pushNotifications.ts";
-import { sendArtifactReportedEmail } from "./email.ts";
+import { sendAdminAlertEmail, sendArtifactReportedEmail } from "./email.ts";
+import type { AdminAlert } from "./aiAlerts.ts";
 import { logger } from "./logger.ts";
 import { waitlistPush } from "./waitlistPush.ts";
 import { artifactReportLabel } from "./artifactReportLabel.ts";
@@ -85,5 +86,53 @@ export async function notifyAdminsOfArtifactReport(args: {
     );
   } catch (err) {
     logger.error({ err }, "notifyAdminsOfArtifactReport failed");
+  }
+}
+
+/**
+ * Pushes + emails every `system_admin` an operational alert (AI account
+ * problem, budget nearly spent, a reported chat message — see aiAlerts.ts and
+ * messageReportAlert.ts, which decide WHETHER to send and own the wording).
+ * Never throws, and callers bound the wait with `pushWithin`: the email send
+ * and the push go out together, so the slower of the two is the cost.
+ */
+export async function notifyAdminsOfAlert(alert: AdminAlert): Promise<void> {
+  try {
+    const admins = await db
+      .select({ id: users.id, email: users.email })
+      .from(users)
+      .where(eq(users.role, "system_admin"));
+    if (admins.length === 0) return;
+
+    const tokenRows = await db
+      .select({ expoPushToken: devicePushTokens.expoPushToken })
+      .from(devicePushTokens)
+      .where(inArray(devicePushTokens.userId, admins.map((a) => a.id)));
+
+    const pushing = (async () => {
+      const results = await sendExpoPush(
+        tokenRows.map((t) => ({
+          to: t.expoPushToken,
+          title: alert.title,
+          body: alert.body,
+          data: { screen: alert.screen },
+          channelId: PUSH_CHANNEL.admin,
+        })),
+      );
+      const dead = deadTokensFrom(results);
+      if (dead.length > 0) {
+        await db.delete(devicePushTokens).where(inArray(devicePushTokens.expoPushToken, dead));
+      }
+    })();
+    const mailing = Promise.all(
+      admins.flatMap((a) => (a.email ? [sendAdminAlertEmail(a.email, alert)] : [])),
+    );
+    // allSettled: a push failure must not abandon the emails, or the reverse.
+    const settled = await Promise.allSettled([pushing, mailing]);
+    for (const r of settled) {
+      if (r.status === "rejected") logger.error({ err: r.reason }, "notifyAdminsOfAlert part failed");
+    }
+  } catch (err) {
+    logger.error({ err }, "notifyAdminsOfAlert failed");
   }
 }

@@ -77,6 +77,7 @@ import { syncClassGroupThread } from "../lib/classThread.js";
 import { pairKey, studentNamesByPair } from "../lib/chatThreadContext.js";
 import { resolveReport } from "../lib/reportDecision.js";
 import { pushWithin } from "../lib/pushWithin.ts";
+import { alertMessageReport } from "../lib/messageReportAlert.ts";
 import { EXTENSION_BY_MIME, MAX_DATA_URL_LENGTH, kindForMime, parseDataUrl } from "../lib/lessonMediaUpload.js";
 
 const router = Router();
@@ -1566,6 +1567,12 @@ router.post("/messaging/reports", async (req: AuthenticatedRequest, res) => {
       .insert(chatReports)
       .values({ reporterUserId: req.user!.id, reportedUserId, threadId, messageId, reason })
       .returning();
+
+    // Tell the admins: a reported message carries a 24-hour moderation
+    // obligation. Awaited (capped, never throwing) because Cloud Run throttles
+    // the CPU after the response, which would leave the push and mail stalled.
+    // Fixed wording only — no message text, reason or names (lib/messageReportAlert.ts).
+    await pushWithin("message report", () => alertMessageReport(req.user!.id));
 
     res.status(201).json({ report });
   } catch (err) {

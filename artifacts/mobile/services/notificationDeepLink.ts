@@ -19,6 +19,10 @@ const SCREEN_ROUTES: Record<string, string> = {
   'artifact-reports': '/admin/artifact-reports',
   // Someone joined the waitlist on iqrra.com (lib/adminNotify.ts).
   'admin-signups': '/admin/signups',
+  // A chat message was reported (lib/messageReportAlert.ts).
+  moderation: '/admin/moderation',
+  // A provider refused the AI account, or spend reached 80%/100% (lib/aiAlerts.ts).
+  'ai-costs': '/admin/ai-costs',
   // A teacher released an exam's results (lib/resultsReleaseNotify.ts).
   'my-exams': '/my-exams',
   // Homework posted, the day-before reminder, an exam date (spec Part 4).
