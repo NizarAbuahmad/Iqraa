@@ -38,11 +38,11 @@
       "status": "draft",
       "ar": {
         "caption": "المتجه A وسالبه (-A): لهما المقدار نفسه، واتجاهاهما متعاكسان.",
-        "teacher": "أشِر إلى تساوي طولي السهمين، ثم إلى أن رأس كل منهما في جهة معاكسة للآخر. «ما ناتج جمع A و(-A)؟»"
+        "teacher": "أشِر إلى تساوي طولي السهمين، ثم إلى أن رأس كل منهما في جهة معاكسة للآخر. «كيف نرسم المتجه (-2A) مقارنةً بالمتجه A؟»"
       },
       "en": {
         "caption": "Vector A and its negative (-A): the same magnitude, opposite directions.",
-        "teacher": "Point out that the arrows are equally long, then that their heads point opposite ways. “What do we get when we add A and (-A)?”"
+        "teacher": "Point out that the arrows are equally long, then that their heads point opposite ways. “How would we draw the vector (-2A) compared with A?”"
       }
     },
     "p013-v2.png": {
@@ -82,7 +82,7 @@
       "status": "draft",
       "ar": {
         "caption": "القوة F تصنع زاوية 53° مع إزاحة الجسم d: الشغل W = F . d ضرب قياسي لمتجهين، وناتجه كمية قياسية.",
-        "teacher": "أشِر إلى موقعي الجسم في بداية الإزاحة d ونهايتها، ثم إلى الزاوية 53° بين F وd. «هل الشغل W كمية متجهة أم قياسية؟ ولماذا؟»"
+        "teacher": "أشِر إلى موقعي الجسم في بداية الإزاحة d ونهايتها، ثم إلى الزاوية 53° بين F وd. «هل الشغل W كمية متجهة أم قياسية، ولماذا؟»"
       },
       "en": {
         "caption": "Force F makes 53° with the body's displacement d: work W = F . d is a scalar product of two vectors, so it is a scalar.",
@@ -93,7 +93,7 @@
       "status": "draft",
       "ar": {
         "caption": "عربة يسحبها شخصان بقوتين مقدار كل منهما 200 N وبينهما زاوية 53°: المحصلة تعتمد على اتجاهات القوى لا على مقاديرها فقط.",
-        "teacher": "أشِر إلى الحبلين واتجاه كل قوة، ثم إلى الزاوية 53° بينهما. «هل مقدار محصلة القوتين يساوي مجموع مقداريهما؟ ولماذا؟»"
+        "teacher": "أشِر إلى الحبلين واتجاه كل قوة، ثم إلى الزاوية 53° بينهما. «هل مقدار محصلة القوتين يساوي مجموع مقداريهما، ولماذا؟»"
       },
       "en": {
         "caption": "Two people pull a cart with forces of 200 N each, 53° apart: the resultant depends on the forces' directions, not only their sizes.",
@@ -115,11 +115,11 @@
       "status": "draft",
       "ar": {
         "caption": "المتجهات v1 وv2 وv3 وv4 مرسومة رأسًا بذيل، والمحصلة R من ذيل v1 إلى رأس v4: طريقة المضلّع لجمع المتجهات.",
-        "teacher": "[تحقّق] فوق الشكل حرف (أ) من شكل مجاور، والمثال يطلب v1 + v2 + v3 - v4؛ تأكد من اتجاه السهم v4 قبل العرض. أشِر إلى أن R تمتد من ذيل أول سهم إلى رأس آخر سهم. «كيف نرسم السهم إذا طُلب طرح v4 لا جمعه؟»"
+        "teacher": "[تحقّق] الحرف (أ) فوق الشكل من شكل مجاور، وهذا الشكل (8/ب): نص الصفحة يجعله حل الفرع أ، جمع المتجهات الأربعة، ويرسم الطرح v1 + v2 + 2v3 + (-v4) في الشكل (8/جـ)؛ قارن اتجاه v4 هنا باتجاهه في الشكل (8/أ) في الصفحة 22 قبل العرض. أشِر إلى أن R تمتد من ذيل أول سهم إلى رأس آخر سهم. «كيف نرسم السهم إذا طُلب طرح v4 لا جمعه؟»"
       },
       "en": {
         "caption": "Vectors v1, v2, v3 and v4 drawn head to tail, with the resultant R from the tail of v1 to the head of v4: the polygon method.",
-        "teacher": "[Check] A stray (a) label from a neighbouring figure sits above this one, and the example asks for v1 + v2 + v3 - v4; confirm the direction of the v4 arrow before showing it. Point out that R runs from the tail of the first arrow to the head of the last. “How do we draw the arrow if we must subtract v4 instead of adding it?”"
+        "teacher": "[Check] The (a) label above belongs to a neighbouring figure; this is figure (8/b). The page text makes it the answer to part a, the sum of the four vectors, and draws the subtraction v1 + v2 + 2v3 + (-v4) in figure (8/c); compare the direction of v4 here with figure (8/a) on page 22 before showing it. Point out that R runs from the tail of the first arrow to the head of the last. “How do we draw the arrow if we must subtract v4 instead of adding it?”"
       }
     },
     "p023-v2.png": {
@@ -173,7 +173,7 @@
         "teacher": "أشِر إلى Δv وΔt المرسومين بين اللحظتين 5 s و20 s، وبيّن أن إشارتي السرعة والتسارع متشابهتان. «ما مقدار تسارع الجسم من Δv وΔt المرسومين؟»"
       },
       "en": {
-        "caption": "The velocity-time graph is a straight line with positive slope: Δv/Δt is the acceleration, constant here, so the body speeds up.",
+        "caption": "A straight velocity-time line, positive slope: Δv/Δt is the acceleration, constant here, so the body speeds up in the positive direction.",
         "teacher": "Point to the Δv and Δt marked between 5 s and 20 s, and note that velocity and acceleration have the same sign. “What is the body's acceleration, from the Δv and Δt marked?”"
       }
     },
@@ -191,7 +191,7 @@
     "p056.png": {
       "status": "draft",
       "ar": {
-        "caption": "منحنى الموقع-الزمن لجسم من جزأين مستقيمين a وb يلتقيان عند 20 s: ميل كل جزء يمثل سرعة الجسم فيه.",
+        "caption": "منحنى الموقع-الزمن لجسم من جزأين مستقيمين a وb يلتقيان عند 20 s: ميل كل جزء يمثل السرعة المتجهة للجسم فيه.",
         "teacher": "هذا الشكل من مراجعة الدرس؛ أشِر إلى نقطة التقاء الجزأين، ثم قارن ميليهما دون حساب. «في أي الجزأين a أم b كانت سرعة الجسم أكبر، وكيف عرفتم؟»"
       },
       "en": {
@@ -302,22 +302,22 @@
       "status": "draft",
       "ar": {
         "caption": "مدرج هوائي عليه عربة يسحبها خيط يمر على بكرة إلى حامل أثقال: تجربة لاستقصاء أثر القوة المحصلة والكتلة في التسارع.",
-        "teacher": "[تحقّق] الأجهزة غير مسمّاة على الشكل، فطابِق أسماءها مع قائمة المواد والأدوات في الكتاب. أشِر إلى حامل الأثقال المعلق في طرف الخيط، ثم إلى العربة على المدرج. «كيف نغيّر القوة المحصلة المؤثرة في العربة في هذه التجربة؟»"
+        "teacher": "أشِر إلى حامل الأثقال المعلق في طرف الخيط، ثم إلى العربة على المدرج. «كيف نغيّر القوة المحصلة المؤثرة في العربة في هذه التجربة؟»"
       },
       "en": {
         "caption": "An air track with a cart pulled by a string over a pulley to a weight hanger: an experiment on how net force and mass affect acceleration.",
-        "teacher": "[Check] The apparatus is not labelled on the figure; match the parts to the book's list of materials and tools. Point to the weight hanger at the end of the string, then to the cart on the track. “How do we change the net force on the cart in this experiment?”"
+        "teacher": "Point to the weight hanger at the end of the string, then to the cart on the track. “How do we change the net force on the cart in this experiment?”"
       }
     },
     "p072-v2.png": {
       "status": "draft",
       "ar": {
         "caption": "منحنى التسارع مقابل القوة المحصلة خط مستقيم يمر بنقطة الأصل: عند ثبات الكتلة يتناسب التسارع طرديًا مع القوة المحصلة.",
-        "teacher": "[تحقّق] عنوان المحور الرأسي مقصوص من الشكل، فتأكد أنه التسارع ووحدته m/s² قبل العرض. أشِر إلى مرور الخط بنقطة الأصل. «ماذا يحدث لتسارع الجسم إذا ضاعفنا القوة المحصلة مع ثبات كتلته؟»"
+        "teacher": "[تحقّق] عنوان المحور الرأسي مقصوص من الشكل؛ نص الصفحة 72 يجعله التسارع بوحدة m/s²، فأخبر الطلبة بذلك أو أعِد قص الشكل قبل العرض. أشِر إلى مرور الخط بنقطة الأصل. «ماذا يحدث لتسارع الجسم إذا ضاعفنا القوة المحصلة مع ثبات كتلته؟»"
       },
       "en": {
         "caption": "Acceleration against net force is a straight line through the origin: at constant mass, acceleration is directly proportional to net force.",
-        "teacher": "[Check] The vertical axis title is cut off the figure; confirm it is acceleration in m/s² before showing it. Point out that the line passes through the origin. “What happens to the body's acceleration if we double the net force while its mass stays the same?”"
+        "teacher": "[Check] The vertical axis title is cut off the figure; the page 72 text gives it as acceleration in m/s², so tell the class or re-crop the figure before showing it. Point out that the line passes through the origin. “What happens to the body's acceleration if we double the net force while its mass stays the same?”"
       }
     },
     "p075-v2.png": {
