@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 
 import { LAB_ITEMS, getLabItem, type LabLawItem, type LabExternalItem } from '@workspace/curriculum/lab';
 import { getExternalResource, type ExternalResource } from '@workspace/curriculum/external';
+import { usePolicy } from '@workspace/curriculum/bank';
 
 import { isBulletLine, looksLikeEquation, stripBullet } from '../deckText.ts';
 import { hasRenderableMath, isolateForeignRuns } from '../mathRender.ts';
@@ -203,8 +204,14 @@ describe('GUARD: every shipped law, through the deck’s real formula helpers', 
   }
 });
 
+/** Share-alike (reference-only) items are listed in the Lab with a credit but never become a slide. */
+const isReferenceOnly = (item: LabExternalItem) => {
+  const res = getExternalResource(item.externalId)!;
+  return usePolicy({ authority: res.authority, license: res.license }) === 'reference-only';
+};
+
 describe('GUARD: every shipped credit reaches both fields the exports read', () => {
-  for (const item of externals) {
+  for (const item of externals.filter(i => !isReferenceOnly(i))) {
     const res = getExternalResource(item.externalId)!;
     it(`${item.id}`, () => {
       const slide = buildLabSlide(item, true, 0);
@@ -223,6 +230,21 @@ describe('GUARD: every shipped credit reaches both fields the exports read', () 
       } else {
         assert.equal(slide.mediaUrl, res.sourceUrl);
       }
+    });
+  }
+});
+
+describe('GUARD: a share-alike (reference-only) item never becomes a slide', () => {
+  const refOnly = externals.filter(isReferenceOnly);
+  it('has at least one such item, so the guard cannot pass vacuously', () => {
+    assert.ok(refOnly.length >= 1);
+  });
+  for (const item of refOnly) {
+    const res = getExternalResource(item.externalId)!;
+    it(`${item.id}`, () => {
+      assert.equal(buildLabSlide(item, true, 0), null);
+      assert.equal(buildLabSlide(item, false, 0), null);
+      assert.ok(res.attribution.trim(), 'the Lab card still credits it');
     });
   }
 });

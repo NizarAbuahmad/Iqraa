@@ -220,6 +220,256 @@
       "lessonId": "kbl-biology-s1-nccd-u3_l4",
       "titleAr": "الغزل الفطري",
       "titleEn": "Aspergillus: fungal mycelium"
+    },
+    {
+      "id": "lab-ext-noaa-ocean-surface-currents",
+      "kind": "external",
+      "externalId": "noaa-ocean-surface-currents",
+      "gradeId": "grade-10",
+      "subjectId": "earth-science",
+      "lessonId": "kbl-earth-science-s2-nccd-u4_l3",
+      "titleAr": "خريطة تيّارات سطح المحيط",
+      "titleEn": "Map of ocean surface currents"
+    },
+    {
+      "id": "lab-ext-noaa-gulf-stream-sst",
+      "kind": "external",
+      "externalId": "noaa-gulf-stream-sst",
+      "gradeId": "grade-10",
+      "subjectId": "earth-science",
+      "lessonId": "kbl-earth-science-s2-nccd-u4_l3",
+      "titleAr": "تيّار الخليج مرئيًّا بدرجة حرارة سطح البحر",
+      "titleEn": "The Gulf Stream seen through sea-surface temperature"
+    },
+    {
+      "id": "lab-ext-commons-basalt-columbia-river",
+      "kind": "external",
+      "externalId": "commons-basalt-columbia-river",
+      "gradeId": "grade-10",
+      "subjectId": "earth-science",
+      "lessonId": "kbl-earth-science-s1-nccd-u1_l1",
+      "titleAr": "البازلت — بازلت نهر كولومبيا الفيضي، أوريغون",
+      "titleEn": "Basalt — Columbia River flood basalt, Oregon"
+    },
+    {
+      "id": "lab-ext-commons-conglomerate-sharon",
+      "kind": "external",
+      "externalId": "commons-conglomerate-sharon",
+      "gradeId": "grade-10",
+      "subjectId": "earth-science",
+      "lessonId": "kbl-earth-science-s1-nccd-u1_l2",
+      "titleAr": "الكونغلوميرات الحصوي — تكوين شارون، أوهايو",
+      "titleEn": "Quartz-pebble conglomerate — Sharon Conglomerate, Ohio"
+    },
+    {
+      "id": "lab-ext-commons-gneiss-ellsworth",
+      "kind": "external",
+      "externalId": "commons-gneiss-ellsworth",
+      "gradeId": "grade-10",
+      "subjectId": "earth-science",
+      "lessonId": "kbl-earth-science-s1-nccd-u1_l3",
+      "titleAr": "النايس — شيست إلزوورث، ماين",
+      "titleEn": "Gneiss — Ellsworth Schist, Maine"
+    },
+    {
+      "id": "lab-ext-yt-nasa-large-scale-ocean-currents",
+      "kind": "external",
+      "externalId": "yt-nasa-large-scale-ocean-currents",
+      "gradeId": "grade-10",
+      "subjectId": "earth-science",
+      "lessonId": "kbl-earth-science-s2-nccd-u4_l3",
+      "titleAr": "ناسا: تيّارات المحيط واسعة النطاق",
+      "titleEn": "NASA: Large Scale Ocean Currents"
+    },
+    {
+      "id": "lab-ext-yt-nasa-ocean-in-motion",
+      "kind": "external",
+      "externalId": "yt-nasa-ocean-in-motion",
+      "gradeId": "grade-10",
+      "subjectId": "earth-science",
+      "lessonId": "kbl-earth-science-s2-nccd-u4_l2",
+      "titleAr": "محيط في حركة: رؤية ناسا لطرق الأعماق",
+      "titleEn": "An Ocean in Motion: NASA's view of Earth's underwater highways"
+    },
+    {
+      "id": "lab-ext-yt-nasa-rock-cycle",
+      "kind": "external",
+      "externalId": "yt-nasa-rock-cycle",
+      "gradeId": "grade-10",
+      "subjectId": "earth-science",
+      "lessonId": "kbl-earth-science-s1-nccd-u1_l1",
+      "titleAr": "عالمنا: دورة الصخور",
+      "titleEn": "Our World: The Rock Cycle"
+    },
+    {
+      "id": "lab-ext-commons-g5-food-web",
+      "kind": "external",
+      "externalId": "commons-g5-food-web",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s1-nccd-u1_l1",
+      "titleAr": "شبكة غذائية: من يأكل من؟",
+      "titleEn": "Food web diagram"
+    },
+    {
+      "id": "lab-ext-commons-g5-azraq-wetland",
+      "kind": "external",
+      "externalId": "commons-g5-azraq-wetland",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s1-nccd-u1_l1",
+      "titleAr": "محمية الأزرق المائية: نظام بيئي أردني",
+      "titleEn": "Azraq Wetland Reserve, Jordan"
+    },
+    {
+      "id": "lab-ext-commons-g5-flower-parts-ar",
+      "kind": "external",
+      "externalId": "commons-g5-flower-parts-ar",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s1-nccd-u2_l1",
+      "titleAr": "أجزاء الزهرة (بالعربية)",
+      "titleEn": "Parts of a flower (Arabic labels)"
+    },
+    {
+      "id": "lab-ext-commons-g5-fly-agaric",
+      "kind": "external",
+      "externalId": "commons-g5-fly-agaric",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s1-nccd-u2_l3",
+      "titleAr": "فطر الغاريقون الأحمر (فطر سامّ)",
+      "titleEn": "Fly agaric mushroom (poisonous)"
+    },
+    {
+      "id": "lab-ext-commons-g5-dead-sea-salt",
+      "kind": "external",
+      "externalId": "commons-g5-dead-sea-salt",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s1-nccd-u3_l1",
+      "titleAr": "ترسّبات الملح على شاطئ البحر الميت",
+      "titleEn": "Salt deposits on the Dead Sea shore, Jordan"
+    },
+    {
+      "id": "lab-ext-commons-g5-dead-sea-salt-u4",
+      "kind": "external",
+      "externalId": "commons-g5-dead-sea-salt",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s1-nccd-u4_l2",
+      "titleAr": "ترسّبات الملح على شاطئ البحر الميت",
+      "titleEn": "Salt deposits on the Dead Sea shore, Jordan"
+    },
+    {
+      "id": "lab-ext-commons-g5-tafila-wind-farm",
+      "kind": "external",
+      "externalId": "commons-g5-tafila-wind-farm",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s1-nccd-u3_l2",
+      "titleAr": "مزرعة رياح الطفيلة: طاقة متجددة",
+      "titleEn": "Tafila Wind Farm, Jordan"
+    },
+    {
+      "id": "lab-ext-commons-g5-maan-solar",
+      "kind": "external",
+      "externalId": "commons-g5-maan-solar",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s1-nccd-u3_l2",
+      "titleAr": "محطة شمس معان للطاقة الشمسية",
+      "titleEn": "Shams Ma'an solar power plant, Jordan"
+    },
+    {
+      "id": "lab-ext-commons-g5-prism-spectrum",
+      "kind": "external",
+      "externalId": "commons-g5-prism-spectrum",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s1-nccd-u5_l1",
+      "titleAr": "تحلّل الضوء الأبيض في المنشور",
+      "titleEn": "White light split by a prism"
+    },
+    {
+      "id": "lab-ext-commons-g5-myplate",
+      "kind": "external",
+      "externalId": "commons-g5-myplate",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s2-nccd-u6_l1",
+      "titleAr": "طبق الغذاء المتوازن (بالإنجليزية)",
+      "titleEn": "MyPlate: a balanced meal (English labels)"
+    },
+    {
+      "id": "lab-ext-commons-g5-urinary-ar",
+      "kind": "external",
+      "externalId": "commons-g5-urinary-ar",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s2-nccd-u7_l1",
+      "titleAr": "أجزاء الجهاز البولي (بالعربية)",
+      "titleEn": "Urinary system (Arabic labels)"
+    },
+    {
+      "id": "lab-ext-commons-g5-digestive-ar",
+      "kind": "external",
+      "externalId": "commons-g5-digestive-ar",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s2-nccd-u7_l1",
+      "titleAr": "الجهاز الهضمي (بالعربية)",
+      "titleEn": "Digestive system (Arabic labels)"
+    },
+    {
+      "id": "lab-ext-commons-g5-respiratory-ar",
+      "kind": "external",
+      "externalId": "commons-g5-respiratory-ar",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s2-nccd-u7_l2",
+      "titleAr": "الجهاز التنفسي (بالعربية)",
+      "titleEn": "Respiratory system (Arabic labels)"
+    },
+    {
+      "id": "lab-ext-commons-g5-pulmonary-circuit-ar",
+      "kind": "external",
+      "externalId": "commons-g5-pulmonary-circuit-ar",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s2-nccd-u7_l2",
+      "titleAr": "الدورة الدموية الصغرى (بالعربية)",
+      "titleEn": "Pulmonary circulation (Arabic labels)"
+    },
+    {
+      "id": "lab-ext-commons-g5-arm-bones-ar",
+      "kind": "external",
+      "externalId": "commons-g5-arm-bones-ar",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s2-nccd-u7_l3",
+      "titleAr": "عظام الطرف العلوي (بالعربية)",
+      "titleEn": "Bones of the arm (Arabic labels)"
+    },
+    {
+      "id": "lab-ext-commons-g5-earth-layers",
+      "kind": "external",
+      "externalId": "commons-g5-earth-layers",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s2-nccd-u10_l1",
+      "titleAr": "طبقات الأرض (نموذج مجسّم)",
+      "titleEn": "Layers of the Earth (3D model)"
+    },
+    {
+      "id": "lab-ext-commons-g5-weather-station",
+      "kind": "external",
+      "externalId": "commons-g5-weather-station",
+      "gradeId": "grade-5",
+      "subjectId": "science",
+      "lessonId": "kbl-g5-science-s2-nccd-u10_l2",
+      "titleAr": "محطة أرصاد جوية: مقياس الرياح ومقياس المطر",
+      "titleEn": "Weather station with anemometer and rain gauge"
     }
   ]
 }

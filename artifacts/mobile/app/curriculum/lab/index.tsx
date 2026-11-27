@@ -11,7 +11,9 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LAB_ITEMS, filterLabItems, type LabItem, type LabItemKind } from '@workspace/curriculum/lab';
-import { SUBJECTS } from '@workspace/curriculum';
+import { SUBJECTS, getVisibleGrades } from '@workspace/curriculum';
+import { useAuth } from '@/context/AuthContext';
+import { initialLabGrade, keepLabSubject, labGradeIds, labSubjectIds } from '@/services/labFilters';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { getLessonById } from '@/services/knowledgeBase';
@@ -29,7 +31,8 @@ const KIND_LABEL: Record<LabItemKind, TranslationKey> = {
 };
 
 // The manifest is static, so the chip sets are module constants.
-const SUBJECT_IDS = [...new Set(LAB_ITEMS.map(i => i.subjectId))];
+const VISIBLE_GRADES = getVisibleGrades();
+const LAB_GRADE_IDS = labGradeIds(LAB_ITEMS, VISIBLE_GRADES.map(g => g.id));
 const KINDS = [...new Set(LAB_ITEMS.map(i => i.kind))] as LabItemKind[];
 
 const KIND_ICON: Record<LabItemKind, React.ComponentProps<typeof Ionicons>['name']> = {
@@ -49,12 +52,15 @@ function ItemRow({
   isRTL,
   lang,
   t,
+  gradeName,
 }: {
   item: LabItem;
   colors: Colors;
   isRTL: boolean;
   lang: string;
   t: TFn;
+  /** Shown only when all grades are listed, so two grades' rows can be told apart. */
+  gradeName?: string;
 }) {
   const surface = useSurface();
   const lesson = getLessonById(item.lessonId);
@@ -80,6 +86,7 @@ function ItemRow({
         <Text
           style={[styles.rowMeta, { color: colors.mutedForeground, textAlign: isRTL ? 'right' : 'left', fontFamily: 'Almarai_400Regular' }]}
         >
+          {gradeName ? `${gradeName} · ` : ''}
           {t(KIND_LABEL[item.kind])}
           {lessonTitle ? ` · ${lessonTitle}` : ''}
         </Text>
@@ -126,10 +133,32 @@ function Chip({
 export default function LabShelfScreen() {
   const colors = useColors();
   const { t, lang, isRTL } = useLanguage();
-  const [subjectId, setSubjectId] = useState<string | null>(null);
+  const { user } = useAuth();
+  // `undefined` = not chosen yet: follow the user's grade, which may arrive
+  // after the first render. A tap stores a grade id or `null` (all grades).
+  const [pickedGrade, setPickedGrade] = useState<string | null | undefined>(undefined);
+  const gradeId = pickedGrade === undefined ? initialLabGrade(LAB_GRADE_IDS, user?.gradeIds) : pickedGrade;
+  const [pickedSubject, setSubjectId] = useState<string | null>(null);
   const [kind, setKind] = useState<LabItemKind | null>(null);
 
-  const shown = filterLabItems({ subjectId: subjectId ?? undefined, kind: kind ?? undefined });
+  const subjectIds = labSubjectIds(LAB_ITEMS, gradeId);
+  const subjectId = keepLabSubject(pickedSubject, subjectIds);
+  // A grade change resets a subject the new grade does not offer (spec §1), so a
+  // pick hidden under one grade cannot resurface under «كل الصفوف».
+  const pickGrade = (id: string | null) => {
+    setPickedGrade(id);
+    setSubjectId(keepLabSubject(subjectId, labSubjectIds(LAB_ITEMS, id)));
+  };
+  const shown = filterLabItems({
+    gradeId: gradeId ?? undefined,
+    subjectId: subjectId ?? undefined,
+    kind: kind ?? undefined,
+  });
+
+  const gradeName = (id: string) => {
+    const g = VISIBLE_GRADES.find(x => x.id === id);
+    return g ? (lang === 'ar' ? g.nameAr : g.name) : id;
+  };
 
   const subjectName = (id: string) => {
     const s = SUBJECTS.find(x => x.id === id);
@@ -138,9 +167,17 @@ export default function LabShelfScreen() {
 
   return (
     <CornerFrame title={t('labTitle')} subtitle={t('labIntro')}>
+      {LAB_GRADE_IDS.length > 1 ? (
+        <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Chip colors={colors} label={t('labAllGrades')} on={gradeId === null} onPress={() => pickGrade(null)} />
+          {LAB_GRADE_IDS.map(id => (
+            <Chip colors={colors} key={id} label={gradeName(id)} on={gradeId === id} onPress={() => pickGrade(id)} />
+          ))}
+        </View>
+      ) : null}
       <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <Chip colors={colors} label={t('labAllSubjects')} on={subjectId === null} onPress={() => setSubjectId(null)} />
-        {SUBJECT_IDS.map(id => (
+        {subjectIds.map(id => (
           <Chip colors={colors} key={id} label={subjectName(id)} on={subjectId === id} onPress={() => setSubjectId(id)} />
         ))}
       </View>
@@ -157,7 +194,17 @@ export default function LabShelfScreen() {
         </Text>
       ) : (
         <CornerGrid>
-          {shown.map(item => <ItemRow key={item.id} item={item} colors={colors} isRTL={isRTL} lang={lang} t={t} />)}
+          {shown.map(item => (
+            <ItemRow
+              key={item.id}
+              item={item}
+              colors={colors}
+              isRTL={isRTL}
+              lang={lang}
+              t={t}
+              gradeName={gradeId === null ? gradeName(item.gradeId) : undefined}
+            />
+          ))}
         </CornerGrid>
       )}
     </CornerFrame>
