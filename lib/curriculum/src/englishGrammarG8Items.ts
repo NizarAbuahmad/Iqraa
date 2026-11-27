@@ -115,23 +115,24 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ['How often does she visit Petra?', 'does she visit', 'do she visit'],
         ['Which bus do you take?', 'do you take', 'you take'],
       ]),
-      // An adverb of frequency goes after be and before any other verb. It sits inside the answer, so the false twin
-      // keeps standard order everywhere else. Never «sometimes» (it can go first or last), and never a twin that puts the
-      // adverb at the end of the sentence, which English allows for «often» and «usually».
+      // An adverb of frequency goes before a main verb, never between the verb and its object. It sits inside the answer,
+      // so the false twin keeps standard order everywhere else. Never «sometimes» (it can go first or last), never a twin
+      // that puts the adverb at the end of the sentence (English allows that for «often» and «usually»), and never a
+      // sentence with «be»: «always is» and «usually is» are acceptable English, with stress or without.
       ...items('adverb-position', 'form', [
-        ['She is always late.', 'is always', 'always is'],
+        ['She always eats breakfast at home.', 'always eats', 'eats always'],
         ['He usually walks to school.', 'usually walks', 'walks usually'],
         ['We often play football after school.', 'often play', 'play often'],
-        ['They are never late for class.', 'are never', 'never are'],
+        ['They often visit their grandparents.', 'often visit', 'visit often'],
         ['My father always drives to work.', 'always drives', 'drives always'],
-        ['Mum is usually at home on Fridays.', 'is usually', 'usually is'],
+        ['My brother usually plays tennis on Fridays.', 'usually plays', 'plays usually'],
         ['I never eat breakfast at school.', 'never eat', 'eat never'],
-        ['The shop is always open.', 'is always', 'always is'],
+        ['Dad never watches TV at night.', 'never watches', 'watches never'],
         ['She often helps her mother.', 'often helps', 'helps often'],
-        ['My brother is often tired.', 'is often', 'often is'],
+        ['We always do our homework at four.', 'always do', 'do always'],
         ['We usually have lunch at two.', 'usually have', 'have usually'],
         ['He never plays chess.', 'never plays', 'plays never'],
-        ['The students are always quiet.', 'are always', 'always are'],
+        ['The students always wear a uniform.', 'always wear', 'wear always'],
         ['Dad usually reads the newspaper.', 'usually reads', 'reads usually'],
       ]),
     ],
@@ -169,10 +170,10 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ['There are some chairs in the living room.', 'some', 'any'],
         ["There aren't any chairs.", 'any', 'some'],
         ["There isn't any rice in the kitchen.", 'any', 'some'],
-        ["We don't have any plants.", 'any', 'some'],
+        ["There aren't any plants in our house.", 'any', 'some'],
         ["There aren't any windows in the bathroom.", 'any', 'some'],
         ["I don't have any brothers.", 'any', 'some'],
-        ["There isn't any carpet in my room.", 'any', 'some'],
+        ["There aren't any rugs in my room.", 'any', 'some'],
         ["There aren't any lamps in the kitchen.", 'any', 'some'],
       ]),
       // Questions and negatives are decided by agreement with the noun after them (a singular or uncountable noun takes
@@ -185,9 +186,9 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ['Is there a garden behind the house?', 'Is there', 'Are there'],
         ['Are there two beds in your room?', 'Are there', 'Is there'],
         ["There isn't a sofa in my room.", "isn't", "aren't"],
-        ["There aren't two bathrooms in our flat.", "aren't", "isn't"],
+        ["There aren't many shops near our house.", "aren't", "isn't"],
         ["There isn't a lift in our building.", "isn't", "aren't"],
-        ["There aren't three bedrooms in the flat.", "aren't", "isn't"],
+        ["There isn't a bathroom downstairs.", "isn't", "aren't"],
         ['How many beds are there in your room?', 'are', 'is'],
         ['Is there any water in the bottle?', 'Is there', 'Are there'],
       ]),
@@ -246,7 +247,7 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ["She can iron shirts, but she can't sew buttons.", "can't", 'can'],
         ["The box is heavy, so I can't lift it.", "can't", 'can'],
         ['Dad has a ladder, so he can clean windows.', 'can', "can't"],
-        ['My arms are strong, so I can lift boxes.', 'can', "can't"],
+        ['It is sunny, so I can dry clothes outside.', 'can', "can't"],
       ]),
     ],
   },
@@ -275,11 +276,11 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
       // «a» before the noun, or the plural verb with it.
       ...items('uncountable', 'form', [
         ['Mum buys some rice every week.', 'some rice', 'a rice'],
-        ['I want some milk.', 'some milk', 'a milk'],
+        ['Mum cooks some meat for lunch.', 'some meat', 'a meat'],
         ['She eats some bread at breakfast.', 'some bread', 'a bread'],
         ['He buys some meat on Fridays.', 'some meat', 'a meat'],
         ['Dad puts some butter in the pan.', 'some butter', 'a butter'],
-        ['Add some milk to the soup.', 'some milk', 'a milk'],
+        ['Add some butter to the rice.', 'some butter', 'a butter'],
         ['Milk is good for you.', 'is', 'are'],
         ['The water is cold.', 'is', 'are'],
         ['Rice is cheap here.', 'is', 'are'],
@@ -290,9 +291,11 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ['I put some butter on my bread.', 'some butter', 'a butter'],
       ]),
       // a before a consonant sound and an before a vowel sound with a singular noun; some with a plural or an uncountable
-      // noun. The distractor is the wrong one of the three, never «some» before a singular countable noun.
+      // noun. The distractor is the wrong one of the three, never «some» before a singular countable noun, and never «a» or
+      // «an» before a drink or cheese (milk, water, juice, coffee, tea, cheese): «a milk», «a water» mean a serving and are
+      // ordinary English. A / an before rice, meat, butter or bread, or before a plural, is wrong without argument.
       ...items('a-an-some', 'form', [
-        ['She drinks some water.', 'some', 'a'],
+        ['She eats some grapes after lunch.', 'some', 'a'],
         ['We need some rice.', 'some', 'a'],
         ['I eat an apple every day.', 'an', 'a'],
         ['She has a sandwich for lunch.', 'a', 'an'],
@@ -302,9 +305,9 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ['I want some bread.', 'some', 'a'],
         ['She buys some apples every week.', 'some', 'an'],
         ['We eat some dates after dinner.', 'some', 'a'],
-        ['He drinks some milk at night.', 'some', 'a'],
+        ['He eats some nuts at night.', 'some', 'a'],
         ['My sister has a pear for lunch.', 'a', 'an'],
-        ['Please give me some cheese.', 'some', 'an'],
+        ['Please give me some meat.', 'some', 'an'],
         ['She eats an onion with lunch.', 'an', 'a'],
       ]),
     ],

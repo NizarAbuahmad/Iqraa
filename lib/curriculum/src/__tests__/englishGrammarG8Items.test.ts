@@ -117,6 +117,19 @@ describe('Grade 8 authored lessons', () => {
     }
   });
 
+  it('never use a/an before a drink or cheese in a false twin of the article or uncountable sub-topics', () => {
+    const serving = /\b(a|an) (milk|water|cheese|juice|coffee|tea|sugar|fruit)\b/i;
+    for (const x of sentencesOf(L('u3_l1')).filter(y => y.patternId === 'a-an-some' || y.patternId === 'uncountable')) {
+      assert.ok(!serving.test(x.claim!.falseText), `${x.text} -> ${x.claim!.falseText}`);
+    }
+  });
+
+  it('never put «be» in an adverb-position sentence or its twin, where the adverb before be is acceptable English', () => {
+    for (const x of sentencesOf(L('u1_l3')).filter(y => y.patternId === 'adverb-position')) {
+      assert.ok(!/\b(is|are|am|was|were|be)\b/i.test(x.text + ' ' + x.claim!.falseText), x.text);
+    }
+  });
+
   it('never test the adverb «sometimes» for position', () => {
     for (const x of sentencesOf(L('u1_l3')).filter(y => y.patternId === 'adverb-position')) {
       assert.ok(!/\bsometimes\b/i.test(x.text), x.text);

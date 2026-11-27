@@ -88,19 +88,19 @@ Not reviewed yet — shown to nobody.
 | Why do you study English? | **do you study** / does you study | _Why does you study English?_ |
 | How often does she visit Petra? | **does she visit** / do she visit | _How often do she visit Petra?_ |
 | Which bus do you take? | **do you take** / you take | _Which bus you take?_ |
-| She is always late. | **is always** / always is | _She always is late._ |
+| She always eats breakfast at home. | **always eats** / eats always | _She eats always breakfast at home._ |
 | He usually walks to school. | **usually walks** / walks usually | _He walks usually to school._ |
 | We often play football after school. | **often play** / play often | _We play often football after school._ |
-| They are never late for class. | **are never** / never are | _They never are late for class._ |
+| They often visit their grandparents. | **often visit** / visit often | _They visit often their grandparents._ |
 | My father always drives to work. | **always drives** / drives always | _My father drives always to work._ |
-| Mum is usually at home on Fridays. | **is usually** / usually is | _Mum usually is at home on Fridays._ |
+| My brother usually plays tennis on Fridays. | **usually plays** / plays usually | _My brother plays usually tennis on Fridays._ |
 | I never eat breakfast at school. | **never eat** / eat never | _I eat never breakfast at school._ |
-| The shop is always open. | **is always** / always is | _The shop always is open._ |
+| Dad never watches TV at night. | **never watches** / watches never | _Dad watches never TV at night._ |
 | She often helps her mother. | **often helps** / helps often | _She helps often her mother._ |
-| My brother is often tired. | **is often** / often is | _My brother often is tired._ |
+| We always do our homework at four. | **always do** / do always | _We do always our homework at four._ |
 | We usually have lunch at two. | **usually have** / have usually | _We have usually lunch at two._ |
 | He never plays chess. | **never plays** / plays never | _He plays never chess._ |
-| The students are always quiet. | **are always** / always are | _The students always are quiet._ |
+| The students always wear a uniform. | **always wear** / wear always | _The students wear always a uniform._ |
 | Dad usually reads the newspaper. | **usually reads** / reads usually | _Dad reads usually the newspaper._ |
 
 ## Semester 1 · Unit 2 — No place like home
@@ -132,10 +132,10 @@ Not reviewed yet — shown to nobody.
 | There are some chairs in the living room. | **some** / any | _There are any chairs in the living room._ |
 | There aren't any chairs. | **any** / some | _There aren't some chairs._ |
 | There isn't any rice in the kitchen. | **any** / some | _There isn't some rice in the kitchen._ |
-| We don't have any plants. | **any** / some | _We don't have some plants._ |
+| There aren't any plants in our house. | **any** / some | _There aren't some plants in our house._ |
 | There aren't any windows in the bathroom. | **any** / some | _There aren't some windows in the bathroom._ |
 | I don't have any brothers. | **any** / some | _I don't have some brothers._ |
-| There isn't any carpet in my room. | **any** / some | _There isn't some carpet in my room._ |
+| There aren't any rugs in my room. | **any** / some | _There aren't some rugs in my room._ |
 | There aren't any lamps in the kitchen. | **any** / some | _There aren't some lamps in the kitchen._ |
 | Are there any books on the shelf? | **Are there** / Is there | _Is there any books on the shelf?_ |
 | Is there a park near your house? | **Is there** / Are there | _Are there a park near your house?_ |
@@ -144,9 +144,9 @@ Not reviewed yet — shown to nobody.
 | Is there a garden behind the house? | **Is there** / Are there | _Are there a garden behind the house?_ |
 | Are there two beds in your room? | **Are there** / Is there | _Is there two beds in your room?_ |
 | There isn't a sofa in my room. | **isn't** / aren't | _There aren't a sofa in my room._ |
-| There aren't two bathrooms in our flat. | **aren't** / isn't | _There isn't two bathrooms in our flat._ |
+| There aren't many shops near our house. | **aren't** / isn't | _There isn't many shops near our house._ |
 | There isn't a lift in our building. | **isn't** / aren't | _There aren't a lift in our building._ |
-| There aren't three bedrooms in the flat. | **aren't** / isn't | _There isn't three bedrooms in the flat._ |
+| There isn't a bathroom downstairs. | **isn't** / aren't | _There aren't a bathroom downstairs._ |
 | How many beds are there in your room? | **are** / is | _How many beds is there in your room?_ |
 | Is there any water in the bottle? | **Is there** / Are there | _Are there any water in the bottle?_ |
 
@@ -195,7 +195,7 @@ Not reviewed yet — shown to nobody.
 | She can iron shirts, but she can't sew buttons. | **can't** / can | _She can iron shirts, but she can sew buttons._ |
 | The box is heavy, so I can't lift it. | **can't** / can | _The box is heavy, so I can lift it._ |
 | Dad has a ladder, so he can clean windows. | **can** / can't | _Dad has a ladder, so he can't clean windows._ |
-| My arms are strong, so I can lift boxes. | **can** / can't | _My arms are strong, so I can't lift boxes._ |
+| It is sunny, so I can dry clothes outside. | **can** / can't | _It is sunny, so I can't dry clothes outside._ |
 
 ## Semester 1 · Unit 3 — Eat in – eat out
 
@@ -216,11 +216,11 @@ Not reviewed yet — shown to nobody.
 | We have three meals a day. | **meals** / meal | _We have three meal a day._ |
 | Two children are eating lunch. | **children** / child | _Two child are eating lunch._ |
 | Mum buys some rice every week. | **some rice** / a rice | _Mum buys a rice every week._ |
-| I want some milk. | **some milk** / a milk | _I want a milk._ |
+| Mum cooks some meat for lunch. | **some meat** / a meat | _Mum cooks a meat for lunch._ |
 | She eats some bread at breakfast. | **some bread** / a bread | _She eats a bread at breakfast._ |
 | He buys some meat on Fridays. | **some meat** / a meat | _He buys a meat on Fridays._ |
 | Dad puts some butter in the pan. | **some butter** / a butter | _Dad puts a butter in the pan._ |
-| Add some milk to the soup. | **some milk** / a milk | _Add a milk to the soup._ |
+| Add some butter to the rice. | **some butter** / a butter | _Add a butter to the rice._ |
 | Milk is good for you. | **is** / are | _Milk are good for you._ |
 | The water is cold. | **is** / are | _The water are cold._ |
 | Rice is cheap here. | **is** / are | _Rice are cheap here._ |
@@ -229,7 +229,7 @@ Not reviewed yet — shown to nobody.
 | The bread is on the table. | **is** / are | _The bread are on the table._ |
 | The cheese is in the fridge. | **is** / are | _The cheese are in the fridge._ |
 | I put some butter on my bread. | **some butter** / a butter | _I put a butter on my bread._ |
-| She drinks some water. | **some** / a | _She drinks a water._ |
+| She eats some grapes after lunch. | **some** / a | _She eats a grapes after lunch._ |
 | We need some rice. | **some** / a | _We need a rice._ |
 | I eat an apple every day. | **an** / a | _I eat a apple every day._ |
 | She has a sandwich for lunch. | **a** / an | _She has an sandwich for lunch._ |
@@ -239,7 +239,7 @@ Not reviewed yet — shown to nobody.
 | I want some bread. | **some** / a | _I want a bread._ |
 | She buys some apples every week. | **some** / an | _She buys an apples every week._ |
 | We eat some dates after dinner. | **some** / a | _We eat a dates after dinner._ |
-| He drinks some milk at night. | **some** / a | _He drinks a milk at night._ |
+| He eats some nuts at night. | **some** / a | _He eats a nuts at night._ |
 | My sister has a pear for lunch. | **a** / an | _My sister has an pear for lunch._ |
-| Please give me some cheese. | **some** / an | _Please give me an cheese._ |
+| Please give me some meat. | **some** / an | _Please give me an meat._ |
 | She eats an onion with lunch. | **an** / a | _She eats a onion with lunch._ |
