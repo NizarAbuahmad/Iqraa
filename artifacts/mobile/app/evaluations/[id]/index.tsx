@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
+import { generationWarnings } from '@/services/generationWarnings';
 import { confirm } from '@/services/confirm';
 import {
   EvaluationError,
@@ -224,7 +225,7 @@ export default function EvaluationDetailScreen() {
     try {
       setGenWarnings([]);
       const gen = await generateEvaluation(id);
-      setGenWarnings(gen.warnings ?? []);
+      setGenWarnings(generationWarnings(gen, lang));
       await refetch();
     } catch (err) {
       const failure = generateFailure(err);

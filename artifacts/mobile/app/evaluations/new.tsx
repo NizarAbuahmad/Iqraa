@@ -55,6 +55,8 @@ import { blankMarkCount, gridFromScan, totalMismatch } from '@/services/paperSca
 import { scanErrorKey } from '@/services/scanErrors';
 import { groupObjectivesByLesson, isEverythingSelected, toggleEverything } from '@/services/objectiveLessons';
 import { selectionForGrade, typesOffered } from '@/services/evaluationTypes';
+import { totalChoicesFor, totalToSend } from '@/services/examTotal';
+import { generationWarnings } from '@/services/generationWarnings';
 import { BackButton } from '@/components/ui/BackButton';
 
 const ACCENT = palette.primary;
@@ -165,6 +167,8 @@ export default function NewEvaluationScreen() {
   );
   const [difficulty, setDifficulty] = useState<Difficulty>('standard');
   const [countIdx, setCountIdx] = useState(1); // 10
+  /** «العلامة الكلية» of a generated paper; null keeps what its questions add up to. */
+  const [targetTotal, setTargetTotal] = useState<number | null>(null);
   const [title, setTitle] = useState('');
   const [mode, setMode] = useState<Mode>('generate');
   // Total-only is the common case for a teacher's own paper: one mark per
@@ -391,6 +395,7 @@ export default function NewEvaluationScreen() {
         // automatic grader — the teacher marks every one of them by hand.
         assessmentTypes: mode === 'paper' ? ['open_ended'] : [...selectedTypes],
         targetQuestionCount: mode === 'paper' ? (totalOnly ? 1 : paperRows.length) : QUESTION_COUNTS[countIdx],
+        ...(mode === 'generate' ? { targetTotalMarks: totalToSend(targetTotal, QUESTION_COUNTS[countIdx]) } : {}),
         difficulty,
         titleAr: title.trim() || undefined,
       });
@@ -410,7 +415,7 @@ export default function NewEvaluationScreen() {
               })),
         );
       } else {
-        warnings = (await generateEvaluation(evaluation.id)).warnings ?? [];
+        warnings = generationWarnings(await generateEvaluation(evaluation.id), lang);
       }
       // The detail screen re-derives everything else from the questions; the
       // generator's warnings are the one thing it cannot, so they ride along.
@@ -673,6 +678,24 @@ export default function NewEvaluationScreen() {
             accent={ACCENT}
           />
         )}
+
+        {mode === 'generate' && (() => {
+          const totals = totalChoicesFor(QUESTION_COUNTS[countIdx]);
+          // A total the count has outgrown is not sent (`totalToSend`), so it reads as automatic.
+          const shown = totalToSend(targetTotal, QUESTION_COUNTS[countIdx]) ?? null;
+          const label = (v: number | null) => (v === null ? t('examTotalAuto') : String(v));
+          return (
+            <PickerField
+              label={t('examTotalLabel')}
+              value={label(shown)}
+              options={totals.map(label)}
+              onChange={i => setTargetTotal(totals[i] ?? null)}
+              colors={colors}
+              isRTL={isRTL}
+              accent={ACCENT}
+            />
+          );
+        })()}
 
         {totalOnly && (
           <>

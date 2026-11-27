@@ -62,6 +62,132 @@ Design: `docs/superpowers/specs/2026-11-27-physics-figure-notes-design.md`; plan
   panel letters are off by one; `p039c-v2`'s caption and left panel are cropped; `p060-v2` shows another figure's caption;
   `p067b` and `p067c-v2` duplicate cup (أ); the axis titles of `p072-v2` and `p101b` are cropped.
 
+## Exam generation warnings in Arabic — 2026-11-27
+
+The review screen printed a generated exam's warnings exactly as the API sent them, and the API wrote every one in
+English, so an Arabic teacher read «3 of 12 questions ask the same thing…» under an Arabic paper (noted under «Not verified» in the entry below).
+
+**What changed.** Each warning is now written in Arabic beside the English, where it is made, and every producer
+returns an Arabic list one for one with its English list: `validateGenerated` (`warningsAr`), `verifyAnswerKeys`
+(`warningsAr`) and `contradictionWarningAr`, `generateMockEvaluation` (`notesAr`, including the library pointer),
+`generateWithModel` (`notesAr`), `fitToTotal` (`noteAr`). The route's own notes moved out of `routes/evaluations.ts`
+into `modules/assessment/generationNotes.ts` (`{ en, ar }` pairs; the English is the route's, word for word). `POST
+/evaluations/:id/generate` returns `warningsAr` beside `warnings`; `warnings` is unchanged, so an installed app that
+does not know `warningsAr` keeps showing English. The app shows `warningsAr` when its language is Arabic and the two
+lists are the same length (`services/generationWarnings.ts`), on the new-exam path and on regenerate.
+
+How the Arabic is written: Arabic-Indic digits; question types by the picker's own names; an option by its abjad
+letter (أ ب ج د, as the exports letter them); competencies by `COMPETENCY_LABELS_AR`. Counts are phrased so the
+number stands on its own («أسئلة عددها ٢», «٣ من أصل ١٠ من الأسئلة») — the first draft read «٢ سؤالًا» and «٣ من ١٠
+سؤالًا», which no Arabic counting rule allows. What only a developer reads is left out of the Arabic: the
+verifier's English reasons (the questions are named by number), the model's discard reasons (the count is given),
+objective ids (the count is given).
+
+**Verified.** `warningsArabic.test.ts` (api-server) drives each producer into its warnings and asserts the Arabic
+list has the same length, Arabic letters and no English word; `generationWarnings.test.ts` (mobile) covers the
+choice and its fallbacks. Both were watched failing first. Every Arabic warning was printed and read by eye.
+
+**Not verified.** Not seen on a screen (RTL, long stems quoted inside a warning). The Arabic was written here, not
+read by a native-speaking teacher. A new warning added later in English only is caught by the test only if the test
+drives it.
+
+## Exams: the live prompt states the competency mix and marks, a teacher picks the total, options are shuffled — 2026-11-27
+
+From a review of the evaluation generator (2026-11-13): a live paper with no textbook share — every
+production paper while `BOOK_ITEMS_LIVE` is off — was told only «a balanced paper» and «marks: a positive
+number», multiple-choice options went out in the order the model wrote them, and the validator missed three
+kinds of unbalanced paper.
+
+**What changed (API).**
+- **Competency quota and fixed marks on every live paper.** `LlmGenerationRequest.quota` (per-competency
+  counts summing to `count`). The route always passes one: the book's `newByCompetency` when the book supplies
+  questions, else `allocateQuestions(modelCount, difficulty)`; the top-up gets `remainingQuota(quota, written,
+  missing)`. The prompt states the mix (only when there is no book block, which already does) and replaces
+  «marks: a positive number…» with the fixed 1/2/3/4 per competency; the parser then sets every question's marks
+  from its competency (`MARKS_BY_COMPETENCY`), so a model that leaves marks out no longer loses the question,
+  and moves the model's rubric onto those marks (the prompt also says the criteria add up to them).
+  Prompt version `exam-gen-9` (`exam-gen-9+book` with a book share). A request **without** `quota` is still
+  exam-gen-8 byte for byte — `llmGeneratorPromptPin.test.ts` is unchanged and passes.
+- **A total the paper is out of.** `evaluations.target_total_marks` (migration `0033`, one nullable `integer`
+  column — additive). `POST /evaluations` takes `targetTotalMarks` (whole number, from the question count to
+  200; 400 `target_total_marks` otherwise). Generation scales the generated questions' marks to the total minus
+  what the teacher's own kept questions carry (`fitToTotal` / `scaleMarks` in `marksTotal.ts`: whole marks, at
+  least one each, largest remainder, never a harder question below an easier one) and moves each rubric's
+  criteria and levels with it (`scaleRubric`). When it cannot (fewer marks left than questions) the generator's
+  marks are kept and a note says so; a note also says when fewer questions than asked for share the whole
+  total. The target is stored in `generationParams.targetTotalMarks`.
+- **Multiple-choice options are shuffled once, at generation** (`choiceOrder.ts`): live output in the route,
+  before the validator; offline output inside `generateMockEvaluation` on the paper's seed. Ids keep their
+  sequence and the key follows its text; a shuffled question carries `aiMetadata.choiceOrder: "shuffled"`. Left
+  in order: book items (so they match the book) and options that point at each other («جميع ما سبق», «أ و ب»,
+  «كلاهما», "all of the above").
+- **Three new validator warnings** (`validator.ts`, warnings only): a competency with **no** questions on a
+  paper of 8 or more (the old check fired only at exactly one); true/false statements where the minority side
+  is under a quarter of 4 or more; more than half of 5 or more single-answer MCQs keyed to one position —
+  counting only questions NOT shuffled (a fair shuffle of 5 puts 3 in one place ~41% of the time, measured by
+  the review at 4,000 trials a size).
+
+**What changed (app).** The new-exam screen has «العلامة الكلية» (تلقائي, 10, 20, 25, 30, 40, 50, 60, 100;
+only totals at least the question count — `services/examTotal.ts`) for a generated exam; «تلقائي» sends nothing.
+«ما الجديد» entry `exam-total-marks`.
+
+**Verified.** New tests: `examQuota`, `choiceOrder`, `paperBalance`, `marksTotal` (api-server) and
+`examTotal` (mobile), each watched failing first; a 20,000-paper random check of `scaleMarks` (sum, minimum
+one, order) found nothing. `pnpm run typecheck`, api-server build + tests and mobile tests (see the PR).
+
+**Found, not fixed.** The offline generator's seed (`generationParams.seed`) has never replayed a banked
+question: `lib/math-practice` draws with `Math.random` (`index.ts`, `formatsBank.ts`). Only the template
+questions replay.
+
+**Not verified.** No live model was run: whether gpt-5.4-mini keeps to the stated mix is unmeasured — read the
+competency split of the first few live papers. The route wiring (quota into the request, shuffle, total inside
+the write transaction) has no route-level test; the db tests were not run here. The new screen field was
+typechecked, not looked at in a browser. Generation warnings, old and new, reached an Arabic teacher in
+English — fixed in the same PR, see «Exam generation warnings in Arabic» above.
+
+## Sets in roster form read left to right in Arabic — 2026-11-27
+
+The follow-up the set-builder entry below named. A roster set `{1, 2, 3}` split at every comma, because the Latin comma
+is not in the run class, and an Arabic line reordered its elements. The bank's `setStr` writes `{−2 ، 0 ، 3}` with the
+Arabic comma, and `…` (as in `{11,13,15,…}`) was outside the class too. In Chromium, «المجموعة {1, 2, 3} …», «… {−2 ،
+0 ، 3} …» and «… {…, -2, -1, 0, 1, 2, …} …» were reversed.
+
+**Fix:**
+- **Renderer** (`services/mathRender.ts`). Braces are never prose, so:
+  - `ROSTER_RE`: a `{…}` of comma-separated maths atoms, with either comma, has its commas and ellipses turned into
+    stand-ins. An element may not hold a bracket, so a code template `{pt(x, y)}` never matches.
+  - `POINT_SET_RE`: a set of points with the Arabic comma between them, `{(1, 2) ، (5, 7)}`, is treated the same way.
+    Saved papers carry it.
+  - A set of Latin-comma points was already joined by `PAIR_RE`.
+- **Bank** (`lib/math-practice/src/grade10b.ts`): the relation helper `set` in the inverse-function family joined its
+  points with « ، », in the English prompt too. It now writes `{(1, 2), (5, 7)}`, as the points entry below decided.
+  The answer-option lists inside Arabic sentences, «… (1, 2)، (3, 4) …» in `algebra.ts`, are prose lists and keep «،».
+
+**Verified:**
+- 7 new cases in `mathRender.test.ts`.
+- All suites pass:
+  - mobile suite: 9,711 tests, 0 failures;
+  - `@workspace/math-practice`: 1,491 tests, plus its typecheck;
+  - api-server build and tests: 3,091;
+  - root typecheck.
+- Old against new over 4,246 lines of the repo's text with braces: 317 change. They are sets, plus `{0,2}`-style
+  quantifiers inside regex *source* in `appHelp.ts`, which are matching patterns and never displayed.
+- Every bank topic generated through the renderer (grades 6–10, every difficulty). All 1,622 sets in Arabic text sit
+  inside an isolate; 315 did not before this change, all in the inverse-function family.
+- **Chromium, Arabic sentences:** all four probes read left to right with the fix, and three were reversed before. The
+  fourth, a set of points, passed the crude first-versus-last check before too, but as three isolates its middle
+  point order was reversed.
+
+**Not covered:** a set-builder that holds bars, `{x | |x| < 3}`; native Android and iOS.
+
+## The Play submit workflow's open questions, answered by its runs — 2026-11-27
+
+`docs/deploying.md` («Submitting to Google Play») still listed, from before its first run, two things nobody had
+checked. Its four runs (read with the Actions API on 2026-11-27) settle one and narrow the other: the GitHub secret
+alone authenticates (`Key Source: local`, no key stored on Expo), run 1 reached Play and failed only on a version
+code already uploaded by hand, and runs 2–4 succeeded, run 4 with `send_for_review=true` (versionCode 15). Still
+unchecked: a `send_for_review=true` commit while the Console holds a listing draft. Docs only; nothing else changed.
+
 ## The 15 held-back Grades 1–9 maths lessons get their ready-made sheets — 2026-11-27
 
 PR #1518 built 432 ready-made sheets for Grades 1–9. It held back 15 lessons (`HELD_BACK` in
@@ -667,6 +793,7 @@ lessons give offline questions; 111 sampled keys were read by hand, all right.
 **Not verified:** the pages beyond each range (not in the bucket); anything needing the PDFs; the pages on a phone.
 
 No «ما الجديد» entry: a record, not a change.
+
 ## Grade 3 review, the Grade 2 way: plans, activities, quick checks and live prompts for eight-year-olds — 2026-11-20
 
 The Grade 2 review (below, «Grade 2 review, the Grade 1 way… — 2026-11-15») repeated for Grade 3: 8 subjects, 254
