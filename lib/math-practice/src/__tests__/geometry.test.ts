@@ -493,7 +493,8 @@ describe('geometry generators: answers recomputed from the stem', () => {
       saw('parallelogram_test', m ? 'sides' : 'angles');
       if (m) assert.equal(Number(m[1]) * x + Number(m[2]), (m[3] ? Number(m[3]) : 1) * x + Number(m[4]), item.promptAr);
       else {
-        const a = item.promptAr!.match(/A = \((\d+)x \+ (\d+)\)° و C = \((\d*)x \+ (\d+)\)°/)!;
+        const a = item.promptAr!.match(/∠A = \((\d+)x \+ (\d+)\)° و ∠C = \((\d*)x \+ (\d+)\)°/)!;
+        assert.ok(a, item.promptAr);
         assert.equal(Number(a[1]) * x + Number(a[2]), (a[3] ? Number(a[3]) : 1) * x + Number(a[4]), item.promptAr);
       }
     }

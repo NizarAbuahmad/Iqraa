@@ -10,6 +10,65 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## The 15 held-back Grades 1–9 maths lessons get their ready-made sheets — 2026-11-27
+
+PR #1518 built 432 ready-made sheets for Grades 1–9. It held back 15 lessons (`HELD_BACK` in
+`artifacts/mobile/scripts/build-premade-sheets.ts`), because their sheets practised another lesson or another grade.
+All 15 now ship; the five Grade 10 entries stay held.
+
+**Generator changes** (`lib/math-practice`):
+- **New, `src/lessonFits.ts`.** Six generators, each matched on one lesson's exact title and grade. They are listed
+  first in `TOPICS`, so nothing else routes to them.
+  - g2 «الشبكات والضرب»: drawn ■ grids, rows × columns, "which multiplication sentence", and orchards.
+  - g4 «ضرب الأعداد»: 3-digit × 1-digit and 2-digit × 2-digit, as direct questions and stories.
+  - g5 «ضرب الكسور»: fraction × fraction, whole × fraction, «ما a/b من W؟», and area. The missing-factor items,
+    which need the next lesson's division, are gone.
+  - g5 «ضرب الأعداد العشرية وقسمتها»: × and ÷ by 10, 100 and 1000. A pen's price stays under a dinar.
+  - g7 «كتابة العدد النسبي بالصورة العشرية»: terminating, mixed numbers, and repeating by long division (its own
+    wording, so the sheet's repeat cap keeps the writing), plus terminating-or-repeating. Decoys are the slips:
+    digits copied (0.8 for 8/11), the fraction inverted (1.375), cut short (0.72).
+  - g9 «المدرجات التكرارية»: reading bars (total, tallest, class width, "from A up"), and frequency density both
+    ways. The lesson used to share `grouped_g9` with «الجداول التكرارية ذات الفئات».
+- **`early.ts`**, g3 «الزوايا»: no degrees, which are Grade 4. Angles are compared with a right angle, named on
+  things around the class, counted in shapes, and read on a clock by hours apart.
+- **`geometry.ts`**, `parallelogram_test` (g8): every item now states a sufficient condition and asks for x:
+  - the diagonals bisect each other (BM = MD given, AM = MC asked);
+  - one pair of sides is parallel and equal;
+  - both pairs of opposite angles are equal.
+  It used to give one condition and ask what makes ABCD a parallelogram.
+- **`topics.ts`**, `round_dec`: at Grade 4, two decimal places at most, and a table is under 4 m. Grade 5 keeps
+  thousandths.
+- **Six of the 15 needed no generator change.** Five were fixed by other PRs since the review: ×6/×9, ×7/×8,
+  zeros in the quotient, measuring angles, tenths. One was held by mistake: g9 distance, whose objectives include
+  the midpoint.
+
+**Build script.** A rebuilt sheet identical to the stored one keeps the stored one, `generatedAt` included. A
+whole-grade re-run used to rewrite all ~400 timestamps.
+
+**Verified:**
+- Every Grade 1–9 sheet was rebuilt (seeded, so reproducible). Against the previous manifest: 15 added, 35 changed,
+  0 removed, 475 in all.
+- The 35 changes:
+  - 24 are only `main`'s Latin comma in points (#1562), with the same values.
+  - 11 are bank changes merged since the last build: nine Grade 4 sheets (the G4 lesson topics), Grade 5
+    rounding (this PR's measurement range), and Grade 9 functions (comma only, in its sets).
+  - Every changed question was read and its key recomputed.
+- All 150 questions of the 15 released sheets were read, and each key was checked by hand.
+- Tests:
+  - math-practice: 1514 of 1514, including the new `heldBackLessons.test.ts`; three old tests were updated to the
+    new kinds.
+  - api-server build and test: 3089 of 3089.
+  - mobile: the whole suite, 9683 tests, 0 failures (10 skipped).
+  - Typecheck is clean, and curriculum `verify` reports 0 errors.
+  - Curriculum `test` has one failure, «R2 helpers are inert», which fails the same way on `main` in this container.
+
+**Not done / limits:**
+- g4 «قياس الزوايا ورسمها» still has 1 of 10 «زاوية على مستقيم» (angles on a line), below the 3-of-10 bar used to
+  hold a lesson.
+- The «مسألة حياتية» slot appends «اكتب الحل موضّحًا الخطوات» even to a classify question. It is generic sheet
+  assembly, not these generators.
+- The five Grade 10 entries in `HELD_BACK` are the topic detector's, and remain.
+
 ## Slides PPTX and PDF exports: answer options in reading order, the app's fonts, Arabic language tag — 2026-11-27
 
 Found by exporting a 17-slide Arabic maths deck through the real `exportDeckAsPptx` and opening it in LibreOffice,

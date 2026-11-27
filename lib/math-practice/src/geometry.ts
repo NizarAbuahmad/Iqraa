@@ -803,12 +803,16 @@ const parallelogram = T('parallelogram_props', /^متوازي الاضلاع$/, 
   return { eq: `${l}, ${w}`, answer: String(2 * (l + w)), wrongs: pos(2 * (l + w), [l + w, l * w, 2 * l + w, 4 * l]), ar: `في متوازي الأضلاع ABCD، AB = ${l} سم و BC = ${w} سم. ما محيطه؟`, en: `In parallelogram ABCD, AB = ${l} cm and BC = ${w} cm. What is its perimeter?` };
 });
 
+// Each condition must prove the shape: one pair of equal sides, one pair of equal angles or
+// one diagonal halved does not, and seven in ten questions gave only that (held back from
+// the ready-made sheets, 2026-11-20). The given part now completes a test the lesson teaches:
+// a pair of sides both parallel and equal, both pairs of opposite angles, diagonals that bisect.
 const parallelogramTest = T('parallelogram_test', /^تمييز متوازي الاضلاع$/, [8, 8], ({ rng, diff }) => {
   const x = int(rng, 3, 15), p = int(rng, 2, 5), q = int(rng, 1, p - 1);
   const c = int(rng, 1, 12), d = (p - q) * x + c;
   // 0 opposite sides, 1 opposite angles, 2 diagonals bisecting each other, 3 the fourth vertex in the plane.
   const kind = pick(rng, diff === 'easy' ? [0, 2, 3] : [0, 1, 2, 3]);
-  if (kind === 2) return { eq: `diag ${p}, ${c}, ${q}, ${d}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, d - c, (d + c) / (p + q) | 0]), ar: `في الشكل الرباعي ABCD يتقاطع القطران AC و BD في النقطة M. ما قيمة x التي تجعل الشكل ABCD متوازي أضلاع إذا كان AM = ${lin(p, c)} و MC = ${lin(q, d)}؟`, en: `In quadrilateral ABCD the diagonals AC and BD meet at M. For what x is ABCD a parallelogram if AM = ${lin(p, c)} and MC = ${lin(q, d)}?` };
+  if (kind === 2) return { eq: `diag ${p}, ${c}, ${q}, ${d}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, d - c, (d + c) / (p + q) | 0]), ar: `في الشكل الرباعي ABCD يتقاطع القطران AC و BD في النقطة M، و BM = MD. ما قيمة x التي تجعل الشكل ABCD متوازي أضلاع إذا كان AM = ${lin(p, c)} و MC = ${lin(q, d)}؟`, en: `In quadrilateral ABCD the diagonals AC and BD meet at M, and BM = MD. For what x is ABCD a parallelogram if AM = ${lin(p, c)} and MC = ${lin(q, d)}?` };
   if (kind === 3) {
     let A: [number, number] = [0, 0], B: [number, number] = [0, 0], C: [number, number] = [0, 0];
     do {
@@ -820,9 +824,9 @@ const parallelogramTest = T('parallelogram_test', /^تمييز متوازي ال
   if (kind === 1) {
     const P = int(rng, 2, 4), Q = int(rng, 1, P - 1), c1 = int(rng, 2, 20), c2 = (P - Q) * x + c1;
     if (P * x + c1 >= 170 || Q * x >= 170) return parallelogramTest.make({ rng, diff, grade: 8 });
-    return { eq: `${P}, ${c1}, ${Q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 3, x - 3, c2 - c1, P * x + c1]), ar: `ما قيمة x التي تجعل الشكل ABCD متوازي أضلاع إذا كان A = (${P}x + ${c1})° و C = (${Q}x + ${c2})°؟`.replace(`${Q}x + ${c2}`, `${Q === 1 ? '' : Q}x + ${c2}`).replace(`${P}x + ${c1}`, `${P}x + ${c1}`).replace('(' + (Q === 1 ? '' : String(Q)) + 'x + ' + c2 + ')', '(' + (Q === 1 ? '' : String(Q)) + 'x + ' + c2 + ')'), en: `For what x is ABCD a parallelogram if A = (${P}x + ${c1})° and C = (${Q === 1 ? '' : Q}x + ${c2})°?` };
+    return { eq: `${P}, ${c1}, ${Q}, ${c2}`, answer: String(x), wrongs: pos(x, [x + 3, x - 3, c2 - c1, P * x + c1]), ar: `في الشكل الرباعي ABCD، ∠B = ∠D. ما قيمة x التي تجعل الشكل ABCD متوازي أضلاع إذا كان ∠A = (${P}x + ${c1})° و ∠C = (${Q === 1 ? '' : Q}x + ${c2})°؟`.replace(`${Q}x + ${c2}`, `${Q === 1 ? '' : Q}x + ${c2}`).replace(`${P}x + ${c1}`, `${P}x + ${c1}`).replace('(' + (Q === 1 ? '' : String(Q)) + 'x + ' + c2 + ')', '(' + (Q === 1 ? '' : String(Q)) + 'x + ' + c2 + ')'), en: `In quadrilateral ABCD, ∠B = ∠D. For what x is ABCD a parallelogram if ∠A = (${P}x + ${c1})° and ∠C = (${Q === 1 ? '' : Q}x + ${c2})°?` };
   }
-  return { eq: `${p}, ${c}, ${q}, ${d}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, d - c, (d + c) / (p + q) | 0]), ar: `ما قيمة x التي تجعل الشكل ABCD متوازي أضلاع إذا كان AB = ${p}x + ${c} و CD = ${q === 1 ? '' : q}x + ${d}؟`, en: `For what x is ABCD a parallelogram if AB = ${p}x + ${c} and CD = ${q === 1 ? '' : q}x + ${d}?` };
+  return { eq: `${p}, ${c}, ${q}, ${d}`, answer: String(x), wrongs: pos(x, [x + 2, x - 2, d - c, (d + c) / (p + q) | 0]), ar: `في الشكل الرباعي ABCD، AB ∥ CD. ما قيمة x التي تجعل الشكل ABCD متوازي أضلاع إذا كان AB = ${p}x + ${c} و CD = ${q === 1 ? '' : q}x + ${d}؟`, en: `In quadrilateral ABCD, AB ∥ CD. For what x is ABCD a parallelogram if AB = ${p}x + ${c} and CD = ${q === 1 ? '' : q}x + ${d}?` };
 });
 
 const SPECIAL_PGRAMS_NAMES = ['مستطيل', 'معين', 'مربع', 'متوازي أضلاع'];
