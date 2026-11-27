@@ -141,6 +141,29 @@ function pagesFor(sourceId: string): Array<{ page: number; raw: string; search: 
   return pages;
 }
 
+const STRIP_MARKS = /[\u064B-\u065F\u0670\u0640]/g;
+
+/**
+ * A unit's «كفايات الوحدة» table: rows of skill codes ((1,1) تمثل آداب
+ * الاستماع…) that scope the unit, with no text a lesson could be built from.
+ *
+ * It matches a lesson's title and outcomes as well as the lesson's own page
+ * does, and OCR makes it long, so it was served to the model as "verbatim text
+ * from the official textbook" — Grade 4 Arabic «السلام الملكي» and «أبني لغتي»
+ * both got pages 7/33/59/85 of the student book. A garble ratio cannot find it:
+ * it scores 0.26–0.51, inside the normal range for OCR'd prose. It is found by
+ * what it is: the heading (33 of 21,489 extracted pages), or — where OCR lost
+ * the heading, as on page 33 — three or more skill codes beside a language-skill
+ * name. Skill codes alone are not enough: maths guides print «(1,1)» page refs.
+ */
+export function isCompetencyTable(raw: string): boolean {
+  // Tashkeel and tatweel are OCR noise on this heading, and spacing varies.
+  const t = raw.replace(STRIP_MARKS, '');
+  if (/كفايات\s*الوحدة/.test(t)) return true;
+  const codes = t.match(/\(\s*\d\s*[,.،]\s*\d\s*\)/g)?.length ?? 0;
+  return codes >= 3 && /مهارة\s*(الاستماع|التحدث|القراءة|الكتابة)/.test(t);
+}
+
 /**
  * A page that lists lessons rather than teaching one — the contents page, a
  * unit opener's «دروس الوحدة». It prints many lesson titles, so a search made
@@ -405,6 +428,7 @@ export function passagesForUnit(query: PassageQuery): Passage[] {
     }
     for (const page of pages) {
       if (fallback && !pageBelongsToUnit(fallback, unitId, source.id, page)) continue;
+      if (isCompetencyTable(page.raw)) continue;
       // Longer terms are rarer and so more informative: «المماس» locating a page
       // means more than «الشكل» does. Length is a cheap stand-in for IDF over a
       // corpus this small.

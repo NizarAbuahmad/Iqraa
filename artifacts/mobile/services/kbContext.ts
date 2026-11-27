@@ -97,6 +97,35 @@ export function unitThemeLine(generalIdea: string | undefined, isAr: boolean): s
     : `Unit theme (stay on it; do not drift to other meanings of the unit title): ${cut}`;
 }
 
+/**
+ * True when the knowledge base holds nothing about a lesson but its title: no
+ * official outcomes, no key concepts, and a summary that is only the
+ * template sentence the catalog builder writes when the book printed none
+ * («درس «X» من وحدة «Y».»). About a fifth of lessons are in this state
+ * (title-only books: Arabic Grades 1–6, English Grade 6, …).
+ */
+export function lessonHasNoSubstance(lesson: KBLesson): boolean {
+  const summary = lesson.summaryAr?.trim() ?? '';
+  const templateOnly = !summary || /^درس «.+» من وحدة «.+»\.?$/.test(summary);
+  return templateOnly
+    && curriculumObjectivesFor(lesson).length === 0
+    && (lesson.keyConceptsAr?.length ?? 0) === 0
+    && (lesson.keyConceptsEn?.length ?? 0) === 0;
+}
+
+/**
+ * What the model is told for such a lesson. Left alone it wrote its own passage
+ * for «السلام الملكي» (a Grade 4 reading lesson) and a worksheet of questions on
+ * it, which a teacher reported as not matching the lesson.
+ */
+function noSubstanceNote(isAr: boolean): string {
+  return isAr
+    ? 'تنبيه: نص هذا الدرس ونتاجاته غير متوفّرين في المنهاج المتاح. لا تؤلّف نصًّا أو قصيدة أو قصة وتنسبها إلى الكتاب المدرسي ولا تقتبس منه؛ '
+      + 'اجعل الأسئلة تُحيل المتعلّم إلى نص الدرس في كتابه، وركّز على المهارة التي يدلّ عليها عنوان الدرس.'
+    : 'NOTE: this lesson\'s text and outcomes are not available in the curriculum KB. Do not write a passage, poem or story and attribute it to the textbook, '
+      + 'and do not quote the book; make the questions send the student to the lesson\'s own text in their book, and focus on the skill the lesson title names.';
+}
+
 function serializeLessonContext(
   lesson: KBLesson,
   lang: 'ar' | 'en',
@@ -205,6 +234,10 @@ function serializeLessonContext(
     lines.push('');
     lines.push(support);
   }
+
+  // The teacher's own objectives are something to build on; without them, and
+  // with nothing in the KB, the model has only a title and must be told so.
+  if (!teacherObj && lessonHasNoSubstance(lesson)) lines.push('', noSubstanceNote(isAr));
 
   return lines.join('\n');
 }

@@ -10,6 +10,30 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Grade 4 Arabic reports: no competency tables as «verbatim text», and a title-only lesson says so — 2026-11-27
+
+Two Grade 4 Arabic reports (worksheet «السلام الملكي», lesson plan «أبني لغتي») came in with no reason. Both lessons ground
+to the right lesson; what the live model was sent was the problem.
+
+- **What it was sent.** The title, a template sentence («درس «X» من وحدة «Y».»), no outcomes and no concepts, plus three
+  student-book pages under «نص حرفي من الكتاب المدرسي (اعتمد عليه ولا تخالفه)»: pages 4/5 (contents) and 7/33/59/85
+  (the unit's «كفايات الوحدة» skill-code tables). The anthem's own text is on no extracted page at all.
+- **Passage gate (`isCompetencyTable`, `lib/curriculum/src/passages.ts`).** `passagesForUnit` skips a page carrying the
+  «كفايات الوحدة» heading, or three or more skill codes `(1,1)` beside a language-skill name (OCR lost the heading on p33).
+  Measured before choosing: a garble ratio does **not** separate these pages (0.26–0.51 against a normal 0.16–0.6), so it
+  was not used. The rule touches 149 of 3,381 lessons, all Arabic-subject (Grades 4, 5, 6, 9, 10), none of the core
+  Grade 10 maths or chemistry; two end with fewer pages, the rest get the next-ranked page.
+- **Title-only lessons (`lessonHasNoSubstance`, `kbContext.ts`).** A lesson with no outcomes, no concepts and a template
+  summary now carries «تنبيه: نص هذا الدرس ونتاجاته غير متوفّرين… لا تؤلّف نصًّا…» (and an English twin), unless the
+  teacher typed objectives. 681 of 3,381 lessons are in this state (Arabic Grades 1–6, English Grade 6, several Grade 4–6
+  subjects), so this changes their prompts; none are Grade 10 maths or chemistry (pinned by `thinLesson.test.ts`).
+- **Verified.** `passages.test.ts` (reported lessons are served none of the table pages; the rule is rare), `thinLesson.test.ts`;
+  curriculum 940 + `verify`, api-server 3,091, mobile 9,693, typecheck: all pass.
+- **Not done, on purpose.** Contents pages (4, 5) and control-character garble are still served: 1,095 pages carry control
+  characters and 3,155 presentation-form glyphs, including core maths books, so a broad gate needs its own measurement
+  against what core lessons are served today. No live model run, so that a regenerated paper stays off an invented text is
+  expected, not observed. Pooled papers made before this keep their content until reported and retired.
+
 ## Magnitude and absolute-value bars read left to right in Arabic — 2026-11-27
 
 The follow-up the vectors entry below named. `|` was not in `isolateForeignRuns`'s run class, so a magnitude or
