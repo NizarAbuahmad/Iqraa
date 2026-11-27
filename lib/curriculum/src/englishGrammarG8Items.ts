@@ -247,7 +247,7 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ["She can iron shirts, but she can't sew buttons.", "can't", 'can'],
         ["The box is heavy, so I can't lift it.", "can't", 'can'],
         ['Dad has a ladder, so he can clean windows.', 'can', "can't"],
-        ['It is sunny, so I can dry clothes outside.', 'can', "can't"],
+        ['The room is empty, so we can play here.', 'can', "can't"],
       ]),
     ],
   },

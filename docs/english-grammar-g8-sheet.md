@@ -195,7 +195,7 @@ Not reviewed yet — shown to nobody.
 | She can iron shirts, but she can't sew buttons. | **can't** / can | _She can iron shirts, but she can sew buttons._ |
 | The box is heavy, so I can't lift it. | **can't** / can | _The box is heavy, so I can lift it._ |
 | Dad has a ladder, so he can clean windows. | **can** / can't | _Dad has a ladder, so he can't clean windows._ |
-| It is sunny, so I can dry clothes outside. | **can** / can't | _It is sunny, so I can't dry clothes outside._ |
+| The room is empty, so we can play here. | **can** / can't | _The room is empty, so we can't play here._ |
 
 ## Semester 1 · Unit 3 — Eat in – eat out
 
