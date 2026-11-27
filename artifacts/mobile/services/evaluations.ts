@@ -371,11 +371,15 @@ export async function publishEvaluation(id: string): Promise<Evaluation> {
   return data.evaluation;
 }
 
-/** Stop the link admitting new sittings and new answers. Re-publishing reopens it. */
-export async function closeEvaluation(id: string): Promise<Evaluation> {
+/**
+ * Stop the link admitting new sittings and new answers. Re-publishing reopens it.
+ * Papers a student started and saved answers to are handed in and marked by the
+ * server; `collected` is how many (0 from a server that predates the feature).
+ */
+export async function closeEvaluation(id: string): Promise<{ evaluation: Evaluation; collected: number }> {
   const res = await apiFetch(`/evaluations/${id}/close`, { method: 'POST' });
-  const data = await readJson<{ evaluation: Evaluation }>(res, 'Closing evaluation');
-  return data.evaluation;
+  const data = await readJson<{ evaluation: Evaluation; collected?: number }>(res, 'Closing evaluation');
+  return { evaluation: data.evaluation, collected: data.collected ?? 0 };
 }
 
 /**

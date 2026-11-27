@@ -1428,3 +1428,22 @@ test('the evaluations paper builder draws its dropdown\'s selected row as an opa
   assert.doesNotMatch(read('components', 'ui', 'PickerField.tsx'), /still passes `accent \+ '15'`/);
   assert.doesNotMatch(read('app', 'evaluations', 'new.tsx'), /ACCENT \+ '15'/);
 });
+
+// ── A saved material is filed under the lesson it was grounded on ───────────
+// `saveItem` re-derives a lesson from the TITLE when the formState has no id,
+// and a repeated title lands on another grade's lesson. Each screen stores the
+// id it grounded on (the frozen `scope.lesson`), never for a wide paper.
+test('quiz, worksheet, lesson plan and activity save the grounded lesson id, and never for a wide scope', () => {
+  const screens = [
+    ['quiz', code(read('app', 'ai-tools', 'quiz.tsx'))],
+    ['worksheet', worksheetCode],
+    ['lesson plan', lessonPlanCode],
+    ['activity', activityCode],
+  ] as const;
+  for (const [name, src] of screens) {
+    const save = src.slice(src.indexOf('const handleSave'));
+    const fs = save.slice(0, save.indexOf('const payload'));
+    assert.match(fs, /\.\.\.\(!wideFrozen && scope\.lesson \? \{ lessonId: scope\.lesson\.id \} : \{\}\)/,
+      `${name}: handleSave's formState must carry scope.lesson.id (and not for a wide scope)`);
+  }
+});

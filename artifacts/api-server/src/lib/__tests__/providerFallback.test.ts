@@ -222,3 +222,121 @@ describe("the generate route", () => {
     assert.match(body, /generateContentWith\(/);
   });
 });
+
+describe("withProviderFallback tells the admins", () => {
+  type Seen = { provider: string; switchedTo: string | null; status: number | undefined };
+  const recorder = () => {
+    const seen: Seen[] = [];
+    return { seen, alert: async (a: Seen) => void seen.push(a) };
+  };
+
+  it("alerts when it switches provider, naming both and the status", async () => {
+    const { seen, alert } = recorder();
+    await withEnv(BOTH, () =>
+      withProviderFallback(
+        "claude-sonnet-5-5",
+        async (model) => {
+          if (model === "claude-sonnet-5-5") throw apiError(401, "invalid x-api-key sk-secret-123");
+          return "ok";
+        },
+        {},
+        { alert },
+      ),
+    );
+    assert.deepEqual(seen, [{ provider: "Claude", switchedTo: "OpenAI", status: 401 }]);
+  });
+
+  it("the alert carries no error message", async () => {
+    const { seen, alert } = recorder();
+    await withEnv(BOTH, () =>
+      withProviderFallback(
+        "claude-sonnet-5-5",
+        async (model) => {
+          if (model === "claude-sonnet-5-5") throw apiError(401, "invalid x-api-key sk-secret-123");
+          return "ok";
+        },
+        {},
+        { alert },
+      ),
+    );
+    assert.doesNotMatch(JSON.stringify(seen), /sk-secret/);
+  });
+
+  it("alerts even with no backup configured, and still rethrows", async () => {
+    const { seen, alert } = recorder();
+    const refused = apiError(402, "credit balance is too low");
+    await assert.rejects(
+      withEnv({ ...BOTH, ANTHROPIC_API_KEY: undefined }, () =>
+        withProviderFallback("gpt-5.4-mini", async () => { throw refused; }, {}, { alert }),
+      ),
+      (err) => err === refused,
+    );
+    assert.deepEqual(seen, [{ provider: "OpenAI", switchedTo: null, status: 402 }]);
+  });
+
+  it("alerts for the backup too when it is also refused, and rethrows the backup's error", async () => {
+    const { seen, alert } = recorder();
+    const second = apiError(401, "bad openai key");
+    await assert.rejects(
+      withEnv(BOTH, () =>
+        withProviderFallback(
+          "claude-sonnet-5-5",
+          async (model) => { throw model === "claude-sonnet-5-5" ? apiError(401) : second; },
+          {},
+          { alert },
+        ),
+      ),
+      (err) => err === second,
+    );
+    assert.deepEqual(seen.map(s => s.provider), ["Claude", "OpenAI"]);
+  });
+
+  it("does not alert for a busy server, a rate limit or a success", async () => {
+    const { seen, alert } = recorder();
+    await withEnv(BOTH, () => withProviderFallback("claude-sonnet-5-5", async () => "ok", {}, { alert }));
+    await assert.rejects(
+      withEnv(BOTH, () => withProviderFallback("claude-sonnet-5-5", async () => { throw apiError(529); }, {}, { alert })),
+    );
+    await assert.rejects(
+      withEnv(BOTH, () => withProviderFallback("gpt-5.4-mini", async () => { throw apiError(429, "rate"); }, {}, { alert })),
+    );
+    assert.deepEqual(seen, []);
+  });
+
+  it("a failing alert never fails or delays the request it reports on", async () => {
+    const out = await withEnv(BOTH, () =>
+      withProviderFallback(
+        "claude-sonnet-5-5",
+        async (model) => {
+          if (model === "claude-sonnet-5-5") throw apiError(401);
+          return "served";
+        },
+        {},
+        { alert: async () => { throw new Error("mail down"); } },
+      ),
+    );
+    assert.equal(out, "served");
+  });
+
+  it("the backup call runs while the alert is still going (the alert adds no latency)", async () => {
+    const order: string[] = [];
+    let release!: () => void;
+    const gate = new Promise<void>(r => (release = r));
+    const result = withEnv(BOTH, () =>
+      withProviderFallback(
+        "claude-sonnet-5-5",
+        async (model) => {
+          if (model === "claude-sonnet-5-5") throw apiError(401);
+          order.push("backup");
+          release();
+          return "ok";
+        },
+        {},
+        { alert: async () => { order.push("alert-start"); await gate; order.push("alert-end"); } },
+      ),
+    );
+    assert.equal(await result, "ok");
+    assert.ok(order.includes("alert-start"));
+    assert.ok(order.indexOf("backup") < order.indexOf("alert-end"), order.join(","));
+  });
+});

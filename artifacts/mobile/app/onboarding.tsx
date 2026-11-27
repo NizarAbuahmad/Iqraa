@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useLanguage } from '@/context/LanguageContext';
 import { markAppIntroSeen } from '@/services/appIntro';
+import { IQRA_CHAT_ENABLED } from '@/services/features';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Button } from '@/components/ui/Button';
 import { scheme, type Palette } from '@/constants/colors';
@@ -23,6 +24,8 @@ type Slide = {
   /** Newline-separated, one line per entry in `pointIcons`. */
   pointsKey: TranslationKey;
   pointIcons: [IconName, IconName, IconName];
+  /** Advertises the «اسأل إقرأ» chat: dropped while `IQRA_CHAT_ENABLED` is off. */
+  chat?: true;
 };
 
 // One idea per slide, in the order a teacher would actually discover them:
@@ -36,9 +39,9 @@ type Slide = {
 //
 // The keys are not renumbered as slides come and go: they are identifiers, and
 // a gap costs nothing next to rewriting every one of them in two locales.
-const SLIDES: Slide[] = [
+const ALL_SLIDES: Slide[] = [
   { icon: 'library-outline', tone: 'primary', titleKey: 'onboardingSlide1Title', descKey: 'onboardingSlide1Desc', pointsKey: 'onboardingSlide1Points', pointIcons: ['school-outline', 'book-outline', 'language-outline'] },
-  { icon: 'chatbubbles-outline', tone: 'info', titleKey: 'onboardingSlide6Title', descKey: 'onboardingSlide6Desc', pointsKey: 'onboardingSlide6Points', pointIcons: ['book-outline', 'bulb-outline', 'arrow-redo-outline'] },
+  { icon: 'chatbubbles-outline', tone: 'info', titleKey: 'onboardingSlide6Title', descKey: 'onboardingSlide6Desc', pointsKey: 'onboardingSlide6Points', pointIcons: ['book-outline', 'bulb-outline', 'arrow-redo-outline'], chat: true },
   { icon: 'git-branch-outline', tone: 'primary', titleKey: 'onboardingSlide2Title', descKey: 'onboardingSlide2Desc', pointsKey: 'onboardingSlide2Points', pointIcons: ['flag-outline', 'people-outline', 'exit-outline'] },
   { icon: 'tv-outline', tone: 'warning', titleKey: 'onboardingSlide4Title', descKey: 'onboardingSlide4Desc', pointsKey: 'onboardingSlide4Points', pointIcons: ['easel-outline', 'trophy-outline', 'image-outline'] },
   { icon: 'document-text-outline', tone: 'success', titleKey: 'onboardingSlide7Title', descKey: 'onboardingSlide7Desc', pointsKey: 'onboardingSlide7Points', pointIcons: ['stats-chart-outline', 'key-outline', 'checkmark-done-outline'] },
@@ -46,6 +49,11 @@ const SLIDES: Slide[] = [
   { icon: 'calendar-outline', tone: 'warning', titleKey: 'onboardingSlide9Title', descKey: 'onboardingSlide9Desc', pointsKey: 'onboardingSlide9Points', pointIcons: ['people-circle-outline', 'time-outline', 'map-outline'] },
   { icon: 'people-outline', tone: 'success', titleKey: 'onboardingSlide5Title', descKey: 'onboardingSlide5Desc', pointsKey: 'onboardingSlide5Points', pointIcons: ['key-outline', 'mail-outline', 'library-outline'] },
 ];
+
+// The chat is hidden (`IQRA_CHAT_ENABLED`), and the tour, Today, the FAQ and
+// the command palette all leave it out; an intro that still promised it sent
+// a new teacher looking for a feature nobody could find.
+const SLIDES = ALL_SLIDES.filter(s => !s.chat || IQRA_CHAT_ENABLED);
 
 /**
  * First-run product intro, shown once per install before the teacher ever
@@ -84,9 +92,12 @@ export default function OnboardingScreen() {
     return () => { cancelled = true; };
   }, [index, enter]);
 
+  // Sign-up, not sign-in: the intro runs once per install, before any account,
+  // so whoever reaches its end almost certainly has none. Someone reinstalling
+  // switches to sign-in from the register screen's own link.
   const finish = async () => {
     await markAppIntroSeen();
-    router.replace('/(auth)/login');
+    router.replace('/(auth)/register');
   };
 
   // Button already fires its own light haptic.

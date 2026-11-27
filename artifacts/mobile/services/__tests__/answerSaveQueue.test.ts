@@ -9,7 +9,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createSaveQueue, mergeUnsavedAnswers } from '../answerSaveQueue.ts';
+import { createSaveQueue, isRetryableSaveError, mergeUnsavedAnswers } from '../answerSaveQueue.ts';
 
 /** Manual timers, so a test decides when the debounce fires. */
 function fakeTimers() {
@@ -161,5 +161,188 @@ describe('mergeUnsavedAnswers', () => {
 
   it('resends nothing when nothing was kept', () => {
     assert.deepEqual(mergeUnsavedAnswers({ q1: { choice: 'b' } }, {}).resend, []);
+  });
+});
+
+describe('createSaveQueue: automatic retry', () => {
+  /** Timers that remember their delay, so backoff can be read off. */
+  function delayTimers() {
+    const pending = new Map<number, { fn: () => void; ms: number }>();
+    let next = 1;
+    return {
+      setTimeout: (fn: () => void, ms: number) => {
+        const id = next++;
+        pending.set(id, { fn, ms });
+        return id as unknown as ReturnType<typeof setTimeout>;
+      },
+      clearTimeout: (id: ReturnType<typeof setTimeout>) => {
+        pending.delete(id as unknown as number);
+      },
+      fireAll() {
+        const all = [...pending.values()];
+        pending.clear();
+        all.forEach(x => x.fn());
+      },
+      delays: () => [...pending.values()].map(x => x.ms),
+      get count() {
+        return pending.size;
+      },
+    };
+  }
+  const noJitter = { random: () => 0.5 }; // jitter factor 1.0
+
+  it('retries a failed save on its own, backing off and capping', async () => {
+    const timers = delayTimers();
+    const { save, calls } = controlledSave();
+    const q = createSaveQueue({ save, delayMs: 500, timers, retry: { baseMs: 2000, maxMs: 30000, ...noJitter } });
+    q.set('q1', { text: 'a' }, { immediate: true });
+    const seen: number[] = [];
+    for (let i = 0; i < 7; i++) {
+      calls[i].reject();
+      await tick();
+      assert.deepEqual(q.state().failed, ['q1']);
+      seen.push(timers.delays()[0]);
+      timers.fireAll();
+      assert.equal(calls.length, i + 2);
+    }
+    assert.deepEqual(seen, [2000, 4000, 8000, 16000, 30000, 30000, 30000]);
+    calls[7].resolve();
+    await tick();
+    assert.deepEqual(q.state(), { pending: [], failed: [] });
+    assert.equal(timers.count, 0);
+  });
+
+  it('adds jitter within the band and never past the cap', async () => {
+    const timers = delayTimers();
+    const { save, calls } = controlledSave();
+    const q = createSaveQueue({ save, delayMs: 500, timers, retry: { baseMs: 2000, maxMs: 30000, random: () => 1 } });
+    q.set('q1', { text: 'a' }, { immediate: true });
+    calls[0].reject();
+    await tick();
+    assert.equal(timers.delays()[0], 2400);
+    q.dispose();
+  });
+
+  it('does not retry an error that can never succeed', async () => {
+    for (const status of [400, 401, 403, 404, 409, 422]) {
+      const timers = delayTimers();
+      const q = createSaveQueue({
+        save: async () => { throw Object.assign(new Error('no'), { status }); },
+        delayMs: 500,
+        timers,
+      });
+      q.set('q1', { text: 'a' }, { immediate: true });
+      await tick();
+      assert.deepEqual(q.state().failed, ['q1'], `status ${status}`);
+      assert.equal(timers.count, 0, `status ${status} must not schedule a retry`);
+    }
+  });
+
+  it('retries 408, 429, 5xx and errors with no status', async () => {
+    for (const err of [{ status: 408 }, { status: 429 }, { status: 503 }, {}]) {
+      const timers = delayTimers();
+      const q = createSaveQueue({
+        save: async () => { throw Object.assign(new Error('x'), err); },
+        delayMs: 500,
+        timers,
+      });
+      q.set('q1', { text: 'a' }, { immediate: true });
+      await tick();
+      assert.equal(timers.count, 1, JSON.stringify(err));
+      q.dispose();
+    }
+  });
+
+  it('sends the latest value when the retry fires, and one request at a time', async () => {
+    const timers = delayTimers();
+    const { save, calls } = controlledSave();
+    const q = createSaveQueue({ save, delayMs: 500, timers, retry: { baseMs: 2000, maxMs: 30000, ...noJitter } });
+    q.set('q1', { text: 'a' }, { immediate: true });
+    calls[0].reject();
+    await tick();
+    q.set('q1', { text: 'ab' }); // debounced; supersedes the retry timer
+    timers.fireAll(); // debounce fires -> one request
+    assert.equal(calls.length, 2);
+    assert.deepEqual(calls[1].response, { text: 'ab' });
+    timers.fireAll();
+    assert.equal(calls.length, 2);
+    calls[1].resolve();
+    await tick();
+    assert.deepEqual(q.state(), { pending: [], failed: [] });
+  });
+
+  it('a retry timer that fires while the question is in flight does not double-send', async () => {
+    const timers = delayTimers();
+    const { save, calls } = controlledSave();
+    const q = createSaveQueue({ save, delayMs: 500, timers, retry: { baseMs: 2000, maxMs: 30000, ...noJitter } });
+    q.set('q1', { text: 'a' }, { immediate: true });
+    calls[0].reject();
+    await tick();
+    void q.flush(); // manual retry puts a request on the wire
+    assert.equal(calls.length, 2);
+    timers.fireAll();
+    assert.equal(calls.length, 2);
+    calls[1].resolve();
+    await tick();
+  });
+
+  it('retryNow resends failed questions at once and skips non-retryable ones', async () => {
+    const timers = delayTimers();
+    const sent: string[] = [];
+    const q = createSaveQueue({
+      save: async id => {
+        sent.push(id);
+        if (sent.length <= 2) throw Object.assign(new Error('x'), { status: id === 'q1' ? 503 : 409 });
+      },
+      delayMs: 500,
+      timers,
+    });
+    q.set('q1', { text: 'a' }, { immediate: true });
+    q.set('q2', { text: 'b' }, { immediate: true });
+    await tick();
+    assert.deepEqual(q.state().failed.sort(), ['q1', 'q2']);
+    q.retryNow();
+    await tick();
+    assert.deepEqual(sent, ['q1', 'q2', 'q1']);
+    assert.deepEqual(q.state().failed, ['q2']);
+  });
+
+  it('dispose cancels every retry timer and nothing is sent after it', async () => {
+    const timers = delayTimers();
+    const { save, calls } = controlledSave();
+    const q = createSaveQueue({ save, delayMs: 500, timers });
+    q.set('q1', { text: 'a' }, { immediate: true });
+    calls[0].reject();
+    await tick();
+    assert.equal(timers.count, 1);
+    q.dispose();
+    assert.equal(timers.count, 0);
+    q.retryNow();
+    timers.fireAll();
+    assert.equal(calls.length, 1);
+  });
+
+  it('a failure arriving after dispose schedules nothing', async () => {
+    const timers = delayTimers();
+    const { save, calls } = controlledSave();
+    const q = createSaveQueue({ save, delayMs: 500, timers });
+    q.set('q1', { text: 'a' }, { immediate: true });
+    q.dispose();
+    calls[0].reject();
+    await tick();
+    assert.equal(timers.count, 0);
+  });
+});
+
+describe('isRetryableSaveError', () => {
+  it('follows the status', () => {
+    assert.equal(isRetryableSaveError(new Error('offline')), true);
+    assert.equal(isRetryableSaveError({ status: 500 }), true);
+    assert.equal(isRetryableSaveError({ status: 408 }), true);
+    assert.equal(isRetryableSaveError({ status: 429 }), true);
+    assert.equal(isRetryableSaveError({ status: 409, code: 'time_up' }), false);
+    assert.equal(isRetryableSaveError({ status: 403 }), false);
+    assert.equal(isRetryableSaveError({ status: 401 }), false);
+    assert.equal(isRetryableSaveError(null), true);
   });
 });

@@ -41,6 +41,12 @@ describe('routeFromNotificationData', () => {
     assert.equal(routeFromNotificationData({ screen: 'admin-signups' }), '/admin/signups');
   });
 
+  it('opens moderation for a message-report push and AI costs for an AI alert', () => {
+    // api-server lib/messageReportAlert.ts and lib/aiAlerts.ts.
+    assert.equal(routeFromNotificationData({ screen: 'moderation' }), '/admin/moderation');
+    assert.equal(routeFromNotificationData({ screen: 'ai-costs' }), '/admin/ai-costs');
+  });
+
   it('ignores screens that are not whitelisted and malformed data', () => {
     assert.equal(routeFromNotificationData({ screen: '/admin/dashboard' }), null);
     assert.equal(routeFromNotificationData({ screen: 'toString' }), null);

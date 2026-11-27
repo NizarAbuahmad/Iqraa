@@ -27,6 +27,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -292,6 +294,20 @@ export default function TakeExamScreen() {
     return () => {
       queue.dispose();
       queueRef.current = null;
+    };
+  }, [token]);
+  // Failed saves retry on their own with backoff (see the queue). Beyond the
+  // timer, resend at once when the connection returns (web `online`) or the
+  // app comes back to the foreground — no native connectivity module is added.
+  useEffect(() => {
+    if (!token) return;
+    const nudge = () => queueRef.current?.retryNow();
+    const sub = AppState.addEventListener('change', st => { if (st === 'active') nudge(); });
+    const onWeb = Platform.OS === 'web' && typeof window !== 'undefined';
+    if (onWeb) window.addEventListener('online', nudge);
+    return () => {
+      sub.remove();
+      if (onWeb) window.removeEventListener('online', nudge);
     };
   }, [token]);
   const unsavedCount = saveState.failed.length;

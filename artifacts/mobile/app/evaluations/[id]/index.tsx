@@ -111,6 +111,8 @@ export default function EvaluationDetailScreen() {
   /** The question open in the editor; 'new' when writing one from scratch. */
   const [editing, setEditing] = useState<EvaluationQuestion | 'new' | null>(null);
   const [error, setError] = useState('');
+  // How many unfinished papers the last close on this screen handed in.
+  const [collectedOnClose, setCollectedOnClose] = useState(0);
   const [busy, setBusy] = useState<'generate' | 'publish' | 'close' | 'release' | 'solutions' | 'instant' | 'steps' | 'archive' | null>(null);
   /** After «جهّز خطوات الحل»: how many questions the model could not explain. */
   const [stepsMissed, setStepsMissed] = useState<number | null>(null);
@@ -251,7 +253,8 @@ export default function EvaluationDetailScreen() {
     setBusy('close');
     setError('');
     try {
-      const updated = await closeEvaluation(id);
+      const { evaluation: updated, collected } = await closeEvaluation(id);
+      setCollectedOnClose(collected);
       queryClient.setQueryData<EvaluationData>(evaluationQueryKey(id), prev =>
         prev ? { ...prev, evaluation: updated } : prev,
       );
@@ -720,6 +723,11 @@ export default function EvaluationDetailScreen() {
           <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
             {t('evaluationClosedNote')}
           </Text>
+          {collectedOnClose > 0 && (
+            <Text accessibilityRole="text" style={{ color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 15, lineHeight: 24, textAlign: align }}>
+              {`${t('evaluationCollectedNote')} ${collectedOnClose}`}
+            </Text>
+          )}
           {markBookOpen ? (
             <Pressable
               accessibilityRole="button"

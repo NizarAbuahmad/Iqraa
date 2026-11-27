@@ -43,6 +43,7 @@ import { masteryGateEnabled } from "../lib/features.js";
 import { isSchemaMissing } from "../lib/schemaMissing.js";
 import { resolveExamPatch } from "../lib/examDate.js";
 import { passedLessonIds, unlockState } from "../modules/assessment/lessonProgress.ts";
+import { collectOpenAttempts } from "../modules/assessment/attemptGrading.ts";
 import { findLiveClass } from "../lib/classOwnership.js";
 import { isUuid } from "../lib/classResource.ts";
 import { archiveDecision } from "../lib/evaluationArchive";
@@ -2035,7 +2036,12 @@ router.post("/evaluations/:id/publish", async (req: AuthenticatedRequest, res) =
  * (`evaluationByCode`) and refuses further answers on a sitting already under
  * way (`writeGate`); handing in what was already written stays allowed.
  *
+ * Sittings a student started and saved answers to, but never handed in, are
+ * handed in and marked here (`collectOpenAttempts`); the response's `collected`
+ * is how many. Sittings with nothing saved are left as they are.
+ *
  * Re-publishing reopens it, with a fresh share-code expiry and the same code.
+ * A collected paper stays handed in (one sitting per student per exam).
  */
 router.post("/evaluations/:id/close", async (req: AuthenticatedRequest, res) => {
   try {
@@ -2053,7 +2059,21 @@ router.post("/evaluations/:id/close", async (req: AuthenticatedRequest, res) => 
       .set({ status: "closed", closedAt: new Date(), updatedAt: new Date() })
       .where(eq(evaluations.id, evaluation.id))
       .returning();
-    res.json({ evaluation: updated });
+    // Only after the exam reads closed: `writeGate` then refuses new answers,
+    // so no paper can gain its first answer behind the collection. Ownership
+    // was proved above as the teacher; the collection itself acts on students'
+    // rows and runs on the owner connection (modules/assessment/attemptGrading).
+    // A failure here must not undo or hide the close, so it is logged and the
+    // count says what was done; the students can still hand in themselves.
+    let collected = 0;
+    try {
+      ({ collected } = await collectOpenAttempts(evaluation.id, (err, attemptId) =>
+        logger.error({ err, attemptId }, "marking a collected paper failed"),
+      ));
+    } catch (err) {
+      logger.error({ err, evaluationId: evaluation.id }, "collecting open papers on close failed");
+    }
+    res.json({ evaluation: updated, collected });
   } catch (err) {
     logger.error({ err }, "close failed");
     res.status(500).json({ error: "Failed to close" });

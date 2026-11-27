@@ -63,6 +63,7 @@ import {
 } from "../lib/aiBudget.ts";
 import { ClaudeRefusalError, completeWithClaude } from "../lib/claude.ts";
 import { withProviderFallback } from "../lib/providerFallback.ts";
+import { pushWithin } from "../lib/pushWithin.ts";
 import { completeAi } from "../lib/aiComplete.ts";
 import { normalizeEscapeCodes } from "../lib/escapeCodes.ts";
 import { withGrounding, type Grounding } from "../lib/grounding.ts";
@@ -1235,8 +1236,12 @@ generateRouter.post("/generate/variants/:id/retire", async (req: AuthenticatedRe
   // approves in the same second) would only email and push the admins about
   // something one of them just did — 8 such mails on 2026-10-18.
   if (req.user!.role !== "system_admin") {
-    notifyAdminsOfArtifactReport({ kind: outcome.kind, lessonRef: outcome.lessonRef, reason }).catch((err) =>
-      logger.error({ err, artifactId: id }, "admin artifact-report notification failed"),
+    // Awaited (capped, never throwing) and not fire-and-forget: Cloud Run
+    // throttles the CPU once the response is out, so a push and an email left
+    // running after `res.json` can stall until some later request wakes them.
+    // notifyAdminsOfArtifactReport sends the push and the emails together.
+    await pushWithin("artifact report", () =>
+      notifyAdminsOfArtifactReport({ kind: outcome.kind, lessonRef: outcome.lessonRef, reason }),
     );
   }
   res.json({ reported: true });

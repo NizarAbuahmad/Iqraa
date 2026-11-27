@@ -286,6 +286,42 @@ export async function sendArtifactReportedEmail(
   );
 }
 
+/**
+ * A short operational notice to a `system_admin` (AI account problem, budget
+ * nearly spent, a reported chat message). Fixed wording only — callers pass
+ * text they wrote, never user content — and escaped anyway.
+ */
+export async function sendAdminAlertEmail(
+  to: string,
+  info: { subject: string; body: string; bodyEn: string; path: string },
+): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger.warn({ to }, "RESEND_API_KEY not set — admin alert not sent");
+    return false;
+  }
+  return deliver(
+    apiKey,
+    { to, subject: info.subject, bodyHtml: adminAlertBodyHtml(info), kind: "general" },
+    "admin alert",
+  );
+}
+
+export function adminAlertBodyHtml(info: { body: string; bodyEn: string; path: string }): string {
+  const link = `https://app.iqrra.com${info.path}`;
+  return `
+    <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-bottom:24px;">
+      <p>${escapeHtml(info.body)}</p>
+      <p><a href="${escapeHtml(link)}">افتح لوحة الإدارة</a></p>
+    </div>
+    <hr style="border:none;border-top:1px solid #E2E8F0;" />
+    <div dir="ltr" style="font-family:Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.7;margin-top:24px;">
+      <p>${escapeHtml(info.bodyEn)}</p>
+      <p><a href="${escapeHtml(link)}">Open the admin screen</a></p>
+    </div>
+  `;
+}
+
 export function artifactReportedBodyHtml(info: { kind: string; lessonRef: string; reason?: string }): string {
   const label = artifactReportLabel(info.kind, info.lessonRef);
   const lessonAr = escapeHtml(label.lessonAr || "—");

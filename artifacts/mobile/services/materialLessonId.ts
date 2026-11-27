@@ -6,6 +6,8 @@
  */
 import { generatorLessonId } from './kbContext.ts';
 import { scopeFromParam } from './wideScopeRequest.ts';
+import { getPickerGrades, getPickerSubjects } from './curriculumData.ts';
+import type { KbScope } from './knowledgeBase.ts';
 
 /**
  * Whether a saved `formState` describes a unit / semester / whole-book paper.
@@ -40,6 +42,23 @@ export function withLessonId(
 ): Record<string, any> | undefined {
   if (!formState || formState.lessonId || !topic?.trim()) return formState;
   if (isWideScopeFormState(formState)) return formState;
-  const lessonId = generatorLessonId(topic.trim(), language ?? 'ar');
+  const lessonId = generatorLessonId(topic.trim(), language ?? 'ar', formStateKbScope(formState));
   return lessonId ? { ...formState, lessonId } : formState;
+}
+
+/**
+ * The grade and subject a saved `formState` was made under, as a `KbScope`, so a
+ * title that repeats across books resolves inside its own. `gradeIdx` /
+ * `subjectIdx` are positions in the picker lists (the same convention every
+ * generator screen saves and `reopenedGenerationScope` reads). An absent or
+ * out-of-range position adds no limit, which is the old behaviour.
+ */
+export function formStateKbScope(formState: Record<string, any>): KbScope | undefined {
+  const at = <T extends { id: string }>(list: readonly T[], raw: unknown): string | undefined => {
+    const n = typeof raw === 'number' ? raw : typeof raw === 'string' && /^\d+$/.test(raw) ? Number(raw) : NaN;
+    return Number.isInteger(n) ? list[n]?.id : undefined;
+  };
+  const gradeId = at(getPickerGrades(), formState.gradeIdx);
+  const subjectId = at(getPickerSubjects(), formState.subjectIdx);
+  return gradeId || subjectId ? { gradeId, subjectId } : undefined;
 }

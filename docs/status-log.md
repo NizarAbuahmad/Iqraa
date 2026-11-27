@@ -10,6 +10,79 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Eight fixes from the 2026-11-27 app review — 2026-11-27
+
+A read-only review of the whole app (five parallel reviews: teacher tools, classroom and assessment, students and
+parents, curriculum and admin, platform) listed eight small items that were bugs or risks rather than features. Each
+is its own commit on this PR.
+
+**1. Privacy policy names Anthropic, Crashlytics and the photo scans** (`constants/legal.ts`, `LEGAL_VERSION`
+2026-11-27). Since 2026-11-21 Claude writes lesson plans, worksheets, quizzes, slides and student explanations, and
+either provider backs the other up; §3 and the provider list named only OpenAI. Firebase Crashlytics (Android, since
+1.5.0) was not listed. And a teacher's photo of a marked paper (`POST /attempts/:id/scan-marks`) or of a printed exam
+(`POST /evaluations/scan-paper`) goes to the model and is not kept — it can show a student's name and marks; §3 now
+says so. **Not reviewed by a lawyer**, and the Play Console data-safety form was not checked against it.
+
+**2. Saved materials are filed under the lesson they were grounded on.** Quiz, worksheet/homework, lesson plan and
+activity saved no `lessonId`, so `saveItem` re-derived it from the title with no grade or subject — a repeated title
+filed the material under another grade's lesson (wrong ticks on Today's prep board, wrong lesson on reopen or send).
+Each `handleSave` now stores `scope.lesson.id` (frozen at generation); a wide paper stores none, as slides already
+did. `withLessonId`'s fallback for old callers resolves inside the formState's grade and subject
+(`formStateKbScope`); that cannot separate titles repeated inside one book (Grade 1 and Grade 10 English), so a new
+generator screen must store its id. Old saves are not migrated. Pinned by `generatorScreens.test.ts` and
+`materialLessonId.test.ts`.
+
+**3. Closing an exam hands in and marks unfinished papers.** `POST /evaluations/:id/close` only flipped the status,
+so a student who saved answers and closed the tab stayed `in_progress` for ever. After the flip,
+`collectOpenAttempts` (`modules/assessment/attemptGrading.ts`, on `systemDb` after the ownership check) hands in
+every `student_link` sitting still in progress with at least one saved answer, under the attempt's row lock and
+through `gradeSubmission` — the same steps as `POST /take/attempt/submit` — and the response carries `collected`.
+Left alone: sittings with nothing saved, `teacher_entry` papers, anything already in. A collected paper is not marked
+as forced (there is no column). A failure in the collection is logged and does not undo the close. The close dialog,
+the «كيف أغلق الامتحان؟» help answer and a count line on the exam screen say so; «ما الجديد» `exam-close-collects`.
+Verified by `evaluationCloseCollect.db.test.ts` against a real Postgres 16 (including a student submitting at the
+same moment). Not done: a sweep for sittings that run out of time.
+
+**4. Exam answer saves retry on their own** (`services/answerSaveQueue.ts`). A failed save waited for the student to
+tap «أعد المحاولة». Each failed question now retries with capped backoff (2 s doubling to 30 s, ±20% jitter) while the
+sitting is open, and at once on the web `online` event or when the app returns to the foreground (no NetInfo added,
+so `app.json` `version` is unchanged). 4xx other than 408/429 (time up, exam closed, token gone) is not retried.
+
+**5. Admins are told about reports.** The artifact-report notification is awaited through `pushWithin` before the
+response (it ran after `res.json`). `POST /messaging/reports` now notifies every `system_admin` by push and email —
+fixed wording, no message text or names — at most once per reporter per 10 minutes (`lib/messageReportAlert.ts`).
+
+**6. The intro ends on sign-up and drops the chat slide.** `app/onboarding.tsx` ended on sign-in, on a fresh install
+where the person almost certainly has no account, and its second slide advertised «اسأل إقرأ», hidden since
+2026-11-23; it is now shown only while `IQRA_CHAT_ENABLED` is on (`onboardingIntro.test.ts`).
+
+**7. Uploaded photos drop their EXIF and GPS** (`services/photoEncode.ts`, `photoMetadata.ts`, `imageDownscale.ts`).
+JPEG and HEIC (and a photo of unknown type) are now always re-encoded — `expo-image-manipulator` on a phone, a canvas on
+the web; both write pixels only (read from the manipulator's 14.0.8 source: `UIImage.jpegData`, `Bitmap.compress`).
+PNG, GIF and WebP are re-encoded only when too big, so transparency and animation survive. A JPEG/HEIC that cannot
+be re-encoded is not sent (callers read it as a cancelled pick, with no message) rather than sent with its location.
+**Not covered:** `pickTeachingImages` and the `image/*` option of `pickTeachingDocuments`
+(`services/documents/pick.ts`) still pass raw files.
+
+**8. Admins are alerted when live AI breaks or its budget runs low** (`lib/aiAlerts.ts`, `lib/providerFallback.ts`,
+`lib/aiBudget.ts`). The 2026-11-20 OpenAI credit outage alerted nobody. A provider account error (401/402/403/404,
+`insufficient_quota`, a credit-balance 400) now alerts every `system_admin` by push and email, once per provider per
+6 hours, whether the other provider took over or not; it runs while the backup request is in flight, so it adds no
+latency, and it carries only the provider, whether it switched and the HTTP status — never the error text. Spend at
+80% and at 100% of `AI_BUDGET_USD` alerts once per monthly period. All three alert kinds are deduplicated across
+Cloud Run instances through `rate_limit_buckets` (`lib/adminAlertGate.ts`, no migration); if that table cannot be
+read, the limit falls back to once per instance. Tapped, the pushes open `/admin/moderation` and `/admin/ai-costs`
+(`notificationDeepLink.ts`).
+
+**Verified.** Root `pnpm run typecheck`; api-server `pnpm build` and `pnpm test`; mobile `pnpm test`; the new tests
+(`adminAlertGate`, `aiAlerts`, `messageReportAlert`, `providerFallback`, `evaluationCloseCollect.db`,
+`answerSaveQueue`, `photoMetadata`, `photoEncode`, `materialLessonId`, `generatorScreens`, `onboardingIntro`,
+`notificationDeepLink`).
+
+**Not verified.** Nothing was opened in a browser or on a phone. No real push or email was sent; the alert dedupe
+was exercised against fakes, not `rate_limit_buckets`. EXIF removal and Android orientation after the re-encode were
+not checked on a geotagged photo. Retry timing was not tried on bad wifi.
+
 ## Exam generation warnings in Arabic — 2026-11-27
 
 The review screen printed a generated exam's warnings exactly as the API sent them, and the API wrote every one in

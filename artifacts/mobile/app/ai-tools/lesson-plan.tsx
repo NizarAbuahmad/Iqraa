@@ -413,6 +413,10 @@ export default function LessonPlanScreen() {
       // text typed before the switch to a wide scope is not saved with the plan.
       priorTopicsNotes: wideFrozen ? '' : priorTopicsNotes,
       includePriorReview: includePriorReview ? '1' : '0',
+      // The lesson it was grounded on, so the save is filed under it and not under
+      // whatever its title grounds to (`withLessonId` keeps an id it is given).
+      // A wide plan has no single lesson and gets none.
+      ...(!wideFrozen && scope.lesson ? { lessonId: scope.lesson.id } : {}),
       // From the frozen scope, not the live picker (a teacher can move it after generating).
       // `distribution` is written by the shared helper and ignored by this tool.
       ...scopeFormState(wideFrozen, 'balanced'),
