@@ -75,6 +75,17 @@ export function redactOwnerNotes(content: unknown, formState: unknown): unknown 
 }
 
 /**
+ * What a visitor without the answers is shown. A paper's answer key is blanked
+ * (`studentCopy`); a whiteboard has none to hide: its «answer» and steps are
+ * what the teacher wrote on the board in front of the class, so blanking them
+ * would hand a student an empty board. Passed in so this file stays free of the
+ * homework module.
+ */
+export function sharedPublicContent(type: string, content: unknown, studentCopy: (c: unknown) => unknown): unknown {
+  return type === "board" ? content : studentCopy(content);
+}
+
+/**
  * The part of the owner's `formState` a colleague's copy may keep: the pickers
  * (grade, subject, lesson, scope, counts), which reopen the right lesson in the
  * tool. Only primitives, no known free-text field, and no long string — the
