@@ -32,12 +32,14 @@ import {
   editText,
   hasInk,
   makeText,
+  moveText,
   redoBoard,
   removeText,
   textIsRtl,
   textSizeFor,
   undoBoard,
   updateCurrent,
+  updateText,
   type BoardDoc,
   type BoardState,
   type Stroke,
@@ -205,6 +207,69 @@ describe('texts on the board', () => {
     let b: BoardState = EMPTY_BOARD;
     for (let i = 0; i < HISTORY_LIMIT + 5; i++) b = editText(addText(b, item('a')), b.texts.length, `b${i}`);
     assert.ok(b.past.length <= HISTORY_LIMIT);
+  });
+});
+
+describe('changing a text that is already placed', () => {
+  const base = () => addText(EMPTY_BOARD, item('keep', { x: 300, y: 200, size: 56, color: RED }));
+
+  it('moves it, clamped onto the page and rounded, as one undo step', () => {
+    const moved = moveText(base(), 0, 412.345, 99.99);
+    assert.deepEqual([moved.texts[0]!.x, moved.texts[0]!.y], [412.3, 100]);
+    assert.equal(undoBoard(moved).texts[0]!.x, 300);
+    assert.deepEqual([moveText(base(), 0, -80, 5000).texts[0]!.x, moveText(base(), 0, -80, 5000).texts[0]!.y], [0, CANVAS_H]);
+    assert.equal(moveText(base(), 0, CANVAS_W + 40, 0).texts[0]!.x, CANVAS_W);
+  });
+
+  it('moving nowhere, to a bad number, or a text that is not there changes nothing', () => {
+    const b = base();
+    assert.equal(moveText(b, 0, 300, 200), b);
+    assert.equal(moveText(b, 0, 300.04, 200.01), b, 'under a tenth of a unit is not a move');
+    assert.equal(moveText(b, 0, Number.NaN, 5), b);
+    assert.equal(moveText(b, 3, 10, 10), b);
+  });
+
+  it('changes the colour and the size without touching the words or the place', () => {
+    const b = updateText(base(), 0, { color: '#2563EB', size: 84 });
+    assert.deepEqual(b.texts[0], { x: 300, y: 200, size: 84, color: '#2563EB', rtl: false, text: 'keep' });
+    assert.equal(undoBoard(b).texts[0]!.color, RED);
+  });
+
+  it('changes words, colour and size together as ONE step', () => {
+    const b = updateText(base(), 0, { text: 'مرحبا', color: '#15803D', size: 40 });
+    assert.deepEqual(b.texts[0], { x: 300, y: 200, size: 40, color: '#15803D', rtl: true, text: 'مرحبا' });
+    assert.equal(b.past.length, 2, 'one add and one change');
+  });
+
+  it('keeps the direction when only the colour or size changes', () => {
+    const b = addText(EMPTY_BOARD, item('123', { rtl: true }));
+    assert.equal(updateText(b, 0, { color: '#2563EB' }).texts[0]!.rtl, true);
+  });
+
+  it('changing nothing, or to what it already is, gives the same state back', () => {
+    const b = base();
+    assert.equal(updateText(b, 0, {}), b);
+    assert.equal(updateText(b, 0, { color: RED, size: 56, text: 'keep' }), b);
+  });
+
+  it('refuses a colour that is not plain hex and keeps the size in range', () => {
+    const b = base();
+    assert.equal(updateText(b, 0, { color: 'red' }), b);
+    assert.equal(updateText(b, 0, { color: '#fff" onload="x' }), b);
+    assert.equal(updateText(b, 0, { size: 1 }).texts[0]!.size, 8);
+    assert.equal(updateText(b, 0, { size: 9999 }).texts[0]!.size, 240);
+    assert.equal(updateText(b, 0, { size: Number.NaN }), b);
+  });
+
+  it('emptying the text removes it, whatever else is changed with it', () => {
+    assert.deepEqual(updateText(base(), 0, { text: '  ', color: '#2563EB' }).texts, []);
+  });
+
+  it('only the text asked about changes', () => {
+    let b = addText(base(), item('other', { x: 700, y: 300 }));
+    b = moveText(updateText(b, 1, { color: '#7C3AED' }), 1, 710, 310);
+    assert.deepEqual(b.texts[0], { x: 300, y: 200, size: 56, color: RED, rtl: false, text: 'keep' });
+    assert.deepEqual([b.texts[1]!.x, b.texts[1]!.y, b.texts[1]!.color], [710, 310, '#7C3AED']);
   });
 });
 
@@ -426,6 +491,32 @@ describe('the screen', () => {
     assert.match(toolbar, /labels\.text\b/);
     assert.match(toolbar, /tool === 'text' \? labels\.textSizes\[i\] : labels\.widths\[i\]/);
     assert.match(screen, /textSizes: \[t\('boardTextSmall'\), t\('boardTextMedium'\), t\('boardTextLarge'\)\]/);
+  });
+
+  it('drags a text with the finger and drops it once, as a position in canvas units', () => {
+    assert.match(layer, /onPanResponderMove: \(_, g\) => setDrag\(\{ dx: g\.dx, dy: g\.dy \}\)/);
+    assert.match(layer, /dropped\(i, item\.x \+ g\.dx \/ s, item\.y \+ g\.dy \/ s\)/);
+    assert.match(layer, /Math\.hypot\(g\.dx, g\.dy\) <= TAP_SLOP\) tapped\(i\)/, 'a touch that barely moves is still a tap');
+    assert.match(layer, /latest\.current\.mode === 'text'/, 'only the text tool drags');
+    assert.match(screen, /moveText\(p\.board, index, x, y\)/);
+    assert.match(screen, /onMoveText=\{onMoveText\}/);
+  });
+
+  it('chooses colour and size in the dialog, for this text only, and hands all three back', () => {
+    assert.match(dialog, /BOARD_PEN_COLORS\.map/);
+    assert.match(dialog, /TEXT_SIZES\.map/);
+    assert.match(dialog, /onSubmit\(\{ text, color, size \}\)/);
+    assert.match(screen, /updateText\(p\.board, index, r\)/);
+    assert.match(screen, /initialColor=\{textDraft\?\.color \?\? color\}/);
+    // A new text starts from the toolbar's colour and size; an existing one from its own.
+    assert.match(screen, /color: item\.color, size: item\.size/);
+    assert.match(screen, /initial: '', color, size: textSizeFor\(width\)/);
+  });
+
+  it('opens the text dialog fresh every time: a new key per draft, and no effect that resets it after it paints', () => {
+    assert.match(screen, /<TextDialog\s+key=\{textDraft\?\.seq \?\? 0\}/);
+    assert.equal((screen.match(/seq: \+\+textSeq\.current/g) ?? []).length, 2, 'both a new draft and an edit take the next number');
+    assert.doesNotMatch(dialog, /useEffect/, 'stale words flashed for a frame while an effect reset them');
   });
 
   it('never sends what was typed to analytics', () => {
