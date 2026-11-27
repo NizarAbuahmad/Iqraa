@@ -155,13 +155,78 @@ describeDb("saved materials shared by link, against a real database", () => {
     assert.doesNotMatch(copy.text, /سارة/);
   });
 
-  it("refuses to share a whiteboard", async () => {
-    const board = (
-      await db.pool.query<{ id: string }>(`INSERT INTO saved_materials (user_id, type, title) VALUES ($1, 'board', 'لوح') RETURNING id`, [w.users.t1])
+  // A whiteboard as the app saves it (file version 3: strokes, a solved problem, typed text).
+  const BOARD = {
+    version: 3,
+    canvas: { w: 1280, h: 720 },
+    pages: [
+      {
+        background: "grid",
+        strokes: [{ color: "#DC2626", width: 6, points: "0.1,0.1 0.2,0.2" }],
+        solution: { problem: "حل المعادلة 2x+5=13", steps: ["2x + 5 = 13", "2x = 8", "x = 4"], answer: "x = 4", verified: true, source: "sympy", understoodAs: "2x+5=13" },
+        texts: [{ x: 900, y: 80, size: 56, color: "#2563EB", rtl: true, text: "مرحبا بكم" }],
+      },
+      { background: "blank", strokes: [] },
+    ],
+  };
+  const board = async (userId: string, content: unknown = BOARD) =>
+    (
+      await db.pool.query<{ id: string }>(
+        `INSERT INTO saved_materials (user_id, type, title, subject, grade, topic, language, content, form_state)
+         VALUES ($1, 'board', 'سبورة المعادلات', 'الرياضيات', 'الصف العاشر', 'المعادلات', 'ar', $2::jsonb, $3::jsonb) RETURNING id`,
+        [userId, JSON.stringify(content), JSON.stringify({ boardVersion: 3, priorTopicsNotes: "سارة تحتاج خطًا أكبر" })],
+      )
     ).rows[0].id;
-    const r = await share(w.users.t1, board);
-    assert.equal(r.status, 400, r.text);
-    assert.equal(r.json.code, "not_shareable");
+
+  it("shares a whiteboard whole: anyone sees its strokes, its solved problem with the answer, and its texts", async () => {
+    const id = await board(w.users.t1);
+    const made = await share(w.users.t1, id);
+    assert.equal(made.status, 200, made.text);
+    assert.match(made.json.shareCode, /^[A-HJKMNP-Z2-9]{8}$/);
+    // What is on a board is what the teacher put there. The student-copy rule that blanks every `answer`
+    // and drops every `solution` would have emptied this one, so a board is served as it is stored.
+    for (const who of [undefined, w.users.t2]) {
+      const r = await open(made.json.shareCode, who);
+      assert.equal(r.status, 200, r.text);
+      assert.equal(r.json.full, false);
+      assert.equal(r.json.material.type, "board");
+      assert.deepEqual(JSON.parse(r.json.material.content), BOARD);
+      assert.doesNotMatch(r.text, /سارة/, "the owner's form state never leaves");
+      assert.equal(r.json.material.formState, undefined);
+    }
+    const full = await open(made.json.shareCode, w.users.t2, true);
+    assert.equal(full.status, 200, full.text);
+    assert.deepEqual(JSON.parse(full.json.material.content), BOARD);
+  });
+
+  it("lets a teacher keep a shared whiteboard as their own, still a whiteboard, without the owner's notes", async () => {
+    const id = await board(w.users.t1);
+    const code = (await share(w.users.t1, id)).json.shareCode;
+    const copy = await call(server, "POST", `/shared/${code}/save`, w.users.t2);
+    assert.equal(copy.status, 201, copy.text);
+    assert.equal(copy.json.item.type, "board");
+    assert.notEqual(copy.json.item.id, id);
+    assert.equal(copy.json.item.shareCode ?? null, null, "a copy is not shared");
+    assert.doesNotMatch(copy.text, /سارة/);
+    const mine = await call(server, "GET", `/workspace/items/${copy.json.item.id}`, w.users.t2);
+    assert.equal(mine.status, 200, mine.text);
+    assert.deepEqual(JSON.parse(typeof mine.json.content === "string" ? mine.json.content : JSON.stringify(mine.json.content)), BOARD);
+  });
+
+  it("stops a whiteboard's link like any other: dead for everyone, and a re-share is a new code", async () => {
+    const id = await board(w.users.t1);
+    const first = (await share(w.users.t1, id)).json.shareCode;
+    assert.equal((await stop(w.users.t1, id)).status, 200);
+    assert.equal((await open(first)).status, 404);
+    const second = (await share(w.users.t1, id)).json.shareCode;
+    assert.notEqual(second, first);
+    assert.equal((await open(first)).status, 404, "the old forwarded link stays dead");
+    assert.equal((await open(second)).status, 200);
+  });
+
+  it("only the owner can share a whiteboard", async () => {
+    const id = await board(w.users.t1);
+    assert.equal((await share(w.users.t2, id)).status, 404);
   });
 
   it("is the same 404 for an unknown, malformed or deleted material's code, and for a bad id", async () => {
