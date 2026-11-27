@@ -106,7 +106,12 @@ describe('generationNotices', () => {
       warningsAr: ['كُتب…', 'شيء جديد'],
       warningCodes: [shortfall, null],
     });
-    assert.deepEqual(notices, [{ warning: shortfall }, { en: 'Something new', ar: 'شيء جديد' }]);
+    assert.deepEqual(notices, [
+      { warning: shortfall, en: 'Produced 3 of 5 requested questions.', ar: 'كُتب…' },
+      { en: 'Something new', ar: 'شيء جديد' },
+    ]);
+    // The route param keeps the code and drops its sentences.
+    assert.deepEqual(decodeNotices(encodeNotices(notices)), [{ warning: shortfall }, { en: 'Something new', ar: 'شيء جديد' }]);
     assert.deepEqual(wordNotices(notices, 'ar'), ['كُتب من الأسئلة ٣ من أصل ٥ طلبتها.', 'شيء جديد']);
     assert.deepEqual(wordNotices(notices, 'en'), ['Produced 3 of 5 requested questions.', 'Something new']);
   });
@@ -120,6 +125,10 @@ describe('generationNotices', () => {
     assert.deepEqual(
       generationNotices({ warnings: ['A', 'B'], warningsAr: ['أ'], warningCodes: [shortfall] }),
       [{ en: 'A' }, { en: 'B' }],
+    );
+    assert.deepEqual(
+      generationNotices({ warnings: ['A'], warningsAr: ['أ', 'ب'], warningCodes: [shortfall] }),
+      [{ warning: shortfall, en: 'A' }],
     );
   });
 
@@ -144,6 +153,34 @@ describe('a coded warning with malformed parameters', () => {
   it('shows an unknown competency or type id as it is', () => {
     const w: GenerationWarning = { code: 'competency_missing', params: { competency: 'creativity' } };
     assert.match(word(w, 'en')!, /"creativity"/);
+  });
+
+  it('never reads a name off Object.prototype («constructor» is just an unknown id)', () => {
+    const w: GenerationWarning = { code: 'competency_single', params: { competency: 'constructor' } };
+    assert.match(word(w, 'ar')!, /«constructor»/);
+    const t = { code: 'types_skipped', params: { types: ['toString'] } } as GenerationWarning;
+    assert.doesNotMatch(word(t, 'en')!, /undefined|function/);
+  });
+
+  it('does not throw on a null inside a list parameter (a hand-edited or truncated URL)', () => {
+    for (const bad of [
+      { code: 'grounded_on', params: { sources: [null] } },
+      { code: 'keys_contradicted', params: { questions: [1], details: [null] } },
+      { code: 'choice_position_bunched', params: { count: 4, total: 6, position: -1 } },
+    ]) {
+      assert.equal(wordNotice({ warning: bad as unknown as GenerationWarning }, 'ar'), null, JSON.stringify(bad));
+      assert.deepEqual(decodeNotices(JSON.stringify([{ warning: bad }])).flatMap(n => wordNotices([n], 'en')), []);
+    }
+  });
+
+  it('shows the API’s sentence when it came with one', () => {
+    // A later API that changed a parameter's shape must not silence the warning on an older app.
+    const changed = { code: 'grounded_on', params: { sources: [{ title: { ar: 'كتاب' }, page: 4 }] } } as unknown as GenerationWarning;
+    const [notice] = generationNotices({ warnings: ['Written from a book.'], warningsAr: ['من كتاب.'], warningCodes: [changed] });
+    assert.equal(wordNotice(notice!, 'ar'), 'من كتاب.');
+    assert.equal(wordNotice(notice!, 'en'), 'Written from a book.');
+    // Through the route param it travels as that sentence, since its code cannot be worded.
+    assert.deepEqual(decodeNotices(encodeNotices([notice!])), [{ en: 'Written from a book.', ar: 'من كتاب.' }]);
   });
 });
 

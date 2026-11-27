@@ -10,37 +10,50 @@
  *
  * So the stored string is matched back to its catalog entry — by id, English
  * name or Arabic name, which are each unique in `GRADES` / `SUBJECTS`
- * (`materialMeta.test.ts` checks) — and named at display time. This covers
- * every row already saved without a migration. A string that matches nothing
- * (typed by hand, or a subject since renamed) is shown as it is.
+ * (`materialMeta.test.ts` checks), or a subject's grade-specific label
+ * (`subjectForGrade`) — and named at display time, as the material's grade
+ * shows that subject. This covers every row already saved without a migration.
+ * A string that matches nothing (typed by hand, or a subject since renamed) is
+ * shown as it is.
  *
  * Grades and subjects only. A lesson's title (`topic`) is not an id and is not
  * mapped here (CLAUDE.md, «A lesson title does not identify a lesson»).
  */
-import { GRADES, SUBJECTS } from '@workspace/curriculum';
+import { GRADES, SUBJECTS, subjectForGrade } from '@workspace/curriculum';
 
 type Named = { id: string; name: string; nameAr: string };
 
-function find<T extends Named>(list: readonly T[], stored: string): T | undefined {
-  const s = stored.trim();
-  if (!s) return undefined;
-  const lower = s.toLowerCase();
-  return list.find(x => x.id === s || x.name.toLowerCase() === lower || x.nameAr === s);
-}
+const matches = (x: Named, s: string) => x.id === s || x.name.toLowerCase() === s.toLowerCase() || x.nameAr === s;
 
-function named(list: readonly Named[], stored: string | null | undefined, lang: string): string {
-  const raw = stored ?? '';
-  const hit = find(list, raw);
-  if (!hit) return raw;
-  return lang === 'ar' ? hit.nameAr : hit.name;
-}
+const findGrade = (stored: string | null | undefined) => {
+  const s = (stored ?? '').trim();
+  return s ? GRADES.find(g => matches(g, s)) : undefined;
+};
 
 /** «الصف العاشر» / «Grade 10», from whatever the material stored. */
 export function materialGradeName(stored: string | null | undefined, lang: string): string {
-  return named(GRADES, stored, lang);
+  const hit = findGrade(stored);
+  if (!hit) return stored ?? '';
+  return lang === 'ar' ? hit.nameAr : hit.name;
 }
 
-/** «الرياضيات» / «Mathematics», from whatever the material stored. */
-export function materialSubjectName(stored: string | null | undefined, lang: string): string {
-  return named(SUBJECTS, stored, lang);
+/**
+ * «الرياضيات» / «Mathematics», from whatever the material stored. Pass the
+ * material's stored grade too, so a subject with a grade-specific label
+ * (`subjectForGrade`) is named as that grade's picker named it.
+ */
+export function materialSubjectName(
+  stored: string | null | undefined,
+  lang: string,
+  storedGrade?: string | null,
+): string {
+  const s = (stored ?? '').trim();
+  if (!s) return stored ?? '';
+  const gradeId = findGrade(storedGrade)?.id;
+  const hit = SUBJECTS.find(x => matches(x, s))
+    // Saved under a grade's own label («Art Education» for grade 6).
+    ?? SUBJECTS.find(x => x.grades.some(g => matches(subjectForGrade(x, g), s)));
+  if (!hit) return stored ?? '';
+  const shown = subjectForGrade(hit, gradeId);
+  return lang === 'ar' ? shown.nameAr : shown.name;
 }

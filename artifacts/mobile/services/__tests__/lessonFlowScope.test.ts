@@ -555,6 +555,15 @@ describe('the flow PDF', () => {
     assert.match(plain, /غلق الدرس/);
   });
 
+  it('names the grade and subject in the paper’s language, whatever names the flow carries', async () => {
+    // Generators are handed `subjects[i].name`, so an Arabic flow can carry «Mathematics».
+    const flow = { ...(await flowOf('ar')), grade: 'Grade 10', subject: 'Mathematics' };
+    const ar = buildLessonFlowHTML(flow, true);
+    assert.match(ar, /الصف العاشر · الرياضيات/);
+    assert.doesNotMatch(ar, /Grade 10|Mathematics/);
+    assert.match(buildLessonFlowHTML({ ...flow, grade: 'الصف العاشر', subject: 'الرياضيات' }, false), /Grade 10 · Mathematics/);
+  });
+
   it('a revision flow calls itself one, in both languages', async () => {
     for (const lang of ['ar', 'en'] as const) {
       const flow = await flowOf(lang);

@@ -208,7 +208,7 @@ export default function WorkspaceViewScreen() {
   const docT = getT(docLang);
   // Saved materials store a grade / subject NAME, often the English one; the
   // export prints it in the document's language (services/materialMeta.ts).
-  const docMeta = { subject: materialSubjectName(item.subject, docLang), grade: materialGradeName(item.grade, docLang) };
+  const docMeta = { subject: materialSubjectName(item.subject, docLang, item.grade), grade: materialGradeName(item.grade, docLang) };
 
   // A unit / semester / book paper is not one lesson. `lessonId` is not stamped
   // on it any more (workspace.ts), but a copy saved before that fix may carry
@@ -361,7 +361,7 @@ export default function WorkspaceViewScreen() {
         </Text>
         <View style={[styles.metaRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Text style={[styles.metaPill, { color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular' }]}>
-            {materialSubjectName(item.subject, lang)}
+            {materialSubjectName(item.subject, lang, item.grade)}
           </Text>
           <Text style={[styles.metaPill, { color: 'rgba(255,255,255,0.9)', fontFamily: 'Almarai_400Regular' }]}>
             {materialGradeName(item.grade, lang)}
@@ -1100,7 +1100,7 @@ function FlowView({ flow, colors, isRTL, lang, accent, revision }: {
     <>
       {/* Meta badge */}
       <View style={[{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }]}>
-        {[flow.grade, flow.subject, lang === 'ar' ? arCountPhrase(flow.duration, 'دقيقة', 'دقيقتان', 'دقائق') : `${flow.duration} min`].map(tag => (
+        {[materialGradeName(flow.grade, lang), materialSubjectName(flow.subject, lang, flow.grade), lang === 'ar' ? arCountPhrase(flow.duration, 'دقيقة', 'دقيقتان', 'دقائق') : `${flow.duration} min`].map(tag => (
           <View key={tag} style={{ backgroundColor: FLOW_TEAL + '15', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
             <Text style={{ color: FLOW_TEAL, fontFamily: 'ReadexPro_500Medium', fontSize: 12 }}>{tag}</Text>
           </View>

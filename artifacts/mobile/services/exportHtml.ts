@@ -35,6 +35,7 @@ import { printStyleCss, type PrintStyle } from './printStyle.ts';
 import { FORMAT_CSS, formatBodyHTML, formatKeyExtraHTML } from './formatPrintHtml.ts';
 import { blankLine, hasOwnBlanks, optionColumns, unattachedFigures, worksheetInstructions, worksheetPointsTotal } from './worksheetPaper.ts';
 import { displayObjective } from './objectiveDisplay.ts';
+import { materialGradeName, materialSubjectName } from './materialMeta.ts';
 import type {
   ActivityOutput,
   LessonFlowOutput,
@@ -1522,7 +1523,8 @@ export function buildLessonFlowHTML(
   const TEAL = '#00A99D';
   const NAVY = '#081B3A';
 
-  const meta = `${flow.grade} · ${flow.subject} · ${isAr ? arCountPhrase(flow.duration, 'دقيقة', 'دقيقتان', 'دقائق') : `${flow.duration} min`}`;
+  // The flow carries the grade/subject names it was made with, often English.
+  const meta = `${materialGradeName(flow.grade, isAr ? 'ar' : 'en')} · ${materialSubjectName(flow.subject, isAr ? 'ar' : 'en', flow.grade)} · ${isAr ? arCountPhrase(flow.duration, 'دقيقة', 'دقيقتان', 'دقائق') : `${flow.duration} min`}`;
 
   /* ── Helpers ── */
   const secHeader = (label: string, icon: string, color: string) =>

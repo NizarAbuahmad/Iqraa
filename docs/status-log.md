@@ -20,10 +20,12 @@ Mathematics» on its public `/m/CODE` page and in «ملفاتي»; and a new 3�
 as a NAME, usually the English one (`grades[i].name`; `subjects[i].name`, which other code reads as the subject's
 identity), and the API passes it through. `services/materialMeta.ts` (`materialGradeName`, `materialSubjectName`)
 matches the stored string back to its `GRADES` / `SUBJECTS` entry by id, English name (any case) or Arabic name, and
-names it in the reader's language; a string that matches nothing is shown as stored. Used by the material screen
+names it in the reader's language, as the material's grade shows it (`subjectForGrade`: grade 6's «التربية الفنية»,
+whose label is also read back); a string that matches nothing is shown as stored. Used by the material screen
 (`app/workspace/view.tsx`, which `/m/[code]` re-exports) for its header chips in the UI language and for its exports'
-header in the document's language, by «ملفاتي» (`app/workspace/index.tsx`) and by the class material picker. Mapped on
-read, so existing rows need no migration; nothing about what is saved changed.
+header in the document's language, by «ملفاتي» (`app/workspace/index.tsx`), by the class material picker, and by a
+lesson flow's own grade/subject chips and PDF header (`FlowView`, `buildLessonFlowHTML`), which print the names the
+flow was generated with. Mapped on read, so existing rows need no migration; nothing about what is saved changed.
 
 **Exam warnings as codes.** The API now sends `warningCodes` beside `warnings` / `warningsAr`, one for one: a code and
 its parameters (`GenerationWarning`, `lib/exam-paper/src/generationWarnings.ts`, 26 codes), or `null` for a note with
@@ -35,8 +37,11 @@ position, question-type ids, competency keys, a question's own stem, book titles
 key the verifier's answer and the key's (Latin maths). The app words them from `genWarn…` keys in `services/i18n.ts`
 (`services/generationWarnings.ts`): types by the picker's names, competencies by the `competency…` keys, options by
 `optionLetter`. The URL param is now `notices`: JSON of codes and parameters, worded on the evaluation page in the
-language it shows, so switching language rewords them. A warning with no code this build knows falls back to the
-API's sentence in the UI language; one whose parameters are malformed is dropped. The Arabic wording is the API's
+language it shows, so switching language rewords them. A warning with no code this build knows, or whose parameters
+cannot be read (a later API that changed one's shape), falls back to the API's sentence in the UI language, and only
+such a warning carries a sentence through the URL; one with neither is dropped. Parameters are read defensively (a
+`null` inside a list, a negative position, an id such as «constructor» never reach a property read or
+`Object.prototype`), so a hand-edited URL cannot crash the page. The Arabic wording is the API's
 Arabic from the entry below, moved; one fix: a single contradicted question now reads «السؤال ٣، فلم يُعلَّم بأنه…
 راجعه» (it read «بأنها… راجعها»). The English wording was rewritten for a teacher: «turn on AI generation», not
 «switch the generator to a real model», and no objective ids.
@@ -49,9 +54,12 @@ the producers and in `i18n.ts`); drop `warningsAr` once no supported build reads
 expected parameters, and every code in the shared list is raised by some producer. Mobile `generationWarnings.test.ts`
 (rewritten): every code is worded in Arabic (Arabic letters, no English word, no Latin digit) and in English; the two
 warnings seen today read «كُتب من الأسئلة ٣ من أصل ٥ طلبتها.» and name «التفكير الناقد»; fallbacks, malformed
-parameters, and the route param's round trip (it holds no sentence; the old newline format reads as nothing).
-`materialMeta.test.ts`: English, Arabic and id forms map both ways, unknown strings pass through, and no id or name in
-`GRADES` / `SUBJECTS` names two entries. Each Arabic and English warning was printed and read by eye. Typecheck,
+parameters (null list items, prototype keys, a changed shape falling back to the sentence), and the route param's
+round trip (no sentence for a wordable code; the old newline format reads as nothing). `materialMeta.test.ts`:
+English, Arabic and id forms map both ways, grade-specific labels, unknown strings pass through, and no id or name in
+`GRADES` / `SUBJECTS` names two entries. `lessonFlowScope.test.ts`: a flow carrying «Grade 10» / «Mathematics» prints
+«الصف العاشر · الرياضيات» in the Arabic PDF. A code-reviewer pass found the crash, the prototype key, the lost fallback
+and the flow chips; all four are fixed here. Each Arabic and English warning was printed and read by eye. Typecheck,
 api-server build + test, mobile test, curriculum test + verify, exam-paper test and `test_equations.py` were run.
 
 **Not verified.** Not seen on a screen: neither the evaluation page nor `/m/CODE` was opened in a browser after the

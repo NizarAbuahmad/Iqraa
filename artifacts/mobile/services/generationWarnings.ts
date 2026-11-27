@@ -17,9 +17,14 @@ import { isGenerationWarning, type GenerationWarning } from '@workspace/exam-pap
 import translations, { type Lang, type TranslationKey, type Translations } from './i18n.ts';
 import { optionLetter } from './optionLabels.ts';
 
-/** One warning to show: a code to word, or (fallback) the API's own sentences. */
+/**
+ * One warning to show: a code to word, or (fallback) the API's own sentences.
+ * A coded notice straight from the API keeps its sentences too, for when its
+ * parameters cannot be read (a later API that changed one's shape); the route
+ * param carries them only for such a notice (`encodeNotices`).
+ */
 export type GenNotice =
-  | { warning: GenerationWarning }
+  | { warning: GenerationWarning; en?: string; ar?: string }
   | { en: string; ar?: string };
 
 interface GenerateWarningsPayload {
@@ -35,8 +40,8 @@ export function generationNotices(result: GenerateWarningsPayload): GenNotice[] 
   const codes = result.warningCodes && result.warningCodes.length === en.length ? result.warningCodes : undefined;
   return en.map((text, i) => {
     const code = codes?.[i];
-    if (isGenerationWarning(code)) return { warning: code };
-    return ar ? { en: text, ar: ar[i]! } : { en: text };
+    const sentences = ar ? { en: text, ar: ar[i]! } : { en: text };
+    return isGenerationWarning(code) ? { warning: code, ...sentences } : sentences;
   });
 }
 
@@ -76,14 +81,26 @@ const list = (v: unknown): unknown[] => {
   if (Array.isArray(v)) return v;
   throw new BadParam(String(v));
 };
+/** An object inside a list parameter (a `null` there must not reach a property read). */
+const rec = (v: unknown): Record<string, unknown> => {
+  if (typeof v === 'object' && v !== null && !Array.isArray(v)) return v as Record<string, unknown>;
+  throw new BadParam(String(v));
+};
+/** A 0-based position. */
+const position = (v: unknown): number => {
+  const n = num(v);
+  if (Number.isInteger(n) && n >= 0) return n;
+  throw new BadParam(String(v));
+};
 
 /** A coded warning in `lang`. Throws `BadParam` when its parameters are malformed. */
 function wordWarning(w: GenerationWarning, lang: Lang): string {
   const T = translations[lang] as unknown as Translations;
   const label = (map: Record<string, TranslationKey>, id: unknown): string => {
-    const key = map[str(id)];
-    // An id this build has no name for is shown as it is rather than dropped.
-    return key ? (T[key] as string) : str(id);
+    const s = str(id);
+    // Own keys only: «constructor» must not read Object.prototype. An id this
+    // build has no name for is shown as it is rather than dropped.
+    return Object.prototype.hasOwnProperty.call(map, s) ? (T[map[s]!] as string) : s;
   };
   const types = (v: unknown) => list(v).map(id => label(TYPE_KEY, id));
   // Read through a plain record: the parameters crossed a network and maybe a URL.
@@ -94,14 +111,14 @@ function wordWarning(w: GenerationWarning, lang: Lang): string {
     case 'competency_missing': return T.genWarnCompetencyMissing(label(COMPETENCY_KEY, p.competency));
     case 'true_false_one_sided': return T.genWarnTrueFalseOneSided(num(p.count), num(p.total), p.value === true);
     case 'choice_position_bunched':
-      return T.genWarnChoicePositionBunched(num(p.count), num(p.total), optionLetter(num(p.position), lang === 'ar'));
+      return T.genWarnChoicePositionBunched(num(p.count), num(p.total), optionLetter(position(p.position), lang === 'ar'));
     case 'same_ask': return T.genWarnSameAsk(num(p.count), num(p.total), str(p.example));
     case 'keys_unlinked': return T.genWarnKeysUnlinked(num(p.count));
     case 'verifier_unreachable': return T.genWarnVerifierUnreachable;
     case 'keys_contradicted': {
       const details = Array.isArray(p.details)
         ? p.details.map(d => {
-          const r = d as Record<string, unknown>;
+          const r = rec(d);
           return { question: num(r.question), derived: str(r.derived), key: str(r.key) };
         })
         : [];
@@ -124,7 +141,7 @@ function wordWarning(w: GenerationWarning, lang: Lang): string {
     case 'first_grade_types_dropped': return T.genWarnFirstGradeTypesDropped(types(p.used), types(p.dropped));
     case 'grounded_on':
       return T.genWarnGroundedOn(list(p.sources).map(s => {
-        const r = s as Record<string, unknown>;
+        const r = rec(s);
         return { title: str(r.title), page: typeof r.page === 'number' ? r.page : str(r.page) };
       }));
     case 'not_grounded': return T.genWarnNotGrounded;
@@ -144,20 +161,29 @@ function wordWarning(w: GenerationWarning, lang: Lang): string {
   }
 }
 
+/** A coded warning in `lang`, or null when its parameters cannot be read. */
+function tryWord(w: GenerationWarning, lang: Lang): string | null {
+  try {
+    return wordWarning(w, lang);
+  } catch (err) {
+    if (err instanceof BadParam) return null;
+    throw err;
+  }
+}
+
+/** The API's own sentence in `lang`, when the notice has one. */
+function sentence(notice: { en?: string; ar?: string }, lang: Lang): string | null {
+  return (lang === 'ar' && notice.ar) || notice.en || null;
+}
+
 /**
- * One notice in `lang`, or null when there is nothing honest to show (a coded
- * warning whose parameters are malformed and that carries no sentence).
+ * One notice in `lang`. A coded warning whose parameters cannot be read shows
+ * the API's sentence if it came with one, and is otherwise null (dropped):
+ * nothing honest to show.
  */
 export function wordNotice(notice: GenNotice, lang: Lang): string | null {
-  if ('warning' in notice) {
-    try {
-      return wordWarning(notice.warning, lang);
-    } catch (err) {
-      if (err instanceof BadParam) return null;
-      throw err;
-    }
-  }
-  return lang === 'ar' && notice.ar ? notice.ar : notice.en;
+  if ('warning' in notice) return tryWord(notice.warning, lang) ?? sentence(notice, lang);
+  return sentence(notice, lang);
 }
 
 /** Every notice in `lang`, in order, without the ones that cannot be worded. */
@@ -165,9 +191,20 @@ export function wordNotices(notices: readonly GenNotice[], lang: Lang): string[]
   return notices.map(n => wordNotice(n, lang)).filter((s): s is string => !!s);
 }
 
-/** For the `/evaluations/[id]` route param. Empty when there is nothing to carry. */
+/**
+ * For the `/evaluations/[id]` route param. A coded warning travels as its code
+ * alone; only one whose parameters cannot be worded travels as the API's
+ * sentences instead (and is dropped if it has none). Empty when there is
+ * nothing to carry.
+ */
 export function encodeNotices(notices: readonly GenNotice[]): string {
-  return notices.length ? JSON.stringify(notices) : '';
+  const carried = notices.flatMap((n): GenNotice[] => {
+    if (!('warning' in n)) return [n];
+    if (tryWord(n.warning, 'ar') !== null && tryWord(n.warning, 'en') !== null) return [{ warning: n.warning }];
+    if (!n.en) return [];
+    return [n.ar ? { en: n.en, ar: n.ar } : { en: n.en }];
+  });
+  return carried.length ? JSON.stringify(carried) : '';
 }
 
 /**

@@ -6469,7 +6469,7 @@ const translations = {
     genWarnChoicePositionBunched: (count: number, total: number, letter: string) =>
       `${count} of ${total} multiple-choice answers are option ${letter} — a student could guess the position.`,
     genWarnSameAsk: (count: number, total: number, example: string) =>
-      `${count} of ${total} questions ask the same thing, with different numbers or in other words: “${example}”`,
+      `${count} of ${total} questions ask the same thing, with different numbers or in other words: "${example}"`,
     genWarnKeysUnlinked: (count: number) =>
       `${count} ${enPlural(count, 'question carries a checked answer that is not its', 'questions carry a checked answer that is not their')} `
       + `own answer key, so ${enPlural(count, 'it is', 'they are')} not marked verified.`,

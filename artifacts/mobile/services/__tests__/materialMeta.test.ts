@@ -33,6 +33,17 @@ describe('materialGradeName / materialSubjectName', () => {
     assert.equal(materialGradeName('grade 1', 'ar'), GRADES[0]!.nameAr);
   });
 
+  it('name a subject the way its grade shows it, and read that grade-specific label back', () => {
+    // creative-arts is «Art Education» / «التربية الفنية» in grade 6 only (SUBJECT_LABEL_BY_GRADE).
+    const generic = SUBJECTS.find(s => s.id === 'creative-arts')!;
+    assert.equal(materialSubjectName(generic.name, 'ar', 'Grade 6'), 'التربية الفنية');
+    assert.equal(materialSubjectName('Art Education', 'ar', 'Grade 6'), 'التربية الفنية');
+    assert.equal(materialSubjectName('Art Education', 'en', 'الصف السادس'), 'Art Education');
+    // In another grade, or with no grade, the shared label.
+    assert.equal(materialSubjectName('Art Education', 'ar', 'Grade 5'), generic.nameAr);
+    assert.equal(materialSubjectName('Art Education', 'ar'), generic.nameAr);
+  });
+
   it('show a name that matches nothing as it was stored, and nothing as nothing', () => {
     assert.equal(materialSubjectName('Robotics club', 'ar'), 'Robotics club');
     assert.equal(materialGradeName('', 'ar'), '');

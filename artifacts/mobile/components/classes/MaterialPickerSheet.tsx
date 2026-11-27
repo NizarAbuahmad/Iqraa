@@ -86,7 +86,7 @@ export function MaterialPickerSheet({
                       {item.title}
                     </Text>
                     <Text style={{ color: colors.mutedForeground, fontFamily: 'Almarai_400Regular', fontSize: TYPE.caption, textAlign: align }}>
-                      {[MATERIAL_LABEL_KEY[item.type] ? t(MATERIAL_LABEL_KEY[item.type]) : '', materialSubjectName(item.subject, lang), materialGradeName(item.grade, lang)].filter(Boolean).join(' · ')}
+                      {[MATERIAL_LABEL_KEY[item.type] ? t(MATERIAL_LABEL_KEY[item.type]) : '', materialSubjectName(item.subject, lang, item.grade),materialGradeName(item.grade, lang)].filter(Boolean).join(' · ')}
                     </Text>
                   </View>
                   {isAdded ? (
