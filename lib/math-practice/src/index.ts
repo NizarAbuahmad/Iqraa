@@ -30,6 +30,9 @@ import { elementaryOpsForTitle, makeElementaryItem } from './elementary.ts';
 import { makeTopicItem, topicFor } from './topics.ts';
 import { G10_LESSON_FIRST } from './grade10.ts';
 import { servedFrames, spreadScore, stemFrame } from './stemFrame.ts';
+import { ITEM_FOCUS, SPLIT_FAMILIES, focusForTitles, type LessonFocus } from './lessonFocus.ts';
+
+export type { LessonFocus } from './lessonFocus.ts';
 
 import { isUnlistedPick } from './picks.ts';
 export { isChemContext, detectChemFamily, CHEM_BANK } from './chemistry.ts';
@@ -76,6 +79,13 @@ export interface PracticeWQ {
    * derived solution.
    */
   steps?: string[];
+  /**
+   * True when the item is a real-life story (`ConcreteItem.story`). A worksheet's
+   * «مسألة حياتية» needs one; an equation with «اكتب الحل» under it is not.
+   * Absent for everything else, including the word-problem slot of a lesson
+   * whose family has no story left.
+   */
+  story?: boolean;
 }
 
 /**
@@ -124,6 +134,14 @@ export interface ConcreteItem {
   /** Optional stem overrides */
   promptAr?: string;
   promptEn?: string;
+  /** Which of the book's lessons the item practises, in a family that holds several — `./lessonFocus.ts`. */
+  focus?: LessonFocus;
+  /**
+   * A real-life situation, which a worksheet's «مسألة حياتية» may print. Set by
+   * hand: `kind: 'word'` only says the item has its own wording, and holds a
+   * GeoGebra task (`g-h3`) and a number puzzle (`lq-w1`) as well.
+   */
+  story?: true;
 }
 
 // ─── Session dedupe (one generation pass) ────────────────────────────────────
@@ -136,6 +154,94 @@ export function beginMathPracticeSession(): void {
 
 /** The module-level used-id set, so offline worksheet formats dedupe against the same set as every other question on the sheet. */
 export function currentSession(): Set<string> { return usedIds; }
+
+/**
+ * An expression as it can be compared: no spaces or braces, superscript digits
+ * and the minus sign written plainly. «81 = 3^4», «81=3⁴» and «81 = 3^{4}» are one.
+ */
+function normMath(s: string): string {
+  const SUP: Record<string, string> = { '⁰': '0', '¹': '1', '²': '2', '³': '3', '⁴': '4', '⁵': '5', '⁶': '6', '⁷': '7', '⁸': '8', '⁹': '9', '⁻': '-' };
+  let out = '';
+  let inSup = false;
+  for (const ch of s) {
+    const d = SUP[ch];
+    if (d !== undefined) { out += (inSup ? '' : '^') + d; inSup = true; continue; }
+    inSup = false;
+    if (/\s|[{}]/.test(ch)) continue;
+    out += ch === '−' ? '-' : ch;
+  }
+  return out.toLowerCase();
+}
+
+/**
+ * The equation an item is about. Two items with one equation are one question
+ * asked two ways — `exp-m4` «أوجد حل 9^x = 27» and `exp-v2` «هل x = 2 حل
+ * للمعادلة 9^x = 27؟» — and one paper printed both (2026-11-13).
+ *
+ * Maths only. A chemistry item's `eq` is a context tag — a reaction, a
+ * formula, «أمثلة» — that different questions share (the bond type in Cl₂ and
+ * the shared pairs in Cl₂), so keying on it would drop real questions.
+ */
+function eqKey(item: ConcreteItem): string | null {
+  if (!MATH_ITEMS.has(item)) return null;
+  return `eq:${normMath(item.eq)}${item.eq2 ? `|${normMath(item.eq2)}` : ''}`;
+}
+
+/** Spend an item in a pass: its id and, for maths, its equation. */
+export function spendItem(item: ConcreteItem, used: Set<string>): void {
+  used.add(item.id);
+  const key = eqKey(item);
+  if (key) used.add(key);
+}
+
+/** `spendItem` by id, for a caller holding a `SolvedItem` — maths or chemistry. */
+export function spendItemById(id: string, used: Set<string>): void {
+  const item = MATH_BANK.find(i => i.id === id) ?? CHEM_BANK.find(i => i.id === id);
+  if (item) spendItem(item, used);
+  else used.add(id);
+}
+
+/**
+ * Working the page prints — a worked example's steps, a half-solved question's
+ * given steps. A maths item whose answer that working states is answered on the
+ * page: «81 = 3^4» printed in a half-solved question, then «اكتب العدد 81 على
+ * صورة قوة أساسها 3» as question 3 (2026-11-13).
+ */
+export function markShown(lines: readonly string[], used: Set<string>): void {
+  for (const line of lines) used.add(`shown:${normMath(line)}`);
+}
+
+/**
+ * Whether `needle` stands in `hay` as a whole expression, not inside a longer
+ * one: «2^x=8» is not in «32^x=8» nor in «3·2^x=8», and «x^2» is not in «x^2-1».
+ */
+function standsIn(hay: string, needle: string): boolean {
+  const edge = /[0-9a-z.^_+\-*/·×÷(]/;
+  for (let at = hay.indexOf(needle); at >= 0; at = hay.indexOf(needle, at + 1)) {
+    const before = hay[at - 1];
+    const after = hay[at + needle.length];
+    if ((before === undefined || !edge.test(before)) && (after === undefined || !edge.test(after))) return true;
+  }
+  return false;
+}
+
+/** Spent in this pass: the item itself, another asking its equation, or working on the page that states its answer. */
+export function itemSpent(item: ConcreteItem, used: Set<string>): boolean {
+  const key = eqKey(item);
+  if (used.has(item.id) || (key !== null && used.has(key))) return true;
+  if (key === null) return false;
+  // Only an equation that holds the item's own answer is answered by stating
+  // it: «81 = 3^4» answers «اكتب 81 كقوة أساسها 3» (answer 3⁴), while
+  // «f(x) = x²» printed in working answers nothing about its derivative, and
+  // «n = 2 mol» or «a=7, b=7, C=60°» are givens.
+  const eq = normMath(item.eq);
+  const answer = normMath(item.answer);
+  if (!eq.includes('=') || item.eq2 || !answer || !eq.includes(answer)) return false;
+  for (const k of used) {
+    if (k.startsWith('shown:') && standsIn(k.slice(6), eq)) return true;
+  }
+  return false;
+}
 
 /**
  * The lesson's name and nothing else — what routing reads. See `elementaryOpsForTitle`.
@@ -282,6 +388,17 @@ export function matchMathFamily(topic: string, kb: KBLesson | null): MathFamily 
 }
 
 /**
+ * The item lessons this lesson accepts, when its family holds several of the
+ * book's lessons — `./lessonFocus.ts`. Null for a one-lesson family, or a title
+ * that names none of them (a typed «المتجهات» takes the whole family).
+ */
+export function lessonFocus(topic: string, kb: KBLesson | null): LessonFocus[] | null {
+  const family = matchMathFamily(topic, kb);
+  if (!family || !(SPLIT_FAMILIES as readonly string[]).includes(family)) return null;
+  return focusForTitles([topic, kb?.titleAr ?? '', kb?.titleEn ?? ''].filter(Boolean));
+}
+
+/**
  * Kept for callers that want a family no matter what (the premade-sheet
  * builder); the question generators use `matchMathFamily` and refuse on null.
  */
@@ -367,7 +484,7 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'exp-h3', family: 'exp_eq', diff: 'hard', eq: '4^{x} = 8^{x-1}', answer: 'x = 3', wrongs: ['x = 2', 'x = 1', 'x = 4'] },
   { id: 'exp-h4', family: 'exp_eq', diff: 'hard', eq: '2^{x+2} = 2^x + 12', answer: 'x = 2', wrongs: ['x = 1', 'x = 3', 'x = 4'] },
   {
-    id: 'exp-h5', family: 'exp_eq', diff: 'hard', eq: '2^t = 32', answer: 't = 5', wrongs: ['t = 4', 't = 6', 't = 32'], kind: 'word',
+    id: 'exp-h5', family: 'exp_eq', diff: 'hard', eq: '2^t = 32', answer: 't = 5', wrongs: ['t = 4', 't = 6', 't = 32'], kind: 'word', story: true,
     wordAr: 'تتضاعف مستعمرة بكتيريا كل ساعة: N = N₀ · 2^t. متى تصبح المستعمرة 32 ضعف الحجم الابتدائي؟ اكتب المعادلة وحلّها.',
     wordEn: 'Bacteria double each hour: N = N₀ · 2^t. After how many hours is the colony 32× initial size? Write and solve.',
   },
@@ -384,7 +501,7 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'exp-v1', family: 'exp_eq', diff: 'easy', eq: '2^{x+1} = 16', answer: 'نعم، لأن 2⁴ = 16', wrongs: ['لا، لأن 2³ = 8', 'لا، لأن 2⁴ = 32', 'نعم، لأن 2³ = 16'], promptAr: 'هل x = 3 حل للمعادلة 2^{x+1} = 16؟ علّل.', promptEn: 'Is x = 3 a solution of 2^{x+1} = 16? Explain.' },
   { id: 'exp-v2', family: 'exp_eq', diff: 'medium', eq: '9^x = 27', answer: 'لا، لأن 9² = 81', wrongs: ['نعم، لأن 9² = 27', 'نعم، لأن 9 × 3 = 27', 'لا، لأن 9² = 18'], promptAr: 'هل x = 2 حل للمعادلة 9^x = 27؟ علّل.', promptEn: 'Is x = 2 a solution of 9^x = 27? Explain.' },
   {
-    id: 'exp-h6', family: 'exp_eq', diff: 'hard', eq: '80 · (1/2)^t = 5', answer: 't = 4', wrongs: ['t = 3', 't = 5', 't = 16'], kind: 'word',
+    id: 'exp-h6', family: 'exp_eq', diff: 'hard', eq: '80 · (1/2)^t = 5', answer: 't = 4', wrongs: ['t = 3', 't = 5', 't = 16'], kind: 'word', story: true,
     wordAr: 'تتناقص كمية مادة مشعة إلى النصف كل يوم، وكانت كميتها في البداية 80 غرامًا. بعد كم يومًا تصبح كميتها 5 غرامات؟ اكتب المعادلة وحلّها.',
     wordEn: 'A radioactive substance halves every day and starts at 80 g. After how many days are 5 g left? Write and solve.',
   },
@@ -419,7 +536,7 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'lq-k1', family: 'linear_quad', diff: 'hard', eq: 'y = 2x + k', eq2: 'y = x²', answer: '−1', wrongs: ['1', '0', '−2'], promptAr: 'ما قيمة k التي تجعل المستقيم y = 2x + k يمسّ المنحنى y = x² (حل واحد فقط)؟', promptEn: 'What value of k makes the line y = 2x + k touch the curve y = x² (exactly one solution)?' },
   { id: 'lq-k2', family: 'linear_quad', diff: 'hard', eq: 'y = 6x + k', eq2: 'y = x² + 1', answer: '−8', wrongs: ['8', '−9', '10'], promptAr: 'ما قيمة k التي تجعل المستقيم y = 6x + k يمسّ المنحنى y = x² + 1 (حل واحد فقط)؟', promptEn: 'What value of k makes the line y = 6x + k touch the curve y = x² + 1 (exactly one solution)?' },
   { id: 'lq-w1', family: 'linear_quad', diff: 'medium', eq: 'x + y = 7', eq2: 'xy = 12', answer: '3 و 4', wrongs: ['2 و 5', '1 و 6', '3 و 5'], kind: 'word', wordAr: 'عددان موجبان مجموعهما 7 وحاصل ضربهما 12. ما العددان؟', wordEn: 'Two positive numbers add up to 7 and multiply to 12. What are they?' },
-  { id: 'lq-w2', family: 'linear_quad', diff: 'hard', eq: '2(l + w) = 20', eq2: 'lw = 24', answer: '4 م و 6 م', wrongs: ['3 م و 8 م', '2 م و 12 م', '5 م و 5 م'], kind: 'word', wordAr: 'قطعة أرض مستطيلة الشكل محيطها 20 م ومساحتها 24 م². ما بُعداها؟', wordEn: 'A rectangular plot has perimeter 20 m and area 24 m². What are its dimensions?' },
+  { id: 'lq-w2', family: 'linear_quad', diff: 'hard', eq: '2(l + w) = 20', eq2: 'lw = 24', answer: '4 م و 6 م', wrongs: ['3 م و 8 م', '2 م و 12 م', '5 م و 5 م'], kind: 'word', story: true, wordAr: 'قطعة أرض مستطيلة الشكل محيطها 20 م ومساحتها 24 م². ما بُعداها؟', wordEn: 'A rectangular plot has perimeter 20 m and area 24 m². What are its dimensions?' },
 
   // ── Two quadratics ──
   { id: 'qq-e1', family: 'quad_system', diff: 'easy', eq: 'y = x²', eq2: 'y = 4', answer: '(−2, 4) و (2, 4)', wrongs: ['(4, 16)', '(0, 0)', 'لا حل'], kind: 'system' },
@@ -477,12 +594,74 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 't-e3', family: 'trig', diff: 'easy', eq: 'tan 45°', answer: '1', wrongs: ['0', '√3', 'غير معرّف'], promptAr: 'أوجد قيمة tan 45°.', promptEn: 'Find tan 45°.' },
   { id: 't-m1', family: 'trig', diff: 'medium', eq: 'sin θ = 1/2', answer: 'θ = 30° أو 150° (خلال دورة)', wrongs: ['θ = 60° فقط', 'θ = 90°', 'θ = 0°'], promptAr: 'حل: sin θ = 1/2 حيث 0° ≤ θ < 360°.', promptEn: 'Solve sin θ = 1/2 for 0° ≤ θ < 360°.' },
   { id: 't-m2', family: 'trig', diff: 'medium', eq: 'cos²θ + sin²θ', answer: '1', wrongs: ['0', '2', 'cos 2θ'], promptAr: 'بسّط: cos²θ + sin²θ', promptEn: 'Simplify: cos²θ + sin²θ' },
+  // «حل المعادلات المثلثية» on its own: cos θ = 0 (the axes), tan θ = 1, a
+  // linear sin equation with √3, tan negative, sin negative, a quadratic in
+  // cos that factors, sin² θ = 1/4 (four solutions), and a Ferris wheel. Every
+  // stem names 0° ≤ θ < 360°; `lessonFocus.test.ts` solves each equation again
+  // over every whole degree, so a key with a missing or an extra solution fails.
+  { id: 'te-e1', family: 'trig', diff: 'easy', eq: 'cos θ = 0', answer: 'θ = 90° أو 270°', wrongs: ['θ = 0° أو 180°', 'θ = 90° فقط', 'θ = 180°'], promptAr: 'حل: cos θ = 0 حيث 0° ≤ θ < 360°.', promptEn: 'Solve cos θ = 0 for 0° ≤ θ < 360°.' },
+  { id: 'te-e2', family: 'trig', diff: 'easy', eq: 'tan θ = 1', answer: 'θ = 45° أو 225°', wrongs: ['θ = 45° أو 135°', 'θ = 45° فقط', 'θ = 45° أو 315°'], promptAr: 'حل: tan θ = 1 حيث 0° ≤ θ < 360°.', promptEn: 'Solve tan θ = 1 for 0° ≤ θ < 360°.' },
+  { id: 'te-m1', family: 'trig', diff: 'medium', eq: '2 sin θ − √3 = 0', answer: 'θ = 60° أو 120°', wrongs: ['θ = 30° أو 150°', 'θ = 60° أو 300°', 'θ = 60° فقط'], promptAr: 'حل: 2 sin θ − √3 = 0 حيث 0° ≤ θ < 360°.', promptEn: 'Solve 2 sin θ − √3 = 0 for 0° ≤ θ < 360°.' },
+  { id: 'te-m2', family: 'trig', diff: 'medium', eq: 'tan θ = −1', answer: 'θ = 135° أو 315°', wrongs: ['θ = 45° أو 225°', 'θ = −45°', 'θ = 135° أو 225°'], promptAr: 'حل: tan θ = −1 حيث 0° ≤ θ < 360°.', promptEn: 'Solve tan θ = −1 for 0° ≤ θ < 360°.' },
+  { id: 'te-m3', family: 'trig', diff: 'medium', eq: 'sin θ = −1/2', answer: 'θ = 210° أو 330°', wrongs: ['θ = 30° أو 150°', 'θ = −30°', 'θ = 150° أو 210°'], promptAr: 'حل: sin θ = −1/2 حيث 0° ≤ θ < 360°.', promptEn: 'Solve sin θ = −1/2 for 0° ≤ θ < 360°.' },
+  { id: 'te-h1', family: 'trig', diff: 'hard', eq: '2cos²θ − cos θ − 1 = 0', answer: 'θ = 0° أو 120° أو 240°', wrongs: ['θ = 120° أو 240°', 'θ = 0° أو 60° أو 300°', 'θ = 0°'], promptAr: 'حل: 2cos² θ − cos θ − 1 = 0 حيث 0° ≤ θ < 360°.', promptEn: 'Solve 2cos² θ − cos θ − 1 = 0 for 0° ≤ θ < 360°.' },
+  { id: 'te-h2', family: 'trig', diff: 'hard', eq: 'sin²θ = 1/4', answer: 'θ = 30° أو 150° أو 210° أو 330°', wrongs: ['θ = 30° أو 150°', 'θ = 30° أو 330°', 'θ = 15° أو 165°'], promptAr: 'حل: sin² θ = 1/4 حيث 0° ≤ θ < 360°.', promptEn: 'Solve sin² θ = 1/4 for 0° ≤ θ < 360°.' },
+  {
+    id: 'te-w1', family: 'trig', diff: 'hard', eq: 'wheel h = 10 − 8 cos θ, h = 14', answer: 'θ = 120° أو 240°', wrongs: ['θ = 60° أو 300°', 'θ = 120° فقط', 'θ = 30° أو 150°'], kind: 'word', story: true,
+    wordAr: 'ارتفاع مقعد في دولاب هواء عن الأرض بالأمتار h = 10 − 8 cos θ، حيث θ الزاوية التي دارها الدولاب. خلال الدورة الأولى (0° ≤ θ < 360°)، عند أيّ زاوية يكون ارتفاع المقعد 14 مترًا؟',
+    wordEn: 'A Ferris wheel seat is h = 10 − 8 cos θ metres above the ground, where θ is the angle the wheel has turned. During the first turn (0° ≤ θ < 360°), at which angles is the seat 14 m high?',
+  },
   { id: 't-h1', family: 'trig', diff: 'hard', eq: '2 cos θ = 1', answer: 'θ = 60° أو 300°', wrongs: ['θ = 30° فقط', 'θ = 90°', 'θ = 45°'], promptAr: 'حل: 2 cos θ = 1 حيث 0° ≤ θ < 360°.', promptEn: 'Solve 2 cos θ = 1 for 0° ≤ θ < 360°.' },
 
   // ── Trig applications ──
   { id: 'ta-e1', family: 'trig_apps', diff: 'easy', eq: 'a=5, b=5, included=60°', answer: 'مساحة = (25√3)/4', wrongs: ['25', '12.5', '5√3'], promptAr: 'مثلث فيه ضلعان 5 و 5 والزاوية المحصورة 60°. أوجد المساحة باستخدام (1/2)ab sin C.', promptEn: 'Triangle sides 5, 5 with included angle 60°. Find area using (1/2)ab sin C.' },
   { id: 'ta-m1', family: 'trig_apps', diff: 'medium', eq: 'a=7, b=7, C=60°', answer: 'c = 7', wrongs: ['c = 14', 'c = 7√3', 'c = 3.5'], promptAr: 'في مثلث: a = 7، b = 7، C = 60°. أوجد c بقانون جيب التمام.', promptEn: 'In a triangle a = 7, b = 7, C = 60°. Find c using the cosine rule.' },
   { id: 'ta-h1', family: 'trig_apps', diff: 'hard', eq: 'a=8, A=30°, B=45°', answer: 'b = 8√2', wrongs: ['b = 8', 'b = 4', 'b = 8√3'], promptAr: 'مثلث: a = 8، A = 30°، B = 45°. أوجد b بقانون الجيوب.', promptEn: 'Triangle: a = 8, A = 30°, B = 45°. Find b using the sine rule.' },
+  // «قانون الجيوب» on its own: a side from two angles, an angle from two sides
+  // (never the two-triangle case: each has one answer, and its working says
+  // why), and a surveyor's river crossing. Special angles only, so the key is exact.
+  { id: 'ls-e1', family: 'trig_apps', diff: 'easy', eq: 'a=10, A=30°, B=90°', answer: 'b = 20', wrongs: ['b = 5', 'b = 10', 'b = 10√3'], promptAr: 'في المثلث ABC: a = 10، A = 30°، B = 90°. أوجد b بقانون الجيوب.', promptEn: 'In triangle ABC, a = 10, A = 30°, B = 90°. Find b using the sine rule.' },
+  { id: 'ls-e2', family: 'trig_apps', diff: 'easy', eq: 'a=6, b=12, B=90°', answer: 'A = 30°', wrongs: ['A = 60°', 'A = 45°', 'A = 150°'], promptAr: 'في المثلث ABC: a = 6، b = 12، B = 90°. أوجد قياس الزاوية A بقانون الجيوب.', promptEn: 'In triangle ABC, a = 6, b = 12, B = 90°. Find angle A using the sine rule.' },
+  { id: 'ls-m1', family: 'trig_apps', diff: 'medium', eq: 'a=12, A=45°, B=30°', answer: 'b = 6√2', wrongs: ['b = 12√2', 'b = 6', 'b = 6√3'], promptAr: 'في المثلث ABC: a = 12، A = 45°، B = 30°. أوجد b بقانون الجيوب.', promptEn: 'In triangle ABC, a = 12, A = 45°, B = 30°. Find b using the sine rule.' },
+  { id: 'ls-m2', family: 'trig_apps', diff: 'medium', eq: 'a=5, A=30°, B=30°', answer: 'c = 5√3', wrongs: ['c = 5', 'c = 10', 'c = 5√2'], promptAr: 'في المثلث ABC: a = 5، A = 30°، B = 30°. أوجد c.', promptEn: 'In triangle ABC, a = 5, A = 30°, B = 30°. Find c.' },
+  { id: 'ls-m3', family: 'trig_apps', diff: 'medium', eq: 'a=3√2, A=60°, b=2√3', answer: 'B = 45°', wrongs: ['B = 30°', 'B = 60°', 'B = 135°'], promptAr: 'في المثلث ABC: a = 3√2، A = 60°، b = 2√3. أوجد قياس الزاوية B بقانون الجيوب.', promptEn: 'In triangle ABC, a = 3√2, A = 60°, b = 2√3. Find angle B using the sine rule.' },
+  { id: 'ls-h1', family: 'trig_apps', diff: 'hard', eq: 'a=6, A=120°, b=2√3', answer: 'B = 30°', wrongs: ['B = 150°', 'B = 60°', 'B = 45°'], promptAr: 'في المثلث ABC: a = 6، A = 120°، b = 2√3. أوجد قياس الزاوية B، وبيّن لماذا لها قيمة واحدة فقط.', promptEn: 'In triangle ABC, a = 6, A = 120°, b = 2√3. Find angle B, and show why it has only one value.' },
+  {
+    id: 'ls-w1', family: 'trig_apps', diff: 'hard', eq: 'AB=100, A=30°, B=120°', answer: 'AC = 100√3 م', wrongs: ['AC = 100 م', 'AC = 50√3 م', 'AC = 200 م'], kind: 'word', story: true,
+    wordAr: 'يقف مسّاح عند النقطتين A و B على ضفة نهر، والمسافة بينهما 100 م، ويرصد شجرة C على الضفة الأخرى. قاس الزاويتين فكانت ∠CAB = 30° و ∠ABC = 120°. أوجد المسافة AC بين النقطة A والشجرة.',
+    wordEn: 'A surveyor stands at points A and B on a riverbank, 100 m apart, and sights a tree C on the far bank. The angles are ∠CAB = 30° and ∠ABC = 120°. Find the distance AC from A to the tree.',
+  },
+  // «قانون جيب التمام» on its own: a side from two sides and the angle between
+  // them (60°, 90° — where it is Pythagoras — and 120°, whose negative cosine
+  // adds), an angle from three sides, the largest angle, and two ships.
+  // Special angles only, so the key is exact; no triangle repeats another's.
+  { id: 'lc-e1', family: 'trig_apps', diff: 'easy', eq: 'a=3, b=5, C=60°', answer: 'c = √19', wrongs: ['c = 7', 'c = √34', 'c = 19'], promptAr: 'في المثلث ABC: a = 3، b = 5، C = 60°. أوجد c بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 3, b = 5, C = 60°. Find c using the cosine rule.' },
+  { id: 'lc-e2', family: 'trig_apps', diff: 'easy', eq: 'a=6, b=8, C=90°', answer: 'c = 10', wrongs: ['c = 14', 'c = 2', 'c = 100'], promptAr: 'في المثلث ABC: a = 6، b = 8، C = 90°. أوجد c بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 6, b = 8, C = 90°. Find c using the cosine rule.' },
+  { id: 'lc-m1', family: 'trig_apps', diff: 'medium', eq: 'a=3, b=5, C=120°', answer: 'c = 7', wrongs: ['c = √19', 'c = 8', 'c = √34'], promptAr: 'في المثلث ABC: a = 3، b = 5، C = 120°. أوجد c بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 3, b = 5, C = 120°. Find c using the cosine rule.' },
+  { id: 'lc-m2', family: 'trig_apps', diff: 'medium', eq: 'a=3, b=8, c=7', answer: 'C = 60°', wrongs: ['C = 30°', 'C = 120°', 'C = 45°'], promptAr: 'في المثلث ABC: a = 3، b = 8، c = 7. أوجد قياس الزاوية C بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 3, b = 8, c = 7. Find angle C using the cosine rule.' },
+  { id: 'lc-m3', family: 'trig_apps', diff: 'medium', eq: 'a=5, b=12, c=13', answer: 'C = 90°', wrongs: ['C = 60°', 'C = 120°', 'C = 45°'], promptAr: 'في المثلث ABC: a = 5، b = 12، c = 13. أوجد قياس الزاوية C بقانون جيب التمام. ماذا تستنتج عن المثلث؟', promptEn: 'In triangle ABC, a = 5, b = 12, c = 13. Find angle C using the cosine rule. What do you conclude about the triangle?' },
+  { id: 'lc-h1', family: 'trig_apps', diff: 'hard', eq: 'sides 7, 8, 13', answer: 'الزاوية الكبرى = 120°', wrongs: ['الزاوية الكبرى = 60°', 'الزاوية الكبرى = 90°', 'الزاوية الكبرى = 150°'], promptAr: 'مثلث أطوال أضلاعه 7 و 8 و 13. أوجد قياس أكبر زواياه.', promptEn: 'A triangle has sides 7, 8 and 13. Find its largest angle.' },
+  {
+    id: 'lc-w1', family: 'trig_apps', diff: 'hard', eq: 'ships 5, 8, 60°', answer: 'المسافة = 7 كم', wrongs: ['المسافة = 13 كم', 'المسافة = √89 كم', 'المسافة = 3 كم'], kind: 'word', story: true,
+    wordAr: 'تنطلق سفينتان من الميناء في الوقت نفسه بمسارين مستقيمين بينهما زاوية 60°. بعد ساعة قطعت الأولى 5 كم والثانية 8 كم. كم تبعد السفينتان إحداهما عن الأخرى عندئذ؟',
+    wordEn: 'Two ships leave port at the same time on straight courses 60° apart. After an hour the first has sailed 5 km and the second 8 km. How far apart are the ships then?',
+  },
+  // More of «قانون جيب التمام»: an equilateral triangle found by the rule, a
+  // second right angle, a larger 120° triangle, a second 60° angle from three
+  // sides, a 120° angle from an isosceles triangle, a parallelogram's long
+  // diagonal, and measuring across a lake. No triangle is another item's
+  // (`lessonFocus.test.ts` recomputes every key and checks the triangles).
+  { id: 'lc-e3', family: 'trig_apps', diff: 'easy', eq: 'a=4, b=4, C=60°', answer: 'c = 4', wrongs: ['c = 8', 'c = 4√3', 'c = 16'], promptAr: 'في المثلث ABC: a = 4، b = 4، C = 60°. أوجد c بقانون جيب التمام. ما نوع المثلث؟', promptEn: 'In triangle ABC, a = 4, b = 4, C = 60°. Find c using the cosine rule. What kind of triangle is it?' },
+  { id: 'lc-e4', family: 'trig_apps', diff: 'easy', eq: 'a=9, b=12, C=90°', answer: 'c = 15', wrongs: ['c = 21', 'c = 3', 'c = 225'], promptAr: 'في المثلث ABC: a = 9، b = 12، C = 90°. أوجد c بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 9, b = 12, C = 90°. Find c using the cosine rule.' },
+  { id: 'lc-m4', family: 'trig_apps', diff: 'medium', eq: 'a=5, b=16, C=120°', answer: 'c = 19', wrongs: ['c = 21', 'c = √201', 'c = √281'], promptAr: 'في المثلث ABC: a = 5، b = 16، C = 120°. أوجد c بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 5, b = 16, C = 120°. Find c using the cosine rule.' },
+  { id: 'lc-m5', family: 'trig_apps', diff: 'medium', eq: 'a=8, b=15, c=13', answer: 'C = 60°', wrongs: ['C = 30°', 'C = 90°', 'C = 120°'], promptAr: 'في المثلث ABC: a = 8، b = 15، c = 13. أوجد قياس الزاوية C بقانون جيب التمام.', promptEn: 'In triangle ABC, a = 8, b = 15, c = 13. Find angle C using the cosine rule.' },
+  { id: 'lc-m6', family: 'trig_apps', diff: 'medium', eq: 'a=5, b=5, c=5√3', answer: 'C = 120°', wrongs: ['C = 60°', 'C = 150°', 'C = 30°'], promptAr: 'مثلث متطابق الضلعين ABC فيه a = b = 5 و c = 5√3. أوجد قياس الزاوية C بقانون جيب التمام.', promptEn: 'Isosceles triangle ABC has a = b = 5 and c = 5√3. Find angle C using the cosine rule.' },
+  { id: 'lc-h2', family: 'trig_apps', diff: 'hard', eq: 'parallelogram 6, 10, 60°', answer: 'القطر الأطول = 14 سم', wrongs: ['القطر الأطول = 2√19 سم', 'القطر الأطول = 16 سم', 'القطر الأطول = √136 سم'], promptAr: 'متوازي أضلاع طولا ضلعين متجاورين فيه 6 سم و 10 سم، وقياس الزاوية بينهما 60°. أوجد طول قطره الأطول.', promptEn: 'A parallelogram has adjacent sides 6 cm and 10 cm with a 60° angle between them. Find its longer diagonal.' },
+  {
+    id: 'lc-w2', family: 'trig_apps', diff: 'hard', eq: 'lake 80, 150, 60°', answer: 'AB = 130 م', wrongs: ['AB = 230 م', 'AB = 70 م', 'AB = 170 م'], kind: 'word', story: true,
+    wordAr: 'أراد مسّاح أن يقيس المسافة AB بين نقطتين على طرفي بحيرة. وقف عند نقطة C على اليابسة، فوجد أن CA = 80 م و CB = 150 م، وأن قياس الزاوية ACB يساوي 60°. أوجد المسافة AB عبر البحيرة.',
+    wordEn: 'A surveyor wants the distance AB between two points on opposite shores of a lake. Standing at a point C on land, they find CA = 80 m, CB = 150 m and angle ACB = 60°. Find the distance AB across the lake.',
+  },
 
   // ── Functions ──
   { id: 'f-e1', family: 'functions', diff: 'easy', eq: 'f(x)=2x+3, f(4)', answer: '11', wrongs: ['8', '14', '5'], promptAr: 'إذا كان f(x) = 2x + 3، أوجد f(4).', promptEn: 'If f(x) = 2x + 3, find f(4).' },
@@ -490,6 +669,23 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'f-m1', family: 'functions', diff: 'medium', eq: 'f(x)=x², g(x)=x+1, (f∘g)(2)', answer: '9', wrongs: ['5', '4', '3'], promptAr: 'f(x)=x² و g(x)=x+1. أوجد (f∘g)(2).', promptEn: 'f(x)=x², g(x)=x+1. Find (f∘g)(2).' },
   { id: 'f-m2', family: 'functions', diff: 'medium', eq: 'f(x)=2x−6, f⁻¹', answer: 'f⁻¹(x) = (x+6)/2', wrongs: ['2x+6', 'x/2 − 6', '6 − 2x'], promptAr: 'أوجد الاقتران العكسي لـ f(x) = 2x − 6.', promptEn: 'Find the inverse of f(x) = 2x − 6.' },
   { id: 'f-h1', family: 'functions', diff: 'hard', eq: 'a_n = 3n − 1', answer: 'a_5 = 14', wrongs: ['15', '12', '8'], promptAr: 'متتالية حسابية a_n = 3n − 1. أوجد a_5.', promptEn: 'Arithmetic sequence a_n = 3n − 1. Find a_5.' },
+  // «الاقتران العكسي» on its own: undoing an addition and a multiplication, then
+  // two-step linear functions (one with a negative slope), a value of f⁻¹ read
+  // without finding it first, a cube, a square with its domain restricted, and
+  // a taxi fare turned round. Every key is checked by undoing f with it
+  // (`lessonFocus.test.ts`).
+  { id: 'if-e1', family: 'functions', diff: 'easy', eq: 'f(x)=x+5, f⁻¹', answer: 'f⁻¹(x) = x − 5', wrongs: ['f⁻¹(x) = x + 5', 'f⁻¹(x) = 5 − x', 'f⁻¹(x) = 1/(x + 5)'], promptAr: 'أوجد الاقتران العكسي للاقتران f(x) = x + 5.', promptEn: 'Find the inverse of f(x) = x + 5.' },
+  { id: 'if-e2', family: 'functions', diff: 'easy', eq: 'f(x)=3x, f⁻¹', answer: 'f⁻¹(x) = x/3', wrongs: ['f⁻¹(x) = 3x', 'f⁻¹(x) = 1/(3x)', 'f⁻¹(x) = x − 3'], promptAr: 'أوجد الاقتران العكسي للاقتران f(x) = 3x.', promptEn: 'Find the inverse of f(x) = 3x.' },
+  { id: 'if-m1', family: 'functions', diff: 'medium', eq: 'f(x)=(x−1)/4, f⁻¹', answer: 'f⁻¹(x) = 4x + 1', wrongs: ['f⁻¹(x) = 4x − 1', 'f⁻¹(x) = (x + 1)/4', 'f⁻¹(x) = 4/(x − 1)'], promptAr: 'أوجد الاقتران العكسي للاقتران f(x) = (x − 1)/4.', promptEn: 'Find the inverse of f(x) = (x − 1)/4.' },
+  { id: 'if-m2', family: 'functions', diff: 'medium', eq: 'f(x)=5−2x, f⁻¹', answer: 'f⁻¹(x) = (5 − x)/2', wrongs: ['f⁻¹(x) = (x − 5)/2', 'f⁻¹(x) = 5 + 2x', 'f⁻¹(x) = (x + 5)/2'], promptAr: 'أوجد الاقتران العكسي للاقتران f(x) = 5 − 2x.', promptEn: 'Find the inverse of f(x) = 5 − 2x.' },
+  { id: 'if-m3', family: 'functions', diff: 'medium', eq: 'f(x)=2x+1, f⁻¹(7)', answer: 'f⁻¹(7) = 3', wrongs: ['f⁻¹(7) = 15', 'f⁻¹(7) = 4', 'f⁻¹(7) = 1/15'], promptAr: 'إذا كان f(x) = 2x + 1، فأوجد f⁻¹(7).', promptEn: 'If f(x) = 2x + 1, find f⁻¹(7).' },
+  { id: 'if-h1', family: 'functions', diff: 'hard', eq: 'f(x)=x³+2, f⁻¹', answer: 'f⁻¹(x) = ∛(x − 2)', wrongs: ['f⁻¹(x) = ∛x − 2', 'f⁻¹(x) = (x − 2)³', 'f⁻¹(x) = 1/(x³ + 2)'], promptAr: 'أوجد الاقتران العكسي للاقتران f(x) = x³ + 2.', promptEn: 'Find the inverse of f(x) = x³ + 2.' },
+  { id: 'if-h2', family: 'functions', diff: 'hard', eq: 'f(x)=x²+1, x≥0, f⁻¹', answer: 'f⁻¹(x) = √(x − 1)، x ≥ 1', wrongs: ['f⁻¹(x) = √x − 1، x ≥ 0', 'f⁻¹(x) = √(x + 1)، x ≥ −1', 'f⁻¹(x) = (x − 1)²، x ≥ 1'], promptAr: 'أوجد الاقتران العكسي للاقتران f(x) = x² + 1 حيث x ≥ 0، واذكر مجاله.', promptEn: 'Find the inverse of f(x) = x² + 1 for x ≥ 0, and state its domain.' },
+  {
+    id: 'if-w1', family: 'functions', diff: 'hard', eq: 'taxi f(d)=0.5d+2, f⁻¹(7)', answer: 'المسافة = 10 كم', wrongs: ['المسافة = 5.5 كم', 'المسافة = 18 كم', 'المسافة = 14 كم'], kind: 'word', story: true,
+    wordAr: 'أجرة سيارة بالدينار f(d) = 0.5d + 2، حيث d المسافة بالكيلومترات. أوجد الاقتران العكسي f⁻¹ وبيّن ماذا يعني، ثم استعمله لإيجاد المسافة التي أجرتها 7 دنانير.',
+    wordEn: 'A taxi fare in dinars is f(d) = 0.5d + 2, where d is the distance in km. Find the inverse f⁻¹ and say what it means, then use it to find the distance whose fare is 7 dinars.',
+  },
   // ── Sequences ──
   { id: 'q-e1', family: 'sequences', diff: 'easy', eq: 'a_n = 2n + 1, a_4', answer: 'a_4 = 9', wrongs: ['7', '8', '10'], promptAr: 'متتالية حدّها العام a_n = 2n + 1. أوجد a_4.', promptEn: 'A sequence has general term a_n = 2n + 1. Find a_4.' },
   { id: 'q-e2', family: 'sequences', diff: 'easy', eq: '5, 9, 13, ...', answer: 'd = 4', wrongs: ['3', '5', '9'], promptAr: 'متتالية حسابية: 5 ، 9 ، 13 ، … ما أساسها (الفرق المشترك)؟', promptEn: 'Arithmetic sequence: 5, 9, 13, … What is the common difference?' },
@@ -526,8 +722,72 @@ export const MATH_BANK: ConcreteItem[] = [
   // ── Vectors ──
   { id: 'v-e1', family: 'vectors', diff: 'easy', eq: 'A(1,2), B(4,6)', answer: 'AB⃗ = ⟨3, 4⟩', wrongs: ['⟨5, 8⟩', '⟨−3, −4⟩', '⟨4, 3⟩'], promptAr: 'أوجد المتجه AB⃗ من A(1,2) إلى B(4,6).', promptEn: 'Find vector AB from A(1,2) to B(4,6).' },
   { id: 'v-e2', family: 'vectors', diff: 'easy', eq: '⟨3,4⟩', answer: '|v| = 5', wrongs: ['7', '12', '1'], promptAr: 'أوجد مقدار المتجه ⟨3, 4⟩.', promptEn: 'Find the magnitude of ⟨3, 4⟩.' },
+  // «المتجهات في المستوى» on its own: a vector from two points, a magnitude, the
+  // length of a vector between points, a unit vector, direction angles (60° and
+  // 135°), the end of an equal vector, a missing component from a magnitude,
+  // and a drone's flight. `lessonFocus.test.ts` recomputes every key.
+  { id: 'vp-e1', family: 'vectors', diff: 'easy', eq: 'P(−2,3), Q(4,1), PQ', answer: 'PQ⃗ = ⟨6, −2⟩', wrongs: ['⟨−6, 2⟩', '⟨2, 4⟩', '⟨6, 2⟩'], promptAr: 'أوجد المتجه PQ⃗ من P(−2, 3) إلى Q(4, 1) بالصورة الإحداثية.', promptEn: 'Find the vector PQ from P(−2, 3) to Q(4, 1) in component form.' },
+  { id: 'vp-e2', family: 'vectors', diff: 'easy', eq: '⟨−5,12⟩, magnitude', answer: '|v| = 13', wrongs: ['7', '17', '169'], promptAr: 'أوجد مقدار المتجه v = ⟨−5, 12⟩.', promptEn: 'Find the magnitude of v = ⟨−5, 12⟩.' },
+  { id: 'vp-m1', family: 'vectors', diff: 'medium', eq: 'A(1,−1), B(7,7), |AB|', answer: '|AB⃗| = 10', wrongs: ['14', '100', '8'], promptAr: 'أوجد مقدار المتجه AB⃗ حيث A(1, −1) و B(7, 7).', promptEn: 'Find the magnitude of AB where A(1, −1) and B(7, 7).' },
+  { id: 'vp-m2', family: 'vectors', diff: 'medium', eq: '⟨3,−4⟩, unit vector', answer: 'u = ⟨3/5, −4/5⟩', wrongs: ['⟨3, −4⟩', '⟨1/3, −1/4⟩', '⟨3/7, −4/7⟩'], promptAr: 'أوجد متجه الوحدة في اتجاه المتجه v = ⟨3, −4⟩.', promptEn: 'Find the unit vector in the direction of v = ⟨3, −4⟩.' },
+  { id: 'vp-m3', family: 'vectors', diff: 'medium', eq: '⟨1,√3⟩, direction angle', answer: 'θ = 60°', wrongs: ['θ = 30°', 'θ = 45°', 'θ = 120°'], promptAr: 'أوجد قياس الزاوية التي يصنعها المتجه v = ⟨1, √3⟩ مع الاتجاه الموجب لمحور x.', promptEn: 'Find the angle v = ⟨1, √3⟩ makes with the positive x-axis.' },
+  { id: 'vp-m4', family: 'vectors', diff: 'medium', eq: 'A(1,2), B(4,7), C(0,−1), AB=CD, D', answer: 'D(3, 4)', wrongs: ['D(−3, −6)', 'D(4, 6)', 'D(3, 6)'], promptAr: 'إذا كان AB⃗ = CD⃗ حيث A(1, 2) و B(4, 7) و C(0, −1)، فأوجد إحداثيي النقطة D.', promptEn: 'If AB = CD where A(1, 2), B(4, 7) and C(0, −1), find the point D.' },
+  { id: 'vp-h1', family: 'vectors', diff: 'hard', eq: '⟨−2,2⟩, direction angle', answer: 'θ = 135°', wrongs: ['θ = 45°', 'θ = −45°', 'θ = 225°'], promptAr: 'أوجد قياس الزاوية التي يصنعها المتجه v = ⟨−2, 2⟩ مع الاتجاه الموجب لمحور x.', promptEn: 'Find the angle v = ⟨−2, 2⟩ makes with the positive x-axis.' },
+  { id: 'vp-h2', family: 'vectors', diff: 'hard', eq: '|⟨a,6⟩|=10, a>0', answer: 'a = 8', wrongs: ['a = 4', 'a = 16', 'a = 64'], promptAr: 'إذا كان مقدار المتجه v = ⟨a, 6⟩ يساوي 10 حيث a > 0، فأوجد قيمة a.', promptEn: 'If the magnitude of v = ⟨a, 6⟩ is 10 with a > 0, find a.' },
+  {
+    id: 'vp-w1', family: 'vectors', diff: 'hard', eq: 'drone (2,1) to (8,9)', answer: 'المسافة = 10 كم', wrongs: ['المسافة = 14 كم', 'المسافة = 100 كم', 'المسافة = 2 كم'], kind: 'word', story: true,
+    wordAr: 'على خريطة وحدتها الكيلومتر، طارت طائرة مسيّرة في خط مستقيم من النقطة (2, 1) إلى النقطة (8, 9). اكتب متجه إزاحتها بالصورة الإحداثية، ثم أوجد المسافة التي قطعتها.',
+    wordEn: 'On a map measured in kilometres, a drone flies in a straight line from (2, 1) to (8, 9). Write its displacement vector in component form, then find the distance it flew.',
+  },
   { id: 'v-m1', family: 'vectors', diff: 'medium', eq: 'u=⟨1,2⟩, v=⟨3,−1⟩', answer: 'u+v = ⟨4, 1⟩', wrongs: ['⟨2, 1⟩', '⟨4, 3⟩', '⟨3, 2⟩'], promptAr: 'إذا كان u = ⟨1, 2⟩ و v = ⟨3, −1⟩، أوجد u + v.', promptEn: 'If u = ⟨1, 2⟩ and v = ⟨3, −1⟩, find u + v.' },
   { id: 'v-m2', family: 'vectors', diff: 'medium', eq: 'u=⟨2,3⟩, v=⟨4,−1⟩', answer: 'u·v = 5', wrongs: ['8', '−3', '7'], promptAr: 'أوجد الضرب القياسي ⟨2, 3⟩ · ⟨4, −1⟩.', promptEn: 'Find the dot product ⟨2, 3⟩ · ⟨4, −1⟩.' },
+  // «الضرب القياسي» on its own: a dot product, one with a negative term, a
+  // vector with itself (|u|²), k for perpendicular vectors, the angle between
+  // two vectors (45° and an obtuse 120°), a right angle in a triangle shown by
+  // vectors, and the work a force does. Special angles only, so the key is
+  // exact; `lessonFocus.test.ts` recomputes every key from the vectors.
+  { id: 'dp-e1', family: 'vectors', diff: 'easy', eq: 'u=⟨3,1⟩, v=⟨2,5⟩, u·v', answer: 'u·v = 11', wrongs: ['⟨6, 5⟩', '17', '28'], promptAr: 'إذا كان u = ⟨3, 1⟩ و v = ⟨2, 5⟩، فأوجد الضرب القياسي u · v.', promptEn: 'If u = ⟨3, 1⟩ and v = ⟨2, 5⟩, find the dot product u · v.' },
+  { id: 'dp-e2', family: 'vectors', diff: 'easy', eq: 'u=⟨4,−2⟩, v=⟨1,3⟩, u·v', answer: 'u·v = −2', wrongs: ['10', '−10', '2'], promptAr: 'إذا كان u = ⟨4, −2⟩ و v = ⟨1, 3⟩، فأوجد الضرب القياسي u · v.', promptEn: 'If u = ⟨4, −2⟩ and v = ⟨1, 3⟩, find the dot product u · v.' },
+  { id: 'dp-m1', family: 'vectors', diff: 'medium', eq: 'u=⟨3,4⟩, u·u', answer: 'u·u = 25', wrongs: ['5', '7', '12'], promptAr: 'إذا كان u = ⟨3, 4⟩، فأوجد u · u، وقارنه بمربع مقدار u.', promptEn: 'If u = ⟨3, 4⟩, find u · u and compare it with the square of |u|.' },
+  { id: 'dp-m2', family: 'vectors', diff: 'medium', eq: 'u=⟨k,2⟩, v=⟨3,−6⟩, u⊥v', answer: 'k = 4', wrongs: ['k = −4', 'k = 1', 'k = 12'], promptAr: 'أوجد قيمة k التي تجعل المتجهين u = ⟨k, 2⟩ و v = ⟨3, −6⟩ متعامدين.', promptEn: 'Find the value of k that makes u = ⟨k, 2⟩ and v = ⟨3, −6⟩ perpendicular.' },
+  { id: 'dp-m3', family: 'vectors', diff: 'medium', eq: 'u=⟨1,1⟩, v=⟨2,0⟩, angle', answer: 'θ = 45°', wrongs: ['θ = 30°', 'θ = 60°', 'θ = 90°'], promptAr: 'أوجد قياس الزاوية θ بين المتجهين u = ⟨1, 1⟩ و v = ⟨2, 0⟩.', promptEn: 'Find the angle θ between u = ⟨1, 1⟩ and v = ⟨2, 0⟩.' },
+  { id: 'dp-h1', family: 'vectors', diff: 'hard', eq: 'u=⟨2,0⟩, v=⟨−1,√3⟩, angle', answer: 'θ = 120°', wrongs: ['θ = 60°', 'θ = 150°', 'θ = 30°'], promptAr: 'أوجد قياس الزاوية θ بين المتجهين u = ⟨2, 0⟩ و v = ⟨−1, √3⟩.', promptEn: 'Find the angle θ between u = ⟨2, 0⟩ and v = ⟨−1, √3⟩.' },
+  { id: 'dp-h2', family: 'vectors', diff: 'hard', eq: 'A(1,1), B(4,2), C(0,4), angle A', answer: 'نعم، AB⃗ · AC⃗ = 0', wrongs: ['لا، AB⃗ · AC⃗ = 6', 'لا، AB⃗ · AC⃗ = −6', 'نعم، AB⃗ · AC⃗ = 10'], promptAr: 'النقاط A(1, 1) و B(4, 2) و C(0, 4). هل الزاوية A في المثلث ABC قائمة؟ برّر باستعمال الضرب القياسي.', promptEn: 'Points A(1, 1), B(4, 2), C(0, 4). Is the angle at A in triangle ABC a right angle? Justify with the dot product.' },
+  {
+    id: 'dp-w1', family: 'vectors', diff: 'hard', eq: 'work F=⟨10,5⟩, d=⟨6,0⟩', answer: 'الشغل = 60 جول', wrongs: ['الشغل = 90 جول', 'الشغل = 30 جول', 'الشغل = 6√125 جول'], kind: 'word', story: true,
+    wordAr: 'يُسحب صندوق على أرض مستوية بقوة F = ⟨10, 5⟩ نيوتن، فيتحرك إزاحة d = ⟨6, 0⟩ م. إذا علمت أن الشغل المبذول W = F · d، فأوجد الشغل بالجول.',
+    wordEn: 'A box is pulled along level ground by a force F = ⟨10, 5⟩ N and moves through a displacement d = ⟨6, 0⟩ m. Given that the work done is W = F · d, find the work in joules.',
+  },
+  // «جمع المتجهات وطرحها» on its own: a sum and a difference, combinations with
+  // a scalar, the length of a sum (not the sum of the lengths), an unknown
+  // vector, the triangle rule from three points, and a boat crossing a river.
+  // `lessonFocus.test.ts` recomputes every key from the stem's numbers.
+  { id: 'va-e1', family: 'vectors', diff: 'easy', eq: 'u=⟨2,5⟩, v=⟨4,1⟩, u+v', answer: 'u+v = ⟨6, 6⟩', wrongs: ['⟨−2, 4⟩', '⟨8, 5⟩', '⟨6, 5⟩'], promptAr: 'إذا كان u = ⟨2, 5⟩ و v = ⟨4, 1⟩، فأوجد u + v.', promptEn: 'If u = ⟨2, 5⟩ and v = ⟨4, 1⟩, find u + v.' },
+  { id: 'va-e2', family: 'vectors', diff: 'easy', eq: 'u=⟨7,3⟩, v=⟨2,5⟩, u−v', answer: 'u−v = ⟨5, −2⟩', wrongs: ['⟨9, 8⟩', '⟨−5, 2⟩', '⟨5, 2⟩'], promptAr: 'إذا كان u = ⟨7, 3⟩ و v = ⟨2, 5⟩، فأوجد u − v.', promptEn: 'If u = ⟨7, 3⟩ and v = ⟨2, 5⟩, find u − v.' },
+  { id: 'va-m1', family: 'vectors', diff: 'medium', eq: 'u=⟨1,−2⟩, v=⟨3,4⟩, 2u+v', answer: '2u+v = ⟨5, 0⟩', wrongs: ['⟨4, 2⟩', '⟨7, 6⟩', '⟨8, 4⟩'], promptAr: 'إذا كان u = ⟨1, −2⟩ و v = ⟨3, 4⟩، فأوجد 2u + v.', promptEn: 'If u = ⟨1, −2⟩ and v = ⟨3, 4⟩, find 2u + v.' },
+  { id: 'va-m2', family: 'vectors', diff: 'medium', eq: 'u=⟨2,1⟩, v=⟨1,−3⟩, 3u−2v', answer: '3u−2v = ⟨4, 9⟩', wrongs: ['⟨4, −3⟩', '⟨8, −3⟩', '⟨1, 4⟩'], promptAr: 'إذا كان u = ⟨2, 1⟩ و v = ⟨1, −3⟩، فأوجد 3u − 2v.', promptEn: 'If u = ⟨2, 1⟩ and v = ⟨1, −3⟩, find 3u − 2v.' },
+  { id: 'va-m3', family: 'vectors', diff: 'medium', eq: 'u=⟨1,2⟩, v=⟨2,2⟩, |u+v|', answer: '|u+v| = 5', wrongs: ['7', '25', '√5 + 2√2'], promptAr: 'إذا كان u = ⟨1, 2⟩ و v = ⟨2, 2⟩، فأوجد مقدار المتجه u + v.', promptEn: 'If u = ⟨1, 2⟩ and v = ⟨2, 2⟩, find the magnitude of u + v.' },
+  { id: 'va-h1', family: 'vectors', diff: 'hard', eq: 'u=⟨3,−1⟩, v=⟨−2,4⟩, u+w=v', answer: 'w = ⟨−5, 5⟩', wrongs: ['⟨1, 3⟩', '⟨5, −5⟩', '⟨−5, 3⟩'], promptAr: 'إذا كان u = ⟨3, −1⟩ و v = ⟨−2, 4⟩، فأوجد المتجه w الذي يحقق u + w = v.', promptEn: 'If u = ⟨3, −1⟩ and v = ⟨−2, 4⟩, find the vector w with u + w = v.' },
+  { id: 'va-h2', family: 'vectors', diff: 'hard', eq: 'A(0,1), B(2,5), C(6,4), AB+BC', answer: 'AB⃗ + BC⃗ = ⟨6, 3⟩', wrongs: ['⟨−2, 5⟩', '⟨2, 4⟩', '⟨8, 9⟩'], promptAr: 'النقاط A(0,1) و B(2,5) و C(6,4). أوجد AB⃗ + BC⃗، ثم قارنه بالمتجه AC⃗.', promptEn: 'Points A(0,1), B(2,5), C(6,4). Find AB + BC, then compare it with AC.' },
+  {
+    id: 'va-w1', family: 'vectors', diff: 'hard', eq: 'boat ⟨0,4⟩, current ⟨3,0⟩', answer: 'السرعة المحصلة = 5 كم/ساعة', wrongs: ['السرعة المحصلة = 7 كم/ساعة', 'السرعة المحصلة = 1 كم/ساعة', 'السرعة المحصلة = 25 كم/ساعة'], kind: 'word', story: true,
+    wordAr: 'يعبر قارب نهرًا، وسرعته بالنسبة إلى الماء ⟨0, 4⟩ كم/ساعة عموديًا على الضفة، ويجري التيار بسرعة ⟨3, 0⟩ كم/ساعة. أوجد متجه السرعة المحصلة للقارب، ثم أوجد مقدارها.',
+    wordEn: 'A boat crosses a river at ⟨0, 4⟩ km/h relative to the water, straight across, while the current flows at ⟨3, 0⟩ km/h. Find the boat\'s resultant velocity vector, then its speed.',
+  },
+  // More of «جمع المتجهات وطرحها»: negative components, the opposite vector,
+  // u − 3v, a scalar k found from a target vector, the length of a difference,
+  // a parallelogram's fourth vertex, and two forces on one object.
+  { id: 'va-e3', family: 'vectors', diff: 'easy', eq: 'u=⟨−3,2⟩, v=⟨5,−6⟩, u+v', answer: 'u+v = ⟨2, −4⟩', wrongs: ['⟨−8, 8⟩', '⟨8, −8⟩', '⟨2, 4⟩'], promptAr: 'إذا كان u = ⟨−3, 2⟩ و v = ⟨5, −6⟩، فأوجد u + v.', promptEn: 'If u = ⟨−3, 2⟩ and v = ⟨5, −6⟩, find u + v.' },
+  { id: 'va-e4', family: 'vectors', diff: 'easy', eq: 'u=⟨4,−1⟩, −u', answer: '−u = ⟨−4, 1⟩', wrongs: ['⟨−4, −1⟩', '⟨4, 1⟩', '⟨1, −4⟩'], promptAr: 'إذا كان u = ⟨4, −1⟩، فأوجد المتجه المعاكس −u.', promptEn: 'If u = ⟨4, −1⟩, find the opposite vector −u.' },
+  { id: 'va-m4', family: 'vectors', diff: 'medium', eq: 'u=⟨5,2⟩, v=⟨1,−1⟩, u−3v', answer: 'u−3v = ⟨2, 5⟩', wrongs: ['⟨8, −1⟩', '⟨12, 9⟩', '⟨2, −1⟩'], promptAr: 'إذا كان u = ⟨5, 2⟩ و v = ⟨1, −1⟩، فأوجد u − 3v.', promptEn: 'If u = ⟨5, 2⟩ and v = ⟨1, −1⟩, find u − 3v.' },
+  { id: 'va-m5', family: 'vectors', diff: 'medium', eq: 'u=⟨1,4⟩, v=⟨3,−2⟩, u+kv=⟨7,0⟩', answer: 'k = 2', wrongs: ['k = 3', 'k = −2', 'k = 6'], promptAr: 'إذا كان u = ⟨1, 4⟩ و v = ⟨3, −2⟩، فأوجد العدد k الذي يجعل u + kv = ⟨7, 0⟩.', promptEn: 'If u = ⟨1, 4⟩ and v = ⟨3, −2⟩, find the number k that makes u + kv = ⟨7, 0⟩.' },
+  { id: 'va-m6', family: 'vectors', diff: 'medium', eq: 'u=⟨7,2⟩, v=⟨2,−10⟩, |u−v|', answer: '|u−v| = 13', wrongs: ['17', '169', '7'], promptAr: 'إذا كان u = ⟨7, 2⟩ و v = ⟨2, −10⟩، فأوجد مقدار المتجه u − v.', promptEn: 'If u = ⟨7, 2⟩ and v = ⟨2, −10⟩, find the magnitude of u − v.' },
+  { id: 'va-h3', family: 'vectors', diff: 'hard', eq: 'parallelogram A(1,1), B(5,2), D(2,4), C', answer: 'C(6, 5)', wrongs: ['C(7, 6)', 'C(5, 4)', 'C(4, −1)'], promptAr: 'ABCD متوازي أضلاع فيه A(1, 1) و B(5, 2) و D(2, 4). استعمل المتجهات لإيجاد إحداثيي الرأس C.', promptEn: 'ABCD is a parallelogram with A(1, 1), B(5, 2) and D(2, 4). Use vectors to find the vertex C.' },
+  {
+    id: 'va-w2', family: 'vectors', diff: 'hard', eq: 'forces ⟨9,4⟩, ⟨−3,4⟩', answer: 'مقدار المحصلة = 10 نيوتن', wrongs: ['مقدار المحصلة = 14 نيوتن', 'مقدار المحصلة = 100 نيوتن', 'مقدار المحصلة = √97 + 5 نيوتن'], kind: 'word', story: true,
+    wordAr: 'يشدّ طفلان صندوقًا بحبلين في الوقت نفسه: الأول بقوة F₁ = ⟨9, 4⟩ نيوتن، والثاني بقوة F₂ = ⟨−3, 4⟩ نيوتن. أوجد متجه القوة المحصلة على الصندوق، ثم أوجد مقدارها.',
+    wordEn: 'Two children pull a box with ropes at the same time: one with force F₁ = ⟨9, 4⟩ N, the other with F₂ = ⟨−3, 4⟩ N. Find the resultant force vector on the box, then its magnitude.',
+  },
   { id: 'v-h1', family: 'vectors', diff: 'hard', eq: 'u=⟨1,0⟩, v=⟨0,1⟩', answer: 'متعامدان (الضرب القياسي = 0)', wrongs: ['متوازيان', 'نفس الاتجاه', 'غير معرّف'], promptAr: 'هل ⟨1, 0⟩ و ⟨0, 1⟩ متعامدان؟ برّر بالضرب القياسي.', promptEn: 'Are ⟨1, 0⟩ and ⟨0, 1⟩ perpendicular? Justify with the dot product.' },
 
   // ── Stats / probability ──
@@ -547,12 +807,18 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'a-h1', family: 'algebra', diff: 'hard', eq: 'x² − 4x + 1 = 0', answer: 'x = 2 ± √3', wrongs: ['x = ±2', 'x = 4', 'x = 1'], promptAr: 'حل بالقانون العام: x² − 4x + 1 = 0', promptEn: 'Solve with the quadratic formula: x² − 4x + 1 = 0' },
   { id: 'a-h2', family: 'algebra', diff: 'hard', eq: 'x² − 9 = 0', answer: 'x = ±3', wrongs: ['x = 9', 'x = 3 فقط', 'x = 0'] },
   {
-    id: 'a-h3', family: 'algebra', diff: 'hard', eq: '2^n = 16', answer: 'n = 4', wrongs: ['n = 8', 'n = 2', 'n = 16'], kind: 'word',
+    id: 'a-h3', family: 'algebra', diff: 'hard', eq: '2^n = 16', answer: 'n = 4', wrongs: ['n = 8', 'n = 2', 'n = 16'], kind: 'word', story: true,
     wordAr: 'عدد يتضاعف كل يوم بدءًا من 1. بعد كم يوم يصبح 16؟ اكتب معادلة أسية وحلّها.',
     wordEn: 'A quantity doubles each day from 1. After how many days is it 16? Write and solve an exponential equation.',
   },
 ];
 const BANK = MATH_BANK;
+for (const item of MATH_BANK) {
+  const focus = ITEM_FOCUS[item.id];
+  if (focus) item.focus = focus;
+}
+/** The maths items, which alone are keyed by their equation (`eqKey`). */
+const MATH_ITEMS = new Set<ConcreteItem>(MATH_BANK);
 
 /**
  * The question as a teacher would write it.
@@ -592,6 +858,18 @@ export function itemStem(item: ConcreteItem, isAr: boolean): string {
     : (isAr ? `أوجد ناتج: ${item.eq}` : `Evaluate: ${item.eq}`);
 }
 
+/**
+ * A story asks the student to «اكتب المعادلة وحلّها». Put to them as a choice
+ * among four answers, or as a proposed answer to judge, that instruction asks
+ * for work the question then does not want — the bacteria problem printed it
+ * above four options (2026-11-13). The question before it stands on its own.
+ */
+function withoutWriteAndSolve(stem: string): string {
+  return stem
+    .replace(/\s*اكتب\s+(?:ال)?معادلة(?:\s+أسية)?\s+وحلّها\.?\s*$/u, '')
+    .replace(/\s*Write and solve(?: an? [a-z ]*equation)?\.?\s*$/i, '');
+}
+
 function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string; options?: string[]; answer: string } {
   const isAr = lang === 'ar';
   const stem = itemStem(item, isAr);
@@ -625,7 +903,7 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
   if (type === 'multiple_choice') {
     const level = levelOptionShape(item.answer, item.wrongs);
     return {
-      text: stem,
+      text: withoutWriteAndSolve(stem),
       options: placeCorrect(level.correct, level.wrongs),
       // The key must be the option as displayed: the teacher panel shows it
       // as the expected answer and the reveal highlights it by value, so a
@@ -641,10 +919,11 @@ function formatItem(item: ConcreteItem, lang: Lang, type: QType): { text: string
     // A prompt is an imperative («أوجد مشتقة…»); there is no mechanical way
     // to turn one into a statement, and the old attempt produced «حل / ناتج
     // «f(x)=x³ − 4x» هو …» for every family alike.
+    const asked = withoutWriteAndSolve(stem);
     return {
       text: isAr
-        ? `${stem}\n\nالإجابة المقترحة: ${value}\n\nهل الإجابة المقترحة صحيحة؟`
-        : `${stem}\n\nProposed answer: ${value}\n\nIs the proposed answer correct?`,
+        ? `${asked}\n\nالإجابة المقترحة: ${value}\n\nهل الإجابة المقترحة صحيحة؟`
+        : `${asked}\n\nProposed answer: ${value}\n\nIs the proposed answer correct?`,
       options: isAr ? ['صح', 'خطأ'] : ['True', 'False'],
       answer: sayTrue ? (isAr ? 'صح' : 'True') : (isAr ? 'خطأ' : 'False'),
     };
@@ -708,28 +987,43 @@ function takeFromBank(
    * topic-templated question takes the slot instead of a duplicate.
    */
   allowRepeat: boolean = true,
+  /** The item lessons the lesson accepts (`lessonFocus`); its own items are taken first. */
+  focus: readonly LessonFocus[] | null = null,
 ): PracticeWQ | null {
-  const preferWord = type === 'word_problem';
-
-  const matches = (item: ConcreteItem, fam: Family) => {
-    if (used.has(item.id)) return false;
-    if (item.family !== fam) return false;
-    if (preferWord && item.kind !== 'word' && !item.wordAr) {
-      // still allow non-word items — formatItem wraps them
-      return true;
-    }
-    return true;
-  };
+  const matches = (item: ConcreteItem, fam: Family) => item.family === fam && !itemSpent(item, used);
+  const ownLesson = (item: ConcreteItem) => !focus || (item.focus !== undefined && focus.includes(item.focus));
+  // The lesson's own story: the law-of-sines river crossing is not a real-life
+  // problem for «قانون جيب التمام», which shares its family.
+  const isStory = (item: ConcreteItem) => item.story === true && Boolean(item.wordAr || item.wordEn) && ownLesson(item);
 
   const pickFrom = (fam: Family): ConcreteItem | null => {
-    const pool = bank.filter(i => matches(i, fam));
+    let pool = bank.filter(i => matches(i, fam));
+    // A word problem is a story while the lesson has one. Without one the slot
+    // still gets a question, and `story` stays unset so the caller can say so.
+    if (type === 'word_problem') {
+      const stories = pool.filter(isStory);
+      if (stories.length > 0) pool = stories;
+    }
     if (pool.length === 0) return null;
     // Random within the difficulty-preferred slice, not `ranked[0]`: taking
     // the first unused item in bank order meant every fresh session served
     // the identical quiz for a topic — "regenerate" only looked alive until
     // the page reloaded. The used set still guarantees no repeats in a pass.
     const sameDiff = pool.filter(i => i.diff === diff);
-    const tier = sameDiff.length > 0 ? sameDiff : pool;
+    let tier = sameDiff.length > 0 ? sameDiff : pool;
+    // The lesson's own items before the rest of its family, so a family that
+    // holds several lessons does not hand this one the next lesson's question
+    // while its own are unused: the tier asked for first, then any tier of the
+    // lesson's own. A lesson with a single item of its own gets it only in its
+    // tier: put first on every paper, it was the whole of the draw — «إعادة
+    // التوليد» served the same homework, and a warm-up and the activity after
+    // it posed the same triangle (when «قانون الجيوب» had one item). The rest
+    // of the family still follows, so a thin lesson keeps its count.
+    const ownInTier = tier.filter(ownLesson);
+    const ownAny = pool.filter(ownLesson);
+    const lessonSize = focus ? bank.filter(i => i.family === fam && ownLesson(i)).length : 0;
+    if (sameDiff.length > 0 && ownInTier.length > 0) tier = ownInTier;
+    else if (lessonSize > 1 && ownAny.length > 0) tier = ownAny;
     // Then away from kinds this pass has already served: each candidate's
     // chance falls with the cube of how often its kind came up (the kind
     // part of `spreadScore`). A family is often one ask with a few others
@@ -778,11 +1072,16 @@ function takeFromBank(
   }
   if (!item) return null;
 
-  used.add(item.id);
+  spendItem(item, used);
   used.add(`ask:${askOf(item, lang)}`);
   const formatted = formatItem(item, lang, type);
   const working = stepsFor(item.id);
-  return { ...formatted, ...(working ? { steps: [...working[lang]] } : {}), points };
+  return {
+    ...formatted,
+    ...(working ? { steps: [...working[lang]] } : {}),
+    points,
+    ...(type === 'word_problem' && isStory(item) ? { story: true } : {}),
+  };
 }
 
 /**
@@ -813,9 +1112,19 @@ export function takeConcreteMath(
   // The thin Grade 10 lessons are served by their own generator, ahead of the
   // family they share with a sibling lesson (`G10_LESSON_FIRST`). A generator
   // never runs dry, so `allowRepeat` has nothing to decide for them.
-  const own = takeG10LessonMath(type, topic, kb, diff, lang, points, session);
-  if (own) return own;
+  //
+  // Except for a word problem, while the lesson has a real-life story of its
+  // own in the bank: a generator writes an exercise, and «مسألة حياتية» wants
+  // the story (the law of sines' river crossing, `ls-w1`).
   const family = matchMathFamily(topic, kb);
+  const focus = lessonFocus(topic, kb);
+  const used = session ?? usedIds;
+  const ownStoryLeft = type === 'word_problem' && family !== null && BANK.some(i =>
+    i.family === family && i.story === true && (!focus || (i.focus !== undefined && focus.includes(i.focus))) && !itemSpent(i, used));
+  if (!ownStoryLeft) {
+    const own = takeG10LessonMath(type, topic, kb, diff, lang, points, session);
+    if (own) return own;
+  }
   if (!family) return null;
   return takeFromBank(
     BANK,
@@ -825,8 +1134,9 @@ export function takeConcreteMath(
     diff,
     lang,
     points,
-    session ?? usedIds,
+    used,
     allowRepeat,
+    focus,
   );
 }
 
@@ -951,12 +1261,19 @@ function takeSolvedFromBank(
   diff: DiffTier,
   lang: Lang,
   used: Set<string>,
+  /**
+   * The item lessons the lesson accepts (`lessonFocus`). Strict, unlike
+   * practice: a worked example from the next lesson teaches a method the class
+   * has not met, so a lesson without one of its own gets none.
+   */
+  focus: readonly LessonFocus[] | null = null,
 ): SolvedItem | null {
+  const ownLesson = (i: ConcreteItem) => !focus || (i.focus !== undefined && focus.includes(i.focus));
   for (const tier of TIER_ORDER[diff]) {
-    const pool = bank.filter(i => i.family === family && i.diff === tier && !used.has(i.id) && stepsFor(i.id));
+    const pool = bank.filter(i => i.family === family && i.diff === tier && ownLesson(i) && !itemSpent(i, used) && stepsFor(i.id));
     if (pool.length === 0) continue;
     const item = pool[Math.floor(Math.random() * pool.length)]!;
-    used.add(item.id);
+    spendItem(item, used);
     return {
       id: item.id,
       problem: itemStem(item, lang === 'ar'),
@@ -978,7 +1295,7 @@ export function takeSolvedMath(
 ): SolvedItem | null {
   const family = matchMathFamily(topic, kb);
   if (!family) return null;
-  return takeSolvedFromBank(MATH_BANK, family, diff, lang, session ?? usedIds);
+  return takeSolvedFromBank(MATH_BANK, family, diff, lang, session ?? usedIds, lessonFocus(topic, kb));
 }
 
 /** A solved chemistry item for this lesson, or null when the lesson has none left. */

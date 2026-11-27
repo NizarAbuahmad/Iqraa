@@ -130,6 +130,116 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'So cos²θ + sin²θ = 1',
     ],
   },
+  'te-e1': {
+    ar: [
+      'cos θ = 0 حيث تكون النقطة على دائرة الوحدة على المحور الرأسي',
+      'وذلك عند θ = 90° (أعلى) و θ = 270° (أسفل)',
+      'إذن θ = 90° أو 270°',
+    ],
+    en: [
+      'cos θ = 0 where the point on the unit circle is on the vertical axis',
+      'That is at θ = 90° (top) and θ = 270° (bottom)',
+      'So θ = 90° or 270°',
+    ],
+  },
+  'te-e2': {
+    ar: [
+      'tan 45° = 1، فالزاوية المرجعية 45°',
+      'tan θ موجبة في الربعين الأول والثالث',
+      'الربع الأول: θ = 45°، والربع الثالث: θ = 180° + 45° = 225°',
+      'إذن θ = 45° أو 225°',
+    ],
+    en: [
+      'tan 45° = 1, so the reference angle is 45°',
+      'tan θ is positive in the first and third quadrants',
+      'First quadrant: θ = 45°; third quadrant: θ = 180° + 45° = 225°',
+      'So θ = 45° or 225°',
+    ],
+  },
+  'te-m1': {
+    ar: [
+      'نعزل sin θ: 2 sin θ = √3، فيكون sin θ = √3/2',
+      'sin 60° = √3/2، فالزاوية المرجعية 60°',
+      'sin θ موجبة في الربعين الأول والثاني: θ = 60°، و θ = 180° − 60° = 120°',
+      'إذن θ = 60° أو 120°',
+    ],
+    en: [
+      'Isolate sin θ: 2 sin θ = √3, so sin θ = √3/2',
+      'sin 60° = √3/2, so the reference angle is 60°',
+      'sin θ is positive in the first and second quadrants: θ = 60°, and θ = 180° − 60° = 120°',
+      'So θ = 60° or 120°',
+    ],
+  },
+  'te-m2': {
+    ar: [
+      'tan 45° = 1، فالزاوية المرجعية 45°',
+      'tan θ سالبة في الربعين الثاني والرابع',
+      'الربع الثاني: θ = 180° − 45° = 135°، والربع الرابع: θ = 360° − 45° = 315°',
+      'إذن θ = 135° أو 315°',
+    ],
+    en: [
+      'tan 45° = 1, so the reference angle is 45°',
+      'tan θ is negative in the second and fourth quadrants',
+      'Second quadrant: θ = 180° − 45° = 135°; fourth quadrant: θ = 360° − 45° = 315°',
+      'So θ = 135° or 315°',
+    ],
+  },
+  'te-m3': {
+    ar: [
+      'sin 30° = 1/2، فالزاوية المرجعية 30°',
+      'sin θ سالبة في الربعين الثالث والرابع',
+      'الربع الثالث: θ = 180° + 30° = 210°، والربع الرابع: θ = 360° − 30° = 330°',
+      'إذن θ = 210° أو 330°',
+    ],
+    en: [
+      'sin 30° = 1/2, so the reference angle is 30°',
+      'sin θ is negative in the third and fourth quadrants',
+      'Third quadrant: θ = 180° + 30° = 210°; fourth quadrant: θ = 360° − 30° = 330°',
+      'So θ = 210° or 330°',
+    ],
+  },
+  'te-h1': {
+    ar: [
+      'معادلة تربيعية في cos θ: نحلّل (2 cos θ + 1)(cos θ − 1) = 0',
+      'إما cos θ = 1، فيكون θ = 0°',
+      'أو cos θ = −1/2: الزاوية المرجعية 60°، و cos سالبة في الربعين الثاني والثالث، فـ θ = 120° أو 240°',
+      'إذن θ = 0° أو 120° أو 240°',
+    ],
+    en: [
+      'A quadratic in cos θ: factor (2 cos θ + 1)(cos θ − 1) = 0',
+      'Either cos θ = 1, so θ = 0°',
+      'Or cos θ = −1/2: reference angle 60°, and cos is negative in the second and third quadrants, so θ = 120° or 240°',
+      'So θ = 0°, 120° or 240°',
+    ],
+  },
+  'te-h2': {
+    ar: [
+      'نأخذ الجذر للطرفين: sin θ = 1/2 أو sin θ = −1/2 (الإشارتان)',
+      'sin θ = 1/2: θ = 30° أو 150°',
+      'sin θ = −1/2: θ = 210° أو 330°',
+      'إذن θ = 30° أو 150° أو 210° أو 330°',
+    ],
+    en: [
+      'Take the square root of both sides: sin θ = 1/2 or sin θ = −1/2 (both signs)',
+      'sin θ = 1/2: θ = 30° or 150°',
+      'sin θ = −1/2: θ = 210° or 330°',
+      'So θ = 30°, 150°, 210° or 330°',
+    ],
+  },
+  'te-w1': {
+    ar: [
+      'نعوّض h = 14: 10 − 8 cos θ = 14',
+      '−8 cos θ = 4، فيكون cos θ = −1/2',
+      'الزاوية المرجعية 60°، و cos سالبة في الربعين الثاني والثالث: θ = 180° − 60° و θ = 180° + 60°',
+      'إذن θ = 120° أو 240°',
+    ],
+    en: [
+      'Set h = 14: 10 − 8 cos θ = 14',
+      '−8 cos θ = 4, so cos θ = −1/2',
+      'Reference angle 60°, and cos is negative in the second and third quadrants: θ = 180° − 60° and θ = 180° + 60°',
+      'So θ = 120° or 240°',
+    ],
+  },
   't-h1': {
     ar: [
       'نقسم الطرفين على 2: cos θ = 1/2',
@@ -196,6 +306,316 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'So b = 8√2',
     ],
   },
+  'ls-e1': {
+    ar: [
+      'قانون الجيوب: a / sin A = b / sin B',
+      'نعوّض: 10 / sin 30° = b / sin 90°',
+      'نحلّ لـ b: b = 10 × sin 90° / sin 30°',
+      'sin 90° = 1 و sin 30° = 1/2: b = 10 × 1 ÷ (1/2)',
+      'إذن b = 20',
+    ],
+    en: [
+      'Sine rule: a / sin A = b / sin B',
+      'Substitute: 10 / sin 30° = b / sin 90°',
+      'Solve for b: b = 10 × sin 90° / sin 30°',
+      'sin 90° = 1 and sin 30° = 1/2: b = 10 × 1 ÷ (1/2)',
+      'So b = 20',
+    ],
+  },
+  'ls-e2': {
+    ar: [
+      'قانون الجيوب: sin A / a = sin B / b',
+      'نعوّض: sin A / 6 = sin 90° / 12',
+      'sin A = 6 × 1 / 12 = 1/2',
+      'A حادة لأن a < b (الضلع الأقصر يقابل الزاوية الأصغر)، إذن A = 30°',
+    ],
+    en: [
+      'Sine rule: sin A / a = sin B / b',
+      'Substitute: sin A / 6 = sin 90° / 12',
+      'sin A = 6 × 1 / 12 = 1/2',
+      'A is acute because a < b (the shorter side faces the smaller angle), so A = 30°',
+    ],
+  },
+  'ls-m1': {
+    ar: [
+      'قانون الجيوب: a / sin A = b / sin B',
+      'نعوّض: 12 / sin 45° = b / sin 30°',
+      'b = 12 × sin 30° / sin 45° = 12 × (1/2) ÷ (√2/2)',
+      'b = 6 ÷ (√2/2) = 12/√2',
+      'نضرب البسط والمقام في √2: 12√2/2، إذن b = 6√2',
+    ],
+    en: [
+      'Sine rule: a / sin A = b / sin B',
+      'Substitute: 12 / sin 45° = b / sin 30°',
+      'b = 12 × sin 30° / sin 45° = 12 × (1/2) ÷ (√2/2)',
+      'b = 6 ÷ (√2/2) = 12/√2',
+      'Multiply top and bottom by √2: 12√2/2, so b = 6√2',
+    ],
+  },
+  'ls-m2': {
+    ar: [
+      'مجموع زوايا المثلث 180°: C = 180° − 30° − 30° = 120°',
+      'قانون الجيوب: a / sin A = c / sin C',
+      'نعوّض: 5 / sin 30° = c / sin 120°',
+      'sin 120° = √3/2 و sin 30° = 1/2: c = 5 × (√3/2) ÷ (1/2)',
+      'إذن c = 5√3',
+    ],
+    en: [
+      'The angles of a triangle sum to 180°: C = 180° − 30° − 30° = 120°',
+      'Sine rule: a / sin A = c / sin C',
+      'Substitute: 5 / sin 30° = c / sin 120°',
+      'sin 120° = √3/2 and sin 30° = 1/2: c = 5 × (√3/2) ÷ (1/2)',
+      'So c = 5√3',
+    ],
+  },
+  'ls-m3': {
+    ar: [
+      'قانون الجيوب: sin B / b = sin A / a',
+      'نعوّض: sin B = 2√3 × sin 60° / (3√2)',
+      'sin 60° = √3/2: sin B = 2√3 × (√3/2) / (3√2) = 3 / (3√2) = √2/2',
+      'B حادة لأن b < a، إذن B = 45°',
+    ],
+    en: [
+      'Sine rule: sin B / b = sin A / a',
+      'Substitute: sin B = 2√3 × sin 60° / (3√2)',
+      'sin 60° = √3/2: sin B = 2√3 × (√3/2) / (3√2) = 3 / (3√2) = √2/2',
+      'B is acute because b < a, so B = 45°',
+    ],
+  },
+  'ls-h1': {
+    ar: [
+      'قانون الجيوب: sin B / b = sin A / a',
+      'نعوّض: sin B = 2√3 × sin 120° / 6',
+      'sin 120° = √3/2: sin B = 2√3 × (√3/2) / 6 = 3/6 = 1/2',
+      'sin B = 1/2 تعطي 30° أو 150°، و A = 120° منفرجة فلا يتسع المثلث لزاوية منفرجة ثانية، إذن B = 30°',
+    ],
+    en: [
+      'Sine rule: sin B / b = sin A / a',
+      'Substitute: sin B = 2√3 × sin 120° / 6',
+      'sin 120° = √3/2: sin B = 2√3 × (√3/2) / 6 = 3/6 = 1/2',
+      'sin B = 1/2 gives 30° or 150°, but A = 120° is obtuse and a triangle has room for only one obtuse angle, so B = 30°',
+    ],
+  },
+  'ls-w1': {
+    ar: [
+      'الزاوية الثالثة: ∠ACB = 180° − 30° − 120° = 30°',
+      'AC يقابل الزاوية B، و AB يقابل الزاوية C',
+      'قانون الجيوب: AC / sin 120° = AB / sin 30°',
+      'AC = 100 × sin 120° / sin 30° = 100 × (√3/2) ÷ (1/2)',
+      'إذن AC = 100√3 م (نحو 173 م)',
+    ],
+    en: [
+      'The third angle: ∠ACB = 180° − 30° − 120° = 30°',
+      'AC faces angle B, and AB faces angle C',
+      'Sine rule: AC / sin 120° = AB / sin 30°',
+      'AC = 100 × sin 120° / sin 30° = 100 × (√3/2) ÷ (1/2)',
+      'So AC = 100√3 m (about 173 m)',
+    ],
+  },
+  'lc-e1': {
+    ar: [
+      'قانون جيب التمام: c² = a² + b² − 2ab cos C',
+      'نعوّض: c² = 3² + 5² − 2 × 3 × 5 × cos 60°',
+      'cos 60° = 1/2، فتكون c² = 9 + 25 − 30 × (1/2)',
+      'c² = 34 − 15 = 19',
+      'c طول موجب، إذن c = √19',
+    ],
+    en: [
+      'Cosine rule: c² = a² + b² − 2ab cos C',
+      'Substitute: c² = 3² + 5² − 2 × 3 × 5 × cos 60°',
+      'cos 60° = 1/2, so c² = 9 + 25 − 30 × (1/2)',
+      'c² = 34 − 15 = 19',
+      'c is a length, so c = √19',
+    ],
+  },
+  'lc-e2': {
+    ar: [
+      'قانون جيب التمام: c² = a² + b² − 2ab cos C',
+      'نعوّض: c² = 6² + 8² − 2 × 6 × 8 × cos 90°',
+      'cos 90° = 0 فيختفي الحد الأخير: c² = 36 + 64 = 100 (وهي نظرية فيثاغورس)',
+      'c طول موجب، إذن c = 10',
+    ],
+    en: [
+      'Cosine rule: c² = a² + b² − 2ab cos C',
+      'Substitute: c² = 6² + 8² − 2 × 6 × 8 × cos 90°',
+      'cos 90° = 0, so the last term vanishes: c² = 36 + 64 = 100 (Pythagoras)',
+      'c is a length, so c = 10',
+    ],
+  },
+  'lc-m1': {
+    ar: [
+      'قانون جيب التمام: c² = a² + b² − 2ab cos C',
+      'نعوّض: c² = 3² + 5² − 2 × 3 × 5 × cos 120°',
+      'cos 120° = −1/2، فتكون c² = 9 + 25 − 30 × (−1/2) = 9 + 25 + 15',
+      'c² = 49',
+      'c طول موجب، إذن c = 7',
+    ],
+    en: [
+      'Cosine rule: c² = a² + b² − 2ab cos C',
+      'Substitute: c² = 3² + 5² − 2 × 3 × 5 × cos 120°',
+      'cos 120° = −1/2, so c² = 9 + 25 − 30 × (−1/2) = 9 + 25 + 15',
+      'c² = 49',
+      'c is a length, so c = 7',
+    ],
+  },
+  'lc-m2': {
+    ar: [
+      'قانون جيب التمام لإيجاد زاوية: cos C = (a² + b² − c²) / (2ab)',
+      'نعوّض: cos C = (3² + 8² − 7²) / (2 × 3 × 8)',
+      'cos C = (9 + 64 − 49) / 48 = 24/48 = 1/2',
+      'C زاوية في مثلث (بين 0° و 180°)، إذن C = 60°',
+    ],
+    en: [
+      'Cosine rule for an angle: cos C = (a² + b² − c²) / (2ab)',
+      'Substitute: cos C = (3² + 8² − 7²) / (2 × 3 × 8)',
+      'cos C = (9 + 64 − 49) / 48 = 24/48 = 1/2',
+      'C is an angle of a triangle (between 0° and 180°), so C = 60°',
+    ],
+  },
+  'lc-m3': {
+    ar: [
+      'قانون جيب التمام لإيجاد زاوية: cos C = (a² + b² − c²) / (2ab)',
+      'نعوّض: cos C = (5² + 12² − 13²) / (2 × 5 × 12)',
+      'cos C = (25 + 144 − 169) / 120 = 0/120 = 0',
+      'إذن C = 90°، فالمثلث قائم الزاوية',
+    ],
+    en: [
+      'Cosine rule for an angle: cos C = (a² + b² − c²) / (2ab)',
+      'Substitute: cos C = (5² + 12² − 13²) / (2 × 5 × 12)',
+      'cos C = (25 + 144 − 169) / 120 = 0/120 = 0',
+      'So C = 90°, and the triangle is right-angled',
+    ],
+  },
+  'lc-h1': {
+    ar: [
+      'أكبر زاوية تقابل أطول ضلع، وهو 13؛ نسمّيها θ',
+      'cos θ = (7² + 8² − 13²) / (2 × 7 × 8)',
+      'cos θ = (49 + 64 − 169) / 112 = −56/112 = −1/2',
+      'cos θ سالب فالزاوية منفرجة، و θ بين 0° و 180°، إذن الزاوية الكبرى = 120°',
+    ],
+    en: [
+      'The largest angle faces the longest side, 13; call it θ',
+      'cos θ = (7² + 8² − 13²) / (2 × 7 × 8)',
+      'cos θ = (49 + 64 − 169) / 112 = −56/112 = −1/2',
+      'cos θ is negative, so the angle is obtuse; θ is between 0° and 180°, so the largest angle is 120°',
+    ],
+  },
+  'lc-w1': {
+    ar: [
+      'المسافة بين السفينتين d ضلع يقابل الزاوية 60° بين المسارين',
+      'قانون جيب التمام: d² = 5² + 8² − 2 × 5 × 8 × cos 60°',
+      'cos 60° = 1/2، فتكون d² = 25 + 64 − 40 = 49',
+      'd طول موجب، إذن المسافة = 7 كم',
+    ],
+    en: [
+      'The distance d between the ships is the side facing the 60° angle between their courses',
+      'Cosine rule: d² = 5² + 8² − 2 × 5 × 8 × cos 60°',
+      'cos 60° = 1/2, so d² = 25 + 64 − 40 = 49',
+      'd is a length, so the ships are 7 km apart',
+    ],
+  },
+  'lc-e3': {
+    ar: [
+      'قانون جيب التمام: c² = a² + b² − 2ab cos C',
+      'نعوّض: c² = 4² + 4² − 2 × 4 × 4 × cos 60°',
+      'cos 60° = 1/2، فتكون c² = 16 + 16 − 32 × (1/2) = 16',
+      'c طول موجب، إذن c = 4 (والمثلث متطابق الأضلاع)',
+    ],
+    en: [
+      'Cosine rule: c² = a² + b² − 2ab cos C',
+      'Substitute: c² = 4² + 4² − 2 × 4 × 4 × cos 60°',
+      'cos 60° = 1/2, so c² = 16 + 16 − 32 × (1/2) = 16',
+      'c is a length, so c = 4 (and the triangle is equilateral)',
+    ],
+  },
+  'lc-e4': {
+    ar: [
+      'قانون جيب التمام: c² = a² + b² − 2ab cos C',
+      'نعوّض: c² = 9² + 12² − 2 × 9 × 12 × cos 90°',
+      'cos 90° = 0 فيختفي الحد الأخير: c² = 81 + 144 = 225',
+      'c طول موجب، إذن c = 15',
+    ],
+    en: [
+      'Cosine rule: c² = a² + b² − 2ab cos C',
+      'Substitute: c² = 9² + 12² − 2 × 9 × 12 × cos 90°',
+      'cos 90° = 0, so the last term vanishes: c² = 81 + 144 = 225',
+      'c is a length, so c = 15',
+    ],
+  },
+  'lc-m4': {
+    ar: [
+      'قانون جيب التمام: c² = a² + b² − 2ab cos C',
+      'نعوّض: c² = 5² + 16² − 2 × 5 × 16 × cos 120°',
+      'cos 120° = −1/2، فتكون c² = 25 + 256 − 160 × (−1/2) = 25 + 256 + 80',
+      'c² = 361',
+      'c طول موجب، إذن c = 19',
+    ],
+    en: [
+      'Cosine rule: c² = a² + b² − 2ab cos C',
+      'Substitute: c² = 5² + 16² − 2 × 5 × 16 × cos 120°',
+      'cos 120° = −1/2, so c² = 25 + 256 − 160 × (−1/2) = 25 + 256 + 80',
+      'c² = 361',
+      'c is a length, so c = 19',
+    ],
+  },
+  'lc-m5': {
+    ar: [
+      'قانون جيب التمام لإيجاد زاوية: cos C = (a² + b² − c²) / (2ab)',
+      'نعوّض: cos C = (8² + 15² − 13²) / (2 × 8 × 15)',
+      'cos C = (64 + 225 − 169) / 240 = 120/240 = 1/2',
+      'C زاوية في مثلث (بين 0° و 180°)، إذن C = 60°',
+    ],
+    en: [
+      'Cosine rule for an angle: cos C = (a² + b² − c²) / (2ab)',
+      'Substitute: cos C = (8² + 15² − 13²) / (2 × 8 × 15)',
+      'cos C = (64 + 225 − 169) / 240 = 120/240 = 1/2',
+      'C is an angle of a triangle (between 0° and 180°), so C = 60°',
+    ],
+  },
+  'lc-m6': {
+    ar: [
+      'قانون جيب التمام لإيجاد زاوية: cos C = (a² + b² − c²) / (2ab)',
+      'نعوّض: cos C = (5² + 5² − (5√3)²) / (2 × 5 × 5)',
+      '(5√3)² = 25 × 3 = 75، فتكون cos C = (25 + 25 − 75) / 50 = −25/50 = −1/2',
+      'cos C سالب فالزاوية منفرجة، إذن C = 120°',
+    ],
+    en: [
+      'Cosine rule for an angle: cos C = (a² + b² − c²) / (2ab)',
+      'Substitute: cos C = (5² + 5² − (5√3)²) / (2 × 5 × 5)',
+      '(5√3)² = 25 × 3 = 75, so cos C = (25 + 25 − 75) / 50 = −25/50 = −1/2',
+      'cos C is negative, so the angle is obtuse: C = 120°',
+    ],
+  },
+  'lc-h2': {
+    ar: [
+      'زاويتا متوازي الأضلاع المتجاورتان مجموعهما 180°، فالزاوية الأخرى 180° − 60° = 120°',
+      'القطر الأطول يقابل الزاوية المنفرجة 120° في المثلث الذي ضلعاه 6 و 10',
+      'قانون جيب التمام: d² = 6² + 10² − 2 × 6 × 10 × cos 120°',
+      'cos 120° = −1/2، فتكون d² = 36 + 100 + 60 = 196',
+      'd طول موجب، إذن القطر الأطول = 14 سم',
+    ],
+    en: [
+      'Adjacent angles of a parallelogram sum to 180°, so the other angle is 180° − 60° = 120°',
+      'The longer diagonal faces the obtuse 120° angle in the triangle with sides 6 and 10',
+      'Cosine rule: d² = 6² + 10² − 2 × 6 × 10 × cos 120°',
+      'cos 120° = −1/2, so d² = 36 + 100 + 60 = 196',
+      'd is a length, so the longer diagonal is 14 cm',
+    ],
+  },
+  'lc-w2': {
+    ar: [
+      'AB هو الضلع المقابل للزاوية C = 60° في المثلث ABC',
+      'قانون جيب التمام: AB² = 80² + 150² − 2 × 80 × 150 × cos 60°',
+      'cos 60° = 1/2، فتكون AB² = 6400 + 22500 − 12000 = 16900',
+      'AB طول موجب، إذن AB = 130 م',
+    ],
+    en: [
+      'AB is the side facing the angle C = 60° in triangle ABC',
+      'Cosine rule: AB² = 80² + 150² − 2 × 80 × 150 × cos 60°',
+      'cos 60° = 1/2, so AB² = 6400 + 22500 − 12000 = 16900',
+      'AB is a length, so AB = 130 m',
+    ],
+  },
 
   // ── Functions ──
   'f-e1': {
@@ -234,6 +654,104 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'Solve for y: x + 6 = 2y',
       'y = (x+6)/2',
       'So f⁻¹(x) = (x+6)/2',
+    ],
+  },
+  'if-e1': {
+    ar: ['نكتب y = x + 5', 'نبدّل x و y: x = y + 5', 'نحلّ لـ y: y = x − 5', 'إذن f⁻¹(x) = x − 5'],
+    en: ['Write y = x + 5', 'Swap x and y: x = y + 5', 'Solve for y: y = x − 5', 'So f⁻¹(x) = x − 5'],
+  },
+  'if-e2': {
+    ar: ['نكتب y = 3x', 'نبدّل x و y: x = 3y', 'نقسم الطرفين على 3: y = x/3', 'إذن f⁻¹(x) = x/3'],
+    en: ['Write y = 3x', 'Swap x and y: x = 3y', 'Divide both sides by 3: y = x/3', 'So f⁻¹(x) = x/3'],
+  },
+  'if-m1': {
+    ar: [
+      'نكتب y = (x − 1)/4',
+      'نبدّل x و y: x = (y − 1)/4',
+      'نضرب الطرفين في 4: 4x = y − 1',
+      'نضيف 1 إلى الطرفين: y = 4x + 1',
+      'إذن f⁻¹(x) = 4x + 1',
+    ],
+    en: [
+      'Write y = (x − 1)/4',
+      'Swap x and y: x = (y − 1)/4',
+      'Multiply both sides by 4: 4x = y − 1',
+      'Add 1 to both sides: y = 4x + 1',
+      'So f⁻¹(x) = 4x + 1',
+    ],
+  },
+  'if-m2': {
+    ar: [
+      'نكتب y = 5 − 2x',
+      'نبدّل x و y: x = 5 − 2y',
+      'ننقل الحدود: 2y = 5 − x',
+      'نقسم الطرفين على 2: y = (5 − x)/2',
+      'إذن f⁻¹(x) = (5 − x)/2',
+    ],
+    en: [
+      'Write y = 5 − 2x',
+      'Swap x and y: x = 5 − 2y',
+      'Rearrange: 2y = 5 − x',
+      'Divide both sides by 2: y = (5 − x)/2',
+      'So f⁻¹(x) = (5 − x)/2',
+    ],
+  },
+  'if-m3': {
+    ar: [
+      'f⁻¹(7) هو العدد x الذي يحقق f(x) = 7',
+      'نحلّ: 2x + 1 = 7',
+      '2x = 6، فيكون x = 3',
+      'نتحقق: f(3) = 2(3) + 1 = 7، إذن f⁻¹(7) = 3',
+    ],
+    en: [
+      'f⁻¹(7) is the number x with f(x) = 7',
+      'Solve: 2x + 1 = 7',
+      '2x = 6, so x = 3',
+      'Check: f(3) = 2(3) + 1 = 7, so f⁻¹(7) = 3',
+    ],
+  },
+  'if-h1': {
+    ar: [
+      'نكتب y = x³ + 2',
+      'نبدّل x و y: x = y³ + 2',
+      'نطرح 2 من الطرفين: y³ = x − 2',
+      'نأخذ الجذر التكعيبي: y = ∛(x − 2)',
+      'إذن f⁻¹(x) = ∛(x − 2)',
+    ],
+    en: [
+      'Write y = x³ + 2',
+      'Swap x and y: x = y³ + 2',
+      'Subtract 2 from both sides: y³ = x − 2',
+      'Take the cube root: y = ∛(x − 2)',
+      'So f⁻¹(x) = ∛(x − 2)',
+    ],
+  },
+  'if-h2': {
+    ar: [
+      'مع x ≥ 0 يكون f واحدًا لواحد، ومداه f(x) ≥ 1',
+      'نكتب y = x² + 1 ثم نبدّل x و y: x = y² + 1',
+      'y² = x − 1، و y ≥ 0 لأنها من مجال f، فنأخذ الجذر الموجب: y = √(x − 1)',
+      'مجال الاقتران العكسي هو مدى f، إذن f⁻¹(x) = √(x − 1)، x ≥ 1',
+    ],
+    en: [
+      'For x ≥ 0, f is one-to-one, and its range is f(x) ≥ 1',
+      'Write y = x² + 1, then swap x and y: x = y² + 1',
+      'y² = x − 1, and y ≥ 0 because it comes from the domain of f, so take the positive root: y = √(x − 1)',
+      'The domain of the inverse is the range of f, so f⁻¹(x) = √(x − 1), x ≥ 1',
+    ],
+  },
+  'if-w1': {
+    ar: [
+      'نكتب c = 0.5d + 2، حيث c الأجرة',
+      'نحلّ لـ d: 0.5d = c − 2، فيكون d = 2(c − 2) = 2c − 4',
+      'إذن f⁻¹(c) = 2c − 4، وهو المسافة بالكيلومترات التي أجرتها c دينارًا',
+      'f⁻¹(7) = 2(7) − 4 = 10، إذن المسافة = 10 كم',
+    ],
+    en: [
+      'Write c = 0.5d + 2, where c is the fare',
+      'Solve for d: 0.5d = c − 2, so d = 2(c − 2) = 2c − 4',
+      'So f⁻¹(c) = 2c − 4: the distance in km whose fare is c dinars',
+      'f⁻¹(7) = 2(7) − 4 = 10, so the distance is 10 km',
     ],
   },
   'f-h1': {
@@ -376,6 +894,104 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'So AB⃗ = ⟨3, 4⟩',
     ],
   },
+  'vp-e1': {
+    ar: ['المتجه من P إلى Q: PQ⃗ = Q − P (نهاية − بداية)', 'PQ⃗ = ⟨4 − (−2), 1 − 3⟩', 'إذن PQ⃗ = ⟨6, −2⟩'],
+    en: ['The vector from P to Q: PQ = Q − P (end minus start)', 'PQ = ⟨4 − (−2), 1 − 3⟩', 'So PQ = ⟨6, −2⟩'],
+  },
+  'vp-e2': {
+    ar: ['مقدار المتجه ⟨a, b⟩ هو |v| = √(a² + b²)', 'نعوّض: |v| = √((−5)² + 12²) = √(25 + 144) = √169', 'إذن |v| = 13'],
+    en: ['The magnitude of ⟨a, b⟩ is |v| = √(a² + b²)', 'Substitute: |v| = √((−5)² + 12²) = √(25 + 144) = √169', 'So |v| = 13'],
+  },
+  'vp-m1': {
+    ar: [
+      'AB⃗ = ⟨7 − 1, 7 − (−1)⟩ = ⟨6, 8⟩',
+      '|AB⃗| = √(6² + 8²) = √(36 + 64) = √100',
+      'إذن |AB⃗| = 10',
+    ],
+    en: [
+      'AB = ⟨7 − 1, 7 − (−1)⟩ = ⟨6, 8⟩',
+      '|AB| = √(6² + 8²) = √(36 + 64) = √100',
+      'So |AB| = 10',
+    ],
+  },
+  'vp-m2': {
+    ar: [
+      'متجه الوحدة في اتجاه v هو v مقسومًا على مقداره: u = v / |v|',
+      '|v| = √(3² + (−4)²) = √25 = 5',
+      'u = ⟨3/5, −4/5⟩، ونتحقق: (3/5)² + (4/5)² = 9/25 + 16/25 = 1',
+      'إذن u = ⟨3/5, −4/5⟩',
+    ],
+    en: [
+      'The unit vector in the direction of v is v divided by its magnitude: u = v / |v|',
+      '|v| = √(3² + (−4)²) = √25 = 5',
+      'u = ⟨3/5, −4/5⟩; check: (3/5)² + (4/5)² = 9/25 + 16/25 = 1',
+      'So u = ⟨3/5, −4/5⟩',
+    ],
+  },
+  'vp-m3': {
+    ar: [
+      'المتجه ⟨1, √3⟩ في الربع الأول، و tan θ = √3 / 1 = √3',
+      'الزاوية الحادة التي ظلها √3 هي 60°',
+      'إذن θ = 60°',
+    ],
+    en: [
+      '⟨1, √3⟩ is in the first quadrant, and tan θ = √3 / 1 = √3',
+      'The acute angle whose tangent is √3 is 60°',
+      'So θ = 60°',
+    ],
+  },
+  'vp-m4': {
+    ar: [
+      'AB⃗ = ⟨4 − 1, 7 − 2⟩ = ⟨3, 5⟩',
+      'المتجهان المتساويان لهما المركبتان نفسيهما، فـ CD⃗ = ⟨3, 5⟩، أي D = C + ⟨3, 5⟩',
+      'D = (0 + 3, −1 + 5)',
+      'إذن D(3, 4)',
+    ],
+    en: [
+      'AB = ⟨4 − 1, 7 − 2⟩ = ⟨3, 5⟩',
+      'Equal vectors have the same components, so CD = ⟨3, 5⟩, that is D = C + ⟨3, 5⟩',
+      'D = (0 + 3, −1 + 5)',
+      'So D(3, 4)',
+    ],
+  },
+  'vp-h1': {
+    ar: [
+      'المتجه ⟨−2, 2⟩ في الربع الثاني (المركبة الأولى سالبة والثانية موجبة)',
+      'الزاوية المرجعية: tan α = 2/2 = 1، فـ α = 45°',
+      'في الربع الثاني θ = 180° − α = 180° − 45°',
+      'إذن θ = 135°',
+    ],
+    en: [
+      '⟨−2, 2⟩ is in the second quadrant (first component negative, second positive)',
+      'Reference angle: tan α = 2/2 = 1, so α = 45°',
+      'In the second quadrant θ = 180° − α = 180° − 45°',
+      'So θ = 135°',
+    ],
+  },
+  'vp-h2': {
+    ar: [
+      '|v| = √(a² + 6²) = 10، فنربّع الطرفين: a² + 36 = 100',
+      'a² = 64، فيكون a = 8 أو a = −8',
+      'الشرط a > 0، إذن a = 8',
+    ],
+    en: [
+      '|v| = √(a² + 6²) = 10; square both sides: a² + 36 = 100',
+      'a² = 64, so a = 8 or a = −8',
+      'The condition is a > 0, so a = 8',
+    ],
+  },
+  'vp-w1': {
+    ar: [
+      'متجه الإزاحة من (2, 1) إلى (8, 9): ⟨8 − 2, 9 − 1⟩ = ⟨6, 8⟩',
+      'المسافة هي مقداره: √(6² + 8²) = √100',
+      'إذن المسافة = 10 كم',
+    ],
+    en: [
+      'The displacement from (2, 1) to (8, 9): ⟨8 − 2, 9 − 1⟩ = ⟨6, 8⟩',
+      'The distance is its magnitude: √(6² + 8²) = √100',
+      'So the distance is 10 km',
+    ],
+  },
   'v-e2': {
     ar: [
       'مقدار المتجه ⟨a, b⟩ هو |v| = √(a² + b²)',
@@ -400,6 +1016,160 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'So u+v = ⟨4, 1⟩',
     ],
   },
+  'va-e1': {
+    ar: ['نجمع المركبات المتناظرة: u + v = ⟨2 + 4, 5 + 1⟩', 'إذن u+v = ⟨6, 6⟩'],
+    en: ['Add corresponding components: u + v = ⟨2 + 4, 5 + 1⟩', 'So u+v = ⟨6, 6⟩'],
+  },
+  'va-e2': {
+    ar: ['نطرح المركبات المتناظرة: u − v = ⟨7 − 2, 3 − 5⟩', 'إذن u−v = ⟨5, −2⟩'],
+    en: ['Subtract corresponding components: u − v = ⟨7 − 2, 3 − 5⟩', 'So u−v = ⟨5, −2⟩'],
+  },
+  'va-m1': {
+    ar: [
+      'نضرب u في 2: 2u = ⟨2, −4⟩',
+      'نجمع v: 2u + v = ⟨2 + 3, −4 + 4⟩',
+      'إذن 2u+v = ⟨5, 0⟩',
+    ],
+    en: [
+      'Multiply u by 2: 2u = ⟨2, −4⟩',
+      'Add v: 2u + v = ⟨2 + 3, −4 + 4⟩',
+      'So 2u+v = ⟨5, 0⟩',
+    ],
+  },
+  'va-m2': {
+    ar: [
+      '3u = ⟨6, 3⟩ و 2v = ⟨2, −6⟩',
+      '3u − 2v = ⟨6 − 2, 3 − (−6)⟩ = ⟨6 − 2, 3 + 6⟩',
+      'إذن 3u−2v = ⟨4, 9⟩',
+    ],
+    en: [
+      '3u = ⟨6, 3⟩ and 2v = ⟨2, −6⟩',
+      '3u − 2v = ⟨6 − 2, 3 − (−6)⟩ = ⟨6 − 2, 3 + 6⟩',
+      'So 3u−2v = ⟨4, 9⟩',
+    ],
+  },
+  'va-m3': {
+    ar: [
+      'نجمع أولًا: u + v = ⟨1 + 2, 2 + 2⟩ = ⟨3, 4⟩',
+      'مقدار المتجه: |u + v| = √(3² + 4²) = √(9 + 16) = √25',
+      'إذن |u+v| = 5 (وليس |u| + |v|)',
+    ],
+    en: [
+      'Add first: u + v = ⟨1 + 2, 2 + 2⟩ = ⟨3, 4⟩',
+      'Its magnitude: |u + v| = √(3² + 4²) = √(9 + 16) = √25',
+      'So |u+v| = 5 (not |u| + |v|)',
+    ],
+  },
+  'va-h1': {
+    ar: [
+      'من u + w = v نطرح u من الطرفين: w = v − u',
+      'w = ⟨−2 − 3, 4 − (−1)⟩ = ⟨−2 − 3, 4 + 1⟩',
+      'إذن w = ⟨−5, 5⟩',
+    ],
+    en: [
+      'From u + w = v, subtract u from both sides: w = v − u',
+      'w = ⟨−2 − 3, 4 − (−1)⟩ = ⟨−2 − 3, 4 + 1⟩',
+      'So w = ⟨−5, 5⟩',
+    ],
+  },
+  'va-h2': {
+    ar: [
+      'AB⃗ = ⟨2 − 0, 5 − 1⟩ = ⟨2, 4⟩، و BC⃗ = ⟨6 − 2, 4 − 5⟩ = ⟨4, −1⟩',
+      'AB⃗ + BC⃗ = ⟨2 + 4, 4 + (−1)⟩ = ⟨6, 3⟩',
+      'AC⃗ = ⟨6 − 0, 4 − 1⟩ = ⟨6, 3⟩، فالمجموع يساوي AC⃗ (قاعدة المثلث)',
+      'إذن AB⃗ + BC⃗ = ⟨6, 3⟩',
+    ],
+    en: [
+      'AB = ⟨2 − 0, 5 − 1⟩ = ⟨2, 4⟩, and BC = ⟨6 − 2, 4 − 5⟩ = ⟨4, −1⟩',
+      'AB + BC = ⟨2 + 4, 4 + (−1)⟩ = ⟨6, 3⟩',
+      'AC = ⟨6 − 0, 4 − 1⟩ = ⟨6, 3⟩, so the sum equals AC (the triangle rule)',
+      'So AB + BC = ⟨6, 3⟩',
+    ],
+  },
+  'va-w1': {
+    ar: [
+      'السرعة المحصلة هي مجموع المتجهين: ⟨0, 4⟩ + ⟨3, 0⟩ = ⟨3, 4⟩ كم/ساعة',
+      'مقدارها √(3² + 4²) = √25 = 5',
+      'إذن السرعة المحصلة = 5 كم/ساعة',
+    ],
+    en: [
+      'The resultant velocity is the sum of the two vectors: ⟨0, 4⟩ + ⟨3, 0⟩ = ⟨3, 4⟩ km/h',
+      'Its magnitude is √(3² + 4²) = √25 = 5',
+      'So the resultant speed is 5 km/h',
+    ],
+  },
+  'va-e3': {
+    ar: ['نجمع المركبات المتناظرة: u + v = ⟨−3 + 5, 2 + (−6)⟩', 'إذن u+v = ⟨2, −4⟩'],
+    en: ['Add corresponding components: u + v = ⟨−3 + 5, 2 + (−6)⟩', 'So u+v = ⟨2, −4⟩'],
+  },
+  'va-e4': {
+    ar: ['المتجه المعاكس نضرب كل مركبة فيه في −1: −u = ⟨−4, −(−1)⟩', 'إذن −u = ⟨−4, 1⟩'],
+    en: ['The opposite vector multiplies each component by −1: −u = ⟨−4, −(−1)⟩', 'So −u = ⟨−4, 1⟩'],
+  },
+  'va-m4': {
+    ar: [
+      '3v = ⟨3, −3⟩',
+      'u − 3v = ⟨5 − 3, 2 − (−3)⟩ = ⟨5 − 3, 2 + 3⟩',
+      'إذن u−3v = ⟨2, 5⟩',
+    ],
+    en: [
+      '3v = ⟨3, −3⟩',
+      'u − 3v = ⟨5 − 3, 2 − (−3)⟩ = ⟨5 − 3, 2 + 3⟩',
+      'So u−3v = ⟨2, 5⟩',
+    ],
+  },
+  'va-m5': {
+    ar: [
+      'u + kv = ⟨1 + 3k, 4 − 2k⟩، ونساويه بالمتجه ⟨7, 0⟩',
+      'المركبة الأولى: 1 + 3k = 7، فيكون 3k = 6',
+      'نتحقق بالمركبة الثانية: 4 − 2(2) = 0',
+      'إذن k = 2',
+    ],
+    en: [
+      'u + kv = ⟨1 + 3k, 4 − 2k⟩, set equal to ⟨7, 0⟩',
+      'First component: 1 + 3k = 7, so 3k = 6',
+      'Check with the second component: 4 − 2(2) = 0',
+      'So k = 2',
+    ],
+  },
+  'va-m6': {
+    ar: [
+      'نطرح أولًا: u − v = ⟨7 − 2, 2 − (−10)⟩ = ⟨5, 12⟩',
+      'مقدار المتجه: |u − v| = √(5² + 12²) = √(25 + 144) = √169',
+      'إذن |u−v| = 13',
+    ],
+    en: [
+      'Subtract first: u − v = ⟨7 − 2, 2 − (−10)⟩ = ⟨5, 12⟩',
+      'Its magnitude: |u − v| = √(5² + 12²) = √(25 + 144) = √169',
+      'So |u−v| = 13',
+    ],
+  },
+  'va-h3': {
+    ar: [
+      'في متوازي الأضلاع ABCD يكون AC⃗ = AB⃗ + AD⃗',
+      'AB⃗ = ⟨5 − 1, 2 − 1⟩ = ⟨4, 1⟩، و AD⃗ = ⟨2 − 1, 4 − 1⟩ = ⟨1, 3⟩',
+      'AC⃗ = ⟨4 + 1, 1 + 3⟩ = ⟨5, 4⟩، فنضيفه إلى A(1, 1): (1 + 5, 1 + 4)',
+      'إذن C(6, 5)',
+    ],
+    en: [
+      'In parallelogram ABCD, AC = AB + AD',
+      'AB = ⟨5 − 1, 2 − 1⟩ = ⟨4, 1⟩, and AD = ⟨2 − 1, 4 − 1⟩ = ⟨1, 3⟩',
+      'AC = ⟨4 + 1, 1 + 3⟩ = ⟨5, 4⟩, added to A(1, 1): (1 + 5, 1 + 4)',
+      'So C(6, 5)',
+    ],
+  },
+  'va-w2': {
+    ar: [
+      'القوة المحصلة مجموع القوتين: F₁ + F₂ = ⟨9 + (−3), 4 + 4⟩ = ⟨6, 8⟩ نيوتن',
+      'مقدارها √(6² + 8²) = √(36 + 64) = √100',
+      'إذن مقدار المحصلة = 10 نيوتن',
+    ],
+    en: [
+      'The resultant force is the sum: F₁ + F₂ = ⟨9 + (−3), 4 + 4⟩ = ⟨6, 8⟩ N',
+      'Its magnitude is √(6² + 8²) = √(36 + 64) = √100',
+      'So the resultant has magnitude 10 N',
+    ],
+  },
   'v-m2': {
     ar: [
       'الضرب القياسي: ⟨a, b⟩ · ⟨c, d⟩ = ac + bd',
@@ -412,6 +1182,94 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'Substitute: 2 × 4 + 3 × (−1)',
       '= 8 − 3',
       'So u·v = 5',
+    ],
+  },
+  'dp-e1': {
+    ar: ['الضرب القياسي: ⟨a, b⟩ · ⟨c, d⟩ = ac + bd', 'نعوّض: 3 × 2 + 1 × 5 = 6 + 5', 'إذن u·v = 11'],
+    en: ['Dot product: ⟨a, b⟩ · ⟨c, d⟩ = ac + bd', 'Substitute: 3 × 2 + 1 × 5 = 6 + 5', 'So u·v = 11'],
+  },
+  'dp-e2': {
+    ar: ['الضرب القياسي: ⟨a, b⟩ · ⟨c, d⟩ = ac + bd', 'نعوّض: 4 × 1 + (−2) × 3 = 4 − 6', 'إذن u·v = −2'],
+    en: ['Dot product: ⟨a, b⟩ · ⟨c, d⟩ = ac + bd', 'Substitute: 4 × 1 + (−2) × 3 = 4 − 6', 'So u·v = −2'],
+  },
+  'dp-m1': {
+    ar: [
+      'u · u = 3 × 3 + 4 × 4 = 9 + 16 = 25',
+      'ومقدار u هو √(3² + 4²) = 5، فمربعه 25: الضرب القياسي لمتجه في نفسه يساوي مربع مقداره',
+      'إذن u·u = 25',
+    ],
+    en: [
+      'u · u = 3 × 3 + 4 × 4 = 9 + 16 = 25',
+      'And |u| = √(3² + 4²) = 5, whose square is 25: a vector dotted with itself is the square of its magnitude',
+      'So u·u = 25',
+    ],
+  },
+  'dp-m2': {
+    ar: [
+      'المتجهان متعامدان إذا كان ضربهما القياسي صفرًا: u · v = 0',
+      'k × 3 + 2 × (−6) = 0، أي 3k − 12 = 0',
+      '3k = 12',
+      'إذن k = 4',
+    ],
+    en: [
+      'The vectors are perpendicular when their dot product is zero: u · v = 0',
+      'k × 3 + 2 × (−6) = 0, that is 3k − 12 = 0',
+      '3k = 12',
+      'So k = 4',
+    ],
+  },
+  'dp-m3': {
+    ar: [
+      'cos θ = (u · v) / (|u| |v|)',
+      'u · v = 1 × 2 + 1 × 0 = 2، و |u| = √2، و |v| = 2',
+      'cos θ = 2 / (2√2) = 1/√2 = √2/2',
+      'θ بين 0° و 180°، إذن θ = 45°',
+    ],
+    en: [
+      'cos θ = (u · v) / (|u| |v|)',
+      'u · v = 1 × 2 + 1 × 0 = 2, |u| = √2 and |v| = 2',
+      'cos θ = 2 / (2√2) = 1/√2 = √2/2',
+      'θ is between 0° and 180°, so θ = 45°',
+    ],
+  },
+  'dp-h1': {
+    ar: [
+      'cos θ = (u · v) / (|u| |v|)',
+      'u · v = 2 × (−1) + 0 × √3 = −2، و |u| = 2، و |v| = √(1 + 3) = 2',
+      'cos θ = −2 / 4 = −1/2، وهو سالب فالزاوية منفرجة',
+      'θ بين 0° و 180°، إذن θ = 120°',
+    ],
+    en: [
+      'cos θ = (u · v) / (|u| |v|)',
+      'u · v = 2 × (−1) + 0 × √3 = −2, |u| = 2 and |v| = √(1 + 3) = 2',
+      'cos θ = −2 / 4 = −1/2, which is negative, so the angle is obtuse',
+      'θ is between 0° and 180°, so θ = 120°',
+    ],
+  },
+  'dp-h2': {
+    ar: [
+      'الزاوية A بين المتجهين AB⃗ و AC⃗',
+      'AB⃗ = ⟨4 − 1, 2 − 1⟩ = ⟨3, 1⟩، و AC⃗ = ⟨0 − 1, 4 − 1⟩ = ⟨−1, 3⟩',
+      'AB⃗ · AC⃗ = 3 × (−1) + 1 × 3 = −3 + 3 = 0، فالمتجهان متعامدان والزاوية A قائمة',
+      'إذن نعم، AB⃗ · AC⃗ = 0',
+    ],
+    en: [
+      'The angle at A is between AB and AC',
+      'AB = ⟨4 − 1, 2 − 1⟩ = ⟨3, 1⟩, and AC = ⟨0 − 1, 4 − 1⟩ = ⟨−1, 3⟩',
+      'AB · AC = 3 × (−1) + 1 × 3 = −3 + 3 = 0, so they are perpendicular and the angle at A is right',
+      'So yes, AB · AC = 0',
+    ],
+  },
+  'dp-w1': {
+    ar: [
+      'W = F · d = ⟨10, 5⟩ · ⟨6, 0⟩',
+      'W = 10 × 6 + 5 × 0 = 60 + 0',
+      'المركبة الرأسية للقوة لا تبذل شغلًا لأن الإزاحة أفقية، إذن الشغل = 60 جول',
+    ],
+    en: [
+      'W = F · d = ⟨10, 5⟩ · ⟨6, 0⟩',
+      'W = 10 × 6 + 5 × 0 = 60 + 0',
+      'The vertical part of the force does no work because the displacement is horizontal, so the work is 60 J',
     ],
   },
   'v-h1': {

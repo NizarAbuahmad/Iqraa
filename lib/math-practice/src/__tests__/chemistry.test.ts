@@ -383,8 +383,9 @@ describe('takeConcreteChem', () => {
     const first = takeConcreteChem('short_answer', 'المول', null, 'easy', 'ar', 4, a);
     const second = takeConcreteChem('short_answer', 'المول', null, 'easy', 'ar', 4, b);
     assert.ok(first && second);
-    // Items only: each draw also records the ask it put (`ask:…`), which kinds are spread on.
-    const items = [...b].filter(k => !k.startsWith('ask:'));
+    // Items only: each draw also records the ask it put (`ask:…`), which kinds are
+    // spread on, and the equation it asks (`eq:…`), so another item cannot ask it again.
+    const items = [...b].filter(k => !/^(?:ask|eq|shown):/.test(k));
     assert.equal(items.length, 1, 'the second session inherited the first one\'s spend');
   });
 

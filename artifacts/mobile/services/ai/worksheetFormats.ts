@@ -8,7 +8,7 @@
  * Arabic, since they are labels, not maths.
  */
 import { pickForFormat, formatSupported, currentSession, type FormatKind } from '@workspace/math-practice';
-import type { AIRequest, WorksheetOutput, WorksheetSection, WorksheetQuestionFormat } from './AIService.ts';
+import type { AIRequest, MissingKind, WorksheetOutput, WorksheetSection, WorksheetQuestionFormat } from './AIService.ts';
 import { getLessonById, resolveGroundedKbLesson, type KBLesson } from '../knowledgeBase.ts';
 import { parseDocumentGrounding } from '../documents/grounding.ts';
 import { samplePlot } from '../deckVisuals.ts';
@@ -339,7 +339,7 @@ export function appendFormats(ws: WorksheetOutput, req: AIRequest, formats: Form
   const { taken, trimmed } = fitFormats(formats, rest, worksheetTotal(req));
   const sections = [...ws.sections];
   const answerKey = [...ws.answerKey];
-  const missing: FormatKind[] = [...(ws.missingFormats ?? []), ...trimmed];
+  const missing: MissingKind[] = [...(ws.missingFormats ?? []), ...trimmed];
   // Numbered from the paper's flat question count: every consumer resolves a
   // key by flat position, so a short or gapped model key must not shift it.
   let num = ws.sections.reduce((n, s) => n + s.questions.length, 0) + 1;

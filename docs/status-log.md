@@ -10,6 +10,230 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Offline worksheets: the lesson's own worked example, a real «مسألة حياتية», one equation once — 2026-11-13
+
+A read of offline worksheets as a teacher would see them (exponential equations, law of sines, ionic bonds,
+the four formats, a homework) found three defects on the page. Every answer key on those papers was correct.
+
+**What changed.**
+- **The worked example is the lesson's own.** Some bank families hold several of the book's lessons. `trig_apps`
+  holds «قانون الجيوب», «قانون جيب التمام» and the triangle-area lesson, so a «قانون الجيوب» worksheet opened with a
+  law-of-cosines worked example. Each item of a split family now names its lesson (`ITEM_FOCUS`, the new
+  `lib/math-practice/src/lessonFocus.ts`; families `trig_apps`, `circle`, `trig`, `functions`, `vectors`,
+  `stats`), and a lesson title names the item lessons it accepts (`lessonFocus`). The worked example and the
+  half-solved question come **only** from those, or there is none. Practice prefers them (the final ranking is under
+  «Fixed after an independent review» below), then takes the rest of the family as before, so a thin lesson keeps its
+  count.
+- **«مسألة حياتية» is a story.** The word problem used to be drawn last, after the practice had spent the lesson's
+  few stories (`exp_eq` has two). So the bacteria story was printed in the challenge section as multiple choice,
+  still saying «اكتب المعادلة وحلّها», while «مسألة حياتية» held «أوجد حل المعادلة: 8^x = 4^{x+1}». Now:
+  - The word problem is drawn before the practice and printed after it, as before.
+  - The bank hands the word-problem slot a story (`kind: 'word'`) while one is unused, and flags it (`story`).
+  - A lesson with no story left keeps the question under «مسألة: حلّ موضّحًا الخطوات» and names `word_problem` in
+    `missingFormats`, so the screen says the real-life problem could not be added.
+  - A story set as multiple choice or true/false no longer says «اكتب المعادلة وحلّها».
+- **One equation is one question.** `9^x = 27` came twice on one paper (`exp-m4` «أوجد الحل», `exp-v2` «هل x = 2
+  حل…»), and the half-solved question printed «81 = 3^4» above «اكتب العدد 81 على صورة قوة أساسها 3». Changes:
+  - Spending an item now also spends its equation (`spendItem`).
+  - Working printed on the page spends any item whose equation it states (`markShown`). That covers the worked
+    example, the half-solved question's given steps, and the steps of «رتّب» and «أين الخطأ؟».
+  - A given such as «r = 5» or «a=7, b=7, C=60°» is not treated as an answer.
+  - The match format pairs one equation once.
+
+**Verified.**
+- Red/green: `lib/math-practice/src/__tests__/lessonFocus.test.ts` (18 cases) and
+  `artifacts/mobile/services/__tests__/worksheetOwnLesson.test.ts` (7). The mobile file's word-problem cases failed
+  before the generator change; its other cases passed once the bank change was in.
+- Three bank tests counted raw session entries and now count item ids only (`chemistry.test.ts`,
+  `formatsBank.test.ts`, `orderSafe.test.ts`); what they assert is unchanged.
+- Regenerated papers read by eye: the exponential-equations paper put the bacteria story under «مسألة حياتية»,
+  printed 9^x = 27 once, and asked no question the half-solved working answered; the law-of-sines paper studied a
+  law-of-sines example.
+
+**Law of sines: seven new bank items** (`ls-e1` … `ls-w1`, `trig_apps`, focus `sine_rule`), each with checked
+working in both languages (`steps-math-b.ts`):
+- easy: a side from two angles (`b = 20`) and an angle from two sides (`A = 30°`);
+- medium: `b = 6√2`, `c = 5√3` (the third angle first), `B = 45°`;
+- hard: `B = 30°`, whose working rules out 150° because `A = 120°` is already obtuse; and a story: a surveyor on a
+  riverbank, `AC = 100√3 م` (about 173 m).
+
+Special angles only, so every key is exact. Every key was computed again by hand for this entry. No item is the
+two-triangle case: each angle asked has one answer, and its working says why. With eight items of its own, a
+«قانون الجيوب» worksheet of 8 is now full: worked example, half-solved question, practice and its own «مسألة حياتية»,
+all on the law of sines (`worksheetOwnLesson.test.ts`).
+
+**Law of cosines: seven new bank items** (`lc-e1` … `lc-w1`, focus `cosine_rule`), each with checked working:
+- easy: a side with the included angle 60° (`c = √19`), and 90°, where the rule becomes Pythagoras (`c = 10`);
+- medium: 120°, whose negative cosine adds (`c = 7`); an angle from three sides (`C = 60°`); a 5-12-13 triangle
+  shown to be right-angled (`C = 90°`);
+- hard: the largest angle of a 7-8-13 triangle (`120°`), and a story: two ships 60° apart after 5 km and 8 km,
+  `7 كم` apart.
+
+No triangle repeats another's. Every key was recomputed numerically.
+
+**Seven more (2026-11-20, `lc-e3` … `lc-w2`):**
+- an equilateral triangle found by the rule (`c = 4`) and a second right angle (`c = 15`);
+- a larger 120° triangle (`c = 19`), a second 60° angle from three sides (8-15-13), and 120° from an isosceles
+  triangle with base `5√3`;
+- a parallelogram's longer diagonal, which faces the 120° angle (`14 سم`);
+- a second story, measuring across a lake (`130 م`).
+
+The distractors are the usual slips: the cross term dropped (`√281`, `170 م`), its sign flipped (`√201`), the
+shorter diagonal (`2√19`), and the sum or the difference of the sides. `lessonFocus.test.ts` now lists every
+law-of-cosines item with its triangle, recomputes each key from it, and fails if two items are the same triangle,
+since then one item's working would answer the other on the same page. Practice for this lesson comes from its generator
+(`grade10.ts`), so these items are what its worked example, half-solved question and «مسألة حياتية» print; before
+them it had one solved item, and no half-solved question.
+
+**Inverse function: eight new bank items** (`if-e1` … `if-w1`, focus `inverse`, 2026-11-24), each with checked working
+in the book's method (write y = f(x), swap x and y, solve for y):
+- easy: undoing an addition (`x − 5`) and a multiplication (`x/3`);
+- medium: two-step linear functions, one with a negative slope (`4x + 1`, `(5 − x)/2`), and a value of f⁻¹ found
+  by solving f(x) = 7 (`f⁻¹(7) = 3`);
+- hard: a cube (`∛(x − 2)`), and x² + 1 restricted to x ≥ 0, whose inverse `√(x − 1)` has domain x ≥ 1 (the
+  working says why the positive root and why that domain);
+- a story: a taxi fare f(d) = 0.5d + 2 turned round to f⁻¹(c) = 2c − 4, and the distance for 7 dinars (10 km).
+
+The distractors are the usual slips: the operation not undone (`x + 5`, `3x`), the order of undoing reversed
+(`(x + 1)/4`), the reciprocal taken for the inverse (`1/(x + 5)`), f(7) given for f⁻¹(7), the root taken before
+the subtraction (`∛x − 2`), and the wrong domain. `lessonFocus.test.ts` reads each printed formula, turns it into a
+function and checks that it undoes f at several points (a value answer must be the x that f sends to the value
+asked), so the key on the page is what is checked, not a copy of it. Before these the lesson had one solved item,
+so its worksheet had a worked example and no half-solved question. The tests that used it as their one-item
+lesson now use «جمع المتجهات وطرحها».
+
+**Vector addition and subtraction: eight new bank items** (`va-e1` … `va-w1`, focus `vector_add`, 2026-11-25),
+each with checked working:
+- easy: a sum and a difference;
+- medium: `2u + v`, `3u − 2v` (the minus times a negative component), and the length of a sum, `5`, not the sum of
+  the lengths;
+- hard: the unknown w in u + w = v, and AB⃗ + BC⃗ from three points, compared with AC⃗ (the triangle rule);
+- a story: a boat crossing a river against a current, resultant speed 5 كم/ساعة.
+
+The distractors are the usual slips: v − u for u − v, components multiplied, u + 2v for 2u + v, 3u + 2v, the sign of
+−2 × (−3), |u| + |v|, AB⃗ − BC⃗, and the points' coordinates added. `lessonFocus.test.ts` recomputes every key from
+the numbers in its stem. The points avoid A(1,2), B(4,6), so the working cannot answer «المتجهات في المستوى»'s own
+AB⃗ item. The unit is written «كم/ساعة»: the working check reads a lone «س» as an Arabic variable letter.
+
+**Seven more (2026-11-27, `va-e3` … `va-w2`):**
+- negative components (`⟨2, −4⟩`) and the opposite vector (`−u = ⟨−4, 1⟩`);
+- `u − 3v` (the minus times a negative component again);
+- a scalar k found from a target vector, checked on both components (`k = 2`);
+- the length of a difference (`|u − v| = 13`);
+- a parallelogram's fourth vertex, `C = A + AB⃗ + AD⃗` (`C(6, 5)`);
+- a second story: two children pulling a box with ropes, a resultant of 10 نيوتن.
+
+The new distractors are: one component's sign flipped, u + 3v, 3(u − v), k without the division, 5 + 12 for
+the length, B + D without − A, and |F₁| + |F₂|. The test's key table takes a scalar and a point as well as a vector.
+Since `main`'s change of 2026-11-27, every vector here is written with the Latin comma, `⟨3, 4⟩`, like the bank's
+other vectors and points, so it reads left to right. The merge converted this branch's earlier items and their
+working.
+
+This was the last lesson with a single solved item. So no real paper now prints a worked example without a
+half-solved question, and the instruction wording for that case moved into `worksheetInstructions`, tested
+directly (and against a generated paper). The bank tests that needed a one-item lesson now use «الضرب القياسي»
+(two solved items: two worked examples, then none). The one-item rule in `takeFromBank` is kept, though no lesson
+triggers it now.
+
+**Dot product: eight new bank items** (`dp-e1` … `dp-w1`, focus `dot_product`, 2026-11-27), each with checked
+working:
+- easy: a dot product (`11`) and one with a negative term (`−2`);
+- medium: a vector with itself, compared with |u|² (`25`); k for perpendicular vectors (`k = 4`); the angle
+  between two vectors (`45°`);
+- hard: an obtuse angle, whose negative cosine the working points out (`120°`); and a right angle at A in a
+  triangle shown by AB⃗ · AC⃗ = 0;
+- a story: the work a pulling force does, W = F · d (`60 جول`), with the working noting that the vertical part of
+  the force does none.
+
+The distractors are: the component products left as a vector, the components cross-multiplied, a lost minus sign,
+|u| for u · u, k without the division, the sign of the cosine dropped (60° for 120°), and |F||d| for F · d.
+`lessonFocus.test.ts` recomputes every key from the vectors: the angles by arccos, k from the perpendicular
+condition, and the right-angle «نعم» against a zero dot product. Moved fixtures:
+- the run-out test now uses «المتجهات في المستوى» (two solved items);
+- the other-tier ranking test uses a typed trigonometric-equations topic;
+- the in-tier test now checks that the question is one of the lesson's own items, not that it contains the words
+  «الضرب القياسي», since an angle question doesn't.
+
+**Vectors in the plane: nine new bank items** (`vp-e1` … `vp-w1`, focus `vector_plane`, 2026-11-27), each with
+checked working:
+- easy: a vector from two points (end minus start) and a magnitude (`13`);
+- medium: the length of a vector between points (`10`); a unit vector (`⟨3/5, −4/5⟩`, checked to have length 1);
+  a direction angle in the first quadrant (`60°`); the end D of a vector equal to AB⃗ (`D(3, 4)`);
+- hard: a direction angle in the second quadrant (`135°`, reference angle then 180° − α); a missing component from
+  the magnitude, with the negative root ruled out (`a = 8`);
+- a story: a drone's straight flight on a kilometre map (`10 كم`).
+
+The distractors are: QP⃗ for PQ⃗, the components added for the magnitude, the vector not divided (or divided by
+|3| + |4|), the reference angle without its quadrant, tan⁻¹(−1) = −45°, C − AB⃗ for D, and a² for a.
+`lessonFocus.test.ts` recomputes every key (direction angles by atan2, the unit vector by dividing). The run-out
+test now uses «حل المعادلات المثلثية», which still has two solved bank items.
+
+**Trigonometric equations: eight new bank items** (`te-e1` … `te-w1`, focus `trig_equations`, 2026-11-27), each with
+checked working in the existing items' method (the reference angle, then the quadrants where the ratio has the sign
+asked):
+- easy: cos θ = 0 (`90°, 270°`) and tan θ = 1 (`45°, 225°`);
+- medium: 2 sin θ − √3 = 0 (`60°, 120°`), tan θ = −1 (`135°, 315°`), sin θ = −1/2 (`210°, 330°`);
+- hard: 2cos² θ − cos θ − 1 = 0, factored (`0°, 120°, 240°`), and sin² θ = 1/4 with both signs (`30°, 150°, 210°,
+  330°`);
+- a story: a Ferris wheel seat at h = 10 − 8 cos θ, 14 m high at `120°` and `240°`.
+
+The distractors are: the wrong pair of quadrants, the first solution only, a negative angle outside the interval,
+sin's angles for cos's, the cosine's sign slipped, one sign of the square root, the cos θ = 1 root dropped, and the
+angle halved. Every stem names 0° ≤ θ < 360°. `lessonFocus.test.ts` solves each equation again over every whole
+degree, so a key with a missing or an extra solution fails; that covers the lesson's two older items too. The run-out
+and other-tier tests now use the typed mean-and-median topic, which still has two solved items and no hard one.
+
+**Fixed after an independent review of the first commit:**
+- **Instructions.** They promised «أكمل الحل في السؤال الأول» whenever there was a worked example. A lesson with one
+  solved item of its own («قانون جيب التمام», «الاقتران العكسي») gets no half-solved question, so the line now
+  depends on that question being on the page.
+- **Chemistry tags.** Equation keys (`eq:`) are maths only. A chemistry item's `eq` is a context tag («Cl₂»,
+  «أمثلة») shared by different questions, and keying on it dropped real questions from quizzes and the API's
+  evaluation bank.
+- **The printed-working rule** spends an item only when the equation printed holds the item's own answer («81 = 3^4»
+  for «اكتب 81 كقوة أساسها 3»). An operator beside the match now counts as part of a longer expression. Before,
+  «f(x) = x² − 1» spent «مشتقة x²», and chemistry givens («n = 2 mol», «pH = 3») spent questions.
+- **Stories are marked by hand** (`ConcreteItem.story`). `kind: 'word'` also held a GeoGebra task and a number
+  puzzle. A story also counts only for its own lesson, so the law-of-sines river crossing is not «قانون جيب
+  التمام»'s real-life problem.
+- **Heading.** The plain heading is «مسألة للحل». The question body already says «اكتب الحل موضّحًا الخطوات», which
+  the old heading repeated.
+- **A spent word problem** no longer stops the practice sections; it is reported as a shortfall.
+- **Lesson ranking.** The lesson's own items come before the rest of the family in the tier asked for, then in any
+  tier. A lesson with a single item of its own gets it only in its tier, so that item does not open every paper.
+- **Tests that used the law of sines as their thin bank.**
+  - The warm-up/activity test compared single values («A = 30»), which different law-of-sines triangles share. It now
+    compares a problem's givens together.
+  - The short-paper tests (`noQuestionBank`, `worksheetWorkedExample`) now use «معادلة الدائرة», whose family still
+    has five items.
+  - The regenerate test keeps the law of sines and adds that lesson as its small-bank case.
+
+**Not changed, and known.**
+- **Since the merge with «Grade 10 maths: lesson-specific offline questions…» (`grade10.ts`, same day):**
+  - **Practice.** Ten Grade 10 lessons, the law of sines and cosines among them, take their practice from their own
+    generator before any bank family. For those lessons the ranking above does not apply.
+  - **What the bank still decides there.** The worked example and the half-solved question still come from the bank:
+    a generator writes no checked working. So the law-of-sines items here are what those two print.
+  - **The word problem** takes the lesson's own bank story while one is unused, ahead of the generator: the river
+    crossing on «قانون الجيوب».
+  - **Since «Grade 10 review: own offline questions for thirteen lessons…» (`grade10b.ts`, 2026-11-14)** every
+    Grade 10 lesson in a split family has its own generator for practice: the vectors, arcs, composition, inverse,
+    probability and trigonometry lessons as well. The bank's lesson ranking now decides practice only for a topic
+    that is not a book title (a typed topic, or an objective's wording from the API's evaluation generator), and
+    the tests use such topics. The worked example and the half-solved question still come from the bank for every
+    lesson, so the lesson tags still decide those. «الاقتران العكسي» and «جمع المتجهات وطرحها» had one
+    solved item each, so a worked example and no half-solved question, until their items below.
+- **Offline worksheets with «مسألة حياتية» ticked** now say the real-life problem could not be added for every lesson
+  without a story of its own. That is every chemistry lesson, and every maths family but `exp_eq`, `linear_quad`,
+  `algebra` and the law of sines. The notice's wording («…أو لا تكفي أسئلة البنك لهذا الدرس») fits only loosely.
+- `f-h1` is an arithmetic-sequence item filed under `functions`. It is tagged so no functions lesson studies it, but
+  it can still fill a functions paper's practice.
+- **The review's chemistry finding was wrong.** It said an ionic-bonds worksheet opened with a metallic-bond example.
+  That came from a typed topic: the book's lesson, «الروابط الكيميائية وأنواعها», covers ionic, covalent and metallic
+  bonds, so chemistry is not split.
+- Only the offline generator changed. The live path (`worksheetPromptAr/En`) is the model's, and production runs live
+  AI, so a teacher sees this paper only when live generation is off or fails.
+
 ## Exam generation warnings in Arabic — 2026-11-27
 
 The review screen printed a generated exam's warnings exactly as the API sent them, and the API wrote every one in

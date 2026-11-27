@@ -148,15 +148,18 @@ describe('warm-up is not the lesson activity again', () => {
       ...req, duration: 30, activityType: 'group', activityVariant: 'main', continueMathPractice: true,
     } as AIRequest);
 
-    const stems = (a: ActivityOutput) => a.steps.map(s => s.description).join('\n');
+    const lines = (a: ActivityOutput) => a.steps.flatMap(s => s.description.split('\n'));
     // Every numeric problem the warm-up puts on the board should be gone by
-    // the time the activity runs. Compare on the equations, not the prose.
-    const nums = (text: string) => (text.match(/[a-z]\s*=\s*-?\d+(\.\d+)?/gi) ?? []);
-    const warmNums = new Set(nums(stems(warmup)));
-    const overlap = nums(stems(activity)).filter(n => warmNums.has(n));
+    // the time the activity runs. Compare on the equations, not the prose — and
+    // on a problem's givens together, not one value at a time: law-of-sines
+    // problems with exact answers all use 30°, 45°, 60° and 90°, so «A = 30»
+    // in two different triangles is not the same problem (2026-11-13).
+    const problem = (line: string) => (line.match(/[a-z]\s*=\s*-?\d+(\.\d+)?/gi) ?? []).map(t => t.replace(/\s/g, '')).sort().join(' ');
+    const warmProblems = new Set(lines(warmup).map(problem).filter(Boolean));
+    const overlap = lines(activity).map(problem).filter(p => p && warmProblems.has(p));
     assert.equal(
       overlap.length, 0,
-      `the activity re-posed the warm-up's problem values: ${[...new Set(overlap)].join(', ')}`,
+      `the activity re-posed a warm-up problem: ${[...new Set(overlap)].join(' | ')}`,
     );
   });
 

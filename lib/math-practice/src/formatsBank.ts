@@ -6,6 +6,7 @@
  */
 import {
   MATH_BANK, CHEM_BANK, matchMathFamily, detectChemFamily, lessonTextBlob, isChemContext, itemStem,
+  itemSpent, markShown, spendItem,
   type ConcreteItem, type KBLesson, type Lang,
 } from './index.ts';
 import { stepsFor } from './steps.ts';
@@ -35,21 +36,24 @@ const shuffle = <T,>(xs: T[]): T[] => xs.map(x => [Math.random(), x] as const).s
 
 function matchCandidates(items: ConcreteItem[], used: Set<string>): ConcreteItem[] {
   const seen = new Set<string>();
-  return shuffle(items.filter(i => !used.has(i.id) && i.answer.length <= 24)).filter(i => {
+  // One equation is one pair, however its items ask it (`spendItem`).
+  const taken = new Set(used);
+  return shuffle(items.filter(i => !itemSpent(i, used) && i.answer.length <= 24)).filter(i => {
     const k = norm(i.answer);
-    if (seen.has(k)) return false;
+    if (seen.has(k) || itemSpent(i, taken)) return false;
     seen.add(k);
+    spendItem(i, taken);
     return true;
   });
 }
 /** Only the hand-audited items whose steps have one valid order (`orderSafe.ts`). */
 const orderCandidates = (items: ConcreteItem[], used: Set<string>) =>
-  items.filter(i => !used.has(i.id) && ORDER_SAFE.has(i.id)
+  items.filter(i => !itemSpent(i, used) && ORDER_SAFE.has(i.id)
     && (stepsFor(i.id)?.ar.length ?? 0) >= 3 && (stepsFor(i.id)?.ar.length ?? 0) <= 6);
 const spotCandidates = (items: ConcreteItem[], used: Set<string>, maths: boolean) =>
-  maths ? items.filter(i => !used.has(i.id) && stepsFor(i.id) && misstepsFor(i.id).length > 0) : [];
+  maths ? items.filter(i => !itemSpent(i, used) && stepsFor(i.id) && misstepsFor(i.id).length > 0) : [];
 const graphCandidates = (items: ConcreteItem[], used: Set<string>, maths: boolean) =>
-  maths ? items.filter(i => !used.has(i.id) && i.kind === 'graph') : [];
+  maths ? items.filter(i => !itemSpent(i, used) && i.kind === 'graph') : [];
 
 /** Pure availability check: marks nothing used. */
 export function formatSupported(kind: FormatKind, topic: string, kb: KBLesson | null, subject?: string): boolean {
@@ -82,27 +86,31 @@ export function pickForFormat(
     const c = matchCandidates(items, session);
     if (c.length < 4) return null;
     const take = c.slice(0, 5);
-    take.forEach(i => session.add(i.id));
+    take.forEach(i => spendItem(i, session));
     return { pairs: take.map(i => ({ problem: itemStem(i, ar), answer: i.answer })) };
   }
   if (kind === 'order') {
     const c = shuffle(orderCandidates(items, session))[0];
     if (!c) return null;
-    session.add(c.id);
+    spendItem(c, session);
+    // Every step is printed, so what they state is answered on the page.
+    markShown(stepsFor(c.id)![lang], session);
     return { problem: itemStem(c, ar), steps: [...stepsFor(c.id)![lang]], answer: c.answer };
   }
   if (kind === 'spot_error') {
     const c = shuffle(spotCandidates(items, session, maths))[0];
     if (!c) return null;
-    session.add(c.id);
+    spendItem(c, session);
     const m = shuffle(misstepsFor(c.id))[0]!;
     const real = [...stepsFor(c.id)![lang]];
+    // The steps around the wrong one are printed as they are.
+    markShown(real.filter((_, i) => i !== m.stepIndex), session);
     const steps = real.map((s, i) => (i === m.stepIndex ? (ar ? m.wrongAr : m.wrongEn) : s));
     return { problem: itemStem(c, ar), steps, wrongStep: m.stepIndex, correctLine: real[m.stepIndex]!, why: ar ? m.whyAr : m.whyEn, answer: c.answer };
   }
   const c = shuffle(graphCandidates(items, session, maths))[0];
   if (!c) return null;
-  session.add(c.id);
+  spendItem(c, session);
   const exprs = [c.eq, c.eq2].filter((e): e is string => !!e).map(e => e.replace(/^\s*y\s*=\s*/, ''));
   return { problem: itemStem(c, ar), exprs, answer: c.answer, window: windowFor(c.answer) };
 }
