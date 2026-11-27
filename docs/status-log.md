@@ -62,6 +62,141 @@ Design: `docs/superpowers/specs/2026-11-27-physics-figure-notes-design.md`; plan
   panel letters are off by one; `p039c-v2`'s caption and left panel are cropped; `p060-v2` shows another figure's caption;
   `p067b` and `p067c-v2` duplicate cup (أ); the axis titles of `p072-v2` and `p101b` are cropped.
 
+## The 15 held-back Grades 1–9 maths lessons get their ready-made sheets — 2026-11-27
+
+PR #1518 built 432 ready-made sheets for Grades 1–9. It held back 15 lessons (`HELD_BACK` in
+`artifacts/mobile/scripts/build-premade-sheets.ts`), because their sheets practised another lesson or another grade.
+All 15 now ship; the five Grade 10 entries stay held.
+
+**Generator changes** (`lib/math-practice`):
+- **New, `src/lessonFits.ts`.** Six generators, each matched on one lesson's exact title and grade. They are listed
+  first in `TOPICS`, so nothing else routes to them.
+  - g2 «الشبكات والضرب»: drawn ■ grids, rows × columns, "which multiplication sentence", and orchards.
+  - g4 «ضرب الأعداد»: 3-digit × 1-digit and 2-digit × 2-digit, as direct questions and stories.
+  - g5 «ضرب الكسور»: fraction × fraction, whole × fraction, «ما a/b من W؟», and area. The missing-factor items,
+    which need the next lesson's division, are gone.
+  - g5 «ضرب الأعداد العشرية وقسمتها»: × and ÷ by 10, 100 and 1000. A pen's price stays under a dinar.
+  - g7 «كتابة العدد النسبي بالصورة العشرية»: terminating, mixed numbers, and repeating by long division (its own
+    wording, so the sheet's repeat cap keeps the writing), plus terminating-or-repeating. Decoys are the slips:
+    digits copied (0.8 for 8/11), the fraction inverted (1.375), cut short (0.72).
+  - g9 «المدرجات التكرارية»: reading bars (total, tallest, class width, "from A up"), and frequency density both
+    ways. The lesson used to share `grouped_g9` with «الجداول التكرارية ذات الفئات».
+- **`early.ts`**, g3 «الزوايا»: no degrees, which are Grade 4. Angles are compared with a right angle, named on
+  things around the class, counted in shapes, and read on a clock by hours apart.
+- **`geometry.ts`**, `parallelogram_test` (g8): every item now states a sufficient condition and asks for x:
+  - the diagonals bisect each other (BM = MD given, AM = MC asked);
+  - one pair of sides is parallel and equal;
+  - both pairs of opposite angles are equal.
+  It used to give one condition and ask what makes ABCD a parallelogram.
+- **`topics.ts`**, `round_dec`: at Grade 4, two decimal places at most, and a table is under 4 m. Grade 5 keeps
+  thousandths.
+- **Six of the 15 needed no generator change.** Five were fixed by other PRs since the review: ×6/×9, ×7/×8,
+  zeros in the quotient, measuring angles, tenths. One was held by mistake: g9 distance, whose objectives include
+  the midpoint.
+
+**Build script.** A rebuilt sheet identical to the stored one keeps the stored one, `generatedAt` included. A
+whole-grade re-run used to rewrite all ~400 timestamps.
+
+**Verified:**
+- Every Grade 1–9 sheet was rebuilt (seeded, so reproducible). Against the previous manifest: 15 added, 35 changed,
+  0 removed, 475 in all.
+- The 35 changes:
+  - 24 are only `main`'s Latin comma in points (#1562), with the same values.
+  - 11 are bank changes merged since the last build: nine Grade 4 sheets (the G4 lesson topics), Grade 5
+    rounding (this PR's measurement range), and Grade 9 functions (comma only, in its sets).
+  - Every changed question was read and its key recomputed.
+- All 150 questions of the 15 released sheets were read, and each key was checked by hand.
+- Tests:
+  - math-practice: 1514 of 1514, including the new `heldBackLessons.test.ts`; three old tests were updated to the
+    new kinds.
+  - api-server build and test: 3089 of 3089.
+  - mobile: the whole suite, 9683 tests, 0 failures (10 skipped).
+  - Typecheck is clean, and curriculum `verify` reports 0 errors.
+  - Curriculum `test` has one failure, «R2 helpers are inert», which fails the same way on `main` in this container.
+
+**Not done / limits:**
+- g4 «قياس الزوايا ورسمها» still has 1 of 10 «زاوية على مستقيم» (angles on a line), below the 3-of-10 bar used to
+  hold a lesson.
+- The «مسألة حياتية» slot appends «اكتب الحل موضّحًا الخطوات» even to a classify question. It is generic sheet
+  assembly, not these generators.
+- The five Grade 10 entries in `HELD_BACK` are the topic detector's, and remain.
+
+## Slides PPTX and PDF exports: answer options in reading order, the app's fonts, Arabic language tag — 2026-11-27
+
+Found by exporting a 17-slide Arabic maths deck through the real `exportDeckAsPptx` and opening it in LibreOffice,
+in Chromium (the PDF's HTML) and as an upload to Google Drive (which converts it to Google Slides).
+
+**What was wrong:**
+- **Answer options read as different points (PPTX, PDF, Google Slides).** In a right-to-left paragraph the bidi
+  algorithm reversed a bare coordinate pair: `(2, 0)` printed `(0 ,2)` and `(-4, 0)` printed `(0 ,4-)`. In the PPTX a
+  table cell `-2` printed `2-`. The PDF's table was already isolated (`esc`); its options went through
+  `mathLineToHtml`, which isolates nothing.
+- **Body text was not in the app's face.** The pptxgenjs theme names Latin faces only. PowerPoint draws Arabic in
+  the complex-script face (`<a:cs>`), so every run without its own `fontFace` fell back to the theme's Arabic
+  default. Google Slides reported every body line in Arial.
+- **Every run said `lang="en-US"`**, so PowerPoint's spell-checker would treat each Arabic word as misspelt English.
+- **The correct option's letter was invisible**: «أ» in the accent colour on a nearly identical blue fill.
+
+**Fix:**
+- New `services/pptxText.ts` (pure, so `node --test` loads it) gives every text box the body face, `ar-JO`/`en-US`
+  and a direction from its own text: right-to-left with an Arabic letter (`hasArabicLetter`, now exported from
+  `mathRender.ts`), left-to-right without one, still right-aligned.
+- `exportPptx.ts`'s `addText` wrapper now runs for both languages and applies those defaults; table cells take
+  them directly. `pptxDiagram.ts` labels choose the same way. The correct option's letter is white.
+- `deckSlidesHtml.ts`: an option with no Arabic letter sits in an inline `dir="ltr"` span. An Arabic option goes
+  through `esc`, as a stem line does.
+
+**Verified:**
+- New `pptxText.test.ts` and an options case in `deckSlidesHtml.test.ts`. The mobile suite (9,692, 0 failures) and
+  the root typecheck pass.
+- Re-exported deck: every run in the XML carries a `cs` face and `lang="ar-JO"`. LibreOffice and Google Slides both
+  show `(0, -4)`, `(0, 4)`, `(-4, 0)`, `(2, 0)` and `-2` in order, with «أ» visible. The PDF shows them in order in
+  Chromium, plus «النقطة (2, 0)». An English deck renders as before.
+
+**Not verified / known limits:**
+- **Desktop PowerPoint and Keynote were not opened.** An option row is plain `algn="r"` with no `rtl="1"`, but
+  nobody has looked at it in either.
+- **Google Slides still shows body text in Arial.** The file names Almarai on every run, but Google Slides
+  substitutes it on import, while Readex Pro comes through. Changing that means choosing another body face for the
+  export.
+- In the PPTX, a coordinate pair *inside* an Arabic sentence (an option «النقطة (2, 0)») can still reverse: the fix
+  gives a whole line one direction. The PDF isolates the pair; the PPTX does not, because nobody has checked
+  PowerPoint's support for Unicode isolates.
+- Exports still print the correct option ticked and the challenge answer, by design ("the teacher's copy"). A
+  teacher who presents the file shows the answers to the class. That is a product decision this change does not
+  make.
+- The in-app presenter was not checked for the same reversal.
+
+## Set-builder notation and conditional probability read left to right in Arabic — 2026-11-27
+
+The follow-up the bars entry below named. A single `|` is a separator and never joins a run on its own. But in
+set-builder notation and in conditional probability it is maths, and both split there. `{x | x ≤ 3}` came out
+`⁦{x⁩ | ⁦x ≤ 3}⁩`, and `P(A | B)` came out in three pieces, which an Arabic line reordered. In Chromium, «مجموعة الحل هي
+{x | x ≤ 6}…», «المجال {y | y ≥ 0}…», «فما قيمة P(A | B)…» and «P(B|A) = 0.4…» were all reversed.
+
+**Fix** (`services/mathRender.ts`, renderer only). Two shapes that are never prose become stand-ins, after the
+pair and interval passes and before the bar pairing:
+- **`SET_BUILDER_RE`:** a `{…|…}` whose content is maths, with no Arabic letter apart from «،». Its separator and
+  both commas become stand-ins, so `{x | x = 6k, k ∈ W, 0 < x < 5}` and `{x | x ∈ Z، x < 4}` are whole. The content
+  class leaves out the braces, so a match cannot run from one set into the next.
+- **`COND_PROB_RE`:** `(` + an event letter (optionally `′`, `'` or `ᶜ`) + `|` + an event letter + `)`. That covers
+  `P(A|B)`, `P(B | A)` and `P(A′|B)`.
+
+**Verified:**
+- 6 new cases in `mathRender.test.ts`, including braces around Arabic and a lone separator bar left alone, and the
+  earlier `P(B|A) + |x|` case now whole. The mobile suite (9,689, 0 failures) and root typecheck pass.
+- Old against new over 5,047 lines of the repo's text that hold a bar or braces: 263 change, all set-builder or
+  conditional probability.
+- **Chromium, inside Arabic sentences:** all five probes read left to right with the fix. Four were reversed with the
+  old text. The fifth, `{x | x = 6k, k ∈ W, 0 < x < 5}`, passed the crude first-versus-last check before too, but as
+  five isolates laid out right to left its middle was scrambled.
+
+**Not covered:**
+- A set in roster form with Latin commas, `C = {11,13,15,…}`, still splits at its commas.
+- A set-builder that holds bars, `{x | |x| < 3}`.
+- Native Android and iOS. No take-screen run for this change; the Chromium check above renders the same strings
+  the screen does.
+
 ## Magnitude and absolute-value bars read left to right in Arabic — 2026-11-27
 
 The follow-up the vectors entry below named. `|` was not in `isolateForeignRuns`'s run class, so a magnitude or
@@ -304,6 +439,68 @@ renders the same helper in the same kind of `<Text>`), and native Android/iOS, w
 other isolate here does. **Not covered:** intervals `[1, 3]` / `]1, 3[` — square brackets are not in the run
 class, so an interval still reads reversed.
 
+
+
+
+## Whiteboard: share a board by link (2026-11-25)
+
+A saved board can now be shared the way a paper is: the link icon in the whiteboard's toolbar
+makes a `/m/CODE` link, anyone opens it without an account, and the teacher stops it from
+«موادي» like any other.
+
+- **Server.** The share route no longer refuses `type: "board"` (`routes/workspace.ts`). The public
+  read serves a board through `sharedPublicContent` (`lib/materialShare.ts`) instead of
+  `studentCopy`: the student-copy rule blanks every `answer` and drops every `solution`, which
+  would empty a board whose solved problem is what the class was shown. The owner's `formState`
+  still never leaves, and a teacher's «save a copy» makes a new `board` row without the owner's notes.
+- **App.** `BoardViewer` (`components/classroom/BoardViewer.tsx`) draws a board read only from the
+  whiteboard's own pieces (background, `SolutionBlock` fully revealed, `PenCanvas` inactive,
+  `TextLayer` mode none), validated with `parseBoard`, one page at a time. `workspace/view.tsx` renders it
+  for a shared board, exports it with `buildBoardHTML`, and a teacher's saved copy reopens in the
+  whiteboard. The whiteboard's link icon shares the SAVED board: an unsaved or edited one is told to
+  save first (the link shows the last saved version), and a board with no title yet opens the save dialog.
+- **Verified.** api-server: `sharedMaterial.db.test.ts` (board shared whole for visitor and teacher,
+  no `formState`, copy is a board, stop = 404 and a re-share is a new code, only the owner) and
+  `materialShare.test.ts` against a real database; mobile `boardShare.test.ts` (wiring read from
+  source). In Chromium: a teacher placed text, drew, added a page, saved, shared; a signed-out
+  visitor at phone width saw the text and stroke and paged to page 2; a teacher's «Save to my files»
+  opened the copy in the whiteboard.
+- **Not verified / limits.** A board's PDF from the shared page was not opened. A board edited and
+  saved after sharing changes what the existing link shows (same as a paper). No telemetry event for
+  sharing a board (the pinned list in `classUsage.ts` is unchanged).
+
+## A placed text can be moved, recoloured and resized — 2026-11-25
+
+The limit the text-tool entry named («cannot be moved, resized or recoloured after it is placed»).
+
+- **Move.** With the text tool on, drag a text: it follows the pointer (a little faded) and is dropped where it is let
+  go, as ONE undo step (`TextLayer.tsx`, `TextBox`). A touch that moves no more than 8 px is a tap, which still opens the
+  dialog. The new spot is clamped onto the page and rounded (`moveText`); an Arabic text moves by its right edge, as it
+  was placed. In erase mode a tap still removes a text; with the pen on the layer still lets every touch through.
+- **Colour and size** are chosen in the text dialog, for a new text and a placed one alike (seven colours, three sizes),
+  starting at the text's own or, for a new one, the toolbar's, and changing nothing outside that text.
+  `updateText(state, index, { text?, color?, size? })` applies any of them as one undo step; `editText` is now a
+  wrapper. A colour that is not plain hex is ignored (a bad one would make the board unsavable), a size is clamped into
+  the 8–240 range the file accepts, the direction is kept when only colour or size change, and emptying the words
+  removes the text. **The file format does not change**: a text already had `x`, `y`, `size` and `color`.
+- **A flaw found while testing it:** after editing a text, the dialog for a NEW text showed the old words for a frame,
+  because the dialog reset its words in an effect after it first painted. It now takes a fresh `key` for every text it
+  opens for (a `seq` on the draft in `whiteboard.tsx`) and has no effect at all; a test pins both.
+- No «ما الجديد» wording beyond the new entry `whiteboard-text-edit`. The dialog uses the theme's scales.
+
+Verified: `boardText.test.ts` (move: clamped, rounded, one undo step, no-ops; update: colour, size, words, direction
+kept, bad colour refused, size clamped, empty removes, only the asked-for text changes; the screen wiring read from
+source), the design-scale ratchet; `pnpm run typecheck`. In Chromium against a local API and Postgres, on desktop:
+dragging an English text by (+200, +120) moved it exactly that far with no dialog opening and it stayed after the drop;
+dragging an Arabic text left by 300 moved its right edge by 300; undo and redo of a move; a tap with no movement opening
+the dialog with the words; recolour to blue and size to large in one save (box 107×73 → 160×109), and ONE undo
+restoring both; the stored board had the new `x`, `y`, `size` and `color`; the new-text dialog opening empty after
+an edit (the flaw above, before and after).
+
+Not verified: dragging by touch on a real phone or Android (the same `PanResponder` the pen uses, but not tried), and
+a drag that starts on a text near the page edge. Known limits: a text can no longer be edited from the keyboard alone
+(it was a button; it is now a drag handle, and the tool is pointer-driven as a whole); there is no resize handle on the
+page, only the three sizes in the dialog; a text cannot be dragged off the page, only clamped at its edge.
 
 ## Admin users filters: confirmed on Android — 2026-11-24
 
@@ -2614,6 +2811,22 @@ and 240 s; with Cloudflare down throughout it makes five calls, waits 30, 60, 12
 the `::error::` line and exits 1; and every call has the exact arguments it had before. Red first: against the old step the
 two-503 and four-503 cases failed (one call, exit 1) and the healthy case passed. The workflow still parses and the
 step order is unchanged.
+
+**In production (checked 2026-11-27).** PR #1463 merged 2026-11-21 at 18:11 UTC. Its deploy run, #1021 (merge commit
+`6fd862c`), finished green with all six jobs run (the change touches `deploy.yml`, so «what changed» ships every surface):
+the verifier and the API reached Cloud Run and passed their post-deploy checks, migrations and the schema check passed, and
+`iqraa-web` built, published and passed «Verify the deployed bundle». The «Publish to Cloudflare Pages» step took 13 s
+(18:20:24 to 18:20:37); a retry would have added at least a 30 s wait, so it succeeded on the first attempt (inferred from
+the step timing, the log itself was not read). So the loop does not break the healthy path under the real `wrangler`. The
+deploy runs after it, #1022 to #1027, also finished green (their jobs were not opened). The merge's own OTA run, #1204,
+published to the `preview` channel only, with no new assets. A production OTA was then dispatched by hand: run #1226
+(2026-11-25, 19:20 to 19:24 UTC, commit `957a748`) published to `production`, runtime 1.6.0, android, update group
+`5f352047-1f91-4a7d-9603-dcdeffae6950`. It carries the 71 commits that had merged since the previous production OTA (run
+1213 per STATUS.md, from `fab8870`), not only this change; `app.json`'s `version` and the native surface were unchanged across
+them. My own dispatch, #1225, was cancelled before it started: the workflow's concurrency group keeps one waiting run, and
+#1226, which I did not send, took its place. **Not checked:** that a phone received that update (it needs an installed
+1.6.0 production binary opened twice), and anything merged to `main` after `957a748` is not in it. STATUS.md names a
+later production OTA, run 1230 (2026-11-26, from `3f2a969`), as the current one.
 
 **Not verified / limits.** It has not run against a real Cloudflare failure; the first outage is the first real test.
 **It covers a short outage, not a long one.** If Cloudflare was down continuously from 15:39 to 16:06 UTC (27 minutes), 7.5
