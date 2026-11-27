@@ -414,8 +414,12 @@ class UnitOpenPage(unittest.TestCase):
 
     def test_item_8_s_printed_entry_is_reported_not_forgiven(self):
         self.assertEqual(self.extras['unmatchedPrinted'], ['(0, 5), (2. 1)'])
-        # the s1 guide's only note; the s2 student book's unit test 23 has its own (its max is printed rounded)
-        self.assertEqual(list(self.extras['notes']), ['bi-math-s1-teacher-guide-u1l3-8', 'bi-math-s2-student-book-u6l3-t23'])
+        # the s1 guide's only note; the s2 unit test's own: 23 (its max is printed rounded) and the word
+        # problems no printed entry answers whole (5 and 7: «see margin»; 6: half a sentence; 10: rounded)
+        self.assertEqual(list(self.extras['notes']), [
+            'bi-math-s1-teacher-guide-u1l3-8',
+            'bi-math-s2-student-book-u6l2-t5', 'bi-math-s2-student-book-u6l2-t6', 'bi-math-s2-student-book-u6l2-t7',
+            'bi-math-s2-student-book-u6l3-t10', 'bi-math-s2-student-book-u6l3-t23'])
 
     def test_nothing_unit_open_carries_a_check(self):
         for n in range(6, 12):
@@ -699,8 +703,9 @@ class Readings(unittest.TestCase):
                 counts[r['status']] = counts.get(r['status'], 0) + 1
         # verified: 5 from guide p.47, 13 s2 derivatives, 3 s2 unit-test max/min (20-22);
         # computed: 28 before, + the s2 unit-6 test's 6 multiple choice, + p.74's 9 max/min, + test item 23,
-        # + its 4 drawn graph questions (29, 32-34)
-        self.assertEqual((counts['verified'], counts['computed']), (21, 48))
+        # + its 4 drawn graph questions (29, 32-34), + 4 of its word problems (5, 6, 7, 10);
+        # verified + the other 5 word problems (9, 11, 12, 24, 25)
+        self.assertEqual((counts['verified'], counts['computed']), (26, 52))
 
 
 class RivalReadings(unittest.TestCase):
@@ -904,8 +909,8 @@ class StudentBookDerivatives(unittest.TestCase):
         ids = [r['id'] for r in self.items.values() if r['kind'] == 'unit-test']
         self.assertEqual(sorted(ids), sorted(
             ['bi-math-s2-student-book-u6l1-t29']
-            + [f'bi-math-s2-student-book-u6l2-t{n}' for n in (15, 16, 18, 19, 32, 33)]
-            + [f'bi-math-s2-student-book-u6l3-t{n}' for n in (20, 21, 22, 23, 34)]))
+            + [f'bi-math-s2-student-book-u6l2-t{n}' for n in (5, 6, 7, 11, 12, 15, 16, 18, 19, 24, 32, 33)]
+            + [f'bi-math-s2-student-book-u6l3-t{n}' for n in (9, 10, 20, 21, 22, 23, 25, 34)]))
 
     def test_item_17_is_left_out_on_purpose_not_quarantined(self):
         # `f(x) = x` is a near-duplicate of four other items by the validator's measure
@@ -913,8 +918,10 @@ class StudentBookDerivatives(unittest.TestCase):
         self.assertNotIn('bi-math-s2-student-book-u6l2-t17', self.reasons)
 
     def test_every_served_one_is_verified(self):
-        open_ones = [r for r in self.items.values()
-                     if r['kind'] != 'unit-test-mcq' and r['lessonId'] == 'kbl-math-s2-nccd-u6_l2' and not r.get('visual')]
+        # the derivatives: p.68-69's practice and the unit test's 14-19
+        open_ones = [r for r in self.items.values() if r['lessonId'] == 'kbl-math-s2-nccd-u6_l2'
+                     and (r['source']['page'] in (68, 69) or 14 <= r['source']['number'] <= 19)
+                     and r['kind'] != 'unit-test-mcq']
         self.assertEqual(len(open_ones), 13)
         self.assertEqual({r['status'] for r in open_ones}, {'verified'})
 
@@ -1102,7 +1109,8 @@ class StudentBookTestExtrema(unittest.TestCase):
     def setUpClass(cls):
         cls.by_source, cls.rejects = x.build()
         cls.items = {r['source']['number']: r for r in cls.by_source.get('math-s2-student-book', [])
-                     if r['lessonId'] == 'kbl-math-s2-nccd-u6_l3' and r['kind'] == 'unit-test' and not r.get('visual')}
+                     if r['lessonId'] == 'kbl-math-s2-nccd-u6_l3' and r['kind'] == 'unit-test'
+                     and 20 <= r['source']['number'] <= 23}
 
     def test_the_four_keys_and_their_states(self):
         self.assertEqual(sorted(self.items), [20, 21, 22, 23])
@@ -1212,6 +1220,100 @@ class StudentBookFigures(unittest.TestCase):
         with self.assertRaises(x.Reject) as e:
             x.require_on_page(page, ['f(x) = x^3 -12x + 18'])
         self.assertEqual(str(e.exception), 'not_on_page')
+
+
+class StudentBookWordProblems(unittest.TestCase):
+    """The unit-6 test's word problems: student p.76 items 5-7, 9-12 and p.77 items 24-25.
+
+    Each is restated in our own Arabic with its maths in the stem, every number the
+    statement carries is checked on the page, and an item is `verified` only when every
+    part of its key equals a printed entry on the guide's copy of the page (p.111, p.112):
+    the same value and unit, and the same name where one is printed. Item 8 ("show that
+    V(x) = …") prints its own answer; 13 is a near-duplicate of 12."""
+
+    KEYS = {  # number: (lesson, stem, key, status)
+        5: ('u6_l2', 'h(x) = 2x^2 + x', "h'(x) = 4x + 1", 'computed'),
+        6: ('u6_l2', 'f(x) = 5x^2 + 2', "c = 7, f'(-1) = -10 < 0", 'computed'),
+        7: ('u6_l2', 'f(x) = 4x^3 + 2', 'y = 12x + 10', 'computed'),
+        9: ('u6_l3', 'V(x) = 200x - 4/3 x^3', 'x = 5√2', 'verified'),
+        10: ('u6_l3', 'V(x) = 200x - 4/3 x^3', 'V = 2000√2/3 cm^3', 'computed'),
+        11: ('u6_l2', 's(t) = t^2 + 1', 'v(2) = 4 m/s, t = 3 s', 'verified'),
+        12: ('u6_l2', 's(t) = (t - 10)^2', 'v(2) = -16 m/s', 'verified'),
+        24: ('u6_l2', 's(t) = 0.6t^3 - 1.5t - 0.9', 't = 3 s', 'verified'),
+        25: ('u6_l3', 'f(x) = kx - x^3', 'k = 3', 'verified'),
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        cls.by_source, cls.rejects = x.build()
+        ids = {f'bi-math-s2-student-book-u6l{lesson[-1]}-t{n}': n for n, (lesson, *_r) in cls.KEYS.items()}
+        cls.items = {ids[r['id']]: r for r in cls.by_source.get('math-s2-student-book', []) if r['id'] in ids}
+
+    def test_every_item_key_and_state(self):
+        self.assertEqual(sorted(self.items), sorted(self.KEYS))
+        for n, (lesson, stem, key, status) in self.KEYS.items():
+            with self.subTest(item=n):
+                r = self.items[n]
+                self.assertEqual((r['lessonId'], r['stem'], r['computedAnswer'], r['status']),
+                                 (f'kbl-math-s2-nccd-{lesson}', stem, key, status))
+                self.assertEqual((r['kind'], r['check'], r['id']),
+                                 ('unit-test', None, f'bi-math-s2-student-book-u6l{lesson[-1]}-t{n}'))
+                if status == 'verified':
+                    self.assertEqual(r['verificationSource'], 'sympy+book')
+                    self.assertTrue(r['printedAnswer'])
+                else:
+                    self.assertIsNone(r['printedAnswer'])
+
+    def test_8_and_13_are_left_out_on_purpose(self):
+        rejected = {q['id'] for q in self.rejects}
+        for n in (8, 13):
+            self.assertNotIn(n, self.items)
+            self.assertFalse(any(i.endswith(f'-t{n}') and 'u6l' in i for i in rejected if 'student' in i), n)
+
+    def test_the_printed_entries_matched(self):
+        self.assertEqual(self.items[9]['printedAnswer'], 'x = √50')
+        self.assertEqual(self.items[11]['printedAnswer'], '4 m/s | t = 3 s')
+        self.assertEqual(self.items[12]['printedAnswer'], '-16 m/s')
+
+    def test_a_part_reads_name_value_unit(self):
+        self.assertEqual(x.answer_part('v(2) = -16 m/s'), ('v(2)', x.Integer(-16), 'm/s'))
+        self.assertEqual(x.answer_part('x = √50'), ('x', 5 * x.sqrt(2), None))
+        self.assertEqual(x.answer_part('942.8 cm3'), (None, x.Rational(9428, 10), 'cm^3'))
+        self.assertIsNone(x.answer_part("f'(-1) = -10 < 0"))     # not one value
+
+    def test_a_part_matches_only_the_same_value_unit_and_name(self):
+        m = x.part_matches
+        self.assertTrue(m(x.answer_part('v(2) = -16 m/s'), x.answer_part('-16 m/s')))   # printed has no name
+        self.assertFalse(m(x.answer_part('v(2) = -16 m/s'), x.answer_part('-16 s')))    # another unit
+        self.assertFalse(m(x.answer_part('t = 3 s'), x.answer_part('k = 3')))            # another name
+        self.assertFalse(m(x.answer_part('V = 2000√2/3 cm^3'), x.answer_part('942.8 cm3')))  # rounded
+        self.assertTrue(m(x.answer_part('x = 5√2'), x.answer_part('x = √50')))
+
+    def test_a_printed_entry_two_items_could_take_verifies_neither(self):
+        recs = [{'source': {'number': n}, 'computedAnswer': 't = 3 s', 'status': 'computed'} for n in (1, 2)]
+        x.pair_applied(recs, ['t = 3 s'])
+        self.assertEqual([r['status'] for r in recs], ['computed', 'computed'])
+
+    def test_an_item_is_verified_only_when_every_part_is_printed(self):
+        recs = [{'source': {'number': 1}, 'computedAnswer': 'v(2) = 4 m/s, t = 3 s', 'status': 'computed'}]
+        x.pair_applied(recs, ['4 m/s'])
+        self.assertEqual(recs[0]['status'], 'computed')
+        x.pair_applied(recs, ['4 m/s \tt = 3 s'])
+        self.assertEqual(recs[0]['status'], 'verified')
+
+    def test_a_bare_number_is_never_a_printed_answer(self):
+        # the guide's pages carry axis labels («3», «10», «-1»): a number with no name and no unit
+        recs = [{'source': {'number': 1}, 'computedAnswer': 'k = 3', 'status': 'computed'}]
+        x.pair_applied(recs, ['3', '-1'])
+        self.assertEqual(recs[0]['status'], 'computed')
+
+    def test_the_solvers_refuse_what_they_cannot_decide(self):
+        with self.assertRaises(x.Reject) as e:       # the identity does not hold
+            x.solve_applied('h(x) = 2x^2 + x', {'ask': 'derivative_identity', 'identity': "x(1 + h'(x)) = 3h(x)"})
+        self.assertEqual(str(e.exception), 'identity_fails')
+        with self.assertRaises(x.Reject) as e:       # two positive times give the velocity
+            x.solve_applied('s(t) = t^3 - 6t^2', {'ask': 'time_for_velocity', 'velocity': '-9'})
+        self.assertEqual(str(e.exception), 'time_not_unique')
 
 
 if __name__ == '__main__':

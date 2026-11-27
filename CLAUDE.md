@@ -363,6 +363,10 @@ sweep in your staged files.
   fixes the curve (p.77 items 29, 32-34; `solve_figure` checks the drawing against the
   question); `buildBookQuestion` puts it in `body.visual`. A graph whose curve the book
   never states (26-28) is not drawn: a curve of ours would not be the book's picture.
+  The unit test's word problems (p.76-77, `solve_applied`) are restated in our Arabic with
+  every number checked on the page, and `pair_applied` verifies one only when EVERY part
+  of its key equals a printed entry (exact value, same unit, same name if printed); a
+  bare number is never an entry (axis labels), and an entry two items fit verifies neither.
   A new book item must not be a near-duplicate (`stemSimilarity` > 0.85) of another
   in its lesson, or the book plan promises a question the draw cannot deliver —
   `bookQuestions.test.ts` catches it, but only for draw orders it happens to try. `SERVED_STATUSES` is the one place

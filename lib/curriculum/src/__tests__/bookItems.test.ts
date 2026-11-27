@@ -132,8 +132,42 @@ const extrema = (s: string): { points: string[]; label: number | null } | null =
   }
   return { points: points.sort(), label: null };
 };
+/**
+ * A word problem's answer, part by part: `v(2) = 4 m/s, t = 3 s` (computed, «, »-joined) or
+ * `4 m/s | t = 3 s` (the printed entries the extractor matched, «|»-joined), each part
+ * `[name =] value [unit]` with an exact value of the form (p/q)·√r. «√50» meets «5√2»;
+ * «942.8» never meets 2000√2/3. A printed part may leave the name out, never the unit.
+ */
+const surd = (s: string): string | null => {
+  const m = /^(-?)(\d+(?:\.\d+)?)?(?:√(\d+))?(?:\/(\d+))?$/.exec(s.replace(/\s+/g, ''));
+  if (!m || (!m[2] && !m[3])) return null;
+  const r0 = rational(`${m[1]}${m[2] ?? '1'}${m[4] ? `/${m[4]}` : ''}`);
+  if (!r0) return null;
+  let [p, q] = r0.split('/').map(BigInt) as [bigint, bigint];
+  let r = BigInt(m[3] ?? '1');
+  for (let k = 2n; k * k <= r; k++) while (r % (k * k) === 0n) { r /= k * k; p *= k; }
+  const gcd = (a: bigint, b: bigint): bigint => (b === 0n ? (a < 0n ? -a : a) : gcd(b, a % b));
+  const g = gcd(p, q);
+  return `${p / g}/${q / g}√${r}`;
+};
+const answerParts = (s: string, sep: RegExp) =>
+  s.split(sep).map(part => {
+    const m = /^(?:([A-Za-z]'?(?:\([^()=]*\))?)\s*=\s*)?(.+?)\s*(m\/s|cm\^?3|s)?$/.exec(part.trim());
+    const value = m && surd(m[2]!);
+    return m && value ? { name: m[1] ?? null, value, unit: m[3]?.replace(/^cm3$/, 'cm^3') ?? null } : null;
+  });
+const sameParts = (printed: string, computed: string) => {
+  if (!printed.includes('|') && !/(m\/s|cm\^?3|\bs)$/.test(printed) && !/=/.test(printed)) return false;
+  const p = answerParts(printed, /\s*\|\s*/);
+  const c = answerParts(computed, /,\s+/);
+  return p.length === c.length && p.every((pp, i) => {
+    const cc = c[i];
+    return pp && cc && pp.value === cc.value && pp.unit === cc.unit && (pp.name === null || pp.name === cc.name);
+  });
+};
 const sameValue = (printed: string, computed: string) => {
   if (flat(printed) === flat(computed)) return true;
+  if (sameParts(printed, computed)) return true;
   const ep = extrema(printed);
   const ec = extrema(computed);
   if (ep && ec) return ep.points.join('|') === ec.points.join('|');
@@ -294,7 +328,12 @@ describe('book items — the committed data', () => {
     assert.deepEqual([eight.status, eight.printedAnswer, eight.computedAnswer], ['computed', null, '(0, 5), (2, 1)']);
     assert.deepEqual(report.unmatchedPrinted, ['(0, 5), (2. 1)']);
     // and the s2 unit test's item 23, whose maximum the guide prints only rounded (1.296 for 35/27)
-    assert.deepEqual(Object.keys(report.notes), [eight.id, 'bi-math-s2-student-book-u6l3-t23']);
+    // and the word problems no printed entry answers whole (5, 7: «see margin»; 6: half a sentence; 10: rounded)
+    assert.deepEqual(Object.keys(report.notes), [
+      eight.id,
+      'bi-math-s2-student-book-u6l2-t5', 'bi-math-s2-student-book-u6l2-t6', 'bi-math-s2-student-book-u6l2-t7',
+      'bi-math-s2-student-book-u6l3-t10', 'bi-math-s2-student-book-u6l3-t23',
+    ]);
     for (const [id, note] of Object.entries(report.notes)) {
       assert.equal(items.find(i => i.id === id)?.status, 'computed', id);
       assert.ok(note.length > 0, id);
@@ -409,7 +448,9 @@ describe('book items — the reader', () => {
 
   it('serves the semester-2 student book’s derivatives to lesson 6.2, every one verified', () => {
     const fromStudentBook = bookItemsForLesson('kbl-math-s2-nccd-u6_l2').filter(
-      i => i.source.sourceId === 'math-s2-student-book' && i.kind !== 'unit-test-mcq' && !i.visual,
+      // the derivatives: p.68-69's practice and the unit test's 14-19 (not its word problems)
+      i => i.source.sourceId === 'math-s2-student-book' && i.kind !== 'unit-test-mcq' && !i.visual
+        && (i.source.page !== 77 || (i.source.number >= 14 && i.source.number <= 19)) && i.source.page !== 76,
     );
     assert.equal(fromStudentBook.length, 13); // 14 verified minus t17, a near-duplicate (see the extractor's TABLE)
     for (const i of fromStudentBook) assert.equal(i.status, 'verified', i.id);
@@ -429,6 +470,22 @@ describe('book items — the reader', () => {
     const eight = extrema.find(i => i.source.number === 8)!;
     assert.equal(eight.computedAnswer, 'لا توجد قيم عظمى أو صغرى محلية'); // 2x³ + 7: f′ does not change sign
     assert.equal(bookCitation(eight, 'ar'), 'كتاب الطالب ص ٧٤، س ٨');
+  });
+
+  it('verifies a word problem only where every part of its key is printed, by exact value and unit', () => {
+    const t = (id: string) => items.find(i => i.id === `bi-math-s2-student-book-${id}`)!;
+    assert.deepEqual(
+      ['u6l3-t9', 'u6l2-t11', 'u6l2-t12', 'u6l2-t24', 'u6l3-t25'].map(id => t(id).status),
+      ['verified', 'verified', 'verified', 'verified', 'verified'],
+    );
+    assert.deepEqual(['u6l2-t5', 'u6l2-t6', 'u6l2-t7', 'u6l3-t10'].map(id => t(id).status), ['computed', 'computed', 'computed', 'computed']);
+    // the same re-check, fed edits: a rounded value, another unit, a missing part, another name
+    const edit = (id: string, printedAnswer: string) => verifiedDisagreements([{ ...t(id), printedAnswer }]);
+    assert.deepEqual(edit('u6l3-t9', 'x = √51'), [t('u6l3-t9').id]);
+    assert.deepEqual(edit('u6l2-t12', '-16 s'), [t('u6l2-t12').id]);
+    assert.deepEqual(edit('u6l2-t11', '4 m/s'), [t('u6l2-t11').id]);
+    assert.deepEqual(edit('u6l3-t25', 'c = 3'), [t('u6l3-t25').id]);
+    assert.deepEqual(['u6l3-t9', 'u6l2-t11', 'u6l2-t12'].flatMap(id => verifiedDisagreements([t(id)])), []);
   });
 
   it('draws only the graph questions whose curve the question fixes, and never verifies them', () => {

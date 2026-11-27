@@ -10,13 +10,13 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Book items: the semester-2 student book's unit 6 (derivatives, max/min, the test's multiple choice) — 2026-11-21
+## Book items: the semester-2 student book's unit 6 (derivatives, max/min, the test's multiple choice, graphs, word problems) — 2026-11-21
 
 `scripts/extract_book_items.py` now reads the NCCD Grade 10 maths **student book**, semester 2
-(`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **16 `verified`
-(13 derivatives, and 3 of the unit test's 4 open max/min questions); 20 `computed` (lesson 6.3's 9 max/min
-exercises, the test's other max/min question, its 6 multiple choice, and 4 graph questions that carry a
-drawing)**, written to
+(`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **21 `verified`
+(13 derivatives, 3 of the unit test's 4 open max/min questions, 5 of its 9 word problems); 24 `computed`
+(lesson 6.3's 9 max/min exercises, the test's other max/min question, its 6 multiple choice, 4 graph
+questions that carry a drawing, and its other 4 word problems)**, written to
 `lib/curriculum/src/data/book-items/math-s2-student-book.json` and served to lessons 6.1–6.3
 (`kbl-math-s2-nccd-u6_l1` … `u6_l3`).
 
@@ -29,6 +29,8 @@ drawing)**, written to
 | 77 | unit test 14–19 «أجد مشتقة» | `unit-test` | 4 verified (15, 16, 18, 19); 14 (`2π/3`) quarantined; 17 left out (below) |
 | 77 | unit test 20–23, max/min (6.3) | `unit-test` | 3 verified (20, 21, 22); 23 computed (its max is printed rounded) |
 | 77 | unit test 29, 32–34, graph questions | `unit-test` + `visual` | 4 computed, each with a drawing (6.1, 6.2, 6.2, 6.3); 26–28 left out |
+| 76 | unit test 5–7, 9–12, word problems | `unit-test` | 3 verified (9, 11, 12); 4 computed (5, 6, 7, 10); 8 and 13 left out |
+| 77 | unit test 24–25, word problems | `unit-test` | 2 verified |
 | 76 | unit test 1–4, multiple choice | `unit-test-mcq` | 4 computed: slope at a point (6.1), a derivative (6.2), the x of a maximum (6.3), a velocity (6.2) |
 | 77 | unit test 30–31, multiple choice | `unit-test-mcq` | 2 computed: all local extrema, the number of critical points (6.3) |
 
@@ -123,6 +125,34 @@ the line through P and Q, and the cubic with A at its maximum, B on the y-axis a
 limit:** the drawing has a numbered grid the book's picture does not, so a student could read item 34's
 A ≈ (−2, 33) off it rather than compute it — the same answer, by an easier road.
 
+**The unit test's word problems are restated, solved, and verified part by part.** Each item's Arabic is ours
+(the book's line is scrambled), its maths sits in the stem, and every number the restatement carries
+(`6 m/s`, `14.7`, `P(-1, c)`, `x = -1`, the stated function) must be found on the page (`require_on_page`).
+`solve_applied` has one small solver per shape, each refusing what it cannot decide (`identity_fails`,
+`time_not_unique`, `maximum_not_unique`, `parameter_not_unique`):
+
+| Item | Stem | Key | Guide prints (p.111 / p.112) | State |
+| --- | --- | --- | --- | --- |
+| 5 | `h(x) = 2x^2 + x` | h′(x) = 4x + 1 (the identity x(1 + h′) = 2h is checked) | «انظر الهامش» | computed |
+| 6 | `f(x) = 5x^2 + 2` | c = 7, f′(−1) = −10 < 0 | `c = 7`, «الميل سالب.» | computed |
+| 7 | `f(x) = 4x^3 + 2` | y = 12x + 10 | «انظر الهامش» | computed |
+| 9 | `V(x) = 200x - 4/3 x^3` | x = 5√2 | `x = √50` | verified |
+| 10 | the same | V = 2000√2/3 cm³ | `942.8 cm3` (rounded) | computed |
+| 11 | `s(t) = t^2 + 1` | v(2) = 4 m/s, t = 3 s | `4 m/s ⇥ t = 3 s` | verified |
+| 12 | `s(t) = (t - 10)^2` | v(2) = −16 m/s | `-16 m/s` | verified |
+| 24 | `s(t) = 0.6t^3 - 1.5t - 0.9` | t = 3 s (t ≥ 0) | `t = 3 s` | verified |
+| 25 | `f(x) = kx - x^3` | k = 3 | `k = 3` | verified |
+
+`pair_applied` verifies an item only when **every part** of its key equals a printed entry on the guide's copy of
+the page: the same exact value (`√50` = 5√2, never `942.8` for 2000√2/3), the same unit, and the same name where
+the entry prints one. A bare number is never an entry (the pages carry axis labels such as `3`, which would
+otherwise "verify" `k = 3`), and an entry two items could take verifies neither. Item 6 stays computed: half its
+printed answer is a sentence. The TS suite re-reads every pair independently (`sameParts` in `bookItems.test.ts`,
+exact surds only) and is fed four corruptions — another surd, another unit, a missing part, another name. Left out:
+**8** («show that V(x) = 200x − 4/3 x³»: the answer is in the question, the dimensions in the figure) and **13** (a
+near-duplicate of 12, 0.89). The shared curve pattern now takes an upper-case name (`V(x)`), which changes no
+earlier output. In the 2021 printing these items are numbered one higher and write `d(t)` for `s(t)`.
+
 **How they are verified.** The s2 teacher guide reproduces each student page with its answers printed on
 it (guide p.102 for student p.68, p.103 for p.69, p.112 for p.77). `printed_derivatives` reads every
 `name '(x) = value` there (with its `)15` item number when printed), and `pair_derivatives` verifies an item
@@ -147,13 +177,13 @@ and a printed number that is another item's.
   practice numbers, which run to 30.
 - An `Entry` takes `page` for a source with no exercise index, `answers` (the guide page) and `unit_test`.
 
-**Verified.** The Python tests failed first, then passed (135). Every stem was compared by eye with the
+**Verified.** The Python tests failed first, then passed (144). Every stem was compared by eye with the
 printed pages of a copy of the book: pp.68, 69, 74 and 76 match. **That copy is an older printing (2021): its
 p.77 numbers the derivatives 15–20 (with `2π³` where the app's text, reprinted 2021–2025, has `2π/3` at 14)
 and the multiple choice 31–32, and its p.76 item 4 says `d(t)` where the app's text says `s(t)`.** The
 guide's labels `)14`…`)19` agree with the app's newer numbering, which is what is cited. Every answer key was
-also re-derived by hand. Curriculum `test` (940) and `verify`, monorepo typecheck, api-server build + test
-(3024; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
+also re-derived by hand. Curriculum `test` (947) and `verify`, monorepo typecheck, api-server build + test
+(3092 after the latest merge of main; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
 mobile suite (9540 after the latest merge of main, 0 failing; the app does not import book items) pass. A
 `password hasher` failure (its event-loop timing assertion) appeared once while the mobile suite ran in
 parallel; the API suite re-run alone passed 3021/3021, and this branch does not touch that code. **Not checked:** how a multi-line
@@ -168,8 +198,8 @@ choice item of both its lessons. Neither assertion was loosened: both still comp
 answer review render `body.visual`; nothing else was looked at, and a printed or exported paper may show the
 question without its drawing).
 
-**Not done.** The unit test's graph questions 26–28 (no formula, above) and its word problems (24, 25), lesson
-6.1's exercises (figures), every other word problem, and units 5, 7, 8. Users
+**Not done.** The unit test's graph questions 26–28 (no formula, above) and word problem 8, lesson 6.1's
+exercises (figures), the lessons' own word problems (p.68–69 items 10–23, p.74 items 11–13), and units 5, 7, 8. Users
 see none of this in production yet: book items reach a paper only on the mock path or with
 `BOOK_ITEMS_LIVE=true`, which is off.
 

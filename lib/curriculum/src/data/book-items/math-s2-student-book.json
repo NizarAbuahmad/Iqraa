@@ -233,6 +233,27 @@
       "verificationSource": "sympy+book"
     },
     {
+      "id": "bi-math-s2-student-book-u6l2-t5",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 76,
+        "bookPage": 76,
+        "unit": 6,
+        "number": 5
+      },
+      "kind": "unit-test",
+      "instruction": "أجد h′(x) للاقتران الآتي، ثم أبيّن أن x(1 + h′(x)) = 2h(x)",
+      "stem": "h(x) = 2x^2 + x",
+      "printedAnswer": null,
+      "computedAnswer": "h'(x) = 4x + 1",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
       "id": "bi-math-s2-student-book-u6l2-6",
       "lessonId": "kbl-math-s2-nccd-u6_l2",
       "source": {
@@ -250,6 +271,90 @@
       "check": null,
       "tier": "hard",
       "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t6",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 76,
+        "bookPage": 76,
+        "unit": 6,
+        "number": 6
+      },
+      "kind": "unit-test",
+      "instruction": "تقع النقطة P(-1, c) على منحنى الاقتران الآتي. أجد قيمة c، ثم أحدد إذا كان الميل موجبًا أو سالبًا عند النقطة P",
+      "stem": "f(x) = 5x^2 + 2",
+      "printedAnswer": null,
+      "computedAnswer": "c = 7, f'(-1) = -10 < 0",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t7",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 76,
+        "bookPage": 76,
+        "unit": 6,
+        "number": 7
+      },
+      "kind": "unit-test",
+      "instruction": "أجد معادلة مماس منحنى الاقتران الآتي عند النقطة التي إحداثيها x يساوي -1",
+      "stem": "f(x) = 4x^3 + 2",
+      "printedAnswer": null,
+      "computedAnswer": "y = 12x + 10",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t11",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 76,
+        "bookPage": 76,
+        "unit": 6,
+        "number": 11
+      },
+      "kind": "unit-test",
+      "instruction": "يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. أجد السرعة بعد ثانيتين، ثم أجد الزمن عندما تبلغ السرعة 6 m/s",
+      "stem": "s(t) = t^2 + 1",
+      "printedAnswer": "4 m/s | t = 3 s",
+      "computedAnswer": "v(2) = 4 m/s, t = 3 s",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t12",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 76,
+        "bookPage": 76,
+        "unit": 6,
+        "number": 12
+      },
+      "kind": "unit-test",
+      "instruction": "يمثل الاقتران الآتي موقع سيارة تتحرك في مسار مستقيم نحو محطة الوقود، حيث s الموقع بالأمتار بعد t ثانية. أجد سرعة السيارة بعد ثانيتين",
+      "stem": "s(t) = (t - 10)^2",
+      "printedAnswer": "-16 m/s",
+      "computedAnswer": "v(2) = -16 m/s",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
       "status": "verified",
       "verificationSource": "sympy+book"
     },
@@ -355,6 +460,27 @@
       "check": null,
       "tier": "easy",
       "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-t24",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 24
+      },
+      "kind": "unit-test",
+      "instruction": "يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. ما الزمن الذي تساوي عنده السرعة 14.7 m/s؟",
+      "stem": "s(t) = 0.6t^3 - 1.5t - 0.9",
+      "printedAnswer": "t = 3 s",
+      "computedAnswer": "t = 3 s",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
       "status": "verified",
       "verificationSource": "sympy+book"
     },
@@ -696,6 +822,27 @@
       "verificationSource": "sympy"
     },
     {
+      "id": "bi-math-s2-student-book-u6l3-t9",
+      "lessonId": "kbl-math-s2-nccd-u6_l3",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 76,
+        "bookPage": 76,
+        "unit": 6,
+        "number": 9
+      },
+      "kind": "unit-test",
+      "instruction": "يمثل الاقتران الآتي حجم قالب يستعمل لصنع لبن البناء بالسنتيمتر المكعب. أستعمل المشتقة لإيجاد قيمة x التي تجعل الحجم أكبر ما يمكن",
+      "stem": "V(x) = 200x - 4/3 x^3",
+      "printedAnswer": "x = √50",
+      "computedAnswer": "x = 5√2",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
       "id": "bi-math-s2-student-book-u6l3-10",
       "lessonId": "kbl-math-s2-nccd-u6_l3",
       "source": {
@@ -713,6 +860,27 @@
       "check": null,
       "tier": "hard",
       "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l3-t10",
+      "lessonId": "kbl-math-s2-nccd-u6_l3",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 76,
+        "bookPage": 76,
+        "unit": 6,
+        "number": 10
+      },
+      "kind": "unit-test",
+      "instruction": "يمثل الاقتران الآتي حجم قالب يستعمل لصنع لبن البناء بالسنتيمتر المكعب. أجد أكبر حجم ممكن للقالب",
+      "stem": "V(x) = 200x - 4/3 x^3",
+      "printedAnswer": null,
+      "computedAnswer": "V = 2000√2/3 cm^3",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
       "status": "computed",
       "verificationSource": "sympy"
     },
@@ -799,6 +967,27 @@
       "tierSource": "default",
       "status": "computed",
       "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l3-t25",
+      "lessonId": "kbl-math-s2-nccd-u6_l3",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 77,
+        "bookPage": 77,
+        "unit": 6,
+        "number": 25
+      },
+      "kind": "unit-test",
+      "instruction": "أجد قيمة الثابت k إذا كان للاقتران الآتي نقطة حرجة عندما x = -1",
+      "stem": "f(x) = kx - x^3",
+      "printedAnswer": "k = 3",
+      "computedAnswer": "k = 3",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "default",
+      "status": "verified",
+      "verificationSource": "sympy+book"
     },
     {
       "id": "bi-math-s2-student-book-u6l3-t30",

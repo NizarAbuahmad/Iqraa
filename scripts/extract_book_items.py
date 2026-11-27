@@ -28,7 +28,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'artifacts' / 'math-verifier'))
 
-from sympy import CRootOf, Eq, Rational, Symbol, diff, simplify, solve  # noqa: E402
+from sympy import CRootOf, Eq, Integer, Rational, Symbol, diff, expand, simplify, solve, sqrt  # noqa: E402
 from verify_core import safe_parse_expr  # noqa: E402
 
 EXTRACTED = ROOT / 'lib' / 'curriculum' / 'src' / 'data' / 'extracted'
@@ -165,6 +165,49 @@ TABLE: list[Entry] = [
           params={'stem': 'f(x) = x^3 - 12x + 17', 'curve': 'f(x) = x^3 - 12x + 17', 'ask': 'extrema_points',
                   'max': 'A', 'min': 'C', 'on_page': ['f(x) = x^3 -12x + 17']},
           visual=CUBIC_77),
+    # The unit-6 test's word problems, restated in our own Arabic (the maths in the stem, every
+    # number the restatement carries checked on the page by `on_page`); answers paired with the
+    # guide's copy of the page (p.111 for p.76, p.112 for p.77) by `pair_applied`. Not 8 ("show
+    # that V(x) = …": its answer is in the question, and its dimensions in the figure) and not 13
+    # (a near-duplicate of 12, 0.89).
+    Entry(SB2, 's2', 6, 2, 5, 5, 'applied', "أجد h′(x) للاقتران الآتي، ثم أبيّن أن x(1 + h′(x)) = 2h(x)",
+          page=76, answers=111, unit_test=True,
+          params={'stem': 'h(x) = 2x^2 + x', 'ask': 'derivative_identity', 'identity': "x(1 + h'(x)) = 2h(x)",
+                  'on_page': ['h(x) = 2x^2 + x', "x(1 + h'(x)) = 2h(x)"]}),
+    Entry(SB2, 's2', 6, 2, 6, 6, 'applied',
+          'تقع النقطة P(-1, c) على منحنى الاقتران الآتي. أجد قيمة c، ثم أحدد إذا كان الميل موجبًا أو سالبًا عند النقطة P',
+          page=76, answers=111, unit_test=True,
+          params={'stem': 'f(x) = 5x^2 + 2', 'ask': 'point_slope_sign', 'at': '-1', 'unknown': 'c',
+                  'on_page': ['P(-1, c)', 'f(x)= 5x^2 + 2']}),
+    Entry(SB2, 's2', 6, 2, 7, 7, 'applied', 'أجد معادلة مماس منحنى الاقتران الآتي عند النقطة التي إحداثيها x يساوي -1',
+          page=76, answers=111, unit_test=True,
+          params={'stem': 'f(x) = 4x^3 + 2', 'ask': 'tangent', 'at': '-1', 'on_page': ['f(x) = 4x^3 + 2']}),
+    Entry(SB2, 's2', 6, 3, 9, 9, 'applied',
+          'يمثل الاقتران الآتي حجم قالب يستعمل لصنع لبن البناء بالسنتيمتر المكعب. أستعمل المشتقة لإيجاد قيمة x التي تجعل الحجم أكبر ما يمكن',
+          page=76, answers=111, unit_test=True,
+          params={'stem': 'V(x) = 200x - 4/3 x^3', 'ask': 'argmax', 'on_page': ['V(x)= 200x- 4/3 x^3']}),
+    Entry(SB2, 's2', 6, 3, 10, 10, 'applied',
+          'يمثل الاقتران الآتي حجم قالب يستعمل لصنع لبن البناء بالسنتيمتر المكعب. أجد أكبر حجم ممكن للقالب',
+          page=76, answers=111, unit_test=True,
+          params={'stem': 'V(x) = 200x - 4/3 x^3', 'ask': 'max_value', 'unit': 'cm^3', 'on_page': ['V(x)= 200x- 4/3 x^3']}),
+    Entry(SB2, 's2', 6, 2, 11, 11, 'applied',
+          'يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. أجد السرعة بعد ثانيتين، ثم أجد الزمن عندما تبلغ السرعة 6 m/s',
+          page=76, answers=111, unit_test=True,
+          params={'stem': 's(t) = t^2 + 1', 'ask': 'velocity_and_time', 'at': '2', 'velocity': '6',
+                  'on_page': ['s(t) = t^2 + 1', '6 m/s']}),
+    Entry(SB2, 's2', 6, 2, 12, 12, 'applied',
+          'يمثل الاقتران الآتي موقع سيارة تتحرك في مسار مستقيم نحو محطة الوقود، حيث s الموقع بالأمتار بعد t ثانية. أجد سرعة السيارة بعد ثانيتين',
+          page=76, answers=111, unit_test=True,
+          params={'stem': 's(t) = (t - 10)^2', 'ask': 'velocity_at', 'at': '2', 'on_page': ['s = (t - 10)^2']}),
+    Entry(SB2, 's2', 6, 2, 24, 24, 'applied',
+          'يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. ما الزمن الذي تساوي عنده السرعة 14.7 m/s؟',
+          page=77, answers=112, unit_test=True,
+          params={'stem': 's(t) = 0.6t^3 - 1.5t - 0.9', 'ask': 'time_for_velocity', 'velocity': '14.7',
+                  'on_page': ['s(t) = 0.6t^3 - 1.5t - 0.9', '14.7m/s']}),
+    Entry(SB2, 's2', 6, 3, 25, 25, 'applied', 'أجد قيمة الثابت k إذا كان للاقتران الآتي نقطة حرجة عندما x = -1',
+          page=77, answers=112, unit_test=True,
+          params={'stem': 'f(x) = kx - x^3', 'ask': 'param_critical', 'at': '-1', 'param': 'k',
+                  'on_page': ['f(x) = kx - x^3', 'x = -1']}),
     # The unit-6 test's multiple choice, read from SB2_READINGS. The guide circles its key, which
     # the text layer does not carry, so these are `computed`. `choices` is the page's whole run.
     Entry(SB2, 's2', 6, 1, 1, 1, 'reading', 'ما ميل منحنى الاقتران الآتي عند قيمة x المعطاة؟', page=76,
@@ -622,7 +665,7 @@ def option_holds(check: str, stem: str, option: str) -> bool:
 # error, never a "no": a second derivative of 0 at a stationary point, a curve that is not
 # a polynomial (its critical points would also need where f′ is undefined), f′ ≡ 0.
 CURVE_CHECKS = ('slope_at', 'velocity_at', 'derivative', 'max_at', 'extrema_at', 'critical_count')
-CURVE = re.compile(r'([a-z])\s*\(\s*([a-z])\s*\)\s*=(.*)')
+CURVE = re.compile(r'([A-Za-z])\s*\(\s*([a-z])\s*\)\s*=(.*)')   # V(x) = … names a volume
 POINT = re.compile(r'([a-z])\s*=\s*(\S.*)')
 
 
@@ -938,6 +981,122 @@ def solve_figure(curve: str, visual: dict, params: dict) -> str:
     raise Reject('unknown_ask')
 
 
+# ── the unit-6 test's word problems (student p.76-77) ───────────────────────
+# Each is restated in our own Arabic (the row's instruction) with its maths in the stem,
+# and every number the restatement carries is checked on the page (`require_on_page`).
+# One small solver per question shape; each refuses what it cannot decide.
+def _curve(stem: str):
+    """(name, variable symbol, expression) of a stem `f(x) = …` / `s(t) = …` / `V(x) = …`."""
+    m = CURVE.fullmatch(stem.strip())
+    if not m:
+        raise Reject('not_a_function_definition')
+    name, var, right = m.groups()
+    expr = parse(right)
+    v = next((s for s in expr.free_symbols if s.name == var), Symbol(var))
+    return name, v, expr
+
+
+def _one(values: list, reason: str):
+    if len(values) != 1:
+        raise Reject(reason)
+    return values[0]
+
+
+def solve_applied(stem: str, params: dict) -> str:
+    from sympy import real_roots, Poly
+    name, v, f = _curve(stem)
+    d1 = diff(f, v)
+    ask = params['ask']
+    at = Rational(params['at']) if 'at' in params else None
+    if ask == 'derivative_identity':        # find h'(x), then show the stated identity holds
+        left, right = params['identity'].split('=')
+        # placeholders the safe parser accepts (one letter), filled with f′ and f after parsing
+        sub = lambda side: parse(side.replace(f"{name}'({v})", '(u)').replace(f'{name}({v})', '(w)'))
+        expr = sub(left) - sub(right)
+        holes = {s.name: s for s in expr.free_symbols}
+        if simplify(expr.subs({holes.get('u', Symbol('u')): d1, holes.get('w', Symbol('w')): f})) != 0:
+            raise Reject('identity_fails')
+        return f"{name}'({v}) = {fmt(expand(d1))}"
+    if ask == 'point_slope_sign':           # the point (at, c) lies on the curve; sign of the slope there
+        c, slope = simplify(f.subs(v, at)), simplify(d1.subs(v, at))
+        if slope == 0:
+            raise Reject('slope_is_zero')
+        return f"{params['unknown']} = {fmt(c)}, {name}'({fmt(at)}) = {fmt(slope)} {'<' if slope < 0 else '>'} 0"
+    if ask == 'tangent':
+        return f'y = {fmt(expand(d1.subs(v, at) * (v - at) + f.subs(v, at)))}'
+    if ask in ('argmax', 'max_value'):      # the one positive x where f has a local maximum
+        roots = [r for r in real_roots(Poly(d1, v)) if r > 0 and diff(d1, v).subs(v, r) < 0]
+        r = _one(sorted(set(roots), key=float), 'maximum_not_unique')
+        if ask == 'argmax':
+            return f'{v} = {fmt(simplify(r))}'
+        return f"{name} = {fmt(simplify(f.subs(v, r)))} {params['unit']}"
+    if ask in ('velocity_at', 'velocity_and_time', 'time_for_velocity'):
+        parts = []
+        if ask != 'time_for_velocity':
+            parts.append(f'v({fmt(at)}) = {fmt(simplify(d1.subs(v, at)))} m/s')
+        if ask != 'velocity_at':
+            target = parse(params['velocity'])
+            times = [t for t in solve(Eq(d1, target), v) if t.is_real and t >= 0]
+            parts.append(f'{v} = {fmt(_one(times, "time_not_unique"), "." in stem)} s')
+        return ', '.join(parts)
+    if ask == 'param_critical':             # the parameter that makes f'(at) = 0
+        k = next(s for s in f.free_symbols if s.name == params['param'])
+        return f"{params['param']} = {fmt(_one(solve(Eq(d1.subs(v, at), 0), k), 'parameter_not_unique'))}"
+    raise Reject('unknown_ask')
+
+
+# A printed answer on the guide's copy of the page is matched part by part. A part is
+# `name = value unit`, `value unit` or `name = value`; a bare number is never one (the pages
+# carry axis labels). Two parts match only with the same exact value (no rounding), the same
+# unit, and the same name where the printed part has one.
+UNITS = {'m/s': 'm/s', 's': 's', 'cm3': 'cm^3', 'cm^3': 'cm^3'}
+ANSWER_PART = re.compile(r"(?:(?P<name>[A-Za-z]'?(?:\([^()=]*\))?)\s*=\s*)?(?P<val>-?[\d√.]+(?:/\d+)?)\s*(?P<unit>m/s|cm\^?3|s)?")
+
+
+def answer_part(text: str) -> tuple | None:
+    m = ANSWER_PART.fullmatch(text.strip().translate(MINUS))
+    if not m:
+        return None
+    val = re.sub(r'(\d)?√(\d+)', lambda g: f"{g.group(1) + '*' if g.group(1) else ''}sqrt({g.group(2)})", m.group('val'))
+    try:
+        value = simplify(parse(val))
+    except Exception:  # noqa: BLE001 - an unreadable part matches nothing
+        return None
+    return (m.group('name'), value, UNITS[m.group('unit')] if m.group('unit') else None)
+
+
+def part_matches(key: tuple | None, printed: tuple | None) -> bool:
+    if key is None or printed is None:
+        return False
+    (kn, kv, ku), (pn, pv, pu) = key, printed
+    return simplify(kv - pv) == 0 and ku == pu and (pn is None or pn == kn)
+
+
+def pair_applied(records: list[dict], lines: list[str]) -> None:
+    """Verify each record whose every key part equals its own printed entry on the page.
+
+    An entry another record's part also matches is unusable for both: nothing is paired by
+    position, and an entry that could belong to two items verifies neither."""
+    chunks = []
+    for line in lines:
+        for raw in nfkc(line).split('\t'):
+            p = answer_part(raw)
+            if p and (p[0] or p[2]):              # a bare number is an axis label, not an answer
+                chunks.append((raw.strip(), p))
+    keys = {id(r): [answer_part(s) for s in r['computedAnswer'].split(', ')] for r in records}
+    for r in records:
+        parts, used = keys[id(r)], []
+        for part in parts:
+            hits = [i for i, (_raw, p) in enumerate(chunks) if i not in used and part_matches(part, p)
+                    and not any(part_matches(q, p) for o in records if o is not r for q in keys[id(o)])]
+            if not hits:
+                break
+            used.append(hits[0])
+        if parts and len(used) == len(parts):
+            r['status'], r['verificationSource'] = assign_state(r['computedAnswer'], r['computedAnswer'], False)
+            r['printedAnswer'] = ' | '.join(chunks[i][0] for i in used)
+
+
 def join_continued(text: str) -> str:
     """Join a line that starts with + or − onto the line before it: an expression the text
     layer broke (student p.77 item 23, `2x3 -4x2` over `+2x+1`). Only for the rows that ask
@@ -1142,6 +1301,7 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
     open_items: dict[tuple[str, int], list[dict]] = {}     # unit_open records waiting for their printed answers
     derivative_items: dict[int, list[dict]] = {}           # s2 guide page -> derivative records it answers
     extrema_items: dict[int, list[dict]] = {}              # s2 guide page -> max/min records it answers
+    applied_items: dict[int, list[dict]] = {}              # s2 guide page -> word-problem records it answers
     for e in TABLE:
         lesson_id = curriculum_lesson_id(e.semester, e.unit, e.lesson)
         if lesson_id is None:
@@ -1169,9 +1329,9 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
             try:
                 # A figure row's question is a picture, not a text block: its data is checked
                 # on the page by `require_on_page` instead (item 29's number has no marker).
-                if e.family != 'figure' and n not in blocks:
+                if e.family not in ('figure', 'applied') and n not in blocks:
                     raise Reject('item_not_found')
-                if e.family != 'figure' and isinstance(blocks[n], Reject):
+                if e.family not in ('figure', 'applied') and isinstance(blocks[n], Reject):
                     raise blocks[n]
                 if e.family == 'mcq_pair':
                     stem, options, key = solve_mcq_pair(blocks[n])
@@ -1198,6 +1358,12 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                     computed = solve_figure(e.params['curve'], e.visual, e.params)
                     kind, tier, tier_source = 'unit-test', 'medium', 'default'
                     extra = {'visual': e.visual}
+                elif e.family == 'applied':
+                    require_on_page(page_text(e.source, page), e.params['on_page'])
+                    stem = e.params['stem']
+                    computed = solve_applied(stem, e.params)
+                    kind, tier, tier_source = 'unit-test', 'medium', 'default'
+                    extra = {}
                 else:
                     lead = lead_math(blocks[n])
                     stem = normalise_stem(join_continued(lead) if e.params.get('join') else lead, MAX_EXP[e.family])
@@ -1220,13 +1386,19 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                 if e.family == 'unit_open':
                     open_items.setdefault((e.source, e.page), []).append(record)
                 if e.answers is not None:
-                    (derivative_items if e.family == 'derivative' else extrema_items).setdefault(e.answers, []).append(record)
+                    {'derivative': derivative_items, 'applied': applied_items}.get(
+                        e.family, extrema_items).setdefault(e.answers, []).append(record)
             except Reject as r:
                 rejects.append({**base, 'family': e.family, 'reason': str(r)})
             except Exception as ex:  # noqa: BLE001 - any parse/solve failure quarantines; nothing is guessed
                 rejects.append({**base, 'family': e.family, 'reason': f'{type(ex).__name__}: {ex}'[:120]})
     unmatched: list[str] = []
     notes: dict[str, str] = {}
+    for page, records in applied_items.items():
+        pair_applied(records, page_text(G2, page).split('\n'))
+        for rec in records:
+            if rec['status'] == 'computed':
+                notes[rec['id']] = f'no printed entries on guide p.{page} hold every part of the computed answer'
     for page, records in extrema_items.items():
         pair_extrema(records, printed_extrema(page_text(G2, page)))
         for rec in records:
