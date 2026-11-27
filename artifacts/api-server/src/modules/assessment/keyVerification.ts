@@ -35,6 +35,7 @@
  * test. A question with no `check` is simply never verified, which is the
  * common case and costs it nothing.
  */
+import { arDigits, arList } from "./arabicNotes.ts";
 import type { GeneratedQuestion } from "./mockGenerator.ts";
 import { linkCheck } from "./keyLinking.ts";
 import { isVerifierUnreachable } from "../../lib/derivativeVerified.ts";
@@ -93,6 +94,8 @@ export interface KeyVerificationResult {
   /** Questions to insert, each with the verdict to store beside it. */
   kept: { question: GeneratedQuestion; verification: KeyVerification }[];
   warnings: string[];
+  /** The same warnings in Arabic, one for one and in the same order. */
+  warningsAr: string[];
   /** How many keys the verifier actually judged — the honest coverage number. */
   checked: number;
   verified: number;
@@ -108,6 +111,7 @@ export async function verifyAnswerKeys(
 ): Promise<KeyVerificationResult> {
   const kept: KeyVerificationResult["kept"] = [];
   const warnings: string[] = [];
+  const warningsAr: string[] = [];
   const checkedAt = new Date().toISOString();
   let checked = 0;
   let verified = 0;
@@ -241,6 +245,9 @@ export async function verifyAnswerKeys(
       `${unlinked} question(s) carry a checked answer that is not their own answer key, ` +
         "so they are not marked verified.",
     );
+    warningsAr.push(
+      `أسئلة عددها ${arDigits(unlinked)} فيها إجابة دُقِّقت لكنها ليست مفتاح إجابتها، فلم تُعلَّم بأنها «تم التحقق».`,
+    );
   }
 
   if (verifierDown) {
@@ -248,9 +255,10 @@ export async function verifyAnswerKeys(
       "The maths verifier could not be reached, so no answer key was checked. "
         + "Nothing was removed from this paper.",
     );
+    warningsAr.push("تعذّر الوصول إلى المدقّق الرياضي، فلم يُدقَّق أي مفتاح إجابة. لم يُحذف شيء من هذا الاختبار.");
   }
 
-  return { kept, warnings, checked, verified, contradicted };
+  return { kept, warnings, warningsAr, checked, verified, contradicted };
 }
 
 /**
@@ -272,6 +280,21 @@ export function contradictionWarning(
   return (
     `The maths verifier disagrees with the answer key of ${lines.length} question(s), so they are not marked `
     + `verified. Check them before using the paper — either the key or the check may be wrong. ${lines.join("; ")}.`
+  );
+}
+
+/**
+ * `contradictionWarning` in Arabic. The verifier's own reasons are English and
+ * technical, so the Arabic names the questions and leaves the reasons out.
+ */
+export function contradictionWarningAr(
+  kept: readonly { verification: KeyVerification }[],
+): string | null {
+  const numbers = kept.flatMap((k, i) => (k.verification.code === "contradicted" ? [i + 1] : []));
+  if (numbers.length === 0) return null;
+  return (
+    `يخالف المدقّق الرياضي مفتاح الإجابة في ${numbers.length === 1 ? "السؤال" : "الأسئلة"} ${arList(numbers)}، `
+    + "فلم تُعلَّم بأنها «تم التحقق». راجعها قبل استعمال الاختبار؛ فقد يكون الخطأ في المفتاح أو في التدقيق."
   );
 }
 

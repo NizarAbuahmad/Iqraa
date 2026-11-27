@@ -359,7 +359,17 @@ sweep in your staged files.
   for a short reply is measured against the model's share (`count − k`).
   The prompt is told what the book supplies and a per-competency quota
   (`allocateQuestions` over the whole paper, rescaled for the top-up by
-  `remainingQuota`), and such a paper records `promptVersion` `exam-gen-8+book`.
+  `remainingQuota`), and such a paper records `promptVersion` `exam-gen-9+book`.
+  **Every live paper gets a quota now (since 2026-11-24)**, book or not: the
+  route passes `quota` (`allocateQuestions(count, difficulty)` without a book
+  share), the prompt states the mix and the fixed marks (1/2/3/4,
+  `MARKS_BY_COMPETENCY`), the parser sets each question's marks from its
+  competency (`exam-gen-9`), and a request without `quota` is still byte for byte
+  exam-gen-8 (`llmGeneratorPromptPin.test.ts`). After validation a teacher's
+  chosen total (`evaluations.target_total_marks`) rescales the generated marks
+  and their rubrics (`marksTotal.ts`), and multiple-choice options are shuffled
+  before validation (`choiceOrder.ts`; book items and options that point at
+  each other, «جميع ما سبق», keep their order).
 - **A teaching style shapes the whole lesson plan, in two places.** Per-style
   phases live in `artifacts/mobile/services/ai/lessonPlanBlueprints.ts` and the
   matching contract in `LESSON_STYLE_RULES_AR`/`_EN`

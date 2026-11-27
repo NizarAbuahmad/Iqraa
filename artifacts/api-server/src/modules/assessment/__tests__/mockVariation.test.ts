@@ -14,7 +14,7 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { getObjectivesForUnit } from "@workspace/curriculum";
+import { getObjectivesForLesson, getObjectivesForUnit } from "@workspace/curriculum";
 import { generateMockEvaluation, type GenerationRequest } from "../mockGenerator.ts";
 import { validateGenerated } from "../validator.ts";
 
@@ -48,6 +48,22 @@ describe("mock generation varies between runs", () => {
     const a = generateMockEvaluation(request({ seed: 42 }));
     const b = generateMockEvaluation(request({ seed: 42 }));
     assert.equal(fingerprint(a), fingerprint(b));
+  });
+
+  it("shuffles its multiple-choice options and says so, so the position check skips them", () => {
+    // Not a replay test: the bank's own draws (`lib/math-practice`) use Math.random,
+    // so a seed has never replayed a banked question. The shuffle itself is seeded.
+    const paper = generateMockEvaluation(request({
+      objectives: getObjectivesForLesson("kbl-math-s1-nccd-u4_l3"),
+      assessmentTypes: ["multiple_choice"],
+      count: 10,
+      subjectId: "mathematics",
+      gradeId: "grade-10",
+      seed: 7,
+    }));
+    const mcqs = paper.questions.filter(q => q.type === "multiple_choice" && q.aiMetadata["generator"] !== "book");
+    assert.ok(mcqs.length > 0, "no generated multiple choice — the case under test never arose");
+    assert.ok(mcqs.every(q => q.aiMetadata["choiceOrder"] === "shuffled"));
   });
 
   it("an unseeded run draws its own seed and reports it", () => {
