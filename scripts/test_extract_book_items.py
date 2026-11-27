@@ -421,6 +421,10 @@ class UnitOpenPage(unittest.TestCase):
             'bi-math-s1-teacher-guide-u1l3-8',
             'bi-math-s2-student-book-u6l1-14', 'bi-math-s2-student-book-u6l1-16',
             'bi-math-s2-student-book-u6l1-25', 'bi-math-s2-student-book-u6l1-26',
+            # the lessons' own word problems no printed entry answers whole (10: only x = 3; 11, 14:
+            # function answers; 21: a split fraction; 28: points inside a sentence)
+            'bi-math-s2-student-book-u6l2-10', 'bi-math-s2-student-book-u6l2-11', 'bi-math-s2-student-book-u6l2-14',
+            'bi-math-s2-student-book-u6l2-21', 'bi-math-s2-student-book-u6l2-28',
             'bi-math-s2-student-book-u6l2-t5', 'bi-math-s2-student-book-u6l2-t6', 'bi-math-s2-student-book-u6l2-t7',
             'bi-math-s2-student-book-u6l3-t10', 'bi-math-s2-student-book-u6l3-t23'])
 
@@ -708,8 +712,9 @@ class Readings(unittest.TestCase):
         # computed: 28 before, + the s2 unit-6 test's 6 multiple choice, + p.74's 9 max/min, + test item 23,
         # + its 4 drawn graph questions (29, 32-34), + 4 of its word problems (5, 6, 7, 10);
         # verified + the other 5 word problems (9, 11, 12, 24, 25);
-        # lesson 6.1: verified 10-13, 15, 21, 24; computed 14, 16, 25, 26
-        self.assertEqual((counts['verified'], counts['computed']), (33, 56))
+        # lesson 6.1: verified 10-13, 15, 21, 24; computed 14, 16, 25, 26;
+        # the lessons' own word problems: 13 verified, 5 computed (6.2's 10, 11, 14, 21, 28)
+        self.assertEqual((counts['verified'], counts['computed']), (46, 61))
 
 
 class RivalReadings(unittest.TestCase):
@@ -922,9 +927,11 @@ class StudentBookDerivatives(unittest.TestCase):
         self.assertNotIn('bi-math-s2-student-book-u6l2-t17', self.reasons)
 
     def test_every_served_one_is_verified(self):
-        # the derivatives: p.68-69's practice and the unit test's 14-19
+        # the derivatives: p.68-69's practice (1-9, 24-26; not its word problems) and the unit test's 14-19
+        n = lambda r: r['source']['number']
         open_ones = [r for r in self.items.values() if r['lessonId'] == 'kbl-math-s2-nccd-u6_l2'
-                     and (r['source']['page'] in (68, 69) or 14 <= r['source']['number'] <= 19)
+                     and ((r['source']['page'] in (68, 69) and (n(r) <= 9 or 24 <= n(r) <= 26))
+                          or (r['source']['page'] == 77 and 14 <= n(r) <= 19))
                      and r['kind'] != 'unit-test-mcq']
         self.assertEqual(len(open_ones), 13)
         self.assertEqual({r['status'] for r in open_ones}, {'verified'})
@@ -1054,7 +1061,8 @@ class StudentBookExtrema(unittest.TestCase):
     def setUpClass(cls):
         cls.by_source, cls.rejects = x.build()
         cls.items = {r['source']['number']: r for r in cls.by_source.get('math-s2-student-book', [])
-                     if r['lessonId'] == 'kbl-math-s2-nccd-u6_l3' and r['kind'] == 'exercise'}
+                     if r['lessonId'] == 'kbl-math-s2-nccd-u6_l3' and r['kind'] == 'exercise'
+                     and r['source']['number'] <= 10}   # 11-13 are the word problems
 
     def test_every_key(self):
         self.assertEqual(sorted(self.items), sorted(self.KEYS))
@@ -1404,6 +1412,115 @@ class StudentBookSlopes(unittest.TestCase):
             with self.subTest(stem=stem), self.assertRaises(x.Reject) as e:
                 x.solve_applied(stem, params)
             self.assertEqual(str(e.exception), reason)
+
+
+class StudentBookLessonWordProblems(unittest.TestCase):
+    """The lessons' own word problems: lesson 6.2's p.68 items 10-15 and p.69 16-30, lesson 6.3's
+    p.74 11-13, paired with the guide's copies (p.102, p.103, p.109) and its appendix (p.117)."""
+
+    KEYS = {  # (lesson, number): (stem, key, status)
+        (2, 10): ('f(x) = 2x^2 - 10', '(3, 8)', 'computed'),
+        (2, 11): ('s(t) = t^3 - 6t + 3', 'v(t) = 3t^2 - 6', 'computed'),
+        (2, 13): ('s(t) = t^3 - 6t + 3', 't = 2 s', 'verified'),
+        (2, 14): ('s(t) = t^3 - 6t + 3', 'a(t) = 6t', 'computed'),
+        (2, 15): ('s(t) = t^3 - 6t + 3\nt = 5', 'a(5) = 30 m/s^2', 'verified'),
+        (2, 16): ('f(x) = 0.5x^3 - 3x^2 + 4x', "f'(x) = 1.5x^2 - 6x + 4", 'verified'),
+        (2, 17): ('f(x) = 0.5x^3 - 3x^2 + 4x', "f'(0) = 4, f'(2) = -2, f'(4) = 4", 'verified'),
+        (2, 19): ('f(x) = 3x^3 + 2', 'y = 9x - 4', 'verified'),
+        (2, 20): ('g(x) = 3x^3 - x^2 - 7x + 4', 'b = -10', 'verified'),
+        (2, 21): ('g(x) = 3x^3 - x^2 - 7x + 4', 'x = -7/9, x = 1', 'computed'),
+        (2, 22): ('y = x^3 - 2ax', 'a = 12', 'verified'),
+        (2, 27): ('f(x) = kx(x - 4)', 'k = 1/2', 'verified'),
+        (2, 28): ('f(x) = 1/3 x^3 - 5x + 4', '(-3, 10), (3, -2)', 'computed'),
+        (2, 29): ('y = ax^3 + bx^2 + 5', 'a = 2, b = -6', 'verified'),
+        (2, 30): ('s(t) = -4.9t^2 + 147t', 'v(10) = 49 m/s, v(20) = -49 m/s', 'verified'),
+        (3, 11): ('h(t) = 1.2 + 19.6t - 4.9t^2\nt = 3', 'v(3) = -9.8 m/s', 'verified'),
+        (3, 12): ('h(t) = 1.2 + 19.6t - 4.9t^2', 'h = 20.8 m', 'verified'),
+        (3, 13): ('A(x) = x(50 - x)', 'A = 625 m^2', 'verified'),
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        cls.by_source, cls.rejects = x.build()
+        ids = {f'bi-math-s2-student-book-u6l{l}-{n}': (l, n) for l, n in cls.KEYS}
+        cls.items = {ids[r['id']]: r for r in cls.by_source.get('math-s2-student-book', []) if r['id'] in ids}
+
+    def test_every_item_key_and_state(self):
+        self.assertEqual(sorted(self.items), sorted(self.KEYS))
+        for (lesson, n), (stem, key, status) in self.KEYS.items():
+            with self.subTest(lesson=lesson, item=n):
+                r = self.items[(lesson, n)]
+                self.assertEqual((r['lessonId'], r['stem'], r['computedAnswer'], r['status']),
+                                 (f'kbl-math-s2-nccd-u6_l{lesson}', stem, key, status))
+                self.assertEqual((r['kind'], r['check']), ('exercise', None))
+                if status == 'computed':
+                    self.assertIsNone(r['printedAnswer'])
+
+    def test_the_printed_entries_matched(self):
+        printed = {k: self.items[k]['printedAnswer'] for k in [(2, 13), (2, 15), (2, 19), (2, 27), (2, 30), (3, 13)]}
+        self.assertEqual(printed, {
+            (2, 13): 't = 2',                              # names the answer, leaves the unit out
+            (2, 15): '30 m/s 2',                           # m/s², its exponent flattened
+            (2, 19): 'y - 5 = 9(x-1)',                     # the same line, another arrangement
+            (2, 27): 'k = 0.5',
+            (2, 30): 'v(10) = -98 + 147 = 49 m/s | v(20) = -196 + 147 = -49 m/s',
+            (3, 13): '625 m 2',
+        })
+
+    def test_12_18_and_23_are_left_out_on_purpose(self):
+        rejected = {q['id'] for q in self.rejects}
+        for n in (12, 18, 23):
+            item = f'bi-math-s2-student-book-u6l2-{n}'
+            self.assertFalse(any(r['id'] == item for r in self.by_source['math-s2-student-book']), n)
+            self.assertNotIn(item, rejected)
+
+    def test_a_printed_part_may_leave_its_unit_out_only_when_it_names_the_answer(self):
+        m, a = x.part_matches, x.answer_part
+        self.assertTrue(m(a('t = 2 s'), a('t = 2')))
+        self.assertFalse(m(a('t = 2 s'), a('2')))           # bare
+        self.assertFalse(m(a('t = 2 s'), a('k = 2')))       # another name
+        self.assertFalse(m(a('t = 2 s'), a('t = 2 m/s')))   # another unit, printed
+        self.assertFalse(m(a('v(2) = 4 m/s'), a('4')))
+
+    def test_units_with_a_flattened_exponent(self):
+        self.assertEqual(x.answer_part('30 m/s 2'), (None, 30, 'm/s^2'))
+        self.assertEqual(x.answer_part('625 m 2'), (None, 625, 'm^2'))
+        self.assertEqual(x.answer_part('20.8 m'), (None, x.Rational(104, 5), 'm'))
+        self.assertFalse(x.part_matches(x.answer_part('A = 625 m^2'), x.answer_part('625 m')))
+
+    def test_a_line_is_compared_as_a_line(self):
+        self.assertEqual(x.answer_part('y - 5 = 9(x-1)'), x.answer_part('y = 9x - 4'))
+        self.assertIsNone(x.answer_part('y = 3x 2 - 6'))       # a flattened exponent, not 6x
+        self.assertIsNone(x.answer_part('y = x^2 + 1'))        # not a line
+        self.assertFalse(x.part_matches(x.answer_part('y = 9x - 4'), x.answer_part('y - 5 = 9(x+1)')))
+
+    def test_a_worked_line_counts_only_when_its_arithmetic_holds(self):
+        self.assertEqual(x.chained_part('v(10) = -98 + 147 = 49 m/s'), ('v(10)', 49, 'm/s'))
+        self.assertIsNone(x.chained_part('v(10) = -98 + 140 = 49 m/s'))
+        self.assertIsNone(x.chained_part('s(t) = -4.9t2 + 147t = 980'))
+        self.assertIsNone(x.chained_part('-98 + 147 = 49'))      # no name: a sum, not an answer
+
+    def test_a_label_and_a_trailing_comma_are_not_part_of_an_entry(self):
+        self.assertEqual(x.clean_entry("17) f '(0) = 4,"), "f'(0) = 4")
+        self.assertEqual(x.clean_entry('x = 1 ،'), 'x = 1')
+
+    def test_the_solvers_refuse_what_they_cannot_decide(self):
+        cases = [
+            ('f(x) = x^2', {'ask': 'points_with_slope', 'slope': '3'}, None),   # x = 3/2 is rational: fine
+            ('f(x) = x^3', {'ask': 'points_with_slope', 'slope': '6'}, 'roots_not_rational'),
+            ('s(t) = t^2', {'ask': 'velocity_at_position', 'position': '2'}, 'times_not_rational'),
+            ('y = ax^2 + bx^2', {'ask': 'fit_point_slope', 'point': ('1', '1'), 'unknowns': ['a', 'b']},
+             'not_fitted_once'),
+            ('f(x) = x^3', {'ask': 'param_critical', 'param': 'k', 'at': '1'}, 'parameter_not_in_curve'),
+        ]
+        for stem, params, reason in cases:
+            with self.subTest(stem=stem):
+                if reason is None:
+                    self.assertEqual(x.solve_applied(stem, params), '(3/2, 9/4)')
+                    continue
+                with self.assertRaises(x.Reject) as e:
+                    x.solve_applied(stem, params)
+                self.assertEqual(str(e.exception), reason)
 
 
 if __name__ == '__main__':

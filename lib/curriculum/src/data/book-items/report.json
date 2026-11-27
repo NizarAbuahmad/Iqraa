@@ -1,7 +1,7 @@
 {
   "counts": {
-    "computed": 56,
-    "verified": 33,
+    "computed": 61,
+    "verified": 46,
     "quarantined": 18
   },
   "unmatchedPrinted": [
@@ -13,6 +13,11 @@
     "bi-math-s2-student-book-u6l1-16": "no printed entries on guide p.94 hold every part of the computed answer",
     "bi-math-s2-student-book-u6l1-25": "no printed entries on guide p.116 hold every part of the computed answer",
     "bi-math-s2-student-book-u6l1-26": "no printed entries on guide p.116 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-10": "no printed entries on guide p.102 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-11": "no printed entries on guide p.102 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-14": "no printed entries on guide p.102 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-21": "no printed entries on guide p.103 hold every part of the computed answer",
+    "bi-math-s2-student-book-u6l2-28": "no printed entries on guide p.117 hold every part of the computed answer",
     "bi-math-s2-student-book-u6l2-t5": "no printed entries on guide p.111 hold every part of the computed answer",
     "bi-math-s2-student-book-u6l2-t6": "no printed entries on guide p.111 hold every part of the computed answer",
     "bi-math-s2-student-book-u6l2-t7": "no printed entries on guide p.111 hold every part of the computed answer",

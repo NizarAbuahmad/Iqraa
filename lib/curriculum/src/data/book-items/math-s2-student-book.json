@@ -548,6 +548,27 @@
       "verificationSource": "sympy"
     },
     {
+      "id": "bi-math-s2-student-book-u6l2-10",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 10
+      },
+      "kind": "exercise",
+      "instruction": "أجد النقطة التي يكون عندها ميل منحنى الاقتران الآتي 12",
+      "stem": "f(x) = 2x^2 - 10",
+      "printedAnswer": null,
+      "computedAnswer": "(3, 8)",
+      "check": null,
+      "tier": "easy",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
       "id": "bi-math-s2-student-book-u6l2-t11",
       "lessonId": "kbl-math-s2-nccd-u6_l2",
       "source": {
@@ -567,6 +588,27 @@
       "tierSource": "default",
       "status": "verified",
       "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-11",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 11
+      },
+      "kind": "exercise",
+      "instruction": "يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. أجد الاقتران v(t) الذي يمثل سرعة الجسم في أي لحظة",
+      "stem": "s(t) = t^3 - 6t + 3",
+      "printedAnswer": null,
+      "computedAnswer": "v(t) = 3t^2 - 6",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
     },
     {
       "id": "bi-math-s2-student-book-u6l2-t12",
@@ -590,6 +632,48 @@
       "verificationSource": "sympy+book"
     },
     {
+      "id": "bi-math-s2-student-book-u6l2-13",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 13
+      },
+      "kind": "exercise",
+      "instruction": "يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. أجد الزمن t عندما تكون السرعة 6 m/s",
+      "stem": "s(t) = t^3 - 6t + 3",
+      "printedAnswer": "t = 2",
+      "computedAnswer": "t = 2 s",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-14",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 14
+      },
+      "kind": "exercise",
+      "instruction": "يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. أجد الاقتران a(t) الذي يمثل تسارع الجسم",
+      "stem": "s(t) = t^3 - 6t + 3",
+      "printedAnswer": null,
+      "computedAnswer": "a(t) = 6t",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
       "id": "bi-math-s2-student-book-u6l2-t15",
       "lessonId": "kbl-math-s2-nccd-u6_l2",
       "source": {
@@ -611,6 +695,27 @@
       "verificationSource": "sympy+book"
     },
     {
+      "id": "bi-math-s2-student-book-u6l2-15",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 68,
+        "bookPage": 68,
+        "unit": 6,
+        "number": 15
+      },
+      "kind": "exercise",
+      "instruction": "يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. أجد تسارع الجسم عند الزمن المعطى",
+      "stem": "s(t) = t^3 - 6t + 3\nt = 5",
+      "printedAnswer": "30 m/s 2",
+      "computedAnswer": "a(5) = 30 m/s^2",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
       "id": "bi-math-s2-student-book-u6l2-t16",
       "lessonId": "kbl-math-s2-nccd-u6_l2",
       "source": {
@@ -628,6 +733,48 @@
       "check": null,
       "tier": "medium",
       "tierSource": "default",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-16",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 16
+      },
+      "kind": "exercise",
+      "instruction": "أجد مشتقة الاقتران الآتي",
+      "stem": "f(x) = 0.5x^3 - 3x^2 + 4x",
+      "printedAnswer": "f '(x) = 1.5x 2 - 6x + 4",
+      "computedAnswer": "f'(x) = 1.5x^2 - 6x + 4",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-17",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 17
+      },
+      "kind": "exercise",
+      "instruction": "أجد ميل منحنى الاقتران الآتي عند نقاط تقاطعه مع المحور x",
+      "stem": "f(x) = 0.5x^3 - 3x^2 + 4x",
+      "printedAnswer": "f'(0) = 4 | f'(2) = -2 | f'(4) = 4",
+      "computedAnswer": "f'(0) = 4, f'(2) = -2, f'(4) = 4",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
       "status": "verified",
       "verificationSource": "sympy+book"
     },
@@ -670,6 +817,90 @@
       "check": null,
       "tier": "medium",
       "tierSource": "default",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-19",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 19
+      },
+      "kind": "exercise",
+      "instruction": "أجد معادلة مماس منحنى الاقتران الآتي عند النقطة التي إحداثيها x يساوي 1",
+      "stem": "f(x) = 3x^3 + 2",
+      "printedAnswer": "y - 5 = 9(x-1)",
+      "computedAnswer": "y = 9x - 4",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-20",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 20
+      },
+      "kind": "exercise",
+      "instruction": "تقع النقطة P(-2, b) على منحنى الاقتران الآتي. أجد قيمة b",
+      "stem": "g(x) = 3x^3 - x^2 - 7x + 4",
+      "printedAnswer": "b = -10",
+      "computedAnswer": "b = -10",
+      "check": null,
+      "tier": "medium",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-21",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 21
+      },
+      "kind": "exercise",
+      "instruction": "أجد قيم x التي يكون عندها ميل منحنى الاقتران الآتي صفرًا",
+      "stem": "g(x) = 3x^3 - x^2 - 7x + 4",
+      "printedAnswer": null,
+      "computedAnswer": "x = -7/9, x = 1",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-22",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 22
+      },
+      "kind": "exercise",
+      "instruction": "إذا كانت قيمة ميل منحنى المعادلة الآتية عندما x = 2 هي -12، حيث a عدد ثابت، فأجد قيمة الثابت a",
+      "stem": "y = x^3 - 2ax",
+      "printedAnswer": "a = 12",
+      "computedAnswer": "a = 12",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
       "status": "verified",
       "verificationSource": "sympy+book"
     },
@@ -751,6 +982,90 @@
       "stem": "f(x) = (x + 3)(x-3)",
       "printedAnswer": "f '(x) = 2x",
       "computedAnswer": "f'(x) = 2x",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-27",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 27
+      },
+      "kind": "exercise",
+      "instruction": "أجد قيمة الثابت k إذا كان ميل منحنى الاقتران الآتي عند النقطة (4, 0) هو 2",
+      "stem": "f(x) = kx(x - 4)",
+      "printedAnswer": "k = 0.5",
+      "computedAnswer": "k = 1/2",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-28",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 28
+      },
+      "kind": "exercise",
+      "instruction": "أجد النقطتين على منحنى الاقتران الآتي اللتين تساوي عندهما مشتقة الاقتران 4",
+      "stem": "f(x) = 1/3 x^3 - 5x + 4",
+      "printedAnswer": null,
+      "computedAnswer": "(-3, 10), (3, -2)",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "computed",
+      "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-29",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 29
+      },
+      "kind": "exercise",
+      "instruction": "أجد قيمتي a و b إذا كان ميل منحنى الاقتران الآتي عند النقطة (2, -3) صفرًا",
+      "stem": "y = ax^3 + bx^2 + 5",
+      "printedAnswer": "a = 2 | b = -6",
+      "computedAnswer": "a = 2, b = -6",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l2-30",
+      "lessonId": "kbl-math-s2-nccd-u6_l2",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 69,
+        "bookPage": 69,
+        "unit": 6,
+        "number": 30
+      },
+      "kind": "exercise",
+      "instruction": "أُطلقت قذيفة من سطح الأرض رأسيًّا إلى الأعلى، ويمثل الاقتران الآتي موقعها s بالأمتار بعد t ثانية من إطلاقها. ما سرعة القذيفة عندما يكون موقعها 980 m فوق سطح الأرض؟",
+      "stem": "s(t) = -4.9t^2 + 147t",
+      "printedAnswer": "v(10) = -98 + 147 = 49 m/s | v(20) = -196 + 147 = -49 m/s",
+      "computedAnswer": "v(10) = 49 m/s, v(20) = -49 m/s",
       "check": null,
       "tier": "hard",
       "tierSource": "position",
@@ -1114,6 +1429,69 @@
       "tierSource": "default",
       "status": "computed",
       "verificationSource": "sympy"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l3-11",
+      "lessonId": "kbl-math-s2-nccd-u6_l3",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 74,
+        "bookPage": 74,
+        "unit": 6,
+        "number": 11
+      },
+      "kind": "exercise",
+      "instruction": "يمثل الاقتران الآتي ارتفاع سهم عن سطح الأرض بالأمتار بعد t ثانية من إطلاقه. أجد سرعة السهم عند الزمن المعطى",
+      "stem": "h(t) = 1.2 + 19.6t - 4.9t^2\nt = 3",
+      "printedAnswer": "-9.8 m/s",
+      "computedAnswer": "v(3) = -9.8 m/s",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l3-12",
+      "lessonId": "kbl-math-s2-nccd-u6_l3",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 74,
+        "bookPage": 74,
+        "unit": 6,
+        "number": 12
+      },
+      "kind": "exercise",
+      "instruction": "يمثل الاقتران الآتي ارتفاع سهم عن سطح الأرض بالأمتار بعد t ثانية من إطلاقه. أستعمل المشتقة لإيجاد أعلى ارتفاع يصله السهم",
+      "stem": "h(t) = 1.2 + 19.6t - 4.9t^2",
+      "printedAnswer": "20.8 m",
+      "computedAnswer": "h = 20.8 m",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
+    },
+    {
+      "id": "bi-math-s2-student-book-u6l3-13",
+      "lessonId": "kbl-math-s2-nccd-u6_l3",
+      "source": {
+        "sourceId": "math-s2-student-book",
+        "page": 74,
+        "bookPage": 74,
+        "unit": 6,
+        "number": 13
+      },
+      "kind": "exercise",
+      "instruction": "يمثل الاقتران الآتي مساحة مستطيل بالمتر المربع، حيث x الطول بالمتر. ما أكبر مساحة ممكنة للمستطيل؟",
+      "stem": "A(x) = x(50 - x)",
+      "printedAnswer": "625 m 2",
+      "computedAnswer": "A = 625 m^2",
+      "check": null,
+      "tier": "hard",
+      "tierSource": "position",
+      "status": "verified",
+      "verificationSource": "sympy+book"
     },
     {
       "id": "bi-math-s2-student-book-u6l3-t20",

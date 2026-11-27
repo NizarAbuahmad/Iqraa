@@ -10,20 +10,23 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Book items: the semester-2 student book's unit 6 (derivatives, max/min, the test's multiple choice, graphs, word problems, lesson 6.1's slopes) — 2026-11-21
+## Book items: the semester-2 student book's unit 6 (derivatives, max/min, the test's multiple choice, graphs, word problems, lesson 6.1's slopes, the lessons' word problems) — 2026-11-21
 
 `scripts/extract_book_items.py` now reads the NCCD Grade 10 maths **student book**, semester 2
-(`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **28 `verified`
+(`math-s2-student-book`), not only the exercise books and the s1 guide. Unit 6 only: **41 `verified`
 (13 derivatives, 3 of the unit test's 4 open max/min questions, 5 of its 9 word problems, 7 of lesson 6.1's
-11 slope exercises); 28 `computed` (lesson 6.3's 9 max/min exercises, the test's other max/min question, its 6
-multiple choice, 4 graph questions that carry a drawing, its other 4 word problems, and lesson 6.1's other 4)**,
-written to
+11 slope exercises, 13 of the lessons' own 18 word problems); 33 `computed` (lesson 6.3's 9 max/min exercises,
+the test's other max/min question, its 6 multiple choice, 4 graph questions that carry a drawing, its other 4
+word problems, lesson 6.1's other 4 and the lessons' other 5 word problems)**, written to
 `lib/curriculum/src/data/book-items/math-s2-student-book.json` and served to lessons 6.1–6.3
 (`kbl-math-s2-nccd-u6_l1` … `u6_l3`).
 
 | Page | Items | Kind | Result |
 | --- | --- | --- | --- |
 | 61 | 10–16 slope at a point (6.1) | `exercise` | 5 verified (10–13, 15); 2 computed (14, 16: the guide prints them bare) |
+| 68 | 10–15 word problems (6.2) | `exercise` | 2 verified (13, 15); 3 computed (10, 11, 14); 12 left out |
+| 69 | 16–30 word problems (6.2) | `exercise` | 8 verified (16, 17, 19, 20, 22, 27, 29, 30); 2 computed (21, 28); 18, 23 left out |
+| 74 | 11–13 word problems (6.3) | `exercise` | 3 verified |
 | 62 | 21, 24–26 (6.1) | `exercise` | 2 verified (21, 24); 2 computed (25, 26) |
 | 68 | 1–6 «أجد مشتقة» | `exercise` | 6 verified |
 | 68 | 7–9 f′(−2) | — | quarantined: split fractions (7 `not_a_function_definition`, 9) and `x99` (8, `exponent_out_of_range`) |
@@ -199,6 +202,50 @@ pair above 0.65. Left out: 1–3 (read off a drawn curve the text never gives), 
 21–26 follow the app's newer text, which the guide's copy (p.95, appendix p.116) reproduces and which fits
 exactly (`a = 4`, `b = 1`); no image of the newer p.62 was seen.
 
+**The lessons' own word problems (p.68 10–15, p.69 16–30, p.74 11–13) ride the same machinery.** Each is
+restated in our Arabic with its numbers checked on the page; the guide's copies are p.102, p.103 and p.109,
+with 28–30 in the appendix (p.117).
+
+| Item | Stem | Key | Guide prints | State |
+| --- | --- | --- | --- | --- |
+| 6.2 10 | `f(x) = 2x^2 - 10`, slope 12 | (3, 8) | only `x = 3` | computed |
+| 6.2 11, 14 | `s(t) = t^3 - 6t + 3` | v(t) = 3t² − 6; a(t) = 6t | `v(t)=3t 2 - 6`, `a(t) = 6t` (function answers are not read) | computed |
+| 6.2 13 | the same, v = 6 m/s | t = 2 s | `t = 2` | verified |
+| 6.2 15 | the same, t = 5 | a(5) = 30 m/s² | `30 m/s 2` | verified |
+| 6.2 16, 17 | `f(x) = 0.5x^3 - 3x^2 + 4x` | f′(x) = 1.5x² − 6x + 4; f′(0) = 4, f′(2) = −2, f′(4) = 4 | the same (17 labelled `17)`) | verified |
+| 6.2 19 | `f(x) = 3x^3 + 2`, x = 1 | y = 9x − 4 | `y - 5 = 9(x-1)` | verified |
+| 6.2 20, 21 | `g(x) = 3x^3 - x^2 - 7x + 4` | b = −10; x = −7/9, x = 1 | `b = -10`; a split fraction | 20 verified, 21 computed |
+| 6.2 22 | `y = x^3 - 2ax`, slope −12 at x = 2 | a = 12 | `a = 12` | verified |
+| 6.2 27 | `f(x) = kx(x - 4)`, slope 2 at (4, 0) | k = 1/2 | `k = 0.5` | verified |
+| 6.2 28 | `f(x) = 1/3 x^3 - 5x + 4`, f′ = 4 | (−3, 10), (3, −2) | inside a sentence (p.117) | computed |
+| 6.2 29 | `y = ax^3 + bx^2 + 5`, slope 0 at (2, −3) | a = 2, b = −6 | the working's `b = -6`, `a = 2` (p.117) | verified |
+| 6.2 30 | `s(t) = -4.9t^2 + 147t`, s = 980 m | v(10) = 49 m/s, v(20) = −49 m/s | `v(10) = -98 + 147 = 49 m/s`, … (p.117) | verified |
+| 6.3 11–13 | the arrow `h(t) = 1.2 + 19.6t - 4.9t^2`; `A(x) = x(50 - x)` | v(3) = −9.8 m/s; h = 20.8 m; A = 625 m² | `-9.8 m/s`, `20.8 m`, `625 m 2` | verified |
+
+New reader pieces, each limited to `pair_applied` (no earlier item changed):
+- **Units m, m² and m/s²**, read with their flattened exponent at the end of a part (`m 2`, `m/s 2`).
+- **A printed part that names the answer may leave its unit out** (13's `t = 2` for `t = 2 s`): the name says
+  what it is. A part with neither name nor unit is still bare, and a printed unit must still be the key's. Agreed
+  as a deliberate loosening of the earlier rule ("never the unit").
+- **A line is compared as a line** (`line_part`): two sides in x and y, linear, never a space between x and a
+  digit (a flattened exponent is refused, not read as a product).
+- **A worked line** (`chained_part`, `v(10) = -98 + 147 = 49 m/s`) counts only when every step between the
+  name and the last value is arithmetic equal to that value; `s(t) = -4.9t2 + 147t = 980` is not one.
+- **An entry's item label and trailing comma are dropped** (`17) f '(0) = 4,` is `f'(0) = 4`).
+- Item 16's key is an `f′(x)`, so it goes to the derivative reader (`pair_derivatives`) like p.69's products;
+  with decimals in the stem, keys keep decimal coefficients (`1.5x^2`, `fmt_poly`), and velocities and maxima
+  print `-9.8`, not `-49/5`.
+- Solvers: `points_with_slope`, `zero_slope_x`, `point_value`, `derivative_function`, `acceleration_at`,
+  `x_intercept_slopes`, `fit_point_slope`, `velocity_at_position`; `param_critical` takes a slope other than 0.
+
+The TS suite re-reads every pair apart from SymPy (a line by its y at three x, a worked line by its arithmetic,
+decimal derivative coefficients) and is fed nine corruptions: another value, a bare value, m/s for m/s², m for
+m², another line, a flattened exponent, a wrong step in the working, another derivative, another slope. Every key
+was also re-derived by hand. Left out: **12** (a near-duplicate of 15, 0.89), **23** (of 22, 0.857: one condition,
+two asks), **18** («أحدد على المنحنى», a drawing task; the guide's `x = 2 ± √2` fits a slope of 1, not the −0.5
+the text asks, so one of the two is misprinted), the «أتحقق من فهمي» boxes (not exercises). A probe of lessons
+6.1–6.3's whole pools finds no pair above 0.83.
+
 **How they are verified.** The s2 teacher guide reproduces each student page with its answers printed on
 it (guide p.102 for student p.68, p.103 for p.69, p.112 for p.77). `printed_derivatives` reads every
 `name '(x) = value` there (with its `)15` item number when printed), and `pair_derivatives` verifies an item
@@ -223,13 +270,13 @@ and a printed number that is another item's.
   practice numbers, which run to 30.
 - An `Entry` takes `page` for a source with no exercise index, `answers` (the guide page) and `unit_test`.
 
-**Verified.** The Python tests failed first, then passed (144; 150 with lesson 6.1). Every stem was compared by eye with the
+**Verified.** The Python tests failed first, then passed (144; 150 with lesson 6.1; 159 with the lessons' word problems). Every stem was compared by eye with the
 printed pages of a copy of the book: pp.68, 69, 74 and 76 match. **That copy is an older printing (2021): its
 p.77 numbers the derivatives 15–20 (with `2π³` where the app's text, reprinted 2021–2025, has `2π/3` at 14)
 and the multiple choice 31–32, and its p.76 item 4 says `d(t)` where the app's text says `s(t)`.** The
 guide's labels `)14`…`)19` agree with the app's newer numbering, which is what is cited. Every answer key was
-also re-derived by hand. Curriculum `test` (948 with lesson 6.1) and `verify`, monorepo typecheck, api-server build + test
-(3092 after the latest merge of main, unchanged by lesson 6.1; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
+also re-derived by hand. Curriculum `test` (948 with lesson 6.1, 949 with the word problems) and `verify`, monorepo typecheck, api-server build + test
+(3092 after the latest merge of main, unchanged by lesson 6.1 and the word problems; three fixtures updated: lesson 6.2 now has open unit-test questions and two choice items) and the
 mobile suite (9540 after the latest merge of main, 0 failing; the app does not import book items) pass. A
 `password hasher` failure (its event-loop timing assertion) appeared once while the mobile suite ran in
 parallel; the API suite re-run alone passed 3021/3021, and this branch does not touch that code. **Not checked:** how a multi-line
@@ -245,7 +292,7 @@ answer review render `body.visual`; nothing else was looked at, and a printed or
 question without its drawing).
 
 **Not done.** The unit test's graph questions 26–28 (no formula, above) and word problem 8, lesson 6.1's
-figure and table-only exercises (above), the lessons' own word problems (p.68–69 items 10–23, p.74 items 11–13), and units 5, 7, 8. Users
+figure and table-only exercises (above), the lessons' word problems 12, 18 and 23 (above), and units 5, 7, 8. Users
 see none of this in production yet: book items reach a paper only on the mock path or with
 `BOOK_ITEMS_LIVE=true`, which is off.
 

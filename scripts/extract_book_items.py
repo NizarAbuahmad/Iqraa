@@ -208,6 +208,82 @@ TABLE: list[Entry] = [
           page=77, answers=112, unit_test=True,
           params={'stem': 'f(x) = kx - x^3', 'ask': 'param_critical', 'at': '-1', 'param': 'k',
                   'on_page': ['f(x) = kx - x^3', 'x = -1']}),
+    # The lessons' own word problems: lesson 6.2's p.68 items 10-15 (answers on guide p.102) and p.69
+    # items 16-30 (p.103; 28-30 in the appendix, p.117), lesson 6.3's p.74 items 11-13 (p.109).
+    # `first`/`last` span each lesson's exercises (the tier). Not 12 (a near-duplicate of 15, 0.89),
+    # 23 (of 22, 0.857: one condition, two asks), 18 («mark on the curve»; the guide's x = 2 ± √2
+    # fits a slope of 1, not the -0.5 asked) or 24-26 (the derivative rows above).
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', 'أجد النقطة التي يكون عندها ميل منحنى الاقتران الآتي 12',
+          page=68, answers=102, numbers=(10,),
+          params={'stem': 'f(x) = 2x^2 - 10', 'ask': 'points_with_slope', 'slope': '12',
+                  'on_page': ['12 f(x) = 2x2 - 10']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', 'يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. أجد الاقتران v(t) الذي يمثل سرعة الجسم في أي لحظة',
+          page=68, answers=102, numbers=(11,),
+          params={'stem': 's(t) = t^3 - 6t + 3', 'ask': 'derivative_function', 'name': 'v(t)', 'on_page': ['s(t) = t3 - 6t + 3']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', 'يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. أجد الزمن t عندما تكون السرعة 6 m/s',
+          page=68, answers=102, numbers=(13,),
+          params={'stem': 's(t) = t^3 - 6t + 3', 'ask': 'time_for_velocity', 'velocity': '6',
+                  'on_page': ['s(t) = t3 - 6t + 3', '6 m/s']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', 'يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. أجد الاقتران a(t) الذي يمثل تسارع الجسم',
+          page=68, answers=102, numbers=(14,),
+          params={'stem': 's(t) = t^3 - 6t + 3', 'ask': 'derivative_function', 'name': 'a(t)', 'order': 2,
+                  'on_page': ['s(t) = t3 - 6t + 3']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', 'يمثل الاقتران الآتي موقع جسم يتحرك في مسار مستقيم، حيث s الموقع بالأمتار بعد t ثانية. أجد تسارع الجسم عند الزمن المعطى',
+          page=68, answers=102, numbers=(15,),
+          params={'stem': 's(t) = t^3 - 6t + 3\nt = 5', 'ask': 'acceleration_at', 'at': '5',
+                  'on_page': ['s(t) = t3 - 6t + 3', 't = 5']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', DERIVATIVE_AR, page=69, answers=103, numbers=(16,),
+          params={'stem': 'f(x) = 0.5x^3 - 3x^2 + 4x', 'ask': 'derivative_function', 'pair': 'derivative',
+                  'on_page': ['f(x) = 0.5x3 - 3x2 + 4x']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', 'أجد ميل منحنى الاقتران الآتي عند نقاط تقاطعه مع المحور x',
+          page=69, answers=103, numbers=(17,),
+          params={'stem': 'f(x) = 0.5x^3 - 3x^2 + 4x', 'ask': 'x_intercept_slopes',
+                  'on_page': ['f(x) = 0.5x3 - 3x2 + 4x']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', 'أجد معادلة مماس منحنى الاقتران الآتي عند النقطة التي إحداثيها x يساوي 1',
+          page=69, answers=103, numbers=(19,),
+          params={'stem': 'f(x) = 3x^3 + 2', 'ask': 'tangent', 'at': '1', 'on_page': ['f(x)=3x3 +2']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', 'تقع النقطة P(-2, b) على منحنى الاقتران الآتي. أجد قيمة b',
+          page=69, answers=103, numbers=(20,),
+          params={'stem': 'g(x) = 3x^3 - x^2 - 7x + 4', 'ask': 'point_value', 'at': '-2', 'unknown': 'b',
+                  'on_page': ['g(x) = 3x3 - x2 - 7x + 4', 'P(-2, b)']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', 'أجد قيم x التي يكون عندها ميل منحنى الاقتران الآتي صفرًا',
+          page=69, answers=103, numbers=(21,),
+          params={'stem': 'g(x) = 3x^3 - x^2 - 7x + 4', 'ask': 'zero_slope_x',
+                  'on_page': ['g(x) = 3x3 - x2 - 7x + 4']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied',
+          'إذا كانت قيمة ميل منحنى المعادلة الآتية عندما x = 2 هي -12، حيث a عدد ثابت، فأجد قيمة الثابت a',
+          page=69, answers=103, numbers=(22,),
+          params={'stem': 'y = x^3 - 2ax', 'ask': 'param_critical', 'param': 'a', 'at': '2', 'slope': '-12',
+                  'on_page': ['-12', 'y = x3 - 2ax', 'x = 2']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', 'أجد قيمة الثابت k إذا كان ميل منحنى الاقتران الآتي عند النقطة (4, 0) هو 2',
+          page=69, answers=103, numbers=(27,),
+          params={'stem': 'f(x) = kx(x - 4)', 'ask': 'param_critical', 'param': 'k', 'at': '4', 'slope': '2',
+                  'on_page': ['f(x) = kx (x-4)', '2 (4, 0)']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', 'أجد النقطتين على منحنى الاقتران الآتي اللتين تساوي عندهما مشتقة الاقتران 4',
+          page=69, answers=117, numbers=(28,),
+          params={'stem': 'f(x) = 1/3 x^3 - 5x + 4', 'ask': 'points_with_slope', 'slope': '4',
+                  'on_page': ['4 f(x) = 1', '3 x3 - 5x + 4']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied', 'أجد قيمتي a و b إذا كان ميل منحنى الاقتران الآتي عند النقطة (2, -3) صفرًا',
+          page=69, answers=117, numbers=(29,),
+          params={'stem': 'y = ax^3 + bx^2 + 5', 'ask': 'fit_point_slope', 'point': ('2', '-3'),
+                  'unknowns': ['a', 'b'], 'prose': True, 'on_page': ['y = ax3 + bx2 + 5', '(2, -3)']}),
+    Entry(SB2, 's2', 6, 2, 1, 30, 'applied',
+          'أُطلقت قذيفة من سطح الأرض رأسيًّا إلى الأعلى، ويمثل الاقتران الآتي موقعها s بالأمتار بعد t ثانية من إطلاقها. ما سرعة القذيفة عندما يكون موقعها 980 m فوق سطح الأرض؟',
+          page=69, answers=117, numbers=(30,),
+          params={'stem': 's(t) = -4.9t^2 + 147t', 'ask': 'velocity_at_position', 'position': '980',
+                  'on_page': ['980 m', 's(t) = -4.9t2 + 147t']}),
+    Entry(SB2, 's2', 6, 3, 1, 13, 'applied', 'يمثل الاقتران الآتي ارتفاع سهم عن سطح الأرض بالأمتار بعد t ثانية من إطلاقه. أجد سرعة السهم عند الزمن المعطى',
+          page=74, answers=109, numbers=(11,),
+          params={'stem': 'h(t) = 1.2 + 19.6t - 4.9t^2\nt = 3', 'ask': 'velocity_at', 'at': '3',
+                  'on_page': ['h(t)= 1.2 + 19.6t - 4.9t2']}),
+    Entry(SB2, 's2', 6, 3, 1, 13, 'applied', 'يمثل الاقتران الآتي ارتفاع سهم عن سطح الأرض بالأمتار بعد t ثانية من إطلاقه. أستعمل المشتقة لإيجاد أعلى ارتفاع يصله السهم',
+          page=74, answers=109, numbers=(12,),
+          params={'stem': 'h(t) = 1.2 + 19.6t - 4.9t^2', 'ask': 'max_value', 'unit': 'm',
+                  'on_page': ['h(t)= 1.2 + 19.6t - 4.9t2']}),
+    Entry(SB2, 's2', 6, 3, 1, 13, 'applied',
+          'يمثل الاقتران الآتي مساحة مستطيل بالمتر المربع، حيث x الطول بالمتر. ما أكبر مساحة ممكنة للمستطيل؟',
+          page=74, answers=109, numbers=(13,),
+          params={'stem': 'A(x) = x(50 - x)', 'ask': 'max_value', 'unit': 'm^2', 'on_page': ['A(x) = x(50-x)']}),
     # Lesson 6.1 (estimating slope), p.61-62. The book asks for estimates and the guide accepts
     # any close answer (p.94, p.95, appendix p.116); the key is the exact value, which is the
     # number the guide prints where it prints one. `first`/`last` span the lesson's 27 exercises
@@ -1036,6 +1112,20 @@ def _curve(stem: str):
     return name, v, expr
 
 
+def fmt_poly(expr, v, decimal: bool) -> str:
+    """A polynomial highest power first; with `decimal`, coefficients as the book writes them
+    (`1.5x^2 - 6x + 4`, never `3x^2/2`). Anything else, or no decimals, is `fmt`'s."""
+    from sympy import Poly
+    if not decimal or not expr.is_polynomial(v):
+        return fmt(expr, decimal)
+    out = ''
+    for (p,), c in Poly(expr, v).terms():
+        mag = fmt(abs(c), True)
+        body = (mag if p == 0 else ('' if mag == '1' else mag) + (str(v) if p == 1 else f'{v}^{p}'))
+        out += (('-' if c < 0 else '') + body) if not out else ((' - ' if c < 0 else ' + ') + body)
+    return out or '0'
+
+
 def _one(values: list, reason: str):
     if len(values) != 1:
         raise Reject(reason)
@@ -1095,11 +1185,14 @@ def solve_applied(stem: str, params: dict) -> str:
         if set(sol) != set(unknowns):
             raise Reject('table_not_fitted_once')
         return ', '.join(f'{u} = {fmt(sol[next(s for s in unknowns if s.name == u)])}' for u in params['unknowns'])
-    if ask == 'intercept_slopes':           # slopes where the curve meets the x axis, then the y axis
+    if ask in ('intercept_slopes', 'x_intercept_slopes'):   # where the curve meets the x axis (then the y axis)
         roots = sorted({r for r in real_roots(Poly(f, v))}, key=float)
-        if not roots or any(not r.is_Rational for r in roots) or 0 in roots:
+        y_axis = ask == 'intercept_slopes'
+        if not roots or any(not r.is_Rational for r in roots) or (y_axis and 0 in roots):
             raise Reject('x_intercepts_not_rational')
-        return ', '.join(f"{name}'({fmt(x)}) = {fmt(simplify(d1.subs(v, x)))}" for x in [*roots, Integer(0)])
+        dec = '.' in stem
+        return ', '.join(f"{name}'({fmt(x)}) = {fmt(simplify(d1.subs(v, x)), dec)}"
+                         for x in [*roots, *([Integer(0)] if y_axis else [])])
     if ask == 'derivative_identity':        # find h'(x), then show the stated identity holds
         left, right = params['identity'].split('=')
         # placeholders the safe parser accepts (one letter), filled with f′ and f after parsing
@@ -1116,24 +1209,63 @@ def solve_applied(stem: str, params: dict) -> str:
         return f"{params['unknown']} = {fmt(c)}, {name}'({fmt(at)}) = {fmt(slope)} {'<' if slope < 0 else '>'} 0"
     if ask == 'tangent':
         return f'y = {fmt(expand(d1.subs(v, at) * (v - at) + f.subs(v, at)))}'
+    dec = '.' in stem                       # decimals in, decimals out (`-9.8`, not `-49/5`)
     if ask in ('argmax', 'max_value'):      # the one positive x where f has a local maximum
         roots = [r for r in real_roots(Poly(d1, v)) if r > 0 and diff(d1, v).subs(v, r) < 0]
         r = _one(sorted(set(roots), key=float), 'maximum_not_unique')
         if ask == 'argmax':
             return f'{v} = {fmt(simplify(r))}'
-        return f"{name} = {fmt(simplify(f.subs(v, r)))} {params['unit']}"
+        return f"{name} = {fmt(simplify(f.subs(v, r)), dec)} {params['unit']}"
     if ask in ('velocity_at', 'velocity_and_time', 'time_for_velocity'):
         parts = []
         if ask != 'time_for_velocity':
-            parts.append(f'v({fmt(at)}) = {fmt(simplify(d1.subs(v, at)))} m/s')
+            parts.append(f'v({fmt(at)}) = {fmt(simplify(d1.subs(v, at)), dec)} m/s')
         if ask != 'velocity_at':
             target = parse(params['velocity'])
             times = [t for t in solve(Eq(d1, target), v) if t.is_real and t >= 0]
-            parts.append(f'{v} = {fmt(_one(times, "time_not_unique"), "." in stem)} s')
+            parts.append(f'{v} = {fmt(_one(times, "time_not_unique"), dec)} s')
         return ', '.join(parts)
-    if ask == 'param_critical':             # the parameter that makes f'(at) = 0
-        k = next(s for s in f.free_symbols if s.name == params['param'])
-        return f"{params['param']} = {fmt(_one(solve(Eq(d1.subs(v, at), 0), k), 'parameter_not_unique'))}"
+    if ask == 'param_critical':             # the parameter that makes f'(at) = slope (0: a critical point)
+        k = next((s for s in f.free_symbols if s.name == params['param']), None)
+        if k is None:
+            raise Reject('parameter_not_in_curve')
+        slope = Rational(params.get('slope', '0'))
+        found = solve(Eq(d1.subs(v, at), slope), k)
+        value = _one(found, 'parameter_not_unique')
+        if 'then_slope_at' not in params:
+            return f"{params['param']} = {fmt(value, dec)}"
+        return fmt(simplify(d1.subs(k, value).subs(v, Rational(params['then_slope_at']))), dec)
+    if ask == 'derivative_function':        # f'(x), or v(t) = s'(t) and a(t) = s''(t) under their own names
+        order, label = params.get('order', 1), params.get('name', f"{name}'({v})")
+        return f'{label} = {fmt_poly(expand(diff(f, v, order)), v, dec)}'
+    if ask == 'acceleration_at':
+        return f'a({fmt(at)}) = {fmt(simplify(diff(f, v, 2).subs(v, at)), dec)} m/s^2'
+    if ask == 'point_value':                # the point (at, unknown) lies on the curve
+        return f"{params['unknown']} = {fmt(simplify(f.subs(v, at)), dec)}"
+    if ask in ('points_with_slope', 'zero_slope_x'):
+        slope = Rational(params.get('slope', '0'))
+        xs = sorted({r for r in solve(Eq(d1, slope), v) if r.is_real}, key=float)
+        if not xs or any(not r.is_Rational for r in xs):
+            raise Reject('roots_not_rational')
+        if ask == 'zero_slope_x':
+            return ', '.join(f'{v} = {fmt(r, dec)}' for r in xs)
+        return ', '.join(f'({fmt(r, dec)}, {fmt(simplify(f.subs(v, r)), dec)})' for r in xs)
+    if ask == 'fit_point_slope':            # constants that put the stated point on the curve with the stated slope
+        px, py = (Rational(c) for c in params['point'])
+        unknowns = [s for s in f.free_symbols if s.name in params['unknowns']]
+        if len(unknowns) != len(params['unknowns']):
+            raise Reject('unknowns_not_in_curve')
+        found = solve([Eq(f.subs(v, px), py), Eq(d1.subs(v, px), Rational(params.get('slope', '0')))],
+                      unknowns, dict=True)
+        sol = _one(found, 'not_fitted_once')
+        if set(sol) != set(unknowns):
+            raise Reject('not_fitted_once')
+        return ', '.join(f'{u} = {fmt(sol[next(s for s in unknowns if s.name == u)], dec)}' for u in params['unknowns'])
+    if ask == 'velocity_at_position':       # every non-negative time the position is reached, and the velocity then
+        times = sorted({t for t in solve(Eq(f, parse(params['position'])), v) if t.is_real and t >= 0}, key=float)
+        if not times or any(not t.is_Rational for t in times):
+            raise Reject('times_not_rational')
+        return ', '.join(f'v({fmt(t, dec)}) = {fmt(simplify(d1.subs(v, t)), dec)} m/s' for t in times)
     raise Reject('unknown_ask')
 
 
@@ -1141,27 +1273,80 @@ def solve_applied(stem: str, params: dict) -> str:
 # `name = value unit`, `value unit` or `name = value`; a bare number is never one (the pages
 # carry axis labels). Two parts match only with the same exact value (no rounding), the same
 # unit, and the same name where the printed part has one.
-UNITS = {'m/s': 'm/s', 's': 's', 'cm3': 'cm^3', 'cm^3': 'cm^3'}
-ANSWER_PART = re.compile(r"(?:(?P<name>[A-Za-z]'?(?:\([^()=]*\))?)\s*=\s*)?(?P<val>-?[\d√.]+(?:/\d+)?)\s*(?P<unit>m/s|cm\^?3|s)?")
+# A unit's flattened exponent is read as one (`m/s 2` is m/s², `m 2` is m²), at the end of
+# the part only. Spaces and `^` are dropped before the lookup.
+UNITS = {'m/s': 'm/s', 'm/s2': 'm/s^2', 's': 's', 'cm3': 'cm^3', 'm2': 'm^2', 'm': 'm'}
+ANSWER_PART = re.compile(r"(?:(?P<name>[A-Za-z]'?(?:\([^()=]*\))?)\s*=\s*)?(?P<val>-?[\d√.]+(?:/\d+)?)"
+                         r"\s*(?P<unit>m/s ?\^?2|m/s|cm ?\^?3|m ?\^?2|m|s)?")
+LINE_CHARS = re.compile(r'[\dxy+\-*/(). ]+')
+
+
+def line_part(text: str) -> tuple | None:
+    """A straight line written in x and y, any arrangement (`y - 5 = 9(x-1)`), as ('y', its y in x).
+
+    Linear only, and never with a space between x and a digit (a flattened exponent)."""
+    sides = text.split('=')
+    if len(sides) != 2 or not all(LINE_CHARS.fullmatch(t.strip()) for t in sides) \
+            or 'y' not in text or 'x' not in text or re.search(r'x\s+\d', text):
+        return None
+    try:
+        sols = solve(Eq(parse(sides[0]), parse(sides[1])), Y)
+    except Exception:  # noqa: BLE001 - an unreadable equation matches nothing
+        return None
+    if len(sols) != 1 or sols[0].has(Y) or sols[0].free_symbols - {X} or diff(sols[0], X, 2) != 0:
+        return None
+    return ('y', expand(sols[0]), None)
 
 
 def answer_part(text: str) -> tuple | None:
-    m = ANSWER_PART.fullmatch(text.strip().translate(MINUS))
+    text = text.strip().translate(MINUS)
+    m = ANSWER_PART.fullmatch(text)
     if not m:
-        return None
+        return line_part(text)
     val = re.sub(r'(\d)?√(\d+)', lambda g: f"{g.group(1) + '*' if g.group(1) else ''}sqrt({g.group(2)})", m.group('val'))
     try:
         value = simplify(parse(val))
     except Exception:  # noqa: BLE001 - an unreadable part matches nothing
         return None
-    return (m.group('name'), value, UNITS[m.group('unit')] if m.group('unit') else None)
+    unit = m.group('unit')
+    return (m.group('name'), value, UNITS[re.sub(r'[\s^]', '', unit)] if unit else None)
 
 
 def part_matches(key: tuple | None, printed: tuple | None) -> bool:
+    """Same exact value, and the same name where the printed part has one. The same unit too,
+    except that a printed part which names the answer may leave its unit out (`t = 2` for
+    `t = 2 s`): the name already says what it is. One with neither name nor unit is bare."""
     if key is None or printed is None:
         return False
     (kn, kv, ku), (pn, pv, pu) = key, printed
-    return simplify(kv - pv) == 0 and ku == pu and (pn is None or pn == kn)
+    same_unit = ku == pu or (pu is None and pn is not None and pn == kn)
+    return simplify(kv - pv) == 0 and same_unit and (pn is None or pn == kn)
+
+
+def chained_part(text: str) -> tuple | None:
+    """A worked line `v(10) = -98 + 147 = 49 m/s`: its name and last value, if every step between
+    them is arithmetic that equals that value (`s(t) = -4.9t2 + 147t = 980` is not one)."""
+    steps = [t.strip() for t in text.split('=')]
+    if len(steps) < 3:
+        return None
+    p = answer_part(f'{steps[0]} = {steps[-1]}')
+    if p is None or p[0] is None:
+        return None
+    for mid in steps[1:-1]:
+        try:
+            if not re.fullmatch(r'[\d+\-*/(). ]+', mid) or simplify(parse(mid) - p[1]) != 0:
+                return None
+        except Exception:  # noqa: BLE001
+            return None
+    return p
+
+
+def clean_entry(raw: str) -> str:
+    """An entry without its item label or trailing comma (`17) f '(0) = 4,` -> `f'(0) = 4`)."""
+    raw = re.sub(r'\s+', ' ', raw).strip()
+    raw = re.sub(r'^\d{1,2}\)\s*', '', raw)
+    raw = re.sub(r'\s*[,،]$', '', raw)
+    return re.sub(r"([a-z]) '\s*\(", r"\1'(", raw)
 
 
 # Lesson 6.1's answers are estimates, printed with the guide's own words around one number:
@@ -1183,9 +1368,10 @@ def applied_entries(lines: list[str], prose: bool = False) -> list[tuple[str, tu
             if (m := pattern.fullmatch(text)) and (p := answer_part(m.group('ans'))):
                 chunks.append((m.group('ans'), p))
         for raw in nfkc(line).split('\t'):
-            p = answer_part(raw)
+            raw = clean_entry(raw.translate(MINUS))
+            p = answer_part(raw) or chained_part(raw)
             if p and (p[0] or p[2]):              # a bare number is an axis label, not an answer
-                chunks.append((raw.strip(), p))
+                chunks.append((raw, p))
         if prose:
             latin = re.sub(r'\s+', ' ', ARABIC.sub(' ', DIACRITICS.sub('', nfkc(line))))
             chunks += [(f'{n} = {val}', (n, Rational(val), None)) for n, val in PROSE_RESULT.findall(latin)]
@@ -1508,7 +1694,9 @@ def build_all() -> tuple[dict[str, list[dict]], list[dict], dict]:
                 by_source.setdefault(e.source, []).append(record)
                 if e.family == 'unit_open':
                     open_items.setdefault((e.source, e.page), []).append(record)
-                if e.answers is not None and e.family == 'applied':
+                if e.answers is not None and e.family == 'applied' and e.params.get('pair') == 'derivative':
+                    derivative_items.setdefault(e.answers, []).append(record)   # an f'(x) key: the derivative reader
+                elif e.answers is not None and e.family == 'applied':
                     applied_items.setdefault((e.answers, bool(e.params.get('prose'))), []).append(record)
                 elif e.answers is not None:
                     {'derivative': derivative_items}.get(

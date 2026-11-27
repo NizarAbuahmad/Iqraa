@@ -65,7 +65,7 @@ const points = (s: string): string[] | null => {
  * the extractor's SymPy check on purpose: the guide prints the terms in its own order
  * (`-2 + 2x` for `2x - 2`) and drops the `^` (`27x8`, or `8x 7` with a gap), so only a
  * comparison of coefficients can tell agreement from a misreading. It reads polynomials with
- * integer coefficients and nothing else.
+ * integer or decimal coefficients (`1.5x 2`, p.69 item 16) and nothing else.
  */
 const derivative = (s: string): { name: string; terms: string; label: number | null } | null => {
   const m = /^([a-z])\s*'\s*\(x\)\s*=\s*(.+?)(?:\s*\)\s*(\d{1,2}))?$/.exec(s.trim());
@@ -75,7 +75,7 @@ const derivative = (s: string): { name: string; terms: string; label: number | n
   const pieces = body.match(/[+-]?[^+-]+/g) ?? [];
   if (pieces.join('') !== body) return null; // a lone or doubled sign: a cut-off or misread entry
   for (const term of pieces) {
-    const t = /^([+-]?)(\d*)(x(?:\^(\d+))?)?$/.exec(term);
+    const t = /^([+-]?)(\d*(?:\.\d+)?)(x(?:\^(\d+))?)?$/.exec(term);
     if (!t || (t[2] === '' && !t[3])) return null;
     const power = t[3] ? Number(t[4] ?? 1) : 0;
     const value = (t[1] === '-' ? -1 : 1) * (t[2] === '' ? 1 : Number(t[2]));
@@ -150,19 +150,76 @@ const surd = (s: string): string | null => {
   const g = gcd(p, q);
   return `${p / g}/${q / g}√${r}`;
 };
+/**
+ * Plain arithmetic in x and y (`9(x-1)`, `-98 + 147`), evaluated; null for anything else.
+ * Test-only and fed only the committed data: the character class admits no names.
+ */
+const arith = (e: string, x = 0, y = 0): number | null => {
+  if (!/^[\dxy+*/(). -]+$/.test(e)) return null;
+  const js = e.replace(/(\d|\))\s*(?=[xy(])/g, '$1*').replace(/([xy])\s*(?=[\d(xy])/g, '$1*');
+  try {
+    const v = Function('x', 'y', `return (${js});`)(x, y) as unknown;
+    return typeof v === 'number' && Number.isFinite(v) ? v : null;
+  } catch {
+    return null;
+  }
+};
+/** A straight line in x and y, any arrangement, as its y at x = 0, 1, 2; null when it is not one. */
+const line = (s: string): string | null => {
+  const sides = s.split('=');
+  if (sides.length !== 2 || !/x/.test(s) || !/y/.test(s) || /x\s+\d/.test(s)) return null;
+  const f = (x: number, y: number) => {
+    const l = arith(sides[0]!, x, y);
+    const r = arith(sides[1]!, x, y);
+    return l === null || r === null ? null : l - r;
+  };
+  const ys: number[] = [];
+  for (const x of [0, 1, 2]) {
+    const a = f(x, 0);
+    const b = f(x, 1);
+    if (a === null || b === null || b === a) return null;
+    ys.push(-a / (b - a));
+  }
+  // linear in x too: equal steps
+  if (Math.abs(ys[2]! - 2 * ys[1]! + ys[0]!) > 1e-9) return null;
+  return `line ${ys.map(v => v.toFixed(9)).join(' ')}`;
+};
+const UNIT = /\s*(m\/s ?\^?2|m\/s|cm ?\^?3|m ?\^?2|m|s)$/;
+const unitOf = (u: string | undefined) => {
+  if (!u) return null;
+  const k = u.replace(/[\s^]/g, '');
+  return ({ 'm/s2': 'm/s^2', cm3: 'cm^3', m2: 'm^2' } as Record<string, string>)[k] ?? k;
+};
 const answerParts = (s: string, sep: RegExp) =>
-  s.split(sep).map(part => {
-    const m = /^(?:([A-Za-z]'?(?:\([^()=]*\))?)\s*=\s*)?(.+?)\s*(m\/s|cm\^?3|s)?$/.exec(part.trim());
-    const value = m && surd(m[2]!);
-    return m && value ? { name: m[1] ?? null, value, unit: m[3]?.replace(/^cm3$/, 'cm^3') ?? null } : null;
+  s.split(sep).map(raw => {
+    const part = raw.trim();
+    const asLine = line(part);
+    if (asLine) return { name: 'y', value: asLine, unit: null };
+    let steps = part.split('=').map(t => t.trim());
+    if (steps.length > 2) {
+      // a worked line, `v(10) = -98 + 147 = 49 m/s`: every middle step must equal the last value
+      const last = steps[steps.length - 1]!.replace(UNIT, '');
+      const want = arith(last);
+      if (want === null || steps.slice(1, -1).some(mid => arith(mid) === null || Math.abs(arith(mid)! - want) > 1e-9)) {
+        return null;
+      }
+      steps = [steps[0]!, steps[steps.length - 1]!];
+    }
+    const m = /^(?:([A-Za-z]'?(?:\([^()=]*\))?)\s*=\s*)?(.+?)$/.exec(steps.join(' = '));
+    if (!m) return null;
+    const unit = UNIT.exec(m[2]!);
+    const value = surd(unit ? m[2]!.slice(0, unit.index) : m[2]!);
+    return value ? { name: m[1] ?? null, value, unit: unitOf(unit?.[1]) } : null;
   });
 const sameParts = (printed: string, computed: string) => {
-  if (!printed.includes('|') && !/(m\/s|cm\^?3|\bs)$/.test(printed) && !/=/.test(printed)) return false;
+  if (!printed.includes('|') && !UNIT.test(printed) && !/=/.test(printed)) return false;
   const p = answerParts(printed, /\s*\|\s*/);
   const c = answerParts(computed, /,\s+/);
   return p.length === c.length && p.every((pp, i) => {
     const cc = c[i];
-    return pp && cc && pp.value === cc.value && pp.unit === cc.unit && (pp.name === null || pp.name === cc.name);
+    if (!pp || !cc || pp.value !== cc.value || (pp.name !== null && pp.name !== cc.name)) return false;
+    // a printed part that names the answer may leave its unit out (`t = 2` for `t = 2 s`)
+    return pp.unit === cc.unit || (pp.unit === null && pp.name !== null);
   });
 };
 const sameValue = (printed: string, computed: string) => {
@@ -334,6 +391,9 @@ describe('book items — the committed data', () => {
       eight.id,
       'bi-math-s2-student-book-u6l1-14', 'bi-math-s2-student-book-u6l1-16',
       'bi-math-s2-student-book-u6l1-25', 'bi-math-s2-student-book-u6l1-26',
+      // the lessons' own word problems no printed entry answers whole
+      'bi-math-s2-student-book-u6l2-10', 'bi-math-s2-student-book-u6l2-11', 'bi-math-s2-student-book-u6l2-14',
+      'bi-math-s2-student-book-u6l2-21', 'bi-math-s2-student-book-u6l2-28',
       'bi-math-s2-student-book-u6l2-t5', 'bi-math-s2-student-book-u6l2-t6', 'bi-math-s2-student-book-u6l2-t7',
       'bi-math-s2-student-book-u6l3-t10', 'bi-math-s2-student-book-u6l3-t23',
     ]);
@@ -453,7 +513,9 @@ describe('book items — the reader', () => {
     const fromStudentBook = bookItemsForLesson('kbl-math-s2-nccd-u6_l2').filter(
       // the derivatives: p.68-69's practice and the unit test's 14-19 (not its word problems)
       i => i.source.sourceId === 'math-s2-student-book' && i.kind !== 'unit-test-mcq' && !i.visual
-        && (i.source.page !== 77 || (i.source.number >= 14 && i.source.number <= 19)) && i.source.page !== 76,
+        && (i.source.page !== 77 || (i.source.number >= 14 && i.source.number <= 19)) && i.source.page !== 76
+        // p.68-69's practice is 1-9 and 24-26; 10-30 are its word problems
+        && (i.source.page === 77 || i.source.number <= 9 || (i.source.number >= 24 && i.source.number <= 26)),
     );
     assert.equal(fromStudentBook.length, 13); // 14 verified minus t17, a near-duplicate (see the extractor's TABLE)
     for (const i of fromStudentBook) assert.equal(i.status, 'verified', i.id);
@@ -461,7 +523,8 @@ describe('book items — the reader', () => {
 
   it('serves p.74’s max/min exercises to lesson 6.3 as computed, every label from the fixed set', () => {
     const extrema = bookItemsForLesson('kbl-math-s2-nccd-u6_l3').filter(
-      i => i.source.sourceId === 'math-s2-student-book' && i.kind === 'exercise',
+      // 11-13 are p.74's word problems
+      i => i.source.sourceId === 'math-s2-student-book' && i.kind === 'exercise' && i.source.number <= 10,
     );
     // 1 and 3-10: item 2 is a near-duplicate of item 1 (see the extractor's TABLE)
     assert.deepEqual(extrema.map(i => i.source.number).sort((a, b) => a - b), [1, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -552,6 +615,27 @@ describe('book items — the reader', () => {
     assert.deepEqual(edit(24, 'a = 4 | b = 2'), [t(24).id]);
     assert.deepEqual(verifiedDisagreements(lesson), []);
     assert.equal(bookCitation(t(11), 'ar'), 'كتاب الطالب ص ٦١، س ١١');
+  });
+
+  it('verifies the lessons’ own word problems where the guide prints the answer, and catches each corruption', () => {
+    const t = (id: string) => items.find(i => i.id === `bi-math-s2-student-book-${id}`)!;
+    const verified = ['u6l2-13', 'u6l2-15', 'u6l2-16', 'u6l2-17', 'u6l2-19', 'u6l2-20', 'u6l2-22', 'u6l2-27',
+      'u6l2-29', 'u6l2-30', 'u6l3-11', 'u6l3-12', 'u6l3-13'];
+    assert.deepEqual(verified.map(id => t(id).status), verified.map(() => 'verified'));
+    assert.deepEqual(['u6l2-10', 'u6l2-11', 'u6l2-14', 'u6l2-21', 'u6l2-28'].map(id => t(id).status),
+      ['computed', 'computed', 'computed', 'computed', 'computed']);
+    for (const n of [12, 18, 23]) assert.ok(!items.some(i => i.id === `bi-math-s2-student-book-u6l2-${n}`), String(n));
+    const edit = (id: string, printedAnswer: string) => verifiedDisagreements([{ ...t(id), printedAnswer }]);
+    assert.deepEqual(edit('u6l2-13', 't = 3'), [t('u6l2-13').id]);                    // another value
+    assert.deepEqual(edit('u6l2-13', '2'), [t('u6l2-13').id]);                        // bare: no name to stand for the unit
+    assert.deepEqual(edit('u6l2-15', '30 m/s'), [t('u6l2-15').id]);                   // m/s for m/s²
+    assert.deepEqual(edit('u6l3-13', '625 m'), [t('u6l3-13').id]);                    // m for m²
+    assert.deepEqual(edit('u6l2-19', 'y - 5 = 9(x+1)'), [t('u6l2-19').id]);           // another line
+    assert.deepEqual(edit('u6l2-19', 'y = 9x 2 - 4'), [t('u6l2-19').id]);             // a flattened exponent
+    assert.deepEqual(edit('u6l2-30', 'v(10) = -98 + 140 = 49 m/s | v(20) = -196 + 147 = -49 m/s'), [t('u6l2-30').id]);
+    assert.deepEqual(edit('u6l2-16', "f '(x) = 1.5x 2 - 6x + 5"), [t('u6l2-16').id]);
+    assert.deepEqual(edit('u6l2-17', "f'(0) = 4 | f'(2) = 2 | f'(4) = 4"), [t('u6l2-17').id]);
+    assert.deepEqual(verified.flatMap(id => verifiedDisagreements([t(id)])), []);
   });
 
   it('draws only the graph questions whose curve the question fixes, and never verifies them', () => {

@@ -370,6 +370,10 @@ sweep in your staged files.
   unless the page prints it as often as they need it. Lesson 6.1's slopes (p.61-62) use the
   same machinery: the stem keeps the book's «أقدّر» and the key is the exact value; a guide
   estimate is an entry only with its own words around it («8 أي إجابة قريبة من», «تقريبًا. 1.2»).
+  So do the lessons' own word problems (p.68-69, p.74). A printed part that NAMES the answer
+  may leave its unit out (`t = 2` for `t = 2 s`); a bare one still never counts. A line
+  matches as a line (`y - 5 = 9(x-1)`), and a worked line `v(10) = -98 + 147 = 49 m/s` only
+  when its arithmetic holds.
   A new book item must not be a near-duplicate (`stemSimilarity` > 0.85) of another
   in its lesson, or the book plan promises a question the draw cannot deliver —
   `bookQuestions.test.ts` catches it, but only for draw orders it happens to try. `SERVED_STATUSES` is the one place
