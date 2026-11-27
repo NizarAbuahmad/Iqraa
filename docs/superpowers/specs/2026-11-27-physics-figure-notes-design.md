@@ -40,8 +40,10 @@ explanation:
 - **Slides already carry the fields needed.**
   - A slide has `content`, `mediaCaption` and `sideImageCaption`.
   - It also has a `teacher` block (`teachingTips`, `expectedAnswer`), never projected.
-  - Every renderer reads these fields: the presenter, the slides editor, `deckSlidesHtml.ts`
-    (HTML/PDF) and `exportPptx.ts`.
+  - The renderers do not all read the same ones. On a figure slide, the presenter draws `content`
+    above the image, while `deckSlidesHtml.ts` (HTML/PDF) and `exportPptx.ts` draw only
+    `mediaCaption` under it. Today a figure slide's `content` and `mediaCaption` are the same
+    citation, so the difference never showed.
 
 ## Decisions (made in chat)
 
@@ -87,7 +89,8 @@ explanation:
   - Name what is there instead of saying «في الصورة» / "in the picture".
   - Numbers and units in Latin, as the book prints them.
 - **`skip`** is for a figure with no physics idea to explain (decoration, a photo of a place). It
-  carries a `skipReason`, and the slide stays as today.
+  carries a `skipReason`, and the slide stays as today. It also covers the one figure no slide can
+  show: S2 `p009b.png` has no unit or lesson, so no lesson maps to it.
 - **A figure with no entry**, including a re-crop saved under a new name (`p011-v2.png`), shows as
   today until a note for it is written and approved.
 
@@ -101,10 +104,13 @@ explanation:
     entry, or a figure of any other book returns `null`.
   - Nothing else reads the notes files.
 - **A figure slide of its own** (`bookFigureSlides`, which serves both the lesson deck and the
-  class-mode quiz and worksheet decks), when the figure has an approved note:
-  - `content` becomes the note's caption;
-  - `mediaCaption` stays the citation;
-  - `teacher.teachingTips` is the note's teacher text.
+  class-mode quiz, worksheet and game decks), when the figure has an approved note:
+  - `content` and `mediaCaption` both become the note's caption, a line break, then the citation.
+    Both, because the renderers split on them (checked 2026-11-27): the presenter draws `content`
+    above the image, while the PDF (`deckSlidesHtml.ts`) and PowerPoint (`exportPptx.ts`) draw only
+    `mediaCaption` under it. Today both fields hold the citation, so this keeps them equal;
+  - `teacher` is `{ expectedAnswer: '', teachingTips: <the note's teacher text> }`. Every
+    renderer skips an empty expected answer (`deckNotes.ts`, `presentation.tsx`).
 - **A side figure** (the rule slide's figure, the revision deck's unit figures), when it has an
   approved note:
   - `sideImageCaption` becomes the caption, a line break, then the citation;
@@ -141,7 +147,8 @@ explanation:
   - **What it writes:** the status, the teacher's edited text where it changed, `reviewedBy`,
     `reviewedAt` and `comment`.
   - **What it refuses:** a verdict for a figure that is not in `index.json`, an approval with an empty
-    field, and a caption over length.
+    field, and a caption over length. One refusal writes nothing at all, so a file is never half
+    applied.
   - **It is idempotent:** running it twice changes nothing.
   - **"Needs a fix" cards** are redrafted from the comment and go round again on the same page.
 - **Delivery, two draft PRs, both on branches from `main`:**
@@ -172,13 +179,20 @@ explanation:
   - returns `null` for a figure with no entry and for a figure of another book;
   - picks the right language.
 - **Slides:**
-  - a figure slide with an approved note gets the caption as `content`, keeps the citation as
-    `mediaCaption`, and has the teacher text in `teacher.teachingTips`;
+  - a figure slide with an approved note has the caption, a line break and the citation in both
+    `content` and `mediaCaption`, and the teacher text in `teacher.teachingTips`;
   - a side figure gets the caption, then the citation, and its teacher text is appended to existing
     tips;
-  - with no approved note, every deck is unchanged. This is checked by building the lesson deck,
-    and the class-mode quiz and worksheet decks, for every Grade 10 physics lesson, in both
-    languages, against the same decks built with the reader returning `null`.
+  - with no approved note, every deck is unchanged. A committed test builds the lesson deck and
+    the class-mode quiz, worksheet and game decks for every Grade 10 physics lesson, in both
+    languages, with a reader over the real notes files whose every status is forced to `draft`,
+    and compares them with the same decks built with a reader that always returns `null`. It also
+    asserts today's shape directly: a figure slide's `content` equals its `mediaCaption` and it has
+    no `teacher` block. A one-off check before the PR compares every deck of every lesson with
+    figures, all subjects, against the same decks built at the base commit.
+- **The reader is injectable.** Each deck builder takes an optional `figureNote` reader beside
+  `figureUri`, defaulting to the real one, so tests can hand it approved notes without editing
+  the shipped files.
 - **The review script:**
   - approve, edited text and needs-fix are each written correctly;
   - an unknown figure is refused;
