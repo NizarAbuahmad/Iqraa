@@ -13,11 +13,12 @@ import { BOARD_PEN_COLORS, BOARD_PEN_LABEL_KEYS } from '@/services/penColors';
 import { boardScope } from '@/services/boardScope';
 import { BoardBackground } from '@/components/classroom/BoardBackground';
 import { exportAsPDF } from '@/services/share';
+import { shareMaterialLink } from '@/services/materialShareAction';
 import { exportFilename } from '@/services/exportFilename';
 import { buildBoardHTML } from '@/services/boardExportHtml';
 import { BoardToolbar, type BoardTool } from '@/components/classroom/BoardToolbar';
 import { TextLayer } from '@/components/classroom/TextLayer';
-import { TextDialog } from '@/components/classroom/TextDialog';
+import { TextDialog, type TextDialogResult } from '@/components/classroom/TextDialog';
 import { BoardSaveDialog } from '@/components/classroom/BoardSaveDialog';
 import { SolveDialog } from '@/components/classroom/SolveDialog';
 import { SolutionBlock } from '@/components/classroom/SolutionBlock';
@@ -61,10 +62,11 @@ import {
   TEXT_SIZES,
   addText,
   docHasText,
-  editText,
   makeText,
+  moveText,
   removeText,
   textSizeFor,
+  updateText,
   type BoardBackground as BoardBackgroundKind,
   type BoardDoc,
 } from '@/services/whiteboardModel';
@@ -114,7 +116,9 @@ export default function WhiteboardScreen() {
   const [width, setWidth] = useState(BOARD_DEFAULT_WIDTH);
   const [tool, setTool] = useState<BoardTool>('pen');
   // The text being typed or edited: a new one at a spot of the page (`index` null), or an existing one.
-  const [textDraft, setTextDraft] = useState<null | { index: number | null; x: number; y: number; initial: string }>(null);
+  const [textDraft, setTextDraft] = useState<null | { seq: number; index: number | null; x: number; y: number; initial: string; color: string; size: number }>(null);
+  // Each draft gets the next number, which is the dialog's `key`: it starts fresh for every text.
+  const textSeq = useRef(0);
   const [area, setArea] = useState({ w: 0, h: 0 });
   const [loading, setLoading] = useState(!!params.savedId);
   const [saved, setSaved] = useState<Saved | null>(null);
@@ -449,6 +453,24 @@ export default function WhiteboardScreen() {
     else setAskTitle(true);
   }, [loading, persist]);
 
+  // The link shows the SAVED board, so an unsaved or edited one is saved first: asking
+  // for the title when there is none yet, and otherwise telling the teacher why nothing opened.
+  const onShare = useCallback(async () => {
+    if (loading || saving.current) return;
+    const current = savedRef.current;
+    if (!current) {
+      showToast(t('boardShareSaveFirst'));
+      setAskTitle(true);
+      return;
+    }
+    if (isBoardDirty(docRef.current, current.json)) {
+      showToast(t('boardShareSaveFirst'));
+      return;
+    }
+    const key = await shareMaterialLink(current.id, current.title, lang === 'ar');
+    if (key) showToast(t(key));
+  }, [lang, loading, showToast, t]);
+
   // From the in-memory document, so a board can be exported before it is saved.
   // `buildBoardHTML` validates what it is given, so a bug in `boardFileOf`
   // cannot put anything unchecked into the markup.
@@ -485,33 +507,37 @@ export default function WhiteboardScreen() {
       showToast(t('boardTextFull'));
       return;
     }
-    setTextDraft({ index: null, x, y, initial: '' });
-  }, [loading, showToast, t]);
+    setTextDraft({ seq: ++textSeq.current, index: null, x, y, initial: '', color, size: textSizeFor(width) });
+  }, [loading, showToast, t, color, width]);
 
   const onTapText = useCallback((index: number) => {
     if (askTextRef.current) return;
     const item = currentPage(docRef.current).board.texts[index];
-    if (item) setTextDraft({ index, x: item.x, y: item.y, initial: item.text });
+    if (item) setTextDraft({ seq: ++textSeq.current, index, x: item.x, y: item.y, initial: item.text, color: item.color, size: item.size });
   }, []);
 
   const onEraseText = useCallback((index: number) => {
     setDoc(d => updateCurrent(d, p => ({ ...p, board: removeText(p.board, index) })));
   }, []);
 
-  const onSubmitText = useCallback((raw: string) => {
+  const onMoveText = useCallback((index: number, x: number, y: number) => {
+    setDoc(d => updateCurrent(d, p => ({ ...p, board: moveText(p.board, index, x, y) })));
+  }, []);
+
+  const onSubmitText = useCallback((r: TextDialogResult) => {
     const draft = textDraft;
     setTextDraft(null);
     if (!draft) return;
     if (draft.index === null) {
-      const item = makeText(draft.x, draft.y, raw, color, textSizeFor(width));
+      const item = makeText(draft.x, draft.y, r.text, r.color, r.size);
       if (!item) return;
       setDoc(d => updateCurrent(d, p => ({ ...p, board: addText(p.board, item) })));
       trackWhiteboardText({ size: (['small', 'medium', 'large'] as const)[Math.max(0, TEXT_SIZES.indexOf(item.size as (typeof TEXT_SIZES)[number]))]!, rtl: item.rtl });
     } else {
       const index = draft.index;
-      setDoc(d => updateCurrent(d, p => ({ ...p, board: editText(p.board, index, raw) })));
+      setDoc(d => updateCurrent(d, p => ({ ...p, board: updateText(p.board, index, r) })));
     }
-  }, [textDraft, color, width]);
+  }, [textDraft]);
 
   const onRemoveText = useCallback(() => {
     const draft = textDraft;
@@ -561,6 +587,7 @@ export default function WhiteboardScreen() {
           mode={loading ? 'none' : tool === 'text' ? 'text' : tool === 'erase' ? 'erase' : 'none'}
           onTapEmpty={onTapEmpty}
           onTapText={onTapText}
+          onMoveText={onMoveText}
           onEraseText={onEraseText}
           labels={{ edit: t('boardTextEditTitle'), erase: t('boardTextRemove') }}
         />
@@ -603,6 +630,7 @@ export default function WhiteboardScreen() {
         saveDirty={dirty}
         saveBusy={saveBusy}
         onExport={onExport}
+        onShare={onShare}
         canExport={!loading && (docHasInk(doc) || docHasSolution(doc))}
         exportBusy={exportBusy}
         onSolve={() => void onOpenSolve()}
@@ -633,6 +661,7 @@ export default function WhiteboardScreen() {
           deletePage: t('boardDeletePage'),
           save: t('boardSave'),
           exportPdf: t('boardExportPdf'),
+          shareLink: t('boardShareLink'),
           solve: t('boardSolve'),
           solveNext: t('solveNextStep'),
           solveHideAll: t('solveHideAll'),
@@ -640,14 +669,19 @@ export default function WhiteboardScreen() {
         }}
       />
       <TextDialog
+        key={textDraft?.seq ?? 0}
         visible={textDraft !== null}
         isRTL={isRTL}
         editing={textDraft?.index != null}
         initialText={textDraft?.initial ?? ''}
+        initialColor={textDraft?.color ?? color}
+        initialSize={textDraft?.size ?? textSizeFor(width)}
         labels={{
           addTitle: t('boardTextAddTitle'), editTitle: t('boardTextEditTitle'), fieldLabel: t('boardTextField'),
           placeholder: t('boardTextPlaceholder'), add: t('boardTextAdd'), save: t('save'), remove: t('boardTextRemove'),
           cancel: t('cancel'), tooManyLines: t('boardTextTooManyLines'),
+          colors: BOARD_PEN_LABEL_KEYS.map(k => t(k)),
+          sizes: [t('boardTextSmall'), t('boardTextMedium'), t('boardTextLarge')],
         }}
         onSubmit={onSubmitText}
         onRemove={onRemoveText}
