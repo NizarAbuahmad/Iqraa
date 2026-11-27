@@ -518,6 +518,12 @@ function protectVector(m: string): string {
 // The arrow over a vector's name, «AB⃗» — a combining mark, so it must ride in the
 // run with its letters or «AB» is isolated and the arrow is left behind.
 const COMBINING_ARROW = String.fromCodePoint(0x20d7);
+// Magnitude / absolute-value bars «|v|», «|x − 3|» (found 2026-11-27). «|» is
+// not in the run class, so «|v| = 5» split at each bar. But «|» is also a
+// separator — a chat's markdown table «| x | 5 |», «الصف العاشر | الرياضيات»,
+// set-builder «{x | x ≤ 3}» — so a bar joins a run only as one of a PAIR around
+// maths (`protectBars`), which becomes stand-ins like an interval's brackets.
+const BAR_STAND_IN = String.fromCodePoint(0xe00d);
 const COMMA_STAND_IN: Record<string, string> = { ',': PAIR_COMMA, '،': PAIR_COMMA_AR };
 function protectPair(m: string): string {
   return [...m].map(c => COMMA_STAND_IN[c] ?? c).join('');
@@ -536,10 +542,53 @@ function restoreStandIns(s: string): string {
   for (const map of [COMMA_STAND_IN, INTERVAL_STAND_IN, VECTOR_STAND_IN, DOT_STAND_IN]) {
     for (const [real, standIn] of Object.entries(map)) out = out.replaceAll(standIn, real);
   }
+  out = out.replaceAll(BAR_STAND_IN, '|');
   return out;
 }
-const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}${PAIR_COMMA}${PAIR_COMMA_AR}${INTERVAL_CHARS}${VECTOR_CHARS}${COMBINING_ARROW}`;
+const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}${PAIR_COMMA}${PAIR_COMMA_AR}${INTERVAL_CHARS}${VECTOR_CHARS}${COMBINING_ARROW}${BAR_STAND_IN}`;
 const FOREIGN_END = FOREIGN_CHAR.replace('.', '');
+
+/**
+ * Pair each «|» with the next one, and keep the pair only when what lies between
+ * is maths: no Arabic letter, nothing outside the run class, not empty, at most
+ * one space against each bar («| v | = …» is how the books' text layer writes a
+ * magnitude), and balanced brackets — so «P(B|A) + |x|» does not pair the bar of
+ * «B|A» with the first bar of «|x|». A failed pair moves on to the next bar. A
+ * markdown table row (a line that starts and ends with «|») is left alone.
+ */
+const BAR_CONTENT = new RegExp(`^ ?[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR} ]*[${FOREIGN_CHAR}])? ?$`);
+function balanced(s: string): boolean {
+  let depth = 0;
+  for (const c of s) {
+    if (c === '(') depth++;
+    else if (c === ')' && --depth < 0) return false;
+  }
+  return depth === 0;
+}
+function protectBars(s: string): string {
+  // A markdown row opens «| cell», «|:-:» or «|---»; «|a| · |b|» opens on a symbol.
+  const t = s.trim();
+  if (/^\|[ :-]/.test(t) && t.endsWith('|')) return s;
+  let out = '';
+  let i = 0;
+  while (i < s.length) {
+    if (s[i] === '|') {
+      const j = s.indexOf('|', i + 1);
+      const inner = j > i ? s.slice(i + 1, j) : '';
+      // Two Latin words is prose, not a magnitude: an English book's text layer
+      // reads the pronoun «I» as «|» — «Well... | had it when | went to…».
+      const words = inner.match(/[A-Za-z]{2,}/g)?.length ?? 0;
+      if (j > i && BAR_CONTENT.test(inner) && balanced(inner) && words < 2) {
+        out += BAR_STAND_IN + inner + BAR_STAND_IN;
+        i = j + 1;
+        continue;
+      }
+    }
+    out += s[i];
+    i++;
+  }
+  return out;
+}
 
 // Reaction and implication arrows. They may sit INSIDE a run but never at its
 // edge. Left out of the run, «N₂ + H₂ → NH₃» became two isolates with the arrow
@@ -567,7 +616,7 @@ const DOT_STAND_IN: Record<string, string> = {
   '⋅': String.fromCodePoint(0xe00a),
 };
 const DOT_CHARS = Object.values(DOT_STAND_IN).join('');
-const MATH_NEIGHBOUR = `0-9¹²³⁰⁴-⁹⁺⁻₀-₉°∞()^′'${INTERVAL_CHARS}${VECTOR_CHARS}`;
+const MATH_NEIGHBOUR = `0-9¹²³⁰⁴-⁹⁺⁻₀-₉°∞()^′'${INTERVAL_CHARS}${VECTOR_CHARS}${BAR_STAND_IN}`;
 const DOT_RE = new RegExp(
   `(?<=[${FOREIGN_CHAR}])[·⋅](?=[${FOREIGN_CHAR}])` +
     `|(?<=[${MATH_NEIGHBOUR}]) [·⋅] (?=[${FOREIGN_CHAR}])` +
@@ -610,11 +659,13 @@ function worthIsolating(run: string): boolean {
 }
 
 export function isolateForeignRuns(line: string): string {
-  const out = (line ?? '')
-    .replace(BLANK_RE, BLANK)
-    .replace(VECTOR_RE, protectVector)
-    .replace(INTERVAL_RE, protectInterval)
-    .replace(PAIR_RE, protectPair)
+  const out = protectBars(
+    (line ?? '')
+      .replace(BLANK_RE, BLANK)
+      .replace(VECTOR_RE, protectVector)
+      .replace(INTERVAL_RE, protectInterval)
+      .replace(PAIR_RE, protectPair),
+  )
     .replace(DOT_RE, protectDot)
     .replace(FOREIGN_RUN_RE, m => {
     // A run with the bank's blank in it is overridden left-to-right, not just

@@ -10,6 +10,40 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Magnitude and absolute-value bars read left to right in Arabic — 2026-11-27
+
+The follow-up the vectors entry below named. `|` was not in `isolateForeignRuns`'s run class, so a magnitude or
+absolute value split at every bar, and inside an Arabic sentence the pieces came out reversed. In Chromium, «إذا كان
+مقدار المتجه |v| = 5» showed `= 5` before `|v|`, and the same held for `|x − 3| ≤ 5`, `|−4| + |3|` and
+`(a·b)/(|a||b|)`.
+
+**Fix** (`services/mathRender.ts`, renderer only). `|` is also a separator: a chat's markdown table `| x | 5 |`,
+«الصف العاشر | الرياضيات», set-builder `{x | x ≤ 3}`, and `P(A | B)`. So it is not added to the run class. Instead
+`protectBars` pairs each bar with the next and keeps the pair, as stand-ins, only when the content between is maths:
+- no Arabic letter, and nothing outside the run class;
+- not empty, with at most one space against each bar (the books' text layer writes `| v | = √…`);
+- balanced brackets, so `P(B|A) + |x|` does not pair `B|A`'s bar with `|x|`'s;
+- fewer than two Latin words of two letters or more. An English book's text layer reads the pronoun «I» as `|`
+  («Well... | had it when | went…»).
+
+A failed pair moves on to the next bar. A markdown table row (one starting `| `, `|:` or `|-` and ending `|`) is left
+alone. A first version skipped every line that started and ended with `|`, which missed `|a| · |b|`; a test pins it.
+
+**Verified:**
+- 10 new cases in `mathRender.test.ts`. The mobile suite (9,683, 0 failures) and root typecheck pass.
+- Old against new over 5,047 lines of the repo's text that hold a bar. Of the 449 that change, every one read was
+  maths (`|w| |v| cosθ`, `W = | F | | d | cosθ`, `|A × B| = A B sin θ`, `3|2x-5|+2 = 11`). The exceptions are six
+  English OCR lines with a one-word «I»-bar pair, which become one English isolate, better than the scrambled
+  pieces they were.
+- **Chromium, Arabic sentences:** «… |v| = 5 …», «… |x − 3| ≤ 5 …», «… |−4| + |3| …» and «… (a·b)/(|a||b|) …». The
+  maths reads left to right with the fix; all four were reversed with the old text.
+- **Take screen at 390px:** a teacher-written question with those four as options, and `|v|` in the stem, shows them
+  left to right. Options with no Arabic in them already displayed left to right (`dir="auto"`), so there only
+  `|−4| + |3| = 7` had been reversed.
+
+**Not covered:** set-builder `{x | x ≤ 3}` and conditional probability `P(A | B)`, whose single `|` is not a pair;
+native Android and iOS.
+
 ## Vectors, the vector arrow and the multiplication dot read left to right in Arabic — 2026-11-27
 
 The follow-up the Latin-comma entry below named. A vector `⟨3, 4⟩` was never isolated: `⟨` and `⟩` are not in
