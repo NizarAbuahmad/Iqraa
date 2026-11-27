@@ -110,6 +110,7 @@ describe("studentExamRow", () => {
       earnedMarks: 8,
       totalMarks: 10,
       competencyScores: {},
+      topics: { strong: [], weak: [] },
     });
   });
 

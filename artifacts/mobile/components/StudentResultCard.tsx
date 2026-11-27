@@ -1,15 +1,23 @@
 /**
- * A student's released result: level, marks, and the four competencies.
+ * A student's released result: level, marks, the four competencies, and (since
+ * 2026-11-27) which topics went well and which need more work.
  *
  * Lifted out of the hand-in screen (`app/take/[code].tsx`) when «اختباراتي»
  * needed the same thing, so the result a student sees right after handing in
  * and the one they find later in their list are one rendering, not two that
- * drift. It renders only what `sanitizeResultForStudent` sends — never the
- * per-objective detail, which is a diagnostic for the teacher.
+ * drift. It renders only what `sanitizeResultForStudent` sends. The topics are
+ * the server's short, named summary (`topicSummary`: two questions or more, at most
+ * three each way, no numbers); the per-objective scores stay the teacher's. A parent
+ * reads the same card in «نتائج أبنائي», so its wording speaks to neither.
  */
 import React from 'react';
 import { Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import type { StudentResult } from '@/services/studentExam';
+import { useLanguage } from '@/context/LanguageContext';
+import { resultTopicLines } from '@/services/resultTopics';
+import { isolateForeignRuns } from '@/services/mathRender';
+import { ICON } from '@/constants/icons';
 import type { TranslationKey } from '@/services/i18n';
 import { palette } from '@/constants/colors';
 import type { useColors } from '@/hooks/useColors';
@@ -45,6 +53,22 @@ export function StudentResultCard({
   showTitle?: boolean;
 }) {
   const levelKey = result.levelKey ? LEVEL_LABEL_KEY[result.levelKey] : undefined;
+  const { lang } = useLanguage();
+  const topics = resultTopicLines(result.topics, lang);
+  const align = isRTL ? 'right' : 'left';
+  const topicList = (title: TranslationKey, items: string[], icon: keyof typeof Ionicons.glyphMap, color: string) => (
+    <View style={{ gap: 4 }}>
+      <Text style={{ color: colors.mutedForeground, fontFamily: 'ReadexPro_600SemiBold', fontSize: 13, textAlign: align }}>{t(title)}</Text>
+      {items.map((line, n) => (
+        <View key={n} style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 6 }}>
+          <Ionicons name={icon} size={ICON.md} color={color} style={{ marginTop: 3 }} />
+          <Text style={{ flex: 1, color: colors.foreground, fontFamily: 'Almarai_400Regular', fontSize: 14, lineHeight: 22, textAlign: align, writingDirection: isRTL ? 'rtl' : 'ltr' }}>
+            {isolateForeignRuns(line)}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
   return (
     <View style={{ gap: 10, alignItems: 'center', width: '100%', maxWidth: 340, alignSelf: 'center' }}>
       {showTitle && (
@@ -76,6 +100,12 @@ export function StudentResultCard({
           );
         })}
       </View>
+      {topics.strong.length > 0 || topics.weak.length > 0 ? (
+        <View style={{ width: '100%', borderTopWidth: 1, borderColor: colors.border, paddingTop: 10, gap: 10 }}>
+          {topics.strong.length > 0 ? topicList('resultTopicsStrong', topics.strong, 'checkmark-circle', palette.success) : null}
+          {topics.weak.length > 0 ? topicList('resultTopicsWeak', topics.weak, 'refresh-circle', colors.mutedForeground) : null}
+        </View>
+      ) : null}
     </View>
   );
 }

@@ -70,6 +70,8 @@ export interface ResultForStudent {
   earnedMarks: unknown;
   totalMarks: unknown;
   competencyScores: unknown;
+  /** Read for the family's topic summary (`topicSummary`); the scores never leave. */
+  objectiveScores?: unknown;
   isProvisional: boolean;
 }
 

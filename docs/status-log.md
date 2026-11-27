@@ -10,11 +10,28 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
-## Parents: «المدرسة» first, a quick look at each child, a read-only view of a handed-in project, every parent code of a class in one place, a parent's tick for a child with no account, the child's answer review, and two small fixes — 2026-11-20
+## Parents: «المدرسة» first, a quick look at each child, a read-only view of a handed-in project, every parent code of a class in one place, a parent's tick for a child with no account, the child's answer review, a topic summary under each result, and two small fixes — 2026-11-20
 
-Seven changes from a review of the parent side (the first four written 2026-11-13, the fifth 2026-11-20, the sixth 2026-11-25, the seventh 2026-11-27).
+Eight changes from a review of the parent side (the first four written 2026-11-13, the fifth 2026-11-20, the sixth 2026-11-25, the seventh and eighth 2026-11-27).
 
 **What changed.**
+- **«ما أُتقن وما يحتاج إلى مراجعة» under every released result** (the owner's call, 2026-11-27), for the student and the
+  parent alike, on the shared `StudentResultCard` (the hand-in screen, «اختباراتي», «نتائج أبنائي»). It reverses a
+  recorded choice: `sanitizeResultForStudent` and the card both said the per-objective detail was "a diagnostic for
+  the teacher". What families now get is a projection of it, not the detail: `topicSummary`
+  (`modules/assessment/topicSummary.ts`) runs the teacher's own split (`splitGapsAndStrengths`) over the stored
+  `objective_scores` and sends **names only** — the outcome's text from the curriculum — never a percentage, marks lost
+  or the scores themselves. A topic must be asked about in **two questions or more** either way (strengths already
+  needed two; a gap now does too, so one unlucky answer never tells a parent "needs work"); at most **three** each way,
+  the gaps ordered as the teacher's are (marks lost first); an objective the curriculum no longer knows is dropped. It
+  rides on the result, so the release rule is the one that already gates the mark: nothing shows before the teacher
+  releases results and the paper is fully marked. «ما الجديد» for students and parents (`result-topics-family`) and
+  for teachers (`result-topics-teacher`, which says families now see it and the percentages stay the teacher's).
+  Verified: `topicSummary.test.ts` (7 cases: two-question floor both ways, ordering, the cap of three, unknown ids,
+  no numbers, malformed rows); `studentView.test.ts` still pins that `objectiveScores` never leave;
+  `answerReview.db.test.ts` sets real catalog objectives on Sara's sitting and checks `/student/exams` and
+  `/parent/exams` carry the same summary, a one-question topic is not named, and neither body contains
+  `objectiveScores` or `marksLost`; `resultTopics.test.ts` on the app side.
 - **Two small fixes on «المدرسة»** (2026-11-27). The selected child chip drew `'#fff'` on `palette.primary`, which in
   dark mode is the light teal `#2DD4BF`: about 1.9:1. Its label is now `palette.primaryForeground`, from the same
   palette as the fill. And the child picked on «المدرسة» now carries over to «نتائج أبنائي»: the four links there

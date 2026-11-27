@@ -19,6 +19,7 @@
  * The local allowlist below survives only as the fallback for a type the
  * registry does not know, where failing safe matters more than completeness.
  */
+import { topicSummary, type TopicSummary } from "./topicSummary.ts";
 import crypto from "node:crypto";
 import { QUESTION_TYPES } from "./questionTypes.ts";
 import { studentFigure } from "./questionFigure.ts";
@@ -197,14 +198,19 @@ export function sanitizeQuestionForStudent(
   };
 }
 
-/** A result a student may see: level, marks, competency breakdown — never
- *  the objective-level detail, which is a diagnostic for the teacher. */
+/**
+ * A result a student (and their parent) may see: level, marks, competency breakdown,
+ * and since 2026-11-27 a short per-objective summary (`topicSummary`: names only, two
+ * questions or more, at most three each way). Never the objective scores themselves,
+ * which stay the teacher's diagnostic, and never the teacher's comment.
+ */
 export interface StudentResult {
   levelKey: string | null;
   percent: number;
   earnedMarks: number;
   totalMarks: number;
   competencyScores: Record<string, unknown>;
+  topics: TopicSummary;
 }
 
 /**
@@ -229,6 +235,8 @@ export function sanitizeResultForStudent(result: {
   earnedMarks: unknown;
   totalMarks: unknown;
   competencyScores: unknown;
+  /** The stored `attempt_results.objective_scores`. Absent reads as none. */
+  objectiveScores?: unknown;
 }): StudentResult {
   return {
     levelKey: result.levelKey,
@@ -236,5 +244,6 @@ export function sanitizeResultForStudent(result: {
     earnedMarks: Number(result.earnedMarks),
     totalMarks: Number(result.totalMarks),
     competencyScores: (result.competencyScores as Record<string, unknown>) ?? {},
+    topics: topicSummary(result.objectiveScores),
   };
 }

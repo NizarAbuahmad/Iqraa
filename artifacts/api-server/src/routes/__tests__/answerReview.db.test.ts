@@ -140,6 +140,36 @@ describeDb("answer review over HTTP, against a real database", () => {
     assert.ok(!r.text.includes("optionIds"));
   });
 
+  it("names what went well and what needs work on the released result, for the student and the parent alike", async () => {
+    const STRONG = "o-nccd-chem-s1-u1_l1-0";
+    const WEAK = "o-nccd-chem-s1-u1_l1-1";
+    await db.pool.query(`UPDATE attempt_results SET objective_scores = $2::jsonb WHERE attempt_id = $1`, [
+      x.attempts.saraReleased,
+      JSON.stringify([
+        { objectiveId: STRONG, earned: 4, total: 4, percent: 100, questionCount: 2, marksLost: 0, bloomsRank: 1 },
+        { objectiveId: WEAK, earned: 1, total: 6, percent: 16.67, questionCount: 3, marksLost: 5, bloomsRank: 2 },
+        { objectiveId: "o-one-question", earned: 0, total: 2, percent: 0, questionCount: 1, marksLost: 2, bloomsRank: 1 },
+      ]),
+    ]);
+    const student = await call(on, "GET", "/student/exams", w.users.studentA);
+    const parent = await call(on, "GET", "/parent/exams", w.users.parentA);
+    const mine = (student.json.exams as { title: string; result: { topics: unknown } | null }[]).find(e => e.title === EX_TITLES.exReleased);
+    const theirs = (parent.json.children as { displayName: string; exams: { title: string; result: { topics: unknown } | null }[] }[])
+      .flatMap(c => (c.displayName === CHILDREN.sara ? c.exams : []))
+      .find(e => e.title === EX_TITLES.exReleased);
+    const expected = {
+      strong: [{ objectiveId: STRONG, title: "أوضح المقصود بالطيف الكهرمغناطيسي.", titleAr: "أوضح المقصود بالطيف الكهرمغناطيسي." }],
+      weak: [{ objectiveId: WEAK, title: "أوضح أهم فروض نظرية بور لذرة الهيدروجين.", titleAr: "أوضح أهم فروض نظرية بور لذرة الهيدروجين." }],
+    };
+    // The chemistry catalog's outcomes are Arabic only, so the English title falls back to it.
+    const shape = (t: unknown) => JSON.parse(JSON.stringify(t)) as typeof expected;
+    assert.deepEqual(shape(mine?.result?.topics).strong.map(s => s.objectiveId), [STRONG]);
+    assert.deepEqual(shape(mine?.result?.topics).weak.map(s => s.objectiveId), [WEAK], "one question names nothing");
+    assert.deepEqual(theirs?.result?.topics, mine?.result?.topics, "the parent reads the same summary");
+    assert.equal(shape(mine?.result?.topics).strong[0]!.titleAr, expected.strong[0]!.titleAr);
+    for (const r of [student, parent]) assert.ok(!r.text.includes("objectiveScores") && !r.text.includes("marksLost"), "the scores themselves never leave");
+  });
+
   it("is never another child's paper", async () => {
     // Adam sat the same exam, but his paper still has a question to mark: his key opens nothing,
     // and above all not his sister's paper from the same class.
