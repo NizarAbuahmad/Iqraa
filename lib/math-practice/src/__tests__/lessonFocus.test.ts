@@ -101,11 +101,11 @@ describe('the worked example is the lesson\'s own', () => {
   });
 
   it('runs out rather than leave the lesson', () => {
-    // «الضرب القياسي» has two solved items of its own: two worked examples, then none.
+    // «المتجهات في المستوى» has two solved items of its own: two worked examples, then none.
     const session = new Set<string>();
-    assert.ok(takeSolvedMath('الضرب القياسي', null, 'medium', 'ar', session));
-    assert.ok(takeSolvedMath('الضرب القياسي', null, 'medium', 'ar', session));
-    assert.equal(takeSolvedMath('الضرب القياسي', null, 'medium', 'ar', session), null);
+    assert.ok(takeSolvedMath('المتجهات في المستوى', null, 'medium', 'ar', session));
+    assert.ok(takeSolvedMath('المتجهات في المستوى', null, 'medium', 'ar', session));
+    assert.equal(takeSolvedMath('المتجهات في المستوى', null, 'medium', 'ar', session), null);
   });
 
   it('practice takes the lesson\'s own items first, within the tier asked', () => {
@@ -115,20 +115,22 @@ describe('the worked example is the lesson\'s own', () => {
       // wording: the book's own titles now have generators (`grade10.ts`,
       // `grade10b.ts`), which come before the bank for practice.
       const q = takeConcreteMath('short_answer', 'إيجاد الضرب القياسي لمتجهين', null, 'medium', 'ar', 4, new Set(), false)!;
-      assert.match(q.text, /الضرب القياسي/, q.text);
+      const ownStems = MATH_BANK.filter(i => i.focus === 'dot_product').map(i => i.promptAr!);
+      assert.ok(ownStems.some(stem => q.text.startsWith(stem)), q.text);
       const arc = takeConcreteMath('short_answer', 'حساب أطوال الأقواس', null, 'medium', 'ar', 4, new Set(), false)!;
       assert.match(arc.text, /قطاع|قوس/, arc.text);
     }
   });
 
   it('a lesson with items of its own takes one from another tier before the next lesson\'s', () => {
-    // The dot product has no easy item; an easy slot still takes the lesson's own
-    // (v-m2, v-h1) before the family's easy ones, which belong to «المتجهات في
-    // المستوى». (Only a lesson with a single bank item keeps it to its own tier —
+    // Trigonometric equations have no easy item; an easy slot still takes the
+    // lesson's own (t-m1, t-h1) before the family's easy ones, which belong to
+    // «النسب المثلثية». A typed topic: the book's own title has a generator.
+    // (Only a lesson with a single bank item keeps it to its own tier —
     // `takeFromBank` — and since every split lesson got items of its own, none has.)
     for (let k = 0; k < 20; k++) {
-      const q = takeConcreteMath('short_answer', 'إيجاد الضرب القياسي لمتجهين', null, 'easy', 'ar', 4, new Set(), false)!;
-      assert.match(q.text, /الضرب القياسي|متعامد/, q.text);
+      const q = takeConcreteMath('short_answer', 'المعادلات المثلثية البسيطة', null, 'easy', 'ar', 4, new Set(), false)!;
+      assert.match(q.text, /θ/, q.text);
     }
   });
 });
@@ -260,6 +262,70 @@ describe('«جمع المتجهات وطرحها» has a lesson\'s worth of item
         const s = takeSolvedMath('جمع المتجهات وطرحها', null, tier, 'ar', new Set());
         assert.ok(s);
         assert.equal(item(s.id).focus, 'vector_add', `got ${s.id}: ${s.problem}`);
+      }
+    }
+  });
+});
+
+describe('«الضرب القياسي» has a lesson\'s worth of items, every key recomputed', () => {
+  type V = [number, number];
+  const dot = (a: V, b: V) => a[0] * b[0] + a[1] * b[1];
+  const angle = (a: V, b: V) => (Math.acos(dot(a, b) / (Math.hypot(...a) * Math.hypot(...b))) * 180) / Math.PI;
+  const r3 = Math.sqrt(3);
+  // Each item's vectors and what it asks; a «yes» key must come with a zero dot product.
+  const KEYS: Record<string, number | 'perpendicular'> = {
+    'v-m2': dot([2, 3], [4, -1]),
+    'v-h1': 'perpendicular',
+    'dp-e1': dot([3, 1], [2, 5]),
+    'dp-e2': dot([4, -2], [1, 3]),
+    'dp-m1': dot([3, 4], [3, 4]),
+    // k with ⟨k, 2⟩ · ⟨3, −6⟩ = 0: 3k − 12 = 0.
+    'dp-m2': 12 / 3,
+    'dp-m3': angle([1, 1], [2, 0]),
+    'dp-h1': angle([2, 0], [-1, r3]),
+    // A(1,1), B(4,2), C(0,4): AB⃗ = ⟨3, 1⟩, AC⃗ = ⟨−1, 3⟩.
+    'dp-h2': dot([3, 1], [-1, 3]) === 0 ? 'perpendicular' : -1,
+    // Work W = F · d for F = ⟨10, 5⟩ N and d = ⟨6, 0⟩ m.
+    'dp-w1': dot([10, 5], [6, 0]),
+  };
+  const own = () => MATH_BANK.filter(i => i.focus === 'dot_product');
+  /** The signed number after the last «=»: «u·v = −2», «θ = 45°», «الشغل = 60 جول». */
+  const stated = (answer: string) => Number(answer.split('=').pop()!.replace(/−/g, '-').replace(/[^0-9.-]/g, ''));
+
+  it('lists every item of the lesson', () => {
+    assert.deepEqual(own().map(i => i.id).sort(), Object.keys(KEYS).sort());
+  });
+
+  it('every key is the vectors\' own dot product, angle or scalar', () => {
+    assert.equal(dot([1, 0], [0, 1]), 0);
+    for (const [id, want] of Object.entries(KEYS)) {
+      const answer = item(id).answer;
+      if (want === 'perpendicular') {
+        assert.match(answer, /متعامد|نعم/, `${id}: «${answer}» should say perpendicular`);
+        continue;
+      }
+      assert.ok(Math.abs(stated(answer) - want) < 1e-9, `${id}: key «${answer}», the vectors give ${want}`);
+    }
+  });
+
+  it('enough for a worksheet, in every tier, with a story, every one with working', () => {
+    assert.ok(own().length >= 8, `${own().length} items`);
+    for (const tier of ['easy', 'medium', 'hard'] as const) assert.ok(own().some(i => i.diff === tier), `no ${tier} item`);
+    assert.ok(own().some(i => i.story), 'no real-life story');
+    for (const i of own()) assert.ok(stepsFor(i.id), `${i.id} has no working`);
+  });
+
+  it('asks for an angle and for perpendicularity, not only a number', () => {
+    assert.ok(own().some(i => /°$/.test(i.answer)), 'no angle');
+    assert.ok(own().filter(i => KEYS[i.id] === 'perpendicular').length >= 2, 'perpendicularity asked once');
+  });
+
+  it('studies only its own lesson', () => {
+    for (const tier of ['easy', 'medium', 'hard'] as const) {
+      for (let k = 0; k < 20; k++) {
+        const s = takeSolvedMath('الضرب القياسي', null, tier, 'ar', new Set());
+        assert.ok(s);
+        assert.equal(item(s.id).focus, 'dot_product', `got ${s.id}: ${s.problem}`);
       }
     }
   });

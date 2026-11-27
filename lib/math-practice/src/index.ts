@@ -707,6 +707,23 @@ export const MATH_BANK: ConcreteItem[] = [
   { id: 'v-e2', family: 'vectors', diff: 'easy', eq: '⟨3,4⟩', answer: '|v| = 5', wrongs: ['7', '12', '1'], promptAr: 'أوجد مقدار المتجه ⟨3, 4⟩.', promptEn: 'Find the magnitude of ⟨3, 4⟩.' },
   { id: 'v-m1', family: 'vectors', diff: 'medium', eq: 'u=⟨1,2⟩, v=⟨3,−1⟩', answer: 'u+v = ⟨4, 1⟩', wrongs: ['⟨2, 1⟩', '⟨4, 3⟩', '⟨3, 2⟩'], promptAr: 'إذا كان u = ⟨1, 2⟩ و v = ⟨3, −1⟩، أوجد u + v.', promptEn: 'If u = ⟨1, 2⟩ and v = ⟨3, −1⟩, find u + v.' },
   { id: 'v-m2', family: 'vectors', diff: 'medium', eq: 'u=⟨2,3⟩, v=⟨4,−1⟩', answer: 'u·v = 5', wrongs: ['8', '−3', '7'], promptAr: 'أوجد الضرب القياسي ⟨2, 3⟩ · ⟨4, −1⟩.', promptEn: 'Find the dot product ⟨2, 3⟩ · ⟨4, −1⟩.' },
+  // «الضرب القياسي» on its own: a dot product, one with a negative term, a
+  // vector with itself (|u|²), k for perpendicular vectors, the angle between
+  // two vectors (45° and an obtuse 120°), a right angle in a triangle shown by
+  // vectors, and the work a force does. Special angles only, so the key is
+  // exact; `lessonFocus.test.ts` recomputes every key from the vectors.
+  { id: 'dp-e1', family: 'vectors', diff: 'easy', eq: 'u=⟨3,1⟩, v=⟨2,5⟩, u·v', answer: 'u·v = 11', wrongs: ['⟨6, 5⟩', '17', '28'], promptAr: 'إذا كان u = ⟨3, 1⟩ و v = ⟨2, 5⟩، فأوجد الضرب القياسي u · v.', promptEn: 'If u = ⟨3, 1⟩ and v = ⟨2, 5⟩, find the dot product u · v.' },
+  { id: 'dp-e2', family: 'vectors', diff: 'easy', eq: 'u=⟨4,−2⟩, v=⟨1,3⟩, u·v', answer: 'u·v = −2', wrongs: ['10', '−10', '2'], promptAr: 'إذا كان u = ⟨4, −2⟩ و v = ⟨1, 3⟩، فأوجد الضرب القياسي u · v.', promptEn: 'If u = ⟨4, −2⟩ and v = ⟨1, 3⟩, find the dot product u · v.' },
+  { id: 'dp-m1', family: 'vectors', diff: 'medium', eq: 'u=⟨3,4⟩, u·u', answer: 'u·u = 25', wrongs: ['5', '7', '12'], promptAr: 'إذا كان u = ⟨3, 4⟩، فأوجد u · u، وقارنه بمربع مقدار u.', promptEn: 'If u = ⟨3, 4⟩, find u · u and compare it with the square of |u|.' },
+  { id: 'dp-m2', family: 'vectors', diff: 'medium', eq: 'u=⟨k,2⟩, v=⟨3,−6⟩, u⊥v', answer: 'k = 4', wrongs: ['k = −4', 'k = 1', 'k = 12'], promptAr: 'أوجد قيمة k التي تجعل المتجهين u = ⟨k, 2⟩ و v = ⟨3, −6⟩ متعامدين.', promptEn: 'Find the value of k that makes u = ⟨k, 2⟩ and v = ⟨3, −6⟩ perpendicular.' },
+  { id: 'dp-m3', family: 'vectors', diff: 'medium', eq: 'u=⟨1,1⟩, v=⟨2,0⟩, angle', answer: 'θ = 45°', wrongs: ['θ = 30°', 'θ = 60°', 'θ = 90°'], promptAr: 'أوجد قياس الزاوية θ بين المتجهين u = ⟨1, 1⟩ و v = ⟨2, 0⟩.', promptEn: 'Find the angle θ between u = ⟨1, 1⟩ and v = ⟨2, 0⟩.' },
+  { id: 'dp-h1', family: 'vectors', diff: 'hard', eq: 'u=⟨2,0⟩, v=⟨−1,√3⟩, angle', answer: 'θ = 120°', wrongs: ['θ = 60°', 'θ = 150°', 'θ = 30°'], promptAr: 'أوجد قياس الزاوية θ بين المتجهين u = ⟨2, 0⟩ و v = ⟨−1, √3⟩.', promptEn: 'Find the angle θ between u = ⟨2, 0⟩ and v = ⟨−1, √3⟩.' },
+  { id: 'dp-h2', family: 'vectors', diff: 'hard', eq: 'A(1,1), B(4,2), C(0,4), angle A', answer: 'نعم، AB⃗ · AC⃗ = 0', wrongs: ['لا، AB⃗ · AC⃗ = 6', 'لا، AB⃗ · AC⃗ = −6', 'نعم، AB⃗ · AC⃗ = 10'], promptAr: 'النقاط A(1, 1) و B(4, 2) و C(0, 4). هل الزاوية A في المثلث ABC قائمة؟ برّر باستعمال الضرب القياسي.', promptEn: 'Points A(1, 1), B(4, 2), C(0, 4). Is the angle at A in triangle ABC a right angle? Justify with the dot product.' },
+  {
+    id: 'dp-w1', family: 'vectors', diff: 'hard', eq: 'work F=⟨10,5⟩, d=⟨6,0⟩', answer: 'الشغل = 60 جول', wrongs: ['الشغل = 90 جول', 'الشغل = 30 جول', 'الشغل = 6√125 جول'], kind: 'word', story: true,
+    wordAr: 'يُسحب صندوق على أرض مستوية بقوة F = ⟨10, 5⟩ نيوتن، فيتحرك إزاحة d = ⟨6, 0⟩ م. إذا علمت أن الشغل المبذول W = F · d، فأوجد الشغل بالجول.',
+    wordEn: 'A box is pulled along level ground by a force F = ⟨10, 5⟩ N and moves through a displacement d = ⟨6, 0⟩ m. Given that the work done is W = F · d, find the work in joules.',
+  },
   // «جمع المتجهات وطرحها» on its own: a sum and a difference, combinations with
   // a scalar, the length of a sum (not the sum of the lengths), an unknown
   // vector, the triangle rule from three points, and a boat crossing a river.

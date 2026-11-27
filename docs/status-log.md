@@ -135,6 +135,25 @@ directly (and against a generated paper). The bank tests that needed a one-item 
 (two solved items: two worked examples, then none). The one-item rule in `takeFromBank` is kept, though no lesson
 triggers it now.
 
+**Dot product: eight new bank items** (`dp-e1` … `dp-w1`, focus `dot_product`, 2026-11-27), each with checked
+working:
+- easy: a dot product (`11`) and one with a negative term (`−2`);
+- medium: a vector with itself, compared with |u|² (`25`); k for perpendicular vectors (`k = 4`); the angle
+  between two vectors (`45°`);
+- hard: an obtuse angle, whose negative cosine the working points out (`120°`); and a right angle at A in a
+  triangle shown by AB⃗ · AC⃗ = 0;
+- a story: the work a pulling force does, W = F · d (`60 جول`), with the working noting that the vertical part of
+  the force does none.
+
+The distractors are: the component products left as a vector, the components cross-multiplied, a lost minus sign,
+|u| for u · u, k without the division, the sign of the cosine dropped (60° for 120°), and |F||d| for F · d.
+`lessonFocus.test.ts` recomputes every key from the vectors: the angles by arccos, k from the perpendicular
+condition, and the right-angle «نعم» against a zero dot product. Moved fixtures:
+- the run-out test now uses «المتجهات في المستوى» (two solved items);
+- the other-tier ranking test uses a typed trigonometric-equations topic;
+- the in-tier test now checks that the question is one of the lesson's own items, not that it contains the words
+  «الضرب القياسي», since an angle question doesn't.
+
 **Fixed after an independent review of the first commit:**
 - **Instructions.** They promised «أكمل الحل في السؤال الأول» whenever there was a worked example. A lesson with one
   solved item of its own («قانون جيب التمام», «الاقتران العكسي») gets no half-solved question, so the line now

@@ -976,6 +976,94 @@ export const MATH_B_STEPS: Record<string, SolutionSteps> = {
       'So u·v = 5',
     ],
   },
+  'dp-e1': {
+    ar: ['الضرب القياسي: ⟨a, b⟩ · ⟨c, d⟩ = ac + bd', 'نعوّض: 3 × 2 + 1 × 5 = 6 + 5', 'إذن u·v = 11'],
+    en: ['Dot product: ⟨a, b⟩ · ⟨c, d⟩ = ac + bd', 'Substitute: 3 × 2 + 1 × 5 = 6 + 5', 'So u·v = 11'],
+  },
+  'dp-e2': {
+    ar: ['الضرب القياسي: ⟨a, b⟩ · ⟨c, d⟩ = ac + bd', 'نعوّض: 4 × 1 + (−2) × 3 = 4 − 6', 'إذن u·v = −2'],
+    en: ['Dot product: ⟨a, b⟩ · ⟨c, d⟩ = ac + bd', 'Substitute: 4 × 1 + (−2) × 3 = 4 − 6', 'So u·v = −2'],
+  },
+  'dp-m1': {
+    ar: [
+      'u · u = 3 × 3 + 4 × 4 = 9 + 16 = 25',
+      'ومقدار u هو √(3² + 4²) = 5، فمربعه 25: الضرب القياسي لمتجه في نفسه يساوي مربع مقداره',
+      'إذن u·u = 25',
+    ],
+    en: [
+      'u · u = 3 × 3 + 4 × 4 = 9 + 16 = 25',
+      'And |u| = √(3² + 4²) = 5, whose square is 25: a vector dotted with itself is the square of its magnitude',
+      'So u·u = 25',
+    ],
+  },
+  'dp-m2': {
+    ar: [
+      'المتجهان متعامدان إذا كان ضربهما القياسي صفرًا: u · v = 0',
+      'k × 3 + 2 × (−6) = 0، أي 3k − 12 = 0',
+      '3k = 12',
+      'إذن k = 4',
+    ],
+    en: [
+      'The vectors are perpendicular when their dot product is zero: u · v = 0',
+      'k × 3 + 2 × (−6) = 0, that is 3k − 12 = 0',
+      '3k = 12',
+      'So k = 4',
+    ],
+  },
+  'dp-m3': {
+    ar: [
+      'cos θ = (u · v) / (|u| |v|)',
+      'u · v = 1 × 2 + 1 × 0 = 2، و |u| = √2، و |v| = 2',
+      'cos θ = 2 / (2√2) = 1/√2 = √2/2',
+      'θ بين 0° و 180°، إذن θ = 45°',
+    ],
+    en: [
+      'cos θ = (u · v) / (|u| |v|)',
+      'u · v = 1 × 2 + 1 × 0 = 2, |u| = √2 and |v| = 2',
+      'cos θ = 2 / (2√2) = 1/√2 = √2/2',
+      'θ is between 0° and 180°, so θ = 45°',
+    ],
+  },
+  'dp-h1': {
+    ar: [
+      'cos θ = (u · v) / (|u| |v|)',
+      'u · v = 2 × (−1) + 0 × √3 = −2، و |u| = 2، و |v| = √(1 + 3) = 2',
+      'cos θ = −2 / 4 = −1/2، وهو سالب فالزاوية منفرجة',
+      'θ بين 0° و 180°، إذن θ = 120°',
+    ],
+    en: [
+      'cos θ = (u · v) / (|u| |v|)',
+      'u · v = 2 × (−1) + 0 × √3 = −2, |u| = 2 and |v| = √(1 + 3) = 2',
+      'cos θ = −2 / 4 = −1/2, which is negative, so the angle is obtuse',
+      'θ is between 0° and 180°, so θ = 120°',
+    ],
+  },
+  'dp-h2': {
+    ar: [
+      'الزاوية A بين المتجهين AB⃗ و AC⃗',
+      'AB⃗ = ⟨4 − 1, 2 − 1⟩ = ⟨3, 1⟩، و AC⃗ = ⟨0 − 1, 4 − 1⟩ = ⟨−1, 3⟩',
+      'AB⃗ · AC⃗ = 3 × (−1) + 1 × 3 = −3 + 3 = 0، فالمتجهان متعامدان والزاوية A قائمة',
+      'إذن نعم، AB⃗ · AC⃗ = 0',
+    ],
+    en: [
+      'The angle at A is between AB and AC',
+      'AB = ⟨4 − 1, 2 − 1⟩ = ⟨3, 1⟩, and AC = ⟨0 − 1, 4 − 1⟩ = ⟨−1, 3⟩',
+      'AB · AC = 3 × (−1) + 1 × 3 = −3 + 3 = 0, so they are perpendicular and the angle at A is right',
+      'So yes, AB · AC = 0',
+    ],
+  },
+  'dp-w1': {
+    ar: [
+      'W = F · d = ⟨10, 5⟩ · ⟨6, 0⟩',
+      'W = 10 × 6 + 5 × 0 = 60 + 0',
+      'المركبة الرأسية للقوة لا تبذل شغلًا لأن الإزاحة أفقية، إذن الشغل = 60 جول',
+    ],
+    en: [
+      'W = F · d = ⟨10, 5⟩ · ⟨6, 0⟩',
+      'W = 10 × 6 + 5 × 0 = 60 + 0',
+      'The vertical part of the force does no work because the displacement is horizontal, so the work is 60 J',
+    ],
+  },
   'v-h1': {
     ar: [
       'متجهان غير صفريين متعامدان إذا كان ضربهما القياسي يساوي صفراً',
