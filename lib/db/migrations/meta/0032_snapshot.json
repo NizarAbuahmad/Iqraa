@@ -1,5 +1,5 @@
 {
-  "id": "8f7fc512-887b-495b-b5b5-b6e480622a5b",
+  "id": "3eb4326b-161e-470e-9ac1-37ad7a1f8564",
   "prevId": "21553ebc-3127-4632-9cb6-e9d35b52d1ff",
   "version": "7",
   "dialect": "postgresql",
@@ -3072,12 +3072,6 @@
           "notNull": true,
           "default": 10
         },
-        "target_total_marks": {
-          "name": "target_total_marks",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "assessment_types": {
           "name": "assessment_types",
           "type": "jsonb",
@@ -3146,6 +3140,13 @@
         },
         "show_solutions_to_student": {
           "name": "show_solutions_to_student",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "instant_feedback": {
+          "name": "instant_feedback",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,

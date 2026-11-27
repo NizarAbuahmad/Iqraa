@@ -110,9 +110,9 @@ const samePoly = (a: Map<number, number>, b: Map<number, number>) =>
   [...new Set([...a.keys(), ...b.keys()])].every(k => Math.abs((a.get(k) ?? 0) - (b.get(k) ?? 0)) < 1e-9);
 const deriv = (p: Map<number, number>) => new Map([...p].filter(([e]) => e > 0).map(([e, c]) => [e - 1, c * e] as [number, number]));
 /** «(x ، y)» points; values may be signed. */
-const pts = (s: string) => [...s.matchAll(/\((−?\d+) ، (−?\d+)\)/g)].map(m => [sn(m[1]!), sn(m[2]!)] as [number, number]);
-/** «⟨a ، b⟩» vectors; components may be surds. */
-const vecs = (s: string) => [...s.matchAll(/⟨([^،⟩]+) ، ([^⟩]+)⟩/g)].map(m => [num(m[1]!), num(m[2]!)] as [number, number]);
+const pts = (s: string) => [...s.matchAll(/\((−?\d+), (−?\d+)\)/g)].map(m => [sn(m[1]!), sn(m[2]!)] as [number, number]);
+/** «⟨a, b⟩» vectors; components may be surds. */
+const vecs = (s: string) => [...s.matchAll(/⟨([^,⟩]+), ([^⟩]+)⟩/g)].map(m => [num(m[1]!), num(m[2]!)] as [number, number]);
 /** «y = 2x − 3» → [m, c]. */
 function line(s: string): [number, number] {
   const m = s.match(/^y = (.+)$/);
@@ -268,7 +268,7 @@ function check(id: string, item: ConcreteItem): string {
         close(num(a), (y2 - y1) / (x2 - x1), where);
         return 'tangent slope';
       }
-      const [t1, t2] = p.match(/\[(\d+) ، (\d+)\]/)!.slice(1).map(Number) as [number, number];
+      const [t1, t2] = p.match(/\[(\d+), (\d+)\]/)!.slice(1).map(Number) as [number, number];
       if (p.includes('s(t) =')) {
         const s = poly(p.match(/s\(t\) = (.+?) موقع/)![1]!, 't');
         assert.equal(sn(a), (at(s, t2) - at(s, t1)) / (t2 - t1), where);
@@ -370,7 +370,7 @@ function check(id: string, item: ConcreteItem): string {
         return 'journey';
       }
       if (p.includes('موازيًا')) {
-        const [[k0, c2], [va, vb]] = [[0, sn(p.match(/⟨k ، (−?\d+)⟩/)![1]!)], vecs(p.replace(/⟨k ، −?\d+⟩/, ''))[0]!];
+        const [[k0, c2], [va, vb]] = [[0, sn(p.match(/⟨k, (−?\d+)⟩/)![1]!)], vecs(p.replace(/⟨k, −?\d+⟩/, ''))[0]!];
         void k0;
         assert.equal(sn(a) * vb!, c2 * va!, where);
         return 'parallel';
@@ -402,8 +402,8 @@ function check(id: string, item: ConcreteItem): string {
         return 'from angle';
       }
       if (p.includes('متعامدين')) {
-        const [[ux, uy]] = vecs(p.replace(/⟨k ، −?\d+⟩/, '')) as [[number, number]];
-        const c = sn(p.match(/⟨k ، (−?\d+)⟩/)![1]!);
+        const [[ux, uy]] = vecs(p.replace(/⟨k, −?\d+⟩/, '')) as [[number, number]];
+        const c = sn(p.match(/⟨k, (−?\d+)⟩/)![1]!);
         assert.equal(sn(a) * ux + c * uy, 0, where);
         return 'perpendicular';
       }

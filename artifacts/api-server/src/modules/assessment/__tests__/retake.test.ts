@@ -24,6 +24,16 @@ function input(over: Partial<RetakeInput> = {}): RetakeInput {
 }
 
 describe("retakeDecision", () => {
+  it("refuses a retake on an exam with instant feedback — it would turn right/wrong into the key", () => {
+    // A failed student was just shown which items were wrong; three more tries
+    // at the same paper settle every true/false and most multiple choice by
+    // elimination, and a pass opens the next lesson behind the mastery gate.
+    assert.deepEqual(retakeDecision(input({ instantFeedback: true })), { ok: false, code: "instant_feedback" });
+    assert.deepEqual(retakeDecision(input({ instantFeedback: false })), { ok: true });
+    // A pass is still a pass, not a refusal that hints at a fail.
+    assert.deepEqual(retakeDecision(input({ instantFeedback: true, percent: "90.00" })), { ok: false, code: "already_passed" });
+  });
+
   it("allows a retake after a failed, final, submitted lesson quiz", () => {
     assert.deepEqual(retakeDecision(input()), { ok: true });
   });

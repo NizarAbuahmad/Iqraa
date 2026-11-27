@@ -82,6 +82,8 @@ export interface Evaluation {
   releaseResultsToStudent?: boolean;
   /** Students may open «راجع إجاباتك» (closed exams only). Absent from an older server. */
   showSolutionsToStudent?: boolean;
+  /** «تغذية راجعة فورية»: students see right and wrong as soon as they hand in. Absent from an older server. */
+  instantFeedback?: boolean;
   totalMarks: string;
   createdAt: string;
 }
@@ -390,6 +392,19 @@ export async function setResultsReleased(id: string, released: boolean): Promise
     body: JSON.stringify({ released }),
   });
   const data = await readJson<{ evaluation: Evaluation }>(res, 'Releasing results');
+  return data.evaluation;
+}
+
+/**
+ * «تغذية راجعة فورية» on or off, in any status. Turning it on for a published
+ * or closed exam also releases its results (the server's `instant-feedback` route).
+ */
+export async function setInstantFeedback(id: string, enabled: boolean): Promise<Evaluation> {
+  const res = await apiFetch(`/evaluations/${id}/instant-feedback`, {
+    method: 'POST',
+    body: JSON.stringify({ enabled }),
+  });
+  const data = await readJson<{ evaluation: Evaluation }>(res, 'Instant feedback');
   return data.evaluation;
 }
 
