@@ -22,7 +22,7 @@
 - Extensionless relative imports do not work under `node --test`: use explicit `.ts`.
 - No `sed -i`/`perl -pi` on source; use the Edit or Write tool. `git diff --stat` must show no `Bin N -> M bytes` line; new files must have no NUL bytes.
 - Stage named paths only (never `git add -A` or `.`) and check `git diff --cached --stat` before each commit.
-- Commits end with the trailers `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` and `Claude-Session: https://claude.ai/code/session_01D1TReadGL7F7nC91Wxx8ez`.
+- Commits end with the two attribution trailer lines (`Co-Authored-By` and `Claude-Session`) given in the session's instructions; no model identifier appears anywhere else in a pushed file.
 - The Latin product name is «Iqrra» in copy; repo and package names stay Iqraa.
 - Work on branch `ccr-d9db5f6c-mgwkuo` (draft PR #1416, which already holds the spec). Do not push from a subagent; the controller pushes.
 - With the sandbox's `R2_*` variables set, `r2.test.ts` fails by design: run the curriculum suite with `env -u R2_ACCESS_KEY_ID -u R2_BUCKET -u R2_ENDPOINT -u R2_SECRET_ACCESS_KEY`. Never print or read any `.env` file or environment value.
