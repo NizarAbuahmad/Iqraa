@@ -10,6 +10,48 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Vectors, the vector arrow and the multiplication dot read left to right in Arabic — 2026-11-27
+
+The follow-up the Latin-comma entry below named. A vector `⟨3, 4⟩` was never isolated: `⟨` and `⟩` are not in
+`isolateForeignRuns`'s run class, and its comma cut it in two anyway. Two neighbours had the same problem. The
+combining arrow of `AB⃗` (U+20D7) was outside the run too, so `AB⃗ = ⟨3, 4⟩` split after `AB`. And the
+multiplication dot was outside it, so `⟨a, b⟩ · ⟨c, d⟩ = ac + bd` fell into five pieces, as did `q = m·c·ΔT`,
+`J/g·°C` and `2^x · 2^2`.
+
+**Renderer** (`services/mathRender.ts`):
+- **Vectors.** `VECTOR_RE` finds `⟨…⟩`, and the books' `〈…〉` (U+3008/3009, used in `math_formulas.json` and the
+  text layers). Components may be expressions: `⟨4 − 1, 6 − 2⟩`, `⟨1 + 3, 2 + (−1)⟩`. Brackets and commas become
+  stand-ins, as for an interval. Angle brackets are never prose, so either comma counts, which covers papers saved
+  with `⟨3 ، 4⟩`.
+- **The arrow** U+20D7 joins the run class.
+- **The dot** `·` / `⋅` joins a run only when it is maths. It joins when unspaced between run characters (`m·c`,
+  `2bc·cos A`), or spaced with a number, superscript, bracket or vector on one side (`4 · 2^x`, `⟩ · ⟨`). A first
+  version joined any interior dot, and the corpus check caught it reordering UI lists: «(PDF · Word · PowerPoint ·
+  صور · نص)» would have read «PowerPoint · Word · PDF» to an Arabic reader. Two words either side of « · » are
+  left alone, and a test pins that line.
+
+**Bank** (`lib/math-practice`): the `vec` helper and the inline `⟨k, …⟩` templates in `grade10b.ts`, 15 items in
+`MATH_BANK` and 9 worked-solution lines in `steps-math-b.ts` now write `⟨3, 4⟩`. `latinCommaPoints.test.ts` now
+also fails on a vector holding «،», and `grade10LessonsB.test.ts`'s vector parsers read the Latin form.
+
+**Verified:**
+- 10 new cases in `mathRender.test.ts`. The mobile suite (9,673, 0 failures), `@workspace/math-practice` (1,491)
+  and its typecheck, the api-server build and tests (3,089), and the root typecheck all pass.
+- Old against new over every Arabic string in the repo (95,856 lines). Every changed line was read: 42 vector, 47
+  dot and 4 arrow lines, all maths, and no word list after the fix above.
+- Through the real renderer, 13,773 vectors from the bank's items, worked solutions and generated questions all sit
+  inside an isolate.
+- **Browser, Chromium at 390px, Arabic.** A scratch copy of the e2e journey (not committed) added a teacher-written
+  question with options `⟨3, 4⟩`, `⟨3 ، 4⟩`, `AB⃗ = ⟨4 − 1, 6 − 2⟩` and `⟨1, 2⟩ · ⟨3, 4⟩ = 11`. On `/take/CODE`
+  each option's first digit is left of its last. With the old text three of the four were reversed; the `AB⃗` line
+  starts with Latin and already passed that crude check. The screenshot shows all four left to right, with the
+  arrow over `AB`.
+
+**Not covered:**
+- `|v|` and `|a||b|` magnitude bars: `|` is not in the run class, as with set-builder braces.
+- Native Android and iOS.
+- Saved papers keep whatever comma they were written with; both now display left to right.
+
 ## The question bank writes points with the Latin comma — 2026-11-27
 
 The follow-up the intervals entry below named. The bank (`lib/math-practice`) wrote every point as `(2 ، −1)`. The

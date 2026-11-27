@@ -21,6 +21,8 @@ import { MATH_C_STEPS } from '../steps-math-c.ts';
 
 const ATOM = String.raw`[+−-]? *[A-Za-z0-9.^√/′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉°∞α-ωΑ-Ω]+`;
 const AR_COMMA_TUPLE = new RegExp(String.raw`[[(\]] *${ATOM} *، *${ATOM} *[\])[]`, 'g');
+// A vector's components may be expressions («⟨4 − 1, 6 − 2⟩»), so any «⟨…⟩» holding «،».
+const AR_COMMA_VECTOR = /[⟨〈][^⟩〉]*،[^⟩〉]*[⟩〉]/g;
 
 function strings(v: unknown, out: string[] = []): string[] {
   if (typeof v === 'string') out.push(v);
@@ -30,10 +32,14 @@ function strings(v: unknown, out: string[] = []): string[] {
 }
 
 function offenders(where: string, texts: string[], found: string[]): void {
-  for (const s of texts) for (const m of s.matchAll(AR_COMMA_TUPLE)) if (found.length < 12) found.push(`${where}: ${m[0]} in «${s.slice(0, 90)}»`);
+  for (const s of texts) {
+    for (const re of [AR_COMMA_TUPLE, AR_COMMA_VECTOR]) {
+      for (const m of s.matchAll(re)) if (found.length < 12) found.push(`${where}: ${m[0]} in «${s.slice(0, 90)}»`);
+    }
+  }
 }
 
-describe('points and intervals print with the Latin comma', () => {
+describe('points, intervals and vectors print with the Latin comma', () => {
   it('in every generated item, Arabic and English', () => {
     const found: string[] = [];
     const diffs: DiffTier[] = ['easy', 'medium', 'hard'];
