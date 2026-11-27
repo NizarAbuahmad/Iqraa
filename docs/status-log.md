@@ -10,6 +10,36 @@ still resolves: search the title in this file.
 header — one section per PR: what changed, what was verified, what was **not**.
 Edit [`STATUS.md`](../STATUS.md) only when a line there stops being true.
 
+## Set-builder notation and conditional probability read left to right in Arabic — 2026-11-27
+
+The follow-up the bars entry below named. A single `|` is a separator and never joins a run on its own. But in
+set-builder notation and in conditional probability it is maths, and both split there. `{x | x ≤ 3}` came out
+`⁦{x⁩ | ⁦x ≤ 3}⁩`, and `P(A | B)` came out in three pieces, which an Arabic line reordered. In Chromium, «مجموعة الحل هي
+{x | x ≤ 6}…», «المجال {y | y ≥ 0}…», «فما قيمة P(A | B)…» and «P(B|A) = 0.4…» were all reversed.
+
+**Fix** (`services/mathRender.ts`, renderer only). Two shapes that are never prose become stand-ins, after the
+pair and interval passes and before the bar pairing:
+- **`SET_BUILDER_RE`:** a `{…|…}` whose content is maths, with no Arabic letter apart from «،». Its separator and
+  both commas become stand-ins, so `{x | x = 6k, k ∈ W, 0 < x < 5}` and `{x | x ∈ Z، x < 4}` are whole. The content
+  class leaves out the braces, so a match cannot run from one set into the next.
+- **`COND_PROB_RE`:** `(` + an event letter (optionally `′`, `'` or `ᶜ`) + `|` + an event letter + `)`. That covers
+  `P(A|B)`, `P(B | A)` and `P(A′|B)`.
+
+**Verified:**
+- 6 new cases in `mathRender.test.ts`, including braces around Arabic and a lone separator bar left alone, and the
+  earlier `P(B|A) + |x|` case now whole. The mobile suite (9,689, 0 failures) and root typecheck pass.
+- Old against new over 5,047 lines of the repo's text that hold a bar or braces: 263 change, all set-builder or
+  conditional probability.
+- **Chromium, inside Arabic sentences:** all five probes read left to right with the fix. Four were reversed with the
+  old text. The fifth, `{x | x = 6k, k ∈ W, 0 < x < 5}`, passed the crude first-versus-last check before too, but as
+  five isolates laid out right to left its middle was scrambled.
+
+**Not covered:**
+- A set in roster form with Latin commas, `C = {11,13,15,…}`, still splits at its commas.
+- A set-builder that holds bars, `{x | |x| < 3}`.
+- Native Android and iOS. No take-screen run for this change; the Chromium check above renders the same strings
+  the screen does.
+
 ## Magnitude and absolute-value bars read left to right in Arabic — 2026-11-27
 
 The follow-up the vectors entry below named. `|` was not in `isolateForeignRuns`'s run class, so a magnitude or
@@ -252,6 +282,68 @@ renders the same helper in the same kind of `<Text>`), and native Android/iOS, w
 other isolate here does. **Not covered:** intervals `[1, 3]` / `]1, 3[` — square brackets are not in the run
 class, so an interval still reads reversed.
 
+
+
+
+## Whiteboard: share a board by link (2026-11-25)
+
+A saved board can now be shared the way a paper is: the link icon in the whiteboard's toolbar
+makes a `/m/CODE` link, anyone opens it without an account, and the teacher stops it from
+«موادي» like any other.
+
+- **Server.** The share route no longer refuses `type: "board"` (`routes/workspace.ts`). The public
+  read serves a board through `sharedPublicContent` (`lib/materialShare.ts`) instead of
+  `studentCopy`: the student-copy rule blanks every `answer` and drops every `solution`, which
+  would empty a board whose solved problem is what the class was shown. The owner's `formState`
+  still never leaves, and a teacher's «save a copy» makes a new `board` row without the owner's notes.
+- **App.** `BoardViewer` (`components/classroom/BoardViewer.tsx`) draws a board read only from the
+  whiteboard's own pieces (background, `SolutionBlock` fully revealed, `PenCanvas` inactive,
+  `TextLayer` mode none), validated with `parseBoard`, one page at a time. `workspace/view.tsx` renders it
+  for a shared board, exports it with `buildBoardHTML`, and a teacher's saved copy reopens in the
+  whiteboard. The whiteboard's link icon shares the SAVED board: an unsaved or edited one is told to
+  save first (the link shows the last saved version), and a board with no title yet opens the save dialog.
+- **Verified.** api-server: `sharedMaterial.db.test.ts` (board shared whole for visitor and teacher,
+  no `formState`, copy is a board, stop = 404 and a re-share is a new code, only the owner) and
+  `materialShare.test.ts` against a real database; mobile `boardShare.test.ts` (wiring read from
+  source). In Chromium: a teacher placed text, drew, added a page, saved, shared; a signed-out
+  visitor at phone width saw the text and stroke and paged to page 2; a teacher's «Save to my files»
+  opened the copy in the whiteboard.
+- **Not verified / limits.** A board's PDF from the shared page was not opened. A board edited and
+  saved after sharing changes what the existing link shows (same as a paper). No telemetry event for
+  sharing a board (the pinned list in `classUsage.ts` is unchanged).
+
+## A placed text can be moved, recoloured and resized — 2026-11-25
+
+The limit the text-tool entry named («cannot be moved, resized or recoloured after it is placed»).
+
+- **Move.** With the text tool on, drag a text: it follows the pointer (a little faded) and is dropped where it is let
+  go, as ONE undo step (`TextLayer.tsx`, `TextBox`). A touch that moves no more than 8 px is a tap, which still opens the
+  dialog. The new spot is clamped onto the page and rounded (`moveText`); an Arabic text moves by its right edge, as it
+  was placed. In erase mode a tap still removes a text; with the pen on the layer still lets every touch through.
+- **Colour and size** are chosen in the text dialog, for a new text and a placed one alike (seven colours, three sizes),
+  starting at the text's own or, for a new one, the toolbar's, and changing nothing outside that text.
+  `updateText(state, index, { text?, color?, size? })` applies any of them as one undo step; `editText` is now a
+  wrapper. A colour that is not plain hex is ignored (a bad one would make the board unsavable), a size is clamped into
+  the 8–240 range the file accepts, the direction is kept when only colour or size change, and emptying the words
+  removes the text. **The file format does not change**: a text already had `x`, `y`, `size` and `color`.
+- **A flaw found while testing it:** after editing a text, the dialog for a NEW text showed the old words for a frame,
+  because the dialog reset its words in an effect after it first painted. It now takes a fresh `key` for every text it
+  opens for (a `seq` on the draft in `whiteboard.tsx`) and has no effect at all; a test pins both.
+- No «ما الجديد» wording beyond the new entry `whiteboard-text-edit`. The dialog uses the theme's scales.
+
+Verified: `boardText.test.ts` (move: clamped, rounded, one undo step, no-ops; update: colour, size, words, direction
+kept, bad colour refused, size clamped, empty removes, only the asked-for text changes; the screen wiring read from
+source), the design-scale ratchet; `pnpm run typecheck`. In Chromium against a local API and Postgres, on desktop:
+dragging an English text by (+200, +120) moved it exactly that far with no dialog opening and it stayed after the drop;
+dragging an Arabic text left by 300 moved its right edge by 300; undo and redo of a move; a tap with no movement opening
+the dialog with the words; recolour to blue and size to large in one save (box 107×73 → 160×109), and ONE undo
+restoring both; the stored board had the new `x`, `y`, `size` and `color`; the new-text dialog opening empty after
+an edit (the flaw above, before and after).
+
+Not verified: dragging by touch on a real phone or Android (the same `PanResponder` the pen uses, but not tried), and
+a drag that starts on a text near the page edge. Known limits: a text can no longer be edited from the keyboard alone
+(it was a button; it is now a drag handle, and the tool is pointer-driven as a whole); there is no resize handle on the
+page, only the three sizes in the dialog; a text cannot be dragged off the page, only clamped at its edge.
 
 ## Admin users filters: confirmed on Android — 2026-11-24
 
