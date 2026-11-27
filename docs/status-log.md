@@ -205,6 +205,36 @@ condition, and the right-angle «نعم» against a zero dot product. Moved fixt
 - Only the offline generator changed. The live path (`worksheetPromptAr/En`) is the model's, and production runs live
   AI, so a teacher sees this paper only when live generation is off or fails.
 
+## Set-builder notation and conditional probability read left to right in Arabic — 2026-11-27
+
+The follow-up the bars entry below named. A single `|` is a separator and never joins a run on its own. But in
+set-builder notation and in conditional probability it is maths, and both split there. `{x | x ≤ 3}` came out
+`⁦{x⁩ | ⁦x ≤ 3}⁩`, and `P(A | B)` came out in three pieces, which an Arabic line reordered. In Chromium, «مجموعة الحل هي
+{x | x ≤ 6}…», «المجال {y | y ≥ 0}…», «فما قيمة P(A | B)…» and «P(B|A) = 0.4…» were all reversed.
+
+**Fix** (`services/mathRender.ts`, renderer only). Two shapes that are never prose become stand-ins, after the
+pair and interval passes and before the bar pairing:
+- **`SET_BUILDER_RE`:** a `{…|…}` whose content is maths, with no Arabic letter apart from «،». Its separator and
+  both commas become stand-ins, so `{x | x = 6k, k ∈ W, 0 < x < 5}` and `{x | x ∈ Z، x < 4}` are whole. The content
+  class leaves out the braces, so a match cannot run from one set into the next.
+- **`COND_PROB_RE`:** `(` + an event letter (optionally `′`, `'` or `ᶜ`) + `|` + an event letter + `)`. That covers
+  `P(A|B)`, `P(B | A)` and `P(A′|B)`.
+
+**Verified:**
+- 6 new cases in `mathRender.test.ts`, including braces around Arabic and a lone separator bar left alone, and the
+  earlier `P(B|A) + |x|` case now whole. The mobile suite (9,689, 0 failures) and root typecheck pass.
+- Old against new over 5,047 lines of the repo's text that hold a bar or braces: 263 change, all set-builder or
+  conditional probability.
+- **Chromium, inside Arabic sentences:** all five probes read left to right with the fix. Four were reversed with the
+  old text. The fifth, `{x | x = 6k, k ∈ W, 0 < x < 5}`, passed the crude first-versus-last check before too, but as
+  five isolates laid out right to left its middle was scrambled.
+
+**Not covered:**
+- A set in roster form with Latin commas, `C = {11,13,15,…}`, still splits at its commas.
+- A set-builder that holds bars, `{x | |x| < 3}`.
+- Native Android and iOS. No take-screen run for this change; the Chromium check above renders the same strings
+  the screen does.
+
 ## Magnitude and absolute-value bars read left to right in Arabic — 2026-11-27
 
 The follow-up the vectors entry below named. `|` was not in `isolateForeignRuns`'s run class, so a magnitude or
