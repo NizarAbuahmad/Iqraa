@@ -46,7 +46,7 @@ def main():
                          f"pad={WIN['w']}:{WIN['h']}:(ow-iw)/2:(oh-ih)/2:color=0xF5F7FA,setsar=1[s{k}]")
             labels.append(f"[s{k}]")
         fc = ';'.join(parts) + f";{''.join(labels)}concat=n={len(labels)}:v=1:a=0[scr]"
-        fc += f";[1:v][scr]overlay={WIN['x']}:{WIN['y']}:shortest=1[a0];[a0][2:v]overlay=0:0[a1]"
+        fc += f";[1:v][scr]overlay={WIN['x']}:{WIN['y']}:shortest=1[a0];[a0][2:v]overlay=0:0:shortest=1[a1]"
         inputs = ['-i', src, '-loop', '1', '-i', os.path.join(b, 'bg.png'), '-loop', '1', '-i', os.path.join(b, 'frame.png')]
         last = 'a1'
         for k, c in enumerate(spec.get('captions', [])):
@@ -54,11 +54,11 @@ def main():
             nxt = f'c{k}'
             fc += (f";[{3 + k}:v]format=rgba,fade=in:st={c['t0']}:d=0.25:alpha=1,"
                    f"fade=out:st={max(c['t0'], c['t1'] - 0.25)}:d=0.25:alpha=1[cap{k}]"
-                   f";[{last}][cap{k}]overlay=0:0:enable='between(t,{c['t0']},{c['t1']})'[{nxt}]")
+                   f";[{last}][cap{k}]overlay=0:0:shortest=1:enable='between(t,{c['t0']},{c['t1']})'[{nxt}]")
             last = nxt
         fc += f";[{last}]format=yuv420p[out]"
         run(['ffmpeg', '-y', '-v', 'error', *inputs, '-filter_complex', fc, '-map', '[out]',
-             '-r', str(FPS), '-c:v', 'libx264', '-crf', '18', '-preset', 'medium', '-pix_fmt', 'yuv420p', body])
+             '-r', str(FPS), '-c:v', 'libx264', '-crf', '18', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', body])
     else:
         cards = spec['cards']
         inputs, fc, off = [], '', 0.0
