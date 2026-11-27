@@ -956,3 +956,33 @@ describe('buildDeckSlidesHTML — the structure layouts', () => {
     assert.match(html, /<span class="deck-emoji"><svg class="deck-icon"/);
   });
 });
+
+describe('buildDeckSlidesHTML — answer options keep their reading order', () => {
+  // In a right-to-left page the bidi algorithm reversed a bare coordinate
+  // pair: «(2, 0)» printed «(0 ,2)», a different point from the answer key.
+  const options = (opts: string[]) => {
+    const html = markup(buildDeckSlidesHTML(deck([titleSlide, {
+      slideNumber: 2, type: 'question', title: 'سؤال سريع', content: 'ما رأس القطع المكافئ؟',
+      options: opts, correctIndex: 0, durationSeconds: 45,
+    }]), true));
+    return [...html.matchAll(/<span class="deck-option-text">(.*?)<\/span>\s*(?:<span class="deck-option-tick|<\/div>)/gs)].map(m => m[1]!);
+  };
+
+  it('lays an option with no Arabic letter out left-to-right, its text intact', () => {
+    const got = options(['(0, -4)', '(2, 0)', '-2', 'x² − 4']);
+    assert.equal(got.length, 4);
+    assert.equal(got[0], '<span dir="ltr">(0, -4)</span>');
+    assert.equal(got[1], '<span dir="ltr">(2, 0)</span>');
+    assert.equal(got[2], '<span dir="ltr">-2</span>');
+    assert.match(got[3]!, /^<span dir="ltr">/);
+  });
+
+  it('leaves an Arabic option in the page direction, with its maths isolated', () => {
+    const [word, mixed] = options(['لا يوجد رأس', 'النقطة (2, 0)']);
+    assert.doesNotMatch(word!, /dir="ltr"/);
+    assert.equal(word, 'لا يوجد رأس');
+    assert.doesNotMatch(mixed!, /dir="ltr"/);
+    assert.notEqual(mixed, 'النقطة (2, 0)', 'the pair inside Arabic goes through isolateForeignRuns');
+    assert.equal(stripIsolates(mixed!).replace(/[‪-‮]/g, ''), 'النقطة (2, 0)');
+  });
+});

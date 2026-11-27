@@ -666,6 +666,21 @@ function protectDot(m: string): string {
   return [...m].map(c => DOT_STAND_IN[c] ?? c).join('');
 }
 
+/**
+ * Whether a line holds an Arabic LETTER — the test for "this line reads
+ * right-to-left". Arabic-Indic digits and «؟» are Script=Arabic too, but they
+ * do not make a line Arabic prose: «(٠، ٤)» or «٢» alone is a value.
+ *
+ * The exports use it to lay a letter-free line out left-to-right. Inside a
+ * right-to-left paragraph the bidi algorithm reverses a coordinate pair —
+ * «(2, 0)» printed as «(0 ,2)», a different point from the answer key — and
+ * puts a minus on the wrong side of a number («-2» as «2-»).
+ */
+const ARABIC_LETTER_RE = /(?=\p{L})\p{Script=Arabic}/u;
+export function hasArabicLetter(line: string): boolean {
+  return ARABIC_LETTER_RE.test(line ?? '');
+}
+
 const FOREIGN_RUN_RE = new RegExp(
   `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW}${FOREIGN_SET_OP}${DOT_CHARS} ]*[${FOREIGN_END}])?`,
   'g',
