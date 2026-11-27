@@ -693,6 +693,43 @@ describe('isolateForeignRuns — magnitude and absolute-value bars', () => {
   });
 });
 
+// A single «|» is a separator, so it never joins a run on its own — but in
+// set-builder notation and conditional probability it is maths, and both split
+// there: «{x | x ≤ 3}» came out «{x⁩ | ⁦x ≤ 3}» and «P(A | B)» in three pieces,
+// which an Arabic line reordered. Braces and «P(A|B)» are never prose, so these
+// two shapes, and the commas inside a set, become stand-ins (found 2026-11-27).
+describe('isolateForeignRuns — set-builder notation and conditional probability', () => {
+  it('keeps a set in set-builder form whole', () => {
+    assert.equal(isolateForeignRuns('المجال {y | y ≥ 0}'), 'المجال ⁦{y | y ≥ 0}⁩');
+    assert.equal(isolateForeignRuns('مجموعة الحل {x|x ≥ 20, x∈W}'), 'مجموعة الحل ⁦{x|x ≥ 20, x∈W}⁩');
+    assert.equal(isolateForeignRuns('{x | x = 6k, k ∈ W, 0 < x < 5}'), '⁦{x | x = 6k, k ∈ W, 0 < x < 5}⁩');
+  });
+
+  it('keeps a set with an Arabic comma inside whole, comma kept', () => {
+    assert.equal(isolateForeignRuns('اكتب {x | x ∈ Z، x < 4}'), 'اكتب ⁦{x | x ∈ Z، x < 4}⁩');
+  });
+
+  it('keeps conditional probability whole, spaced or not', () => {
+    assert.equal(isolateForeignRuns('فما P(A|B)؟'), 'فما ⁦P(A|B)⁩؟');
+    assert.equal(isolateForeignRuns('الحوادث P(A | B) = 0.5'), 'الحوادث ⁦P(A | B) = 0.5⁩');
+    assert.equal(isolateForeignRuns('P(B|A) = P(A ∩ B) / P(A)'), '⁦P(B|A) = P(A ∩ B) / P(A)⁩');
+    assert.equal(isolateForeignRuns('احسب P(A′|B)'), 'احسب ⁦P(A′|B)⁩');
+  });
+
+  it('keeps a conditional probability beside a magnitude whole', () => {
+    assert.equal(isolateForeignRuns('P(B|A) + |x|'), '⁦P(B|A) + |x|⁩');
+  });
+
+  it('leaves braces around Arabic, and a lone separator bar, alone', () => {
+    for (const line of ['{الاسم | الصف}', 'الصف العاشر | الرياضيات']) assert.equal(isolateForeignRuns(line), line);
+  });
+
+  it('never drops or reorders characters', () => {
+    const original = 'المجال {x | x ∈ Z، x < 4} و P(A | B) = 0.5.';
+    assert.equal(isolateForeignRuns(original).replace(/[⁦⁩]/g, ''), original);
+  });
+});
+
 // The bank stores maths canonically (`5^{10}`, `3^6 = 729`) and its promptAr
 // carries the display form (`5⁷ ÷ 5³`). A printed worksheet mixed the two:
 // stems in real superscripts, options and the whole answer key in raw caret
