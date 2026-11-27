@@ -462,12 +462,61 @@ const BLANK_RE = /؟(?=[ ]*[=+\-−×÷])|(?<=[=+\-−×÷][ ]*)؟/g;
 // maths atoms, or between two such tuples, is swapped for this stand-in, which
 // the run class accepts and which marks the run as worth isolating; it is swapped
 // back before the line is returned. «الأعداد 1, 2, 3» has no brackets and is
-// untouched, and an Arabic-comma pair «(1، 3)» stays in the Arabic flow as before.
+// untouched.
+//
+// A pair written with the ARABIC comma is left alone: in prose «،» separates
+// numbers an Arabic reader reads right to left — a Quran citation «(79 ،78)»,
+// an outcome code «(2 ،3)», «المواد المرقمة (3،2،1)» — and forcing those left
+// to right reverses them. An interval is different (below).
 const PAIR_COMMA = String.fromCodePoint(0xe001);
-const PAIR_ATOM = `[+−-]?[A-Za-z0-9.^√/′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉°${FOREIGN_GREEK}]+`;
+const PAIR_COMMA_AR = String.fromCodePoint(0xe006);
+// An atom may be infinity, and the books space a sign off it: «( - ∞, 3]».
+const PAIR_ATOM = `[+−-]? *[A-Za-z0-9.^√/′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉°∞${FOREIGN_GREEK}]+`;
 const PAIR_TUPLE = `[(] *${PAIR_ATOM} *(?:, *${PAIR_ATOM} *)+[)]`;
 const PAIR_RE = new RegExp(`${PAIR_TUPLE}(?: *, *${PAIR_TUPLE})*`, 'g');
-const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}${PAIR_COMMA}`;
+// An interval may use either comma: the question banks write «(−∞ ، 5]» and
+// «[−3 ، ∞)», which displayed as right-to-left notation beside left-to-right
+// equations and options (product decision 2026-11-26: intervals read left to
+// right, like the books). A square bracket or «∞» is never prose, so the
+// Arabic comma is safe there; it gets a stand-in of its own and comes back as «،».
+const COMMA = '[,،]';
+// An interval — «[1, 3]», «[5, ∞)», «(-∞, -2]», «]1, 3[» — is a pair with at
+// least one square bracket. «[» and «]» are not in the run class (a chat's
+// markdown link «[نص](…)» passes through here), and a half-open interval has a
+// «)» with no partner, which `isolateRun` would cut out of it. So inside an
+// interval all four bracket characters become stand-ins too, which the run
+// class accepts and the pairing does not see, and the comma becomes
+// `PAIR_COMMA`. All are swapped back before the line is returned. A run of two
+// parentheses only is left to `PAIR_RE`.
+const INTERVAL_RE = new RegExp(`[[(\\]] *${PAIR_ATOM} *${COMMA} *${PAIR_ATOM} *[\\])[]`, 'g');
+const INTERVAL_STAND_IN: Record<string, string> = {
+  '[': String.fromCodePoint(0xe002),
+  ']': String.fromCodePoint(0xe003),
+  '(': String.fromCodePoint(0xe004),
+  ')': String.fromCodePoint(0xe005),
+};
+const INTERVAL_CHARS = Object.values(INTERVAL_STAND_IN).join('');
+const COMMA_STAND_IN: Record<string, string> = { ',': PAIR_COMMA, '،': PAIR_COMMA_AR };
+function protectPair(m: string): string {
+  return [...m].map(c => COMMA_STAND_IN[c] ?? c).join('');
+}
+function protectInterval(m: string): string {
+  // «(−∞ ، 5)» has no square bracket but is no less an interval.
+  if (!m.includes('[') && !m.includes(']') && !m.includes('∞')) return m;
+  return [...m].map(c => COMMA_STAND_IN[c] ?? INTERVAL_STAND_IN[c] ?? c).join('');
+}
+/** The run holds a tuple's or interval's comma. */
+function hasPairComma(run: string): boolean {
+  return run.includes(PAIR_COMMA) || run.includes(PAIR_COMMA_AR);
+}
+function restoreStandIns(s: string): string {
+  let out = s.replaceAll(BLANK, '؟');
+  for (const map of [COMMA_STAND_IN, INTERVAL_STAND_IN]) {
+    for (const [real, standIn] of Object.entries(map)) out = out.replaceAll(standIn, real);
+  }
+  return out;
+}
+const FOREIGN_CHAR = `A-Za-z0-9(){}=+\\-\\u2212./^√×÷∘′'¹²³⁰⁴-⁹⁺⁻ⁿ₀-₉<>≤≥≠≈±∞°${FOREIGN_GREEK}${BLANK}${PAIR_COMMA}${PAIR_COMMA_AR}${INTERVAL_CHARS}`;
 const FOREIGN_END = FOREIGN_CHAR.replace('.', '');
 
 // Reaction and implication arrows. They may sit INSIDE a run but never at its
@@ -479,9 +528,13 @@ const FOREIGN_END = FOREIGN_CHAR.replace('.', '');
 // edge of a Latin word and Arabic prose, and pulling it into the isolate would
 // change layout that was already right.
 const FOREIGN_ARROW = '→←↔⇒⇐⇔⇌⇄⟶⟵⟷';
+// Set symbols sit inside a run for the same reason and on the same terms:
+// «(-∞, 0) ∪ [5, ∞)» and «x ∈ [1, 3]» split at the symbol laid their two halves
+// out right to left. Never at the edge, so «الرمز ∪ يعني الاتحاد» is untouched.
+const FOREIGN_SET_OP = '∪∩∈∉';
 
 const FOREIGN_RUN_RE = new RegExp(
-  `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW} ]*[${FOREIGN_END}])?`,
+  `[${FOREIGN_CHAR}](?:[${FOREIGN_CHAR}${FOREIGN_ARROW}${FOREIGN_SET_OP} ]*[${FOREIGN_END}])?`,
   'g',
 );
 
@@ -502,18 +555,20 @@ const HAS_OPERATOR = /[=+\-−/^√×÷∘<>≤≥≠≈±∞]/;
 
 /** An equation's shape: an operator, or the comma of a coordinate pair. */
 function isEquationLike(run: string): boolean {
-  return HAS_OPERATOR.test(run) || run.includes(PAIR_COMMA);
+  return HAS_OPERATOR.test(run) || hasPairComma(run);
 }
 
 function worthIsolating(run: string): boolean {
-  if (HAS_LATIN.test(run)) return true;
+  // A tuple or interval always is — even «(-∞, ∞)», which has no digit.
+  if (HAS_LATIN.test(run) || hasPairComma(run)) return true;
   return HAS_DIGIT.test(run) && isEquationLike(run);
 }
 
 export function isolateForeignRuns(line: string): string {
-  return (line ?? '')
+  const out = (line ?? '')
     .replace(BLANK_RE, BLANK)
-    .replace(PAIR_RE, m => m.replaceAll(',', PAIR_COMMA))
+    .replace(INTERVAL_RE, protectInterval)
+    .replace(PAIR_RE, protectPair)
     .replace(FOREIGN_RUN_RE, m => {
     // A run with the bank's blank in it is overridden left-to-right, not just
     // isolated: «؟» is an Arabic letter to the bidi algorithm, and inside a bare
@@ -534,9 +589,8 @@ export function isolateForeignRuns(line: string): string {
     const [, body, dots] = /^(.*?)(\s*\.*)$/su.exec(m)!;
     if (dots && isEquationLike(body!)) return worthIsolating(body!) ? isolateRun(body!) + dots : m;
     return worthIsolating(m) ? isolateRun(m) : m;
-  })
-    .replaceAll(BLANK, '؟')
-    .replaceAll(PAIR_COMMA, ',');
+  });
+  return restoreStandIns(out);
 }
 
 /**
