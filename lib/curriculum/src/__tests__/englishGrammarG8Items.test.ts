@@ -14,6 +14,7 @@ import { GRAMMAR_ONLY_LESSONS, hubLesson } from '../englishHub.ts';
 const dataFile = () => JSON.parse(readFileSync(new URL('../data/iqra_curriculum_g8_eng_sem1.json', import.meta.url), 'utf8'));
 const L = (s: string) => `kbl-g8-eng-s1-nccd-${s}`;
 const FIRST = ['u1_l1', 'u1_l3', 'u2_l1', 'u2_l3', 'u3_l1'].map(L);
+const REST = ['u3_l4', 'u4_l1', 'u4_l3', 'u5_l1', 'u5_l4'].map(L);
 const sentencesOf = (id: string) => unitSentences(grammarUnit(id)!);
 const ids = () => G8_ITEM_LESSONS.map(l => l.lessonId);
 
@@ -24,11 +25,16 @@ const SIZES: Record<string, Record<string, [number, 'form' | 'meaning']>> = {
   [L('u2_l1')]: { 'there-is-are': [14, 'form'], 'some-any': [14, 'form'], 'questions-negatives': [12, 'form'] },
   [L('u2_l3')]: { 'can-form': [14, 'form'], 'can-questions': [12, 'form'], 'can-vs-cant': [14, 'meaning'] },
   [L('u3_l1')]: { 'plural-nouns': [12, 'form'], uncountable: [14, 'form'], 'a-an-some': [14, 'form'] },
+  [L('u3_l4')]: { 'much-many': [14, 'form'], 'a-few-a-little': [14, 'form'], 'how-much-how-many': [12, 'form'] },
+  [L('u4_l1')]: { 'be-v-ing': [14, 'form'], 'spelling-ing': [12, 'form'], 'questions-negatives': [14, 'form'] },
+  [L('u4_l3')]: { 'habit-markers': [12, 'meaning'], 'now-markers': [12, 'meaning'], 'stative-verbs': [8, 'form'], questions: [8, 'form'] },
+  [L('u5_l1')]: { 'regular-ed': [12, 'form'], irregular: [14, 'form'], 'past-time-markers': [14, 'meaning'] },
+  [L('u5_l4')]: { 'did-questions': [14, 'form'], 'didnt-negatives': [14, 'form'], 'wh-did': [12, 'form'] },
 };
 
 describe('Grade 8 authored lessons', () => {
   it('are the hub lessons in order, unsigned and offered to nobody', () => {
-    assert.deepEqual(ids(), FIRST);
+    assert.deepEqual(ids(), [...FIRST, ...REST]);
     for (const id of ids()) {
       assert.ok(hubLesson(id), id);
       assert.equal(hubLesson(id)!.grade, 8, id);
@@ -37,10 +43,11 @@ describe('Grade 8 authored lessons', () => {
     }
   });
 
-  it('are, for now, lessons with words and none of them grammar-only', () => {
+  it('make only the Past Simple questions lesson grammar-only, under the word floor, and the rest lessons with words', () => {
+    const grammarOnly = (id: string) => id === L('u5_l4');
     for (const id of ids()) {
-      assert.equal(!!hubLesson(id)!.grammarOnly, false, id);
-      assert.equal(GRAMMAR_ONLY_LESSONS.includes(id), false, id);
+      assert.equal(!!hubLesson(id)!.grammarOnly, grammarOnly(id), id);
+      assert.equal(GRAMMAR_ONLY_LESSONS.includes(id), grammarOnly(id), id);
     }
   });
 
@@ -52,12 +59,12 @@ describe('Grade 8 authored lessons', () => {
     }
   });
 
-  it('are 5 lessons and 200 items, 14 of them meaning-decided', () => {
-    assert.equal(G8_ITEM_LESSONS.length, 5);
-    assert.equal(G8_ITEM_LESSONS.reduce((n, l) => n + sentencesOf(l.lessonId).length, 0), 200);
-    assert.equal(grammarUnitsForGrade(8).length, 5);
+  it('are 10 lessons and 400 items, 52 of them meaning-decided', () => {
+    assert.equal(G8_ITEM_LESSONS.length, 10);
+    assert.equal(G8_ITEM_LESSONS.reduce((n, l) => n + sentencesOf(l.lessonId).length, 0), 400);
+    assert.equal(grammarUnitsForGrade(8).length, 10);
     const meaning = ids().flatMap(id => sentencesOf(id)).filter(x => x.kind === 'meaning').length;
-    assert.equal(meaning, 14);
+    assert.equal(meaning, 52);
     assert.equal(meaning, Object.values(SIZES).flatMap(s => Object.values(s)).filter(([, k]) => k === 'meaning').reduce((n, [size]) => n + size, 0));
   });
 
@@ -142,6 +149,28 @@ describe('Grade 8 authored lessons', () => {
     }
   });
 
+  it('decide the Simple against the Continuous by a habit word or a now word, never «this week» or «always»', () => {
+    const habit = /\b(every|usually|often|rarely|on (Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)days)\b/i;
+    const now = /\b(now|Look!|Listen!|at the moment)/i;
+    for (const x of sentencesOf(L('u4_l3'))) {
+      if (x.patternId === 'habit-markers') assert.ok(habit.test(x.text), x.text);
+      if (x.patternId === 'now-markers') assert.ok(now.test(x.text), x.text);
+      if (x.kind === 'meaning') assert.ok(!/\b(always|this week)\b/i.test(x.text), x.text);
+    }
+  });
+
+  it('decide the Past Simple against the present by a past time word', () => {
+    for (const x of sentencesOf(L('u5_l1')).filter(y => y.patternId === 'past-time-markers')) {
+      assert.ok(/\b(yesterday|last \w+|\w+ ago)\b/i.test(x.text), x.text);
+    }
+  });
+
+  it('keep did out of the past form in the Past Simple questions lesson, so no twin is a grammatical past question', () => {
+    for (const x of sentencesOf(L('u5_l4'))) {
+      assert.ok(/\b(did|didn't|Did)\b/.test(x.text), `${x.text}: the true sentence uses did`);
+    }
+  });
+
   it('send true sentences to the audio list and no twin', () => {
     const spoken = new Set(allGrammarSpoken());
     for (const id of ids()) for (const x of sentencesOf(id)) {
@@ -167,13 +196,14 @@ describe('the Grade 8 teacher form', () => {
     for (const l of G8_ITEM_LESSONS) assert.ok(html.includes(l.statement.replace(/'/g, '&#39;')) || html.includes(l.statement), l.lessonId);
     assert.ok(html.includes('تأكدوا أولًا'));
     assert.ok(html.includes('الكلمات خارج قوائم المفردات'));
-    assert.equal(html.split('class="unit"').length - 1, 5);
+    assert.equal(html.split('class="unit"').length - 1, 10);
     assert.ok(html.includes('الصف الثامن'));
     assert.ok(html.includes('>s1-nccd-u1_l1<'), 'the id shown without its kbl-g8-eng- prefix');
     assert.ok(html.includes('>s1-nccd-u3_l1<'));
+    assert.ok(html.includes('>s1-nccd-u5_l4<'));
     assert.ok(!html.includes('>kbl-g8-'), 'no un-stripped id');
-    assert.equal((html.match(/<span class="kind kind-meaning"/g) ?? []).length, 14);
-    assert.equal((html.match(/<span class="kind kind-form"/g) ?? []).length, 186);
+    assert.equal((html.match(/<span class="kind kind-meaning"/g) ?? []).length, 52);
+    assert.equal((html.match(/<span class="kind kind-form"/g) ?? []).length, 348);
   });
   it('names Semester 1 in its lead', () => {
     assert.ok(html.includes('الفصل الأول'));

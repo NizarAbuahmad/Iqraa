@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { GRAMMAR_UNITS_G8, NOT_COVERED_G8 } from '../englishGrammarG8.ts';
 import { grammarUnit, offeredGrammar, unitSentences } from '../englishGrammar.ts';
 
-const IDS = ['u1_l1', 'u1_l3', 'u2_l1', 'u2_l3', 'u3_l1'].map(s => `kbl-g8-eng-s1-nccd-${s}`);
+const IDS = ['u1_l1', 'u1_l3', 'u2_l1', 'u2_l3', 'u3_l1', 'u3_l4', 'u4_l1', 'u4_l3', 'u5_l1', 'u5_l4'].map(s => `kbl-g8-eng-s1-nccd-${s}`);
 
 describe('Grade 8 grammar units', () => {
   it('are the grammar lessons in hub order, all unsigned', () => {

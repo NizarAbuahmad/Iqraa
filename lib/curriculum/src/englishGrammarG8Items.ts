@@ -5,9 +5,11 @@
  *
  * The rule for a distractor: it is `form` (ungrammatical in standard English: the bare verb or a wrong -s, the wrong
  * auxiliary or agreement, `to` or -ing after a modal, an adverb in a position English does not allow, the wrong be-form,
- * `some` in a negative, `a` with an uncountable noun, a misspelt inflection in the spelling sub-topics only) or `meaning`
- * (grammatical, but excluded by a word in the sentence itself: here only a `so` or `but` clause that states why someone
- * can or can't do a chore). Never a form that could fit, and `meaning` only in the sub-topics the test pins as `meaning`.
+ * `some` in a negative, `a` with an uncountable noun, a past form after `did`, a Continuous of a stative verb, a misspelt
+ * inflection in the spelling sub-topics only) or `meaning` (grammatical, but excluded by a word in the sentence itself: a
+ * `so` or `but` clause that states why someone can or can't do a chore, a habit word or a now word that decides Simple
+ * against Continuous, a past time word that rules out the present). Never a form that could fit, and `meaning` only in
+ * the sub-topics the test pins as `meaning`.
  * Every sentence is nine words or fewer, so Build always takes it whole. No names: a pronoun, a family word (`Mum`, `Dad`)
  * or a Jordanian place. `statement` is the book's own «I can» line for the lesson id (its `objectives[0]`, read back by a test).
  *
@@ -309,6 +311,304 @@ export const G8_ITEM_LESSONS: { lessonId: string; statement: string; items: Gram
         ['My sister has a pear for lunch.', 'a', 'an'],
         ['Please give me some meat.', 'some', 'an'],
         ['She eats an onion with lunch.', 'an', 'a'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L('u3_l4'),
+    statement: 'I can use quantifiers to talk about amounts.',
+    items: [
+      // many goes with a countable plural, much with an uncountable noun; both only in a negative sentence or a question
+      // here (a lot of is the positive form), so no row has «much» in a positive. The distractor is the other word, which
+      // cannot stand before that kind of noun («many milk», «much eggs»).
+      ...items('much-many', 'form', [
+        ["There aren't many eggs.", 'many', 'much'],
+        ["We don't have much milk.", 'much', 'many'],
+        ['Do you have many friends?', 'many', 'much'],
+        ["I don't have much money.", 'much', 'many'],
+        ["There aren't many chairs in the room.", 'many', 'much'],
+        ['Is there much traffic in Amman?', 'much', 'many'],
+        ["She doesn't eat much rice.", 'much', 'many'],
+        ['Are there many shops near here?', 'many', 'much'],
+        ["He doesn't drink much water.", 'much', 'many'],
+        ["They don't have many books.", 'many', 'much'],
+        ["We don't have much time today.", 'much', 'many'],
+        ['Are there many students in your class?', 'many', 'much'],
+        ["There isn't much bread left.", 'much', 'many'],
+        ["I don't have much homework today.", 'much', 'many'],
+      ]),
+      // a few before a countable plural, a little before an uncountable noun; the distractor is the other, which cannot
+      // stand before that noun («a few milk», «a little eggs»).
+      ...items('a-few-a-little', 'form', [
+        ['I have a little milk.', 'a little', 'a few'],
+        ['She has a few friends in Aqaba.', 'a few', 'a little'],
+        ['We need a little rice.', 'a little', 'a few'],
+        ['There are a few eggs in the fridge.', 'a few', 'a little'],
+        ['Add a little salt to the soup.', 'a little', 'a few'],
+        ['He has a few books on his desk.', 'a few', 'a little'],
+        ['I have a little time after school.', 'a little', 'a few'],
+        ['Mum bought a few tomatoes.', 'a few', 'a little'],
+        ['There is a little water in the glass.', 'a little', 'a few'],
+        ['A few students are late today.', 'A few', 'A little'],
+        ['Dad puts a little honey on his bread.', 'a little', 'a few'],
+        ['We have a few apples left.', 'a few', 'a little'],
+        ['My sister has a little homework.', 'a little', 'a few'],
+        ['I see a few cars outside.', 'a few', 'a little'],
+      ]),
+      // How many + a plural, How much + an uncountable noun. No price question («How much are the eggs?» is correct with a
+      // plural), so every row asks for an amount of the noun itself.
+      ...items('how-much-how-many', 'form', [
+        ['How many apples do we need?', 'many', 'much'],
+        ['How much milk do you drink?', 'much', 'many'],
+        ['How many students are in your class?', 'many', 'much'],
+        ['How much water is in the bottle?', 'much', 'many'],
+        ['How many rooms are there in your house?', 'many', 'much'],
+        ['How much rice does Mum cook?', 'much', 'many'],
+        ['How many eggs do you want?', 'many', 'much'],
+        ['How much homework do you have?', 'much', 'many'],
+        ['How many books are on the shelf?', 'many', 'much'],
+        ['How much time do we have?', 'much', 'many'],
+        ['How many brothers do you have?', 'many', 'much'],
+        ['How much cheese is in the sandwich?', 'much', 'many'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L('u4_l1'),
+    statement: 'I can use the Present Continuous to talk about things happening now or temporary situations.',
+    items: [
+      // am, is or are + the -ing form: the be-form agrees with the subject. The distractor drops be, uses the wrong be-form,
+      // or puts the verb after is in the plain -s form. Never «is read», which is a grammatical passive.
+      ...items('be-v-ing', 'form', [
+        ['She is reading a book.', 'is reading', 'reading'],
+        ['They are playing football now.', 'are playing', 'is playing'],
+        ['I am doing my homework.', 'am doing', 'are doing'],
+        ['He is washing the car.', 'is washing', 'are washing'],
+        ['We are cooking dinner.', 'are cooking', 'cooking'],
+        ['My brother is sleeping.', 'is sleeping', 'are sleeping'],
+        ['The students are writing a test.', 'are writing', 'is writing'],
+        ['Mum is making tea.', 'is making', 'is makes'],
+        ['I am listening to music.', 'am listening', 'listening'],
+        ['The birds are singing outside.', 'are singing', 'is singing'],
+        ['She is eating an apple.', 'is eating', 'is eats'],
+        ['The children are drawing pictures.', 'are drawing', 'is drawing'],
+        ['Dad is driving to work now.', 'is driving', 'driving'],
+        ['You are studying English.', 'are studying', 'is studying'],
+      ]),
+      // The spelling of the -ing form: double the last consonant (running, getting, stopping, shopping, cutting, swimming),
+      // drop the silent e (making, writing, having, taking, coming), ie becomes y (dying). The distractor is the misspelt
+      // form. A distractor that is another English word (siting, planing, hoping) is never used.
+      ...items('spelling-ing', 'form', [
+        ['He is running now.', 'running', 'runing'],
+        ['She is making a cake.', 'making', 'makeing'],
+        ['I am writing a letter.', 'writing', 'writeing'],
+        ['She is cutting the bread.', 'cutting', 'cuting'],
+        ['They are swimming in the sea.', 'swimming', 'swiming'],
+        ['The flowers are dying.', 'dying', 'dieing'],
+        ['Dad is getting ready for work.', 'getting', 'geting'],
+        ['We are having lunch now.', 'having', 'haveing'],
+        ['She is taking a photo.', 'taking', 'takeing'],
+        ['The bus is coming now.', 'coming', 'comeing'],
+        ['He is stopping the car.', 'stopping', 'stoping'],
+        ['Mum is shopping in Amman.', 'shopping', 'shoping'],
+      ]),
+      // Questions start with Is, Are or Am; negatives take n't or not after be. The distractor puts a do-auxiliary in front
+      // of the -ing form, which English never does. No twin is a question in another word order.
+      ...items('questions-negatives', 'form', [
+        ['Is she sleeping?', 'Is she sleeping', 'Does she sleeping'],
+        ['Are they playing outside?', 'Are they playing', 'Do they playing'],
+        ["It isn't raining now.", "isn't raining", "don't raining"],
+        ['Is your father working today?', 'Is your father working', 'Does your father working'],
+        ["We aren't watching TV.", "aren't watching", "don't watching"],
+        ['Are you listening to me?', 'Are you listening', 'Do you listening'],
+        ["He isn't wearing a coat.", "isn't wearing", "doesn't wearing"],
+        ['What are you doing now?', 'are you doing', 'do you doing'],
+        ['Where is she going?', 'is she going', 'does she going'],
+        ['I am not sleeping.', 'am not sleeping', 'do not sleeping'],
+        ['Is the baby crying?', 'Is the baby crying', 'Does the baby crying'],
+        ["They aren't studying now.", "aren't studying", "don't studying"],
+        ['Are the children eating?', 'Are the children eating', 'Do the children eating'],
+        ['Why is he laughing?', 'is he laughing', 'does he laughing'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L('u4_l3'),
+    statement: 'I can use the Present Simple and the Present Continuous to talk about regular actions and activities happening now/temporary situations.',
+    items: [
+      // MEANING: both tenses are grammatical, and a habit word (every day, every morning, on Fridays, often, usually,
+      // rarely) is what rules the Continuous out. Never «always» or «this week»: both fit either tense.
+      ...items('habit-markers', 'meaning', [
+        ['We play chess every day.', 'play', 'are playing'],
+        ['She walks to school every morning.', 'walks', 'is walking'],
+        ['My uncle visits us on Fridays.', 'visits', 'is visiting'],
+        ['I brush my teeth every night.', 'brush', 'am brushing'],
+        ['He rarely eats fish.', 'eats', 'is eating'],
+        ['Dad reads the news every evening.', 'reads', 'is reading'],
+        ['The shop opens at nine every day.', 'opens', 'is opening'],
+        ['We often eat lunch at school.', 'eat', 'are eating'],
+        ['Mum cooks rice every week.', 'cooks', 'is cooking'],
+        ['My sister usually wakes up at six.', 'wakes', 'is waking'],
+        ['I swim in the pool every Friday.', 'swim', 'am swimming'],
+        ['The students have maths every Sunday.', 'have', 'are having'],
+      ]),
+      // MEANING: a now word (now, right now, Look!, Listen!, at the moment) is what rules the Simple out. Where the text has
+      // two sentences the answer sits in the second one.
+      ...items('now-markers', 'meaning', [
+        ['Look! It is raining.', 'is raining', 'rains'],
+        ['Listen! The baby is crying.', 'is crying', 'cries'],
+        ['Dad is cooking dinner right now.', 'is cooking', 'cooks'],
+        ['We are studying at the moment.', 'are studying', 'study'],
+        ['Look! The children are running.', 'are running', 'run'],
+        ['I am reading a book right now.', 'am reading', 'read'],
+        ['Listen! Someone is knocking at the door.', 'is knocking', 'knocks'],
+        ['My sister is sleeping at the moment.', 'is sleeping', 'sleeps'],
+        ['Look! The bus is coming.', 'is coming', 'comes'],
+        ['The students are writing a test now.', 'are writing', 'write'],
+        ['Mum is washing the car at the moment.', 'is washing', 'washes'],
+        ['He is playing football in the garden right now.', 'is playing', 'plays'],
+      ]),
+      // A stative verb (like, know, need, understand, own, belong, prefer) has no Continuous: the distractor is the
+      // Continuous of the verb. Never love, hate or have: «I am loving it» and «I am having lunch» are ordinary English.
+      ...items('stative-verbs', 'form', [
+        ['I like pizza.', 'like', 'am liking'],
+        ['She knows the answer.', 'knows', 'is knowing'],
+        ['We need a new table.', 'need', 'are needing'],
+        ['The students understand the lesson.', 'understand', 'are understanding'],
+        ['Dad owns a small shop.', 'owns', 'is owning'],
+        ['This book belongs to my sister.', 'belongs', 'is belonging'],
+        ['I know your brother.', 'know', 'am knowing'],
+        ['Mum prefers fish to meat.', 'prefers', 'is preferring'],
+      ]),
+      // Questions in either tense, decided by the auxiliary: Do or Does with the base verb, Is or Are with the -ing form.
+      // The distractor puts the wrong auxiliary in front, which makes an ungrammatical question.
+      ...items('questions', 'form', [
+        ['Do you play chess every day?', 'Do you play', 'Are you play'],
+        ['Are you listening to me now?', 'Are you listening', 'Do you listening'],
+        ['Does she walk to school every day?', 'Does she walk', 'Is she walk'],
+        ['Is he sleeping at the moment?', 'Is he sleeping', 'Does he sleeping'],
+        ['What are you eating now?', 'are you eating', 'do you eating'],
+        ['Does your father work on Fridays?', 'Does your father work', 'Is your father work'],
+        ['Where do you go on Fridays?', 'do you go', 'are you go'],
+        ['Are the children playing outside now?', 'Are the children playing', 'Do the children playing'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L('u5_l1'),
+    statement: 'I can use the Past Simple to talk about the past.',
+    items: [
+      // The regular -ed, with the spelling rules (-ied after a consonant and y, a doubled consonant, -d after e). The
+      // distractor is the base form after a singular subject (which is ungrammatical, so never after «they» or «we»), a
+      // misspelt -ed, or «did» with the -ed form.
+      ...items('regular-ed', 'form', [
+        ['She walked to school.', 'walked', 'walk'],
+        ['He studied English at home.', 'studied', 'studyed'],
+        ['The bus stopped at the corner.', 'stopped', 'stoped'],
+        ['We cleaned the kitchen after dinner.', 'cleaned', 'did cleaned'],
+        ['My mother cooked rice for lunch.', 'cooked', 'cook'],
+        ['He carried the heavy bag.', 'carried', 'carryed'],
+        ['They played football after school.', 'played', 'plaied'],
+        ['She danced at the party.', 'danced', 'danceed'],
+        ['Dad dropped me at school.', 'dropped', 'droped'],
+        ['He tried to open the door.', 'tried', 'tryed'],
+        ['We visited our aunt in Aqaba.', 'visited', 'visitted'],
+        ['The baby cried all night.', 'cried', 'cryed'],
+      ]),
+      // The second form of an irregular verb. The distractor is the regularised form (goed, eated), or the base form after a
+      // singular subject, which is ungrammatical. Never «sawed» for saw, which is a real verb form.
+      ...items('irregular', 'form', [
+        ['We went to the park.', 'went', 'goed'],
+        ['She saw her friend at school.', 'saw', 'see'],
+        ['We had lunch at one.', 'had', 'haved'],
+        ['He ate two sandwiches.', 'ate', 'eated'],
+        ['Mum took the bus to work.', 'took', 'taked'],
+        ['The dog ran across the road.', 'ran', 'runned'],
+        ['My cousin came from Irbid.', 'came', 'comed'],
+        ['She wrote a letter to her aunt.', 'wrote', 'writed'],
+        ['Dad bought a new car.', 'bought', 'buyed'],
+        ['We met our teacher in the park.', 'met', 'meeted'],
+        ['I gave my pen to my brother.', 'gave', 'gived'],
+        ['They drank some water.', 'drank', 'drinked'],
+        ['He made a cake for Mum.', 'made', 'make'],
+        ['I got a new bag.', 'got', 'getted'],
+      ]),
+      // MEANING: a past time word (yesterday, last week, last night, two days ago) rules the present form out. The
+      // distractor is the Present Simple of the same verb; the sentence has no other tense clue.
+      ...items('past-time-markers', 'meaning', [
+        ['She visited her aunt yesterday.', 'visited', 'visits'],
+        ['We played football last week.', 'played', 'play'],
+        ['I watched a film two days ago.', 'watched', 'watch'],
+        ['Dad bought a new car last year.', 'bought', 'buys'],
+        ['My brother went to Aqaba last summer.', 'went', 'goes'],
+        ['They cleaned the house yesterday morning.', 'cleaned', 'clean'],
+        ['He ate fish for dinner last night.', 'ate', 'eats'],
+        ['Mum cooked rice an hour ago.', 'cooked', 'cooks'],
+        ['We saw a film last Friday.', 'saw', 'see'],
+        ['The students had a test yesterday.', 'had', 'have'],
+        ['I finished my homework ten minutes ago.', 'finished', 'finish'],
+        ['Our teacher came late last Monday.', 'came', 'comes'],
+        ['She wrote a letter three days ago.', 'wrote', 'writes'],
+        ['We stayed at home last night.', 'stayed', 'stay'],
+      ]),
+    ],
+  },
+  {
+    lessonId: L('u5_l4'),
+    statement: 'I can use the Past Simple to ask questions and give affirmative or negative answers.',
+    items: [
+      // Did + subject + the base verb. The distractor keeps the past form after the auxiliary (Did you saw), or swaps the
+      // auxiliary for a present one (Do you saw): neither is English. No twin is a question in another word order.
+      ...items('did-questions', 'form', [
+        ['Did you see the film?', 'Did you see', 'Did you saw'],
+        ['Did she go to Aqaba?', 'Did she go', 'Did she went'],
+        ['Did they play football?', 'Did they play', 'Do they played'],
+        ['Did your brother eat lunch?', 'Did your brother eat', 'Did your brother ate'],
+        ['Did he buy a new bag?', 'Did he buy', 'Does he bought'],
+        ['Did the children finish the homework?', 'Did the children finish', 'Did the children finished'],
+        ['Did you write a letter?', 'Did you write', 'Did you wrote'],
+        ['Did Mum cook dinner?', 'Did Mum cook', 'Did Mum cooked'],
+        ['Did we have a test last week?', 'Did we have', 'Did we had'],
+        ['Did your uncle come to the party?', 'Did your uncle come', 'Did your uncle came'],
+        ['Did the bus arrive on time?', 'Did the bus arrive', 'Did the bus arrived'],
+        ['Did you meet your teacher?', 'Did you meet', 'Do you met'],
+        ['Did she take her bag?', 'Did she take', 'Did she took'],
+        ['Did they visit Petra?', 'Did they visit', 'Did they visited'],
+      ]),
+      // didn't + the base verb. The distractor keeps the past form after didn't (didn't went), or uses «not» with the past
+      // form and no auxiliary («Dad not drove»), which English does not have.
+      ...items('didnt-negatives', 'form', [
+        ["He didn't go to school.", "didn't go", "didn't went"],
+        ["We didn't see the film.", "didn't see", "didn't saw"],
+        ["She didn't eat breakfast.", "didn't eat", "didn't ate"],
+        ["I didn't buy any milk.", "didn't buy", "didn't bought"],
+        ["They didn't play football yesterday.", "didn't play", "didn't played"],
+        ["Mum didn't cook dinner.", "didn't cook", "didn't cooked"],
+        ["My brother didn't do his homework.", "didn't do", "didn't did"],
+        ["The bus didn't stop here.", "didn't stop", 'not stopped'],
+        ["We didn't have a lesson today.", "didn't have", "didn't had"],
+        ["She didn't come to the party.", "didn't come", "didn't came"],
+        ["I didn't write a letter.", "didn't write", "didn't wrote"],
+        ["Dad didn't drive to work.", "didn't drive", 'not drove'],
+        ["The students didn't finish the test.", "didn't finish", "didn't finished"],
+        ["He didn't take his bag.", "didn't take", "didn't took"],
+      ]),
+      // A wh-word + did + subject + the base verb. The distractor keeps the past form after did, uses a present auxiliary with
+      // it, or leaves the auxiliary out (a question with no auxiliary is ungrammatical here; never a question in another
+      // word order).
+      ...items('wh-did', 'form', [
+        ['Where did she go?', 'did she go', 'did she went'],
+        ['What did you eat for lunch?', 'did you eat', 'did you ate'],
+        ['When did the lesson start?', 'did the lesson start', 'did the lesson started'],
+        ['Why did he leave early?', 'did he leave', 'did he left'],
+        ['Who did you see at the party?', 'did you see', 'do you saw'],
+        ['How did they get to school?', 'did they get', 'did they got'],
+        ['What did Mum buy yesterday?', 'did Mum buy', 'does Mum bought'],
+        ['Where did your father work?', 'did your father work', 'your father worked'],
+        ['Which bus did you take?', 'did you take', 'did you took'],
+        ['What time did the film finish?', 'did the film finish', 'the film finished'],
+        ['How did you learn English?', 'did you learn', 'did you learned'],
+        ['Why did they close the shop?', 'did they close', 'did they closed'],
       ]),
     ],
   },

@@ -243,3 +243,238 @@ Not reviewed yet — shown to nobody.
 | My sister has a pear for lunch. | **a** / an | _My sister has an pear for lunch._ |
 | Please give me some meat. | **some** / an | _Please give me an meat._ |
 | She eats an onion with lunch. | **an** / a | _She eats a onion with lunch._ |
+
+## Semester 1 · Unit 3 — Eat in – eat out
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Choose | True or false: wrong sentence |
+|---|---|---|
+| There aren't many eggs. | **many** / much | _There aren't much eggs._ |
+| We don't have much milk. | **much** / many | _We don't have many milk._ |
+| Do you have many friends? | **many** / much | _Do you have much friends?_ |
+| I don't have much money. | **much** / many | _I don't have many money._ |
+| There aren't many chairs in the room. | **many** / much | _There aren't much chairs in the room._ |
+| Is there much traffic in Amman? | **much** / many | _Is there many traffic in Amman?_ |
+| She doesn't eat much rice. | **much** / many | _She doesn't eat many rice._ |
+| Are there many shops near here? | **many** / much | _Are there much shops near here?_ |
+| He doesn't drink much water. | **much** / many | _He doesn't drink many water._ |
+| They don't have many books. | **many** / much | _They don't have much books._ |
+| We don't have much time today. | **much** / many | _We don't have many time today._ |
+| Are there many students in your class? | **many** / much | _Are there much students in your class?_ |
+| There isn't much bread left. | **much** / many | _There isn't many bread left._ |
+| I don't have much homework today. | **much** / many | _I don't have many homework today._ |
+| I have a little milk. | **a little** / a few | _I have a few milk._ |
+| She has a few friends in Aqaba. | **a few** / a little | _She has a little friends in Aqaba._ |
+| We need a little rice. | **a little** / a few | _We need a few rice._ |
+| There are a few eggs in the fridge. | **a few** / a little | _There are a little eggs in the fridge._ |
+| Add a little salt to the soup. | **a little** / a few | _Add a few salt to the soup._ |
+| He has a few books on his desk. | **a few** / a little | _He has a little books on his desk._ |
+| I have a little time after school. | **a little** / a few | _I have a few time after school._ |
+| Mum bought a few tomatoes. | **a few** / a little | _Mum bought a little tomatoes._ |
+| There is a little water in the glass. | **a little** / a few | _There is a few water in the glass._ |
+| A few students are late today. | **A few** / A little | _A little students are late today._ |
+| Dad puts a little honey on his bread. | **a little** / a few | _Dad puts a few honey on his bread._ |
+| We have a few apples left. | **a few** / a little | _We have a little apples left._ |
+| My sister has a little homework. | **a little** / a few | _My sister has a few homework._ |
+| I see a few cars outside. | **a few** / a little | _I see a little cars outside._ |
+| How many apples do we need? | **many** / much | _How much apples do we need?_ |
+| How much milk do you drink? | **much** / many | _How many milk do you drink?_ |
+| How many students are in your class? | **many** / much | _How much students are in your class?_ |
+| How much water is in the bottle? | **much** / many | _How many water is in the bottle?_ |
+| How many rooms are there in your house? | **many** / much | _How much rooms are there in your house?_ |
+| How much rice does Mum cook? | **much** / many | _How many rice does Mum cook?_ |
+| How many eggs do you want? | **many** / much | _How much eggs do you want?_ |
+| How much homework do you have? | **much** / many | _How many homework do you have?_ |
+| How many books are on the shelf? | **many** / much | _How much books are on the shelf?_ |
+| How much time do we have? | **much** / many | _How many time do we have?_ |
+| How many brothers do you have? | **many** / much | _How much brothers do you have?_ |
+| How much cheese is in the sandwich? | **much** / many | _How many cheese is in the sandwich?_ |
+
+## Semester 1 · Unit 4 — School life
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Choose | True or false: wrong sentence |
+|---|---|---|
+| She is reading a book. | **is reading** / reading | _She reading a book._ |
+| They are playing football now. | **are playing** / is playing | _They is playing football now._ |
+| I am doing my homework. | **am doing** / are doing | _I are doing my homework._ |
+| He is washing the car. | **is washing** / are washing | _He are washing the car._ |
+| We are cooking dinner. | **are cooking** / cooking | _We cooking dinner._ |
+| My brother is sleeping. | **is sleeping** / are sleeping | _My brother are sleeping._ |
+| The students are writing a test. | **are writing** / is writing | _The students is writing a test._ |
+| Mum is making tea. | **is making** / is makes | _Mum is makes tea._ |
+| I am listening to music. | **am listening** / listening | _I listening to music._ |
+| The birds are singing outside. | **are singing** / is singing | _The birds is singing outside._ |
+| She is eating an apple. | **is eating** / is eats | _She is eats an apple._ |
+| The children are drawing pictures. | **are drawing** / is drawing | _The children is drawing pictures._ |
+| Dad is driving to work now. | **is driving** / driving | _Dad driving to work now._ |
+| You are studying English. | **are studying** / is studying | _You is studying English._ |
+| He is running now. | **running** / runing | _He is runing now._ |
+| She is making a cake. | **making** / makeing | _She is makeing a cake._ |
+| I am writing a letter. | **writing** / writeing | _I am writeing a letter._ |
+| She is cutting the bread. | **cutting** / cuting | _She is cuting the bread._ |
+| They are swimming in the sea. | **swimming** / swiming | _They are swiming in the sea._ |
+| The flowers are dying. | **dying** / dieing | _The flowers are dieing._ |
+| Dad is getting ready for work. | **getting** / geting | _Dad is geting ready for work._ |
+| We are having lunch now. | **having** / haveing | _We are haveing lunch now._ |
+| She is taking a photo. | **taking** / takeing | _She is takeing a photo._ |
+| The bus is coming now. | **coming** / comeing | _The bus is comeing now._ |
+| He is stopping the car. | **stopping** / stoping | _He is stoping the car._ |
+| Mum is shopping in Amman. | **shopping** / shoping | _Mum is shoping in Amman._ |
+| Is she sleeping? | **Is she sleeping** / Does she sleeping | _Does she sleeping?_ |
+| Are they playing outside? | **Are they playing** / Do they playing | _Do they playing outside?_ |
+| It isn't raining now. | **isn't raining** / don't raining | _It don't raining now._ |
+| Is your father working today? | **Is your father working** / Does your father working | _Does your father working today?_ |
+| We aren't watching TV. | **aren't watching** / don't watching | _We don't watching TV._ |
+| Are you listening to me? | **Are you listening** / Do you listening | _Do you listening to me?_ |
+| He isn't wearing a coat. | **isn't wearing** / doesn't wearing | _He doesn't wearing a coat._ |
+| What are you doing now? | **are you doing** / do you doing | _What do you doing now?_ |
+| Where is she going? | **is she going** / does she going | _Where does she going?_ |
+| I am not sleeping. | **am not sleeping** / do not sleeping | _I do not sleeping._ |
+| Is the baby crying? | **Is the baby crying** / Does the baby crying | _Does the baby crying?_ |
+| They aren't studying now. | **aren't studying** / don't studying | _They don't studying now._ |
+| Are the children eating? | **Are the children eating** / Do the children eating | _Do the children eating?_ |
+| Why is he laughing? | **is he laughing** / does he laughing | _Why does he laughing?_ |
+
+## Semester 1 · Unit 4 — School life
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Choose | True or false: wrong sentence |
+|---|---|---|
+| We play chess every day. | **play** / are playing | _We are playing chess every day._ |
+| She walks to school every morning. | **walks** / is walking | _She is walking to school every morning._ |
+| My uncle visits us on Fridays. | **visits** / is visiting | _My uncle is visiting us on Fridays._ |
+| I brush my teeth every night. | **brush** / am brushing | _I am brushing my teeth every night._ |
+| He rarely eats fish. | **eats** / is eating | _He rarely is eating fish._ |
+| Dad reads the news every evening. | **reads** / is reading | _Dad is reading the news every evening._ |
+| The shop opens at nine every day. | **opens** / is opening | _The shop is opening at nine every day._ |
+| We often eat lunch at school. | **eat** / are eating | _We often are eating lunch at school._ |
+| Mum cooks rice every week. | **cooks** / is cooking | _Mum is cooking rice every week._ |
+| My sister usually wakes up at six. | **wakes** / is waking | _My sister usually is waking up at six._ |
+| I swim in the pool every Friday. | **swim** / am swimming | _I am swimming in the pool every Friday._ |
+| The students have maths every Sunday. | **have** / are having | _The students are having maths every Sunday._ |
+| Look! It is raining. | **is raining** / rains | _Look! It rains._ |
+| Listen! The baby is crying. | **is crying** / cries | _Listen! The baby cries._ |
+| Dad is cooking dinner right now. | **is cooking** / cooks | _Dad cooks dinner right now._ |
+| We are studying at the moment. | **are studying** / study | _We study at the moment._ |
+| Look! The children are running. | **are running** / run | _Look! The children run._ |
+| I am reading a book right now. | **am reading** / read | _I read a book right now._ |
+| Listen! Someone is knocking at the door. | **is knocking** / knocks | _Listen! Someone knocks at the door._ |
+| My sister is sleeping at the moment. | **is sleeping** / sleeps | _My sister sleeps at the moment._ |
+| Look! The bus is coming. | **is coming** / comes | _Look! The bus comes._ |
+| The students are writing a test now. | **are writing** / write | _The students write a test now._ |
+| Mum is washing the car at the moment. | **is washing** / washes | _Mum washes the car at the moment._ |
+| He is playing football in the garden right now. | **is playing** / plays | _He plays football in the garden right now._ |
+| I like pizza. | **like** / am liking | _I am liking pizza._ |
+| She knows the answer. | **knows** / is knowing | _She is knowing the answer._ |
+| We need a new table. | **need** / are needing | _We are needing a new table._ |
+| The students understand the lesson. | **understand** / are understanding | _The students are understanding the lesson._ |
+| Dad owns a small shop. | **owns** / is owning | _Dad is owning a small shop._ |
+| This book belongs to my sister. | **belongs** / is belonging | _This book is belonging to my sister._ |
+| I know your brother. | **know** / am knowing | _I am knowing your brother._ |
+| Mum prefers fish to meat. | **prefers** / is preferring | _Mum is preferring fish to meat._ |
+| Do you play chess every day? | **Do you play** / Are you play | _Are you play chess every day?_ |
+| Are you listening to me now? | **Are you listening** / Do you listening | _Do you listening to me now?_ |
+| Does she walk to school every day? | **Does she walk** / Is she walk | _Is she walk to school every day?_ |
+| Is he sleeping at the moment? | **Is he sleeping** / Does he sleeping | _Does he sleeping at the moment?_ |
+| What are you eating now? | **are you eating** / do you eating | _What do you eating now?_ |
+| Does your father work on Fridays? | **Does your father work** / Is your father work | _Is your father work on Fridays?_ |
+| Where do you go on Fridays? | **do you go** / are you go | _Where are you go on Fridays?_ |
+| Are the children playing outside now? | **Are the children playing** / Do the children playing | _Do the children playing outside now?_ |
+
+## Semester 1 · Unit 5 — Appearances
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Choose | True or false: wrong sentence |
+|---|---|---|
+| She walked to school. | **walked** / walk | _She walk to school._ |
+| He studied English at home. | **studied** / studyed | _He studyed English at home._ |
+| The bus stopped at the corner. | **stopped** / stoped | _The bus stoped at the corner._ |
+| We cleaned the kitchen after dinner. | **cleaned** / did cleaned | _We did cleaned the kitchen after dinner._ |
+| My mother cooked rice for lunch. | **cooked** / cook | _My mother cook rice for lunch._ |
+| He carried the heavy bag. | **carried** / carryed | _He carryed the heavy bag._ |
+| They played football after school. | **played** / plaied | _They plaied football after school._ |
+| She danced at the party. | **danced** / danceed | _She danceed at the party._ |
+| Dad dropped me at school. | **dropped** / droped | _Dad droped me at school._ |
+| He tried to open the door. | **tried** / tryed | _He tryed to open the door._ |
+| We visited our aunt in Aqaba. | **visited** / visitted | _We visitted our aunt in Aqaba._ |
+| The baby cried all night. | **cried** / cryed | _The baby cryed all night._ |
+| We went to the park. | **went** / goed | _We goed to the park._ |
+| She saw her friend at school. | **saw** / see | _She see her friend at school._ |
+| We had lunch at one. | **had** / haved | _We haved lunch at one._ |
+| He ate two sandwiches. | **ate** / eated | _He eated two sandwiches._ |
+| Mum took the bus to work. | **took** / taked | _Mum taked the bus to work._ |
+| The dog ran across the road. | **ran** / runned | _The dog runned across the road._ |
+| My cousin came from Irbid. | **came** / comed | _My cousin comed from Irbid._ |
+| She wrote a letter to her aunt. | **wrote** / writed | _She writed a letter to her aunt._ |
+| Dad bought a new car. | **bought** / buyed | _Dad buyed a new car._ |
+| We met our teacher in the park. | **met** / meeted | _We meeted our teacher in the park._ |
+| I gave my pen to my brother. | **gave** / gived | _I gived my pen to my brother._ |
+| They drank some water. | **drank** / drinked | _They drinked some water._ |
+| He made a cake for Mum. | **made** / make | _He make a cake for Mum._ |
+| I got a new bag. | **got** / getted | _I getted a new bag._ |
+| She visited her aunt yesterday. | **visited** / visits | _She visits her aunt yesterday._ |
+| We played football last week. | **played** / play | _We play football last week._ |
+| I watched a film two days ago. | **watched** / watch | _I watch a film two days ago._ |
+| Dad bought a new car last year. | **bought** / buys | _Dad buys a new car last year._ |
+| My brother went to Aqaba last summer. | **went** / goes | _My brother goes to Aqaba last summer._ |
+| They cleaned the house yesterday morning. | **cleaned** / clean | _They clean the house yesterday morning._ |
+| He ate fish for dinner last night. | **ate** / eats | _He eats fish for dinner last night._ |
+| Mum cooked rice an hour ago. | **cooked** / cooks | _Mum cooks rice an hour ago._ |
+| We saw a film last Friday. | **saw** / see | _We see a film last Friday._ |
+| The students had a test yesterday. | **had** / have | _The students have a test yesterday._ |
+| I finished my homework ten minutes ago. | **finished** / finish | _I finish my homework ten minutes ago._ |
+| Our teacher came late last Monday. | **came** / comes | _Our teacher comes late last Monday._ |
+| She wrote a letter three days ago. | **wrote** / writes | _She writes a letter three days ago._ |
+| We stayed at home last night. | **stayed** / stay | _We stay at home last night._ |
+
+## Semester 1 · Unit 5 — Appearances
+
+Not reviewed yet — shown to nobody.
+
+| Sentence | Choose | True or false: wrong sentence |
+|---|---|---|
+| Did you see the film? | **Did you see** / Did you saw | _Did you saw the film?_ |
+| Did she go to Aqaba? | **Did she go** / Did she went | _Did she went to Aqaba?_ |
+| Did they play football? | **Did they play** / Do they played | _Do they played football?_ |
+| Did your brother eat lunch? | **Did your brother eat** / Did your brother ate | _Did your brother ate lunch?_ |
+| Did he buy a new bag? | **Did he buy** / Does he bought | _Does he bought a new bag?_ |
+| Did the children finish the homework? | **Did the children finish** / Did the children finished | _Did the children finished the homework?_ |
+| Did you write a letter? | **Did you write** / Did you wrote | _Did you wrote a letter?_ |
+| Did Mum cook dinner? | **Did Mum cook** / Did Mum cooked | _Did Mum cooked dinner?_ |
+| Did we have a test last week? | **Did we have** / Did we had | _Did we had a test last week?_ |
+| Did your uncle come to the party? | **Did your uncle come** / Did your uncle came | _Did your uncle came to the party?_ |
+| Did the bus arrive on time? | **Did the bus arrive** / Did the bus arrived | _Did the bus arrived on time?_ |
+| Did you meet your teacher? | **Did you meet** / Do you met | _Do you met your teacher?_ |
+| Did she take her bag? | **Did she take** / Did she took | _Did she took her bag?_ |
+| Did they visit Petra? | **Did they visit** / Did they visited | _Did they visited Petra?_ |
+| He didn't go to school. | **didn't go** / didn't went | _He didn't went to school._ |
+| We didn't see the film. | **didn't see** / didn't saw | _We didn't saw the film._ |
+| She didn't eat breakfast. | **didn't eat** / didn't ate | _She didn't ate breakfast._ |
+| I didn't buy any milk. | **didn't buy** / didn't bought | _I didn't bought any milk._ |
+| They didn't play football yesterday. | **didn't play** / didn't played | _They didn't played football yesterday._ |
+| Mum didn't cook dinner. | **didn't cook** / didn't cooked | _Mum didn't cooked dinner._ |
+| My brother didn't do his homework. | **didn't do** / didn't did | _My brother didn't did his homework._ |
+| The bus didn't stop here. | **didn't stop** / not stopped | _The bus not stopped here._ |
+| We didn't have a lesson today. | **didn't have** / didn't had | _We didn't had a lesson today._ |
+| She didn't come to the party. | **didn't come** / didn't came | _She didn't came to the party._ |
+| I didn't write a letter. | **didn't write** / didn't wrote | _I didn't wrote a letter._ |
+| Dad didn't drive to work. | **didn't drive** / not drove | _Dad not drove to work._ |
+| The students didn't finish the test. | **didn't finish** / didn't finished | _The students didn't finished the test._ |
+| He didn't take his bag. | **didn't take** / didn't took | _He didn't took his bag._ |
+| Where did she go? | **did she go** / did she went | _Where did she went?_ |
+| What did you eat for lunch? | **did you eat** / did you ate | _What did you ate for lunch?_ |
+| When did the lesson start? | **did the lesson start** / did the lesson started | _When did the lesson started?_ |
+| Why did he leave early? | **did he leave** / did he left | _Why did he left early?_ |
+| Who did you see at the party? | **did you see** / do you saw | _Who do you saw at the party?_ |
+| How did they get to school? | **did they get** / did they got | _How did they got to school?_ |
+| What did Mum buy yesterday? | **did Mum buy** / does Mum bought | _What does Mum bought yesterday?_ |
+| Where did your father work? | **did your father work** / your father worked | _Where your father worked?_ |
+| Which bus did you take? | **did you take** / did you took | _Which bus did you took?_ |
+| What time did the film finish? | **did the film finish** / the film finished | _What time the film finished?_ |
+| How did you learn English? | **did you learn** / did you learned | _How did you learned English?_ |
+| Why did they close the shop? | **did they close** / did they closed | _Why did they closed the shop?_ |
