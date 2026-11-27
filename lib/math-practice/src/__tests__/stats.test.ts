@@ -639,7 +639,7 @@ describe('statistics: answers recomputed', () => {
         else { scatterKinds.add('predict-x'); assert.equal(Number(item.answer), (Number(p.match(/y = (\d+)؟/)![1]) - b) / m, p); }
         continue;
       }
-      const pts = [...p.matchAll(/\((\d+) ، (\d+)\)/g)].map(m => [Number(m[1]), Number(m[2])] as const);
+      const pts = [...p.matchAll(/\((\d+), (\d+)\)/g)].map(m => [Number(m[1]), Number(m[2])] as const);
       if (has(p, 'ما ميله')) {
         scatterKinds.add('slope');
         const [[x1, y1], [x2, y2]] = pts as [readonly [number, number], readonly [number, number]];

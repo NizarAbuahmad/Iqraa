@@ -1,5 +1,5 @@
 {
-  "id": "09e72e2d-8173-464e-920a-d6e65dbbaef6",
+  "id": "3eb4326b-161e-470e-9ac1-37ad7a1f8564",
   "prevId": "21553ebc-3127-4632-9cb6-e9d35b52d1ff",
   "version": "7",
   "dialect": "postgresql",
@@ -3140,6 +3140,13 @@
         },
         "show_solutions_to_student": {
           "name": "show_solutions_to_student",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "instant_feedback": {
+          "name": "instant_feedback",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
@@ -7372,158 +7379,6 @@
             "day",
             "area",
             "platform"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.newsletter_issues": {
-      "name": "newsletter_issues",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "subject": {
-          "name": "subject",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "body": {
-          "name": "body",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "content_hash": {
-          "name": "content_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "tested_at": {
-          "name": "tested_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "sending_at": {
-          "name": "sending_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "sent_at": {
-          "name": "sent_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "newsletter_issues_created_by_users_id_fk": {
-          "name": "newsletter_issues_created_by_users_id_fk",
-          "tableFrom": "newsletter_issues",
-          "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "newsletter_issues_content_hash_unique": {
-          "name": "newsletter_issues_content_hash_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "content_hash"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.newsletter_sends": {
-      "name": "newsletter_sends",
-      "schema": "",
-      "columns": {
-        "issue_id": {
-          "name": "issue_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "sent_at": {
-          "name": "sent_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "newsletter_sends_issue_id_newsletter_issues_id_fk": {
-          "name": "newsletter_sends_issue_id_newsletter_issues_id_fk",
-          "tableFrom": "newsletter_sends",
-          "tableTo": "newsletter_issues",
-          "columnsFrom": [
-            "issue_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "newsletter_sends_user_id_users_id_fk": {
-          "name": "newsletter_sends_user_id_users_id_fk",
-          "tableFrom": "newsletter_sends",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "newsletter_sends_issue_id_user_id_pk": {
-          "name": "newsletter_sends_issue_id_user_id_pk",
-          "columns": [
-            "issue_id",
-            "user_id"
           ]
         }
       },

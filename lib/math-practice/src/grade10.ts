@@ -41,8 +41,8 @@ const sgn = (ans: number, cands: number[]) =>
 /** Angle options strictly between `lo` and `hi`. */
 const degOpts = (ans: number, cands: number[], lo = 0, hi = 360, step = 5) =>
   wrongsFrom(dg(ans), cands.filter(c => Number.isInteger(c) && c > lo && c < hi).map(dg), k => (ans + step * Math.abs(k) < hi ? dg(ans + step * Math.abs(k)) : ''));
-/** «(−3 ، 4)»; coordinates may be fractions over `d`. */
-const pt = (x: number, y: number, d = 1) => `(${sfrac(x, d)} ، ${sfrac(y, d)})`;
+/** «(−3, 4)»; coordinates may be fractions over `d`. The Latin comma: see latinCommaPoints.test.ts. */
+const pt = (x: number, y: number, d = 1) => `(${sfrac(x, d)}, ${sfrac(y, d)})`;
 
 /** √n in simplest form: «7», «2√7», «√37». */
 function root(n: number): string {

@@ -18,7 +18,7 @@
  *
  * Pure: the route fetches plain rows.
  */
-import { studentResultReady } from "./studentView.ts";
+import { sanitizeQuestionForStudent, studentResultReady } from "./studentView.ts";
 import { studentVisual } from "./questionVisual.ts";
 
 export type SolutionsDecision =
@@ -48,6 +48,35 @@ export function studentReviewReady(opts: {
     opts.solutionsShown &&
     studentResultReady({ released: opts.released, result: opts.result })
   );
+}
+
+/**
+ * «تغذية راجعة فورية»: may a student who handed in see right and wrong per
+ * question, before the exam closes?
+ *
+ * The teacher turned it on (`instantFeedback`), the results are released (a
+ * per-question mark adds up to the mark, so hiding the results must hide this
+ * too) and this sitting was handed in. Deliberately NOT "closed" and NOT "the
+ * paper is fully marked": an open homework is where it is used, and a question
+ * the teacher has yet to mark simply has no verdict yet. What it shows is
+ * `feedbackItems`, which carries no answer key — the key still waits for
+ * `studentReviewReady`.
+ */
+export function feedbackReady(opts: { instantFeedback: boolean; released: boolean; submitted: boolean }): boolean {
+  return opts.instantFeedback && opts.released && opts.submitted;
+}
+
+export type InstantFeedbackDecision =
+  | { ok: true; enabled: boolean }
+  | { ok: false; status: 400; code: "invalid_input"; error: string };
+
+/** The teacher's switch. Allowed in any status: a draft keeps it for publishing. */
+export function instantFeedbackDecision(body: unknown): InstantFeedbackDecision {
+  const enabled = body && typeof body === "object" ? (body as Record<string, unknown>)["enabled"] : undefined;
+  if (typeof enabled !== "boolean") {
+    return { ok: false, status: 400, code: "invalid_input", error: "enabled must be true or false" };
+  }
+  return { ok: true, enabled };
 }
 
 export interface ReviewQuestion {
@@ -189,5 +218,27 @@ export function reviewItems(input: {
       verdict: grade?.verdict ?? null,
       steps: Array.isArray(steps) && steps.length > 0 ? steps : null,
     };
+  });
+}
+
+/**
+ * The same list as `reviewItems`, for an exam still being sat: right or wrong,
+ * the student's own answer and the marks — with the correct answer and the
+ * steps left out, here and not in the screen, so the key never leaves the
+ * server before `studentReviewReady`. A question nobody has marked yet has a
+ * null verdict, which the screen shows as waiting for the teacher.
+ *
+ * **The body is the one the student was shown** (`sanitizeQuestionForStudent`,
+ * seeded with their attempt), never the stored one: a stored body can carry
+ * the key — an option's `isCorrect`, a fill-blank's `blanks`, a matching column
+ * written in key order — and the full review's `reviewBody` only has to be safe
+ * once the answers are out anyway.
+ */
+export function feedbackItems(input: Parameters<typeof reviewItems>[0] & { attemptId: string }): ReviewItem[] {
+  const { attemptId, ...rest } = input;
+  return reviewItems({ ...rest, stepsById: new Map() }).map((item, i) => {
+    const q = rest.snapshot[i]!;
+    const shown = sanitizeQuestionForStudent({ id: q.id, orderIndex: i, type: q.type, marks: q.marks, body: q.body }, attemptId);
+    return { ...item, body: shown.body, correctAnswer: null, steps: null };
   });
 }

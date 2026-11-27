@@ -21,9 +21,10 @@ math answer keys (`artifacts/math-verifier`), RTL/Arabic-first UX.
 
 Checked 2026-10-22:
 
-- **API** `iqraa-api` (Cloud Run, europe-west1, project `iqraa-auth-507315`): commit `681749c`,
-  revision `iqraa-api-00565-ws2`, read by command from `/api/healthz/version` on 2026-11-23 after deploy
-  run 1025 (its «Verify the deployed commit» step passed). The traffic split was not read.
+- **API** `iqraa-api` (Cloud Run, europe-west1, project `iqraa-auth-507315`): commit `3f2a969` (instant
+  feedback, #1558, with migration `0032`), deployed by Deploy run 1039 on 2026-11-26, whose «Verify the deployed
+  commit» step passed. Not read from `/api/healthz/version` by hand this time (the host was not reachable from the
+  session that wrote this); the revision name and the traffic split were not read.
 - **Site assistant «اسأل إقرأ»** (checked 2026-10-26 by command): `POST /api/site/ask` is live
   and the widget is on `www.iqrra.com` (`Site_Iqra`). The three starter questions are answered from
   fixed answers (`source: "curated"`); anything else goes to the AI path, capped by
@@ -36,8 +37,8 @@ Checked 2026-10-22:
 - **Database:** Neon Postgres, **Launch plan since 2026-10-23** (was Free: 100 compute-hours a
   month, 30.92 used, after which Neon suspends the compute), autoscaling 0.25-0.5 CU, scale to
   zero on, $10 spend alert — see «Neon leaves the Free plan before launch» in the log and the
-  first item under *Open*. The schema deploys as migrations (33 files in
-  `lib/db/migrations`, up to `0032`; `0032_lumpy_sleeper`, the newsletter tables with one issue per text, is applied by the first deploy after that PR merges; `0018` was applied by deploy run 801 on 2026-10-25); `verify-schema` runs before every API deploy.
+  first item under *Open*. The schema deploys as migrations (34 files in
+  `lib/db/migrations`, up to `0033`; `0033_wandering_betty_ross`, the newsletter tables with one issue per text, is applied by the first deploy after that PR merges; `0018` was applied by deploy run 801 on 2026-10-25); `verify-schema` runs before every API deploy.
 - **Live config** (plain env on the service): `AI_LIVE_MODE=true`; models `gpt-5.4-mini`
   for generation and for chat; **`AI_MODEL_DOCUMENTS=claude-sonnet-5-5` is set** (read back by the
   owner on 2026-11-21, with `ANTHROPIC_API_KEY` attached from Secret Manager), so lesson plans,
@@ -66,9 +67,9 @@ Checked 2026-10-22:
   and two on 2026-11-14, submitted to Play (submit runs 2–3). Which version is on users' phones is not
   known from here: a phone still on 1.5.0 gets no OTA from `main`, whose runtime is 1.6.0 (CLAUDE.md,
   «`app.json`'s `version` is the OTA compatibility key»). OTAs reach the `production` channel only when
-  published by hand (`mobile-update.yml`, `branch=production`); the latest is from `fab8870` (run 1213,
-  2026-11-24, the bell refreshing when a join-request push arrives, #1540). `preview` got the same commit from
-  run 1212.
+  published by hand (`mobile-update.yml`, `branch=production`); the latest is from `3f2a969` (run 1230,
+  2026-11-26, instant feedback, #1558, its «Publish update» step passed). `preview` got the same commit from
+  run 1229.
 - **The AI chat «اسأل إقرأ» is hidden** (`IQRA_CHAT_ENABLED = false` in
   `artifacts/mobile/services/features.ts`, #1535): on the web since deploy run 1022 and on 1.6.0 phones since
   production OTA run 1207, both 2026-11-23. `/iqra` only hosts the change-lesson sheet; the chat's API route is
