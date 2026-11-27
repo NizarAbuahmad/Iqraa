@@ -115,6 +115,20 @@ The distractors are the usual slips: v − u for u − v, components multiplied,
 the numbers in its stem. The points avoid A(1,2), B(4,6), so the working cannot answer «المتجهات في المستوى»'s own
 AB⃗ item. The unit is written «كم/ساعة»: the working check reads a lone «س» as an Arabic variable letter.
 
+**Seven more (2026-11-27, `va-e3` … `va-w2`):**
+- negative components (`⟨2, −4⟩`) and the opposite vector (`−u = ⟨−4, 1⟩`);
+- `u − 3v` (the minus times a negative component again);
+- a scalar k found from a target vector, checked on both components (`k = 2`);
+- the length of a difference (`|u − v| = 13`);
+- a parallelogram's fourth vertex, `C = A + AB⃗ + AD⃗` (`C(6, 5)`);
+- a second story: two children pulling a box with ropes, a resultant of 10 نيوتن.
+
+The new distractors are: one component's sign flipped, u + 3v, 3(u − v), k without the division, 5 + 12 for
+the length, B + D without − A, and |F₁| + |F₂|. The test's key table takes a scalar and a point as well as a vector.
+Since `main`'s change of 2026-11-27, every vector here is written with the Latin comma, `⟨3, 4⟩`, like the bank's
+other vectors and points, so it reads left to right. The merge converted this branch's earlier items and their
+working.
+
 This was the last lesson with a single solved item. So no real paper now prints a worked example without a
 half-solved question, and the instruction wording for that case moved into `worksheetInstructions`, tested
 directly (and against a generated paper). The bank tests that needed a one-item lesson now use «الضرب القياسي»

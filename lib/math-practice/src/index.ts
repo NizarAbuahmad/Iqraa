@@ -723,6 +723,20 @@ export const MATH_BANK: ConcreteItem[] = [
     wordAr: 'يعبر قارب نهرًا، وسرعته بالنسبة إلى الماء ⟨0, 4⟩ كم/ساعة عموديًا على الضفة، ويجري التيار بسرعة ⟨3, 0⟩ كم/ساعة. أوجد متجه السرعة المحصلة للقارب، ثم أوجد مقدارها.',
     wordEn: 'A boat crosses a river at ⟨0, 4⟩ km/h relative to the water, straight across, while the current flows at ⟨3, 0⟩ km/h. Find the boat\'s resultant velocity vector, then its speed.',
   },
+  // More of «جمع المتجهات وطرحها»: negative components, the opposite vector,
+  // u − 3v, a scalar k found from a target vector, the length of a difference,
+  // a parallelogram's fourth vertex, and two forces on one object.
+  { id: 'va-e3', family: 'vectors', diff: 'easy', eq: 'u=⟨−3,2⟩, v=⟨5,−6⟩, u+v', answer: 'u+v = ⟨2, −4⟩', wrongs: ['⟨−8, 8⟩', '⟨8, −8⟩', '⟨2, 4⟩'], promptAr: 'إذا كان u = ⟨−3, 2⟩ و v = ⟨5, −6⟩، فأوجد u + v.', promptEn: 'If u = ⟨−3, 2⟩ and v = ⟨5, −6⟩, find u + v.' },
+  { id: 'va-e4', family: 'vectors', diff: 'easy', eq: 'u=⟨4,−1⟩, −u', answer: '−u = ⟨−4, 1⟩', wrongs: ['⟨−4, −1⟩', '⟨4, 1⟩', '⟨1, −4⟩'], promptAr: 'إذا كان u = ⟨4, −1⟩، فأوجد المتجه المعاكس −u.', promptEn: 'If u = ⟨4, −1⟩, find the opposite vector −u.' },
+  { id: 'va-m4', family: 'vectors', diff: 'medium', eq: 'u=⟨5,2⟩, v=⟨1,−1⟩, u−3v', answer: 'u−3v = ⟨2, 5⟩', wrongs: ['⟨8, −1⟩', '⟨12, 9⟩', '⟨2, −1⟩'], promptAr: 'إذا كان u = ⟨5, 2⟩ و v = ⟨1, −1⟩، فأوجد u − 3v.', promptEn: 'If u = ⟨5, 2⟩ and v = ⟨1, −1⟩, find u − 3v.' },
+  { id: 'va-m5', family: 'vectors', diff: 'medium', eq: 'u=⟨1,4⟩, v=⟨3,−2⟩, u+kv=⟨7,0⟩', answer: 'k = 2', wrongs: ['k = 3', 'k = −2', 'k = 6'], promptAr: 'إذا كان u = ⟨1, 4⟩ و v = ⟨3, −2⟩، فأوجد العدد k الذي يجعل u + kv = ⟨7, 0⟩.', promptEn: 'If u = ⟨1, 4⟩ and v = ⟨3, −2⟩, find the number k that makes u + kv = ⟨7, 0⟩.' },
+  { id: 'va-m6', family: 'vectors', diff: 'medium', eq: 'u=⟨7,2⟩, v=⟨2,−10⟩, |u−v|', answer: '|u−v| = 13', wrongs: ['17', '169', '7'], promptAr: 'إذا كان u = ⟨7, 2⟩ و v = ⟨2, −10⟩، فأوجد مقدار المتجه u − v.', promptEn: 'If u = ⟨7, 2⟩ and v = ⟨2, −10⟩, find the magnitude of u − v.' },
+  { id: 'va-h3', family: 'vectors', diff: 'hard', eq: 'parallelogram A(1,1), B(5,2), D(2,4), C', answer: 'C(6, 5)', wrongs: ['C(7, 6)', 'C(5, 4)', 'C(4, −1)'], promptAr: 'ABCD متوازي أضلاع فيه A(1, 1) و B(5, 2) و D(2, 4). استعمل المتجهات لإيجاد إحداثيي الرأس C.', promptEn: 'ABCD is a parallelogram with A(1, 1), B(5, 2) and D(2, 4). Use vectors to find the vertex C.' },
+  {
+    id: 'va-w2', family: 'vectors', diff: 'hard', eq: 'forces ⟨9,4⟩, ⟨−3,4⟩', answer: 'مقدار المحصلة = 10 نيوتن', wrongs: ['مقدار المحصلة = 14 نيوتن', 'مقدار المحصلة = 100 نيوتن', 'مقدار المحصلة = √97 + 5 نيوتن'], kind: 'word', story: true,
+    wordAr: 'يشدّ طفلان صندوقًا بحبلين في الوقت نفسه: الأول بقوة F₁ = ⟨9, 4⟩ نيوتن، والثاني بقوة F₂ = ⟨−3, 4⟩ نيوتن. أوجد متجه القوة المحصلة على الصندوق، ثم أوجد مقدارها.',
+    wordEn: 'Two children pull a box with ropes at the same time: one with force F₁ = ⟨9, 4⟩ N, the other with F₂ = ⟨−3, 4⟩ N. Find the resultant force vector on the box, then its magnitude.',
+  },
   { id: 'v-h1', family: 'vectors', diff: 'hard', eq: 'u=⟨1,0⟩, v=⟨0,1⟩', answer: 'متعامدان (الضرب القياسي = 0)', wrongs: ['متوازيان', 'نفس الاتجاه', 'غير معرّف'], promptAr: 'هل ⟨1, 0⟩ و ⟨0, 1⟩ متعامدان؟ برّر بالضرب القياسي.', promptEn: 'Are ⟨1, 0⟩ and ⟨0, 1⟩ perpendicular? Justify with the dot product.' },
 
   // ── Stats / probability ──

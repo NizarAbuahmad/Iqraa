@@ -211,12 +211,23 @@ describe('«جمع المتجهات وطرحها» has a lesson\'s worth of item
     // AB⃗ + BC⃗ for A(0,1), B(2,5), C(6,4).
     'va-h2': add(add([2, 5], scale(-1, [0, 1])), add([6, 4], scale(-1, [2, 5]))),
     'va-w1': len(add([0, 4], [3, 0])),
+    'va-e3': add([-3, 2], [5, -6]),
+    'va-e4': scale(-1, [4, -1]),
+    'va-m4': add([5, 2], scale(-3, [1, -1])),
+    // k with ⟨1, 4⟩ + k⟨3, −2⟩ = ⟨7, 0⟩, from the first component; the second must agree.
+    'va-m5': (() => { const k = (7 - 1) / 3; assert.equal(4 + k * -2, 0, 'va-m5 has no single k'); return k; })(),
+    'va-m6': len(add([7, 2], scale(-1, [2, -10]))),
+    // The fourth vertex C of parallelogram ABCD: A + AB⃗ + AD⃗, for A(1,1), B(5,2), D(2,4).
+    'va-h3': add([1, 1], add(add([5, 2], scale(-1, [1, 1])), add([2, 4], scale(-1, [1, 1])))),
+    'va-w2': len(add([9, 4], [-3, 4])),
   };
   const own = () => MATH_BANK.filter(i => i.focus === 'vector_add');
   /** «⟨5, −2⟩» as [5, -2], or the number after «=». */
   const stated = (answer: string): V | number => {
     const m = /⟨\s*([−-]?\d+)\s*[,،]\s*([−-]?\d+)\s*⟩/.exec(answer);
     if (m) return [Number(m[1]!.replace('−', '-')), Number(m[2]!.replace('−', '-'))];
+    const pt = /\(\s*([−-]?\d+)\s*[,،]\s*([−-]?\d+)\s*\)/.exec(answer);
+    if (pt) return [Number(pt[1]!.replace('−', '-')), Number(pt[2]!.replace('−', '-'))];
     return Number(answer.split('=').pop()!.replace(/[^0-9.]/g, ''));
   };
 
@@ -235,6 +246,12 @@ describe('«جمع المتجهات وطرحها» has a lesson\'s worth of item
     for (const tier of ['easy', 'medium', 'hard'] as const) assert.ok(own().some(i => i.diff === tier), `no ${tier} item`);
     assert.ok(own().some(i => i.story), 'no real-life story');
     for (const i of own()) assert.ok(stepsFor(i.id), `${i.id} has no working`);
+  });
+
+  it('has more than one story, and asks for a scalar and a point as well as a vector', () => {
+    assert.ok(own().filter(i => i.story).length >= 2, 'one story');
+    assert.ok(own().some(i => /^k\s*=/.test(i.answer)), 'no item solves for a scalar');
+    assert.ok(own().some(i => /\(\s*[−-]?\d+\s*,/.test(i.answer)), 'no item asks for a point');
   });
 
   it('studies only its own lesson', () => {

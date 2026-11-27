@@ -107,6 +107,13 @@ export const ITEM_FOCUS: Record<string, LessonFocus> = {
   'va-h1': 'vector_add',
   'va-h2': 'vector_add',
   'va-w1': 'vector_add',
+  'va-e3': 'vector_add',
+  'va-e4': 'vector_add',
+  'va-m4': 'vector_add',
+  'va-m5': 'vector_add',
+  'va-m6': 'vector_add',
+  'va-h3': 'vector_add',
+  'va-w2': 'vector_add',
   'v-m2': 'dot_product',
   'v-h1': 'dot_product',
 
