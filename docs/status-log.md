@@ -234,6 +234,52 @@ and other-tier tests now use the typed mean-and-median topic, which still has tw
 - Only the offline generator changed. The live path (`worksheetPromptAr/En`) is the model's, and production runs live
   AI, so a teacher sees this paper only when live generation is off or fails.
 
+## Slides PPTX and PDF exports: answer options in reading order, the app's fonts, Arabic language tag — 2026-11-27
+
+Found by exporting a 17-slide Arabic maths deck through the real `exportDeckAsPptx` and opening it in LibreOffice,
+in Chromium (the PDF's HTML) and as an upload to Google Drive (which converts it to Google Slides).
+
+**What was wrong:**
+- **Answer options read as different points (PPTX, PDF, Google Slides).** In a right-to-left paragraph the bidi
+  algorithm reversed a bare coordinate pair: `(2, 0)` printed `(0 ,2)` and `(-4, 0)` printed `(0 ,4-)`. In the PPTX a
+  table cell `-2` printed `2-`. The PDF's table was already isolated (`esc`); its options went through
+  `mathLineToHtml`, which isolates nothing.
+- **Body text was not in the app's face.** The pptxgenjs theme names Latin faces only. PowerPoint draws Arabic in
+  the complex-script face (`<a:cs>`), so every run without its own `fontFace` fell back to the theme's Arabic
+  default. Google Slides reported every body line in Arial.
+- **Every run said `lang="en-US"`**, so PowerPoint's spell-checker would treat each Arabic word as misspelt English.
+- **The correct option's letter was invisible**: «أ» in the accent colour on a nearly identical blue fill.
+
+**Fix:**
+- New `services/pptxText.ts` (pure, so `node --test` loads it) gives every text box the body face, `ar-JO`/`en-US`
+  and a direction from its own text: right-to-left with an Arabic letter (`hasArabicLetter`, now exported from
+  `mathRender.ts`), left-to-right without one, still right-aligned.
+- `exportPptx.ts`'s `addText` wrapper now runs for both languages and applies those defaults; table cells take
+  them directly. `pptxDiagram.ts` labels choose the same way. The correct option's letter is white.
+- `deckSlidesHtml.ts`: an option with no Arabic letter sits in an inline `dir="ltr"` span. An Arabic option goes
+  through `esc`, as a stem line does.
+
+**Verified:**
+- New `pptxText.test.ts` and an options case in `deckSlidesHtml.test.ts`. The mobile suite (9,692, 0 failures) and
+  the root typecheck pass.
+- Re-exported deck: every run in the XML carries a `cs` face and `lang="ar-JO"`. LibreOffice and Google Slides both
+  show `(0, -4)`, `(0, 4)`, `(-4, 0)`, `(2, 0)` and `-2` in order, with «أ» visible. The PDF shows them in order in
+  Chromium, plus «النقطة (2, 0)». An English deck renders as before.
+
+**Not verified / known limits:**
+- **Desktop PowerPoint and Keynote were not opened.** An option row is plain `algn="r"` with no `rtl="1"`, but
+  nobody has looked at it in either.
+- **Google Slides still shows body text in Arial.** The file names Almarai on every run, but Google Slides
+  substitutes it on import, while Readex Pro comes through. Changing that means choosing another body face for the
+  export.
+- In the PPTX, a coordinate pair *inside* an Arabic sentence (an option «النقطة (2, 0)») can still reverse: the fix
+  gives a whole line one direction. The PDF isolates the pair; the PPTX does not, because nobody has checked
+  PowerPoint's support for Unicode isolates.
+- Exports still print the correct option ticked and the challenge answer, by design ("the teacher's copy"). A
+  teacher who presents the file shows the answers to the class. That is a product decision this change does not
+  make.
+- The in-app presenter was not checked for the same reversal.
+
 ## Set-builder notation and conditional probability read left to right in Arabic — 2026-11-27
 
 The follow-up the bars entry below named. A single `|` is a separator and never joins a run on its own. But in
