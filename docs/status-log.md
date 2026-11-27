@@ -20,7 +20,7 @@ student sees a card, `u5_l4` is absent from the Grade 8 index and its URL says �
 the printed form.** For that reason there is **no «ما الجديد» entry** in this change (nothing is visible); it comes with
 the change that sets the first `reviewedBy`. Spec: `docs/superpowers/specs/2026-11-04-english-corner-grammar-g8-s1-design.md`;
 plan: `docs/superpowers/plans/2026-11-27-english-corner-grammar-g8-s1.md`; draft PR #1416. Same engine and rules as Grades 5, 9
-and 10; **no app screen, server, schema or migration change** (the app's own test file only grew).
+and 10; **no app screen, server, schema or migration change**: no app screen or other non-test file changed.
 
 - **400 hand-written items, 40 a lesson, 30 sub-topics** (`englishGrammarG8Items.ts`, `G8_ITEM_LESSONS`, each `statement`
   equal to `objectives[0]` of its lesson, read back from the Grade 8 Semester 1 JSON by a test). **52 are `meaning` and 348
@@ -70,7 +70,7 @@ and 10; **no app screen, server, schema or migration change** (the app's own tes
   above), `englishGrammarG8.test.ts` (ten units in hub order, all unsigned, a note each), `englishHub.test.ts` (twenty-three grammar-only
   ids; the Grade 8 test adds the grammar-only lesson) and, in the app, `englishGrammarG8ItemGames.test.ts` (Choose, Build and True or
   false on all ten, Yes or No on none, no twin voiced).
-- **Verified (2026-11-27, on `ccr-d9db5f6c-mgwkuo` at `b68d815`):** root `pnpm run typecheck` **exit 0** (api-server, mobile,
+- **Verified (2026-11-27, at `b68d815`):** root `pnpm run typecheck` **exit 0** (api-server, mobile,
   scripts); `@workspace/curriculum` `test` **965 tests, 965 passing** with `env -u R2_ACCESS_KEY_ID -u R2_BUCKET -u R2_ENDPOINT -u
   R2_SECRET_ACCESS_KEY`, its `verify` **200 files, 3369 lessons, 0 errors** (the 2400 «gaps» are the existing content-gap
   report); the **full mobile suite 9688 tests, 9678 passing, 10 skipped, 0 failing** (425 s). The api-server suites were not run: nothing there changed (CI covers them). The CI on the PR
@@ -106,7 +106,7 @@ and 10; **no app screen, server, schema or migration change** (the app's own tes
   sentence; **a grammar-only lesson that appears only after a signature is tested but not seen on a device.** Switching a lesson on:
   a Grade 8 English teacher signs that lesson's page of the printed form and checks the book-page line, audio is recorded for
   the correct sentences, then the unit's `reviewedBy` is set (with a «ما الجديد» entry).
-- **How it was built:** subagent-driven, one reviewer per task (opus). Task 1 and Task 2 each took two fix rounds (Task 1:
+- **How it was built:** subagent-driven, one reviewer per task. Task 1 and Task 2 each took two fix rounds (Task 1:
   adverb-before-be and `a milk` twins; Task 2: adverb outside the answer, Continuous twins on a temporary reading); Task 3 was
   approved with no findings.
 
