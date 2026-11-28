@@ -67,9 +67,9 @@ Checked 2026-10-22:
   and two on 2026-11-14, submitted to Play (submit runs 2–3). Which version is on users' phones is not
   known from here: a phone still on 1.5.0 gets no OTA from `main`, whose runtime is 1.6.0 (CLAUDE.md,
   «`app.json`'s `version` is the OTA compatibility key»). OTAs reach the `production` channel only when
-  published by hand (`mobile-update.yml`, `branch=production`); the latest is from `3f2a969` (run 1230,
-  2026-11-26, instant feedback, #1558, its «Publish update» step passed). `preview` got the same commit from
-  run 1229.
+  published by hand (`mobile-update.yml`, `branch=production`); the latest is from `768f3ae` (run 1246,
+  2026-11-27, exams' competency mix and chosen total, #1545; its log reads «Branch production», «Runtime version
+  1.6.0»). `preview` is published by every merge to `main` on its own.
 - **The AI chat «اسأل إقرأ» is hidden** (`IQRA_CHAT_ENABLED = false` in
   `artifacts/mobile/services/features.ts`, #1535): on the web since deploy run 1022 and on 1.6.0 phones since
   production OTA run 1207, both 2026-11-23. `/iqra` only hosts the change-lesson sheet; the chat's API route is
